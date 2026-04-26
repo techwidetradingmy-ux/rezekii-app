@@ -1,26 +1,128 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ============================================
+   REZEKII DESIGN SYSTEM — Brand Kit v3.0
+   TikTok Creator Affiliate Platform
+   Techwide Marketing Sdn Bhd
+   ============================================ */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* === COLORS === */
+  --color-rz-green:       #00c073;
+  --color-rz-green-hover: #009a5c;
+  --color-rz-black:       #0d1117;
+  --color-rz-white:       #ffffff;
+  --color-rz-cyan:        #25f4ee;
+  --color-rz-canvas:      #f5fdf7;
+  --color-rz-border:      #d8f0e4;
+  --color-rz-body:        #4a5568;
+  --color-rz-muted:       #9aa5b1;
+
+  /* === TYPOGRAPHY === */
+  --font-rz: var(--font-albert-sans), "Albert Sans", system-ui, sans-serif;
+
+  /* === RADII === */
+  --radius-input:     10px;
+  --radius-button:    12px;
+  --radius-card:      16px;
+  --radius-pill:      20px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ============================================
+   BASE STYLES
+   ============================================ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: #f5fdf7;
+  color: #4a5568;
+  font-family: var(--font-rz), sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================
+   GRADIENT — warm (logo / badges only)
+   ============================================ */
+
+.gradient-warm {
+  background: linear-gradient(135deg, #f5a623 0%, #e8005a 100%);
+}
+
+.gradient-warm-text {
+  background: linear-gradient(135deg, #f5a623 0%, #e8005a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ============================================
+   SCROLLBAR — hide on mobile feel
+   ============================================ */
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ============================================
+   SAFE AREA
+   ============================================ */
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(32px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse-green {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 192, 115, 0.4); }
+  50%       { box-shadow: 0 0 0 8px rgba(0, 192, 115, 0); }
+}
+
+.animate-fade-up    { animation: fadeUp 320ms cubic-bezier(.2,.7,.2,1) both; }
+.animate-fade-in    { animation: fadeIn 200ms ease both; }
+.animate-slide-in   { animation: slideInRight 320ms cubic-bezier(.2,.7,.2,1) both; }
+.animate-pulse-green { animation: pulse-green 2s infinite; }
+
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }
+.delay-500 { animation-delay: 500ms; }
+
+/* ============================================
+   TAP FEEDBACK
+   ============================================ */
+
+.tap-target {
+  transition: transform 120ms cubic-bezier(.2,.7,.2,1),
+              opacity   120ms cubic-bezier(.2,.7,.2,1);
+  cursor: pointer;
+}
+.tap-target:active {
+  transform: scale(0.97);
+  opacity: 0.85;
 }
