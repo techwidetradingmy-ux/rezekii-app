@@ -20,30 +20,33 @@ export default function HomePage() {
 
   return (
     <AppShell>
-      {/* Header band */}
+      {/* Green header band — contains logo, greeting AND earnings card */}
       <div
+        style={{ background: "#00c073" }}
         className="px-5 pt-12 pb-5"
-        style={{ background: "linear-gradient(160deg, #0d1117 0%, #0f2018 100%)" }}
       >
-        <div className="flex items-center justify-between mb-4">
+        {/* Top row: logo + bell */}
+        <div className="flex items-center justify-between mb-3">
           <RezekiiLogo size="md" variant="light" />
           <div className="flex items-center gap-3">
             <Link href="/notifications" className="relative tap-target">
               <Bell size={22} color="white" strokeWidth={1.8} />
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#e8005a] rounded-full text-[9px] text-white font-[700] flex items-center justify-center">3</span>
+              <span
+                className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] text-white font-[700] flex items-center justify-center"
+                style={{ background: "#e8005a" }}
+              >3</span>
             </Link>
           </div>
         </div>
-        <p className="text-[#9aa5b1] text-[13px]">Good morning,</p>
-        <h1 className="text-white text-[22px] font-[800] leading-tight">
-          {creatorProfile.name.split(" ")[0]} 👋
-        </h1>
-      </div>
 
-      <div className="px-5 pt-4 pb-4 flex flex-col gap-4">
+        {/* Greeting */}
+        <p className="text-white text-[18px] font-[700] mb-4">
+          Good morning, {creatorProfile.name.split(" ")[0]} 👋
+        </p>
 
-        {/* Earnings Hero Card */}
-        <RzCard className="animate-fade-up" padding={false}>
+        {/* Earnings card — sits inside the green band */}
+        <RzCard padding={false} className="animate-fade-up">
+          {/* Card top: monthly earnings with gradient */}
           <div
             className="rounded-t-[16px] px-4 pt-4 pb-3"
             style={{ background: "linear-gradient(135deg, #00c073 0%, #009a5c 100%)" }}
@@ -51,18 +54,23 @@ export default function HomePage() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-white/70 text-[12px] font-[500] mb-0.5">This Month&apos;s Earnings</p>
-                <p className="text-white text-[28px] font-[800] leading-tight">
+                <p className="text-white text-[24px] font-[700] leading-tight">
                   {formatRM(dashboardStats.totalEarningsThisMonth)}
                 </p>
               </div>
-              <div className="flex items-center gap-1 bg-white/20 px-2 py-1 rounded-full mt-1">
+              <div
+                className="flex items-center gap-1 px-2 py-1 rounded-full mt-1"
+                style={{ background: "rgba(255,255,255,0.2)" }}
+              >
                 <ArrowUpRight size={12} color="white" />
                 <span className="text-white text-[12px] font-[700]">+{dashboardStats.earningsDelta}%</span>
               </div>
             </div>
             <p className="text-white/60 text-[11px] mt-1">vs last month</p>
           </div>
-          <div className="px-4 pt-3 pb-2">
+
+          {/* Card bottom: weekly chart + 7-day commission */}
+          <div className="px-4 pt-3 pb-1">
             <p className="text-[11px] text-[#9aa5b1] font-[500] mb-2">This week</p>
             <EarningsChart data={earningsWeek} metric="commission" />
           </div>
@@ -78,20 +86,24 @@ export default function HomePage() {
             </Link>
           </div>
         </RzCard>
+      </div>
 
-        {/* Quick Stats */}
+      {/* White section */}
+      <div className="px-5 pt-4 pb-4 flex flex-col gap-4">
+
+        {/* Quick Stats — all green icons per design spec */}
         <div className="grid grid-cols-3 gap-3 animate-fade-up delay-100">
           {[
-            { label: "Products Sold", value: dashboardStats.productsSold, icon: Package, color: "#00c073" },
-            { label: "Campaigns", value: dashboardStats.activeCampaigns, icon: Megaphone, color: "#f5a623" },
-            { label: "Pending Samples", value: dashboardStats.pendingSamples, icon: Clock, color: "#25f4ee" },
-          ].map(({ label, value, icon: Icon, color }) => (
+            { label: "Products Sold",   value: dashboardStats.productsSold,      icon: Package,   },
+            { label: "Campaigns",        value: dashboardStats.activeCampaigns,   icon: Megaphone, },
+            { label: "Pending Samples", value: dashboardStats.pendingSamples,    icon: Clock,     },
+          ].map(({ label, value, icon: Icon }) => (
             <RzCard key={label} padding={false} className="p-3">
               <div
                 className="w-8 h-8 rounded-[10px] flex items-center justify-center mb-2"
-                style={{ background: `${color}22` }}
+                style={{ background: "rgba(0,192,115,0.12)" }}
               >
-                <Icon size={16} color={color} />
+                <Icon size={16} color="#00c073" />
               </div>
               <p className="text-[20px] font-[800] text-[#0d1117] leading-none">{value}</p>
               <p className="text-[10px] text-[#9aa5b1] font-[500] mt-1 leading-tight">{label}</p>
@@ -102,15 +114,24 @@ export default function HomePage() {
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-3 animate-fade-up delay-200">
           <Link href="/marketplace">
-            <div className="bg-[#00c073] rounded-[14px] p-4 flex items-center gap-3 tap-target shadow-[0_2px_12px_rgba(0,192,115,0.25)]">
+            <div
+              className="rounded-[14px] p-4 flex items-center gap-3 tap-target"
+              style={{
+                background: "#00c073",
+                boxShadow: "0 2px 12px rgba(0,192,115,0.25)",
+              }}
+            >
               <Package size={20} color="white" />
               <span className="text-white font-[700] text-[14px]">Browse Products</span>
             </div>
           </Link>
           <Link href="/earnings">
-            <div className="bg-[#0d1117] rounded-[14px] p-4 flex items-center gap-3 tap-target">
-              <Wallet size={20} color="white" />
-              <span className="text-white font-[700] text-[14px]">Withdraw</span>
+            <div
+              className="rounded-[14px] p-4 flex items-center gap-3 tap-target bg-white"
+              style={{ border: "1.5px solid #00c073" }}
+            >
+              <Wallet size={20} color="#00c073" />
+              <span className="font-[700] text-[14px]" style={{ color: "#00c073" }}>Withdraw</span>
             </div>
           </Link>
         </div>
@@ -127,25 +148,25 @@ export default function HomePage() {
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
                   style={{
-                    background: item.type === "earn" ? "rgba(0,192,115,0.12)" :
-                                item.type === "payout" ? "rgba(232,0,90,0.10)" :
-                                "rgba(245,166,35,0.12)"
+                    background: item.type === "earn"   ? "rgba(0,192,115,0.12)" :
+                                item.type === "payout" ? "rgba(232,0,90,0.10)"  :
+                                                         "rgba(245,166,35,0.12)"
                   }}
                 >
-                  {item.type === "earn" && <TrendingUp size={14} color="#00c073" />}
-                  {item.type === "payout" && <Wallet size={14} color="#e8005a" />}
-                  {item.type === "sample" && <Package size={14} color="#f5a623" />}
-                  {item.type === "campaign" && <Megaphone size={14} color="#f5a623" />}
+                  {item.type === "earn"     && <TrendingUp size={14} color="#00c073" />}
+                  {item.type === "payout"   && <Wallet     size={14} color="#e8005a" />}
+                  {item.type === "sample"   && <Package    size={14} color="#f5a623" />}
+                  {item.type === "campaign" && <Megaphone  size={14} color="#f5a623" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] text-[#0d1117] font-[500] truncate">{item.text}</p>
                   <p className="text-[11px] text-[#9aa5b1]">{item.time}</p>
                 </div>
                 {item.amount && (
-                  <span className={[
-                    "text-[13px] font-[700] shrink-0",
-                    item.amount.startsWith("+") ? "text-[#00c073]" : "text-[#4a5568]"
-                  ].join(" ")}>
+                  <span
+                    className="text-[13px] font-[700] shrink-0"
+                    style={{ color: item.amount.startsWith("+") ? "#00c073" : "#4a5568" }}
+                  >
                     {item.amount}
                   </span>
                 )}
@@ -166,11 +187,14 @@ export default function HomePage() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1.5">
                 <span className="text-[13px] font-[700] text-[#0d1117]">Gold Creator</span>
-                <span className="text-[10px] font-[600] text-[#f5a623] bg-[rgba(245,166,35,0.12)] px-2 py-0.5 rounded-full">
+                <span
+                  className="text-[10px] font-[600] px-2 py-0.5 rounded-full"
+                  style={{ color: "#f5a623", background: "rgba(245,166,35,0.12)" }}
+                >
                   68% to Platinum
                 </span>
               </div>
-              <div className="w-full h-1.5 bg-[#f5fdf7] rounded-full overflow-hidden">
+              <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: "#f5fdf7" }}>
                 <div
                   className="h-full rounded-full"
                   style={{ width: "68%", background: "linear-gradient(90deg, #f5a623, #e8005a)" }}
