@@ -122,25 +122,24 @@ export default function HomePage() {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-3 animate-fade-up delay-200">
-          <Link href="/marketplace">
-            <div
-              className="rounded-[14px] p-4 flex items-center gap-3 tap-target"
-              style={{
-                background: "#00c073",
-                boxShadow: "0 2px 12px rgba(0,192,115,0.25)",
-              }}
-            >
-              <Package size={20} color="white" />
-              <span className="text-white font-[700] text-[14px]">Browse Products</span>
+          <Link href="/marketplace" style={{ textDecoration: "none" }}>
+            <div style={{
+              height: 52, borderRadius: 12, background: "#00c073",
+              boxShadow: "0 2px 12px rgba(0,192,115,0.28)",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8
+            }}>
+              <Package size={18} color="white" />
+              <span style={{ color: "white", fontWeight: 700, fontSize: 14 }}>Browse Products</span>
             </div>
           </Link>
-          <Link href="/earnings">
-            <div
-              className="rounded-[14px] p-4 flex items-center gap-3 tap-target bg-white"
-              style={{ border: "1.5px solid #00c073" }}
-            >
-              <Wallet size={20} color="#00c073" />
-              <span className="font-[700] text-[14px]" style={{ color: "#00c073" }}>Withdraw</span>
+          <Link href="/earnings" style={{ textDecoration: "none" }}>
+            <div style={{
+              height: 52, borderRadius: 12, background: "white",
+              border: "1.5px solid #00c073",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8
+            }}>
+              <Wallet size={18} color="#00c073" />
+              <span style={{ color: "#00c073", fontWeight: 700, fontSize: 14 }}>Withdraw</span>
             </div>
           </Link>
         </div>
