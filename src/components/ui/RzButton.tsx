@@ -14,7 +14,7 @@ interface RzButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantStyles: Record<Variant, string> = {
-  primary: "bg-[#00c073] hover:bg-[#009a5c] text-white border-transparent shadow-[0_2px_12px_rgba(0,192,115,0.25)]",
+  primary: "bg-[#00c073] hover:bg-[#009a5c] text-white border-transparent shadow-[0_2px_12px_rgba(0,192,115,0.25)] rz-btn-fx-primary",
   tiktok:  "bg-[#25f4ee] hover:bg-[#1be0da] text-[#0d1117] border-transparent",
   ghost:   "bg-[rgba(0,192,115,0.09)] hover:bg-[rgba(0,192,115,0.15)] text-[#00c073] border-[#d8f0e4]",
   dark:    "bg-[#0d1117] hover:bg-[#1a2332] text-white border-transparent",
@@ -45,9 +45,8 @@ export default function RzButton({
       disabled={disabled || loading}
       className={[
         "inline-flex items-center justify-center gap-2",
-        "rounded-[12px] border font-[700] transition-all",
-        "duration-[120ms] ease-[cubic-bezier(.2,.7,.2,1)]",
-        "active:scale-[0.97] active:opacity-85",
+        "rounded-[12px] border font-[700]",
+        "rz-btn-fx",
         "disabled:opacity-50 disabled:cursor-not-allowed",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00c073]/50",
         variantStyles[variant],

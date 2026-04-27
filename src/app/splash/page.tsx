@@ -54,8 +54,8 @@ export default function SplashPage() {
               Get Started — It&apos;s Free
             </RzButton>
           </Link>
-          <Link href="/" className="text-center text-[13px] text-[#9aa5b1] py-2 tap-target hover:text-white transition-colors">
-            Already have an account? <span className="text-[#00c073] font-[600]">Sign in</span>
+          <Link href="/home" className="text-center text-[13px] text-[#9aa5b1] py-2 tap-target hover:text-white transition-colors">
+            Already have an account? <span className="text-[#00c073] font-[600]">Sign In</span>
           </Link>
         </div>
 

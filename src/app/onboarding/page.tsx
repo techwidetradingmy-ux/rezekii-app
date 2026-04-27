@@ -55,11 +55,15 @@ export default function OnboardingPage() {
 
   const isLast = current === slides.length - 1;
   const slide = slides[current];
-  const IllustIcon = slide.icon;
+
+  const finish = () => {
+    localStorage.setItem("rezekii_onboarded", "true");
+    router.push("/home");
+  };
 
   const next = () => {
     if (isLast) {
-      router.push("/");
+      finish();
     } else {
       setCurrent((c) => c + 1);
     }
@@ -72,7 +76,7 @@ export default function OnboardingPage() {
         {/* Skip */}
         <div className="flex justify-end px-5 pt-12">
           <button
-            onClick={() => router.push("/")}
+            onClick={finish}
             className="text-[13px] text-[#9aa5b1] font-[500] tap-target"
           >
             Skip
@@ -128,10 +132,10 @@ export default function OnboardingPage() {
           </RzButton>
           {current === 0 && (
             <button
-              onClick={() => router.push("/")}
+              onClick={finish}
               className="w-full text-center text-[13px] text-[#9aa5b1] py-3 tap-target mt-1"
             >
-              Already have an account? <span className="text-[#00c073] font-[600]">Sign in</span>
+              Already have an account? <span className="text-[#00c073] font-[600]">Sign In</span>
             </button>
           )}
         </div>

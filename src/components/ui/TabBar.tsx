@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { Home, ShoppingBag, Megaphone, TrendingUp, User } from "lucide-react";
 
 const tabs = [
-  { label: "Home",        href: "/",             icon: Home },
+  { label: "Home",        href: "/home",          icon: Home },
   { label: "Marketplace", href: "/marketplace",   icon: ShoppingBag },
   { label: "Campaign",    href: "/campaign",      icon: Megaphone },
   { label: "Earnings",    href: "/earnings",      icon: TrendingUp },
@@ -22,7 +22,7 @@ export default function TabBar() {
     >
       <div className="flex items-center justify-around h-[49px]">
         {tabs.map(({ label, href, icon: Icon }) => {
-          const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
+          const isActive = pathname.startsWith(href);
           return (
             <Link
               key={href}
