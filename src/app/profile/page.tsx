@@ -26,7 +26,7 @@ export default function ProfilePage() {
       {/* Header */}
       <div
         className="px-5 pt-12 pb-6"
-        style={{ background: "linear-gradient(160deg, #0d1117 0%, #0f2018 100%)" }}
+        style={{ background: "#00c073" }}
       >
         <div className="flex items-center gap-4">
           {/* Avatar */}

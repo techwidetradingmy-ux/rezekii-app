@@ -34,7 +34,7 @@ export default function EarningsPage() {
       {/* Header */}
       <div
         className="px-5 pt-12 pb-5"
-        style={{ background: "linear-gradient(160deg, #0d1117 0%, #0f2018 100%)" }}
+        style={{ background: "#00c073" }}
       >
         <h1 className="text-[22px] font-[800] text-white mb-4">Earnings</h1>
 
