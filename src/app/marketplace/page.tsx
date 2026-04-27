@@ -1,13 +1,31 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import AppShell from "@/components/layout/AppShell";
 import RzCard from "@/components/ui/RzCard";
 import RzInput from "@/components/ui/RzInput";
 import CategoryChip from "@/components/ui/CategoryChip";
 import ProductLabel from "@/components/ui/ProductLabel";
 import { products } from "@/lib/mock-data";
-import { Search, Star, SlidersHorizontal } from "lucide-react";
+import { Search, Star, SlidersHorizontal, Sparkles, UtensilsCrossed, Headphones, Shirt, Wind } from "lucide-react";
+
+function CategoryIcon({ category, color }: { category: string; color: string }) {
+  const iconProps = { size: 32, color, strokeWidth: 1.5 };
+  if (category === "Beauty")  return <Sparkles {...iconProps} />;
+  if (category === "Food")    return <UtensilsCrossed {...iconProps} />;
+  if (category === "Tech")    return <Headphones {...iconProps} />;
+  if (category === "Fashion") return <Shirt {...iconProps} />;
+  return <Wind {...iconProps} />;
+}
+
+const categoryIconColor: Record<string, string> = {
+  Beauty: "#e8005a",
+  Food: "#f5a623",
+  Tech: "#25f4ee",
+  Fashion: "#9aa5b1",
+  Home: "#00c073",
+};
 
 const categories = ["All", "Beauty", "Food", "Tech", "Fashion", "Home"] as const;
 type Category = typeof categories[number];
@@ -66,15 +84,23 @@ export default function MarketplacePage() {
           <RzCard key={product.id} padding={false} className="overflow-hidden tap-target">
             {/* Product Image */}
             <div
-              className="w-full aspect-square flex items-center justify-center relative"
+              className="w-full aspect-square flex items-center justify-center relative overflow-hidden"
               style={{ background: product.imageColor }}
             >
-              <span className="text-[48px]">
-                {product.category === "Beauty" ? "💄" :
-                 product.category === "Food" ? "🍱" :
-                 product.category === "Tech" ? "📱" :
-                 product.category === "Fashion" ? "👗" : "🏠"}
-              </span>
+              {product.imageUrl ? (
+                <Image
+                  src={product.imageUrl}
+                  alt={product.name}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 390px) 50vw, 195px"
+                />
+              ) : (
+                <CategoryIcon
+                  category={product.category}
+                  color={categoryIconColor[product.category] ?? "#9aa5b1"}
+                />
+              )}
               {product.label && (
                 <div className="absolute top-2 left-2">
                   <ProductLabel label={product.label} />

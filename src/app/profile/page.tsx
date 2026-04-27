@@ -5,7 +5,7 @@ import RzCard from "@/components/ui/RzCard";
 import { creatorProfile } from "@/lib/mock-data";
 import {
   ChevronRight, CreditCard, Bell, HelpCircle,
-  LogOut, Shield, Star, TrendingUp, Video,
+  LogOut, Shield, Star, TrendingUp, Video, User,
 } from "lucide-react";
 
 function formatRM(n: number) {
@@ -31,10 +31,10 @@ export default function ProfilePage() {
         <div className="flex items-center gap-4">
           {/* Avatar */}
           <div
-            className="w-16 h-16 rounded-full flex items-center justify-center text-[28px] shrink-0 border-2 border-[#00c073]"
-            style={{ background: "linear-gradient(135deg, #00c073, #009a5c)" }}
+            className="w-16 h-16 rounded-full flex items-center justify-center shrink-0 border-2 border-white/40"
+            style={{ background: "rgba(255,255,255,0.25)" }}
           >
-            👩‍💼
+            <User size={28} color="white" strokeWidth={1.8} />
           </div>
           <div>
             <h1 className="text-[20px] font-[800] text-white">{creatorProfile.name}</h1>
@@ -42,10 +42,10 @@ export default function ProfilePage() {
             {/* Level badge */}
             <div
               className="inline-flex items-center gap-1.5 mt-1.5 px-3 py-1 rounded-full"
-              style={{ background: "rgba(245,166,35,0.2)" }}
+              style={{ background: "rgba(255,255,255,0.25)" }}
             >
-              <span className="text-[11px]">🏅</span>
-              <span className="text-[11px] font-[700]" style={{ color: "#f5a623" }}>
+              <Star size={11} color="white" fill="white" />
+              <span className="text-[11px] font-[700] text-white">
                 {creatorProfile.level}
               </span>
             </div>

@@ -157,10 +157,10 @@ export default function HomePage() {
         <RzCard padding={false} className="animate-fade-up delay-400">
           <div className="p-4 flex items-center gap-3">
             <div
-              className="w-12 h-12 rounded-full flex items-center justify-center text-[20px] shrink-0"
+              className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
               style={{ background: "rgba(245,166,35,0.15)" }}
             >
-              🏅
+              <TrendingUp size={22} color="#f5a623" strokeWidth={2} />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1.5">

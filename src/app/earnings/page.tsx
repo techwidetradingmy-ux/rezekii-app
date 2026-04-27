@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import AppShell from "@/components/layout/AppShell";
 import RzCard from "@/components/ui/RzCard";
 import RzButton from "@/components/ui/RzButton";
@@ -140,12 +141,20 @@ export default function EarningsPage() {
               <RzCard key={post.id} padding={false} className="overflow-hidden tap-target">
                 <div className="flex items-center gap-3 p-3">
                   <div
-                    className="w-14 h-14 rounded-[10px] flex items-center justify-center text-[24px] shrink-0 relative"
+                    className="w-14 h-14 rounded-[10px] overflow-hidden shrink-0 relative"
                     style={{ background: post.imageColor }}
                   >
-                    {post.platform === "live" ? "🔴" : "🎬"}
+                    {post.imageUrl && (
+                      <Image
+                        src={post.imageUrl}
+                        alt={post.title}
+                        fill
+                        className="object-cover"
+                        sizes="56px"
+                      />
+                    )}
                     <span
-                      className="absolute -bottom-1 -right-1 text-[9px] font-[700] text-white px-1.5 py-0.5 rounded-full"
+                      className="absolute bottom-1 right-1 text-[9px] font-[700] text-white px-1.5 py-0.5 rounded-full"
                       style={{
                         background: post.platform === "live" ? "#e8005a" : "#0d1117"
                       }}
