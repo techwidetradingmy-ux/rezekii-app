@@ -39,7 +39,16 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${albertSans.variable} h-full`}>
       <body className="h-full antialiased" style={{ fontFamily: "var(--font-rz, var(--font-albert-sans), system-ui, sans-serif)" }}>
-        {children}
+        <div style={{
+          maxWidth: 390,
+          margin: '0 auto',
+          minHeight: '100dvh',
+          position: 'relative',
+          background: '#f5fdf7',
+          overflow: 'hidden',
+        }}>
+          {children}
+        </div>
       </body>
     </html>
   );

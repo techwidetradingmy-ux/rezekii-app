@@ -1,12 +1,14 @@
 import AppShell from "@/components/layout/AppShell";
 import RzCard from "@/components/ui/RzCard";
 import Link from "next/link";
+import Image from "next/image";
 import {
   TrendingUp, Package, Megaphone,
-  ChevronRight, ArrowUpRight, Bell, Wallet,
+  ChevronRight, ArrowUpRight, Bell, Wallet, Star,
 } from "lucide-react";
 import {
   dashboardStats, recentActivity, creatorProfile, earningsWeek,
+  campaigns, products,
 } from "@/lib/mock-data";
 import EarningsChart from "@/components/ui/EarningsChart";
 
@@ -16,6 +18,9 @@ function formatRM(amount: number) {
 
 export default function HomePage() {
   const totalWeekCommission = earningsWeek.reduce((s, d) => s + d.commission, 0);
+  const activeCampaigns = campaigns.filter((c) => c.status === "Active");
+  const recommendedProducts = products.slice(0, 6);
+  const viralProducts = [...products].sort((a, b) => b.sold - a.sold).slice(0, 6);
 
   return (
     <AppShell>
@@ -88,10 +93,10 @@ export default function HomePage() {
       </div>
 
       {/* White section */}
-      <div className="px-5 pt-4 pb-4 flex flex-col gap-4">
+      <div className="pt-4 pb-4 flex flex-col gap-4">
 
         {/* Quick Stats — circles */}
-        <div className="grid grid-cols-3 gap-3 animate-fade-up delay-100">
+        <div className="grid grid-cols-3 gap-3 animate-fade-up delay-100 px-5">
           {[
             { label: "Products Sold",   value: dashboardStats.productsSold,   color: "#00c073" },
             { label: "Campaigns",        value: dashboardStats.activeCampaigns, color: "#f5a623" },
@@ -109,8 +114,179 @@ export default function HomePage() {
           ))}
         </div>
 
+        {/* Campaign Banners Carousel */}
+        {activeCampaigns.length > 0 && (
+          <div className="animate-fade-up delay-150">
+            <div className="flex items-center justify-between mb-3 px-5">
+              <h2 className="text-[16px] font-[700] text-[#0d1117]">Active Campaigns</h2>
+              <Link href="/campaign">
+                <button className="text-[12px] text-[#00c073] font-[600] tap-target flex items-center gap-0.5">
+                  See all <ChevronRight size={13} />
+                </button>
+              </Link>
+            </div>
+            <div
+              className="flex gap-3 overflow-x-auto no-scrollbar pl-5 pr-5"
+              style={{ scrollSnapType: "x mandatory" }}
+            >
+              {activeCampaigns.map((campaign) => (
+                <Link key={campaign.id} href="/campaign" style={{ textDecoration: "none", scrollSnapAlign: "start", minWidth: 280, flexShrink: 0 }}>
+                  <div
+                    className="rounded-[16px] overflow-hidden"
+                    style={{ background: campaign.imageColor, border: "1px solid rgba(0,0,0,0.06)" }}
+                  >
+                    {/* Banner image strip */}
+                    <div className="relative h-[100px] w-full overflow-hidden">
+                      {campaign.imageUrl && (
+                        <Image
+                          src={campaign.imageUrl}
+                          alt={campaign.title}
+                          fill
+                          className="object-cover"
+                          sizes="280px"
+                        />
+                      )}
+                      <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.55) 100%)" }} />
+                      <div
+                        className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-[700]"
+                        style={{ background: "#00c073", color: "white" }}
+                      >
+                        {campaign.commissionRate}% comm
+                      </div>
+                      <p className="absolute bottom-2 left-3 text-white text-[13px] font-[700] leading-tight">{campaign.title}</p>
+                    </div>
+                    {/* Card footer */}
+                    <div className="px-3 py-2.5 flex items-center justify-between" style={{ background: "white" }}>
+                      <div>
+                        <p className="text-[11px] text-[#9aa5b1]">{campaign.brand}</p>
+                        <p className="text-[12px] font-[600] text-[#e8005a]">{campaign.slotsLeft} slots left</p>
+                      </div>
+                      <div
+                        className="px-3 py-1.5 rounded-full text-[11px] font-[700]"
+                        style={{ background: "#00c073", color: "white" }}
+                      >
+                        View
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Recommended For You */}
+        <div className="animate-fade-up delay-200">
+          <div className="flex items-center justify-between mb-3 px-5">
+            <h2 className="text-[16px] font-[700] text-[#0d1117]">Recommended For You</h2>
+            <Link href="/marketplace">
+              <button className="text-[12px] text-[#00c073] font-[600] tap-target flex items-center gap-0.5">
+                See all <ChevronRight size={13} />
+              </button>
+            </Link>
+          </div>
+          <div
+            className="flex gap-3 overflow-x-auto no-scrollbar pl-5 pr-5"
+            style={{ scrollSnapType: "x mandatory" }}
+          >
+            {recommendedProducts.map((product) => (
+              <Link key={product.id} href="/marketplace" style={{ textDecoration: "none", scrollSnapAlign: "start", minWidth: 140, flexShrink: 0 }}>
+                <RzCard padding={false} className="overflow-hidden">
+                  <div
+                    className="relative w-full overflow-hidden"
+                    style={{ height: 120, background: product.imageColor }}
+                  >
+                    {product.imageUrl && (
+                      <Image
+                        src={product.imageUrl}
+                        alt={product.name}
+                        fill
+                        className="object-cover"
+                        sizes="140px"
+                      />
+                    )}
+                    {product.label && (
+                      <div
+                        className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-[700]"
+                        style={{
+                          background: product.label === "BEST SELLER" ? "#00c073" : product.label === "HOT SELLING" ? "#e8005a" : "#f5a623",
+                          color: "white",
+                        }}
+                      >
+                        {product.label}
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-2.5">
+                    <p className="text-[10px] text-[#9aa5b1]">{product.brand}</p>
+                    <p className="text-[12px] font-[600] text-[#0d1117] leading-tight line-clamp-2">{product.name}</p>
+                    <div className="flex items-center justify-between mt-1.5">
+                      <p className="text-[11px] font-[700] text-[#00c073]">+RM {product.commissionRM.toFixed(2)}</p>
+                      <div className="flex items-center gap-0.5">
+                        <Star size={9} color="#f5a623" fill="#f5a623" />
+                        <span className="text-[9px] text-[#9aa5b1]">{product.rating}</span>
+                      </div>
+                    </div>
+                  </div>
+                </RzCard>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Top Viral Products */}
+        <div className="animate-fade-up delay-300">
+          <div className="flex items-center justify-between mb-3 px-5">
+            <h2 className="text-[16px] font-[700] text-[#0d1117]">🔥 Top Viral Products</h2>
+            <Link href="/marketplace">
+              <button className="text-[12px] text-[#00c073] font-[600] tap-target flex items-center gap-0.5">
+                See all <ChevronRight size={13} />
+              </button>
+            </Link>
+          </div>
+          <div
+            className="flex gap-3 overflow-x-auto no-scrollbar pl-5 pr-5"
+            style={{ scrollSnapType: "x mandatory" }}
+          >
+            {viralProducts.map((product) => (
+              <Link key={product.id} href="/marketplace" style={{ textDecoration: "none", scrollSnapAlign: "start", minWidth: 140, flexShrink: 0 }}>
+                <RzCard padding={false} className="overflow-hidden">
+                  <div
+                    className="relative w-full overflow-hidden"
+                    style={{ height: 120, background: product.imageColor }}
+                  >
+                    {product.imageUrl && (
+                      <Image
+                        src={product.imageUrl}
+                        alt={product.name}
+                        fill
+                        className="object-cover"
+                        sizes="140px"
+                      />
+                    )}
+                    <div
+                      className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-[700]"
+                      style={{ background: "#e8005a", color: "white" }}
+                    >
+                      {product.sold.toLocaleString()} sold
+                    </div>
+                  </div>
+                  <div className="p-2.5">
+                    <p className="text-[10px] text-[#9aa5b1]">{product.brand}</p>
+                    <p className="text-[12px] font-[600] text-[#0d1117] leading-tight line-clamp-2">{product.name}</p>
+                    <div className="flex items-center justify-between mt-1.5">
+                      <p className="text-[11px] font-[700] text-[#00c073]">+RM {product.commissionRM.toFixed(2)}</p>
+                      <p className="text-[10px] text-[#9aa5b1]">{product.commissionRate}%</p>
+                    </div>
+                  </div>
+                </RzCard>
+              </Link>
+            ))}
+          </div>
+        </div>
+
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-3 animate-fade-up delay-200">
+        <div className="grid grid-cols-2 gap-3 animate-fade-up delay-350 px-5">
           <Link href="/marketplace" style={{ textDecoration: "none" }}>
             <div style={{
               height: 52, borderRadius: 12, background: "#00c073",
@@ -134,7 +310,7 @@ export default function HomePage() {
         </div>
 
         {/* Recent Activity */}
-        <div className="animate-fade-up delay-300">
+        <div className="animate-fade-up delay-400 px-5">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-[16px] font-[700] text-[#0d1117]">Recent Activity</h2>
             <button className="text-[12px] text-[#00c073] font-[600] tap-target">See all</button>
@@ -173,7 +349,7 @@ export default function HomePage() {
         </div>
 
         {/* Creator level banner */}
-        <RzCard padding={false} className="animate-fade-up delay-400">
+        <RzCard padding={false} className="animate-fade-up delay-500 mx-5">
           <div className="p-4 flex items-center gap-3">
             <div
               className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"

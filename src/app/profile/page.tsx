@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import AppShell from "@/components/layout/AppShell";
 import RzCard from "@/components/ui/RzCard";
 import { creatorProfile } from "@/lib/mock-data";
 import {
-  ChevronRight, CreditCard, Bell, HelpCircle,
-  LogOut, Shield, Star, TrendingUp, Video, User,
+  ChevronRight, HelpCircle,
+  LogOut, Star, TrendingUp, Video, User,
+  Wallet, FileText, BarChart2, CheckCircle,
 } from "lucide-react";
 
 function formatRM(n: number) {
@@ -13,17 +15,18 @@ function formatRM(n: number) {
 }
 
 const menuItems = [
-  { icon: CreditCard, label: "Payment & Bank Account", sub: "Maybank **** 4521", color: "#00c073" },
-  { icon: Bell,       label: "Notifications",            sub: "3 unread",          color: "#f5a623" },
-  { icon: Shield,     label: "Privacy & Security",       sub: null,                color: "#25f4ee" },
-  { icon: HelpCircle, label: "Help & Support",           sub: null,                color: "#9aa5b1" },
-  { icon: LogOut,     label: "Sign Out",                 sub: null,                color: "#e8005a" },
+  { icon: Wallet,    label: "My Wallet",       sub: formatRM(creatorProfile.totalEarnings), color: "#00c073", href: "/wallet" },
+  { icon: FileText,  label: "My Applications", sub: "3 pending",                             color: "#f5a623", href: "/applications" },
+  { icon: BarChart2, label: "Insights",         sub: null,                                   color: "#25f4ee", href: "/insights" },
+  { icon: Video,     label: "TikTok Posts",     sub: `${creatorProfile.totalVideos} videos`,  color: "#0d1117", href: "/tiktok-posts" },
+  { icon: HelpCircle, label: "Help & Support",  sub: null,                                   color: "#9aa5b1", href: null },
+  { icon: LogOut,    label: "Sign Out",          sub: null,                                   color: "#e8005a", href: null },
 ];
 
 export default function ProfilePage() {
   return (
     <AppShell>
-      {/* Header */}
+      {/* Green header */}
       <div
         className="px-5 pt-12 pb-6"
         style={{ background: "#00c073" }}
@@ -36,8 +39,12 @@ export default function ProfilePage() {
           >
             <User size={28} color="white" strokeWidth={1.8} />
           </div>
-          <div>
-            <h1 className="text-[20px] font-[800] text-white">{creatorProfile.name}</h1>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="text-[20px] font-[800] text-white">{creatorProfile.name}</h1>
+              {/* Verified badge */}
+              <CheckCircle size={18} color="white" fill="rgba(255,255,255,0.3)" strokeWidth={2} />
+            </div>
             <p className="text-white/70 text-[13px]">{creatorProfile.handle}</p>
             {/* Level badge */}
             <div
@@ -54,6 +61,49 @@ export default function ProfilePage() {
       </div>
 
       <div className="px-5 pt-4 pb-4 flex flex-col gap-4">
+
+        {/* Posting Streak Card */}
+        <RzCard padding={false} className="animate-fade-up overflow-hidden">
+          <div
+            className="p-4 flex items-center gap-4"
+            style={{ background: "linear-gradient(135deg, #fff8e8 0%, #fff3d0 100%)", borderBottom: "1px solid rgba(245,166,35,0.15)" }}
+          >
+            {/* Mascot emoji */}
+            <div
+              className="w-14 h-14 rounded-full flex items-center justify-center shrink-0 text-[28px]"
+              style={{ background: "rgba(245,166,35,0.15)" }}
+            >
+              🔥
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] text-[#f5a623] font-[700] uppercase tracking-wide mb-0.5">Posting Streak</p>
+              <p className="text-[22px] font-[800] text-[#0d1117] leading-tight">7 days</p>
+              <p className="text-[12px] text-[#9aa5b1] mt-0.5">Keep it up! Post today to continue 🎯</p>
+            </div>
+            <div className="flex flex-col items-center">
+              <p className="text-[11px] text-[#9aa5b1] mb-1">Best</p>
+              <p className="text-[16px] font-[800] text-[#f5a623]">14</p>
+              <p className="text-[9px] text-[#9aa5b1]">days</p>
+            </div>
+          </div>
+          {/* Streak dots */}
+          <div className="px-4 py-3 flex items-center justify-between">
+            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, i) => (
+              <div key={day} className="flex flex-col items-center gap-1">
+                <div
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-[12px]"
+                  style={{
+                    background: i < 7 ? "#f5a623" : "#f5fdf7",
+                    color: i < 7 ? "white" : "#9aa5b1",
+                  }}
+                >
+                  {i < 7 ? "✓" : "·"}
+                </div>
+                <p className="text-[9px] text-[#9aa5b1]">{day}</p>
+              </div>
+            ))}
+          </div>
+        </RzCard>
 
         {/* Total Earnings */}
         <RzCard padding={false} className="animate-fade-up">
@@ -78,31 +128,8 @@ export default function ProfilePage() {
           </div>
         </RzCard>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-3 animate-fade-up delay-100">
-          {[
-            { icon: TrendingUp, label: "Avg Views",       value: creatorProfile.avgViews,  color: "#00c073" },
-            { icon: Video,      label: "Videos Posted",   value: `${creatorProfile.totalVideos}`, color: "#f5a623" },
-            { icon: Star,       label: "Creator Since",   value: creatorProfile.joinDate,  color: "#25f4ee" },
-            { icon: Star,       label: "Partner Status",  value: "TAP Certified",          color: "#e8005a" },
-          ].map(({ icon: Icon, label, value, color }) => (
-            <RzCard key={label} padding={false} className="p-3 flex items-center gap-3">
-              <div
-                className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0"
-                style={{ background: `${color}18` }}
-              >
-                <Icon size={16} color={color} />
-              </div>
-              <div>
-                <p className="text-[13px] font-[700] text-[#0d1117]">{value}</p>
-                <p className="text-[10px] text-[#9aa5b1]">{label}</p>
-              </div>
-            </RzCard>
-          ))}
-        </div>
-
         {/* Level Progress */}
-        <RzCard className="animate-fade-up delay-200" padding={false}>
+        <RzCard className="animate-fade-up delay-100" padding={false}>
           <div className="p-4">
             <div className="flex items-center justify-between mb-3">
               <div>
@@ -131,29 +158,61 @@ export default function ProfilePage() {
           </div>
         </RzCard>
 
-        {/* Menu items */}
-        <RzCard padding={false} className="animate-fade-up delay-300 divide-y divide-[#f5fdf7]">
-          {menuItems.map(({ icon: Icon, label, sub, color }) => (
-            <button
-              key={label}
-              className="w-full flex items-center gap-3 px-4 py-3.5 tap-target hover:bg-[#f5fdf7] transition-colors"
-            >
+        {/* Stats */}
+        <div className="grid grid-cols-2 gap-3 animate-fade-up delay-150">
+          {[
+            { icon: TrendingUp, label: "Avg Views",      value: creatorProfile.avgViews,  color: "#00c073" },
+            { icon: Video,      label: "Videos Posted",  value: `${creatorProfile.totalVideos}`, color: "#f5a623" },
+            { icon: Star,       label: "Creator Since",  value: creatorProfile.joinDate,  color: "#25f4ee" },
+            { icon: CheckCircle, label: "Partner Status", value: "TAP Certified",          color: "#e8005a" },
+          ].map(({ icon: Icon, label, value, color }) => (
+            <RzCard key={label} padding={false} className="p-3 flex items-center gap-3">
               <div
-                className="w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0"
+                className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0"
                 style={{ background: `${color}18` }}
               >
-                <Icon size={15} color={color} />
+                <Icon size={16} color={color} />
               </div>
-              <div className="flex-1 text-left">
-                <p className={[
-                  "text-[14px] font-[500]",
-                  color === "#e8005a" ? "text-[#e8005a]" : "text-[#0d1117]"
-                ].join(" ")}>{label}</p>
-                {sub && <p className="text-[11px] text-[#9aa5b1]">{sub}</p>}
+              <div>
+                <p className="text-[13px] font-[700] text-[#0d1117]">{value}</p>
+                <p className="text-[10px] text-[#9aa5b1]">{label}</p>
               </div>
-              <ChevronRight size={15} color="#d8f0e4" />
-            </button>
+            </RzCard>
           ))}
+        </div>
+
+        {/* Menu items */}
+        <RzCard padding={false} className="animate-fade-up delay-200 divide-y divide-[#f5fdf7]">
+          {menuItems.map(({ icon: Icon, label, sub, color, href }) => {
+            const inner = (
+              <div className="w-full flex items-center gap-3 px-4 py-3.5 tap-target hover:bg-[#f5fdf7] transition-colors">
+                <div
+                  className="w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0"
+                  style={{ background: `${color}18` }}
+                >
+                  <Icon size={15} color={color} />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className={[
+                    "text-[14px] font-[500]",
+                    color === "#e8005a" ? "text-[#e8005a]" : "text-[#0d1117]"
+                  ].join(" ")}>{label}</p>
+                  {sub && <p className="text-[11px] text-[#9aa5b1]">{sub}</p>}
+                </div>
+                <ChevronRight size={15} color="#d8f0e4" />
+              </div>
+            );
+
+            return href ? (
+              <Link key={label} href={href} style={{ display: "block", textDecoration: "none" }}>
+                {inner}
+              </Link>
+            ) : (
+              <button key={label} className="w-full text-left">
+                {inner}
+              </button>
+            );
+          })}
         </RzCard>
 
         <p className="text-center text-[11px] text-[#9aa5b1] pb-2">

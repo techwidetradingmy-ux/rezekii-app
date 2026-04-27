@@ -23,11 +23,13 @@ export interface Campaign {
   id: string;
   title: string;
   brand: string;
+  description: string;
   status: "Active" | "Pending" | "Completed" | "Rejected";
   commissionRate: number;
   deadline: string;
   gmv: number;
   videos: number;
+  slotsLeft: number;
   imageColor: string;
   imageUrl?: string;
   category: string;
@@ -194,11 +196,13 @@ export const campaigns: Campaign[] = [
     id: "c1",
     title: "Ramadan Beauty Haul",
     brand: "COSRX",
+    description: "Create authentic review videos of COSRX skincare products. Focus on glow-up results and before/after content.",
     status: "Active",
     commissionRate: 14,
     deadline: "30 Apr 2026",
     gmv: 8450,
     videos: 12,
+    slotsLeft: 5,
     imageColor: "#fde8f0",
     imageUrl: "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=200&h=200&fit=crop",
     category: "Beauty",
@@ -207,11 +211,13 @@ export const campaigns: Campaign[] = [
     id: "c2",
     title: "Hari Raya Snacks Fest",
     brand: "MyRasa",
+    description: "Showcase our festive snack hampers in your Raya prep content. Unboxing and taste test formats preferred.",
     status: "Active",
     commissionRate: 10,
     deadline: "5 May 2026",
     gmv: 3200,
     videos: 7,
+    slotsLeft: 12,
     imageColor: "#fff3d6",
     imageUrl: "https://images.unsplash.com/photo-1621939514649-280e2ee25f60?w=200&h=200&fit=crop",
     category: "Food",
@@ -220,11 +226,13 @@ export const campaigns: Campaign[] = [
     id: "c3",
     title: "Tech Lifestyle Summer",
     brand: "Soundcore",
+    description: "Feature Soundcore earbuds in your daily lifestyle videos — gym, study, travel. Show how it fits your routine.",
     status: "Pending",
     commissionRate: 8,
     deadline: "15 May 2026",
     gmv: 0,
     videos: 0,
+    slotsLeft: 20,
     imageColor: "#e8ecff",
     imageUrl: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=200&h=200&fit=crop",
     category: "Tech",
@@ -233,11 +241,13 @@ export const campaigns: Campaign[] = [
     id: "c4",
     title: "Fashion Forward Q2",
     brand: "ZALORA Studio",
+    description: "Style our linen collection in your OOTDs. Mix & match looks for Raya season and beyond.",
     status: "Completed",
     commissionRate: 15,
     deadline: "15 Apr 2026",
     gmv: 22100,
     videos: 31,
+    slotsLeft: 0,
     imageColor: "#f0ede8",
     imageUrl: "https://images.unsplash.com/photo-1594938298603-c8148c4b4057?w=200&h=200&fit=crop",
     category: "Fashion",
@@ -246,11 +256,13 @@ export const campaigns: Campaign[] = [
     id: "c5",
     title: "Home Refresh Collection",
     brand: "ScentCo",
+    description: "Show our aroma diffusers transforming your living space. Home tour and room makeover formats work great.",
     status: "Rejected",
     commissionRate: 10,
     deadline: "20 Apr 2026",
     gmv: 0,
     videos: 0,
+    slotsLeft: 0,
     imageColor: "#e8f5f0",
     imageUrl: "https://images.unsplash.com/photo-1602928321679-560bb453f190?w=200&h=200&fit=crop",
     category: "Home",
