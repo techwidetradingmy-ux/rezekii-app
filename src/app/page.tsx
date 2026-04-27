@@ -26,7 +26,7 @@ export default function HomePage() {
       >
         {/* Top row: logo + bell */}
         <div className="flex items-center justify-between mb-3">
-          <img src="/rezekii-logo.svg" alt="rezekii" style={{ height: 28 }} />
+          <img src="/rezekii-logo.png" alt="rezekii" style={{ height: 28 }} />
           <div className="flex items-center gap-3">
             <Link href="/notifications" className="relative tap-target">
               <Bell size={22} color="white" strokeWidth={1.8} />
