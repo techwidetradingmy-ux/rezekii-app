@@ -3,7 +3,7 @@ import RezekiiLogo from "@/components/ui/RezekiiLogo";
 import RzCard from "@/components/ui/RzCard";
 import Link from "next/link";
 import {
-  TrendingUp, Package, Megaphone, Clock,
+  TrendingUp, Package, Megaphone,
   ChevronRight, ArrowUpRight, Bell, Wallet,
 } from "lucide-react";
 import {
@@ -91,22 +91,21 @@ export default function HomePage() {
       {/* White section */}
       <div className="px-5 pt-4 pb-4 flex flex-col gap-4">
 
-        {/* Quick Stats — all green icons per design spec */}
+        {/* Quick Stats — circles */}
         <div className="grid grid-cols-3 gap-3 animate-fade-up delay-100">
           {[
-            { label: "Products Sold",   value: dashboardStats.productsSold,      icon: Package,   },
-            { label: "Campaigns",        value: dashboardStats.activeCampaigns,   icon: Megaphone, },
-            { label: "Pending Samples", value: dashboardStats.pendingSamples,    icon: Clock,     },
-          ].map(({ label, value, icon: Icon }) => (
-            <RzCard key={label} padding={false} className="p-3">
+            { label: "Products Sold",   value: dashboardStats.productsSold,   color: "#00c073" },
+            { label: "Campaigns",        value: dashboardStats.activeCampaigns, color: "#f5a623" },
+            { label: "Pending Samples", value: dashboardStats.pendingSamples,  color: "#25f4ee" },
+          ].map(({ label, value, color }) => (
+            <RzCard key={label} padding={false} className="p-3 flex flex-col items-center">
               <div
-                className="w-8 h-8 rounded-[10px] flex items-center justify-center mb-2"
-                style={{ background: "rgba(0,192,115,0.12)" }}
+                className="w-[52px] h-[52px] rounded-full flex items-center justify-center mb-2"
+                style={{ background: `${color}18`, border: `2px solid ${color}` }}
               >
-                <Icon size={16} color="#00c073" />
+                <p className="text-[18px] font-[800] text-[#0d1117] leading-none">{value}</p>
               </div>
-              <p className="text-[20px] font-[800] text-[#0d1117] leading-none">{value}</p>
-              <p className="text-[10px] text-[#9aa5b1] font-[500] mt-1 leading-tight">{label}</p>
+              <p className="text-[10px] text-[#9aa5b1] font-[500] text-center leading-tight">{label}</p>
             </RzCard>
           ))}
         </div>
@@ -179,10 +178,10 @@ export default function HomePage() {
         <RzCard padding={false} className="animate-fade-up delay-400">
           <div className="p-4 flex items-center gap-3">
             <div
-              className="w-12 h-12 rounded-full flex items-center justify-center text-[20px] shrink-0"
+              className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
               style={{ background: "rgba(245,166,35,0.15)" }}
             >
-              🏅
+              <TrendingUp size={22} color="#f5a623" strokeWidth={2} />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1.5">

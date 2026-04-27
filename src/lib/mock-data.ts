@@ -12,6 +12,7 @@ export interface Product {
   priceRM: number;
   commissionRM: number;
   imageColor: string; // placeholder color
+  imageUrl?: string;  // Unsplash product photo
   label?: "BEST SELLER" | "HOT SELLING" | "NEW ARRIVAL";
   samplesLeft: number;
   rating: number;
@@ -28,6 +29,7 @@ export interface Campaign {
   gmv: number;
   videos: number;
   imageColor: string;
+  imageUrl?: string;
   category: string;
 }
 
@@ -55,6 +57,7 @@ export interface Post {
   commission: number;
   platform: "video" | "live";
   imageColor: string;
+  imageUrl?: string;
 }
 
 // ============================================
@@ -71,6 +74,7 @@ export const products: Product[] = [
     priceRM: 89.90,
     commissionRM: 10.79,
     imageColor: "#fde8f0",
+    imageUrl: "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=400&h=400&fit=crop",
     label: "BEST SELLER",
     samplesLeft: 8,
     rating: 4.9,
@@ -85,6 +89,7 @@ export const products: Product[] = [
     priceRM: 24.90,
     commissionRM: 1.99,
     imageColor: "#fff3d6",
+    imageUrl: "https://images.unsplash.com/photo-1621939514649-280e2ee25f60?w=400&h=400&fit=crop",
     label: "HOT SELLING",
     samplesLeft: 15,
     rating: 4.7,
@@ -99,6 +104,7 @@ export const products: Product[] = [
     priceRM: 199.00,
     commissionRM: 11.94,
     imageColor: "#e8ecff",
+    imageUrl: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=400&h=400&fit=crop",
     label: "NEW ARRIVAL",
     samplesLeft: 3,
     rating: 4.8,
@@ -113,6 +119,7 @@ export const products: Product[] = [
     priceRM: 129.00,
     commissionRM: 19.35,
     imageColor: "#f0ede8",
+    imageUrl: "https://images.unsplash.com/photo-1594938298603-c8148c4b4057?w=400&h=400&fit=crop",
     label: "HOT SELLING",
     samplesLeft: 6,
     rating: 4.6,
@@ -127,6 +134,7 @@ export const products: Product[] = [
     priceRM: 79.00,
     commissionRM: 7.90,
     imageColor: "#e8f5f0",
+    imageUrl: "https://images.unsplash.com/photo-1602928321679-560bb453f190?w=400&h=400&fit=crop",
     label: "BEST SELLER",
     samplesLeft: 12,
     rating: 4.8,
@@ -141,6 +149,7 @@ export const products: Product[] = [
     priceRM: 69.00,
     commissionRM: 7.59,
     imageColor: "#fce8fe",
+    imageUrl: "https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=400&h=400&fit=crop",
     samplesLeft: 5,
     rating: 4.7,
     sold: 9100,
@@ -154,6 +163,7 @@ export const products: Product[] = [
     priceRM: 39.90,
     commissionRM: 3.59,
     imageColor: "#e8f5e8",
+    imageUrl: "https://images.unsplash.com/photo-1582793988951-9aed5509eb97?w=400&h=400&fit=crop",
     label: "NEW ARRIVAL",
     samplesLeft: 20,
     rating: 4.5,
@@ -168,6 +178,7 @@ export const products: Product[] = [
     priceRM: 149.00,
     commissionRM: 7.45,
     imageColor: "#fff8e8",
+    imageUrl: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=400&h=400&fit=crop",
     samplesLeft: 2,
     rating: 4.9,
     sold: 6700,
@@ -189,6 +200,7 @@ export const campaigns: Campaign[] = [
     gmv: 8450,
     videos: 12,
     imageColor: "#fde8f0",
+    imageUrl: "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=200&h=200&fit=crop",
     category: "Beauty",
   },
   {
@@ -201,6 +213,7 @@ export const campaigns: Campaign[] = [
     gmv: 3200,
     videos: 7,
     imageColor: "#fff3d6",
+    imageUrl: "https://images.unsplash.com/photo-1621939514649-280e2ee25f60?w=200&h=200&fit=crop",
     category: "Food",
   },
   {
@@ -213,6 +226,7 @@ export const campaigns: Campaign[] = [
     gmv: 0,
     videos: 0,
     imageColor: "#e8ecff",
+    imageUrl: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=200&h=200&fit=crop",
     category: "Tech",
   },
   {
@@ -225,6 +239,7 @@ export const campaigns: Campaign[] = [
     gmv: 22100,
     videos: 31,
     imageColor: "#f0ede8",
+    imageUrl: "https://images.unsplash.com/photo-1594938298603-c8148c4b4057?w=200&h=200&fit=crop",
     category: "Fashion",
   },
   {
@@ -237,6 +252,7 @@ export const campaigns: Campaign[] = [
     gmv: 0,
     videos: 0,
     imageColor: "#e8f5f0",
+    imageUrl: "https://images.unsplash.com/photo-1602928321679-560bb453f190?w=200&h=200&fit=crop",
     category: "Home",
   },
 ];
@@ -280,15 +296,17 @@ export const topPosts: Post[] = [
     commission: 504,
     platform: "video",
     imageColor: "#fde8f0",
+    imageUrl: "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=200&h=200&fit=crop",
   },
   {
     id: "post2",
-    title: "Hari Raya Snack Haul LIVE 🎉",
+    title: "Hari Raya Snack Haul LIVE",
     views: "89K",
     gmv: 2800,
     commission: 280,
     platform: "live",
     imageColor: "#fff3d6",
+    imageUrl: "https://images.unsplash.com/photo-1621939514649-280e2ee25f60?w=200&h=200&fit=crop",
   },
   {
     id: "post3",
@@ -298,6 +316,7 @@ export const topPosts: Post[] = [
     commission: 117,
     platform: "video",
     imageColor: "#e8ecff",
+    imageUrl: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=200&h=200&fit=crop",
   },
   {
     id: "post4",
@@ -307,6 +326,7 @@ export const topPosts: Post[] = [
     commission: 1020,
     platform: "video",
     imageColor: "#f0ede8",
+    imageUrl: "https://images.unsplash.com/photo-1594938298603-c8148c4b4057?w=200&h=200&fit=crop",
   },
 ];
 

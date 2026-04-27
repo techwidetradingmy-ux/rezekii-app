@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import AppShell from "@/components/layout/AppShell";
 import RzCard from "@/components/ui/RzCard";
 import StatusBadge from "@/components/ui/StatusBadge";
@@ -46,15 +47,20 @@ export default function CampaignPage() {
         {filtered.map((campaign) => (
           <RzCard key={campaign.id} padding={false} className="overflow-hidden tap-target">
             <div className="flex gap-3 p-4">
-              {/* Brand icon */}
+              {/* Brand image */}
               <div
-                className="w-14 h-14 rounded-[12px] flex items-center justify-center text-[28px] shrink-0"
+                className="w-14 h-14 rounded-[12px] overflow-hidden shrink-0 relative"
                 style={{ background: campaign.imageColor }}
               >
-                {campaign.category === "Beauty" ? "💄" :
-                 campaign.category === "Food" ? "🍱" :
-                 campaign.category === "Tech" ? "📱" :
-                 campaign.category === "Fashion" ? "👗" : "🏠"}
+                {campaign.imageUrl && (
+                  <Image
+                    src={campaign.imageUrl}
+                    alt={campaign.brand}
+                    fill
+                    className="object-cover"
+                    sizes="56px"
+                  />
+                )}
               </div>
 
               <div className="flex-1 min-w-0">
