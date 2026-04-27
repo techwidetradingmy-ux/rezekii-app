@@ -1,49 +1,64 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Home, ShoppingBag, Megaphone, TrendingUp, User } from "lucide-react";
+import React from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { RZ } from '@/lib/rz';
+import Icon from '@/components/ui/Icon';
 
 const tabs = [
-  { label: "Home",        href: "/",             icon: Home },
-  { label: "Marketplace", href: "/marketplace",   icon: ShoppingBag },
-  { label: "Campaign",    href: "/campaign",      icon: Megaphone },
-  { label: "Earnings",    href: "/earnings",      icon: TrendingUp },
-  { label: "Profile",     href: "/profile",       icon: User },
+  { id: 'home',        label: 'Home',        icon: 'home'     as const, href: '/home' },
+  { id: 'marketplace', label: 'Marketplace', icon: 'bag'      as const, href: '/marketplace' },
+  { id: 'campaign',    label: 'Campaign',    icon: 'sparkles' as const, href: '/campaign' },
+  { id: 'earnings',    label: 'Earnings',    icon: 'wallet'   as const, href: '/earnings' },
+  { id: 'profile',     label: 'Profile',     icon: 'user'     as const, href: '/profile' },
 ];
 
-export default function TabBar() {
+export default function TabBar({ active }: { active?: string }) {
+  const router = useRouter();
   const pathname = usePathname();
 
+  const activeId = active ?? (
+    (pathname === '/' || pathname.startsWith('/home')) ? 'home' :
+    pathname.startsWith('/marketplace') ? 'marketplace' :
+    pathname.startsWith('/campaign')    ? 'campaign' :
+    pathname.startsWith('/earnings')    ? 'earnings' :
+    pathname.startsWith('/profile')     ? 'profile' : 'home'
+  );
+
   return (
-    <nav
-      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[390px] bg-white border-t border-[#d8f0e4] z-50"
-      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-    >
-      <div className="flex items-center justify-around h-[49px]">
-        {tabs.map(({ label, href, icon: Icon }) => {
-          const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              className="flex flex-col items-center justify-center gap-0.5 flex-1 h-full tap-target"
-            >
-              <Icon
-                size={24}
-                strokeWidth={isActive ? 2.5 : 1.8}
-                color={isActive ? "#00c073" : "#9aa5b1"}
-              />
-              <span
-                className="text-[10px] font-[500] leading-none"
-                style={{ color: isActive ? "#00c073" : "#9aa5b1" }}
-              >
-                {label}
-              </span>
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
+    <div style={{
+      background: RZ.white,
+      borderTop: `1px solid ${RZ.border}`,
+      height: 83,
+      display: 'flex',
+      alignItems: 'flex-start',
+      paddingTop: 6,
+      boxShadow: '0 -1px 0 rgba(0,0,0,0.04)',
+      flexShrink: 0,
+    }}>
+      {tabs.map(t => {
+        const isActive = activeId === t.id;
+        return (
+          <button key={t.id} onClick={() => router.push(t.href)} style={{
+            flex: 1, background: 'transparent', border: 0, cursor: 'pointer',
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            gap: 3, padding: '6px 0',
+            color: isActive ? RZ.green : RZ.muted,
+            font: `600 10px/1 ${RZ.fontUI}`,
+            letterSpacing: '0.01em',
+            transition: 'color 0.15s',
+          }}>
+            <Icon
+              name={t.icon}
+              size={24}
+              color={isActive ? RZ.green : RZ.muted}
+              fill={isActive && t.icon === 'home' ? RZ.green : 'none'}
+              strokeWidth={isActive ? 2.2 : 1.8}
+            />
+            <span style={{ color: isActive ? RZ.green : RZ.muted }}>{t.label}</span>
+          </button>
+        );
+      })}
+    </div>
   );
 }

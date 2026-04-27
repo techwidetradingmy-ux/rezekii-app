@@ -1,123 +1,105 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import AppShell from "@/components/layout/AppShell";
-import { notifications } from "@/lib/mock-data";
-import { ArrowLeft, CheckCheck, Package, Wallet, TrendingUp, Megaphone, Gift } from "lucide-react";
-import Link from "next/link";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { RZ } from '@/lib/rz';
+import Icon from '@/components/ui/Icon';
 
-const iconMap = {
-  approved:  { icon: CheckCheck, color: "#00c073", bg: "rgba(0,192,115,0.12)" },
-  payout:    { icon: Wallet,     color: "#e8005a", bg: "rgba(232,0,90,0.10)" },
-  commission:{ icon: TrendingUp, color: "#00c073", bg: "rgba(0,192,115,0.12)" },
-  campaign:  { icon: Megaphone,  color: "#f5a623", bg: "rgba(245,166,35,0.12)" },
-  sample:    { icon: Package,    color: "#25f4ee", bg: "rgba(37,244,238,0.12)" },
-} as const;
+const initialItems = [
+  { type: 'approved',   t: 'Sample approved',       d: 'Glow Vitamin C Serum is on its way -- expect delivery Fri.', ago: '2m',        unread: true,  tone: 'green' },
+  { type: 'payout',     t: 'Payout landed',          d: 'RM 428.50 sent to Maybank **4291. Tap to download receipt.', ago: '1h',        unread: true,  tone: 'warm' },
+  { type: 'campaign',   t: 'New campaign . Skintific',d: 'Paid brief: 1 TikTok, 15-30s, #skintific. Earn RM 80 flat.',ago: '3h',        unread: true,  tone: 'cyan' },
+  { type: 'commission', t: 'Commission earned',       d: '+RM 14.20 from Nasi Lemak Sambal Paste . 3 units.',          ago: 'yesterday', unread: false, tone: 'green' },
+  { type: 'review',     t: 'Post reached 10K views', d: 'Your ProBuds 2 review crossed 10K -- keep it up.',           ago: '2d',        unread: false, tone: 'warm' },
+  { type: 'approved',   t: 'Sample shipped',          d: 'Skintific 5X Ceramide Serum dispatched via J&T.',            ago: '2d',        unread: false, tone: 'green' },
+  { type: 'system',     t: 'Verify your payout bank', d: 'Add Maybank or CIMB details before your first withdrawal.',  ago: '4d',        unread: false, tone: 'muted' },
+];
 
-type NotifType = keyof typeof iconMap;
+const toneBg: Record<string, string> = {
+  green: RZ.green,
+  warm:  '#e8005a',
+  cyan:  RZ.cyanText,
+  muted: RZ.body,
+};
+
+const iconFor: Record<string, 'pkg' | 'wallet' | 'sparkles' | 'trend' | 'play' | 'bell'> = {
+  approved:   'pkg',
+  payout:     'wallet',
+  campaign:   'sparkles',
+  commission: 'trend',
+  review:     'play',
+  system:     'bell',
+};
+
+function NotifRow({ it, onRead }: { it: typeof initialItems[0]; onRead: () => void }) {
+  return (
+    <div
+      onClick={onRead}
+      style={{
+        background: RZ.white, border: `1.5px solid ${RZ.border}`, borderRadius: 14,
+        padding: 14, display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 10,
+        position: 'relative', cursor: 'pointer',
+      }}
+    >
+      <div style={{ width: 40, height: 40, borderRadius: 12, background: toneBg[it.tone], display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <Icon name={iconFor[it.type]} size={20} color={RZ.white} />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginBottom: 2 }}>
+          <div style={{ font: `700 14px/1.2 ${RZ.fontUI}`, color: RZ.black, letterSpacing: '-0.005em' }}>{it.t}</div>
+          <div style={{ font: `500 11px/1 ${RZ.fontUI}`, color: RZ.muted, flexShrink: 0 }}>{it.ago}</div>
+        </div>
+        <div style={{ font: `400 12.5px/1.45 ${RZ.fontUI}`, color: RZ.body }}>{it.d}</div>
+      </div>
+      {it.unread && (
+        <div style={{ position: 'absolute', top: 16, right: 14, width: 8, height: 8, borderRadius: 999, background: RZ.green }} />
+      )}
+    </div>
+  );
+}
 
 export default function NotificationsPage() {
-  const [items, setItems] = useState(notifications);
-  const unreadCount = items.filter((n) => !n.read).length;
+  const router = useRouter();
+  const [items, setItems] = useState(initialItems);
 
-  const markAllRead = () => setItems(items.map((n) => ({ ...n, read: true })));
+  const markAllRead = () => setItems(items.map(it => ({ ...it, unread: false })));
+  const markRead = (idx: number) => setItems(items.map((it, i) => i === idx ? { ...it, unread: false } : it));
+
+  const todayItems = items.slice(0, 3);
+  const earlierItems = items.slice(3);
 
   return (
-    <AppShell>
+    <div style={{ flex: 1, background: RZ.canvas, display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden' }}>
       {/* Header */}
-      <div className="px-5 pt-12 pb-4 bg-white border-b border-[#d8f0e4] sticky top-0 z-20">
-        <div className="flex items-center gap-3 mb-0">
-          <Link href="/" className="tap-target">
-            <ArrowLeft size={20} color="#4a5568" />
-          </Link>
-          <h1 className="text-[20px] font-[800] text-[#0d1117] flex-1">Notifications</h1>
-          {unreadCount > 0 && (
-            <button
-              onClick={markAllRead}
-              className="text-[12px] text-[#00c073] font-[600] tap-target"
-            >
-              Mark all read
-            </button>
-          )}
+      <div style={{ padding: '56px 20px 16px', background: RZ.white, borderBottom: `1px solid ${RZ.border}`, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button
+            onClick={() => router.back()}
+            style={{ width: 40, height: 40, borderRadius: 12, border: `1.5px solid ${RZ.border}`, background: RZ.white, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+          >
+            <Icon name="chevL" size={18} color={RZ.black} />
+          </button>
+          <div style={{ font: `800 22px/1 ${RZ.fontDisplay}`, color: RZ.black, letterSpacing: '-0.01em', flex: 1 }}>Notifications</div>
+          <button
+            onClick={markAllRead}
+            style={{ font: `600 12px/1 ${RZ.fontUI}`, color: RZ.green, background: 'none', border: 0, cursor: 'pointer', padding: 0 }}
+          >
+            Mark all read
+          </button>
         </div>
-        {unreadCount > 0 && (
-          <p className="text-[12px] text-[#9aa5b1] mt-1 ml-8">{unreadCount} unread</p>
-        )}
       </div>
 
-      <div className="flex flex-col">
-        {/* Unread section */}
-        {items.some((n) => !n.read) && (
-          <div>
-            <p className="px-5 pt-4 pb-2 text-[11px] font-[700] text-[#9aa5b1] uppercase tracking-wider">
-              New
-            </p>
-            {items.filter((n) => !n.read).map((notif) => {
-              const { icon: Icon, color, bg } = iconMap[notif.type as NotifType];
-              return (
-                <button
-                  key={notif.id}
-                  onClick={() => setItems(items.map((n) => n.id === notif.id ? { ...n, read: true } : n))}
-                  className="w-full flex items-start gap-3 px-5 py-4 bg-[rgba(0,192,115,0.04)] border-b border-[#f5fdf7] tap-target"
-                >
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 mt-0.5"
-                    style={{ background: bg }}
-                  >
-                    <Icon size={18} color={color} />
-                  </div>
-                  <div className="flex-1 text-left min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-[14px] font-[700] text-[#0d1117]">{notif.title}</p>
-                      <span className="w-2 h-2 rounded-full bg-[#00c073] shrink-0 mt-1.5" />
-                    </div>
-                    <p className="text-[13px] text-[#4a5568] leading-relaxed mt-0.5">{notif.body}</p>
-                    <p className="text-[11px] text-[#9aa5b1] mt-1.5">{notif.time}</p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Read section */}
-        {items.some((n) => n.read) && (
-          <div>
-            <p className="px-5 pt-4 pb-2 text-[11px] font-[700] text-[#9aa5b1] uppercase tracking-wider">
-              Earlier
-            </p>
-            {items.filter((n) => n.read).map((notif) => {
-              const { icon: Icon, color, bg } = iconMap[notif.type as NotifType];
-              return (
-                <div
-                  key={notif.id}
-                  className="flex items-start gap-3 px-5 py-4 border-b border-[#f5fdf7]"
-                >
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 mt-0.5 opacity-60"
-                    style={{ background: bg }}
-                  >
-                    <Icon size={18} color={color} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-[600] text-[#4a5568]">{notif.title}</p>
-                    <p className="text-[13px] text-[#9aa5b1] leading-relaxed mt-0.5">{notif.body}</p>
-                    <p className="text-[11px] text-[#9aa5b1] mt-1.5">{notif.time}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {items.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-24">
-            <Gift size={48} color="#d8f0e4" />
-            <p className="text-[16px] font-[700] text-[#0d1117] mt-4 mb-1">All caught up!</p>
-            <p className="text-[13px] text-[#9aa5b1]">No new notifications</p>
-          </div>
-        )}
+      {/* List */}
+      <div style={{ flex: 1, overflow: 'auto', padding: '12px 16px 100px' }}>
+        <div style={{ font: `600 11px/1 ${RZ.fontUI}`, color: RZ.muted, textTransform: 'uppercase', letterSpacing: '.08em', margin: '8px 4px 8px' }}>Today</div>
+        {todayItems.map((it, i) => (
+          <NotifRow key={i} it={it} onRead={() => markRead(i)} />
+        ))}
+        <div style={{ font: `600 11px/1 ${RZ.fontUI}`, color: RZ.muted, textTransform: 'uppercase', letterSpacing: '.08em', margin: '20px 4px 8px' }}>Earlier</div>
+        {earlierItems.map((it, i) => (
+          <NotifRow key={i + 3} it={it} onRead={() => markRead(i + 3)} />
+        ))}
       </div>
-    </AppShell>
+    </div>
   );
 }

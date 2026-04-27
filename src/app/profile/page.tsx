@@ -1,32 +1,37 @@
 "use client";
 
-import Link from "next/link";
 import AppShell from "@/components/layout/AppShell";
 import RzCard from "@/components/ui/RzCard";
+import Link from "next/link";
 import { creatorProfile } from "@/lib/mock-data";
 import {
-  ChevronRight, HelpCircle,
-  LogOut, Star, TrendingUp, Video, User,
-  Wallet, FileText, BarChart2, CheckCircle,
+  ChevronRight, Bell, HelpCircle,
+  LogOut, Shield, Star, TrendingUp, Video, User,
+  Wallet, Package, BarChart2, CheckCircle,
 } from "lucide-react";
 
 function formatRM(n: number) {
   return `RM ${n.toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-const menuItems = [
-  { icon: Wallet,    label: "My Wallet",       sub: formatRM(creatorProfile.totalEarnings), color: "#00c073", href: "/wallet" },
-  { icon: FileText,  label: "My Applications", sub: "3 pending",                             color: "#f5a623", href: "/applications" },
-  { icon: BarChart2, label: "Insights",         sub: null,                                   color: "#25f4ee", href: "/insights" },
-  { icon: Video,     label: "TikTok Posts",     sub: `${creatorProfile.totalVideos} videos`,  color: "#0d1117", href: "/tiktok-posts" },
-  { icon: HelpCircle, label: "Help & Support",  sub: null,                                   color: "#9aa5b1", href: null },
-  { icon: LogOut,    label: "Sign Out",          sub: null,                                   color: "#e8005a", href: null },
+const quickLinks = [
+  { icon: Wallet,    label: "Wallet & Payout",   sub: "RM 892.40 available",        color: "#00c073", href: "/wallet" },
+  { icon: Package,   label: "My Applications",    sub: "6 total · 2 pending",        color: "#f5a623", href: "/applications" },
+  { icon: BarChart2, label: "Sales & Insights",   sub: "RM 17.6k GMV this week",     color: "#25f4ee", href: "/insights" },
+  { icon: Video,     label: "My TikTok Posts",    sub: "6 posts · 919K total views", color: "#e8005a", href: "/tiktok-posts" },
+];
+
+const settingsItems = [
+  { icon: Bell,       label: "Notifications",      sub: "3 unread",  color: "#f5a623", href: "/notifications" },
+  { icon: Shield,     label: "Privacy & Security", sub: null,        color: "#25f4ee", href: null },
+  { icon: HelpCircle, label: "Help & Support",     sub: null,        color: "#9aa5b1", href: null },
+  { icon: LogOut,     label: "Sign Out",            sub: null,        color: "#e8005a", href: null },
 ];
 
 export default function ProfilePage() {
   return (
     <AppShell>
-      {/* Green header */}
+      {/* Header */}
       <div
         className="px-5 pt-12 pb-6"
         style={{ background: "#00c073" }}
@@ -68,7 +73,6 @@ export default function ProfilePage() {
             className="p-4 flex items-center gap-4"
             style={{ background: "linear-gradient(135deg, #fff8e8 0%, #fff3d0 100%)", borderBottom: "1px solid rgba(245,166,35,0.15)" }}
           >
-            {/* Mascot emoji */}
             <div
               className="w-14 h-14 rounded-full flex items-center justify-center shrink-0 text-[28px]"
               style={{ background: "rgba(245,166,35,0.15)" }}
@@ -86,7 +90,6 @@ export default function ProfilePage() {
               <p className="text-[9px] text-[#9aa5b1]">days</p>
             </div>
           </div>
-          {/* Streak dots */}
           <div className="px-4 py-3 flex items-center justify-between">
             {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, i) => (
               <div key={day} className="flex flex-col items-center gap-1">
@@ -128,8 +131,31 @@ export default function ProfilePage() {
           </div>
         </RzCard>
 
+        {/* Stats */}
+        <div className="grid grid-cols-2 gap-3 animate-fade-up delay-100">
+          {[
+            { icon: TrendingUp, label: "Avg Views",       value: creatorProfile.avgViews,  color: "#00c073" },
+            { icon: Video,      label: "Videos Posted",   value: `${creatorProfile.totalVideos}`, color: "#f5a623" },
+            { icon: Star,       label: "Creator Since",   value: creatorProfile.joinDate,  color: "#25f4ee" },
+            { icon: Star,       label: "Partner Status",  value: "TAP Certified",          color: "#e8005a" },
+          ].map(({ icon: Icon, label, value, color }) => (
+            <RzCard key={label} padding={false} className="p-3 flex items-center gap-3">
+              <div
+                className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0"
+                style={{ background: `${color}18` }}
+              >
+                <Icon size={16} color={color} />
+              </div>
+              <div>
+                <p className="text-[13px] font-[700] text-[#0d1117]">{value}</p>
+                <p className="text-[10px] text-[#9aa5b1]">{label}</p>
+              </div>
+            </RzCard>
+          ))}
+        </div>
+
         {/* Level Progress */}
-        <RzCard className="animate-fade-up delay-100" padding={false}>
+        <RzCard className="animate-fade-up delay-200" padding={false}>
           <div className="p-4">
             <div className="flex items-center justify-between mb-3">
               <div>
@@ -158,62 +184,75 @@ export default function ProfilePage() {
           </div>
         </RzCard>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-3 animate-fade-up delay-150">
-          {[
-            { icon: TrendingUp, label: "Avg Views",      value: creatorProfile.avgViews,  color: "#00c073" },
-            { icon: Video,      label: "Videos Posted",  value: `${creatorProfile.totalVideos}`, color: "#f5a623" },
-            { icon: Star,       label: "Creator Since",  value: creatorProfile.joinDate,  color: "#25f4ee" },
-            { icon: CheckCircle, label: "Partner Status", value: "TAP Certified",          color: "#e8005a" },
-          ].map(({ icon: Icon, label, value, color }) => (
-            <RzCard key={label} padding={false} className="p-3 flex items-center gap-3">
-              <div
-                className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0"
-                style={{ background: `${color}18` }}
+        {/* Quick Links — main sub-pages */}
+        <div className="animate-fade-up delay-300">
+          <p className="text-[12px] font-[600] text-[#9aa5b1] uppercase tracking-wide mb-2 px-1">My Pages</p>
+          <RzCard padding={false} className="divide-y divide-[#f5fdf7]">
+            {quickLinks.map(({ icon: Icon, label, sub, color, href }) => (
+              <Link
+                key={label}
+                href={href}
+                className="w-full flex items-center gap-3 px-4 py-3.5 tap-target hover:bg-[#f5fdf7] transition-colors"
               >
-                <Icon size={16} color={color} />
-              </div>
-              <div>
-                <p className="text-[13px] font-[700] text-[#0d1117]">{value}</p>
-                <p className="text-[10px] text-[#9aa5b1]">{label}</p>
-              </div>
-            </RzCard>
-          ))}
-        </div>
-
-        {/* Menu items */}
-        <RzCard padding={false} className="animate-fade-up delay-200 divide-y divide-[#f5fdf7]">
-          {menuItems.map(({ icon: Icon, label, sub, color, href }) => {
-            const inner = (
-              <div className="w-full flex items-center gap-3 px-4 py-3.5 tap-target hover:bg-[#f5fdf7] transition-colors">
                 <div
-                  className="w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0"
+                  className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0"
                   style={{ background: `${color}18` }}
                 >
-                  <Icon size={15} color={color} />
+                  <Icon size={17} color={color} />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className={[
-                    "text-[14px] font-[500]",
-                    color === "#e8005a" ? "text-[#e8005a]" : "text-[#0d1117]"
-                  ].join(" ")}>{label}</p>
+                  <p className="text-[14px] font-[600] text-[#0d1117]">{label}</p>
                   {sub && <p className="text-[11px] text-[#9aa5b1]">{sub}</p>}
                 </div>
                 <ChevronRight size={15} color="#d8f0e4" />
-              </div>
-            );
-
-            return href ? (
-              <Link key={label} href={href} style={{ display: "block", textDecoration: "none" }}>
-                {inner}
               </Link>
-            ) : (
-              <button key={label} className="w-full text-left">
-                {inner}
-              </button>
-            );
-          })}
-        </RzCard>
+            ))}
+          </RzCard>
+        </div>
+
+        {/* Settings */}
+        <div className="animate-fade-up delay-400">
+          <p className="text-[12px] font-[600] text-[#9aa5b1] uppercase tracking-wide mb-2 px-1">Settings</p>
+          <RzCard padding={false} className="divide-y divide-[#f5fdf7]">
+            {settingsItems.map(({ icon: Icon, label, sub, color, href }) => {
+              const content = (
+                <>
+                  <div
+                    className="w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0"
+                    style={{ background: `${color}18` }}
+                  >
+                    <Icon size={15} color={color} />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <p className={[
+                      "text-[14px] font-[500]",
+                      color === "#e8005a" ? "text-[#e8005a]" : "text-[#0d1117]"
+                    ].join(" ")}>{label}</p>
+                    {sub && <p className="text-[11px] text-[#9aa5b1]">{sub}</p>}
+                  </div>
+                  <ChevronRight size={15} color="#d8f0e4" />
+                </>
+              );
+
+              return href ? (
+                <Link
+                  key={label}
+                  href={href}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 tap-target hover:bg-[#f5fdf7] transition-colors"
+                >
+                  {content}
+                </Link>
+              ) : (
+                <button
+                  key={label}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 tap-target hover:bg-[#f5fdf7] transition-colors"
+                >
+                  {content}
+                </button>
+              );
+            })}
+          </RzCard>
+        </div>
 
         <p className="text-center text-[11px] text-[#9aa5b1] pb-2">
           Rezekii v1.0.0 · Techwide Marketing Sdn Bhd
