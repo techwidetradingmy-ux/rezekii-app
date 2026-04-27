@@ -1,63 +1,10 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { RZ } from "@/lib/rz";
 import Icon from "@/components/ui/Icon";
-
-// ─── Tab Bar ──────────────────────────────────────────────────────────────────
-
-const TAB_ITEMS = [
-  { key: "home",        label: "Home",       route: "/",           icon: "home"   },
-  { key: "marketplace", label: "Shop",       route: "/marketplace",icon: "search" },
-  { key: "campaign",   label: "Campaign",   route: "/campaign",   icon: "sparkles" },
-  { key: "earnings",   label: "Earnings",   route: "/earnings",   icon: "chart"  },
-  { key: "profile",    label: "Profile",    route: "/profile",    icon: "user"   },
-] as const;
-
-type TabKey = typeof TAB_ITEMS[number]["key"];
-
-function TabBar({ active }: { active: TabKey }) {
-  const router = useRouter();
-  return (
-    <div style={{
-      position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 80,
-      background: RZ.white,
-      borderTop: `1px solid ${RZ.border}`,
-      display: "flex",
-      paddingBottom: "env(safe-area-inset-bottom, 0px)",
-    }}>
-      {TAB_ITEMS.map(tab => {
-        const isActive = tab.key === active;
-        return (
-          <button
-            key={tab.key}
-            onClick={() => router.push(tab.route)}
-            style={{
-              flex: 1, display: "flex", flexDirection: "column", alignItems: "center",
-              justifyContent: "center", gap: 4, padding: "10px 0 8px",
-              border: 0, background: "transparent", cursor: "pointer",
-            }}
-          >
-            <Icon
-              name={tab.icon as Parameters<typeof Icon>[0]["name"]}
-              size={22}
-              color={isActive ? RZ.green : RZ.muted}
-              strokeWidth={isActive ? 2.4 : 1.8}
-            />
-            <span style={{
-              font: `${isActive ? 700 : 500} 10px/1 ${RZ.fontUI}`,
-              color: isActive ? RZ.green : RZ.muted,
-              letterSpacing: ".03em",
-            }}>
-              {tab.label}
-            </span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
+import TabBar from "@/components/ui/TabBar";
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 
@@ -360,7 +307,7 @@ function PostAnalyticsSheet({ post, onClose }: { post: PostData; onClose: () => 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ font: `800 19px/1.2 ${RZ.fontDisplay}`, color: RZ.black, letterSpacing: "-0.01em", marginBottom: 5 }}>Post Analytics</div>
-              <div style={{ font: `500 11.5px/1.3 ${RZ.fontUI}`, color: RZ.muted, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" } as React.CSSProperties}>{post.caption}</div>
+              <div style={{ font: `500 11.5px/1.3 ${RZ.fontUI}`, color: RZ.muted, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const, overflow: "hidden" } as React.CSSProperties}>{post.caption}</div>
             </div>
             <button onClick={onClose} style={{ border: 0, background: RZ.canvas, borderRadius: 10, width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, marginLeft: 10 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={RZ.body} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
@@ -394,7 +341,7 @@ function PostAnalyticsSheet({ post, onClose }: { post: PostData; onClose: () => 
           {/* Key metrics */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
             {metrics.map((m, i) => (
-              <div key={i} style={{ background: RZ.white, borderRadius: 14, border: `1.5px solid ${RZ.border}`, padding: 12 }}>
+              <div key={i} style={{ background: RZ.white, border: `1.5px solid ${RZ.border}`, borderRadius: 16, padding: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                   <div style={{ width: 20, height: 20, borderRadius: 6, background: `${m.color}18`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <Icon name={m.icon as Parameters<typeof Icon>[0]["name"]} size={11} color={m.color}/>
@@ -555,6 +502,12 @@ export default function EarningsPage() {
 
   return (
     <div style={{ position: "fixed", inset: 0, background: RZ.canvas, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <style>{`
+        @keyframes earnDropIn { from { opacity: 0; transform: translateY(-6px) } to { opacity: 1; transform: translateY(0) } }
+        @keyframes earnBarRise { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+        @keyframes rzFade { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes rzSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+      `}</style>
 
       {/* ─── COMPACT TOP BAR ──────────────────────────────────────────── */}
       <div style={{ padding: "56px 20px 14px", background: RZ.white, position: "relative", flexShrink: 0 }}>
@@ -616,7 +569,7 @@ export default function EarningsPage() {
         </div>
 
         {/* Interactive bar chart */}
-        <div style={{ background: RZ.white, borderRadius: 16, border: `1.5px solid ${RZ.border}`, padding: 14, marginBottom: 14 }}>
+        <div style={{ background: RZ.white, border: `1.5px solid ${RZ.border}`, borderRadius: 16, padding: 14, marginBottom: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
             <div style={{ font: `700 13px/1 ${RZ.fontDisplay}`, color: RZ.black }}>Daily Sales Trend</div>
             <div style={{ font: `500 10px/1 ${RZ.fontUI}`, color: RZ.muted }}>Tap A Bar To Reveal GMV</div>
@@ -688,7 +641,7 @@ export default function EarningsPage() {
         {/* Primary stats grid */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 18 }}>
           {primaryStats.map((s, i) => (
-            <div key={i} style={{ background: RZ.white, borderRadius: 14, border: `1.5px solid ${RZ.border}`, padding: 12 }}>
+            <div key={i} style={{ background: RZ.white, border: `1.5px solid ${RZ.border}`, borderRadius: 16, padding: 12 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                 <div style={{ width: 22, height: 22, borderRadius: 6, background: `${s.tone}18`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <Icon name={s.icon as Parameters<typeof Icon>[0]["name"]} size={12} color={s.tone}/>
@@ -728,7 +681,7 @@ export default function EarningsPage() {
 
         {/* Top Selling Niche */}
         <div style={{ font: `700 16px/1 ${RZ.fontDisplay}`, color: RZ.black, marginBottom: 10, letterSpacing: "-0.01em" }}>Top Selling Niche</div>
-        <div style={{ background: RZ.white, borderRadius: 16, border: `1.5px solid ${RZ.border}`, padding: 16, marginBottom: 18 }}>
+        <div style={{ background: RZ.white, border: `1.5px solid ${RZ.border}`, borderRadius: 16, padding: 16, marginBottom: 18 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             {/* Donut */}
             <div style={{ position: "relative", width: SIZE, height: SIZE, flexShrink: 0 }}>
@@ -762,9 +715,11 @@ export default function EarningsPage() {
         {/* Top Selling Products */}
         <div style={{ font: `700 16px/1 ${RZ.fontDisplay}`, color: RZ.black, marginBottom: 10, letterSpacing: "-0.01em" }}>Top Selling Products</div>
         {topProducts.map((p, i) => (
-          <div key={i} style={{ background: RZ.white, borderRadius: 14, border: `1.5px solid ${RZ.border}`, display: "flex", gap: 12, alignItems: "center", marginBottom: 8, padding: 10 }}>
+          <div key={i} style={{ background: RZ.white, border: `1.5px solid ${RZ.border}`, borderRadius: 16, display: "flex", gap: 12, alignItems: "center", marginBottom: 8, padding: 10 }}>
             <div style={{ width: 28, height: 28, borderRadius: "50%", background: i === 0 ? "#f5a623" : i === 1 ? "#c0c7cf" : "#d4936a", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", font: `900 13px/1 ${RZ.fontDisplay}`, flexShrink: 0, boxShadow: "0 3px 8px rgba(0,0,0,0.12)" }}>{i + 1}</div>
-            <div style={{ width: 42, height: 42, borderRadius: 8, overflow: "hidden", flexShrink: 0, boxShadow: "inset 0 0 0 1px rgba(13,17,23,0.06)", background: RZ.canvas }}/>
+            <div style={{ width: 42, height: 42, borderRadius: 8, overflow: "hidden", flexShrink: 0, boxShadow: "inset 0 0 0 1px rgba(13,17,23,0.06)", background: RZ.canvas }}>
+              <img src={p.img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}/>
+            </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ font: `700 13.5px/1.2 ${RZ.fontDisplay}`, color: RZ.black, letterSpacing: "-0.005em" }}>{p.name}</div>
               <div style={{ font: `500 11px/1 ${RZ.fontUI}`, color: RZ.muted, marginTop: 3 }}>{p.cat} · {p.units} units</div>
@@ -786,7 +741,7 @@ export default function EarningsPage() {
               <div style={{ background: RZ.white, borderRadius: 14, border: `1.5px solid ${RZ.border}`, overflow: "hidden" }}>
                 {/* TikTok thumbnail 9:16 */}
                 <div style={{ position: "relative", width: "100%", aspectRatio: "9 / 12", background: "#0d1117", overflow: "hidden" }}>
-                  <div style={{ width: "100%", height: "100%", background: `linear-gradient(160deg, #1a2a1f, #0d1117)`, filter: "brightness(0.88)" }}/>
+                  <img src={post.img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", filter: "brightness(0.88)" }}/>
                   {/* TikTok badge */}
                   <div style={{ position: "absolute", top: 8, right: 8, padding: "3px 6px", borderRadius: 5, background: "rgba(0,0,0,0.55)", color: "#fff", font: `700 9px/1 ${RZ.fontUI}`, letterSpacing: ".04em", display: "inline-flex", alignItems: "center", gap: 3 }}>
                     <svg width="8" height="8" viewBox="0 0 24 24" fill="#25f4ee"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005.8 20.1a6.34 6.34 0 0010.86-4.43V9.01a8.16 8.16 0 004.77 1.52V7.09a4.85 4.85 0 01-1.84-.4z"/></svg>
@@ -802,7 +757,7 @@ export default function EarningsPage() {
                   </div>
                 </div>
                 <div style={{ padding: 9 }}>
-                  <div style={{ font: `700 11.5px/1.3 ${RZ.fontDisplay}`, color: RZ.black, letterSpacing: "-0.005em", marginBottom: 5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" } as React.CSSProperties}>{post.caption}</div>
+                  <div style={{ font: `700 11.5px/1.3 ${RZ.fontDisplay}`, color: RZ.black, letterSpacing: "-0.005em", marginBottom: 5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const, overflow: "hidden" } as React.CSSProperties}>{post.caption}</div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, font: `500 10px/1 ${RZ.fontUI}`, color: RZ.muted }}>
                     <span>{post.views} views</span>
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 3, color: RZ.green, font: `700 10px/1 ${RZ.fontUI}` }}>
@@ -855,7 +810,7 @@ export default function EarningsPage() {
                 </button>
               </div>
               <div style={{ padding: "0 14px 8px", display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, font: `700 10px/1 ${RZ.fontUI}`, color: RZ.muted, textAlign: "center" }}>
-                {["S","M","T","W","T","F","S"].map((d, i) => <div key={i} style={{ padding: "6px 0" }}>{d}</div>)}
+                {["S","M","T","W","T","F","S"].map((day, i) => <div key={i} style={{ padding: "6px 0" }}>{day}</div>)}
               </div>
               <div style={{ padding: "0 14px 14px", display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2 }}>
                 {cells.map((dd, i) => (

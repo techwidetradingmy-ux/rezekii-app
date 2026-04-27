@@ -9,9 +9,13 @@ import TabBar from '@/components/ui/TabBar';
 // --- TikTok glyph ---
 function TikTokGlyph({ size = 14 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={RZ.black}>
-      <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005.8 20.1a6.34 6.34 0 0010.86-4.43V9.01a8.16 8.16 0 004.77 1.52V7.09a4.85 4.85 0 01-1.84-.4z" />
-    </svg>
+    <img
+      src="/tiktok-square.png"
+      alt="TikTok"
+      width={size}
+      height={size}
+      style={{ display: 'block', objectFit: 'contain' as const, borderRadius: size * 0.22, flexShrink: 0 }}
+    />
   );
 }
 
@@ -47,7 +51,7 @@ function MiniStat({ n, l }: { n: string; l: string }) {
 }
 
 // --- ProfileRow ---
-function ProfileRow({ icon, title, sub, onClick }: { icon: 'wallet' | 'pkg' | 'heart' | 'trend' | 'play' | 'bell' | 'share'; title: string; sub?: string; onClick?: () => void }) {
+function ProfileRow({ icon, title, sub, onClick }: { icon: string; title: string; sub?: string; onClick?: () => void }) {
   return (
     <div onClick={onClick} style={{
       display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
@@ -283,6 +287,16 @@ function ShareStreakSheet({ streakDays, onClose }: { streakDays: number; onClose
     { id: 'tw',   name: 'X',         color: '#0d1117' },
     { id: 'more', name: 'More',      color: '#6b7280' },
   ];
+  const platformIcon = (id: string) => {
+    switch (id) {
+      case 'ig': return <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="5" stroke="#fff" strokeWidth="2"/><circle cx="12" cy="12" r="4" stroke="#fff" strokeWidth="2"/><circle cx="17.5" cy="6.5" r="1" fill="#fff"/></svg>;
+      case 'tt': return <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005.8 20.1a6.34 6.34 0 0010.86-4.43V9.01a8.16 8.16 0 004.77 1.52V7.09a4.85 4.85 0 01-1.84-.4z"/></svg>;
+      case 'fb': return <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M14 9h3V6h-3c-2 0-3 1-3 3v2H9v3h2v7h3v-7h2.5l.5-3H14V9z"/></svg>;
+      case 'wa': return <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M17.6 6.3A7.9 7.9 0 0012 4a8 8 0 00-6.8 12.1L4 21l5-1.3A8 8 0 0020 12a7.9 7.9 0 00-2.4-5.7zm-5.6 12.3a6.6 6.6 0 01-3.4-.9l-.2-.1-2.5.6.7-2.4-.2-.3A6.6 6.6 0 1112 18.6zm3.5-4.6c-.2-.1-1.1-.6-1.3-.6l-.4-.1c-.2 0-.3.1-.4.2l-.6.7c-.1.1-.2.2-.4.1a5.4 5.4 0 01-1.6-1 6.2 6.2 0 01-1.2-1.5.3.3 0 01.1-.4l.3-.3.2-.3.1-.3v-.2l-.5-1.3c-.1-.3-.3-.3-.4-.3H9c-.2 0-.4 0-.6.2a1.8 1.8 0 00-.6 1.3 3.3 3.3 0 00.6 1.7A7.2 7.2 0 0011.3 15c.4.2.8.3 1.1.4.5.1.9.1 1.3 0a2.1 2.1 0 001.4-1c.2-.4.2-.7.1-.8l-.2-.1z"/></svg>;
+      case 'tw': return <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M17.5 3h3l-6.6 7.6L22 21h-6.2l-4.9-6.4L5 21H2l7.1-8.1L2 3h6.3l4.4 5.8L17.5 3zm-1 16h1.7L7.6 4.8H5.9L16.5 19z"/></svg>;
+      default: return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="12" r="1.5" fill="#fff"/><circle cx="12" cy="12" r="1.5" fill="#fff"/><circle cx="19" cy="12" r="1.5" fill="#fff"/></svg>;
+    }
+  };
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'flex-end', background: 'rgba(13,17,23,0.6)' }}>
@@ -307,11 +321,40 @@ function ShareStreakSheet({ streakDays, onClose }: { streakDays: number; onClose
           <div style={{ position: 'absolute', top: -40, right: -40, width: 180, height: 180, borderRadius: '50%', background: 'radial-gradient(circle, rgba(245,166,35,0.45), transparent 70%)' }} />
           <div style={{ position: 'absolute', bottom: -50, left: -40, width: 160, height: 160, borderRadius: '50%', background: 'radial-gradient(circle, rgba(232,0,90,0.45), transparent 70%)' }} />
           <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', padding: 20, color: '#fff' }}>
-            <div style={{ font: `900 9px/1 ${RZ.fontUI}`, letterSpacing: '.12em', textTransform: 'uppercase', color: '#f5a623', marginBottom: 8 }}>🔥 Posting Streak</div>
+            <div style={{ font: `900 9px/1 ${RZ.fontUI}`, letterSpacing: '.12em', textTransform: 'uppercase' as const, color: '#f5a623', marginBottom: 8 }}>🔥 Posting Streak</div>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              {/* Mascot */}
+              <svg viewBox="0 0 100 100" width="120" height="120" style={{ filter: 'drop-shadow(0 8px 20px rgba(0,0,0,0.4))', marginBottom: 10 }}>
+                <defs>
+                  <radialGradient id="reziFurP" cx="50%" cy="40%">
+                    <stop offset="0%" stopColor="#ffb347" /><stop offset="100%" stopColor="#ff8a1f" />
+                  </radialGradient>
+                  <radialGradient id="reziBellyP" cx="50%" cy="60%">
+                    <stop offset="0%" stopColor="#fff6d8" /><stop offset="100%" stopColor="#ffd89a" />
+                  </radialGradient>
+                </defs>
+                <ellipse cx="50" cy="65" rx="24" ry="22" fill="url(#reziFurP)" />
+                <ellipse cx="50" cy="68" rx="16" ry="14" fill="url(#reziBellyP)" />
+                <circle cx="50" cy="38" r="20" fill="url(#reziFurP)" />
+                <ellipse cx="38" cy="24" rx="7" ry="9" fill="#ff8a1f" /><ellipse cx="38" cy="25" rx="4" ry="5" fill="#ffd89a" />
+                <ellipse cx="62" cy="24" rx="7" ry="9" fill="#ff8a1f" /><ellipse cx="62" cy="25" rx="4" ry="5" fill="#ffd89a" />
+                <path d="M 42 32 Q 38 34 36 36" stroke="#e8005a" strokeWidth="1.8" fill="none" strokeLinecap="round" />
+                <path d="M 58 32 Q 62 34 64 36" stroke="#e8005a" strokeWidth="1.8" fill="none" strokeLinecap="round" />
+                <circle cx="40" cy="42" r="8" fill="#ffd89a" /><circle cx="60" cy="42" r="8" fill="#ffd89a" />
+                <ellipse cx="43" cy="40" rx="3.5" ry="4.5" fill="#1a0410" /><circle cx="44" cy="39" r="1.2" fill="#fff" />
+                <ellipse cx="57" cy="40" rx="3.5" ry="4.5" fill="#1a0410" /><circle cx="58" cy="39" r="1.2" fill="#fff" />
+                <ellipse cx="50" cy="46" rx="2.5" ry="2" fill="#1a0410" />
+                <path d="M 46 48 Q 50 51 54 48" stroke="#e8005a" strokeWidth="1.6" fill="none" strokeLinecap="round" />
+                <path d="M 35 50 Q 35 55 40 58 L 50 54 L 60 58 Q 65 55 65 50 L 62 48 Q 50 52 38 48 Z" fill="#00c073" />
+                <path d="M 62 48 L 68 52 L 66 58 L 62 54 Z" fill="#00c073" />
+                <ellipse cx="32" cy="64" rx="6" ry="8" fill="url(#reziFurP)" /><ellipse cx="68" cy="64" rx="6" ry="8" fill="url(#reziFurP)" />
+                <circle cx="32" cy="70" r="4" fill="#ffd89a" /><circle cx="68" cy="70" r="4" fill="#ffd89a" />
+                <path d="M 28 75 Q 18 78 16 85" stroke="#ff8a1f" strokeWidth="7" fill="none" strokeLinecap="round" />
+                <path d="M 16 85 Q 14 88 18 90" fill="#ff8a1f" /><circle cx="17" cy="87" r="2.5" fill="#e8005a" />
+              </svg>
               <div style={{ font: `900 72px/1 ${RZ.fontDisplay}`, letterSpacing: '-0.04em', background: 'linear-gradient(135deg,#f5a623,#e8005a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: 4 }}>{streakDays}</div>
               <div style={{ font: `800 16px/1 ${RZ.fontDisplay}`, letterSpacing: '-0.01em' }}>Days Strong</div>
-              <div style={{ font: `500 10px/1.35 ${RZ.fontUI}`, color: 'rgba(255,255,255,0.75)', marginTop: 8, textAlign: 'center' }}>Posting TikToks daily with</div>
+              <div style={{ font: `500 10px/1.35 ${RZ.fontUI}`, color: 'rgba(255,255,255,0.75)', marginTop: 8, textAlign: 'center' as const }}>Posting TikToks daily with</div>
               <div style={{ font: `900 15px/1 ${RZ.fontDisplay}`, color: '#00c073', marginTop: 4, letterSpacing: '-0.01em' }}>Rezekii</div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', font: `700 9px/1 ${RZ.fontUI}`, color: 'rgba(255,255,255,0.7)' }}>
@@ -326,7 +369,7 @@ function ShareStreakSheet({ streakDays, onClose }: { streakDays: number; onClose
           {platforms.map(p => (
             <button key={p.id} style={{ border: 0, background: 'transparent', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, padding: '6px 0' }}>
               <div style={{ width: 48, height: 48, borderRadius: 14, background: p.color, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 6px 14px ${p.color}55` }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5" fill="#fff" /></svg>
+                {platformIcon(p.id)}
               </div>
               <div style={{ font: `600 11px/1 ${RZ.fontUI}`, color: RZ.body }}>{p.name}</div>
             </button>
