@@ -27,7 +27,17 @@ export default function HomePage() {
       >
         {/* Top row: logo + bell */}
         <div className="flex items-center justify-between mb-3">
-          <RezekiiLogo size="md" variant="light" />
+          <div
+            style={{
+              background: "#ffffff",
+              borderRadius: 13,
+              padding: 8,
+              display: "inline-flex",
+              boxShadow: "0 6px 14px rgba(0,0,0,0.14)",
+            }}
+          >
+            <RezekiiLogo size="sm" iconOnly px={30} />
+          </div>
           <div className="flex items-center gap-3">
             <Link href="/notifications" className="relative tap-target">
               <Bell size={22} color="white" strokeWidth={1.8} />
