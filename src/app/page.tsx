@@ -3,7 +3,7 @@ import RezekiiLogo from "@/components/ui/RezekiiLogo";
 import RzCard from "@/components/ui/RzCard";
 import Link from "next/link";
 import {
-  TrendingUp, Package, Megaphone, Clock,
+  TrendingUp, Package, Megaphone,
   ChevronRight, ArrowUpRight, Bell, Wallet,
 } from "lucide-react";
 import {
@@ -20,10 +20,10 @@ export default function HomePage() {
 
   return (
     <AppShell>
-      {/* Header band */}
+      {/* Header band — solid green */}
       <div
         className="px-5 pt-12 pb-5"
-        style={{ background: "linear-gradient(160deg, #0d1117 0%, #0f2018 100%)" }}
+        style={{ background: "#00c073" }}
       >
         <div className="flex items-center justify-between mb-4">
           <RezekiiLogo size="md" variant="light" />
@@ -34,7 +34,7 @@ export default function HomePage() {
             </Link>
           </div>
         </div>
-        <p className="text-[#9aa5b1] text-[13px]">Good morning,</p>
+        <p className="text-white/70 text-[13px]">Good morning,</p>
         <h1 className="text-white text-[22px] font-[800] leading-tight">
           {creatorProfile.name.split(" ")[0]} 👋
         </h1>
@@ -79,22 +79,21 @@ export default function HomePage() {
           </div>
         </RzCard>
 
-        {/* Quick Stats */}
+        {/* Quick Stats — circles */}
         <div className="grid grid-cols-3 gap-3 animate-fade-up delay-100">
           {[
-            { label: "Products Sold", value: dashboardStats.productsSold, icon: Package, color: "#00c073" },
-            { label: "Campaigns", value: dashboardStats.activeCampaigns, icon: Megaphone, color: "#f5a623" },
-            { label: "Pending Samples", value: dashboardStats.pendingSamples, icon: Clock, color: "#25f4ee" },
-          ].map(({ label, value, icon: Icon, color }) => (
-            <RzCard key={label} padding={false} className="p-3">
+            { label: "Products Sold", value: dashboardStats.productsSold, color: "#00c073" },
+            { label: "Campaigns", value: dashboardStats.activeCampaigns, color: "#f5a623" },
+            { label: "Pending Samples", value: dashboardStats.pendingSamples, color: "#25f4ee" },
+          ].map(({ label, value, color }) => (
+            <RzCard key={label} padding={false} className="p-3 flex flex-col items-center">
               <div
-                className="w-8 h-8 rounded-[10px] flex items-center justify-center mb-2"
-                style={{ background: `${color}22` }}
+                className="w-[52px] h-[52px] rounded-full flex items-center justify-center mb-2"
+                style={{ background: `${color}18`, border: `2px solid ${color}` }}
               >
-                <Icon size={16} color={color} />
+                <p className="text-[18px] font-[800] text-[#0d1117] leading-none">{value}</p>
               </div>
-              <p className="text-[20px] font-[800] text-[#0d1117] leading-none">{value}</p>
-              <p className="text-[10px] text-[#9aa5b1] font-[500] mt-1 leading-tight">{label}</p>
+              <p className="text-[10px] text-[#9aa5b1] font-[500] text-center leading-tight">{label}</p>
             </RzCard>
           ))}
         </div>

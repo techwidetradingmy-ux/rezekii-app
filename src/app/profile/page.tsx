@@ -23,10 +23,10 @@ const menuItems = [
 export default function ProfilePage() {
   return (
     <AppShell>
-      {/* Header */}
+      {/* Header — solid green */}
       <div
         className="px-5 pt-12 pb-6"
-        style={{ background: "linear-gradient(160deg, #0d1117 0%, #0f2018 100%)" }}
+        style={{ background: "#00c073" }}
       >
         <div className="flex items-center gap-4">
           {/* Avatar */}
@@ -38,7 +38,7 @@ export default function ProfilePage() {
           </div>
           <div>
             <h1 className="text-[20px] font-[800] text-white">{creatorProfile.name}</h1>
-            <p className="text-[#9aa5b1] text-[13px]">{creatorProfile.handle}</p>
+            <p className="text-white/70 text-[13px]">{creatorProfile.handle}</p>
             {/* Level badge */}
             <div
               className="inline-flex items-center gap-1.5 mt-1.5 px-3 py-1 rounded-full"

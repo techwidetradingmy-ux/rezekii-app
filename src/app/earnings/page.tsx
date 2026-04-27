@@ -31,28 +31,28 @@ export default function EarningsPage() {
 
   return (
     <AppShell>
-      {/* Header */}
+      {/* Header — solid green */}
       <div
         className="px-5 pt-12 pb-5"
-        style={{ background: "linear-gradient(160deg, #0d1117 0%, #0f2018 100%)" }}
+        style={{ background: "#00c073" }}
       >
         <h1 className="text-[22px] font-[800] text-white mb-4">Earnings</h1>
 
         {/* Hero numbers */}
         <div className="flex items-end justify-between">
           <div>
-            <p className="text-[#9aa5b1] text-[12px] mb-1">Total Commission</p>
+            <p className="text-white/70 text-[12px] mb-1">Total Commission</p>
             <p className="text-[32px] font-[800] text-white leading-none">
               {formatRM(totalCommission)}
             </p>
             <div className="flex items-center gap-1 mt-1">
-              <ArrowUpRight size={13} color="#00c073" />
-              <span className="text-[12px] text-[#00c073] font-[600]">+18.4%</span>
-              <span className="text-[11px] text-[#9aa5b1]">vs previous period</span>
+              <ArrowUpRight size={13} color="white" />
+              <span className="text-[12px] text-white font-[600]">+18.4%</span>
+              <span className="text-[11px] text-white/70">vs previous period</span>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-[#9aa5b1] text-[11px]">GMV</p>
+            <p className="text-white/70 text-[11px]">GMV</p>
             <p className="text-[18px] font-[700] text-white">{formatRM(totalGMV)}</p>
           </div>
         </div>
