@@ -32,28 +32,24 @@ export default function EarningsPage() {
   return (
     <AppShell>
       {/* Header */}
-      <div
-        className="px-5 pt-12 pb-5"
-        style={{ background: "linear-gradient(160deg, #0d1117 0%, #0f2018 100%)" }}
-      >
-        <h1 className="text-[22px] font-[800] text-white mb-4">Earnings</h1>
-
+      <div style={{ background: "#00c073", paddingTop: 48, paddingBottom: 20, paddingLeft: 20, paddingRight: 20 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 800, color: "white", margin: "0 0 16px" }}>Earnings</h1>
         {/* Hero numbers */}
-        <div className="flex items-end justify-between">
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
           <div>
-            <p className="text-[#9aa5b1] text-[12px] mb-1">Total Commission</p>
-            <p className="text-[32px] font-[800] text-white leading-none">
+            <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 12, margin: "0 0 4px" }}>Total Commission</p>
+            <p style={{ fontSize: 32, fontWeight: 800, color: "white", lineHeight: 1, margin: 0 }}>
               {formatRM(totalCommission)}
             </p>
-            <div className="flex items-center gap-1 mt-1">
-              <ArrowUpRight size={13} color="#00c073" />
-              <span className="text-[12px] text-[#00c073] font-[600]">+18.4%</span>
-              <span className="text-[11px] text-[#9aa5b1]">vs previous period</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4 }}>
+              <ArrowUpRight size={13} color="white" />
+              <span style={{ fontSize: 12, color: "white", fontWeight: 600 }}>+18.4%</span>
+              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.7)" }}>vs previous period</span>
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-[#9aa5b1] text-[11px]">GMV</p>
-            <p className="text-[18px] font-[700] text-white">{formatRM(totalGMV)}</p>
+          <div style={{ textAlign: "right" }}>
+            <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 11, margin: "0 0 2px" }}>GMV</p>
+            <p style={{ fontSize: 18, fontWeight: 700, color: "white", margin: 0 }}>{formatRM(totalGMV)}</p>
           </div>
         </div>
       </div>

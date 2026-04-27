@@ -24,28 +24,29 @@ export default function ProfilePage() {
   return (
     <AppShell>
       {/* Header */}
-      <div
-        className="px-5 pt-12 pb-6"
-        style={{ background: "linear-gradient(160deg, #0d1117 0%, #0f2018 100%)" }}
-      >
-        <div className="flex items-center gap-4">
+      <div style={{ background: "#00c073", paddingTop: 48, paddingBottom: 24, paddingLeft: 20, paddingRight: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           {/* Avatar */}
-          <div
-            className="w-16 h-16 rounded-full flex items-center justify-center text-[28px] shrink-0 border-2 border-[#00c073]"
-            style={{ background: "linear-gradient(135deg, #00c073, #009a5c)" }}
-          >
+          <div style={{
+            width: 64, height: 64, borderRadius: "50%", flexShrink: 0,
+            border: "3px solid rgba(255,255,255,0.6)",
+            background: "rgba(255,255,255,0.2)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 28
+          }}>
             👩‍💼
           </div>
           <div>
-            <h1 className="text-[20px] font-[800] text-white">{creatorProfile.name}</h1>
-            <p className="text-[#9aa5b1] text-[13px]">{creatorProfile.handle}</p>
+            <h1 style={{ fontSize: 20, fontWeight: 800, color: "white", margin: 0 }}>{creatorProfile.name}</h1>
+            <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 13, margin: "2px 0 0" }}>{creatorProfile.handle}</p>
             {/* Level badge */}
-            <div
-              className="inline-flex items-center gap-1.5 mt-1.5 px-3 py-1 rounded-full"
-              style={{ background: "rgba(245,166,35,0.2)" }}
-            >
-              <span className="text-[11px]">🏅</span>
-              <span className="text-[11px] font-[700]" style={{ color: "#f5a623" }}>
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: 4,
+              marginTop: 6, padding: "4px 10px", borderRadius: 20,
+              background: "rgba(255,255,255,0.2)"
+            }}>
+              <span style={{ fontSize: 11 }}>🏅</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "white" }}>
                 {creatorProfile.level}
               </span>
             </div>
