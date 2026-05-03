@@ -1,134 +1,109 @@
-"use client";
+'use client';
 
-import AppShell from "@/components/layout/AppShell";
-import RzCard from "@/components/ui/RzCard";
-import RzButton from "@/components/ui/RzButton";
-import Link from "next/link";
-import { ArrowLeft, TrendingUp, CreditCard, ArrowDownToLine } from "lucide-react";
-import { creatorProfile } from "@/lib/mock-data";
+import React from 'react';
+import { useRouter } from 'next/navigation';
+import { RZ } from '@/lib/rz';
+import Icon from '@/components/ui/Icon';
 
-function formatRM(n: number) {
-  return `RM ${n.toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+interface Txn {
+  t: string;
+  d: string;
+  amt: string;
+  tone: 'in' | 'out';
 }
 
-const transactions = [
-  { id: "t1", type: "credit", label: "Commission — COSRX Serum Video",    amount: 84.00,    date: "27 Apr 2026", method: "TikTok Shop" },
-  { id: "t2", type: "credit", label: "Commission — ZALORA Live",           amount: 1020.00,  date: "25 Apr 2026", method: "TikTok Shop" },
-  { id: "t3", type: "debit",  label: "Payout To Maybank **** 4521",        amount: 1245.60,  date: "24 Apr 2026", method: "Bank Transfer" },
-  { id: "t4", type: "credit", label: "Commission — Hari Raya Snacks",      amount: 280.00,   date: "22 Apr 2026", method: "TikTok Shop" },
-  { id: "t5", type: "credit", label: "Commission — Tech Gadgets Video",    amount: 117.00,   date: "20 Apr 2026", method: "TikTok Shop" },
-  { id: "t6", type: "debit",  label: "Payout To Maybank **** 4521",        amount: 800.00,   date: "15 Apr 2026", method: "Bank Transfer" },
-  { id: "t7", type: "credit", label: "Commission — COSRX Campaign Bonus",  amount: 350.00,   date: "12 Apr 2026", method: "TikTok Shop" },
+const txns: Txn[] = [
+  { t: 'Payout . Maybank **4291',         d: 'Apr 15 . 14:32', amt: '-RM 428.50', tone: 'out' },
+  { t: 'Commission . Nasi Lemak Sambal',  d: 'Apr 13',         amt: '+RM 14.20',  tone: 'in'  },
+  { t: 'Flat fee . Skintific campaign',   d: 'Apr 11',         amt: '+RM 80.00',  tone: 'in'  },
+  { t: 'Commission . ProBuds 2',          d: 'Apr 08',         amt: '+RM 38.40',  tone: 'in'  },
+  { t: 'Payout . Maybank **4291',         d: 'Apr 01 . 09:05', amt: '-RM 612.00', tone: 'out' },
+  { t: 'Commission . Glow Serum',         d: 'Mar 29',         amt: '+RM 22.50',  tone: 'in'  },
 ];
 
-const availableBalance = 892.40;
-const pendingBalance   = 543.20;
-const totalPaidOut     = 15240.00;
-
 export default function WalletPage() {
+  const router = useRouter();
+
   return (
-    <AppShell>
-      {/* Header */}
-      <div className="px-5 pt-12 pb-6" style={{ background: "#00c073" }}>
-        <div className="flex items-center gap-3 mb-4">
-          <Link href="/profile" className="tap-target">
-            <ArrowLeft size={22} color="white" strokeWidth={2} />
-          </Link>
-          <h1 className="text-[22px] font-[800] text-white">Wallet & Payout</h1>
-        </div>
-
-        {/* Balance card */}
-        <RzCard padding={false} className="animate-fade-up">
-          <div
-            className="rounded-t-[16px] px-4 pt-4 pb-3"
-            style={{ background: "linear-gradient(135deg, #00c073 0%, #009a5c 100%)" }}
-          >
-            <p className="text-white/70 text-[12px] font-[500] mb-0.5">Available Balance</p>
-            <p className="text-white text-[32px] font-[800] leading-tight">{formatRM(availableBalance)}</p>
-          </div>
-          <div className="grid grid-cols-2 divide-x divide-[#f5fdf7] py-3">
-            <div className="flex flex-col items-center">
-              <p className="text-[15px] font-[700] text-[#f5a623]">{formatRM(pendingBalance)}</p>
-              <p className="text-[10px] text-[#9aa5b1]">Pending</p>
-            </div>
-            <div className="flex flex-col items-center">
-              <p className="text-[15px] font-[700] text-[#0d1117]">{formatRM(totalPaidOut)}</p>
-              <p className="text-[10px] text-[#9aa5b1]">Total Paid Out</p>
-            </div>
-          </div>
-        </RzCard>
-      </div>
-
-      <div className="px-5 pt-4 pb-4 flex flex-col gap-4">
-
-        {/* Withdraw Button */}
-        <div className="animate-fade-up">
-          <RzButton leftIcon={<ArrowDownToLine size={18} />}>
-            Withdraw — {formatRM(availableBalance)}
-          </RzButton>
-          <p className="text-center text-[11px] text-[#9aa5b1] mt-2">
-            Instant transfer to {creatorProfile.bankAccount}
-          </p>
-        </div>
-
-        {/* Bank Details */}
-        <RzCard className="animate-fade-up delay-100">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <CreditCard size={16} color="#00c073" />
-              <p className="text-[14px] font-[700] text-[#0d1117]">Bank Account</p>
-            </div>
-            <button className="text-[12px] text-[#00c073] font-[600] tap-target">Edit</button>
-          </div>
-          <div className="flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0"
-              style={{ background: "#fff3d6" }}
+    <div style={{ flex: 1, background: RZ.canvas, display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden' }}>
+      {/* Header + action row */}
+      <div style={{ flexShrink: 0, position: 'relative', paddingBottom: 36 }}>
+        <div style={{ background: RZ.black, padding: '56px 20px 44px', position: 'relative' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button
+              onClick={() => router.back()}
+              style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(255,255,255,0.12)', border: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
-              <span className="text-[14px] font-[900] text-[#f5a623]">M</span>
+              <Icon name="chevL" size={18} color={RZ.white} />
+            </button>
+            <div style={{ font: `800 18px/1 ${RZ.fontDisplay}`, color: RZ.white, flex: 1 }}>Wallet</div>
+            <Icon name="share" size={20} color={RZ.white} />
+          </div>
+          <div style={{ marginTop: 22 }}>
+            <div style={{ color: 'rgba(255,255,255,0.6)', font: `500 12px/1 ${RZ.fontUI}`, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>
+              Available balance
             </div>
-            <div>
-              <p className="text-[14px] font-[600] text-[#0d1117]">{creatorProfile.bankAccount}</p>
-              <p className="text-[11px] text-[#9aa5b1]">Maybank Berhad · Default</p>
+            <div style={{ color: RZ.white, font: `800 40px/1 ${RZ.fontDisplay}`, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
+              RM 1,638.70
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 999, background: 'rgba(0,192,115,0.22)', color: RZ.green, font: `700 11px/1 ${RZ.fontUI}` }}>
+                <Icon name="arrowUpRight" size={12} color={RZ.green} /> +RM 155.10 this week
+              </div>
             </div>
           </div>
-        </RzCard>
-
-        {/* Transaction History */}
-        <div className="animate-fade-up delay-200">
-          <h2 className="text-[16px] font-[700] text-[#0d1117] mb-3">Transaction History</h2>
-          <RzCard padding={false} className="divide-y divide-[#f5fdf7]">
-            {transactions.map((tx) => (
-              <div key={tx.id} className="flex items-center gap-3 px-4 py-3">
-                <div
-                  className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
-                  style={{
-                    background: tx.type === "credit"
-                      ? "rgba(0,192,115,0.12)"
-                      : "rgba(232,0,90,0.10)",
-                  }}
-                >
-                  {tx.type === "credit"
-                    ? <TrendingUp size={14} color="#00c073" />
-                    : <ArrowDownToLine size={14} color="#e8005a" />
-                  }
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] text-[#0d1117] font-[500] truncate">{tx.label}</p>
-                  <p className="text-[11px] text-[#9aa5b1]">{tx.date} · {tx.method}</p>
-                </div>
-                <span
-                  className="text-[13px] font-[700] shrink-0"
-                  style={{ color: tx.type === "credit" ? "#00c073" : "#e8005a" }}
-                >
-                  {tx.type === "credit" ? "+" : "−"}RM {tx.amount.toLocaleString("en-MY", { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-            ))}
-          </RzCard>
         </div>
-
+        {/* Action row -- straddles header/body */}
+        <div style={{ position: 'absolute', left: 16, right: 16, bottom: 0, background: RZ.white, border: `1.5px solid ${RZ.border}`, borderRadius: 18, padding: 12, display: 'flex', gap: 10, boxShadow: '0 12px 32px rgba(0,0,0,0.08)' }}>
+          <button style={{ flex: 1, height: 48, borderRadius: 12, background: RZ.green, color: RZ.white, border: 0, font: `700 13px/1 ${RZ.fontUI}`, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer' }}>
+            <Icon name="arrowUpRight" size={15} color={RZ.white} /> Withdraw
+          </button>
+          <button style={{ flex: 1, height: 48, borderRadius: 12, background: RZ.canvas, color: RZ.black, border: `1.5px solid ${RZ.border}`, font: `700 13px/1 ${RZ.fontUI}`, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer' }}>
+            <Icon name="filter" size={15} color={RZ.black} /> Statement
+          </button>
+        </div>
       </div>
-    </AppShell>
+
+      {/* Payout method */}
+      <div style={{ padding: '20px 16px 0', flexShrink: 0 }}>
+        <div style={{ font: `600 11px/1 ${RZ.fontUI}`, color: RZ.muted, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8, paddingLeft: 4 }}>
+          Payout method
+        </div>
+        <div style={{ background: RZ.white, border: `1.5px solid ${RZ.border}`, borderRadius: 12, padding: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 44, height: 34, borderRadius: 6, background: '#ffd400', display: 'flex', alignItems: 'center', justifyContent: 'center', font: `800 10px/1 ${RZ.fontDisplay}`, color: '#000' }}>MBB</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ font: `700 13px/1 ${RZ.fontUI}`, color: RZ.black }}>Maybank ** 4291</div>
+            <div style={{ font: `500 11px/1 ${RZ.fontUI}`, color: RZ.muted, marginTop: 3 }}>Default . verified</div>
+          </div>
+          <Icon name="chevR" size={16} color={RZ.muted} />
+        </div>
+      </div>
+
+      {/* Transactions */}
+      <div style={{ padding: '20px 16px 32px', flex: 1, overflow: 'auto' }}>
+        <div style={{ font: `600 11px/1 ${RZ.fontUI}`, color: RZ.muted, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8, paddingLeft: 4 }}>
+          Recent activity
+        </div>
+        {txns.map((x, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: RZ.white, border: `1.5px solid ${RZ.border}`, borderRadius: 12, marginBottom: 8 }}>
+            <div style={{ width: 34, height: 34, borderRadius: 999, background: x.tone === 'in' ? RZ.greenTint : '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon
+                name={x.tone === 'in' ? 'arrowUpRight' : 'wallet'}
+                size={16}
+                color={x.tone === 'in' ? RZ.greenDark : '#e8005a'}
+                style={x.tone === 'in' ? { transform: 'rotate(180deg)' } : undefined}
+              />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ font: `700 13px/1.2 ${RZ.fontUI}`, color: RZ.black, letterSpacing: '-0.005em' }}>{x.t}</div>
+              <div style={{ font: `500 11px/1 ${RZ.fontUI}`, color: RZ.muted, marginTop: 3 }}>{x.d}</div>
+            </div>
+            <div style={{ font: `800 13.5px/1 ${RZ.fontDisplay}`, color: x.tone === 'in' ? RZ.greenDark : RZ.black, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.005em' }}>
+              {x.amt}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

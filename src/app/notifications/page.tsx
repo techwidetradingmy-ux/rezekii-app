@@ -1,28 +1,40 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { RZ } from '@/lib/rz';
 import Icon from '@/components/ui/Icon';
 
-const initialItems = [
-  { type: 'approved',   t: 'Sample approved',       d: 'Glow Vitamin C Serum is on its way -- expect delivery Fri.', ago: '2m',        unread: true,  tone: 'green' },
-  { type: 'payout',     t: 'Payout landed',          d: 'RM 428.50 sent to Maybank **4291. Tap to download receipt.', ago: '1h',        unread: true,  tone: 'warm' },
-  { type: 'campaign',   t: 'New campaign . Skintific',d: 'Paid brief: 1 TikTok, 15-30s, #skintific. Earn RM 80 flat.',ago: '3h',        unread: true,  tone: 'cyan' },
-  { type: 'commission', t: 'Commission earned',       d: '+RM 14.20 from Nasi Lemak Sambal Paste . 3 units.',          ago: 'yesterday', unread: false, tone: 'green' },
-  { type: 'review',     t: 'Post reached 10K views', d: 'Your ProBuds 2 review crossed 10K -- keep it up.',           ago: '2d',        unread: false, tone: 'warm' },
-  { type: 'approved',   t: 'Sample shipped',          d: 'Skintific 5X Ceramide Serum dispatched via J&T.',            ago: '2d',        unread: false, tone: 'green' },
-  { type: 'system',     t: 'Verify your payout bank', d: 'Add Maybank or CIMB details before your first withdrawal.',  ago: '4d',        unread: false, tone: 'muted' },
+type Tone = 'green' | 'warm' | 'cyan' | 'muted';
+type NotifType = 'approved' | 'payout' | 'campaign' | 'commission' | 'review' | 'system';
+
+interface NotifItem {
+  type: NotifType;
+  t: string;
+  d: string;
+  ago: string;
+  unread?: boolean;
+  tone: Tone;
+}
+
+const initialItems: NotifItem[] = [
+  { type: 'approved',   t: 'Sample approved',         d: 'Glow Vitamin C Serum is on its way -- expect delivery Fri.', ago: '2m',        unread: true, tone: 'green' },
+  { type: 'payout',     t: 'Payout landed',           d: 'RM 428.50 sent to Maybank **4291. Tap to download receipt.', ago: '1h',        unread: true, tone: 'warm' },
+  { type: 'campaign',   t: 'New campaign . Skintific', d: 'Paid brief: 1 TikTok, 15-30s, #skintific. Earn RM 80 flat.', ago: '3h',        unread: true, tone: 'cyan' },
+  { type: 'commission', t: 'Commission earned',        d: '+RM 14.20 from Nasi Lemak Sambal Paste . 3 units.',          ago: 'yesterday',                tone: 'green' },
+  { type: 'review',     t: 'Post reached 10K views',   d: 'Your ProBuds 2 review crossed 10K -- keep it up.',           ago: '2d',                       tone: 'warm' },
+  { type: 'approved',   t: 'Sample shipped',           d: 'Skintific 5X Ceramide Serum dispatched via J&T.',            ago: '2d',                       tone: 'green' },
+  { type: 'system',     t: 'Verify your payout bank',  d: 'Add Maybank or CIMB details before your first withdrawal.',  ago: '4d',                       tone: 'muted' },
 ];
 
-const toneBg: Record<string, string> = {
+const toneBg: Record<Tone, string> = {
   green: RZ.green,
   warm:  '#e8005a',
   cyan:  RZ.cyanText,
   muted: RZ.body,
 };
 
-const iconFor: Record<string, 'pkg' | 'wallet' | 'sparkles' | 'trend' | 'play' | 'bell'> = {
+const iconFor: Record<NotifType, 'pkg' | 'wallet' | 'sparkles' | 'trend' | 'play' | 'bell'> = {
   approved:   'pkg',
   payout:     'wallet',
   campaign:   'sparkles',
@@ -31,7 +43,7 @@ const iconFor: Record<string, 'pkg' | 'wallet' | 'sparkles' | 'trend' | 'play' |
   system:     'bell',
 };
 
-function NotifRow({ it, onRead }: { it: typeof initialItems[0]; onRead: () => void }) {
+function NotifRow({ it, onRead }: { it: NotifItem; onRead: () => void }) {
   return (
     <div
       onClick={onRead}
@@ -60,7 +72,7 @@ function NotifRow({ it, onRead }: { it: typeof initialItems[0]; onRead: () => vo
 
 export default function NotificationsPage() {
   const router = useRouter();
-  const [items, setItems] = useState(initialItems);
+  const [items, setItems] = useState<NotifItem[]>(initialItems);
 
   const markAllRead = () => setItems(items.map(it => ({ ...it, unread: false })));
   const markRead = (idx: number) => setItems(items.map((it, i) => i === idx ? { ...it, unread: false } : it));

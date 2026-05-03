@@ -1,32 +1,33 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import crypto from 'crypto';
 
-export async function GET(request: NextRequest) {
-  const clientKey = process.env.TIKTOK_CLIENT_KEY;
-  if (!clientKey) {
-    return NextResponse.json({ error: 'TIKTOK_CLIENT_KEY not configured' }, { status: 500 });
-  }
+const CLIENT_KEY = process.env.TIKTOK_CLIENT_KEY!;
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+const REDIRECT_URI = `${APP_URL}/api/auth/tiktok/callback`;
+const SCOPES = 'user.info.basic,video.list';
 
-  const state = crypto.randomUUID();
+export async function GET() {
+  const state = crypto.randomBytes(16).toString('hex');
 
   const cookieStore = await cookies();
-  cookieStore.set('tiktok_csrf_state', state, {
+  cookieStore.set('tiktok_oauth_state', state, {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: 300,
+    maxAge: 600,
     path: '/',
   });
 
   const params = new URLSearchParams({
-    client_key: clientKey,
-    scope: 'user.info.basic,video.list',
+    client_key: CLIENT_KEY,
+    scope: SCOPES,
     response_type: 'code',
-    redirect_uri: 'https://rezekii.com/api/auth/tiktok/callback',
-    state: state,
+    redirect_uri: REDIRECT_URI,
+    state,
   });
 
-  const tiktokAuthUrl = 'https://www.tiktok.com/v2/auth/authorize/?' + params.toString();
-
-  return NextResponse.redirect(tiktokAuthUrl);
+  return NextResponse.redirect(
+    `https://www.tiktok.com/v2/auth/authorize/?${params.toString()}`
+  );
 }

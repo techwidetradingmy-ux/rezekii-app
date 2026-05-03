@@ -6,7 +6,8 @@ type IconName =
   | 'home' | 'search' | 'bag' | 'chart' | 'user' | 'bell'
   | 'chevR' | 'chevL' | 'check' | 'x' | 'heart' | 'filter'
   | 'arrowUpRight' | 'wallet' | 'pkg' | 'clock' | 'play'
-  | 'share' | 'plus' | 'trend' | 'sparkles';
+  | 'share' | 'plus' | 'trend' | 'sparkles' | 'cursor'
+  | 'cog' | 'shield' | 'help' | 'signOut' | 'bank' | 'bellOutline';
 
 interface IconProps {
   name: IconName;
@@ -19,7 +20,7 @@ interface IconProps {
 
 export default function Icon({ name, size = 20, color = 'currentColor', strokeWidth = 2, fill = 'none', style }: IconProps) {
   const paths: Record<IconName, React.ReactNode> = {
-    home: <><path d="M3 9.5L12 2l9 7.5V20a2 2 0 0 1-2 2h-4v-7h-6v7H5a2 2 0 0 1-2-2V9.5z"/></>,
+    home: <><path d="M3 10.5L12 3l9 7.5V20a2 2 0 0 1-2 2h-4v-7h-6v7H5a2 2 0 0 1-2-2v-9.5z"/></>,
     search: <><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></>,
     bag: <><path d="M3 7h18l-2 12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L3 7z"/><path d="M8 7V5a4 4 0 0 1 8 0v2"/></>,
     chart: <><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="13" y="7" width="3" height="11"/></>,
@@ -40,6 +41,13 @@ export default function Icon({ name, size = 20, color = 'currentColor', strokeWi
     plus: <><path d="M12 5v14M5 12h14"/></>,
     trend: <><path d="M3 17 9 11l4 4 8-8"/><path d="M21 7h-5V7"/><path d="M21 7v5"/></>,
     sparkles: <><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/></>,
+    cursor: <><path d="M3 11l18-7-4 18-5-7-9-4z"/><path d="M12 15l5-8"/></>,
+    cog: <><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></>,
+    shield: <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></>,
+    help: <><circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></>,
+    signOut: <><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></>,
+    bank: <><path d="M3 21h18"/><path d="M3 10h18"/><path d="M5 6l7-3 7 3"/><path d="M4 10v11"/><path d="M20 10v11"/><path d="M8 14v3"/><path d="M12 14v3"/><path d="M16 14v3"/></>,
+    bellOutline: <><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></>,
   };
 
   return (

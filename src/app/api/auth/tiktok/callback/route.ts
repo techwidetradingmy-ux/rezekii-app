@@ -1,37 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
+const CLIENT_KEY = process.env.TIKTOK_CLIENT_KEY!;
+const CLIENT_SECRET = process.env.TIKTOK_CLIENT_SECRET!;
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+const REDIRECT_URI = `${APP_URL}/api/auth/tiktok/callback`;
+
+export async function GET(req: NextRequest) {
+  const { searchParams } = req.nextUrl;
   const code = searchParams.get('code');
   const state = searchParams.get('state');
   const error = searchParams.get('error');
 
-  // Handle errors from TikTok
   if (error) {
     console.error('TikTok OAuth error:', error, searchParams.get('error_description'));
-    return NextResponse.redirect(new URL('/onboarding?error=tiktok_denied', request.url));
+    return NextResponse.redirect(`${APP_URL}/onboarding?error=tiktok_denied`);
   }
 
-  if (!code || !state) {
-    return NextResponse.redirect(new URL('/onboarding?error=missing_params', request.url));
-  }
-
-  // Validate CSRF state
   const cookieStore = await cookies();
-  const savedState = cookieStore.get('tiktok_csrf_state')?.value;
+  const savedState = cookieStore.get('tiktok_oauth_state')?.value;
 
-  if (!savedState || savedState !== state) {
+  if (!state || state !== savedState) {
     console.error('CSRF state mismatch');
-    return NextResponse.redirect(new URL('/onboarding?error=csrf_mismatch', request.url));
+    return NextResponse.redirect(`${APP_URL}/onboarding?error=csrf_mismatch`);
   }
 
-  // Exchange code for access token
-  const clientKey = process.env.TIKTOK_CLIENT_KEY;
-  const clientSecret = process.env.TIKTOK_CLIENT_SECRET;
+  cookieStore.delete('tiktok_oauth_state');
 
-  if (!clientKey || !clientSecret) {
-    return NextResponse.redirect(new URL('/onboarding?error=config_missing', request.url));
+  if (!code) {
+    return NextResponse.redirect(`${APP_URL}/onboarding?error=missing_params`);
+  }
+
+  if (!CLIENT_KEY || !CLIENT_SECRET) {
+    return NextResponse.redirect(`${APP_URL}/onboarding?error=config_missing`);
   }
 
   try {
@@ -39,45 +40,50 @@ export async function GET(request: NextRequest) {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
-        client_key: clientKey,
-        client_secret: clientSecret,
-        code: code,
+        client_key: CLIENT_KEY,
+        client_secret: CLIENT_SECRET,
+        code,
         grant_type: 'authorization_code',
-        redirect_uri: 'https://rezekii.com/api/auth/tiktok/callback',
+        redirect_uri: REDIRECT_URI,
       }),
     });
 
-    const tokenData = await tokenRes.json();
-
-    if (tokenData.error || !tokenData.access_token) {
-      console.error('Token exchange failed:', tokenData);
-      return NextResponse.redirect(new URL('/onboarding?error=token_failed', request.url));
+    if (!tokenRes.ok) {
+      const text = await tokenRes.text();
+      console.error('TikTok token exchange failed:', text);
+      return NextResponse.redirect(`${APP_URL}/onboarding?error=token_failed`);
     }
 
-    // Store access token in httpOnly cookie
-    cookieStore.set('tiktok_token', tokenData.access_token, {
+    const tokenData = await tokenRes.json();
+    const { access_token, open_id, expires_in, refresh_token, refresh_expires_in } = tokenData;
+
+    if (!access_token) {
+      console.error('No access_token in response:', tokenData);
+      return NextResponse.redirect(`${APP_URL}/onboarding?error=token_failed`);
+    }
+
+    const session = JSON.stringify({ access_token, open_id, expires_in, refresh_token, refresh_expires_in });
+    const isProd = process.env.NODE_ENV === 'production';
+
+    cookieStore.set('tiktok_session', session, {
       httpOnly: true,
-      secure: true,
+      secure: isProd,
       sameSite: 'lax',
-      maxAge: tokenData.expires_in || 86400,
+      maxAge: Number(expires_in) || 86400,
       path: '/',
     });
 
-    // Clear CSRF state cookie
-    cookieStore.delete('tiktok_csrf_state');
-
-    // Store onboarded flag
     cookieStore.set('rezekii_onboarded', 'true', {
       httpOnly: false,
-      secure: true,
+      secure: isProd,
       sameSite: 'lax',
       maxAge: 365 * 24 * 60 * 60,
       path: '/',
     });
 
-    return NextResponse.redirect(new URL('/home', request.url));
+    return NextResponse.redirect(`${APP_URL}/home`);
   } catch (err) {
     console.error('Token exchange error:', err);
-    return NextResponse.redirect(new URL('/onboarding?error=exchange_error', request.url));
+    return NextResponse.redirect(`${APP_URL}/onboarding?error=exchange_error`);
   }
 }
