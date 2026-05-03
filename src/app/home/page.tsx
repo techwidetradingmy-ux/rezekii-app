@@ -513,12 +513,41 @@ function ViralProductCarousel({ timeframe, onOpenProduct }: ViralProductCarousel
 // HomePage — main screen
 // ---------------------------------------------------------------------------
 
+function readTikTokUser() {
+  if (typeof document === 'undefined') return null;
+  const raw = document.cookie.split('; ').find(r => r.startsWith('tiktok_user='))?.split('=').slice(1).join('=');
+  if (!raw) return null;
+  try { return JSON.parse(decodeURIComponent(raw)); } catch { return null; }
+}
+
 export default function HomePage() {
   const router = useRouter();
+
+  // Live TikTok profile from cookie
+  const [displayName, setDisplayName] = useState('');
+  useEffect(() => {
+    const u = readTikTokUser();
+    if (u?.display_name) setDisplayName(u.display_name);
+  }, []);
 
   const gmvRanges: string[] = ['Today', 'Yesterday', 'Past 7 days', 'Past 30 days', 'Last month', 'This month', 'Custom '];
   const [gmvRange, setGmvRange] = useState<string>('Today');
   const [rangeOpen, setRangeOpen] = useState(false);
+
+  // Live GMV from dashboard API
+  const [liveGmv, setLiveGmv] = useState<{ amt: string; delta: number; compare: string } | null>(null);
+  useEffect(() => {
+    const rangeMap: Record<string, string> = {
+      'Today': 'Today', 'Yesterday': 'Yesterday',
+      'Past 7 days': 'Past 7 Days', 'Past 30 days': 'Past 30 Days',
+      'Last month': 'Last Month', 'This month': 'This Month',
+    };
+    const apiRange = rangeMap[gmvRange] ?? 'Today';
+    fetch(`/api/tiktok/dashboard?range=${encodeURIComponent(apiRange)}`)
+      .then(r => r.json())
+      .then(d => setLiveGmv({ amt: d.total, delta: d.delta, compare: `${d.deltaLabel} . ${d.prevTotal}` }))
+      .catch(() => {});
+  }, [gmvRange]);
 
   // Custom-range calendar
   const [calOpen, setCalOpen] = useState(false);
@@ -559,17 +588,16 @@ export default function HomePage() {
     return () => clearInterval(id);
   }, [bannerPaused, banners.length]);
 
-  // GMV data per range
-  const gmvData: Record<string, { amt: string; delta: number; compare: string }> = {
-    'Today':         { amt: 'RM 142.00',   delta: 23,  compare: 'vs yesterday . RM 115.40' },
-    'Yesterday':     { amt: 'RM 115.40',   delta: 8,   compare: 'vs day before . RM 106.80' },
-    'Past 7 days':   { amt: 'RM 842.60',   delta: 14,  compare: 'vs previous 7 days . RM 739.20' },
-    'Past 30 days':  { amt: 'RM 3,612.00', delta: 31,  compare: 'vs previous 30 days . RM 2,755.00' },
-    'Last month':    { amt: 'RM 1,012.00', delta: -4,  compare: 'vs month prior . RM 1,054.00' },
-    'This month':    { amt: 'RM 1,245.00', delta: 23,  compare: 'vs last month . RM 1,012.00' },
-    'Custom ':       { amt: 'RM 1,245.00', delta: 23,  compare: 'Select date range' },
+  const gmvFallback: Record<string, { amt: string; delta: number; compare: string }> = {
+    'Today':        { amt: 'RM 142.00',   delta: 23,  compare: 'vs yesterday . RM 115.40' },
+    'Yesterday':    { amt: 'RM 115.40',   delta: 8,   compare: 'vs day before . RM 106.80' },
+    'Past 7 days':  { amt: 'RM 842.60',   delta: 14,  compare: 'vs previous 7 days . RM 739.20' },
+    'Past 30 days': { amt: 'RM 3,612.00', delta: 31,  compare: 'vs previous 30 days . RM 2,755.00' },
+    'Last month':   { amt: 'RM 1,012.00', delta: -4,  compare: 'vs month prior . RM 1,054.00' },
+    'This month':   { amt: 'RM 1,245.00', delta: 23,  compare: 'vs last month . RM 1,012.00' },
+    'Custom ':      { amt: 'RM 1,245.00', delta: 23,  compare: 'Select date range' },
   };
-  const g = gmvData[gmvRange] ?? gmvData['Custom '];
+  const g = liveGmv ?? gmvFallback[gmvRange] ?? gmvFallback['Custom '];
   const gmvDelta = g.delta;
   const deltaPositive = gmvDelta >= 0;
   const deltaColor = deltaPositive ? RZ.green : '#e8005a';
@@ -588,7 +616,7 @@ export default function HomePage() {
               </div>
               <div>
                 <div style={{ color: 'rgba(255,255,255,0.85)', font: `600 13px/1 ${RZ.fontUI}`, marginBottom: 6 }}>Good Morning,</div>
-                <div style={{ color: RZ.white, font: `800 22px/1 ${RZ.fontDisplay}`, letterSpacing: '-0.015em' }}>Aisyah *</div>
+                <div style={{ color: RZ.white, font: `800 22px/1 ${RZ.fontDisplay}`, letterSpacing: '-0.015em' }}>{displayName || 'Creator'}</div>
               </div>
             </div>
             <button

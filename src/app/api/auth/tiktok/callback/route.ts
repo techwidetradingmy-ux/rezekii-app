@@ -66,17 +66,63 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(`${APP_URL}/onboarding?error=token_failed`);
     }
 
+    const isProd = true;
+    const tokenMaxAge = data.expires_in || 86400;
+
     cookieStore.set('tiktok_token', data.access_token, {
       httpOnly: true,
-      secure: true,
+      secure: isProd,
       sameSite: 'lax',
-      maxAge: data.expires_in || 86400,
+      maxAge: tokenMaxAge,
       path: '/',
     });
 
+    // Fetch full user profile — display_name, avatar, username, follower count
+    try {
+      const fields = 'open_id,display_name,avatar_url,username,follower_count,following_count,likes_count,video_count';
+      const userRes = await fetch(
+        `https://open.tiktokapis.com/v2/user/info/?fields=${fields}`,
+        { headers: { Authorization: `Bearer ${data.access_token}` } },
+      );
+      if (userRes.ok) {
+        const userData = await userRes.json();
+        const u = userData?.data?.user ?? {};
+        const followerCount: number = u.follower_count ?? 0;
+        const tier =
+          followerCount >= 1_000_000 ? 'Top Creator' :
+          followerCount >= 100_000   ? 'Tier 3 Creator' :
+          followerCount >= 10_000    ? 'Tier 2 Creator' :
+          followerCount >= 1_000     ? 'Tier 1 Creator' :
+          'Starter Creator';
+        const profile = JSON.stringify({
+          display_name:   u.display_name   ?? '',
+          avatar_url:     u.avatar_url     ?? '',
+          username:       u.username       ?? '',
+          open_id:        u.open_id        ?? data.open_id ?? '',
+          follower_count: followerCount,
+          following_count:u.following_count ?? 0,
+          likes_count:    u.likes_count    ?? 0,
+          video_count:    u.video_count    ?? 0,
+          tier,
+        });
+        cookieStore.set('tiktok_user', profile, {
+          httpOnly: false,
+          secure: isProd,
+          sameSite: 'lax',
+          maxAge: tokenMaxAge,
+          path: '/',
+        });
+        console.log('TikTok user profile stored:', u.display_name, 'followers:', followerCount);
+      } else {
+        console.warn('Could not fetch TikTok user info:', await userRes.text());
+      }
+    } catch (userErr) {
+      console.warn('User info fetch failed (non-fatal):', userErr);
+    }
+
     cookieStore.set('rezekii_onboarded', 'true', {
       httpOnly: false,
-      secure: true,
+      secure: isProd,
       sameSite: 'lax',
       maxAge: 365 * 24 * 60 * 60,
       path: '/',

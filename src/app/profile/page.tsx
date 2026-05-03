@@ -302,6 +302,26 @@ export default function ProfilePage() {
   const router = useRouter();
   const [verifiedOpen, setVerifiedOpen] = useState(false);
 
+  // Live TikTok profile from cookie set during OAuth
+  const [displayName, setDisplayName]   = useState('');
+  const [username, setUsername]         = useState('');
+  const [followerCount, setFollowerCount] = useState(0);
+  const [avatarUrl, setAvatarUrl]       = useState('');
+  const [tier, setTier]                 = useState('');
+
+  useEffect(() => {
+    const raw = document.cookie.split('; ').find(r => r.startsWith('tiktok_user='))?.split('=').slice(1).join('=');
+    if (!raw) return;
+    try {
+      const u = JSON.parse(decodeURIComponent(raw));
+      if (u.display_name)   setDisplayName(u.display_name);
+      if (u.username)       setUsername(u.username);
+      if (u.follower_count) setFollowerCount(u.follower_count);
+      if (u.avatar_url)     setAvatarUrl(u.avatar_url);
+      if (u.tier)           setTier(u.tier);
+    } catch { /* keep defaults */ }
+  }, []);
+
   const handleRow = (href?: string) => {
     if (href) router.push(href);
   };
@@ -345,23 +365,28 @@ export default function ProfilePage() {
             {/* Avatar with edit camera badge */}
             <div style={{ position: 'relative', flexShrink: 0 }}>
               <div style={{ width: 68, height: 68, borderRadius: 999, overflow: 'hidden', border: `3px solid ${RZ.white}`, boxShadow: '0 4px 14px rgba(232,0,90,0.25)' }}>
-                <svg viewBox="0 0 68 68" width="100%" height="100%" style={{ display: 'block' }}>
-                  <defs>
-                    <linearGradient id="avBg" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0" stopColor="#ffb27a" />
-                      <stop offset="1" stopColor="#e8005a" />
-                    </linearGradient>
-                  </defs>
-                  <rect width="68" height="68" fill="url(#avBg)" />
-                  <path d="M6 58c2-22 12-36 28-36s26 14 28 36z" fill="#2b0a1a" />
-                  <ellipse cx="34" cy="36" rx="13" ry="15" fill="#f4c9a1" />
-                  <path d="M16 42c0-14 8-24 18-24s18 10 18 24c-4-4-10-6-18-6s-14 2-18 6z" fill="#3a0f24" />
-                  <ellipse cx="29.5" cy="36" rx="1.3" ry="1.8" fill="#1a0410" />
-                  <ellipse cx="38.5" cy="36" rx="1.3" ry="1.8" fill="#1a0410" />
-                  <path d="M30 42q4 3 8 0" stroke="#8a3a1f" strokeWidth="1.4" fill="none" strokeLinecap="round" />
-                  <circle cx="27" cy="40" r="1.5" fill="#e8005a" opacity=".35" />
-                  <circle cx="41" cy="40" r="1.5" fill="#e8005a" opacity=".35" />
-                </svg>
+                {avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={avatarUrl} alt={displayName} width={68} height={68} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                ) : (
+                  <svg viewBox="0 0 68 68" width="100%" height="100%" style={{ display: 'block' }}>
+                    <defs>
+                      <linearGradient id="avBg" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0" stopColor="#ffb27a" />
+                        <stop offset="1" stopColor="#e8005a" />
+                      </linearGradient>
+                    </defs>
+                    <rect width="68" height="68" fill="url(#avBg)" />
+                    <path d="M6 58c2-22 12-36 28-36s26 14 28 36z" fill="#2b0a1a" />
+                    <ellipse cx="34" cy="36" rx="13" ry="15" fill="#f4c9a1" />
+                    <path d="M16 42c0-14 8-24 18-24s18 10 18 24c-4-4-10-6-18-6s-14 2-18 6z" fill="#3a0f24" />
+                    <ellipse cx="29.5" cy="36" rx="1.3" ry="1.8" fill="#1a0410" />
+                    <ellipse cx="38.5" cy="36" rx="1.3" ry="1.8" fill="#1a0410" />
+                    <path d="M30 42q4 3 8 0" stroke="#8a3a1f" strokeWidth="1.4" fill="none" strokeLinecap="round" />
+                    <circle cx="27" cy="40" r="1.5" fill="#e8005a" opacity=".35" />
+                    <circle cx="41" cy="40" r="1.5" fill="#e8005a" opacity=".35" />
+                  </svg>
+                )}
               </div>
               <div style={{ position: 'absolute', bottom: -2, right: -2, width: 22, height: 22, borderRadius: '50%', background: RZ.green, border: `2px solid ${RZ.white}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
@@ -373,7 +398,7 @@ export default function ProfilePage() {
 
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }}>
-                <div style={{ font: `800 18px/1.1 ${RZ.fontDisplay}`, color: RZ.black, letterSpacing: '-0.01em' }}>Aisyah Rahman</div>
+                <div style={{ font: `800 18px/1.1 ${RZ.fontDisplay}`, color: RZ.black, letterSpacing: '-0.01em' }}>{displayName || 'Creator'}</div>
                 <button
                   onClick={() => setVerifiedOpen(o => !o)}
                   aria-label="Fully verified creator"
@@ -438,10 +463,13 @@ export default function ProfilePage() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
                 <TikTokGlyph size={14} />
-                <span style={{ font: `500 12px/1 ${RZ.fontUI}`, color: RZ.body }}>@aisyah.reviews . 24.3K</span>
+                <span style={{ font: `500 12px/1 ${RZ.fontUI}`, color: RZ.body }}>
+                  {username ? `@${username}` : '@tiktok'}
+                  {followerCount > 0 ? ` . ${followerCount >= 1000 ? `${(followerCount/1000).toFixed(1)}K` : followerCount}` : ''}
+                </span>
               </div>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 8, padding: '4px 9px', borderRadius: 999, background: RZ.greenTint, font: `700 10px/1 ${RZ.fontUI}`, color: RZ.greenDark, textTransform: 'uppercase', letterSpacing: '.06em' }}>
-                <Icon name="sparkles" size={10} color={RZ.greenDark} /> Tier 2 Creator
+                <Icon name="sparkles" size={10} color={RZ.greenDark} /> {tier || 'Creator'}
               </div>
             </div>
           </div>

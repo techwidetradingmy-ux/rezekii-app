@@ -124,14 +124,14 @@ const dataByRange: Record<Exclude<RangeKey, 'Custom...'>, RangeData> = {
   },
 };
 
-const niches: Niche[] = [
+const nichesLocal: Niche[] = [
   { name: 'Beauty', pct: 48, gmv: 'RM 1,733.76', color: '#e8005a' },
   { name: 'Food', pct: 22, gmv: 'RM 794.64', color: '#f5a623' },
   { name: 'Fashion', pct: 18, gmv: 'RM 650.16', color: '#8b5cf6' },
   { name: 'Tech', pct: 12, gmv: 'RM 433.44', color: '#25f4ee' },
 ];
 
-const topProducts: TopProduct[] = [
+const topProductsLocal: TopProduct[] = [
   { name: 'Glow Serum 30ml', cat: 'Beauty', gmv: 'RM 682.00', units: 38, img: '/images/product-beauty.jpg' },
   { name: 'Matte Lip Tint', cat: 'Beauty', gmv: 'RM 425.60', units: 22, img: '/images/product-beauty.jpg' },
   { name: 'Nasi Lemak Sambal', cat: 'Food', gmv: 'RM 378.00', units: 18, img: '/images/product-food.jpg' },
@@ -149,20 +149,50 @@ export default function EarningsPage() {
   const [rangeOpen, setRangeOpen] = useState(false);
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
 
+  // Live data from dashboard API — falls back to static mock while loading
+  const [liveData, setLiveData] = useState<null | {
+    total: string; delta: number; deltaLabel: string; prevTotal: string;
+    bars: number[]; labels: string[]; barDates: string[];
+    productsSold: number; avgPrice: string; gmvPerVideo: string; gmvPerLive: string;
+    videoViews: string; productTypes: number; withdraw: string;
+    topProducts: { name: string; cat: string; gmv: string; units: number; img: string }[];
+    niches: { name: string; pct: number; gmv: string; color: string }[];
+    topPosts: { caption: string; views: string; gmv: string; duration: string; img: string; tag: string; tagColor: string }[];
+  }>(null);
+
+  useEffect(() => {
+    const apiRange = range === 'Custom...' ? 'Past 30 Days' : range;
+    fetch(`/api/tiktok/dashboard?range=${encodeURIComponent(apiRange)}`)
+      .then(r => r.json())
+      .then(setLiveData)
+      .catch(() => {});
+  }, [range]);
+
   const dataKey: Exclude<RangeKey, 'Custom...'> =
     range === 'Custom...' ? 'Past 30 Days' : range;
   const d = dataByRange[dataKey];
-  const bars = d.bars;
+
+  // Merge live API data over static fallback
+  const bars         = liveData?.bars         ?? d.bars;
+  const totalLabel   = liveData?.total        ?? d.total;
+  const deltaVal     = liveData?.delta        ?? d.delta;
+  const deltaLbl     = liveData?.deltaLabel   ?? d.deltaLabel;
+  const prevTotalLbl = liveData?.prevTotal    ?? '';
+  const withdraw     = liveData?.withdraw     ?? 'RM 842.00';
+  const topProducts  = liveData?.topProducts  ?? topProductsLocal;
+  const niches       = liveData?.niches       ?? nichesLocal;
+  const topPostsData = liveData?.topPosts     ?? topPostsLocal;
+
   const maxH = Math.max(...bars);
-  const deltaPositive = d.delta >= 0;
+  const deltaPositive = deltaVal >= 0;
 
   const primaryStats: PrimaryStat[] = [
-    { label: 'Products Sold', value: String(d.productsSold), icon: 'bag', tone: RZ.green, growth: 24 },
-    { label: 'Avg Product GMV', value: d.avgPrice, icon: 'wallet', tone: '#8b5cf6', growth: 12 },
-    { label: 'Avg GMV / Video', value: d.gmvPerVideo, icon: 'play', tone: '#e8005a', growth: -3 },
-    { label: 'Avg GMV / Live', value: d.gmvPerLive, icon: 'trend', tone: '#f5a623', growth: 18 },
-    { label: 'Avg Video Views', value: d.videoViews, icon: 'trend', tone: RZ.cyanText, growth: 31 },
-    { label: 'Product Types Sold', value: String(d.productTypes), icon: 'pkg', tone: RZ.green, growth: 8 },
+    { label: 'Products Sold',     value: String(liveData?.productsSold  ?? d.productsSold),  icon: 'bag',    tone: RZ.green,    growth: 24 },
+    { label: 'Avg Product GMV',   value: liveData?.avgPrice   ?? d.avgPrice,   icon: 'wallet', tone: '#8b5cf6', growth: 12 },
+    { label: 'Avg GMV / Video',   value: liveData?.gmvPerVideo ?? d.gmvPerVideo, icon: 'play',   tone: '#e8005a', growth: -3 },
+    { label: 'Avg GMV / Live',    value: liveData?.gmvPerLive  ?? d.gmvPerLive,  icon: 'trend',  tone: '#f5a623', growth: 18 },
+    { label: 'Avg Video Views',   value: liveData?.videoViews  ?? d.videoViews,  icon: 'trend',  tone: RZ.cyanText, growth: 31 },
+    { label: 'Product Types Sold',value: String(liveData?.productTypes ?? d.productTypes), icon: 'pkg', tone: RZ.green, growth: 8 },
   ];
 
   return (
@@ -246,7 +276,7 @@ export default function EarningsPage() {
               Total . {range}
             </div>
             <div className="rz-earn" style={{ font: `700 24px/1 ${RZ.fontDisplay}`, color: RZ.black, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
-              {d.total}
+              {totalLabel}
             </div>
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 8,
@@ -260,7 +290,7 @@ export default function EarningsPage() {
                   ? <path d="M7 17L17 7M17 7H9M17 7v8" />
                   : <path d="M17 7L7 17M7 17h8M7 17V9" />}
               </svg>
-              {Math.abs(d.delta)}% {d.deltaLabel}
+              {Math.abs(deltaVal)}% {deltaLbl}
             </div>
           </div>
 
@@ -402,7 +432,7 @@ export default function EarningsPage() {
                   Available To Withdraw
                 </div>
                 <div style={{ font: `900 18px/1 ${RZ.fontDisplay}`, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
-                  RM 842.00
+                  {withdraw}
                 </div>
               </div>
             </div>
@@ -431,7 +461,7 @@ export default function EarningsPage() {
                 const R = (SIZE - STROKE) / 2;
                 const C = 2 * Math.PI * R;
                 let acc = 0;
-                const slices = niches.map((n) => {
+                const slices = niches.map((n: { name: string; pct: number; gmv: string; color: string }) => {
                   const len = (n.pct / 100) * C;
                   const dasharray = `${len} ${C - len}`;
                   const dashoffset = -acc + (C / 4);
@@ -518,7 +548,7 @@ export default function EarningsPage() {
             Ranked By GMV Generated . {range}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            {topPostsLocal.map((post, i) => (
+            {topPostsData.map((post, i) => (
               <button key={i} style={{ textDecoration: 'none', border: 0, padding: 0, background: 'transparent', cursor: 'pointer', textAlign: 'left' }}>
                 <div style={{ background: RZ.white, borderRadius: 14, border: `1.5px solid ${RZ.border}`, overflow: 'hidden' }}>
                   <div style={{ position: 'relative', width: '100%', aspectRatio: '9 / 12', background: '#0d1117', overflow: 'hidden' }}>

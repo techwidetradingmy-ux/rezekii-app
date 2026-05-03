@@ -4,7 +4,7 @@ import crypto from 'crypto';
 
 const CLIENT_KEY = process.env.TIKTOK_CLIENT_KEY!;
 const REDIRECT_URI = 'https://rezekii.com/api/auth/tiktok/callback';
-const SCOPES = 'user.info.basic,video.list';
+const SCOPES = 'user.info.basic,user.info.stats,user.info.profile,video.list';
 
 function base64url(buffer: Buffer): string {
     return buffer.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
