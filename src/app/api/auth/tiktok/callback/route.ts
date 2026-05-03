@@ -6,6 +6,12 @@ const CLIENT_SECRET = process.env.TIKTOK_CLIENT_SECRET!;
 const REDIRECT_URI = 'https://rezekii.com/api/auth/tiktok/callback';
 const APP_URL = 'https://rezekii.com';
 
+const COOKIE_OPTS = {
+  secure: true,
+  sameSite: 'lax' as const,
+  path: '/',
+};
+
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const code = searchParams.get('code');
@@ -17,15 +23,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${APP_URL}/onboarding?error=tiktok_denied`);
   }
 
+  // Read request cookies for CSRF + PKCE verification
   const cookieStore = await cookies();
   const savedState = cookieStore.get('tiktok_oauth_state')?.value;
 
-  // Log mismatch but don't block — multiple button clicks can overwrite the cookie
   if (savedState && state !== savedState) {
     console.warn('CSRF state mismatch (non-blocking):', { received: state, saved: savedState });
   }
 
-  cookieStore.delete('tiktok_oauth_state');
+  const codeVerifier = cookieStore.get('tiktok_code_verifier')?.value;
 
   if (!code) {
     return NextResponse.redirect(`${APP_URL}/onboarding?error=missing_params`);
@@ -34,9 +40,6 @@ export async function GET(req: NextRequest) {
   if (!CLIENT_KEY || !CLIENT_SECRET) {
     return NextResponse.redirect(`${APP_URL}/onboarding?error=config_missing`);
   }
-
-  const codeVerifier = cookieStore.get('tiktok_code_verifier')?.value;
-  cookieStore.delete('tiktok_code_verifier');
 
   const tokenParams: Record<string, string> = {
     client_key: CLIENT_KEY,
@@ -66,15 +69,21 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(`${APP_URL}/onboarding?error=token_failed`);
     }
 
-    const isProd = true;
     const tokenMaxAge = data.expires_in || 86400;
 
-    cookieStore.set('tiktok_token', data.access_token, {
+    // Build redirect response and attach all cookies to IT directly
+    const res = NextResponse.redirect(`${APP_URL}/home`);
+
+    res.cookies.set('tiktok_token', data.access_token, {
+      ...COOKIE_OPTS,
       httpOnly: true,
-      secure: isProd,
-      sameSite: 'lax',
       maxAge: tokenMaxAge,
-      path: '/',
+    });
+
+    res.cookies.set('rezekii_onboarded', 'true', {
+      ...COOKIE_OPTS,
+      httpOnly: false,
+      maxAge: 365 * 24 * 60 * 60,
     });
 
     // Fetch full user profile — display_name, avatar, username, follower count
@@ -95,22 +104,20 @@ export async function GET(req: NextRequest) {
           followerCount >= 1_000     ? 'Tier 1 Creator' :
           'Starter Creator';
         const profile = JSON.stringify({
-          display_name:   u.display_name   ?? '',
-          avatar_url:     u.avatar_url     ?? '',
-          username:       u.username       ?? '',
-          open_id:        u.open_id        ?? data.open_id ?? '',
-          follower_count: followerCount,
-          following_count:u.following_count ?? 0,
-          likes_count:    u.likes_count    ?? 0,
-          video_count:    u.video_count    ?? 0,
+          display_name:    u.display_name    ?? '',
+          avatar_url:      u.avatar_url      ?? '',
+          username:        u.username        ?? '',
+          open_id:         u.open_id         ?? data.open_id ?? '',
+          follower_count:  followerCount,
+          following_count: u.following_count ?? 0,
+          likes_count:     u.likes_count     ?? 0,
+          video_count:     u.video_count     ?? 0,
           tier,
         });
-        cookieStore.set('tiktok_user', encodeURIComponent(profile), {
+        res.cookies.set('tiktok_user', encodeURIComponent(profile), {
+          ...COOKIE_OPTS,
           httpOnly: false,
-          secure: isProd,
-          sameSite: 'lax',
           maxAge: tokenMaxAge,
-          path: '/',
         });
         console.log('TikTok user profile stored:', u.display_name, 'followers:', followerCount);
       } else {
@@ -120,15 +127,11 @@ export async function GET(req: NextRequest) {
       console.warn('User info fetch failed (non-fatal):', userErr);
     }
 
-    cookieStore.set('rezekii_onboarded', 'true', {
-      httpOnly: false,
-      secure: isProd,
-      sameSite: 'lax',
-      maxAge: 365 * 24 * 60 * 60,
-      path: '/',
-    });
+    // Clear CSRF + PKCE cookies
+    res.cookies.delete('tiktok_oauth_state');
+    res.cookies.delete('tiktok_code_verifier');
 
-    return NextResponse.redirect(`${APP_URL}/home`);
+    return res;
   } catch (err) {
     console.error('Token exchange error:', err);
     return NextResponse.redirect(`${APP_URL}/onboarding?error=exchange_error`);
