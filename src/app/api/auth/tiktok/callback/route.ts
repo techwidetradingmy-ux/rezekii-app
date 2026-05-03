@@ -105,7 +105,7 @@ export async function GET(req: NextRequest) {
           video_count:    u.video_count    ?? 0,
           tier,
         });
-        cookieStore.set('tiktok_user', profile, {
+        cookieStore.set('tiktok_user', encodeURIComponent(profile), {
           httpOnly: false,
           secure: isProd,
           sameSite: 'lax',
