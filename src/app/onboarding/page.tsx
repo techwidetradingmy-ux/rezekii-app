@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { RZ } from '@/lib/rz';
 import Icon from '@/components/ui/Icon';
 
@@ -12,7 +11,6 @@ const features = [
 ];
 
 export default function OnboardingPage() {
-  const router = useRouter();
   const [i, setI] = useState(0);
 
   useEffect(() => {
@@ -21,8 +19,7 @@ export default function OnboardingPage() {
   }, []);
 
   const handleContinue = () => {
-    localStorage.setItem('rezekii_onboarded', 'true');
-    router.push('/home');
+    window.location.href = '/api/auth/tiktok';
   };
 
   return (
