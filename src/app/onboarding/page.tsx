@@ -1,8 +1,6 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { RZ } from '@/lib/rz';
 import Icon from '@/components/ui/Icon';
@@ -1072,7 +1070,7 @@ type Slide = {
   Gfx: React.FC;
 };
 
-export default function OnboardingPage() {
+function OnboardingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const shopStep = searchParams.get('shop_step') === '1';
@@ -1177,5 +1175,13 @@ export default function OnboardingPage() {
         <OBText eyebrow={s.eyebrow} headline={s.headline} sub={s.sub} theme={s.theme}/>
       </OBChrome>
     </div>
+  );
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100dvh', background: '#fff' }} />}>
+      <OnboardingContent />
+    </Suspense>
   );
 }
