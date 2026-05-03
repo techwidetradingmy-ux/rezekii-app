@@ -71,8 +71,13 @@ export async function GET(req: NextRequest) {
 
     const tokenMaxAge = data.expires_in || 86400;
 
+    // First-time onboarding? Send user back to connect TikTok Shop next.
+    // Re-logins (cookie already present) go straight to /home.
+    const alreadyOnboarded = cookieStore.get('rezekii_onboarded')?.value === 'true';
+    const postAuthDest = alreadyOnboarded ? `${APP_URL}/home` : `${APP_URL}/onboarding?shop_step=1`;
+
     // Build redirect response and attach all cookies to IT directly
-    const res = NextResponse.redirect(`${APP_URL}/home`);
+    const res = NextResponse.redirect(postAuthDest);
 
     res.cookies.set('tiktok_token', data.access_token, {
       ...COOKIE_OPTS,

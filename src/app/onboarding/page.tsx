@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { RZ } from '@/lib/rz';
 import Icon from '@/components/ui/Icon';
 import TikTokGlyph from '@/components/ui/TikTokGlyph';
@@ -94,10 +94,10 @@ function OBText({ eyebrow, headline, sub, theme = 'light' }: { eyebrow: string; 
 // OBChrome ??shared scaffold (top logo + skip + progress + bottom CTA pair)
 // ===================================================================
 function OBChrome({
-  idx, total, onPrev, onNext, onSkip, theme = 'light', children,
+  idx, total, onPrev, onNext, onSkip, theme = 'light', shopStep, children,
 }: {
   idx: number; total: number; onPrev: () => void; onNext: () => void; onSkip: () => void;
-  theme?: 'light' | 'dark'; children: React.ReactNode;
+  theme?: 'light' | 'dark'; shopStep?: boolean; children: React.ReactNode;
 }) {
   const isLast = idx === total - 1;
   const isFirst = idx === 0;
@@ -133,51 +133,119 @@ function OBChrome({
       <div style={{ padding: `0 22px clamp(14px,env(safe-area-inset-bottom,16px),30px)`, pointerEvents: 'auto', flexShrink: 0, overflowY: 'auto', maxHeight: '68dvh' }}>
         {children}
         {isLast ? (
-          /* ── Last slide: T&C above, back + TikTok CTA row ── */
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 22 }}>
-            <div style={{
-              textAlign: 'center',
-              font: `400 11px/1.4 ${RZ.fontUI}`,
-              color: theme === 'dark' ? 'rgba(255,255,255,0.45)' : RZ.muted,
-            }}>
-              By continuing, you agree to our{' '}
-              <span style={{ textDecoration: 'underline', cursor: 'pointer' }}>Terms</span>
-              {' '}&amp;{' '}
-              <span style={{ textDecoration: 'underline', cursor: 'pointer' }}>Privacy Policy</span>.
-            </div>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              <button onClick={onPrev} style={{
-                width: 48, height: 52, borderRadius: 12, flexShrink: 0,
-                background: 'rgba(13,17,23,0.06)',
-                border: '1px solid rgba(13,17,23,0.10)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer',
-              }}><Icon name="chevL" size={17} color={inkFg}/></button>
+          shopStep ? (
+            /* ── Last slide · shop_step=1: TikTok ✅ connected → now connect Shop ── */
+            <div className="ob-anim" style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 22 }}>
+
+              {/* TikTok connected pill */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '9px 14px', borderRadius: 10,
+                background: 'rgba(0,192,115,0.10)',
+                border: '1px solid rgba(0,192,115,0.28)',
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill={RZ.green}><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005.8 20.1a6.34 6.34 0 0010.86-4.43V9.01a8.16 8.16 0 004.77 1.52V7.09a4.85 4.85 0 01-1.84-.4z"/></svg>
+                <span style={{ font: `600 12.5px/1 ${RZ.fontUI}`, color: RZ.green, flex: 1 }}>TikTok Connected</span>
+                {/* checkmark */}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={RZ.green} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              </div>
+
+              {/* TikTok Shop connect button */}
               <button
-                onClick={onNext}
+                onClick={() => { window.location.href = '/api/auth/tiktok-shop/connect'; }}
                 style={{
-                  flex: 1, height: 52, borderRadius: 12, border: 0, cursor: 'pointer',
-                  background: '#000', color: '#fff',
+                  width: '100%', height: 54, borderRadius: 12, border: 0, cursor: 'pointer',
+                  background: 'linear-gradient(135deg, #ff0050 0%, #ff6b35 100%)',
+                  color: '#fff',
                   font: `700 15px/1 ${RZ.fontUI}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                  boxShadow: '0 10px 28px rgba(0,0,0,0.38)',
+                  boxShadow: '0 10px 28px rgba(255,0,80,0.35)',
                   position: 'relative', overflow: 'hidden',
                 }}>
                 <span aria-hidden="true" style={{
                   position: 'absolute', inset: 0, pointerEvents: 'none',
-                  background: 'linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.18) 50%, transparent 65%)',
+                  background: 'linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.2) 50%, transparent 65%)',
                   transform: 'translateX(-120%)',
                   animation: 'rzBtnSheen 3.6s ease-in-out infinite',
                 }}/>
                 <span style={{ position: 'relative', zIndex: 1, display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="white" style={{ display: 'block', flexShrink: 0 }}>
-                    <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005.8 20.1a6.34 6.34 0 0010.86-4.43V9.01a8.16 8.16 0 004.77 1.52V7.09a4.85 4.85 0 01-1.84-.4z"/>
+                  {/* TikTok Shop bag icon */}
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <path d="M16 10a4 4 0 0 1-8 0"/>
                   </svg>
-                  Continue with TikTok
+                  Connect TikTok Shop
                 </span>
               </button>
+
+              {/* What you unlock */}
+              <div style={{ display: 'flex', gap: 12, padding: '4px 0' }}>
+                {['GMV & earnings', 'Orders & products', 'Available to withdraw'].map(t => (
+                  <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={RZ.green} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                    <span style={{ font: `500 10px/1 ${RZ.fontUI}`, color: inkMuted, whiteSpace: 'nowrap' as const }}>{t}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Skip */}
+              <button
+                onClick={() => { window.location.href = '/home'; }}
+                style={{
+                  background: 'transparent', border: 0, cursor: 'pointer', textAlign: 'center',
+                  font: `500 12px/1 ${RZ.fontUI}`, color: inkMuted, padding: '4px 0',
+                }}>
+                Skip for now — connect later in Settings
+              </button>
             </div>
-          </div>
+          ) : (
+            /* ── Last slide · default: T&C above, back + TikTok CTA row ── */
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 22 }}>
+              <div style={{
+                textAlign: 'center',
+                font: `400 11px/1.4 ${RZ.fontUI}`,
+                color: theme === 'dark' ? 'rgba(255,255,255,0.45)' : RZ.muted,
+              }}>
+                By continuing, you agree to our{' '}
+                <span style={{ textDecoration: 'underline', cursor: 'pointer' }}>Terms</span>
+                {' '}&amp;{' '}
+                <span style={{ textDecoration: 'underline', cursor: 'pointer' }}>Privacy Policy</span>.
+              </div>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <button onClick={onPrev} style={{
+                  width: 48, height: 52, borderRadius: 12, flexShrink: 0,
+                  background: 'rgba(13,17,23,0.06)',
+                  border: '1px solid rgba(13,17,23,0.10)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer',
+                }}><Icon name="chevL" size={17} color={inkFg}/></button>
+                <button
+                  onClick={onNext}
+                  style={{
+                    flex: 1, height: 52, borderRadius: 12, border: 0, cursor: 'pointer',
+                    background: '#000', color: '#fff',
+                    font: `700 15px/1 ${RZ.fontUI}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                    boxShadow: '0 10px 28px rgba(0,0,0,0.38)',
+                    position: 'relative', overflow: 'hidden',
+                  }}>
+                  <span aria-hidden="true" style={{
+                    position: 'absolute', inset: 0, pointerEvents: 'none',
+                    background: 'linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.18) 50%, transparent 65%)',
+                    transform: 'translateX(-120%)',
+                    animation: 'rzBtnSheen 3.6s ease-in-out infinite',
+                  }}/>
+                  <span style={{ position: 'relative', zIndex: 1, display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="white" style={{ display: 'block', flexShrink: 0 }}>
+                      <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005.8 20.1a6.34 6.34 0 0010.86-4.43V9.01a8.16 8.16 0 004.77 1.52V7.09a4.85 4.85 0 01-1.84-.4z"/>
+                    </svg>
+                    Continue with TikTok
+                  </span>
+                </button>
+              </div>
+            </div>
+          )
         ) : (
           /* ── All other slides: back chevron + next button (back on slide 1 goes to /splash) ── */
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 22 }}>
@@ -1004,6 +1072,8 @@ type Slide = {
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const shopStep = searchParams.get('shop_step') === '1';
   const slides: Slide[] = [
     { key: 'commission', eyebrow: '01 · Commission',      headline: <>Earn <span style={{ color: RZ.cyan }}>Up To +5% Or More</span> On Every Sale</>, sub: <>Sellers pay Rezekii creators extra commission on every eligible product — <b style={{ color: '#fff' }}>a guaranteed minimum of +1%</b> on top of the TikTok open-plan rate, scaling up to +5% or more as you rank up.</>, theme: 'dark',  Gfx: OBCommission },
     { key: 'rank',       eyebrow: '02 · Rank Up',         headline: <>Jom, Verify, <span style={{ color: RZ.green }}>Start Earning.</span></>, sub: <>Outside the programme you&apos;re at 0%. Join Rezekii and verify to unlock <b style={{ color: RZ.black }}>+1%</b> and climb toward higher tiers under our MCN. Applies to selected eligible products — not every listing qualifies.</>, theme: 'light', Gfx: OBRank },
@@ -1015,10 +1085,15 @@ export default function OnboardingPage() {
     { key: 'casestudy',  eyebrow: '08 · Latest Drops',    headline: <>Everything You Need, <span style={{ color: '#e8005a' }}>In One Feed</span></>, sub: 'Viral products, policy updates, winning content formats, and live-selling strategy — delivered as they happen. Login with TikTok to unlock.', theme: 'light', Gfx: OBCaseStudy },
   ];
 
-  const [i, setI] = useState(0);
+  const [i, setI] = useState(() => shopStep ? slides.length - 1 : 0);
   const total = slides.length;
   const s = slides[i];
   const Gfx = s.Gfx;
+
+  // If ?shop_step=1 arrives after mount (rare), jump to last slide
+  useEffect(() => {
+    if (shopStep) setI(slides.length - 1);
+  }, [shopStep, slides.length]);
 
   // Touch swipe support
   const touchRef = useRef<{ startX: number; startY: number; locked: 'x' | 'y' | null } | null>(null);
@@ -1095,6 +1170,7 @@ export default function OnboardingPage() {
         onPrev={goPrev}
         onNext={goNext}
         onSkip={goSkip}
+        shopStep={shopStep}
       >
         <OBText eyebrow={s.eyebrow} headline={s.headline} sub={s.sub} theme={s.theme}/>
       </OBChrome>

@@ -293,8 +293,14 @@ function handleLogout(router: ReturnType<typeof useRouter>) {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('rezekii_onboarded');
   }
+  // Clear TikTok Open Platform cookies
+  document.cookie = 'tiktok_token=; path=/; max-age=0';
+  document.cookie = 'tiktok_user=; path=/; max-age=0';
+  document.cookie = 'rezekii_onboarded=; path=/; max-age=0';
   document.cookie = 'tiktok_session=; path=/; max-age=0';
   document.cookie = 'tiktok_oauth_state=; path=/; max-age=0';
+  // Clear TikTok Shop cookies
+  document.cookie = 'tts_shop_connected=; path=/; max-age=0';
   router.replace('/splash');
 }
 
@@ -309,6 +315,9 @@ export default function ProfilePage() {
   const [avatarUrl, setAvatarUrl]       = useState('');
   const [tier, setTier]                 = useState('');
 
+  // TikTok Shop connection state (read from client-visible cookie)
+  const [shopConnected, setShopConnected] = useState(false);
+
   useEffect(() => {
     fetch('/api/me')
       .then(r => r.json())
@@ -321,6 +330,10 @@ export default function ProfilePage() {
         if (u.tier)           setTier(u.tier);
       })
       .catch(() => {});
+
+    // Check if TikTok Shop is already connected
+    const connected = document.cookie.split(';').some(c => c.trim().startsWith('tts_shop_connected='));
+    setShopConnected(connected);
   }, []);
 
   const handleRow = (href?: string) => {
@@ -480,6 +493,110 @@ export default function ProfilePage() {
             <MiniStat n="18" l="Samples" />
             <MiniStat n="4.9*" l="Creator score" />
           </div>
+        </div>
+
+        {/* TikTok Shop connection card */}
+        <div style={{ margin: '14px 16px 0' }}>
+          {shopConnected ? (
+            /* ── Connected state ── */
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '12px 14px', borderRadius: 14,
+              background: RZ.greenTint,
+              border: `1.5px solid rgba(0,192,115,0.28)`,
+            }}>
+              {/* Shop bag icon */}
+              <div style={{
+                width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                background: RZ.green,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                  <line x1="3" y1="6" x2="21" y2="6"/>
+                  <path d="M16 10a4 4 0 0 1-8 0"/>
+                </svg>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ font: `700 13px/1 ${RZ.fontUI}`, color: RZ.greenDark }}>TikTok Shop Connected</div>
+                <div style={{ font: `500 11px/1 ${RZ.fontUI}`, color: RZ.green, marginTop: 3 }}>
+                  Earnings &amp; GMV are synced
+                </div>
+              </div>
+              {/* Check */}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={RZ.green} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 6 9 17l-5-5"/>
+              </svg>
+            </div>
+          ) : (
+            /* ── Not connected state ── */
+            <div style={{
+              borderRadius: 14, overflow: 'hidden',
+              border: '1.5px solid rgba(255,0,80,0.18)',
+              background: 'linear-gradient(135deg, #fff8f9 0%, #fff4f8 100%)',
+            }}>
+              <div style={{ padding: '14px 14px 0', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                {/* Icon */}
+                <div style={{
+                  width: 40, height: 40, borderRadius: 11, flexShrink: 0,
+                  background: 'linear-gradient(135deg, #ff0050 0%, #ff6b35 100%)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 4px 12px rgba(255,0,80,0.30)',
+                }}>
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <path d="M16 10a4 4 0 0 1-8 0"/>
+                  </svg>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ font: `700 13.5px/1 ${RZ.fontUI}`, color: RZ.black }}>Connect TikTok Shop</div>
+                  <div style={{ font: `500 11.5px/1.35 ${RZ.fontUI}`, color: RZ.muted, marginTop: 4 }}>
+                    Unlock your real GMV, orders &amp; available to withdraw
+                  </div>
+                  {/* Feature chips */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 5, marginTop: 8 }}>
+                    {['GMV tracking', 'Orders', 'Withdraw balance', 'Top products'].map(label => (
+                      <span key={label} style={{
+                        padding: '3px 7px', borderRadius: 999,
+                        background: 'rgba(255,0,80,0.08)',
+                        font: `600 10px/1 ${RZ.fontUI}`, color: '#e8005a',
+                        border: '1px solid rgba(255,0,80,0.15)',
+                      }}>{label}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              {/* CTA button */}
+              <div style={{ padding: '12px 14px 14px' }}>
+                <button
+                  onClick={() => { window.location.href = '/api/auth/tiktok-shop/connect'; }}
+                  style={{
+                    width: '100%', height: 44, borderRadius: 10, border: 0, cursor: 'pointer',
+                    background: 'linear-gradient(135deg, #ff0050 0%, #ff6b35 100%)',
+                    color: '#fff',
+                    font: `700 13.5px/1 ${RZ.fontUI}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    boxShadow: '0 6px 18px rgba(255,0,80,0.32)',
+                    position: 'relative', overflow: 'hidden',
+                  }}
+                >
+                  <span aria-hidden="true" style={{
+                    position: 'absolute', inset: 0, pointerEvents: 'none',
+                    background: 'linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.18) 50%, transparent 65%)',
+                    transform: 'translateX(-120%)',
+                    animation: 'rzBtnSheen 3.6s ease-in-out infinite',
+                  }}/>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'relative', zIndex: 1 }}>
+                    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <path d="M16 10a4 4 0 0 1-8 0"/>
+                  </svg>
+                  <span style={{ position: 'relative', zIndex: 1 }}>Connect TikTok Shop</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Streak + sections */}
