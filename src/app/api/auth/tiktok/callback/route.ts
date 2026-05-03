@@ -35,21 +35,23 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${APP_URL}/onboarding?error=config_missing`);
   }
 
-  const codeVerifier = cookieStore.get('tiktok_code_verifier')?.value || '';
+  const codeVerifier = cookieStore.get('tiktok_code_verifier')?.value;
   cookieStore.delete('tiktok_code_verifier');
+
+  const tokenParams: Record<string, string> = {
+    client_key: CLIENT_KEY,
+    client_secret: CLIENT_SECRET,
+    code,
+    grant_type: 'authorization_code',
+    redirect_uri: REDIRECT_URI,
+  };
+  if (codeVerifier) tokenParams.code_verifier = codeVerifier;
 
   try {
     const tokenRes = await fetch('https://open.tiktokapis.com/v2/oauth/token/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_key: CLIENT_KEY,
-        client_secret: CLIENT_SECRET,
-        code,
-        grant_type: 'authorization_code',
-        redirect_uri: REDIRECT_URI,
-        code_verifier: codeVerifier,
-      }),
+      body: new URLSearchParams(tokenParams),
     });
 
     if (!tokenRes.ok) {
@@ -60,7 +62,7 @@ export async function GET(req: NextRequest) {
 
     const data = await tokenRes.json();
     if (!data.access_token) {
-      console.error('No access_token in response:', data);
+      console.error('No access_token in response:', JSON.stringify(data));
       return NextResponse.redirect(`${APP_URL}/onboarding?error=token_failed`);
     }
 
