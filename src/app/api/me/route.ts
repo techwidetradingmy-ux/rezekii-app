@@ -1,16 +1,17 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
+const TESTER_FOLLOWER_COUNT = 24300;
 const TESTER_FALLBACK = {
-  authenticated: true,
+  authenticated:   true,
   display_name:    'HomeFitHacks',
   username:        'homefithacksofficial',
   avatar_url:      '',
-  follower_count:  24300,
+  follower_count:  TESTER_FOLLOWER_COUNT,
   following_count: 0,
   likes_count:     0,
   video_count:     0,
-  tier:            'Tier 1 Creator',
+  tier:            deriveTier(TESTER_FOLLOWER_COUNT),
 };
 
 function deriveTier(n: number) {
