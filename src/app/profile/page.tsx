@@ -310,16 +310,17 @@ export default function ProfilePage() {
   const [tier, setTier]                 = useState('');
 
   useEffect(() => {
-    const raw = document.cookie.split('; ').find(r => r.startsWith('tiktok_user='))?.split('=').slice(1).join('=');
-    if (!raw) return;
-    try {
-      const u = JSON.parse(decodeURIComponent(raw));
-      if (u.display_name)   setDisplayName(u.display_name);
-      if (u.username)       setUsername(u.username);
-      if (u.follower_count) setFollowerCount(u.follower_count);
-      if (u.avatar_url)     setAvatarUrl(u.avatar_url);
-      if (u.tier)           setTier(u.tier);
-    } catch { /* keep defaults */ }
+    fetch('/api/me')
+      .then(r => r.json())
+      .then(u => {
+        if (!u.authenticated) return;
+        if (u.display_name)   setDisplayName(u.display_name);
+        if (u.username)       setUsername(u.username);
+        if (u.follower_count) setFollowerCount(u.follower_count);
+        if (u.avatar_url)     setAvatarUrl(u.avatar_url);
+        if (u.tier)           setTier(u.tier);
+      })
+      .catch(() => {});
   }, []);
 
   const handleRow = (href?: string) => {

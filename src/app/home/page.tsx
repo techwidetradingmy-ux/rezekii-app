@@ -513,21 +513,16 @@ function ViralProductCarousel({ timeframe, onOpenProduct }: ViralProductCarousel
 // HomePage — main screen
 // ---------------------------------------------------------------------------
 
-function readTikTokUser() {
-  if (typeof document === 'undefined') return null;
-  const raw = document.cookie.split('; ').find(r => r.startsWith('tiktok_user='))?.split('=').slice(1).join('=');
-  if (!raw) return null;
-  try { return JSON.parse(decodeURIComponent(raw)); } catch { return null; }
-}
-
 export default function HomePage() {
   const router = useRouter();
 
-  // Live TikTok profile from cookie
+  // Live TikTok profile from server-side /api/me
   const [displayName, setDisplayName] = useState('');
   useEffect(() => {
-    const u = readTikTokUser();
-    if (u?.display_name) setDisplayName(u.display_name);
+    fetch('/api/me')
+      .then(r => r.json())
+      .then(u => { if (u?.display_name) setDisplayName(u.display_name); })
+      .catch(() => {});
   }, []);
 
   const gmvRanges: string[] = ['Today', 'Yesterday', 'Past 7 days', 'Past 30 days', 'Last month', 'This month', 'Custom '];
