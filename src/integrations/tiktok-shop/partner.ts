@@ -1,4 +1,5 @@
 import { callApi } from "./api.ts";
+import type { AffiliateOrder } from "./creator.ts";
 
 export type CategoryAsset = { cipher: string; target_market?: string; category?: { id: number; name: string } };
 
@@ -54,5 +55,17 @@ export function campaignProductLink(accessToken: string, cipher: string, campaig
     accessToken,
     query: { category_asset_cipher: cipher },
     body: creatorRate ? { creator_commission_rate: creatorRate } : undefined,
+  });
+}
+
+
+/** Every order through Techwide's TAP campaigns (all creators). With only `create_time_lt`, TikTok starts from the earliest data it has. */
+export function searchTapOrders(accessToken: string, cipher: string, opts: { pageSize?: number; pageToken?: string; campaignId?: string; createTimeLt?: number } = {}) {
+  return callApi<{ orders?: AffiliateOrder[]; next_page_token?: string; total_count?: number }>({
+    method: "POST",
+    path: "/affiliate_partner/202411/orders/search",
+    accessToken,
+    query: { category_asset_cipher: cipher, page_size: String(opts.pageSize ?? 100), ...(opts.pageToken ? { page_token: opts.pageToken } : {}) },
+    body: { ...(opts.campaignId ? { campaign_id: opts.campaignId } : {}), create_time_lt: opts.createTimeLt ?? Math.floor(Date.now() / 1000) },
   });
 }

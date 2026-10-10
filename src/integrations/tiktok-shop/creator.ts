@@ -85,3 +85,35 @@ export function addShowcaseByLink(accessToken: string, link: string) {
     body: { add_type: "PRODUCT_LINK", product_link: link },
   });
 }
+
+export type Money = { amount: string; currency: string };
+export type OrderSku = {
+  id?: string;
+  product_id?: string;
+  product_name?: string;
+  shop_name?: string;
+  price?: Money;
+  quantity?: number;
+  refunded_quantity?: number;
+  returned_quantity?: number;
+  estimated_commission?: Money;
+  actual_commission?: Money;
+  actual_commission_base?: Money;
+  campaign_id?: string;
+  content_id?: string;
+  content_type?: string;
+  tag?: string;
+  creator_username?: string;
+};
+export type AffiliateOrder = { id: string; status?: string; create_time?: number; delivery_time?: number; skus?: OrderSku[] | OrderSku };
+
+/** The creator's own affiliate orders. With only `create_time_lt`, TikTok starts from the earliest data it has. */
+export function searchCreatorOrders(accessToken: string, opts: { pageSize?: number; pageToken?: string; createTimeGe?: number; createTimeLt?: number } = {}) {
+  return callApi<{ orders?: AffiliateOrder[]; next_page_token?: string }>({
+    method: "POST",
+    path: "/affiliate_creator/202410/orders/search",
+    accessToken,
+    query: { page_size: String(opts.pageSize ?? 20), ...(opts.pageToken ? { page_token: opts.pageToken } : {}) },
+    body: { ...(opts.createTimeGe ? { create_time_ge: opts.createTimeGe } : {}), create_time_lt: opts.createTimeLt ?? Math.floor(Date.now() / 1000) },
+  });
+}
