@@ -10,15 +10,15 @@ const MESSAGES: Record<string, { title: string; body: string; retry?: boolean }>
   "partner-not-allowed": { title: "Partner account not allowed", body: "This Partner Center account isn't on the test list, so nothing was saved." },
 };
 
-export default async function Connected({ searchParams }: { searchParams: Promise<{ result?: string; name?: string }> }) {
-  const { result, name } = await searchParams;
+export default async function Connected({ searchParams }: { searchParams: Promise<{ result?: string; id?: string }> }) {
+  const { result, id } = await searchParams;
   const msg = MESSAGES[result ?? ""] ?? MESSAGES.error;
   return (
     <Splash>
       <h1>{msg.title}</h1>
       <p>
         {msg.body}
-        {result === "partner-not-allowed" && name ? ` (TikTok called it "${name}".)` : ""}
+        {result === "partner-not-allowed" && id ? ` (TikTok's partner ID: ${id})` : ""}
         {msg.retry && (
           <>
             {" "}

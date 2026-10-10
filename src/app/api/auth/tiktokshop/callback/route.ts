@@ -64,11 +64,11 @@ export async function GET(req: NextRequest) {
 /** Partner Center login (Techwide, for TAP campaigns). Returns the /connected result. */
 async function connectPartner(tokens: TokenSet): Promise<string> {
   const name = tokens.seller_name || "Partner account";
-  if (!isAllowedPartnerDuringProof(name)) return "partner-not-allowed&name=" + encodeURIComponent(name);
   if (!tokens.open_id) {
     console.error("[tiktokshop] partner token has no open_id");
     return "error";
   }
+  if (!isAllowedPartnerDuringProof(tokens.open_id)) return "partner-not-allowed&id=" + encodeURIComponent(tokens.open_id);
   const assets = await getCategoryAssets(tokens.access_token);
   if (assets.code !== 0) console.error("[tiktokshop] category assets failed", assets.code, assets.message, assets.request_id);
   await savePartnerConnection({ openId: tokens.open_id, name, assets: assets.data?.category_assets }, tokens);

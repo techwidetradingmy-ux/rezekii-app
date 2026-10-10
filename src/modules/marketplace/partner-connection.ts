@@ -3,11 +3,13 @@ import type { TokenSet } from "../../integrations/tiktok-shop/auth.ts";
 import type { CategoryAsset } from "../../integrations/tiktok-shop/partner.ts";
 import { decryptToken, encryptToken } from "../creator-accounts/token-crypto.ts";
 
-/** During the v0.1 proof only partners whose name contains one of these (env PROOF_PARTNER_NAMES, comma-separated) may connect. */
-export function isAllowedPartnerDuringProof(name: string): boolean {
-  const wanted = (process.env.PROOF_PARTNER_NAMES ?? "").split(",").map((w) => w.trim().toLowerCase()).filter(Boolean);
-  const have = name.trim().toLowerCase();
-  return !!have && wanted.some((w) => have.includes(w));
+/**
+ * During the v0.1 proof only these partner IDs (env PROOF_PARTNER_IDS, comma-separated) may connect.
+ * Matched on TikTok's ID, not the name: TikTok calls every partner "Partner account".
+ */
+export function isAllowedPartnerDuringProof(openId: string | undefined): boolean {
+  const wanted = (process.env.PROOF_PARTNER_IDS ?? "").split(",").map((w) => w.trim()).filter(Boolean);
+  return !!openId && wanted.includes(openId.trim());
 }
 
 const isoFromUnix = (seconds: number) => new Date(seconds * 1000).toISOString();
