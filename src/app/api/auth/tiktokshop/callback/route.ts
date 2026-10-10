@@ -1,6 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { exchangeAuthCode } from "@/integrations/tiktok-shop/auth.ts";
 import { getCreatorProfile } from "@/integrations/tiktok-shop/creator.ts";
+import { getCategoryAssets } from "@/integrations/tiktok-shop/partner.ts";
+import type { TokenSet } from "@/integrations/tiktok-shop/auth.ts";
+import { isAllowedPartnerDuringProof, savePartnerConnection } from "@/modules/marketplace/partner-connection.ts";
 import { isAllowedDuringProof, saveAffiliateConnection } from "@/modules/creator-accounts/affiliate-connections.ts";
 import { STATE_COOKIE, STATE_COOKIE_OPTIONS, stateMatches } from "../state.ts";
 
@@ -25,6 +28,7 @@ export async function GET(req: NextRequest) {
       return finish("error");
     }
     const tokens = tokenReply.data;
+    if (tokens.user_type === 3) return finish(await connectPartner(tokens));
 
     const profileReply = await getCreatorProfile(tokens.access_token);
     if (profileReply.code !== 0 || !profileReply.data) {
@@ -55,4 +59,18 @@ export async function GET(req: NextRequest) {
     console.error("[tiktokshop] callback error", err instanceof Error ? err.message : err);
     return finish("error");
   }
+}
+
+/** Partner Center login (Techwide, for TAP campaigns). Returns the /connected result. */
+async function connectPartner(tokens: TokenSet): Promise<string> {
+  const name = tokens.seller_name || "Partner account";
+  if (!isAllowedPartnerDuringProof(name)) return "partner-not-allowed&name=" + encodeURIComponent(name);
+  if (!tokens.open_id) {
+    console.error("[tiktokshop] partner token has no open_id");
+    return "error";
+  }
+  const assets = await getCategoryAssets(tokens.access_token);
+  if (assets.code !== 0) console.error("[tiktokshop] category assets failed", assets.code, assets.message, assets.request_id);
+  await savePartnerConnection({ openId: tokens.open_id, name, assets: assets.data?.category_assets }, tokens);
+  return "partner-connected";
 }

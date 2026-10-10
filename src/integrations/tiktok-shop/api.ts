@@ -9,8 +9,8 @@ export type ApiReply<T> = {
   data?: T;
 };
 
-/** Calls a TikTok Shop creator API with the creator's access token. */
-export async function callCreatorApi<T>(opts: {
+/** Calls a TikTok Shop API with a creator's or partner's access token. */
+export async function callApi<T>(opts: {
   method: "GET" | "POST";
   path: string;
   accessToken: string;

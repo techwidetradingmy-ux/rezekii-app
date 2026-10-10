@@ -1,4 +1,4 @@
-import { AUTH_BASE, CREATOR_AUTH_URL, appCredentials } from "./config.ts";
+import { AUTH_BASE, CREATOR_AUTH_URL, PARTNER_AUTH_URL, SERVICE_ID, appCredentials } from "./config.ts";
 import type { ApiReply } from "./api.ts";
 
 export type TokenSet = {
@@ -9,7 +9,10 @@ export type TokenSet = {
   /** Unix seconds when the refresh token expires. */
   refresh_token_expire_in: number;
   open_id?: string;
+  /** 1 = creator, 3 = partner (0 = seller). */
   user_type?: number;
+  /** Shop or partner name, when TikTok sends one. */
+  seller_name?: string;
   granted_scopes?: string[];
 };
 
@@ -17,6 +20,11 @@ export type TokenSet = {
 export function creatorAuthUrl(state: string): string {
   const { appKey } = appCredentials();
   return `${CREATOR_AUTH_URL}?${new URLSearchParams({ app_key: appKey, state })}`;
+}
+
+/** Where Techwide's Partner Center account approves Rezekii (TAP campaigns). */
+export function partnerAuthUrl(state: string): string {
+  return `${PARTNER_AUTH_URL}?${new URLSearchParams({ service_id: SERVICE_ID, state })}`;
 }
 
 async function tokenRequest(path: string, grant: Record<string, string>): Promise<ApiReply<TokenSet>> {

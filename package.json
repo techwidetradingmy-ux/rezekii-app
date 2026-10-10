@@ -10,7 +10,9 @@
     "lint": "eslint",
     "test": "node --test \"src/**/*.test.ts\"",
     "typecheck": "tsc --noEmit",
-    "proof:links": "node --env-file=.env.local scripts/proof-link-converter.ts"
+    "proof:links": "node --env-file=.env.local scripts/proof-link-converter.ts",
+    "proof:lookup": "node --env-file=.env.local scripts/proof-lookup.ts",
+    "proof:tap": "node --env-file=.env.local scripts/proof-tap.ts"
   },
   "dependencies": {
     "next": "16.2.4",
