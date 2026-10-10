@@ -1,7 +1,7 @@
 import { test, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { lookupProducts, addShowcaseByLink } from "./creator.ts";
-import { campaignProductLink, listCampaigns } from "./partner.ts";
+import { TAP_CATEGORY, campaignProductLink, listCampaignProducts, listCampaigns, tapAsset } from "./partner.ts";
 import { partnerAuthUrl, creatorAuthUrl } from "./auth.ts";
 import { signRequest } from "./sign.ts";
 
@@ -35,22 +35,42 @@ test("lookup sends comma-joined product IDs, signed", async () => {
   assert.ok(signatureMatches(c));
 });
 
-test("partner calls carry the category asset cipher", async () => {
+test("campaign list carries the cipher and always a status (TikTok rejects it without one)", async () => {
   await listCampaigns("ptok", "CIPHER1");
   const c = calls[0];
   assert.equal(c.url.searchParams.get("category_asset_cipher"), "CIPHER1");
   assert.equal(c.url.searchParams.get("type"), "MY_CAMPAIGNS");
   assert.equal(c.url.searchParams.get("page_size"), "20");
+  assert.equal(c.url.searchParams.get("status"), "UNSPECIFIED");
   assert.ok(signatureMatches(c));
+  await listCampaigns("ptok", "CIPHER1", { status: "ONGOING" });
+  assert.equal(calls[1].url.searchParams.get("status"), "ONGOING");
 });
 
-test("campaign link without a rate sends no body; with a rate sends it", async () => {
-  await campaignProductLink("ptok", "C", "camp1", "prod1");
+test("campaign products default to approved only", async () => {
+  await listCampaignProducts("ptok", "C", "camp1");
+  assert.equal(calls[0].url.pathname, "/affiliate_partner/202405/campaigns/camp1/products");
+  assert.equal(calls[0].url.searchParams.get("review_status"), "APPROVED");
+  assert.ok(signatureMatches(calls[0]));
+});
+
+test("campaign link always sends the creator rate, including 0", async () => {
+  await campaignProductLink("ptok", "C", "camp1", "prod1", 1100);
   assert.equal(calls[0].url.pathname, "/affiliate_partner/202405/campaigns/camp1/products/prod1/promotion_link/generate");
-  assert.equal(calls[0].init.body, undefined);
-  await campaignProductLink("ptok", "C", "camp1", "prod1", 1500);
-  assert.equal(calls[1].init.body, JSON.stringify({ creator_commission_rate: 1500 }));
-  assert.ok(signatureMatches(calls[1]));
+  assert.equal(calls[0].init.body, JSON.stringify({ creator_commission_rate: 1100 }));
+  assert.ok(signatureMatches(calls[0]));
+  await campaignProductLink("ptok", "C", "camp1", "prod1", 0);
+  assert.equal(calls[1].init.body, JSON.stringify({ creator_commission_rate: 0 }));
+});
+
+test("TAP asset is picked by category name and market, not the first asset", () => {
+  const assets = [
+    { cipher: "PROMO", target_market: "MY", category: { id: 1, name: "Promotions" } },
+    { cipher: "CAP", target_market: "MY", category: { id: 2, name: "Creator Management" } },
+    { cipher: "TAP", target_market: "MY", category: { id: 3, name: TAP_CATEGORY } },
+  ];
+  assert.equal(tapAsset(assets)?.cipher, "TAP");
+  assert.equal(tapAsset(assets, "TH"), undefined);
 });
 
 test("showcase add uses PRODUCT_LINK", async () => {

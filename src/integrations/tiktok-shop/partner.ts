@@ -8,15 +8,27 @@ export function getCategoryAssets(accessToken: string) {
   return callApi<{ category_assets?: CategoryAsset[] }>({ method: "GET", path: "/authorization/202405/category_assets", accessToken });
 }
 
-export type Campaign = { id: string; name: string; status: string; campaign_start_time?: number; campaign_end_time?: number; registration_start_time?: number; registration_end_time?: number };
+/** TikTok's name for the TAP (affiliate partner) category. Campaign and TAP order calls reject every other category's cipher. */
+export const TAP_CATEGORY = "Seller and Scalable Creator Match-Up";
 
-/** Techwide's own TAP campaigns (type MY_CAMPAIGNS). */
-export function listCampaigns(accessToken: string, cipher: string, pageSize = 20) {
+/** The partner's TAP category asset for one market. */
+export function tapAsset(assets: CategoryAsset[], market = "MY"): CategoryAsset | undefined {
+  return assets.find((a) => a.category?.name === TAP_CATEGORY && (a.target_market ?? "").toUpperCase() === market);
+}
+
+export type Campaign = { id: string; name: string; status: string; campaign_start_time?: number; campaign_end_time?: number; registration_start_time?: number; registration_end_time?: number };
+export type CampaignStatus = "READY" | "UPCOMING" | "ONGOING" | "CLOSED" | "UNSPECIFIED";
+
+/**
+ * Techwide's own TAP campaigns (type MY_CAMPAIGNS). `status` is always sent: without it TikTok
+ * rejects the call (16032001 "review_status"), although its docs mark it optional. UNSPECIFIED = all.
+ */
+export function listCampaigns(accessToken: string, cipher: string, opts: { status?: CampaignStatus; pageSize?: number } = {}) {
   return callApi<{ campaigns?: Campaign[]; next_page_token?: string; total_count?: number }>({
     method: "GET",
     path: "/affiliate_partner/202405/campaigns",
     accessToken,
-    query: { category_asset_cipher: cipher, page_size: String(pageSize), type: "MY_CAMPAIGNS" },
+    query: { category_asset_cipher: cipher, page_size: String(opts.pageSize ?? 20), type: "MY_CAMPAIGNS", status: opts.status ?? "UNSPECIFIED" },
   });
 }
 
@@ -34,27 +46,35 @@ export type CampaignProduct = {
   open_collaboration_commission_rate?: number;
   partner_commission_rate?: number;
   creator_commission_rate?: number;
+  /** The most a link can give the creator. */
+  total_commission_rate?: number;
   lowest_price?: { amount: string; currency: string };
   highest_price?: { amount: string; currency: string };
 };
 
-export function listCampaignProducts(accessToken: string, cipher: string, campaignId: string, pageSize = 20) {
-  return callApi<{ products?: CampaignProduct[]; next_page_token?: string }>({
+export type ProductReviewStatus = "PENDING" | "APPROVED" | "REJECTED" | "PENDING_CLOSED" | "CLOSED";
+
+/** Products in one campaign; approved ones by default, since only those can be promoted. */
+export function listCampaignProducts(accessToken: string, cipher: string, campaignId: string, opts: { reviewStatus?: ProductReviewStatus; pageSize?: number } = {}) {
+  return callApi<{ products?: CampaignProduct[]; next_page_token?: string; total_count?: number }>({
     method: "GET",
     path: `/affiliate_partner/202405/campaigns/${campaignId}/products`,
     accessToken,
-    query: { category_asset_cipher: cipher, page_size: String(pageSize) },
+    query: { category_asset_cipher: cipher, page_size: String(opts.pageSize ?? 20), review_status: opts.reviewStatus ?? "APPROVED" },
   });
 }
 
-/** A promotion link for one campaign product; sales through it count for the TAP campaign. */
-export function campaignProductLink(accessToken: string, cipher: string, campaignId: string, productId: string, creatorRate?: number) {
+/**
+ * A promotion link for one campaign product; sales through it count for the TAP campaign.
+ * `creatorRate` (×100, e.g. 1100 = 11%) is required by TikTok; 0 is allowed. It cannot exceed the product's total rate.
+ */
+export function campaignProductLink(accessToken: string, cipher: string, campaignId: string, productId: string, creatorRate: number) {
   return callApi<{ product_promotion_link?: string }>({
     method: "POST",
     path: `/affiliate_partner/202405/campaigns/${campaignId}/products/${productId}/promotion_link/generate`,
     accessToken,
     query: { category_asset_cipher: cipher },
-    body: creatorRate ? { creator_commission_rate: creatorRate } : undefined,
+    body: { creator_commission_rate: creatorRate },
   });
 }
 

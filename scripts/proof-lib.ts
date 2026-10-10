@@ -1,7 +1,7 @@
 /** Shared helpers for the v0.1 proof scripts: load + refresh stored tokens, format replies, write reports to docs/proof/. */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { refreshTokens } from "../src/integrations/tiktok-shop/auth.ts";
-import { getCategoryAssets } from "../src/integrations/tiktok-shop/partner.ts";
+import { TAP_CATEGORY, getCategoryAssets, tapAsset } from "../src/integrations/tiktok-shop/partner.ts";
 import { getAffiliateConnection, saveAffiliateConnection } from "../src/modules/creator-accounts/affiliate-connections.ts";
 import { getPartnerConnection, savePartnerConnection } from "../src/modules/marketplace/partner-connection.ts";
 
@@ -40,8 +40,8 @@ export async function partnerSession(): Promise<{ token: string; cipher: string;
     if (a.code !== 0) fail(`Get Authorized Category Assets failed: ${a.code} ${a.message} (request ${a.request_id})`);
     assets = a.data?.category_assets ?? [];
   }
-  const pick = assets.find((x) => (x.target_market ?? "").toUpperCase() === "MY") ?? assets[0];
-  if (!pick) fail("The partner authorized no business category for Rezekii. Re-authorize and tick the category.");
+  const pick = tapAsset(assets);
+  if (!pick) fail(`The partner's "${TAP_CATEGORY}" (TAP) category for MY was not authorized. Re-authorize and tick it.`);
   return { token, cipher: pick.cipher, name: conn.name, market: pick.target_market ?? "?", category: pick.category?.name ?? "?" };
 }
 

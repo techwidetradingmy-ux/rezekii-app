@@ -15,13 +15,16 @@ const wantShowcase = args.includes("--showcase");
 const HANDLE = process.env.PROOF_HANDLE ?? "tinawellnesshacks";
 
 const p = await partnerSession();
-const camps = await listCampaigns(p.token, p.cipher);
+const camps = await listCampaigns(p.token, p.cipher, { status: "ONGOING", pageSize: 50 });
 const clist = camps.data?.campaigns ?? [];
-const campaign = flag("campaign") ? clist.find((c) => c.id === flag("campaign")) : clist.find((c) => c.status === "ONGOING") ?? clist[0];
+const campaign = flag("campaign") ? clist.find((c) => c.id === flag("campaign")) : clist[0];
 const prods = campaign ? await listCampaignProducts(p.token, p.cipher, campaign.id) : null;
 const plist = prods?.data?.products ?? [];
-const product = flag("product") ? plist.find((x) => x.id === flag("product")) : plist.find((x) => x.review_status === "APPROVED") ?? plist[0];
-const link = campaign && product ? await campaignProductLink(p.token, p.cipher, campaign.id, product.id) : null;
+const product = flag("product") ? plist.find((x) => x.id === flag("product")) : plist.find((x) => typeof x.open_collaboration_commission_rate === "number") ?? plist[0];
+// Test link at Open Plan + 1% (the Proven level), never above the product's total commission.
+const open = product?.open_collaboration_commission_rate;
+const creatorRate = typeof open === "number" ? Math.min(open + 100, product?.total_commission_rate ?? open + 100) : undefined;
+const link = campaign && product && creatorRate !== undefined ? await campaignProductLink(p.token, p.cipher, campaign.id, product.id, creatorRate) : null;
 const promo = link?.data?.product_promotion_link;
 const showcase = wantShowcase && promo ? await addShowcaseByLink(await creatorToken(HANDLE), promo) : null;
 
@@ -32,7 +35,7 @@ const out = [
   "",
   "## Techwide's TAP campaigns",
   "",
-  `\`GET /affiliate_partner/202405/campaigns\` (MY_CAMPAIGNS) → ${status(camps)} · ${camps.data?.total_count ?? clist.length} campaigns`,
+  `\`GET /affiliate_partner/202405/campaigns\` (MY_CAMPAIGNS, ONGOING) → ${status(camps)} · ${camps.data?.total_count ?? clist.length} campaigns`,
   "",
   "| Campaign | ID | Status | Runs | Registration |",
   "|---|---|---|---|---|",
@@ -40,15 +43,15 @@ const out = [
   "",
   `## Products in "${campaign?.name ?? "—"}"`,
   "",
-  `\`GET /affiliate_partner/202405/campaigns/{id}/products\` → ${status(prods)} · ${plist.length} on the first page`,
+  `\`GET /affiliate_partner/202405/campaigns/{id}/products\` (APPROVED) → ${status(prods)} · ${plist.length} on the first page`,
   "",
-  "| Product | ID | Shop | Review | Open | Partner (TAP) | Creator | Sales | Sample quota |",
+  "| Product | ID | Shop | Review | Open | Partner (TAP) | Total | Sales | Sample quota |",
   "|---|---|---|---|---|---|---|---|---|",
-  ...plist.map((x) => `| ${cell(x.name)}${product && x.id === product.id ? " ← link made" : ""} | ${x.id} | ${cell(x.shop_name)} | ${cell(x.review_status)} | ${pct(x.open_collaboration_commission_rate)} | ${pct(x.partner_commission_rate)} | ${pct(x.creator_commission_rate)} | ${cell(x.product_sales)} | ${cell(x.sample_quota)} |`),
+  ...plist.map((x) => `| ${cell(x.name)}${product && x.id === product.id ? " ← link made" : ""} | ${x.id} | ${cell(x.shop_name)} | ${cell(x.review_status)} | ${pct(x.open_collaboration_commission_rate)} | ${pct(x.partner_commission_rate)} | ${pct(x.total_commission_rate)} | ${cell(x.product_sales)} | ${cell(x.sample_quota)} |`),
   "",
   "## Campaign product link",
   "",
-  `\`POST …/promotion_link/generate\` → ${status(link)}`,
+  `\`POST …/promotion_link/generate\` at creator rate ${pct(creatorRate)} (Open Plan + 1%) → ${status(link)}`,
   "",
   promo ? `Link: ${promo}` : "No link returned.",
   "",
