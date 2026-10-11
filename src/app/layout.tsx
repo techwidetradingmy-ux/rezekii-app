@@ -5,8 +5,8 @@ import "./globals.css";
 const albertSans = Albert_Sans({ subsets: ["latin"], weight: ["400", "700", "800"], display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Rezekii",
-  description: "TikTok affiliate tools by Techwide. Coming soon.",
+  title: "Rezekii · TikTok creator platform",
+  description: "Schedule your TikTok posts, see what sells, promote Techwide's TikTok Shop campaigns and level up from Bronze to Gold.",
   metadataBase: new URL("https://rezekii.com"),
 };
 
