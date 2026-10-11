@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { currentUser } from "./current-user";
 
 export const COMPANY = "Techwide Marketing Sdn Bhd";
 export const COMPANY_NO = "202001017785";
@@ -19,8 +20,9 @@ export function TikTokLogo({ size = 22 }: { size?: number }) {
   );
 }
 
-/** Top bar. "hero" sits on the green band; "plain" is for legal and other inner pages. */
-export function SiteNav({ variant }: { variant: "hero" | "plain" }) {
+/** Top bar. "hero" sits on the green band; "plain" is for legal and other inner pages. Signed-in people get "My account" instead of "Sign in". */
+export async function SiteNav({ variant }: { variant: "hero" | "plain" }) {
+  const user = await currentUser();
   const nav = (
     <nav className="site-nav site-wrap" aria-label="Main">
       <Link href="/" className="site-brand">
@@ -42,9 +44,20 @@ export function SiteNav({ variant }: { variant: "hero" | "plain" }) {
           <Link href="/terms">Terms of Service</Link>
         </>
       )}
-      <Link href="/signin" className="site-signin">
-        Sign in
-      </Link>
+      {user ? (
+        <Link href="/app" className="site-signin site-account">
+          {user.avatar_url ? (
+            // Avatars come from many TikTok and Google CDN hosts, so a plain img (as on /app).
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={user.avatar_url} alt="" width={26} height={26} />
+          ) : null}
+          My account
+        </Link>
+      ) : (
+        <Link href="/signin" className="site-signin">
+          Sign in
+        </Link>
+      )}
     </nav>
   );
   return variant === "hero" ? nav : <header className="site-plainnav">{nav}</header>;
