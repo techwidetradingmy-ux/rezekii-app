@@ -1,7 +1,7 @@
 import { test, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { lookupProducts, addShowcaseByLink } from "./creator.ts";
-import { TAP_CATEGORY, campaignProductLink, listCampaignProducts, listCampaigns, tapAsset } from "./partner.ts";
+import { TAP_CATEGORY, campaignProductLink, listCampaignProductStats, listCampaignProducts, listCampaigns, listCreatorContent, listProductCreators, tapAsset } from "./partner.ts";
 import { partnerAuthUrl, creatorAuthUrl } from "./auth.ts";
 import { signRequest } from "./sign.ts";
 
@@ -61,6 +61,27 @@ test("campaign link always sends the creator rate, including 0", async () => {
   assert.ok(signatureMatches(calls[0]));
   await campaignProductLink("ptok", "C", "camp1", "prod1", 0);
   assert.equal(calls[1].init.body, JSON.stringify({ creator_commission_rate: 0 }));
+});
+
+test("performance calls: per-product stats and per-product creators, paged, with the cipher", async () => {
+  await listCampaignProductStats("ptok", "C", "camp1");
+  assert.equal(calls[0].url.pathname, "/affiliate_partner/202501/campaigns/camp1/products/performance");
+  assert.equal(calls[0].url.searchParams.get("page_size"), "50");
+  assert.equal(calls[0].url.searchParams.get("category_asset_cipher"), "C");
+  assert.equal(calls[0].url.searchParams.get("page_token"), null);
+  await listProductCreators("ptok", "C", "camp1", "prod1", { pageToken: "NEXT" });
+  assert.equal(calls[1].url.pathname, "/affiliate_partner/202501/campaigns/camp1/products/prod1/performance");
+  assert.equal(calls[1].url.searchParams.get("page_token"), "NEXT");
+  assert.ok(signatureMatches(calls[1]));
+});
+
+test("creator content uses version 202501 with a word content type", async () => {
+  const creator = { affiliate_product_id: "AP1", creator: { creator_temp_id: "TEMP1" } };
+  await listCreatorContent("ptok", "C", "camp1", "prod1", creator, "VIDEO");
+  assert.equal(calls[0].url.pathname, "/affiliate_partner/202501/campaigns/camp1/products/prod1/creator/TEMP1/content/statistics");
+  assert.equal(calls[0].url.searchParams.get("affiliate_product_id"), "AP1");
+  assert.equal(calls[0].url.searchParams.get("content_type"), "VIDEO");
+  assert.ok(signatureMatches(calls[0]));
 });
 
 test("TAP asset is picked by category name and market, not the first asset", () => {

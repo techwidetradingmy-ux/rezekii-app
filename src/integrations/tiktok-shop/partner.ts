@@ -1,5 +1,5 @@
 import { callApi } from "./api.ts";
-import type { AffiliateOrder } from "./creator.ts";
+import type { Money } from "./creator.ts";
 
 export type CategoryAsset = { cipher: string; target_market?: string; category?: { id: number; name: string } };
 
@@ -23,12 +23,12 @@ export type CampaignStatus = "READY" | "UPCOMING" | "ONGOING" | "CLOSED" | "UNSP
  * Techwide's own TAP campaigns (type MY_CAMPAIGNS). `status` is always sent: without it TikTok
  * rejects the call (16032001 "review_status"), although its docs mark it optional. UNSPECIFIED = all.
  */
-export function listCampaigns(accessToken: string, cipher: string, opts: { status?: CampaignStatus; pageSize?: number } = {}) {
+export function listCampaigns(accessToken: string, cipher: string, opts: { status?: CampaignStatus; pageSize?: number; pageToken?: string } = {}) {
   return callApi<{ campaigns?: Campaign[]; next_page_token?: string; total_count?: number }>({
     method: "GET",
     path: "/affiliate_partner/202405/campaigns",
     accessToken,
-    query: { category_asset_cipher: cipher, page_size: String(opts.pageSize ?? 20), type: "MY_CAMPAIGNS", status: opts.status ?? "UNSPECIFIED" },
+    query: { category_asset_cipher: cipher, page_size: String(opts.pageSize ?? 20), type: "MY_CAMPAIGNS", status: opts.status ?? "UNSPECIFIED", ...(opts.pageToken ? { page_token: opts.pageToken } : {}) },
   });
 }
 
@@ -78,14 +78,90 @@ export function campaignProductLink(accessToken: string, cipher: string, campaig
   });
 }
 
+// TikTok retired TAP order search (202411/orders/search) on 2026-06-30. The calls below replace it.
+// They have no date filter: every amount is a lifetime total. Numbers arrive as strings ("911.40", "1000").
 
-/** Every order through Techwide's TAP campaigns (all creators). With only `create_time_lt`, TikTok starts from the earliest data it has. */
-export function searchTapOrders(accessToken: string, cipher: string, opts: { pageSize?: number; pageToken?: string; campaignId?: string; createTimeLt?: number } = {}) {
-  return callApi<{ orders?: AffiliateOrder[]; next_page_token?: string; total_count?: number }>({
-    method: "POST",
-    path: "/affiliate_partner/202411/orders/search",
+type Page = { pageSize?: number; pageToken?: string };
+const pageQuery = (cipher: string, p: Page, size: number) => ({ category_asset_cipher: cipher, page_size: String(p.pageSize ?? size), ...(p.pageToken ? { page_token: p.pageToken } : {}) });
+
+export type CampaignProductStats = {
+  campaign_product_detail?: {
+    product_id: string;
+    product_name?: string;
+    product_status?: string;
+    /** Rates ×100, e.g. "1000" = 10%. */
+    plan_commission_percent?: string;
+    creator_commission_percent?: string;
+    partner_commission_percent?: string;
+    total_commission_percent?: string;
+    product_price?: { currency?: string; min_price?: string; max_price?: string };
+    indicator_data?: { actual_amount?: string; actual_order_num?: string; paid_order_num?: string; estimated_amount?: string; actual_partner_commission?: string; estimated_partner_commission?: string };
+  };
+  promoted_creator_num?: number;
+  collaborated_creators_num?: number;
+  creator_sales_num?: number;
+  sample_requested_creator_num?: number;
+  data_update_time?: string;
+};
+
+/** Sales and creator counts for each product in one campaign. */
+export function listCampaignProductStats(accessToken: string, cipher: string, campaignId: string, page: Page = {}) {
+  return callApi<{ campaign_product_statistics?: CampaignProductStats[]; next_page_token?: string; total_count?: number }>({
+    method: "GET",
+    path: `/affiliate_partner/202501/campaigns/${campaignId}/products/performance`,
     accessToken,
-    query: { category_asset_cipher: cipher, page_size: String(opts.pageSize ?? 100), ...(opts.pageToken ? { page_token: opts.pageToken } : {}) },
-    body: { ...(opts.campaignId ? { campaign_id: opts.campaignId } : {}), create_time_lt: opts.createTimeLt ?? Math.floor(Date.now() / 1000) },
+    query: pageQuery(cipher, page, 50),
+  });
+}
+
+export type ProductCreator = {
+  affiliate_product_id: string;
+  /** Rate ×100. */
+  commission?: string;
+  /** `creator_temp_id` is valid for one hour. */
+  creator: { creator_temp_id: string; user_name?: string; nick_name?: string; follower_num?: number; avatar_url?: string };
+  paid_amount?: Money;
+  video_count?: number;
+  room_count?: number;
+  /** e.g. "NotRequested" (TikTok's docs say NOT_REQUESTED). */
+  free_sample_status?: string;
+  effective_start_time?: string;
+  effective_end_time?: string;
+};
+
+/** Every creator promoting one campaign product: sales, video and LIVE counts, rate and sample status. */
+export function listProductCreators(accessToken: string, cipher: string, campaignId: string, productId: string, page: Page = {}) {
+  return callApi<{ promotion_creators?: ProductCreator[]; next_page_token?: string; total_creator_count?: number }>({
+    method: "GET",
+    path: `/affiliate_partner/202501/campaigns/${campaignId}/products/${productId}/performance`,
+    accessToken,
+    query: pageQuery(cipher, page, 50),
+  });
+}
+
+export type CreatorContent = {
+  content_type?: string;
+  /** Unix seconds as a string. */
+  published_date?: string;
+  /** Formatted with the currency, e.g. "RM12.30". */
+  paid_amount?: string;
+  paid_order_num?: string;
+  view_count?: string;
+  like_count?: string;
+  comment_num?: string;
+  linked_tiktok_video?: string;
+  source_url?: string;
+};
+
+/**
+ * One creator's videos or LIVEs for one campaign product. Version 202501 on purpose: the documented 202508 version
+ * rejects the `creator_temp_id` from listProductCreators ("Invalid open_id").
+ */
+export function listCreatorContent(accessToken: string, cipher: string, campaignId: string, productId: string, creator: ProductCreator, contentType: "VIDEO" | "LIVE_ROOM") {
+  return callApi<{ creator_content_statistics?: CreatorContent[] }>({
+    method: "GET",
+    path: `/affiliate_partner/202501/campaigns/${campaignId}/products/${productId}/creator/${creator.creator.creator_temp_id}/content/statistics`,
+    accessToken,
+    query: { category_asset_cipher: cipher, affiliate_product_id: creator.affiliate_product_id, content_type: contentType },
   });
 }
