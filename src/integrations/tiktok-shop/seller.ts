@@ -47,17 +47,18 @@ export function searchMarketplaceCreators(accessToken: string, cipher: string, f
   });
 }
 
-export type BestsellingCreator = { rank?: number; username?: string; nickname?: string; avatar_url?: string; follower_count?: number; like_count?: number; gmv_range?: Range };
+/** `gmv_range` is a plain string here, e.g. "MYR38562398.30~MYR60426989.28". */
+export type BestsellingCreator = { rank?: number; open_id?: string; user_name?: string; nick_name?: string; followers_count?: number; likes_count?: number; gmv_range?: string };
 
 /**
- * Get Bestselling Creators: TikTok's top 100 sellers' creators for the market (1D, 7D or 30D).
- * Not in the local API spec, so the reply is typed loosely until a real call confirms its shape.
+ * Get Bestselling Creators: TikTok's top 100 creators in the market for the period ending on `date` (YYYY-MM-DD).
+ * Not in the local API spec; confirmed by a real call (2026-10-12): `date` and `author_type` (ALL or AFFILIATE) are required.
  */
-export function getBestsellingCreators(accessToken: string, cipher: string, timeSlot: "1D" | "7D" | "30D" = "30D", version = "202511") {
-  return callApi<Record<string, unknown>>({
+export function getBestsellingCreators(accessToken: string, cipher: string, opts: { date: string; timeSlot?: "1D" | "7D" | "30D"; authorType?: "ALL" | "AFFILIATE" }) {
+  return callApi<{ creators?: BestsellingCreator[] }>({
     method: "GET",
-    path: `/analytics/${version}/creators/bestselling`,
+    path: "/analytics/202511/creators/bestselling",
     accessToken,
-    query: { shop_cipher: cipher, time_slot: timeSlot },
+    query: { shop_cipher: cipher, date: opts.date, time_slot: opts.timeSlot ?? "30D", author_type: opts.authorType ?? "ALL" },
   });
 }
