@@ -13,7 +13,8 @@
     "proof:links": "node --env-file=.env.local scripts/proof-link-converter.ts",
     "proof:lookup": "node --env-file=.env.local scripts/proof-lookup.ts",
     "proof:tap": "node --env-file=.env.local scripts/proof-tap.ts",
-    "proof:orders": "node --env-file=.env.local scripts/proof-orders.ts"
+    "proof:orders": "node --env-file=.env.local scripts/proof-orders.ts",
+    "proof:seller": "node --env-file=.env.local scripts/proof-seller.ts"
   },
   "dependencies": {
     "next": "16.2.4",

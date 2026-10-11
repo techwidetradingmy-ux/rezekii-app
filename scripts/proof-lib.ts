@@ -4,6 +4,7 @@ import { refreshTokens } from "../src/integrations/tiktok-shop/auth.ts";
 import { TAP_CATEGORY, getCategoryAssets, tapAsset } from "../src/integrations/tiktok-shop/partner.ts";
 import { getAffiliateConnection, saveAffiliateConnection } from "../src/modules/creator-accounts/affiliate-connections.ts";
 import { getPartnerConnection, savePartnerConnection } from "../src/modules/marketplace/partner-connection.ts";
+import { getSellerConnection, saveSellerConnection } from "../src/modules/marketplace/seller-connection.ts";
 
 const soon = (d: Date) => d.getTime() < Date.now() + 10 * 60 * 1000;
 
@@ -43,6 +44,20 @@ export async function partnerSession(): Promise<{ token: string; cipher: string;
   const pick = tapAsset(assets);
   if (!pick) fail(`The partner's "${TAP_CATEGORY}" (TAP) category for MY was not authorized. Re-authorize and tick it.`);
   return { token, cipher: pick.cipher, name: conn.name, market: pick.target_market ?? "?", category: pick.category?.name ?? "?" };
+}
+
+/** A connected seller shop's token (refreshed if needed) and shop cipher. */
+export async function sellerSession(): Promise<{ token: string; cipher: string; shop: string; region: string }> {
+  const conn = await getSellerConnection();
+  if (!conn) fail("No seller shop has linked yet. Open https://rezekii.com/api/auth/tiktokshop/start?as=seller while signed in to Seller Center.");
+  let token = conn.accessToken;
+  if (soon(conn.accessExpiresAt)) {
+    const r = await refreshTokens(conn.refreshToken);
+    if (r.code !== 0 || !r.data) fail(`Seller token refresh failed: ${r.code} ${r.message}`);
+    await saveSellerConnection(conn.shop, r.data);
+    token = r.data.access_token;
+  }
+  return { token, cipher: conn.shop.cipher, shop: conn.shop.name, region: conn.shop.region ?? "?" };
 }
 
 export const status = (r: { code: number; message: string; request_id?: string } | null | undefined) =>

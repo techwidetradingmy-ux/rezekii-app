@@ -2,8 +2,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { exchangeAuthCode } from "@/integrations/tiktok-shop/auth.ts";
 import { getCreatorProfile } from "@/integrations/tiktok-shop/creator.ts";
 import { getCategoryAssets } from "@/integrations/tiktok-shop/partner.ts";
+import { getAuthorizedShops } from "@/integrations/tiktok-shop/seller.ts";
 import type { TokenSet } from "@/integrations/tiktok-shop/auth.ts";
 import { isAllowedPartnerDuringProof, savePartnerConnection } from "@/modules/marketplace/partner-connection.ts";
+import { isAllowedSellerDuringProof, saveSellerConnection } from "@/modules/marketplace/seller-connection.ts";
 import { isAllowedDuringProof, saveAffiliateConnection } from "@/modules/creator-accounts/affiliate-connections.ts";
 import { STATE_COOKIE, STATE_COOKIE_OPTIONS, stateMatches } from "../state.ts";
 
@@ -29,6 +31,7 @@ export async function GET(req: NextRequest) {
     }
     const tokens = tokenReply.data;
     if (tokens.user_type === 3) return finish(await connectPartner(tokens));
+    if (tokens.user_type === 0) return finish(await connectSeller(tokens));
 
     const profileReply = await getCreatorProfile(tokens.access_token);
     if (profileReply.code !== 0 || !profileReply.data) {
@@ -73,4 +76,18 @@ async function connectPartner(tokens: TokenSet): Promise<string> {
   if (assets.code !== 0) console.error("[tiktokshop] category assets failed", assets.code, assets.message, assets.request_id);
   await savePartnerConnection({ openId: tokens.open_id, name, assets: assets.data?.category_assets }, tokens);
   return "partner-connected";
+}
+
+/** Seller Center login (a seller shop such as Zemvello Wellness, for marketplace creator data). Returns the /connected result. */
+async function connectSeller(tokens: TokenSet): Promise<string> {
+  const reply = await getAuthorizedShops(tokens.access_token);
+  const shops = reply.data?.shops ?? [];
+  if (reply.code !== 0 || !shops.length) {
+    console.error("[tiktokshop] authorized shops failed", reply.code, reply.message, reply.request_id);
+    return "error";
+  }
+  const allowed = shops.filter((s) => isAllowedSellerDuringProof(s.name));
+  if (!allowed.length) return "seller-not-allowed&id=" + encodeURIComponent(shops.map((s) => s.name).join(", "));
+  for (const shop of allowed) await saveSellerConnection(shop, tokens);
+  return "seller-connected";
 }

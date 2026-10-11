@@ -1,4 +1,4 @@
-import { AUTH_BASE, CREATOR_AUTH_URL, PARTNER_AUTH_URL, SERVICE_ID, appCredentials } from "./config.ts";
+import { AUTH_BASE, CREATOR_AUTH_URL, PARTNER_AUTH_URL, SELLER_AUTH_URL, SERVICE_ID, appCredentials } from "./config.ts";
 import type { ApiReply } from "./api.ts";
 
 export type TokenSet = {
@@ -25,6 +25,11 @@ export function creatorAuthUrl(state: string): string {
 /** Where Techwide's Partner Center account approves Rezekii (TAP campaigns). */
 export function partnerAuthUrl(state: string): string {
   return `${PARTNER_AUTH_URL}?${new URLSearchParams({ service_id: SERVICE_ID, state })}`;
+}
+
+/** Where a seller shop's owner (e.g. Zemvello Wellness) approves Rezekii in Seller Center. */
+export function sellerAuthUrl(state: string): string {
+  return `${SELLER_AUTH_URL}?${new URLSearchParams({ service_id: SERVICE_ID, state })}`;
 }
 
 async function tokenRequest(path: string, grant: Record<string, string>): Promise<ApiReply<TokenSet>> {

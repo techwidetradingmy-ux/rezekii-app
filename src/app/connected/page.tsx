@@ -8,6 +8,8 @@ const MESSAGES: Record<string, { title: string; body: string; retry?: boolean }>
   error: { title: "Something went wrong", body: "TikTok Shop didn't finish linking.", retry: true },
   "partner-connected": { title: "Partner account linked", body: "Techwide's TAP campaigns are now connected to Rezekii. You can close this page." },
   "partner-not-allowed": { title: "Partner account not allowed", body: "This Partner Center account isn't on the test list, so nothing was saved." },
+  "seller-connected": { title: "Shop linked", body: "Your TikTok Shop is now connected to Rezekii. You can close this page." },
+  "seller-not-allowed": { title: "Shop not allowed", body: "This shop isn't on the test list, so nothing was saved." },
 };
 
 export default async function Connected({ searchParams }: { searchParams: Promise<{ result?: string; id?: string }> }) {
@@ -19,6 +21,7 @@ export default async function Connected({ searchParams }: { searchParams: Promis
       <p>
         {msg.body}
         {result === "partner-not-allowed" && id ? ` (TikTok's partner ID: ${id})` : ""}
+        {result === "seller-not-allowed" && id ? ` (Shop: ${id})` : ""}
         {msg.retry && (
           <>
             {" "}
