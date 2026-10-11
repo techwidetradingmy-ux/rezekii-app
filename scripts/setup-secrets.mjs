@@ -1,8 +1,9 @@
 /**
- * Owner-run helper: puts the v0.1 secrets into Vercel (Production) straight from .env.local,
+ * Owner-run helper: puts Rezekii's secrets into Vercel (Production) straight from .env.local,
  * so no secret is typed into chat. Prints names only, never values.
  *   - TOKEN_ENCRYPTION_KEY: generated here if missing, saved to .env.local
- *   - TIKTOK_SHOP_APP_SECRET, SUPABASE_SECRET_KEY: if missing, asked for in a paste box (the Supabase key is tested first)
+ *   - Other secrets: if missing or rejected by their service, asked for in a paste box and tested before saving
+ *   - TIKTOK_CLIENT_KEY, GOOGLE_CLIENT_ID: public IDs, also copied to Vercel
  * Run:  node scripts/setup-secrets.mjs   (needs the Vercel CLI signed in and this folder linked)
  */
 import { readFileSync, writeFileSync } from "node:fs";
@@ -49,27 +50,51 @@ async function supabaseKeyWorks(key) {
   return res.ok;
 }
 
-const SECRETS = ["TIKTOK_SHOP_APP_SECRET", "SUPABASE_SECRET_KEY", "TOKEN_ENCRYPTION_KEY"];
-const PROMPTS = {
-  TIKTOK_SHOP_APP_SECRET: "Paste the TikTok Shop app secret (Partner Center > Rezekii app), then click OK.",
-  SUPABASE_SECRET_KEY: "Paste the NEW Supabase secret key (starts with sb_secret_), then click OK.",
+/** Posts a form and returns the JSON reply. */
+async function postForm(url, fields) {
+  const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(fields) });
+  return res.json().catch(() => ({}));
+}
+
+/** True unless Google says the secret is wrong (a fake code is sent, so a right secret gets "invalid_grant"). */
+async function googleSecretWorks(secret) {
+  const r = await postForm("https://oauth2.googleapis.com/token", { code: "check", client_id: get("GOOGLE_CLIENT_ID"), client_secret: secret, redirect_uri: "https://rezekii.com/api/auth/google/callback", grant_type: "authorization_code" });
+  return r.error !== "invalid_client";
+}
+
+// Public IDs: TikTok sandbox "Rezekii Dev" and Google client "Rezekii web".
+const PUBLIC_IDS = { TIKTOK_CLIENT_KEY: "sbaw8za4y6wqy3g54u", GOOGLE_CLIENT_ID: "950882525963-24tae5gho3ev8058i7jq4ruvtn1gv13b.apps.googleusercontent.com" };
+for (const [k, v] of Object.entries(PUBLIC_IDS)) if (get(k) !== v) set(k, v);
+writeFileSync(envPath, text);
+
+const SECRETS = ["TIKTOK_SHOP_APP_SECRET", "SUPABASE_SECRET_KEY", "TOKEN_ENCRYPTION_KEY", "TIKTOK_CLIENT_SECRET", "GOOGLE_CLIENT_SECRET"];
+const CHECKS = {
+  TIKTOK_SHOP_APP_SECRET: { prompt: "Paste the TikTok Shop app secret (Partner Center > Rezekii app), then click OK." },
+  SUPABASE_SECRET_KEY: { prompt: "Paste the NEW Supabase secret key (starts with sb_secret_), then click OK.", works: supabaseKeyWorks, fix: "Create a new secret key in Supabase > Settings > API Keys." },
+  TIKTOK_CLIENT_SECRET: { prompt: "Paste the Client secret of the TikTok SANDBOX 'Rezekii Dev' (developers.tiktok.com > Rezekii > Sandbox > App details), then click OK.", current: () => get("TIKTOK_CLIENT_SECRET_FOR") === get("TIKTOK_CLIENT_KEY"), after: () => set("TIKTOK_CLIENT_SECRET_FOR", get("TIKTOK_CLIENT_KEY")) },
+  GOOGLE_CLIENT_SECRET: { prompt: "Paste the Client secret of the Google client 'Rezekii web' (Google Cloud > Google Auth Platform > Clients > Rezekii web, copy icon), then click OK.", works: googleSecretWorks, fix: "Copy it again from the Rezekii web client page." },
 };
-for (const k of SECRETS.filter((x) => !get(x) && PROMPTS[x])) {
-  const v = await askBox(PROMPTS[k]);
+// Asks only when a secret is missing, rejected by its service, or saved for a different app (the TikTok sandbox secret
+// can't be tested without a real sign-in, so the helper remembers which client key it was saved for).
+for (const k of SECRETS.filter((x) => CHECKS[x])) {
+  const { prompt, works, fix, current, after } = CHECKS[k];
+  if (get(k) && (!works || (await works(get(k)))) && (!current || current())) continue;
+  const v = await askBox(prompt);
   if (!v) { console.log(k + ": nothing pasted. Run this again when you have it."); process.exit(1); }
-  if (k === "SUPABASE_SECRET_KEY" && !(await supabaseKeyWorks(v))) {
-    console.log("Supabase says that key is not valid (old or deleted). Create a new secret key in Supabase > Settings > API Keys, then run this again. Nothing was saved.");
-    process.exit(1);
-  }
+  if (works && !(await works(v))) { console.log(k + ": the service says that value is not valid. " + fix + " Nothing was saved."); process.exit(1); }
   set(k, v);
+  after?.();
   writeFileSync(envPath, text);
   console.log(k + ": saved in .env.local");
 }
 
 let failed = 0;
-for (const k of SECRETS) {
-  const r = spawnSync("vercel", ["env", "add", k, "production", "--sensitive", "--yes", "--force"], { input: get(k), encoding: "utf8", shell: true });
+const push = (k, sensitive) => {
+  const args = ["env", "add", k, "production", ...(sensitive ? ["--sensitive"] : []), "--yes", "--force"];
+  const r = spawnSync("vercel", args, { input: get(k), encoding: "utf8", shell: true, timeout: 60000 });
   if (r.status === 0) console.log(k + ": saved in Vercel (Production)");
   else { failed++; console.log(k + ": FAILED. " + String(r.stderr || r.stdout || "").split("\n").filter(Boolean).slice(-2).join(" ")); }
-}
-console.log(failed ? "Some values failed. Tell Claude what it says." : "All 3 secrets are in Vercel. Tell Claude \"secrets done\".");
+};
+for (const k of Object.keys(PUBLIC_IDS)) push(k, false);
+for (const k of SECRETS) push(k, true);
+console.log(failed ? "Some values failed. Tell Claude what it says." : "All done. Tell Claude \"secrets done\".");
