@@ -31,28 +31,34 @@ body { background: var(--bg); color: var(--text); -webkit-font-smoothing: antial
 a { color: var(--gink); }
 :focus-visible { outline: 3px solid var(--green); outline-offset: 2px; }
 
-/* Green brand screen (connected / sign-in pages) */
+/* Brand screen (sign-in / connected), Style A: light, soft 3D card, the logo ripple and floating TikTok-style tiles */
 .rz-splash {
-  min-height: 100vh; padding: 48px 16px; background: #00874f; color: #ffffff;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
-  text-align: center;
+  position: relative; overflow: hidden; min-height: 100vh; padding: 48px 16px; background: var(--hero); color: var(--text);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; text-align: center;
 }
+.rz-tiles { position: absolute; inset: 0; pointer-events: none; }
+.rz-tile { position: absolute; animation: rzBob2 4s ease-in-out infinite; }
+.rz-tile > span { display: flex; width: 56px; height: 56px; border-radius: 17px; align-items: center; justify-content: center; box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.35), inset 0 -3px 0 rgba(0, 0, 0, 0.12), 0 14px 26px -10px rgba(0, 0, 0, 0.35); }
+@keyframes rzBob2 { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+.rz-logo-wrap { position: relative; width: 104px; height: 104px; }
+.rz-ripple { position: absolute; inset: 0; border-radius: 30px; border: 2px solid rgba(0, 192, 115, 0.55); animation: rzRipple 3s cubic-bezier(0.2, 0.6, 0.3, 1) infinite; }
+@keyframes rzRipple { 0% { opacity: 0.75; transform: scale(1); } 100% { opacity: 0; transform: scale(2.6); } }
 .rz-logo {
-  width: 96px; height: 96px; border-radius: 28px; background: #ffffff;
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  position: relative; width: 104px; height: 104px; border-radius: 30px; background: #ffffff;
+  display: flex; align-items: center; justify-content: center; border: 1px solid var(--border);
+  box-shadow: inset 0 2px 0 #ffffff, 0 26px 44px -18px rgba(0, 112, 66, 0.5);
 }
-.rz-name { margin: 0; font-size: 40px; font-weight: 800; letter-spacing: -0.01em; }
-.rz-tag { margin: 0; font-size: 13px; font-weight: 800; letter-spacing: 0.18em; }
+.rz-name { position: relative; margin: 0; font-size: 40px; font-weight: 800; letter-spacing: -0.01em; }
+.rz-tag { position: relative; margin: 0; font-size: 13px; font-weight: 800; letter-spacing: 0.18em; color: var(--gink); }
 .rz-card {
-  width: 100%; max-width: 420px; padding: 28px; border-radius: 26px;
-  background: #ffffff; color: #0d1117; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.16);
+  position: relative; width: 100%; max-width: 420px; padding: 28px; border-radius: 28px;
+  background: #ffffff; color: #0d1117; border: 1px solid #edf3ef; box-shadow: var(--shadow-lg);
 }
 .rz-card h1 { margin: 0 0 8px; font-size: 22px; font-weight: 800; }
 .rz-card p { margin: 0; color: #4a5568; font-size: 15px; line-height: 1.5; }
 .rz-card a { color: #00704a; font-weight: 700; }
-.rz-foot { font-size: 13px; }
-.rz-foot a { color: #ffffff; }
+.rz-foot { position: relative; font-size: 13px; }
+.rz-foot a { color: var(--gink); }
 
 /* Public site (Style A) */
 .site-wrap { max-width: 1180px; margin: 0 auto; padding-inline: 24px; }

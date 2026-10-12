@@ -36,7 +36,7 @@ export default async function SignIn({ searchParams }: { searchParams: Promise<{
     <Splash>
       <div className="signin">
         <h1>Sign in to Rezekii</h1>
-        <p>Schedule your TikTok videos, track what they sell, and grow from Bronze to Gold.</p>
+        <p>Post smarter. Sell more. Earn more.</p>
         {error && ERRORS[error] && (
           <p role="alert" className="signin-error">
             {ERRORS[error]}
