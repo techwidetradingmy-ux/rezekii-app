@@ -1,22 +1,14 @@
 import type { Metadata } from "next";
 import { Roboto } from "next/font/google";
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { currentUser } from "../current-user";
+import { Suspense } from "react";
 import { TikTokLogo } from "../site";
 import { Splash } from "../splash";
+import { SigninStatus } from "./signin-status";
 
 export const metadata: Metadata = { title: "Sign in · Rezekii" };
-export const dynamic = "force-dynamic";
 
 const roboto = Roboto({ subsets: ["latin"], weight: ["500"], display: "swap" });
-
-const ERRORS: Record<string, string> = {
-  denied: "Sign-in was cancelled. Try again when you're ready.",
-  expired: "That sign-in took too long or was opened in another browser. Please try again.",
-  failed: "We couldn't finish signing you in. Please try again.",
-  config: "Sign-in isn't switched on yet. Please try again later.",
-};
 
 function GoogleG() {
   return (
@@ -29,19 +21,15 @@ function GoogleG() {
   );
 }
 
-export default async function SignIn({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
-  if (await currentUser()) redirect("/app");
-  const { error } = await searchParams;
+export default function SignIn() {
   return (
     <Splash>
       <div className="signin">
         <h1>Sign in to Rezekii</h1>
         <p>Post smarter. Sell more. Earn more.</p>
-        {error && ERRORS[error] && (
-          <p role="alert" className="signin-error">
-            {ERRORS[error]}
-          </p>
-        )}
+        <Suspense fallback={null}>
+          <SigninStatus />
+        </Suspense>
         <a href="/api/auth/tiktok/start" className="btn-tiktok signin-btn">
           <TikTokLogo />
           Continue with TikTok

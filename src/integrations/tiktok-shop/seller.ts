@@ -62,3 +62,41 @@ export function getBestsellingCreators(accessToken: string, cipher: string, opts
     query: { shop_cipher: cipher, date: opts.date, time_slot: opts.timeSlot ?? "30D", author_type: opts.authorType ?? "ALL" },
   });
 }
+
+export type BestsellingKind = "creators" | "products" | "videos" | "lives";
+
+/**
+ * Any of TikTok's four best-seller lists (top 100) for the period ending on `date` (YYYY-MM-DD).
+ * Confirmed by real calls (2026-10-12): products take a level-1 `category_id`; creators ignore it and need `author_type`.
+ * `currency` is LOCAL (RM) or USD; both are kept because each rounds GMV into different ranges.
+ */
+export function getBestselling(
+  accessToken: string,
+  cipher: string,
+  kind: BestsellingKind,
+  opts: { date: string; timeSlot: "1D" | "7D" | "30D"; currency?: "LOCAL" | "USD"; authorType?: string; categoryId?: string },
+) {
+  return callApi<Record<string, unknown[] | undefined>>({
+    method: "GET",
+    path: `/analytics/202511/${kind}/bestselling`,
+    accessToken,
+    query: {
+      shop_cipher: cipher,
+      date: opts.date,
+      time_slot: opts.timeSlot,
+      currency: opts.currency ?? "LOCAL",
+      ...(opts.authorType ? { author_type: opts.authorType } : {}),
+      ...(opts.categoryId ? { category_id: opts.categoryId } : {}),
+    },
+  });
+}
+
+/** One creator's full Creator Marketplace profile (GMV split, audience, engagement, categories). */
+export function getMarketplaceCreator(accessToken: string, cipher: string, openId: string) {
+  return callApi<{ creator?: Record<string, unknown> }>({
+    method: "GET",
+    path: `/affiliate_seller/202508/marketplace_creators/${openId}`,
+    accessToken,
+    query: { shop_cipher: cipher },
+  });
+}

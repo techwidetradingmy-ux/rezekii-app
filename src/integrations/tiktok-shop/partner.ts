@@ -55,12 +55,12 @@ export type CampaignProduct = {
 export type ProductReviewStatus = "PENDING" | "APPROVED" | "REJECTED" | "PENDING_CLOSED" | "CLOSED";
 
 /** Products in one campaign; approved ones by default, since only those can be promoted. */
-export function listCampaignProducts(accessToken: string, cipher: string, campaignId: string, opts: { reviewStatus?: ProductReviewStatus; pageSize?: number } = {}) {
+export function listCampaignProducts(accessToken: string, cipher: string, campaignId: string, opts: { reviewStatus?: ProductReviewStatus; pageSize?: number; pageToken?: string } = {}) {
   return callApi<{ products?: CampaignProduct[]; next_page_token?: string; total_count?: number }>({
     method: "GET",
     path: `/affiliate_partner/202405/campaigns/${campaignId}/products`,
     accessToken,
-    query: { category_asset_cipher: cipher, page_size: String(opts.pageSize ?? 20), review_status: opts.reviewStatus ?? "APPROVED" },
+    query: { category_asset_cipher: cipher, page_size: String(opts.pageSize ?? 20), review_status: opts.reviewStatus ?? "APPROVED", ...(opts.pageToken ? { page_token: opts.pageToken } : {}) },
   });
 }
 
