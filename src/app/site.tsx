@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { currentUser } from "./current-user";
+import { NavAccount } from "./nav-account";
 
 export const COMPANY = "Techwide Marketing Sdn Bhd";
 export const COMPANY_NO = "202001017785";
@@ -21,8 +22,10 @@ export function TikTokLogo({ size = 22 }: { size?: number }) {
 }
 
 /** Top bar. "hero" sits on the green band; "plain" is for legal and other inner pages. Signed-in people get "My account" instead of "Sign in". */
-export async function SiteNav({ variant }: { variant: "hero" | "plain" }) {
-  const user = await currentUser();
+export async function SiteNav({ variant, staticPage = false }: { variant: "hero" | "plain"; staticPage?: boolean }) {
+  // The homepage stays static (served from the CDN); its account button is checked in the browser.
+  const clientAccount = variant === "hero" || staticPage;
+  const user = clientAccount ? null : await currentUser();
   const nav = (
     <nav className="site-nav site-wrap" aria-label="Main">
       <Link href="/" className="site-brand">
@@ -34,9 +37,10 @@ export async function SiteNav({ variant }: { variant: "hero" | "plain" }) {
       <span className="site-spacer" />
       {variant === "hero" ? (
         <>
-          <a href="#features">Features</a>
-          <a href="#levels">Creator levels</a>
-          <a href="#control">Your control</a>
+          <a href="#earn">Earn more</a>
+          <a href="#compare">Compare</a>
+          <a href="#levels">Levels</a>
+          <a href="#faq">FAQ</a>
         </>
       ) : (
         <>
@@ -44,7 +48,9 @@ export async function SiteNav({ variant }: { variant: "hero" | "plain" }) {
           <Link href="/terms">Terms of Service</Link>
         </>
       )}
-      {user ? (
+      {clientAccount ? (
+        <NavAccount />
+      ) : user ? (
         <Link href="/app" className="site-signin site-account">
           {user.avatar_url ? (
             // Avatars come from many TikTok and Google CDN hosts, so a plain img (as on /app).

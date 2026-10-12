@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "Privacy Policy · Rezekii", descript
 export default function Privacy() {
   return (
     <>
-      <SiteNav variant="plain" />
+      <SiteNav variant="plain" staticPage />
       <main className="legal">
         <h1>Privacy Policy</h1>
         <p className="updated">Last updated 11 October 2026</p>

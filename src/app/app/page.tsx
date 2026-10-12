@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentUser } from "../current-user";
 import { Emblem } from "../emblems";
@@ -45,9 +46,15 @@ export default async function AppHome() {
             </div>
           </section>
         )}
-        <section className="card">
-          <h2>Coming next</h2>
-          <p>New post, Calendar, Drafts and the campaign marketplace are being built now. You&apos;ll see them here.</p>
+        <section className="app-actions" aria-label="Posting">
+          <Link href="/app/new" className="card app-action">
+            <span className="ico" style={{ background: "#00874f" }}><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg></span>
+            <span><strong>New post</strong><small>Upload a video, set the caption and privacy, and post now or pick a time.</small></span>
+          </Link>
+          <Link href="/app/posts" className="card app-action">
+            <span className="ico" style={{ background: "#1d4ed8" }}><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4" /></svg></span>
+            <span><strong>My posts</strong><small>Everything scheduled, sending and posted, as a list or a week calendar.</small></span>
+          </Link>
         </section>
       </main>
       <SiteFooter />

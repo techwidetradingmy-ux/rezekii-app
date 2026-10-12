@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "Terms of Service · Rezekii", descri
 export default function Terms() {
   return (
     <>
-      <SiteNav variant="plain" />
+      <SiteNav variant="plain" staticPage />
       <main className="legal">
         <h1>Terms of Service</h1>
         <p className="updated">Last updated 11 October 2026</p>
