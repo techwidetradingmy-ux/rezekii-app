@@ -28,7 +28,7 @@ const STATUS: Record<Post["status"], [string, string]> = {
 };
 const PRIVACY: Record<string, string> = { PUBLIC_TO_EVERYONE: "Everyone", MUTUAL_FOLLOW_FRIENDS: "Friends", FOLLOWER_OF_CREATOR: "Followers", SELF_ONLY: "Only me" };
 const TZ = "Asia/Kuala_Lumpur";
-const fmt = (iso: string, o: Intl.DateTimeFormatOptions) => new Date(iso).toLocaleString("en-GB", { timeZone: TZ, ...o });
+const fmt = (iso: string, o: Intl.DateTimeFormatOptions) => new Date(iso).toLocaleString("en-GB", { timeZone: TZ, hour12: true, ...o });
 const dayKey = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: TZ });
 
 /** My posts: every post with its status, as a list or a week calendar. Updates itself while TikTok is working on a post. */
@@ -86,7 +86,7 @@ export function PostsView() {
         <span className="mp-when">{at ? <><strong>{fmt(at, { weekday: "short", day: "numeric", month: "short" })}</strong><small>{fmt(at, { hour: "numeric", minute: "2-digit" })}</small></> : <small>No time yet</small>}</span>
         <span className="mp-main">
           <span className="mp-caption">{p.caption || (p.mode === "inbox" ? "Sent to TikTok drafts (caption added in TikTok)" : "No caption")}</span>
-          <small>{p.mode === "inbox" ? "To TikTok drafts" : `Post · ${p.privacy_level ? PRIVACY[p.privacy_level] ?? p.privacy_level : "privacy not set"}`}{p.status === "failed" && p.last_error ? ` · ${p.last_error}` : ""}{p.status === "publishing" && p.attempts > 0 ? ` · try ${p.attempts + 1} of 3` : ""}</small>
+          <small>{p.mode === "inbox" ? "To TikTok drafts" : `Post · ${p.privacy_level ? PRIVACY[p.privacy_level] ?? p.privacy_level : "privacy not set"}`}{p.status === "failed" && p.last_error ? ` · ${p.last_error}` : ""}{p.status === "scheduled" && p.attempts > 0 && p.last_error ? ` · Try ${p.attempts} of 3 didn't go through, trying again soon: ${p.last_error}` : ""}{p.status === "publishing" && p.attempts > 0 ? ` · try ${p.attempts + 1} of 3` : ""}</small>
         </span>
         <span className={`badge ${cls}`}>{label}</span>
         {(p.status === "scheduled" || p.status === "failed") && (
@@ -99,7 +99,7 @@ export function PostsView() {
   if (error) return <p className="np-error" role="alert">{error}</p>;
   if (!posts) return <p className="np-muted">Loading your posts…</p>;
 
-  const upcoming = posts.filter((p) => ["scheduled", "publishing", "processing", "failed"].includes(p.status));
+  const upcoming = posts.filter((p) => ["scheduled", "publishing", "processing", "failed"].includes(p.status)).sort((a, b) => (a.scheduled_at ?? "").localeCompare(b.scheduled_at ?? ""));
   const done = posts.filter((p) => ["posted", "sent_to_inbox"].includes(p.status));
   const drafts = posts.filter((p) => p.status === "draft");
 

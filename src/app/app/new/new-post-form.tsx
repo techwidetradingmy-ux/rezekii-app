@@ -14,7 +14,7 @@ const PRIVACY_LABEL: Record<PrivacyLevel, string> = {
   FOLLOWER_OF_CREATOR: "Followers",
   SELF_ONLY: "Only me",
 };
-const myt = (iso: string) => new Date(iso).toLocaleString("en-GB", { timeZone: "Asia/Kuala_Lumpur", weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+const myt = (iso: string) => new Date(iso).toLocaleString("en-GB", { timeZone: "Asia/Kuala_Lumpur", weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true });
 
 /** New post: TikTok's Content Sharing Guidelines, step by step, for the creator's own TikTok account. */
 export function NewPostForm() {
@@ -98,7 +98,7 @@ export function NewPostForm() {
     return (
       <section className="card np-done" role="status">
         <span className="np-done-ico" aria-hidden="true">✓</span>
-        <h2>{done.status === "draft" ? "Saved as a draft" : when === "now" ? "Sending to TikTok now" : "Scheduled"}</h2>
+        <h2>{done.status === "draft" ? "Saved as a draft" : when === "now" ? (mode === "inbox" ? "Sending to your TikTok drafts" : "Sending to TikTok now") : "Scheduled"}</h2>
         <p>
           {done.status === "draft"
             ? "It's saved in Rezekii. Schedule it from My posts whenever you're ready."
