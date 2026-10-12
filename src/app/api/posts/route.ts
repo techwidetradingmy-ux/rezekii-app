@@ -1,0 +1,83 @@
+import { NextResponse, type NextRequest } from "next/server";
+import { currentUser } from "@/app/current-user";
+import { queryCreatorInfo, type PrivacyLevel } from "@/integrations/tiktok/posting.ts";
+import { nextRecommendedSlot, postProblems, type PostChoice } from "@/modules/posting/rules.ts";
+import { freshTikTokToken, insertPost, listPosts, scheduledTimes, userTikTokOpenId } from "@/modules/posting/store.ts";
+
+export const dynamic = "force-dynamic";
+
+/** The signed-in creator's posts, newest scheduled first. */
+export async function GET() {
+  const user = await currentUser();
+  if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  return NextResponse.json({ posts: await listPosts(user.id) });
+}
+
+type Body = Partial<PostChoice> & { source?: "upload" | "link"; storagePath?: string; linkUrl?: string; when?: string; consent?: boolean };
+const bad = (error: string | string[]) => NextResponse.json({ error }, { status: 400 });
+
+/**
+ * Creates a post for the signed-in creator's own TikTok account.
+ * `when`: "now", "recommended", "draft" (saved in Rezekii only) or an ISO time.
+ */
+export async function POST(req: NextRequest) {
+  const user = await currentUser();
+  if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  const openId = await userTikTokOpenId(user.id);
+  if (!openId) return NextResponse.json({ error: "Continue with TikTok to post." }, { status: 409 });
+  const b = (await req.json().catch(() => ({}))) as Body;
+
+  if (b.source === "upload" ? !b.storagePath?.startsWith(`${user.id}/`) : b.source === "link" ? !/^https:\/\/\S+$/.test(b.linkUrl ?? "") : true)
+    return bad("Add a video: upload one or paste an https link.");
+  const choice: PostChoice = {
+    mode: b.mode === "inbox" ? "inbox" : "direct",
+    caption: String(b.caption ?? ""),
+    privacyLevel: (b.privacyLevel as PrivacyLevel) || null,
+    allowComments: !!b.allowComments,
+    allowDuet: !!b.allowDuet,
+    allowStitch: !!b.allowStitch,
+    promo: !!b.promo,
+    brandOrganic: !!b.brandOrganic,
+    brandedContent: !!b.brandedContent,
+    isAigc: !!b.isAigc,
+    durationSec: typeof b.durationSec === "number" ? b.durationSec : null,
+  };
+  const when = b.when ?? "draft";
+  let scheduledAt: Date | null = null;
+  if (when !== "draft") {
+    const info = await queryCreatorInfo(await freshTikTokToken(openId));
+    if (info.error || !info.data) return NextResponse.json({ error: "TikTok says this account can't post right now. Try again later." }, { status: 503 });
+    const problems = postProblems(choice, info.data);
+    if (problems.length) return bad(problems);
+    if (choice.mode === "direct" && !b.consent) return bad("Agree to TikTok's Music Usage Confirmation to post.");
+    if (when === "now") scheduledAt = new Date();
+    else if (when === "recommended") scheduledAt = nextRecommendedSlot(new Date(), await scheduledTimes(openId));
+    else {
+      scheduledAt = new Date(when);
+      if (isNaN(scheduledAt.getTime()) || scheduledAt.getTime() < Date.now() + 60e3) return bad("Pick a time at least a minute from now.");
+      if (scheduledAt.getTime() > Date.now() + 60 * 86400e3) return bad("Pick a time within the next 60 days.");
+    }
+  }
+
+  const post = await insertPost({
+    user_id: user.id,
+    tiktok_open_id: openId,
+    mode: choice.mode,
+    source: b.source as "upload" | "link",
+    storage_path: b.source === "upload" ? b.storagePath : null,
+    link_url: b.source === "link" ? b.linkUrl : null,
+    duration_sec: choice.durationSec ?? null,
+    caption: choice.caption,
+    privacy_level: choice.privacyLevel ?? null,
+    allow_comments: choice.allowComments,
+    allow_duet: choice.allowDuet,
+    allow_stitch: choice.allowStitch,
+    brand_organic: choice.promo && choice.brandOrganic,
+    branded_content: choice.promo && choice.brandedContent,
+    is_aigc: choice.isAigc,
+    status: scheduledAt ? "scheduled" : "draft",
+    scheduled_at: scheduledAt?.toISOString() ?? null,
+    next_attempt_at: scheduledAt?.toISOString() ?? null,
+  });
+  return NextResponse.json({ post }, { status: 201 });
+}
