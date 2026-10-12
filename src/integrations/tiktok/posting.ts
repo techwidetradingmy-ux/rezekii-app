@@ -13,6 +13,7 @@ async function call<T>(token: string, path: string, body: unknown): Promise<TikT
     headers: { authorization: `Bearer ${token}`, "content-type": "application/json; charset=UTF-8" },
     body: JSON.stringify(body),
     cache: "no-store",
+    signal: AbortSignal.timeout(30_000),
   });
   const json = (await res.json().catch(() => ({}))) as Envelope<T>;
   const e = json.error;
@@ -77,9 +78,11 @@ export function initVideoPost(token: string, mode: "direct" | "inbox", plan: Chu
 export async function uploadChunk(uploadUrl: string, bytes: Uint8Array<ArrayBuffer>, start: number, end: number, total: number, mime = "video/mp4"): Promise<void> {
   const res = await fetch(uploadUrl, {
     method: "PUT",
-    headers: { "content-type": mime, "content-length": String(bytes.byteLength), "content-range": `bytes ${start}-${end}/${total}` },
+    headers: { "content-type": mime, "content-range": `bytes ${start}-${end}/${total}` },
     body: bytes,
     cache: "no-store",
+    // 64 MB at a slow 1 MB/s still fits; the whole timer run has 300 s.
+    signal: AbortSignal.timeout(120_000),
   });
   if (!res.ok && res.status !== 206) throw new Error(`TikTok upload refused chunk ${start}-${end}: HTTP ${res.status} ${(await res.text()).slice(0, 200)}`);
 }
