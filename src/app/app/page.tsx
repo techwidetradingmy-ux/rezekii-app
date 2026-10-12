@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { currentUser } from "../current-user";
 import { Emblem } from "../emblems";
 import { SiteFooter, SiteNav } from "../site";
+import { TikTokStats } from "./tiktok-stats";
 
 export const metadata: Metadata = { title: "Today · Rezekii" };
 export const dynamic = "force-dynamic";
@@ -32,6 +33,7 @@ export default async function AppHome() {
               {user.tiktok_username && <> · TikTok @{user.tiktok_username} connected</>}
               {!user.tiktok_username && user.email && <> · {user.email}</>}
             </p>
+            {user.tiktok_username && <TikTokStats />}
           </div>
           <form action="/api/auth/signout" method="post">
             <button type="submit" className="btn-outline">Sign out</button>

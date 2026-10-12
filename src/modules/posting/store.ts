@@ -122,3 +122,9 @@ export async function userTikTokOpenId(userId: string): Promise<string | null> {
   const res = await supabaseRest(`tiktok_connections?user_id=eq.${userId}&select=open_id&order=updated_at.desc&limit=1`);
   return ((await res.json()) as { open_id: string }[])[0]?.open_id ?? null;
 }
+
+/** TikTok video ids of the account's posts that went out through Rezekii (only public posts get one), newest first. */
+export async function postedVideoIds(userId: string): Promise<{ id: string; tiktok_post_id: string }[]> {
+  const res = await supabaseRest(`posts?user_id=eq.${userId}&status=eq.posted&tiktok_post_id=not.is.null&select=id,tiktok_post_id&order=posted_at.desc&limit=20`);
+  return res.json();
+}

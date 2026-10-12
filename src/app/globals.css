@@ -377,3 +377,14 @@ textarea.np-input { resize: vertical; line-height: 1.5; }
   .legal { padding-inline: 16px; }
 }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* TikTok numbers (user.info.stats, video.list) */
+.app-ttstats { margin: 2px 0 0; display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--muted); font-size: 14px; }
+.app-ttstats b, .mp-stats b { color: var(--text); font-variant-numeric: tabular-nums; }
+.mp-stats { display: flex; flex-wrap: wrap; gap: 2px 12px; color: var(--muted); font-size: 13px; }
+.tt-grid { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+.tt-card { display: flex; flex-direction: column; gap: 6px; color: var(--text); text-decoration: none; min-width: 0; }
+.tt-card img, .tt-cover { width: 100%; aspect-ratio: 3 / 4; height: auto; object-fit: cover; border-radius: 14px; background: var(--surface2); display: block; }
+.tt-title { font-size: 13px; font-weight: 700; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tt-card small { color: var(--muted); font-size: 12px; }
+.tt-card:hover .tt-title { text-decoration: underline; }

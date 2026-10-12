@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { shortCount, type TikTokVideo } from "@/integrations/tiktok/stats.ts";
 
 type Post = {
   id: string;
@@ -30,6 +31,7 @@ const PRIVACY: Record<string, string> = { PUBLIC_TO_EVERYONE: "Everyone", MUTUAL
 const TZ = "Asia/Kuala_Lumpur";
 const fmt = (iso: string, o: Intl.DateTimeFormatOptions) => new Date(iso).toLocaleString("en-GB", { timeZone: TZ, hour12: true, ...o });
 const dayKey = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: TZ });
+type Stats = { videos: TikTokVideo[]; posts: Record<string, { views?: number; likes?: number; url?: string }> };
 
 /** My posts: every post with its status, as a list or a week calendar. Updates itself while TikTok is working on a post. */
 export function PostsView() {
@@ -40,6 +42,7 @@ export function PostsView() {
   const [busyId, setBusyId] = useState("");
   const [note, setNote] = useState("");
   const [loadedAt, setLoadedAt] = useState(0);
+  const [stats, setStats] = useState<Stats>({ videos: [], posts: {} });
 
   const load = useCallback(() => {
     fetch("/api/posts", { cache: "no-store" })
@@ -48,6 +51,13 @@ export function PostsView() {
       .catch(() => setError("Couldn't load your posts. Check your connection."));
   }, []);
   useEffect(load, [load]);
+  // Views and likes from TikTok (video.list), loaded once; they don't change by the second.
+  useEffect(() => {
+    fetch("/api/tiktok/stats?videos=1", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d: Partial<Stats>) => setStats({ videos: d.videos ?? [], posts: d.posts ?? {} }))
+      .catch(() => {});
+  }, []);
 
   // Status updates after publishing (TikTok's guidelines): poll while a post is on its way.
   const working = posts?.some((p) => p.status === "publishing" || p.status === "processing" || (p.status === "scheduled" && p.scheduled_at && new Date(p.scheduled_at).getTime() < loadedAt + 120e3));
@@ -87,6 +97,12 @@ export function PostsView() {
         <span className="mp-main">
           <span className="mp-caption">{p.caption || (p.mode === "inbox" ? "Sent to TikTok drafts (caption added in TikTok)" : "No caption")}</span>
           <small>{p.mode === "inbox" ? "To TikTok drafts" : `Post · ${p.privacy_level ? PRIVACY[p.privacy_level] ?? p.privacy_level : "privacy not set"}`}{p.status === "failed" && p.last_error ? ` · ${p.last_error}` : ""}{p.status === "scheduled" && p.attempts > 0 && p.last_error ? ` · Try ${p.attempts} of 3 didn't go through, trying again soon: ${p.last_error}` : ""}{p.status === "publishing" && p.attempts > 0 ? ` · try ${p.attempts + 1} of 3` : ""}</small>
+          {stats.posts[p.id] && (
+            <span className="mp-stats">
+              <span><b>{shortCount(stats.posts[p.id].views)}</b> views</span>
+              <span><b>{shortCount(stats.posts[p.id].likes)}</b> likes</span>
+            </span>
+          )}
         </span>
         <span className={`badge ${cls}`}>{label}</span>
         {(p.status === "scheduled" || p.status === "failed") && (
@@ -122,6 +138,32 @@ export function PostsView() {
           {drafts.length > 0 && <section className="card mp-group"><h2>Drafts</h2><ul>{drafts.map(row)}</ul></section>}
           {done.length > 0 && <section className="card mp-group"><h2>Posted</h2><ul>{done.map(row)}</ul></section>}
         </>
+      )}
+      {view === "list" && stats.videos.length > 0 && (
+        <section className="card mp-group" aria-labelledby="tt-recent">
+          <h2 id="tt-recent">Recent videos on your TikTok</h2>
+          <ul className="tt-grid">
+            {stats.videos.map((v) => (
+              <li key={v.id}>
+                <a href={v.share_url} target="_blank" rel="noreferrer" className="tt-card">
+                  {v.cover_image_url ? (
+                    // TikTok's signed cover links come from many CDN hosts, so a plain img.
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={v.cover_image_url} alt="" loading="lazy" width={120} height={160} />
+                  ) : (
+                    <span className="tt-cover" aria-hidden="true" />
+                  )}
+                  <span className="tt-title">{v.title || v.video_description || "Untitled video"}</span>
+                  <span className="mp-stats">
+                    <span><b>{shortCount(v.view_count)}</b> views</span>
+                    <span><b>{shortCount(v.like_count)}</b> likes</span>
+                  </span>
+                  {v.create_time ? <small>{fmt(new Date(v.create_time * 1000).toISOString(), { day: "numeric", month: "short" })}</small> : null}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
       {posts.length > 0 && view === "week" && (
         <section className="card mp-week" aria-label="Week calendar">
