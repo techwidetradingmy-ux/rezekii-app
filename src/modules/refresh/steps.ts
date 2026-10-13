@@ -2,6 +2,7 @@ import type { ApiReply } from "../../integrations/tiktok-shop/api.ts";
 import { listCampaignProductStats, listCampaignProducts, listCampaigns, listProductCreators, type Campaign, type CampaignProduct, type CampaignProductStats } from "../../integrations/tiktok-shop/partner.ts";
 import { amount, goldenSellers, type StatRow } from "../tap/golden.ts";
 import { smallImage } from "../tap/image.ts";
+import { updateLevels } from "../levels/store.ts";
 import { getBestselling, getMarketplaceCreator, searchMarketplaceCreators, type BestsellingKind } from "../../integrations/tiktok-shop/seller.ts";
 import { bestSlot, type PlannedTask } from "./plan.ts";
 import type { Sessions } from "./sessions.ts";
@@ -114,6 +115,13 @@ async function tapProducts(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
   return { count: rows.length, followUps };
 }
 
+/** Creator levels: today's totals for every Rezekii creator, then each one's level. Waits until all TAP data is read. */
+async function levels(t: TaskRow): Promise<StepResult> {
+  for (const kind of ["tap_campaigns", "tap_products", "tap_creators"])
+    if (await openTaskCount(t.run_date, kind)) return { count: 0, more: true, waitMs: 60_000 };
+  return { count: await updateLevels(t.run_date) };
+}
+
 /** [productId, name, shop, image] */
 type CreatorTaskProduct = [string, string, string, string | null];
 
@@ -201,6 +209,7 @@ export const STEPS: Record<string, (t: TaskRow, ctx: Ctx) => Promise<StepResult>
   tap_products: tapProducts,
   tap_catalog: tapCatalog,
   tap_creators: tapCreators,
+  levels,
   details,
   marketplace,
 };

@@ -1,0 +1,26 @@
+/* Level benefits: copied from the approved mockup (Benefits page), unchanged. */
+.nv-dotr { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #b42318; flex-shrink: 0; }
+.nv { --glass: rgba(255, 255, 255, 0.86); }
+@media (prefers-color-scheme: dark) { .nv { --glass: rgba(19, 28, 24, 0.88); } }
+@keyframes bfFloat{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-7px) rotate(2deg)}}
+@keyframes bfSweep{0%{transform:translateX(-60px) skewX(-20deg)}55%,100%{transform:translateX(120px) skewX(-20deg)}}
+@keyframes bfRow{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes bfCheck{0%{transform:scale(0) rotate(-30deg)}70%{transform:scale(1.2) rotate(6deg)}100%{transform:none}}
+@keyframes bfBar{from{transform:translateY(100%)}to{transform:none}}
+.bf-emb{animation:bfFloat 4s ease-in-out infinite;filter:drop-shadow(0 10px 14px rgba(0,0,0,.18))}
+.bf-sweep{animation:bfSweep 3.6s ease-in-out infinite;transform-box:fill-box}
+.bf-grid{display:grid;grid-template-columns:minmax(200px,1.5fr) repeat(3,minmax(0,1fr));align-items:stretch}
+.bf-cell{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;font-size:15px;line-height:1.45;min-width:0}
+.bf-lab{font-weight:700;color:var(--text);gap:8px}
+.bf-you{background:var(--gsoft)}
+.bf-row{display:contents}
+.bf-row>.bf-cell{animation:bfRow .45s cubic-bezier(.2,.7,.2,1) both}
+.bf-yes{display:inline-flex;width:28px;height:28px;border-radius:50%;background:#00c073;align-items:center;justify-content:center;animation:bfCheck .5s cubic-bezier(.3,1.5,.4,1) both}
+.bf-key{font-weight:800;color:var(--gink)}
+.bf-head{display:flex;flex-direction:column;align-items:center;gap:6px;padding:18px 10px 14px;text-align:center}
+.bf-edit{width:100%;height:40px;padding:0 10px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;outline:none}
+.bf-edit:focus{border-color:#00c073}
+.bf-del{width:30px;height:30px;border-radius:50%;border:0;background:var(--rsoft);color:var(--red);font-weight:800;flex-shrink:0}
+.bf-bar{position:sticky;bottom:16px;z-index:5;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:20px;background:var(--glass);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);box-shadow:0 12px 34px rgba(13,17,23,.16);animation:bfBar .4s cubic-bezier(.32,.72,0,1) both}
+@media (max-width:720px){.bf-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.bf-lab{grid-column:1 / -1;background:var(--surface2);border-bottom:0}.bf-corner{display:none}.bf-cell{padding:12px 10px;font-size:14px}}
+@media (prefers-reduced-motion: reduce){.bf-emb,.bf-sweep,.bf-row>.bf-cell,.bf-yes,.bf-bar{animation:none!important}}

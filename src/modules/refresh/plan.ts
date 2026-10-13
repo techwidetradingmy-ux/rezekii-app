@@ -1,6 +1,6 @@
 /** What the daily refresh fetches, as a list of tasks. Pure: no network, no database. */
 
-export type TaskKind = "tap_campaigns" | "tap_products" | "tap_catalog" | "tap_creators" | "best" | "details" | "marketplace";
+export type TaskKind = "tap_campaigns" | "tap_products" | "tap_catalog" | "tap_creators" | "levels" | "best" | "details" | "marketplace";
 export type PlannedTask = { key: string; kind: TaskKind; params: Record<string, unknown>; priority: number };
 
 const DAY = 86_400_000;
@@ -55,6 +55,8 @@ export function planDay(now: number, haveDays: Set<string>): PlannedTask[] {
     { key: "tap_campaigns", kind: "tap_campaigns", params: {}, priority: 1 },
     // the TAP Marketplace table, rebuilt once every campaign's products are in
     { key: "tap_catalog", kind: "tap_catalog", params: {}, priority: 3 },
+    // creator levels, once every campaign's creators are read (tap_creators)
+    { key: "levels", kind: "levels", params: {}, priority: 5 },
   ];
 
   // Newest date: every period for every list.

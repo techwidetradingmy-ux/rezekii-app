@@ -6,6 +6,18 @@ import type { TapProduct } from "@/modules/tap/catalog.ts";
 export type Flow = "idle" | "loading" | "done";
 type Toast = { text: string; ok: boolean; n: number };
 
+/** The mockup's short message at the bottom of the screen: `flash(text)` shows it for 1.8 seconds. */
+export function useToast() {
+  const [toast, setToast] = useState<Toast | null>(null);
+  const flash = (text: string, ok = true) => setToast({ text, ok, n: Date.now() });
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 1800);
+    return () => clearTimeout(t);
+  }, [toast]);
+  return { toast, flash };
+}
+
 /**
  * The card and panel actions, shared by the Marketplace and the product page (as in the mockup).
  * Showcase: Techwide makes a TAP link and TikTok Shop opens on the product, where the creator taps Add to showcase.
@@ -14,14 +26,7 @@ type Toast = { text: string; ok: boolean; n: number };
 export function useTap(requestedIds: string[]) {
   const [add, setAdd] = useState<Record<string, Flow>>({});
   const [sample, setSample] = useState<Record<string, Flow>>(() => Object.fromEntries(requestedIds.map((id) => [id, "done" as Flow])));
-  const [toast, setToast] = useState<Toast | null>(null);
-  const flash = (text: string, ok = true) => setToast({ text, ok, n: Date.now() });
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 1800);
-    return () => clearTimeout(t);
-  }, [toast]);
+  const { toast, flash } = useToast();
 
   async function addToShowcase(id: string) {
     if ((add[id] ?? "idle") !== "idle") return;
