@@ -56,7 +56,7 @@ export async function refreshVideos(start: number, stopAt: number): Promise<{ co
 export type VideoRow = { id: string; openId: string; handle: string; title: string; cover: string | null; url: string | null; at: string | null; views: number; likes: number; comments: number; shares: number; viaRezekii: boolean };
 
 /** Saved videos from the last `days` days (newest first) and when they were last refreshed. */
-export async function savedVideos(days: number): Promise<{ rows: VideoRow[]; refreshedAt: string | null }> {
+export async function savedVideos(days: number): Promise<{ rows: VideoRow[]; refreshedAt: string | null; now: number }> {
   const since = new Date(Date.now() - days * 86400_000).toISOString();
   const [videos, posted] = await Promise.all([
     supabaseRest(`tiktok_videos?created_at=gte.${since}&select=*&order=created_at.desc&limit=3000`).then((r) => r.json() as Promise<{ video_id: string; open_id: string; username: string | null; title: string | null; cover: string | null; share_url: string | null; created_at: string | null; views: number; likes: number; comments: number; shares: number; updated_at: string }[]>),
@@ -69,5 +69,6 @@ export async function savedVideos(days: number): Promise<{ rows: VideoRow[]; ref
       views: Number(v.views), likes: Number(v.likes), comments: Number(v.comments), shares: Number(v.shares), viaRezekii: ours.has(v.video_id),
     })),
     refreshedAt: videos.reduce<string | null>((m, v) => (!m || v.updated_at > m ? v.updated_at : m), null),
+    now: Date.now(),
   };
 }

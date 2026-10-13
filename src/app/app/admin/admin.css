@@ -9,3 +9,5 @@
 .nv-sheet .nv-grab { align-self: center; width: 38px; height: 5px; border-radius: 999px; background: var(--border); flex-shrink: 0; }
 @keyframes nvSheetOut { from { transform: none; } to { transform: translateY(100%); } }
 @media (max-width: 600px) { .nv-sheet { margin-left: 0; left: 0; } }
+.nv-thbtn { border: 0; background: transparent; padding: 0; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+.nv-thbtn.on { color: var(--gink); }
