@@ -1,8 +1,9 @@
 /* TAP Marketplace and product view: copied from the approved mockup (Direction A · Native), classes and values unchanged. */
 .nv { --bg: #f2f7f4; --surface: #ffffff; --surface2: #f2f7f4; --line: #edf2ef; --border: #e4ebe7; --text: #0d1117; --body: #4a5568; --muted: #5f6b7a; --green: #00c073; --gink: #00704a; --gsoft: #e3f7ed; --ink: #0d1117; --red: #b42318; --rsoft: #fdecea; --amber: #8a4f00; --asoft: #fff2db; --blue: #1d4ed8; --bsoft: #e8efff; --seg: #e4ebe7; --thumb: #ffffff; --shadow: 0 12px 34px rgba(13, 17, 23, 0.08); --shadow2: 0 4px 14px rgba(13, 17, 23, 0.06); }
 @media (prefers-color-scheme: dark) {
-  .nv { --bg: #0b1210; --surface: #131c18; --surface2: #0e1613; --line: #1f2a25; --border: #26332d; --text: #eef3f1; --body: #c6d0cb; --muted: #9aa8a1; --gink: #5fe3ab; --gsoft: #0f2e21; --red: #ff8a80; --rsoft: #3a1714; --amber: #ffc56b; --asoft: #33250c; --blue: #a9c1ff; --bsoft: #17213b; --seg: #1f2a25; --thumb: #2c3a33; --shadow: 0 0 0 1px #1f2a25; --shadow2: 0 0 0 1px #1f2a25; }
+  :root:not([data-theme="light"]) .nv { --bg: #0b1210; --surface: #131c18; --surface2: #0e1613; --line: #1f2a25; --border: #26332d; --text: #eef3f1; --body: #c6d0cb; --muted: #9aa8a1; --gink: #5fe3ab; --gsoft: #0f2e21; --red: #ff8a80; --rsoft: #3a1714; --amber: #ffc56b; --asoft: #33250c; --blue: #a9c1ff; --bsoft: #17213b; --seg: #1f2a25; --thumb: #2c3a33; --shadow: 0 0 0 1px #1f2a25; --shadow2: 0 0 0 1px #1f2a25; }
 }
+:root[data-theme="dark"] .nv { --bg: #0b1210; --surface: #131c18; --surface2: #0e1613; --line: #1f2a25; --border: #26332d; --text: #eef3f1; --body: #c6d0cb; --muted: #9aa8a1; --gink: #5fe3ab; --gsoft: #0f2e21; --red: #ff8a80; --rsoft: #3a1714; --amber: #ffc56b; --asoft: #33250c; --blue: #a9c1ff; --bsoft: #17213b; --seg: #1f2a25; --thumb: #2c3a33; --shadow: 0 0 0 1px #1f2a25; --shadow2: 0 0 0 1px #1f2a25; }
 .nv-page { background: var(--bg); color: var(--text); }
 .nv-page .app-main { gap: 24px; }
 .nv-title { margin: 0; font-size: 34px !important; font-weight: 800; letter-spacing: -0.02em; animation: nvTitle 0.6s 0.05s cubic-bezier(0.2, 0.7, 0.2, 1) both; }

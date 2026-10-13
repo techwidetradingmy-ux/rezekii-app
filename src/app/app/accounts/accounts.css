@@ -1,0 +1,20 @@
+/* My accounts (mockup MyAccounts page). Base nv tokens and cards come from marketplace.css, shared bits from today.css. */
+.nv { --glass: rgba(255, 255, 255, 0.86); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .nv { --glass: rgba(19, 28, 24, 0.88); } }
+:root[data-theme="dark"] .nv { --glass: rgba(19, 28, 24, 0.88); }
+
+.nv-btn3 { height: 44px; padding: 0 16px; border-radius: 12px; border: 0; background: var(--gsoft); color: var(--gink); font-size: 15px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; white-space: nowrap; }
+.nv-btnd { height: 44px; padding: 0 16px; border-radius: 12px; border: 0; background: #b42318; color: #ffffff; font-size: 15px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; }
+.nv-btn3[disabled], .nv-btnd[disabled] { opacity: 0.45; cursor: not-allowed; transform: none; }
+.nv-btn3 { transition: transform 0.18s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.2s, background-color 0.2s; }
+.nv-btn3:hover { transform: translateY(-1px); }
+.nv-btn3:active { transform: scale(0.97); }
+.nv-sping { display: inline-block; width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--gsoft); border-top-color: var(--gink); animation: nvSpin 0.7s linear infinite; flex-shrink: 0; }
+
+.nv-dimalert { position: fixed; inset: 0; border: 0; background: rgba(13, 17, 23, 0.4); z-index: 50; animation: nvFadeIn 0.2s ease both; }
+.nv-alert { position: fixed; left: 50%; top: 50%; width: 320px; max-width: calc(100% - 32px); background: var(--glass); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); color: var(--text); border-radius: 18px; overflow: hidden; text-align: center; box-shadow: 0 20px 60px rgba(13, 17, 23, 0.3); z-index: 51; animation: nvAlertIn 0.25s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.nv-alert-b { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); border-top: 1px solid var(--border); }
+.nv-alert-b button { height: 46px; border: 0; background: transparent; font-size: 16px; font-weight: 600; color: #007aff; }
+.nv-alert-b button + button { border-left: 1px solid var(--border); }
+.nv-alert-b button.danger { color: #ff3b30; font-weight: 700; }
+@keyframes nvAlertIn { from { opacity: 0; transform: translate(-50%, -50%) scale(1.08); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }

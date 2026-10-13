@@ -12,8 +12,9 @@
   --shadow-lg: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 22px 44px -22px rgba(0, 112, 66, 0.32), 0 3px 10px rgba(11, 26, 19, 0.05);
   color-scheme: light;
 }
+/* Dark follows the device unless My accounts > Appearance picked Light or Dark (data-theme on <html>). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #0b1210; --surface: #131c18; --surface2: #0e1613; --border: #26332d; --line: #1f2a25;
     --text: #eef3f1; --body: #c6d0cb; --muted: #9aa8a1;
     --gink: #5fe3ab; --gsoft: #0f2e21;
@@ -23,6 +24,16 @@
     --shadow: 0 0 0 1px #1f2a25; --shadow-lg: 0 0 0 1px #1f2a25;
     color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+    --bg: #0b1210; --surface: #131c18; --surface2: #0e1613; --border: #26332d; --line: #1f2a25;
+    --text: #eef3f1; --body: #c6d0cb; --muted: #9aa8a1;
+    --gink: #5fe3ab; --gsoft: #0f2e21;
+    --bsoft: #17213b; --blue: #a9c1ff; --asoft: #33250c; --amber: #ffc56b; --rsoft: #3a1714; --red: #ff8a80;
+    --band1: #0f5a3a; --band2: #0b3f29; --band3: #08281b;
+    --hero: radial-gradient(900px 520px at 78% -8%, rgba(0, 192, 115, 0.18) 0%, transparent 62%), #0b1210;
+    --shadow: 0 0 0 1px #1f2a25; --shadow-lg: 0 0 0 1px #1f2a25;
+    color-scheme: dark;
 }
 
 * { box-sizing: border-box; }

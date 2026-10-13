@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { exchangeTikTokCode, getTikTokUser, type TikTokTokens } from "@/integrations/tiktok/login.ts";
-import { saveTikTokConnection, upsertTikTokUser } from "@/modules/accounts/users.ts";
+import { SESSION_COOKIE, userForSession } from "@/modules/accounts/session.ts";
+import { linkOrSignInTikTok, saveTikTokConnection } from "@/modules/accounts/users.ts";
 import { stateMatches } from "../../tiktokshop/state.ts";
 import { callbackUrl, oauthCookie, signedIn, toSignin } from "../../oauth.ts";
 
@@ -26,9 +27,11 @@ export async function GET(req: NextRequest) {
     const info = await getTikTokUser(tokens.access_token);
     if (info.error) console.error("[tiktok] user info failed", info.error.code, info.error.message);
     const profile = { open_id: tokens.open_id, username: info.user?.username, display_name: info.user?.display_name, avatar_url: info.user?.avatar_url };
-    const user = await upsertTikTokUser(profile);
+    // Already signed in (Connect TikTok on My accounts): connect it to that account and go back there.
+    const current = await userForSession(req.cookies.get(SESSION_COOKIE)?.value).catch(() => null);
+    const { user, linked } = await linkOrSignInTikTok(current, profile);
     await saveTikTokConnection(user.id, profile, tokens);
-    return signedIn(req, user.id, "tiktok");
+    return signedIn(req, user.id, "tiktok", linked ? "/app/accounts?connected=tiktok" : "/app");
   } catch (err) {
     console.error("[tiktok] callback error", err instanceof Error ? err.message : err);
     return toSignin(req, "failed", "tiktok");

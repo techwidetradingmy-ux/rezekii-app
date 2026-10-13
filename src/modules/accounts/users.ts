@@ -55,6 +55,25 @@ export async function upsertTikTokUser(t: { open_id: string; username?: string; 
   return existing ? patch(existing.id, fields) : insert({ ...fields, tiktok_open_id: t.open_id, role: "creator" });
 }
 
+/**
+ * TikTok from My accounts: when someone is already signed in and no other Rezekii account uses this TikTok account, it is
+ * connected to the signed-in account (their own name and photo are kept). Otherwise it signs in as usual.
+ */
+export async function linkOrSignInTikTok(current: AppUser | null, t: { open_id: string; username?: string; display_name?: string; avatar_url?: string }): Promise<{ user: AppUser; linked: boolean }> {
+  const owner = await findBy("tiktok_open_id", t.open_id);
+  if (current && (!owner || owner.id === current.id)) {
+    const user = await patch(current.id, {
+      tiktok_open_id: t.open_id,
+      tiktok_username: t.username?.toLowerCase() ?? current.tiktok_username,
+      ...(current.avatar_url ? {} : { avatar_url: t.avatar_url ?? null }),
+      ...(current.display_name ? {} : { display_name: t.display_name ?? null }),
+      last_sign_in_at: now(),
+    });
+    return { user, linked: true };
+  }
+  return { user: await upsertTikTokUser(t), linked: false };
+}
+
 const inSeconds = (s: number) => new Date(Date.now() + s * 1000).toISOString();
 
 /** Saves the account's TikTok connection (tokens encrypted), used later for posting. */

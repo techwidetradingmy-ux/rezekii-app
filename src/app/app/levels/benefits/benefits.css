@@ -1,7 +1,8 @@
 /* Level benefits: copied from the approved mockup (Benefits page), unchanged. */
 .nv-dotr { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #b42318; flex-shrink: 0; }
 .nv { --glass: rgba(255, 255, 255, 0.86); }
-@media (prefers-color-scheme: dark) { .nv { --glass: rgba(19, 28, 24, 0.88); } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .nv { --glass: rgba(19, 28, 24, 0.88); } }
+:root[data-theme="dark"] .nv { --glass: rgba(19, 28, 24, 0.88); }
 @keyframes bfFloat{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-7px) rotate(2deg)}}
 @keyframes bfSweep{0%{transform:translateX(-60px) skewX(-20deg)}55%,100%{transform:translateX(120px) skewX(-20deg)}}
 @keyframes bfRow{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}

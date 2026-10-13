@@ -49,6 +49,7 @@ export async function SiteNav({ variant, staticPage = false }: { variant: "hero"
           <Link href="/app/posts">My posts</Link>
           <Link href="/app/levels">Levels</Link>
           <Link href="/app/rankings">Rankings</Link>
+          <Link href="/app/accounts">My accounts</Link>
           {user?.role === "admin" && <Link href="/app/admin/samples">Sample queue</Link>}
         </>
       ) : (
@@ -60,7 +61,7 @@ export async function SiteNav({ variant, staticPage = false }: { variant: "hero"
       {clientAccount ? (
         <NavAccount />
       ) : user ? (
-        <Link href="/app" className="site-signin site-account">
+        <Link href={variant === "app" ? "/app/accounts" : "/app"} className="site-signin site-account">
           {user.avatar_url ? (
             // Avatars come from many TikTok and Google CDN hosts, so a plain img (as on /app).
             // eslint-disable-next-line @next/next/no-img-element

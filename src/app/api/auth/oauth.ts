@@ -25,9 +25,9 @@ export function toSignin(req: NextRequest, error: "denied" | "expired" | "failed
 }
 
 /** Starts a session for the account and sends them into the app. */
-export async function signedIn(req: NextRequest, userId: string, p: Provider): Promise<NextResponse> {
+export async function signedIn(req: NextRequest, userId: string, p: Provider, to = "/app"): Promise<NextResponse> {
   const { token, expires } = await createSession(userId);
-  const res = NextResponse.redirect(`${appBase(req)}/app`);
+  const res = NextResponse.redirect(`${appBase(req)}${to}`);
   res.cookies.set(SESSION_COOKIE, token, sessionCookieOptions(expires));
   res.cookies.set(oauthCookie(p), "", { ...OAUTH_COOKIE_OPTIONS, maxAge: 0 });
   return res;

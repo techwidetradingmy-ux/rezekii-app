@@ -50,6 +50,19 @@ async function tokenRequest(params: Record<string, string>): Promise<TokenReply>
 export const exchangeTikTokCode = (code: string, redirectUri: string) => tokenRequest({ code, grant_type: "authorization_code", redirect_uri: redirectUri });
 export const refreshTikTokToken = (refreshToken: string) => tokenRequest({ grant_type: "refresh_token", refresh_token: refreshToken });
 
+/** Ends Rezekii's access to the TikTok account (TikTok's revoke endpoint). Used for Disconnect and account deletion. */
+export async function revokeTikTokToken(accessToken: string): Promise<boolean> {
+  const { key, secret } = credentials();
+  const res = await fetch("https://open.tiktokapis.com/v2/oauth/revoke/", {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded", "cache-control": "no-cache" },
+    body: new URLSearchParams({ client_key: key, client_secret: secret, token: accessToken }),
+    cache: "no-store",
+    signal: AbortSignal.timeout(10_000),
+  });
+  return res.ok;
+}
+
 export type TikTokUser = { open_id: string; union_id?: string; avatar_url?: string; display_name?: string; username?: string };
 
 /** `username` needs user.info.profile; without it TikTok still returns the basic fields. */
