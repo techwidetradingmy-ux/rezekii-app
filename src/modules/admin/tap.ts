@@ -44,8 +44,27 @@ async function latest(dataset: string): Promise<{ asOf: string | null; rows: { s
 
 const statusOf = (c: Campaign): AdminCampaign["status"] => (c.status === "ONGOING" ? "live" : c.status === "CLOSED" ? "ended" : "upcoming");
 
-/** Techwide's TAP campaigns from the latest daily refresh, each with its products, creators and commission. Admin only. */
-export async function tapOverview(): Promise<{ asOf: string | null; campaigns: AdminCampaign[]; products: Record<string, AdminTapProduct[]> }> {
+/** One campaign's products from the latest daily refresh (admin TAP page, loaded when the campaign is picked). */
+export async function campaignProducts(campaignId: string): Promise<AdminTapProduct[]> {
+  const [d] = (await (await supabaseRest("market_snapshots?dataset=eq.tap_products&select=as_of&order=as_of.desc&limit=1")).json()) as { as_of: string }[];
+  if (!d) return [];
+  const [row] = (await (await supabaseRest(`market_snapshots?dataset=eq.tap_products&as_of=eq.${d.as_of}&slot=eq.${encodeURIComponent(campaignId)}&select=items&limit=1`)).json()) as { items: Raw[] }[];
+  return (row?.items ?? []).map(toAdminProduct).sort((a, b) => b.sold - a.sold);
+}
+
+const toAdminProduct = (p: Raw): AdminTapProduct => ({
+  id: p.id, name: (p.name ?? "").replace(/\s+/g, " ").trim(), shop: p.shop_name ?? null, image: p.main_image_url ? smallImage(p.main_image_url) : null,
+  open: p.open_collaboration_commission_rate ?? null, total: p.total_commission_rate ?? null, sold: Number(p.product_sales ?? 0), stock: p.inventory ?? null,
+  samples: p.sample_quota ?? 0, available: p.is_available !== false,
+  variants: (p.sku_information_list ?? []).slice(0, 8).map((s): [string, number | null, number] => [
+    (s.properties ?? []).map((x) => x.value_name).filter(Boolean).join(" / ") || s.sku_name || "Default",
+    s.base_price?.sale_price ? Number(s.base_price.sale_price) : null,
+    s.inventory?.available_quantity ?? 0,
+  ]),
+});
+
+/** Techwide's TAP campaigns from the latest daily refresh, each with its product and creator counts and commission. Admin only. */
+export async function tapOverview(): Promise<{ asOf: string | null; campaigns: AdminCampaign[] }> {
   const [camps, prods, stats, creators] = await Promise.all([
     latest("tap_campaigns"),
     latest("tap_products"),
@@ -54,18 +73,7 @@ export async function tapOverview(): Promise<{ asOf: string | null; campaigns: A
   ]);
   const list = (camps.rows.flatMap((r) => r.items) as Campaign[]).filter((c) => c?.id);
   const productsBy: Record<string, AdminTapProduct[]> = {};
-  for (const r of prods.rows) {
-    productsBy[r.slot] = (r.items as Raw[]).map((p) => ({
-      id: p.id, name: (p.name ?? "").replace(/\s+/g, " ").trim(), shop: p.shop_name ?? null, image: p.main_image_url ? smallImage(p.main_image_url) : null,
-      open: p.open_collaboration_commission_rate ?? null, total: p.total_commission_rate ?? null, sold: Number(p.product_sales ?? 0), stock: p.inventory ?? null,
-      samples: p.sample_quota ?? 0, available: p.is_available !== false,
-      variants: (p.sku_information_list ?? []).slice(0, 8).map((s): [string, number | null, number] => [
-        (s.properties ?? []).map((x) => x.value_name).filter(Boolean).join(" / ") || s.sku_name || "Default",
-        s.base_price?.sale_price ? Number(s.base_price.sale_price) : null,
-        s.inventory?.available_quantity ?? 0,
-      ]),
-    })).sort((a, b) => b.sold - a.sold);
-  }
+  for (const r of prods.rows) productsBy[r.slot] = (r.items as Raw[]).map(toAdminProduct);
   const statsBy = new Map(stats.rows.map((r) => [r.slot, r.items as StatRow[]]));
   const people = new Map<string, Set<string>>();
   for (const c of creators) people.set(c.campaign_id, (people.get(c.campaign_id) ?? new Set()).add(c.username));
@@ -81,7 +89,7 @@ export async function tapOverview(): Promise<{ asOf: string | null; campaigns: A
   });
   const order = { live: 0, upcoming: 1, ended: 2 };
   campaigns.sort((a, b) => order[a.status] - order[b.status] || b.products - a.products);
-  return { asOf: prods.asOf, campaigns, products: productsBy };
+  return { asOf: prods.asOf, campaigns };
 }
 
 export type Commission = { asOf: string | null; est: number; settled: number; gmvPaid: number; gmvSettled: number; campaigns: number; top: { name: string; est: number }[]; hasSettled: boolean };
