@@ -18,7 +18,8 @@ export async function GET(req: NextRequest) {
   try {
     token = await freshTikTokToken(openId);
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "TikTok sign-in ran out. Continue with TikTok again." }, { status: 409 });
+    console.error("[creator-info] token", err instanceof Error ? err.message : err);
+    return NextResponse.json({ error: "Rezekii can't reach this TikTok account any more. Continue with TikTok again to reconnect it." }, { status: 409 });
   }
   const info = await queryCreatorInfo(token);
   if (info.error || !info.data) return NextResponse.json({ error: `TikTok says this account can't post right now. Try again later. (${info.error?.message ?? "no reply"})` }, { status: 503 });

@@ -16,8 +16,14 @@ const PRIVACY_LABEL: Record<PrivacyLevel, string> = {
 };
 const myt = (iso: string) => new Date(iso).toLocaleString("en-GB", { timeZone: "Asia/Kuala_Lumpur", weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true });
 
-/** New post: TikTok's Content Sharing Guidelines, step by step, for the creator's own TikTok account. */
-export function NewPostForm() {
+export type PostAccount = { open_id: string; username: string | null };
+
+/**
+ * New post: TikTok's Content Sharing Guidelines, step by step, for the creator's own TikTok account. Admins with several
+ * Techwide team accounts pick which one to post to first.
+ */
+export function NewPostForm({ accounts }: { accounts: PostAccount[] }) {
+  const [account, setAccount] = useState(accounts[accounts.length - 1]?.open_id ?? "");
   const [info, setInfo] = useState<Info | null>(null);
   const [infoError, setInfoError] = useState("");
   const [mode, setMode] = useState<"direct" | "inbox">("direct");
@@ -42,11 +48,17 @@ export function NewPostForm() {
 
   // TikTok requires fresh creator info every time the posting screen opens.
   useEffect(() => {
-    fetch("/api/posts/creator-info", { cache: "no-store" })
+    fetch(`/api/posts/creator-info${account ? `?account=${encodeURIComponent(account)}` : ""}`, { cache: "no-store" })
       .then(async (r) => ((await r.json()) as Info & { error?: string }))
       .then((d) => (d.error ? setInfoError(d.error) : setInfo(d)))
       .catch(() => setInfoError("Couldn't reach TikTok. Check your connection and try again."));
-  }, []);
+  }, [account]);
+  function pickAccount(openId: string) {
+    setAccount(openId);
+    setInfo(null);
+    setInfoError("");
+    setPrivacy("");
+  }
 
   const preview = useMemo(() => (file ? URL.createObjectURL(file) : ""), [file]);
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
@@ -82,7 +94,7 @@ export function NewPostForm() {
       const r = await fetch("/api/posts", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ ...choice, source, storagePath, linkUrl: source === "link" ? linkUrl : undefined, when: at, consent: true }),
+        body: JSON.stringify({ ...choice, source, storagePath, linkUrl: source === "link" ? linkUrl : undefined, when: at, consent: true, account: account || undefined }),
       });
       const d = (await r.json()) as { post?: { status: string; scheduled_at: string | null }; error?: string | string[] };
       if (!r.ok || !d.post) throw new Error(Array.isArray(d.error) ? d.error.join(" ") : d.error || "Something went wrong.");
@@ -117,6 +129,14 @@ export function NewPostForm() {
 
   return (
     <form className="np" onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate>
+      {accounts.length > 1 && (
+        <label className="card np-account" style={{ display: "flex", flexDirection: "column", alignItems: "stretch", gap: 6 }}>
+          <small>Post to</small>
+          <select value={account} onChange={(e) => pickAccount(e.target.value)} className="np-input">
+            {accounts.map((a) => <option key={a.open_id} value={a.open_id}>{a.username ? `@${a.username}` : "TikTok account"}</option>)}
+          </select>
+        </label>
+      )}
       <section className="card np-account" aria-label="TikTok account">
         {info ? (
           <>
