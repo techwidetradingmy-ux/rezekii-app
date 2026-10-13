@@ -2,46 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import { shortCount, type AccountStats } from "@/integrations/tiktok/stats.ts";
 import type { AccountOverview } from "@/modules/accounts/manage.ts";
 import { Hud, useToast } from "../marketplace/use-tap-actions";
+import { saveTheme, useTheme } from "../use-theme";
 import "../marketplace/marketplace.css";
 import "../today.css";
 import "./accounts.css";
-
-type Theme = "light" | "dark" | "device";
-const themeListeners = new Set<() => void>();
-const readTheme = (): Theme => {
-  try {
-    const t = window.localStorage.getItem("rz_theme");
-    return t === "light" || t === "dark" ? t : "device";
-  } catch {
-    return "device";
-  }
-};
-const subscribeTheme = (fn: () => void) => {
-  themeListeners.add(fn);
-  return () => {
-    themeListeners.delete(fn);
-  };
-};
-/** Saved on this device only, and applied before paint by the script in the root layout. */
-function saveTheme(t: Theme) {
-  try {
-    if (t === "device") window.localStorage.removeItem("rz_theme");
-    else window.localStorage.setItem("rz_theme", t);
-  } catch {}
-  const root = document.documentElement;
-  if (t === "device") {
-    delete root.dataset.theme;
-    root.style.colorScheme = "";
-  } else {
-    root.dataset.theme = t;
-    root.style.colorScheme = t;
-  }
-  themeListeners.forEach((fn) => fn());
-}
 
 type Me = { handle: string; avatar: string | null; initial: string; role: "admin" | "creator"; tiktokUsername: string | null };
 type Alert = "disconnect" | "delete" | null;
@@ -50,7 +18,7 @@ type Alert = "disconnect" | "delete" | null;
 export function AccountsView({ me, o, justConnected }: { me: Me; o: AccountOverview; justConnected: boolean }) {
   const router = useRouter();
   const { toast, flash } = useToast();
-  const theme = useSyncExternalStore(subscribeTheme, readTheme, () => "device" as Theme);
+  const theme = useTheme();
   const [stats, setStats] = useState<AccountStats | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [alert, setAlert] = useState<Alert>(null);

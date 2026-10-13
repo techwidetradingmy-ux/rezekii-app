@@ -36,9 +36,8 @@ export async function addedAdminEmails(): Promise<string[]> {
 }
 
 export async function addAdmin(email: string, by: string): Promise<void> {
+  // They become admin the next time they sign in with Google (which also checks the email is verified).
   await supabaseRest("admin_emails?on_conflict=email", json({ email, added_by: by }, "resolution=ignore-duplicates,return=minimal"));
-  // Someone already signed in with Google under this verified email becomes admin straight away.
-  await supabaseRest(`app_users?email=eq.${encodeURIComponent(email)}&google_sub=not.is.null`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ role: "admin" }) });
   await logActivity(by, "Admins", `added ${email} as admin`);
 }
 
@@ -48,4 +47,9 @@ export async function removeAdmin(email: string, by: string): Promise<void> {
   const users = (await (await supabaseRest(`app_users?email=eq.${encodeURIComponent(email)}&role=eq.admin&select=id`, { method: "PATCH", headers: { prefer: "return=representation" }, body: JSON.stringify({ role: "creator" }) })).json()) as { id: string }[];
   for (const u of users) await supabaseRest(`app_sessions?user_id=eq.${u.id}`, { method: "DELETE", headers: { prefer: "return=minimal" } });
   await logActivity(by, "Admins", `removed ${email} as admin`);
+}
+
+/** The activity log keeps 90 days (run with the daily refresh). */
+export async function pruneActivity(): Promise<void> {
+  await supabaseRest(`admin_activity?at=lt.${new Date(Date.now() - 90 * 86400_000).toISOString()}`, { method: "DELETE", headers: { prefer: "return=minimal" } });
 }

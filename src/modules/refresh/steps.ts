@@ -3,6 +3,7 @@ import { listCampaignProductStats, listCampaignProducts, listCampaigns, listProd
 import { amount, goldenSellers, type StatRow } from "../tap/golden.ts";
 import { smallImage } from "../tap/image.ts";
 import { updateLevels } from "../levels/store.ts";
+import { pruneActivity } from "../admin/admins.ts";
 import { refreshVideos } from "../admin/videos.ts";
 import { buildRankings } from "../rankings/store.ts";
 import { getBestselling, getMarketplaceCreator, searchMarketplaceCreators, type BestsellingKind } from "../../integrations/tiktok-shop/seller.ts";
@@ -132,10 +133,12 @@ async function rankings(t: TaskRow): Promise<StepResult> {
   return { count: built.creators["30D"].length };
 }
 
-/** Video numbers for every connected TikTok account (admin Video stats). Resumes by account when the tick runs out. */
+/** Video numbers for every connected TikTok account (admin Video stats), then trims the admin activity log to 90 days. */
 async function videos(t: TaskRow, { deadline }: Ctx): Promise<StepResult> {
   const r = await refreshVideos(t.cursor ? Number(t.cursor) : 0, deadline - 8000);
-  return r.next === null ? { count: r.count } : { count: r.count, more: true, cursor: String(r.next) };
+  if (r.next !== null) return { count: r.count, more: true, cursor: String(r.next) };
+  await pruneActivity();
+  return { count: r.count };
 }
 
 /** [productId, name, shop, image] */
