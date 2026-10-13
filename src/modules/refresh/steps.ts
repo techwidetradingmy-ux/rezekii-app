@@ -1,10 +1,11 @@
 import type { ApiReply } from "../../integrations/tiktok-shop/api.ts";
-import { listCampaignProductStats, listCampaignProducts, listCampaigns, type Campaign, type CampaignProduct, type CampaignProductStats } from "../../integrations/tiktok-shop/partner.ts";
+import { listCampaignProductStats, listCampaignProducts, listCampaigns, listProductCreators, type Campaign, type CampaignProduct, type CampaignProductStats } from "../../integrations/tiktok-shop/partner.ts";
 import { amount, goldenSellers, type StatRow } from "../tap/golden.ts";
+import { smallImage } from "../tap/image.ts";
 import { getBestselling, getMarketplaceCreator, searchMarketplaceCreators, type BestsellingKind } from "../../integrations/tiktok-shop/seller.ts";
 import { bestSlot, type PlannedTask } from "./plan.ts";
 import type { Sessions } from "./sessions.ts";
-import { catalogSales, creatorsNeedingDetail, openTaskCount, rebuildTapCatalog, saveDetail, saveSnapshot, snapshotItems, upsertCreators, type TaskRow } from "./store.ts";
+import { catalogSales, creatorsNeedingDetail, upsertCreatorProducts, openTaskCount, rebuildTapCatalog, saveDetail, saveSnapshot, snapshotItems, upsertCreators, type TaskRow } from "./store.ts";
 
 /** TikTok's "too many requests" code, shared by the app's whole API group. */
 export const RATE_LIMITED = 36009002;
@@ -88,6 +89,9 @@ async function tapProducts(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
 
   const shopOf = new Map(rows.map((p) => [p.id, p.shop_name ?? ""]));
   const stats: StatRow[] = [];
+  // Products somebody promotes: their creators are read next (tap_creators), for My TAP products.
+  const promoted: CreatorTaskProduct[] = [];
+  const byId = new Map(rows.map((p) => [p.id, p]));
   try {
     pageToken = undefined;
     do {
@@ -95,6 +99,8 @@ async function tapProducts(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
       for (const x of data.campaign_product_statistics ?? []) {
         const d = x.campaign_product_detail;
         if (d?.product_id) stats.push([d.product_id, shopOf.get(d.product_id) ?? "", amount(d.indicator_data?.estimated_amount)]);
+        const p = d?.product_id ? byId.get(d.product_id) : undefined;
+        if (p && (x.promoted_creator_num ?? 0) > 0) promoted.push([p.id, p.name, p.shop_name ?? "", smallImage(p.main_image_url)]);
       }
       pageToken = data.next_page_token || undefined;
       if (pageToken) await wait(300);
@@ -104,7 +110,42 @@ async function tapProducts(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
     if (err instanceof ApiError && err.code === RATE_LIMITED) throw err;
     console.error("[refresh] campaign sales", c.id, err instanceof Error ? err.message : err);
   }
-  return { count: rows.length };
+  const followUps: PlannedTask[] = promoted.length ? [{ key: `tap_creators|${c.id}`, kind: "tap_creators", params: { campaignId: c.id, products: promoted }, priority: 4 }] : [];
+  return { count: rows.length, followUps };
+}
+
+/** [productId, name, shop, image] */
+type CreatorTaskProduct = [string, string, string, string | null];
+
+/**
+ * Every creator promoting each of one campaign's products: sales through their links, video and LIVE counts, sample status.
+ * Resumes where it stopped (product index and page) when the timer tick runs out.
+ */
+async function tapCreators(t: TaskRow, { sessions, deadline }: Ctx): Promise<StepResult> {
+  const { campaignId, products } = t.params as { campaignId: string; products: CreatorTaskProduct[] };
+  const s = await sessions.partner();
+  let { i, token } = (t.cursor ? JSON.parse(t.cursor) : { i: 0 }) as { i: number; token?: string };
+  let count = 0;
+  while (i < products.length) {
+    if (Date.now() > deadline - 8000) return { count, more: true, cursor: JSON.stringify({ i, token }) };
+    const [productId, name, shop, image] = products[i];
+    const data = ok(await listProductCreators(s.token, s.cipher, campaignId, productId, { pageSize: 50, pageToken: token }));
+    const now = new Date().toISOString();
+    const found = (data.promotion_creators ?? [])
+      .filter((c) => c.creator?.user_name)
+      .map((c) => ({
+        campaign_id: campaignId, product_id: productId, username: c.creator.user_name!.toLowerCase(), nick_name: c.creator.nick_name ?? null,
+        temp_id: c.creator.creator_temp_id, temp_id_at: now, affiliate_product_id: c.affiliate_product_id ?? null,
+        paid: amount(c.paid_amount?.amount), videos: c.video_count ?? 0, lives: c.room_count ?? 0, sample_status: c.free_sample_status ?? null,
+        commission: c.commission ? Number(c.commission) : null, product_name: name, shop, image, as_of: t.run_date, updated_at: now,
+      }));
+    if (found.length) await upsertCreatorProducts(found);
+    count += found.length;
+    token = data.next_page_token || undefined;
+    if (!token) i++;
+    await wait(300);
+  }
+  return { count };
 }
 
 /** Rebuilds the TAP Marketplace table, after every campaign's products are saved (waits while any are still running). */
@@ -159,6 +200,7 @@ export const STEPS: Record<string, (t: TaskRow, ctx: Ctx) => Promise<StepResult>
   tap_campaigns: tapCampaigns,
   tap_products: tapProducts,
   tap_catalog: tapCatalog,
+  tap_creators: tapCreators,
   details,
   marketplace,
 };

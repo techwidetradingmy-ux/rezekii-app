@@ -165,3 +165,20 @@ export function listCreatorContent(accessToken: string, cipher: string, campaign
     query: { category_asset_cipher: cipher, affiliate_product_id: creator.affiliate_product_id, content_type: contentType },
   });
 }
+
+export type SampleTracking = {
+  shipping_provider_name?: string;
+  /** Unix time (seconds or milliseconds, as a string or number). */
+  estimated_latest_delivery_date?: string | number;
+  tracking_results?: { tracking_event_description?: string; tracking_event_update_date?: string | number }[];
+};
+
+/** Where one creator's free sample is: courier, tracking events and the latest expected delivery. */
+export function getSampleTracking(accessToken: string, cipher: string, campaignId: string, productId: string, creatorTempId: string) {
+  return callApi<{ sample_status?: SampleTracking }>({
+    method: "GET",
+    path: `/affiliate_partner/202508/campaigns/${campaignId}/products/${productId}/creator/${creatorTempId}/content/statistics/sample/status`,
+    accessToken,
+    query: { category_asset_cipher: cipher },
+  });
+}

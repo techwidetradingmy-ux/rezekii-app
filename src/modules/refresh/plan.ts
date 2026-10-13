@@ -1,6 +1,6 @@
 /** What the daily refresh fetches, as a list of tasks. Pure: no network, no database. */
 
-export type TaskKind = "tap_campaigns" | "tap_products" | "tap_catalog" | "best" | "details" | "marketplace";
+export type TaskKind = "tap_campaigns" | "tap_products" | "tap_catalog" | "tap_creators" | "best" | "details" | "marketplace";
 export type PlannedTask = { key: string; kind: TaskKind; params: Record<string, unknown>; priority: number };
 
 const DAY = 86_400_000;

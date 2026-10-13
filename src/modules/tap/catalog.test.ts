@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { browse, creatorRateFor, PAGE_SIZE, type TapProduct } from "./catalog.ts";
 import { amount, goldenSellers } from "./golden.ts";
+import { smallImage } from "./image.ts";
 import { n, pct, perSale, priceText, pulled, rm, short } from "../../app/app/marketplace/format.ts";
 
 const P = (id: string, o: Partial<TapProduct>): TapProduct => ({
@@ -83,4 +84,10 @@ test("tap marketplace: display formats", () => {
   assert.equal(pulled("2026-10-13"), "13 Oct 2026");
   assert.equal(perSale(30.9, 500), "RM1.55");
   assert.equal(perSale(null, 500), "—");
+});
+
+test("tap images: full-size TikTok photos become 300px WebP", () => {
+  assert.equal(smallImage("https://p16.example/tos/abc~tplv-aphluv4xwc-origin-jpeg.jpeg?dr=1"), "https://p16.example/tos/abc~tplv-aphluv4xwc-resize-webp:300:300.webp?dr=1");
+  assert.equal(smallImage("https://p16.example/already-small.webp"), "https://p16.example/already-small.webp");
+  assert.equal(smallImage(undefined), null);
 });

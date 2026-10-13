@@ -111,3 +111,8 @@ export async function catalogSales(): Promise<{ id: string; shop: string | null;
     if (page.length < 1000) return out;
   }
 }
+
+/** Saves creator rows for My TAP products (one per campaign, product and creator; newer numbers replace older ones). */
+export async function upsertCreatorProducts(rows: Record<string, unknown>[]): Promise<void> {
+  await supabaseRest("tap_creator_products?on_conflict=campaign_id,product_id,username", json(rows, "resolution=merge-duplicates,return=minimal"));
+}

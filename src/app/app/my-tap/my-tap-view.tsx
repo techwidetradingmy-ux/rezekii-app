@@ -2,32 +2,44 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import type { SampleRequest } from "@/modules/tap/samples.ts";
+import { sampleLook, type MyTapRow } from "@/modules/tap/stages.ts";
+import type { MyTapDetail } from "@/modules/tap/mytap.ts";
+import { n, rmx, short, tiktokProductUrl } from "../marketplace/format";
 import "../marketplace/marketplace.css";
 import "./my-tap.css";
 
-/** Sample stage, as in the mockup: 1 requested, 2 shipped, 3 delivered (to post), 4 posted, -1 cancelled, 0 selling without a sample. */
-const stageOf = (r: SampleRequest): number => (r.status === "rejected" || r.status === "cancelled" ? -1 : 1);
-const LOOK: Record<string, [string, string, string]> = {
-  "1": ["Sample requested", "var(--bsoft)", "var(--blue)"],
-  "-1": ["Sample cancelled", "var(--surface2)", "var(--muted)"],
-};
-const TABS: [string, (r: SampleRequest) => boolean][] = [
+const TABS: [string, (r: MyTapRow) => boolean][] = [
   ["All", () => true],
-  ["Samples on the way", (r) => [1, 2].includes(stageOf(r))],
-  ["To post", (r) => stageOf(r) === 3],
-  ["Posted", (r) => stageOf(r) === 4],
-  ["Selling, no sample", (r) => stageOf(r) === 0],
+  ["Samples on the way", (r) => [1, 2].includes(r.stage)],
+  ["To post", (r) => r.stage === 3],
+  ["Posted", (r) => r.stage === 4],
+  ["Selling, no sample", (r) => r.stage === 0],
 ];
-const dt = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kuala_Lumpur" });
-const events = (r: SampleRequest): [string, string][] =>
-  [
-    ["Requested on Rezekii · Techwide applies for you next", r.created_at] as [string, string],
-    ...(r.status === "applied" ? [["Techwide applied for it in TikTok Shop", r.updated_at] as [string, string]] : []),
-    ...(r.status === "rejected" ? [[`Techwide could not apply${r.note ? `: ${r.note}` : ""}`, r.updated_at] as [string, string]] : []),
-  ].reverse();
+/** TikTok's tracking events, in words (as in the mockup). */
+const EVN: Record<string, string> = {
+  REZEKII_REQUEST: "Requested on Rezekii · Techwide applies for you next",
+  TECHWIDE_APPLIED: "Techwide applied for it in TikTok Shop",
+  ORDER_PLACED: "Sample ordered",
+  ORDER_PACKED_AND_READY_FOR_DROP_OFF_AT_CARRIERS_FACILITY: "Packed and handed to the courier",
+  OUT_FOR_DELIVERY: "Out for delivery",
+  THE_PACKAGE_HAS_BEEN_DELIVERED: "Delivered",
+};
+const dt = (unix: number) => (unix ? new Date(unix * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kuala_Lumpur" }) : "");
+const isoUnix = (iso: string) => Math.floor(Date.parse(iso) / 1000);
+const plural = (v: number, one: string, many: string) => `${v} ${v === 1 ? one : many}`;
+const contentText = (r: MyTapRow) => `${plural(r.videos, "video", "videos")} · ${plural(r.lives, "LIVE", "LIVEs")}`;
+/** Order: Rezekii requests, then waiting for a post, samples on the way, posted, the rest; then by sales. */
+const pri = (r: MyTapRow) => (r.request ? -1 : r.stage === 3 ? 0 : r.stage === 1 || r.stage === 2 ? 1 : r.stage === 4 ? 2 : 3);
 
-function Thumb({ r }: { r: SampleRequest }) {
+function requestEvents(r: MyTapRow): [string, number][] {
+  const q = r.request!;
+  const ev: [string, number][] = [["REZEKII_REQUEST", isoUnix(q.createdAt)]];
+  if (q.status === "applied") ev.push(["TECHWIDE_APPLIED", isoUnix(q.updatedAt)]);
+  if (q.status === "rejected") ev.push([`Techwide could not apply${q.note ? `: ${q.note}` : ""}`, isoUnix(q.updatedAt)]);
+  return ev.reverse();
+}
+
+function Thumb({ r }: { r: MyTapRow }) {
   return r.image ? (
     <span className="mt-ph" aria-hidden="true" style={{ backgroundImage: `url("${r.image}")` }} />
   ) : (
@@ -35,14 +47,27 @@ function Thumb({ r }: { r: SampleRequest }) {
   );
 }
 
-/** My TAP products from the mockup. Today it lists the free samples requested on Rezekii; TikTok's sales, shipping and posts are added next. */
-export function MyTapView({ rows }: { rows: SampleRequest[] }) {
+/** My TAP products from the mockup: every Techwide TAP product the creator promotes, with sales, samples and posts from TikTok. */
+export function MyTapView({ rows, hasTikTok }: { rows: MyTapRow[]; hasTikTok: boolean }) {
   const [tab, setTab] = useState(0);
   const [q, setQ] = useState("");
   const [pg, setPg] = useState(1);
-  const [panel, setPanel] = useState<SampleRequest | null>(null);
+  const [panel, setPanel] = useState<MyTapRow | null>(null);
   const [closing, setClosing] = useState(false);
+  const [detail, setDetail] = useState<{ key: string; data: MyTapDetail | null; error: string } | null>(null);
 
+  const openPanel = (r: MyTapRow) => {
+    setClosing(false);
+    setPanel(r);
+    if (!r.campaignId || detail?.key === r.key) return;
+    setDetail({ key: r.key, data: null, error: "" });
+    fetch(`/api/tap/my-tap?campaign=${r.campaignId}&product=${r.productId}`)
+      .then(async (res) => {
+        const d = (await res.json().catch(() => ({}))) as MyTapDetail & { error?: string };
+        setDetail({ key: r.key, data: res.ok ? d : null, error: res.ok ? "" : d.error || "TikTok could not load this right now." });
+      })
+      .catch(() => setDetail({ key: r.key, data: null, error: "TikTok could not load this right now." }));
+  };
   const closePanel = () => {
     setClosing(true);
     setTimeout(() => {
@@ -58,16 +83,19 @@ export function MyTapView({ rows }: { rows: SampleRequest[] }) {
   });
 
   const term = q.trim().toLowerCase();
-  const list = rows.filter(TABS[tab][1]).filter((r) => !term || `${r.product_name} ${r.shop ?? ""}`.toLowerCase().includes(term));
+  const list = rows.filter(TABS[tab][1]).filter((r) => !term || `${r.name} ${r.shop}`.toLowerCase().includes(term)).sort((a, b) => pri(a) - pri(b) || b.paid - a.paid);
   const shown = list.slice(0, pg * 15);
-  const onWay = rows.filter((r) => [1, 2].includes(stageOf(r))).length;
+  const videos = rows.reduce((a, r) => a + r.videos, 0);
+  const lives = rows.reduce((a, r) => a + r.lives, 0);
+  const due = rows.filter((r) => r.stage === 3).length;
   const sums: [string, string, string][] = [
-    ["Products promoting", rows.length.toLocaleString("en-US"), "From Rezekii TAP campaigns"],
-    ["Sales", "—", "What buyers paid through your links"],
-    ["Samples", rows.filter((r) => stageOf(r) > 0).length.toLocaleString("en-US"), `${onWay} on the way · 0 to post`],
-    ["Content posted", "—", "Videos and LIVEs, each counted once"],
+    ["Products promoting", n(rows.length), "From Rezekii TAP campaigns"],
+    ["Sales", rmx(rows.reduce((a, r) => a + r.paid, 0)), "What buyers paid through your links"],
+    ["Samples", n(rows.filter((r) => r.stage > 0).length), `${rows.filter((r) => [1, 2].includes(r.stage)).length} on the way · ${due} to post`],
+    ["Content posted", n(videos + lives), `${videos.toLocaleString("en-US")} videos · ${lives.toLocaleString("en-US")} LIVEs`],
   ];
-  const look = (r: SampleRequest) => LOOK[String(stageOf(r))];
+  const d = panel && detail?.key === panel.key ? detail : null;
+  const events: [string, number][] = panel ? (panel.request ? requestEvents(panel) : (d?.data?.events ?? [])) : [];
 
   return (
     <>
@@ -80,6 +108,13 @@ export function MyTapView({ rows }: { rows: SampleRequest[] }) {
           </div>
         ))}
       </div>
+
+      {due > 0 && (
+        <div className="mt-alert" role="status">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true" style={{ flexShrink: 0 }}><path d="M12 8v5M12 16h.01" /><circle cx="12" cy="12" r="9" /></svg>
+          <span>{`${due} ${due === 1 ? "sample is" : "samples are"} waiting for your post. TikTok marks each one completed once you post.`}</span>
+        </div>
+      )}
 
       <section className="nv-card" aria-label="Your TAP products" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
         <div className="fb-row">
@@ -102,19 +137,19 @@ export function MyTapView({ rows }: { rows: SampleRequest[] }) {
         )}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {shown.map((r, i) => {
-            const [status, bg, fg] = look(r);
-            const g = stageOf(r);
-            const steps: [string, string][] = [["Requested", g >= 1 ? dt(r.created_at) : ""], ["Shipped", ""], ["Delivered", ""], ["Posted", ""]];
+            const [status, bg, fg] = sampleLook(r.stage);
+            const requested = r.request ? dt(isoUnix(r.request.createdAt)) : "Done";
+            const steps: [string, string][] = [["Requested", r.stage >= 1 ? requested : ""], ["Shipped", r.stage >= 2 ? "Done" : ""], ["Delivered", r.stage >= 3 ? "Done" : ""], ["Posted", r.stage >= 4 ? "Done" : ""]];
             return (
-              <button key={r.id} type="button" className="mt-card" onClick={() => { setClosing(false); setPanel(r); }} aria-label={`Details for ${r.product_name}`} style={{ animationDelay: `${Math.min(i, 10) * 40}ms` }}>
+              <button key={r.key} type="button" className="mt-card" onClick={() => openPanel(r)} aria-label={`Details for ${r.name}`} style={{ animationDelay: `${Math.min(i, 10) * 40}ms` }}>
                 <Thumb r={r} />
                 <span style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
                   <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                     <span className="mt-pill" style={{ background: bg, color: fg }}>{status}</span>
                     <span style={{ fontSize: 12, color: "var(--muted)" }}>{r.shop}</span>
                   </span>
-                  <strong style={{ fontSize: 15, lineHeight: 1.35, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{r.product_name}</strong>
-                  {g > 0 && (
+                  <strong style={{ fontSize: 15, lineHeight: 1.35, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{r.name}</strong>
+                  {r.stage !== 0 && r.stage !== -1 && (
                     <span className="mt-steps">
                       {steps.map(([lab, when], k) => (
                         <span key={lab} className="mt-step">
@@ -126,8 +161,8 @@ export function MyTapView({ rows }: { rows: SampleRequest[] }) {
                   )}
                 </span>
                 <span className="mt-right">
-                  <span style={{ fontSize: 18, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>—</span>
-                  <span style={{ fontSize: 12, color: "var(--muted)" }}>Sales from TikTok soon</span>
+                  <span style={{ fontSize: 18, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{rmx(r.paid)}</span>
+                  <span style={{ fontSize: 12, color: "var(--muted)" }}>{contentText(r)}</span>
                 </span>
               </button>
             );
@@ -137,7 +172,9 @@ export function MyTapView({ rows }: { rows: SampleRequest[] }) {
           <div><button type="button" className="nv-btn2 nv-press" style={{ height: 36, padding: "0 13px", fontSize: 13, borderRadius: 10 }} onClick={() => setPg(pg + 1)}>Show {Math.min(15, list.length - shown.length)} more</button></div>
         )}
         <p style={{ margin: 0, fontSize: 12, color: "var(--muted)", lineHeight: 1.5 }}>
-          Free samples you request on Rezekii show here first; Techwide applies for each one in TikTok Shop. Sales, shipping and your posts come from TikTok and are being added next.
+          {hasTikTok
+            ? "Every status comes straight from TikTok: a sample shows as completed once you post a video or LIVE for it, and TikTok tracks late samples itself. Sales are what buyers paid through your links in Techwide's TAP campaigns, from TikTok's campaign data."
+            : "Sign in with TikTok to see the products you promote, with your sales, samples and posts from TikTok. Samples you request on Rezekii show here either way."}
         </p>
       </section>
 
@@ -146,39 +183,54 @@ export function MyTapView({ rows }: { rows: SampleRequest[] }) {
           <button type="button" aria-label="Close" className={`nv-dim ${closing ? "out" : ""}`} onClick={closePanel} />
           <div role="dialog" aria-modal="true" aria-labelledby="mtpt" className={`nv-panel ${closing ? "out" : ""}`}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span className="mt-pill" style={{ background: look(panel)[1], color: look(panel)[2] }}>{look(panel)[0]}</span>
+              <span className="mt-pill" style={{ background: sampleLook(panel.stage)[1], color: sampleLook(panel.stage)[2] }}>{sampleLook(panel.stage)[0]}</span>
               <button type="button" className="nv-press" aria-label="Close" onClick={closePanel} style={{ width: 34, height: 34, borderRadius: "50%", border: 0, background: "var(--surface2)", color: "var(--text)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
               </button>
             </div>
-            <h3 id="mtpt" style={{ margin: 0, fontSize: 19, fontWeight: 800, lineHeight: 1.3 }}>{panel.product_name}</h3>
+            <h3 id="mtpt" style={{ margin: 0, fontSize: 19, fontWeight: 800, lineHeight: 1.3 }}>{panel.name}</h3>
             <span style={{ fontSize: 13, color: "var(--muted)" }}>{panel.shop}</span>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
-              {["Sales", "Orders", "Videos", "LIVEs"].map((k) => (
+              {([
+                ["Sales", rmx(panel.paid)],
+                ["Orders", d?.data ? n(d.data.content.reduce((a, c) => a + c[3], 0)) : panel.campaignId && !d?.error ? "…" : "0"],
+                ["Videos", String(panel.videos)],
+                ["LIVEs", String(panel.lives)],
+              ] as [string, string][]).map(([k, v]) => (
                 <div key={k} style={{ background: "var(--surface2)", borderRadius: 14, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 2 }}>
                   <span style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)" }}>{k}</span>
-                  <span style={{ fontSize: 18, fontWeight: 800 }}>—</span>
+                  <span style={{ fontSize: 18, fontWeight: 800 }}>{v}</span>
                 </div>
               ))}
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <span className="nv-cap">Sample tracking · TikTok Shop logistics</span>
-              {events(panel).map(([title, when], k) => (
-                <div key={k} className="mt-ev">
-                  <span className={`mt-dot ${k === 0 ? "on" : ""}`} aria-hidden="true" />
-                  <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                    <strong style={{ fontSize: 14 }}>{title}</strong>
-                    <span style={{ fontSize: 12, color: "var(--muted)" }}>{dt(when)}</span>
-                  </span>
-                </div>
-              ))}
-            </div>
+            {events.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <span className="nv-cap">Sample tracking · {d?.data?.carrier || "TikTok Shop logistics"}</span>
+                {events.map(([title, when], k) => (
+                  <div key={k} className="mt-ev">
+                    <span className={`mt-dot ${k === 0 ? "on" : ""}`} aria-hidden="true" />
+                    <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                      <strong style={{ fontSize: 14 }}>{EVN[title] || title}</strong>
+                      <span style={{ fontSize: 12, color: "var(--muted)" }}>{dt(when)}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <span className="nv-cap">Your content for this product</span>
-              <span style={{ fontSize: 14, color: "var(--muted)" }}>Your videos and LIVEs from TikTok will show here.</span>
+              {panel.campaignId && !d?.data && !d?.error && <span style={{ fontSize: 14, color: "var(--muted)", display: "flex", alignItems: "center", gap: 8 }}><span className="nv-spin" aria-hidden="true" style={{ width: 14, height: 14 }} />Loading from TikTok…</span>}
+              {d?.error && <span style={{ fontSize: 14, color: "var(--red)" }}>{d.error}</span>}
+              {(!panel.campaignId || (d?.data && d.data.content.length === 0)) && <span style={{ fontSize: 14, color: "var(--muted)" }}>Nothing posted yet.</span>}
+              {d?.data?.content.map(([kind, when, views, orders, paid], k) => (
+                <div key={k} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 12, background: "var(--surface2)" }}>
+                  <span className="mt-pill" style={{ background: kind === "VIDEO" ? "#00874f" : "#7c3aed", color: "#ffffff" }}>{kind === "VIDEO" ? "Video" : "LIVE"}</span>
+                  <span style={{ flex: 1, fontSize: 13, minWidth: 0 }}>{dt(when) || "Date not given"}</span>
+                  <span style={{ fontSize: 13, color: "var(--muted)" }}>{`${short(views)} views · ${orders} orders · ${rmx(paid)}`}</span>
+                </div>
+              ))}
             </div>
-            <Link href={`/app/marketplace/${panel.product_id}`} className="nv-btn2 nv-press" style={{ height: 50 }}>Open product</Link>
-            <a href={`https://shop.tiktok.com/view/product/${panel.product_id}?region=MY`} target="_blank" rel="noopener" className="nv-btn2 nv-press" style={{ height: 50 }}>Open on TikTok Shop</a>
+            <a href={tiktokProductUrl(panel.productId)} target="_blank" rel="noopener" className="nv-btn2 nv-press" style={{ height: 50 }}>Open on TikTok Shop</a>
           </div>
         </>
       )}
