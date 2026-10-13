@@ -4,7 +4,6 @@ import { notFound, redirect } from "next/navigation";
 import { getProduct } from "@/modules/tap/catalog.ts";
 import { mySamples } from "@/modules/tap/samples.ts";
 import { currentUser } from "../../../current-user";
-import { SiteFooter, SiteNav } from "../../../site";
 import { ProductPageView } from "../product-page-view";
 
 export const metadata: Metadata = { title: "TAP product · Rezekii" };
@@ -20,7 +19,6 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   const requested = samples.some((r) => r.product_id === id && (r.status === "requested" || r.status === "applied"));
   return (
     <>
-      <SiteNav variant="app" />
       <div className="nv nv-page">
         <main className="site-wrap app-main nv-main">
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
@@ -36,7 +34,6 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
           <ProductPageView p={product} requested={requested} />
         </main>
       </div>
-      <SiteFooter />
     </>
   );
 }

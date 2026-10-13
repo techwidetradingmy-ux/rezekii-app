@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { settingsData } from "@/modules/admin/settings.ts";
-import { SiteFooter, SiteNav } from "../../../site";
 import { requireAdmin } from "../guard";
 import { SettingsView } from "./settings-view";
 
@@ -15,13 +14,11 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
   const [d, q] = await Promise.all([settingsData(), searchParams]);
   return (
     <>
-      <SiteNav variant="app" />
       <div className="nv nv-page">
         <main className="site-wrap app-main nv-main">
           <SettingsView d={d} me={user.email ?? user.display_name ?? "admin"} startTab={Math.max(0, TABS.indexOf(q.tab ?? ""))} />
         </main>
       </div>
-      <SiteFooter />
     </>
   );
 }

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { creatorsPage } from "@/modules/admin/creators.ts";
-import { SiteFooter, SiteNav } from "../../../site";
 import { requireAdmin } from "../guard";
 import { CreatorsView } from "./creators-view";
 
@@ -13,13 +12,11 @@ export default async function AdminCreatorsPage() {
   const { creators, places, auto, now } = await creatorsPage();
   return (
     <>
-      <SiteNav variant="app" />
       <div className="nv nv-page">
         <main className="site-wrap app-main nv-main">
           <CreatorsView creators={creators} places={places} auto={auto} now={now} />
         </main>
       </div>
-      <SiteFooter />
     </>
   );
 }

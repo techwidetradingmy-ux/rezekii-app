@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { todayData } from "@/modules/today/today.ts";
 import { currentUser } from "../current-user";
-import { SiteFooter, SiteNav } from "../site";
 import { TodayView } from "./today-view";
 
 export const metadata: Metadata = { title: "Today · Rezekii" };
@@ -18,7 +17,6 @@ export default async function AppHome() {
   const who = user.tiktok_username ? `@${user.tiktok_username}` : user.email;
   return (
     <>
-      <SiteNav variant="app" />
       <div className="nv nv-page">
         <main className="site-wrap app-main nv-main">
           <div>
@@ -28,7 +26,6 @@ export default async function AppHome() {
           <TodayView data={data} />
         </main>
       </div>
-      <SiteFooter />
     </>
   );
 }

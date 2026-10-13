@@ -33,16 +33,19 @@ const fmt = (iso: string, o: Intl.DateTimeFormatOptions) => new Date(iso).toLoca
 const dayKey = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: TZ });
 type Stats = { videos: TikTokVideo[]; posts: Record<string, { views?: number; likes?: number; url?: string }> };
 
-/** My posts: every post with its status, as a list or a week calendar. Updates itself while TikTok is working on a post. */
-export function PostsView() {
-  const [posts, setPosts] = useState<Post[] | null>(null);
+/**
+ * My posts: every post with its status, as a list or a week calendar. Updates itself while TikTok is working on a post.
+ * Opens with the posts and the saved views and likes from the server; the latest numbers from TikTok follow.
+ */
+export function PostsView({ initialPosts, initialStats, now }: { initialPosts: Post[]; initialStats: Stats; now: number }) {
+  const [posts, setPosts] = useState<Post[] | null>(initialPosts);
   const [error, setError] = useState("");
   const [view, setView] = useState<"list" | "week">("list");
   const [weekStart, setWeekStart] = useState(() => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d; });
   const [busyId, setBusyId] = useState("");
   const [note, setNote] = useState("");
-  const [loadedAt, setLoadedAt] = useState(0);
-  const [stats, setStats] = useState<Stats>({ videos: [], posts: {} });
+  const [loadedAt, setLoadedAt] = useState(now);
+  const [stats, setStats] = useState<Stats>(initialStats);
 
   const load = useCallback(() => {
     fetch("/api/posts", { cache: "no-store" })
@@ -50,12 +53,11 @@ export function PostsView() {
       .then(({ ok, d }) => (ok && d.posts ? (setPosts(d.posts), setError(""), setLoadedAt(Date.now())) : setError(d.error || "Couldn't load your posts.")))
       .catch(() => setError("Couldn't load your posts. Check your connection."));
   }, []);
-  useEffect(load, [load]);
-  // Views and likes from TikTok (video.list), loaded once; they don't change by the second.
+  // The latest views and likes from TikTok (video.list), once; the saved numbers stay if TikTok doesn't answer.
   useEffect(() => {
     fetch("/api/tiktok/stats?videos=1", { cache: "no-store" })
       .then((r) => r.json())
-      .then((d: Partial<Stats>) => setStats({ videos: d.videos ?? [], posts: d.posts ?? {} }))
+      .then((d: Partial<Stats>) => (d.videos?.length || Object.keys(d.posts ?? {}).length) && setStats({ videos: d.videos ?? [], posts: d.posts ?? {} }))
       .catch(() => {});
   }, []);
 

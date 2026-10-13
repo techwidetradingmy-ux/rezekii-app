@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { allAccounts } from "@/modules/admin/accounts.ts";
-import { SiteFooter, SiteNav } from "../../../site";
 import { requireAdmin } from "../guard";
 import { AccountsAdminView } from "./accounts-admin-view";
 
@@ -13,13 +12,11 @@ export default async function AdminAccountsPage() {
   const accounts = await allAccounts();
   return (
     <>
-      <SiteNav variant="app" />
       <div className="nv nv-page">
         <main className="site-wrap app-main nv-main">
           <AccountsAdminView accounts={accounts} />
         </main>
       </div>
-      <SiteFooter />
     </>
   );
 }

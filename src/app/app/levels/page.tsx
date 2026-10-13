@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { benefits, levelPage } from "@/modules/levels/store.ts";
 import { currentUser } from "../../current-user";
-import { SiteFooter, SiteNav } from "../../site";
 import { LevelsView } from "./levels-view";
 
 export const metadata: Metadata = { title: "Your level · Rezekii" };
@@ -17,7 +16,6 @@ export default async function LevelsPage() {
   const firstName = (user.display_name || user.tiktok_username || "creator").split(" ")[0];
   return (
     <>
-      <SiteNav variant="app" />
       <div className="nv nv-page">
         <main className="site-wrap app-main nv-main">
           <div>
@@ -27,7 +25,6 @@ export default async function LevelsPage() {
           <LevelsView data={data} benefits={b.list} firstName={firstName} handle={handle} username={user.tiktok_username} />
         </main>
       </div>
-      <SiteFooter />
     </>
   );
 }

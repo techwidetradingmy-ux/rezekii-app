@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { benefits, levelPage } from "@/modules/levels/store.ts";
 import { currentUser } from "../../../current-user";
-import { SiteFooter, SiteNav } from "../../../site";
 import { BenefitsView } from "./benefits-view";
 
 export const metadata: Metadata = { title: "Level benefits · Rezekii" };
@@ -23,7 +22,6 @@ export default async function BenefitsPage() {
         : null;
   return (
     <>
-      <SiteNav variant="app" />
       <div className="nv nv-page">
         <main className="site-wrap app-main nv-main">
           <div>
@@ -33,7 +31,6 @@ export default async function BenefitsPage() {
           <BenefitsView initial={b.list} updatedAt={b.updatedAt} level={lv.level} isAdmin={user.role === "admin"} next={next} />
         </main>
       </div>
-      <SiteFooter />
     </>
   );
 }

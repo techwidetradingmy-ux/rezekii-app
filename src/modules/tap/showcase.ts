@@ -1,3 +1,4 @@
+import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { addShowcaseByLink, getShowcaseProducts } from "../../integrations/tiktok-shop/creator.ts";
 import { approvedCreatorToken } from "../creator-accounts/access.ts";
 import { allProducts } from "./catalog.ts";
@@ -20,18 +21,37 @@ export async function addToShowcase(userId: string, productId: string): Promise<
     console.error("[showcase add]", r.code, r.message, failed?.code, failed?.message);
     return { added: false, link: tap.link, error: failed?.message || r.message || "TikTok Shop didn't add it. Open the link to add it in TikTok Shop.", status: 502 };
   }
-  cache.delete(userId);
+  const saved = await savedShowcase(userId);
+  if (saved) await saveShowcase(userId, { count: saved.count + 1, tap: saved.tap + 1, more: saved.more }, saved.at);
   return { added: true };
 }
 
 export type ShowcaseSummary = { linked: boolean; count: number; tap: number; more: boolean };
-const cache = new Map<string, { at: number; data: ShowcaseSummary }>();
+export type SavedShowcase = { count: number; tap: number; more: boolean; at: string };
 const PAGES = 10;
+const DAY = 86400_000;
 
-/** How many products are in an approved creator's showcase and how many are TAP products (first 200; kept 10 minutes). */
+/** The showcase size from the last count, or null before the first one. */
+export async function savedShowcase(userId: string): Promise<SavedShowcase | null> {
+  const res = await supabaseRest(`affiliate_connections?user_id=eq.${userId}&showcase_at=not.is.null&select=showcase_count,showcase_tap,showcase_more,showcase_at&limit=1`);
+  if (!res.ok) return null;
+  const [row] = (await res.json()) as { showcase_count: number; showcase_tap: number; showcase_more: boolean; showcase_at: string }[];
+  return row ? { count: row.showcase_count, tap: row.showcase_tap, more: row.showcase_more, at: row.showcase_at } : null;
+}
+
+/** True when the saved count is missing or more than a day old. */
+export const showcaseStale = (saved: SavedShowcase | null, now: number) => !saved || now - Date.parse(saved.at) > DAY;
+
+async function saveShowcase(userId: string, s: { count: number; tap: number; more: boolean }, at = new Date().toISOString()) {
+  await supabaseRest(`affiliate_connections?user_id=eq.${userId}`, {
+    method: "PATCH",
+    headers: { prefer: "return=minimal" },
+    body: JSON.stringify({ showcase_count: s.count, showcase_tap: s.tap, showcase_more: s.more, showcase_at: at }),
+  });
+}
+
+/** Counts an approved creator's showcase on TikTok Shop (first 200) and how many are TAP products, then saves it for Today. */
 export async function showcaseSummary(userId: string): Promise<ShowcaseSummary> {
-  const hit = cache.get(userId);
-  if (hit && Date.now() - hit.at < 10 * 60_000) return hit.data;
   const token = await approvedCreatorToken(userId);
   if (!token) return { linked: false, count: 0, tap: 0, more: false };
   const ids: string[] = [];
@@ -41,13 +61,18 @@ export async function showcaseSummary(userId: string): Promise<ShowcaseSummary> 
     const r = await getShowcaseProducts(token, pageToken);
     if (r.code !== 0) {
       console.error("[showcase list]", r.code, r.message);
+      if (page === 0) {
+        // TikTok didn't answer: keep the last count rather than saving a wrong 0.
+        const saved = await savedShowcase(userId);
+        return saved ? { linked: true, count: saved.count, tap: saved.tap, more: saved.more } : { linked: true, count: 0, tap: 0, more: false };
+      }
       break;
     }
     ids.push(...(r.data?.products ?? []).map((p) => p.id));
     pageToken = r.data?.next_page_token || undefined;
   } while (pageToken && ++page < PAGES);
   const catalog = new Set((await allProducts()).map((p) => p.id));
-  const data = { linked: true, count: ids.length, tap: ids.filter((id) => catalog.has(id)).length, more: !!pageToken };
-  cache.set(userId, { at: Date.now(), data });
-  return data;
+  const data = { count: ids.length, tap: ids.filter((id) => catalog.has(id)).length, more: !!pageToken };
+  await saveShowcase(userId, data);
+  return { linked: true, ...data };
 }

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { accountOverview } from "@/modules/accounts/manage.ts";
 import { currentUser } from "../../current-user";
-import { SiteFooter, SiteNav } from "../../site";
 import { AccountsView } from "./accounts-view";
 
 export const metadata: Metadata = { title: "My accounts · Rezekii" };
@@ -16,7 +15,6 @@ export default async function AccountsPage({ searchParams }: { searchParams: Pro
   const handle = user.display_name || user.email || "Your account";
   return (
     <>
-      <SiteNav variant="app" />
       <div className="nv nv-page">
         <main className="site-wrap app-main nv-main">
           <div>
@@ -30,7 +28,6 @@ export default async function AccountsPage({ searchParams }: { searchParams: Pro
           />
         </main>
       </div>
-      <SiteFooter />
     </>
   );
 }

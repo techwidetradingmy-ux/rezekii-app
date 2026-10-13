@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { savedVideos } from "@/modules/admin/videos.ts";
-import { SiteFooter, SiteNav } from "../../../site";
 import { requireAdmin } from "../guard";
 import { StatsView } from "./stats-view";
 
@@ -13,13 +12,11 @@ export default async function AdminStatsPage() {
   const { rows, refreshedAt, now } = await savedVideos(180);
   return (
     <>
-      <SiteNav variant="app" />
       <div className="nv nv-page">
         <main className="site-wrap app-main nv-main">
           <StatsView rows={rows} refreshedAt={refreshedAt} now={now} />
         </main>
       </div>
-      <SiteFooter />
     </>
   );
 }

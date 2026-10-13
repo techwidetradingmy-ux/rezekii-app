@@ -1,6 +1,7 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { allProducts, type TapProduct } from "../tap/catalog.ts";
 import { myTapRows } from "../tap/mytap.ts";
+import { savedShowcase, showcaseStale } from "../tap/showcase.ts";
 import { listPosts } from "../posting/store.ts";
 import { mytDay } from "../refresh/plan.ts";
 import { bestSelling, closingSoon, creatorCategories, greeting, longDay, pickForYou, postWhen, weekDelta, type ClosingSoon, type TodayPick } from "./rules.ts";
@@ -21,6 +22,8 @@ export type TodayData = {
   nextPosts: NextPost[];
   requestedIds: string[];
   asOf: string | null;
+  /** The saved showcase count is missing or a day old: the page recounts it in the background. */
+  showcaseStale: boolean;
 };
 
 const count = async (path: string) => {
@@ -64,7 +67,7 @@ function nextPostsFrom(posts: Awaited<ReturnType<typeof listPosts>>, now: number
 /** Everything the Today page shows for one creator, from Rezekii's own data and Techwide's TAP campaigns. */
 export async function todayData(user: { id: string; tiktok_username: string | null }): Promise<TodayData> {
   const now = Date.now();
-  const [all, tap, links, fresh, posts] = await Promise.all([allProducts(), myTapRows(user.id, user.tiktok_username), linkCounts(user.id, now), newThisWeek(now), listPosts(user.id, 50)]);
+  const [all, tap, links, fresh, posts, showcase] = await Promise.all([allProducts(), myTapRows(user.id, user.tiktok_username), linkCounts(user.id, now), newThisWeek(now), listPosts(user.id, 50), savedShowcase(user.id)]);
   const categoryOf = new Map(all.map((p) => [p.id, p.category]));
   const { top, niche } = creatorCategories(tap.rows, categoryOf);
   const promoted = new Set(tap.rows.filter((r) => r.campaignId).map((r) => r.productId));
@@ -81,7 +84,9 @@ export async function todayData(user: { id: string; tiktok_username: string | nu
     day: longDay(now),
     stats: [
       { key: "links", value: links[0], delta: weekDelta(links[0], links[1]), note: links[1] ? "vs last week" : "made in the last 7 days" },
-      { key: "showcase", value: onTikTok.length, delta: "", note: "from Techwide TAP campaigns" },
+      showcase
+        ? { key: "showcase", value: showcase.count, delta: "", note: `${showcase.tap} from TAP campaigns${showcase.more ? " · first 200" : ""}` }
+        : { key: "showcase", value: onTikTok.length, delta: "", note: "from Techwide TAP campaigns" },
       { key: "samples", value: samples.length, delta: "", note: `${samples.filter((r) => r.stage === 1).length} requested · ${samples.filter((r) => r.stage === 3).length} to post` },
       { key: "open", value: all.length, delta: fresh ? `+${fresh}` : "", note: fresh === null ? "in Techwide's live campaigns" : "new this week" },
     ],
@@ -95,5 +100,6 @@ export async function todayData(user: { id: string; tiktok_username: string | nu
     nextPosts: nextPostsFrom(posts, now),
     requestedIds: tap.rows.filter((r) => r.request && (r.request.status === "requested" || r.request.status === "applied")).map((r) => r.productId),
     asOf: all[0]?.asOf ?? null,
+    showcaseStale: showcaseStale(showcase, now),
   };
 }

@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { allProducts, browse, latestGolden } from "@/modules/tap/catalog.ts";
 import { mySamples } from "@/modules/tap/samples.ts";
 import { currentUser } from "../../current-user";
-import { SiteFooter, SiteNav } from "../../site";
 import { pulled } from "./format";
 import { MarketplaceView } from "./marketplace-view";
 
@@ -18,7 +17,6 @@ export default async function MarketplacePage() {
   const requested = samples.filter((r) => r.status === "requested" || r.status === "applied").map((r) => r.product_id);
   return (
     <>
-      <SiteNav variant="app" />
       <div className="nv nv-page">
         <main className="site-wrap app-main nv-main">
           <div>
@@ -28,7 +26,6 @@ export default async function MarketplacePage() {
           <MarketplaceView initial={initial} golden={golden} requestedIds={requested} />
         </main>
       </div>
-      <SiteFooter />
     </>
   );
 }

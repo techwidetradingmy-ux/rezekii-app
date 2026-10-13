@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { adminToday } from "@/modules/admin/today.ts";
-import { SiteFooter, SiteNav } from "../../site";
 import { AdminTodayView } from "./admin-today-view";
 import { requireAdmin } from "./guard";
 
@@ -13,13 +12,11 @@ export default async function AdminTodayPage() {
   const d = await adminToday();
   return (
     <>
-      <SiteNav variant="app" />
       <div className="nv nv-page">
         <main className="site-wrap app-main nv-main">
           <AdminTodayView d={d} />
         </main>
       </div>
-      <SiteFooter />
     </>
   );
 }

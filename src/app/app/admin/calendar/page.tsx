@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { calendar } from "@/modules/admin/posts.ts";
 import { postingTimes } from "@/modules/posting/times.ts";
-import { SiteFooter, SiteNav } from "../../../site";
 import { requireAdmin } from "../guard";
 import { CalendarView } from "./calendar-view";
 
@@ -16,13 +15,11 @@ export default async function AdminCalendarPage({ searchParams }: { searchParams
   const [{ week, posts, now }, times] = await Promise.all([calendar(offset), postingTimes()]);
   return (
     <>
-      <SiteNav variant="app" />
       <div className="nv nv-page">
         <main className="site-wrap app-main nv-main">
           <CalendarView key={offset} week={week} posts={posts} now={now} times={times} startPost={q.post ?? null} startAccount={q.account ?? null} />
         </main>
       </div>
-      <SiteFooter />
     </>
   );
 }

@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { leaderboard } from "@/modules/rankings/leaderboard.ts";
 import { rankings } from "@/modules/rankings/store.ts";
 import { currentUser } from "../../current-user";
-import { SiteFooter, SiteNav } from "../../site";
 import { pulled } from "../marketplace/format";
 import { RankingsView } from "./rankings-view";
 
@@ -17,7 +16,6 @@ export default async function RankingsPage() {
   const [board, built] = await Promise.all([leaderboard(), rankings()]);
   return (
     <>
-      <SiteNav variant="app" />
       <div className="nv nv-page">
         <main className="site-wrap app-main nv-main">
           <div>
@@ -27,7 +25,6 @@ export default async function RankingsPage() {
           <RankingsView board={board} you={user.tiktok_username ? `@${user.tiktok_username}` : null} asOf={built?.asOf ?? null} />
         </main>
       </div>
-      <SiteFooter />
     </>
   );
 }

@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { allProducts, latestGolden } from "@/modules/tap/catalog.ts";
 import { mySamples } from "@/modules/tap/samples.ts";
 import { currentUser } from "../../current-user";
-import { SiteFooter, SiteNav } from "../../site";
 import { pulled } from "../marketplace/format";
 import { SellersView } from "./sellers-view";
 
@@ -21,7 +20,6 @@ export default async function GoldenSellersPage({ searchParams }: { searchParams
   const requested = samples.filter((r) => r.status === "requested" || r.status === "applied").map((r) => r.product_id);
   return (
     <>
-      <SiteNav variant="app" />
       <div className="nv nv-page">
         <main className="site-wrap app-main nv-main">
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
@@ -37,7 +35,6 @@ export default async function GoldenSellersPage({ searchParams }: { searchParams
           <SellersView golden={golden} products={products} initialShop={shop} requestedIds={requested} />
         </main>
       </div>
-      <SiteFooter />
     </>
   );
 }

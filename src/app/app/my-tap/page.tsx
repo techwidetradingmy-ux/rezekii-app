@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { myTapRows } from "@/modules/tap/mytap.ts";
 import { currentUser } from "../../current-user";
-import { SiteFooter, SiteNav } from "../../site";
 import { pulled } from "../marketplace/format";
 import { MyTapView } from "./my-tap-view";
 
@@ -16,7 +15,6 @@ export default async function MyTapPage() {
   const { rows, asOf } = await myTapRows(user.id, user.tiktok_username);
   return (
     <>
-      <SiteNav variant="app" />
       <div className="nv nv-page">
         <main className="site-wrap app-main nv-main">
           <div>
@@ -26,7 +24,6 @@ export default async function MyTapPage() {
           <MyTapView rows={rows} hasTikTok={!!user.tiktok_username} />
         </main>
       </div>
-      <SiteFooter />
     </>
   );
 }

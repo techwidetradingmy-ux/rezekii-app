@@ -3,7 +3,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { userTikTokAccounts } from "@/modules/posting/store.ts";
 import { currentUser } from "../../current-user";
-import { SiteFooter, SiteNav } from "../../site";
 import { NewPostForm } from "./new-post-form";
 
 export const metadata: Metadata = { title: "New post · Rezekii" };
@@ -15,7 +14,6 @@ export default async function NewPostPage() {
   const accounts = (await userTikTokAccounts(user.id)).map((a) => ({ open_id: a.open_id, username: a.username }));
   return (
     <>
-      <SiteNav variant="app" />
       <main className="site-wrap app-main app-narrow">
         <nav className="app-crumbs" aria-label="Breadcrumb"><Link href={user.role === "admin" ? "/app/admin" : "/app"}>Today</Link><span aria-hidden="true">›</span><span>New post</span></nav>
         <h1>New post</h1>
@@ -29,7 +27,6 @@ export default async function NewPostPage() {
           </section>
         )}
       </main>
-      <SiteFooter />
     </>
   );
 }

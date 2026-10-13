@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { accessFor } from "@/modules/creator-accounts/access.ts";
 import { linkCounts } from "@/modules/tap/links.ts";
 import { currentUser } from "../../current-user";
-import { SiteFooter, SiteNav } from "../../site";
 import { tiktokProductUrl } from "../marketplace/format";
 import { LinksView } from "./links-view";
 
@@ -21,7 +20,6 @@ export default async function LinksPage({ searchParams }: { searchParams: Promis
   ]);
   return (
     <>
-      <SiteNav variant="app" />
       <div className="nv nv-page">
         <main className="site-wrap app-main nv-main">
           <LinksView
@@ -33,7 +31,6 @@ export default async function LinksPage({ searchParams }: { searchParams: Promis
           />
         </main>
       </div>
-      <SiteFooter />
     </>
   );
 }

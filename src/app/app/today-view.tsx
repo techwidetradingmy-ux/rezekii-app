@@ -64,12 +64,13 @@ export function TodayView({ data }: { data: TodayData }) {
   const { toast: msg, flash } = useToast();
   const [showcase, setShowcase] = useState<{ count: number; tap: number; more: boolean } | null>(null);
   useEffect(() => {
-    // With TikTok Shop linked, the real showcase count from TikTok Shop.
+    // The saved showcase count shows straight away; once a day it is recounted from TikTok Shop in the background.
+    if (!data.showcaseStale) return;
     fetch("/api/tap/showcase?count=1", { cache: "no-store" })
       .then((r) => r.json())
       .then((d: { linked?: boolean; count: number; tap: number; more: boolean }) => d.linked && setShowcase(d))
       .catch(() => {});
-  }, []);
+  }, [data.showcaseStale]);
 
   useEffect(() => {
     if (!data.camp) return;

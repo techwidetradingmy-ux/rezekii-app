@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { allProducts } from "@/modules/tap/catalog.ts";
 import { accessFor } from "@/modules/creator-accounts/access.ts";
 import { currentUser } from "../../current-user";
-import { SiteFooter, SiteNav } from "../../site";
 import { tiktokProductUrl } from "../marketplace/format";
 import { LookupView } from "./lookup-view";
 
@@ -20,7 +19,6 @@ export default async function LookupPage() {
   ]);
   return (
     <>
-      <SiteNav variant="app" />
       <div className="nv nv-page">
         <main className="site-wrap app-main nv-main">
           <div>
@@ -30,7 +28,6 @@ export default async function LookupPage() {
           <LookupView linked={linked} samples={all.slice(0, 5).map((p) => tiktokProductUrl(p.id))} />
         </main>
       </div>
-      <SiteFooter />
     </>
   );
 }

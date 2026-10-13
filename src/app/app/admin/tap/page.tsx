@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { campaignProducts, tapOverview } from "@/modules/admin/tap.ts";
-import { SiteFooter, SiteNav } from "../../../site";
 import { requireAdmin } from "../guard";
 import { TapAdminView } from "./tap-admin-view";
 
@@ -15,13 +14,11 @@ export default async function AdminTapPage() {
   const products = first ? await campaignProducts(first.id) : [];
   return (
     <>
-      <SiteNav variant="app" />
       <div className="nv nv-page">
         <main className="site-wrap app-main nv-main">
           <TapAdminView asOf={asOf} campaigns={campaigns} firstProducts={products} />
         </main>
       </div>
-      <SiteFooter />
     </>
   );
 }
