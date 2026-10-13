@@ -3,7 +3,7 @@ import { listCampaignProducts, listCampaigns, type Campaign } from "../../integr
 import { getBestselling, getMarketplaceCreator, searchMarketplaceCreators, type BestsellingKind } from "../../integrations/tiktok-shop/seller.ts";
 import { bestSlot, type PlannedTask } from "./plan.ts";
 import type { Sessions } from "./sessions.ts";
-import { creatorsNeedingDetail, saveDetail, saveSnapshot, upsertCreators, type TaskRow } from "./store.ts";
+import { creatorsNeedingDetail, openTaskCount, rebuildTapCatalog, saveDetail, saveSnapshot, upsertCreators, type TaskRow } from "./store.ts";
 
 /** TikTok's "too many requests" code, shared by the app's whole API group. */
 export const RATE_LIMITED = 36009002;
@@ -84,6 +84,13 @@ async function tapProducts(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
   return { count: rows.length };
 }
 
+/** Rebuilds the TAP Marketplace table, after every campaign's products are saved (waits while any are still running). */
+async function tapCatalog(t: TaskRow): Promise<StepResult> {
+  if (await openTaskCount(t.run_date, "tap_products")) return { count: 0, more: true, waitMs: 60_000 };
+  if (await openTaskCount(t.run_date, "tap_campaigns")) return { count: 0, more: true, waitMs: 60_000 };
+  return { count: await rebuildTapCatalog() };
+}
+
 /** Full Creator Marketplace profiles for new creators, until the run's time is up or the daily cap is reached. */
 async function details(t: TaskRow, { sessions, deadline }: Ctx): Promise<StepResult> {
   if (t.result_count >= DETAILS_PER_DAY) return { count: 0 };
@@ -124,6 +131,7 @@ export const STEPS: Record<string, (t: TaskRow, ctx: Ctx) => Promise<StepResult>
   best,
   tap_campaigns: tapCampaigns,
   tap_products: tapProducts,
+  tap_catalog: tapCatalog,
   details,
   marketplace,
 };

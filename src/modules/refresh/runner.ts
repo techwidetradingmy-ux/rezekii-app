@@ -5,7 +5,7 @@ import { addTasks, claimTask, completeDailyDays, hasTasks, pruneMarketData, upda
 
 /** Daily lists per data date: creators (4 author types) and products (29 category lists), each in RM and US$. */
 const DAILY_LISTS = (AUTHOR_TYPES.length + CATEGORIES.length) * 2;
-const QUEUE: TaskKind[] = ["tap_campaigns", "tap_products", "best", "details"];
+const QUEUE: TaskKind[] = ["tap_campaigns", "tap_products", "tap_catalog", "best", "details"];
 /** Gap between calls to TikTok's analytics and partner APIs. */
 const GAP_MS = 1200;
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));

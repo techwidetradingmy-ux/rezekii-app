@@ -13,7 +13,7 @@ export default async function MyPostsPage() {
   if (!user) redirect("/signin");
   return (
     <>
-      <SiteNav variant="plain" />
+      <SiteNav variant="app" />
       <main className="site-wrap app-main">
         <nav className="app-crumbs" aria-label="Breadcrumb"><Link href="/app">Today</Link><span aria-hidden="true">›</span><span>My posts</span></nav>
         <h1>My posts</h1>

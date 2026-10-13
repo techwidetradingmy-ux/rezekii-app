@@ -13,7 +13,7 @@ export default async function NewPostPage() {
   if (!user) redirect("/signin");
   return (
     <>
-      <SiteNav variant="plain" />
+      <SiteNav variant="app" />
       <main className="site-wrap app-main app-narrow">
         <nav className="app-crumbs" aria-label="Breadcrumb"><Link href="/app">Today</Link><span aria-hidden="true">›</span><span>New post</span></nav>
         <h1>New post</h1>

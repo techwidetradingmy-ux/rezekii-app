@@ -21,8 +21,8 @@ export function TikTokLogo({ size = 22 }: { size?: number }) {
   );
 }
 
-/** Top bar. "hero" sits on the green band; "plain" is for legal and other inner pages. Signed-in people get "My account" instead of "Sign in". */
-export async function SiteNav({ variant, staticPage = false }: { variant: "hero" | "plain"; staticPage?: boolean }) {
+/** Top bar. "hero" sits on the homepage band; "plain" is for legal pages; "app" is the signed-in menu. Signed-in people get "My account" instead of "Sign in". */
+export async function SiteNav({ variant, staticPage = false }: { variant: "hero" | "plain" | "app"; staticPage?: boolean }) {
   // The homepage stays static (served from the CDN); its account button is checked in the browser.
   const clientAccount = variant === "hero" || staticPage;
   const user = clientAccount ? null : await currentUser();
@@ -41,6 +41,14 @@ export async function SiteNav({ variant, staticPage = false }: { variant: "hero"
           <a href="#compare">Compare</a>
           <a href="#levels">Levels</a>
           <a href="#faq">FAQ</a>
+        </>
+      ) : variant === "app" ? (
+        <>
+          <Link href="/app">Today</Link>
+          <Link href="/app/marketplace">TAP Marketplace</Link>
+          <Link href="/app/samples">My samples</Link>
+          <Link href="/app/posts">My posts</Link>
+          {user?.role === "admin" && <Link href="/app/admin/samples">Sample queue</Link>}
         </>
       ) : (
         <>

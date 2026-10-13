@@ -83,3 +83,15 @@ export async function saveDetail(key: string, detail: unknown, error: string | n
     body: JSON.stringify({ detail, detail_error: error, detail_at: new Date().toISOString() }),
   });
 }
+
+/** Tasks of one kind still waiting or running for a day. */
+export async function openTaskCount(runDate: string, kind: string): Promise<number> {
+  const res = await supabaseRest(`refresh_tasks?run_date=eq.${runDate}&kind=eq.${kind}&status=in.(pending,running)&select=key`, { headers: { prefer: "count=exact", range: "0-0" } });
+  return Number((res.headers.get("content-range") ?? "*/0").split("/")[1]) || 0;
+}
+
+/** Rebuilds the TAP Marketplace table from the latest TAP snapshot; returns how many products it holds. */
+export async function rebuildTapCatalog(): Promise<number> {
+  const res = await supabaseRest("rpc/rebuild_tap_catalog", json({}, "return=representation"));
+  return Number(await res.json()) || 0;
+}
