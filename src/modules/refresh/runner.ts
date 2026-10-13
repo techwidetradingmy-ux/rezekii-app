@@ -44,7 +44,7 @@ export async function runRefresh(sessions: Sessions, deadline: number, now = Dat
   const runDate = mytDay(now);
   let planned = 0;
   if (mytHour(now) >= PLAN_HOUR && !(await hasTasks(runDate))) {
-    await pruneMarketData();
+    await pruneMarketData(runDate);
     const tasks = planDay(now, await completeDailyDays(DAILY_LISTS));
     await addTasks(runDate, tasks);
     planned = tasks.length;

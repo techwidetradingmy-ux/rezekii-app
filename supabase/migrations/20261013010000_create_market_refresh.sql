@@ -92,19 +92,23 @@ $$;
 revoke all on function public.complete_daily_days(int) from public, anon, authenticated;
 grant execute on function public.complete_daily_days(int) to service_role;
 
--- Keeps the database small: daily lists for 40 days, 7- and 30-day lists and TAP products for 7 days, finished tasks for 14 days.
-create or replace function public.prune_market_data()
+-- Runs when a new day is planned (`today` = that day in Malaysia). Leftovers from earlier days are closed, since
+-- every day's plan fetches everything again. Keeps the database small: daily lists for 40 days, 7- and 30-day
+-- lists and TAP products for 7 days, tasks for 14 days.
+create or replace function public.prune_market_data(today date)
 returns void
 language sql
 security definer
 set search_path = ''
 as $$
-  delete from public.market_snapshots where as_of < current_date - 40;
-  delete from public.market_snapshots where as_of < current_date - 7 and (slot not like '1D|%' or dataset like 'tap_%');
-  delete from public.refresh_tasks where run_date < current_date - 14;
+  update public.refresh_tasks set status = 'failed', last_error = 'Not finished before the next day''s plan', updated_at = now()
+   where run_date < today and status in ('pending', 'running');
+  delete from public.market_snapshots where as_of < today - 40;
+  delete from public.market_snapshots where as_of < today - 7 and (slot not like '1D|%' or dataset like 'tap_%');
+  delete from public.refresh_tasks where run_date < today - 14;
 $$;
-revoke all on function public.prune_market_data() from public, anon, authenticated;
-grant execute on function public.prune_market_data() to service_role;
+revoke all on function public.prune_market_data(date) from public, anon, authenticated;
+grant execute on function public.prune_market_data(date) to service_role;
 
 -- The per-environment schedule is set separately (same Vault token as the posting timer):
 --   select cron.schedule('rezekii-refresh', '* * * * *', $$ select net.http_post(

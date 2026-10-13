@@ -50,8 +50,9 @@ export async function completeDailyDays(expected: number): Promise<Set<string>> 
   return new Set(((await res.json()) as (string | { complete_daily_days: string })[]).map((r) => (typeof r === "string" ? r : r.complete_daily_days)));
 }
 
-export async function pruneMarketData(): Promise<void> {
-  await supabaseRest("rpc/prune_market_data", json({}));
+/** Closes earlier days' leftovers and deletes old lists. Called once per day, just before the day is planned. */
+export async function pruneMarketData(today: string): Promise<void> {
+  await supabaseRest("rpc/prune_market_data", json({ today }));
 }
 
 export async function saveSnapshot(dataset: string, slot: string, asOf: string, items: unknown[]): Promise<void> {
