@@ -48,11 +48,7 @@ export default async function AppHome() {
             </div>
           </section>
         )}
-        <section className="app-actions" aria-label="What you can do">
-          <Link href="/app/marketplace" className="card app-action">
-            <span className="ico" style={{ background: "#b45309" }}><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 8h14l-1.2 11H6.2zM9 8a3 3 0 0 1 6 0" /></svg></span>
-            <span><strong>TAP Marketplace</strong><small>Techwide campaign products to add to your showcase, with free samples to ask for.</small></span>
-          </Link>
+        <section className="app-actions" aria-label="Posting">
           <Link href="/app/new" className="card app-action">
             <span className="ico" style={{ background: "#00874f" }}><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg></span>
             <span><strong>New post</strong><small>Upload a video, set the caption and privacy, and post now or pick a time.</small></span>

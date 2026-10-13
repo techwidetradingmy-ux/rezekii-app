@@ -1,0 +1,30 @@
+/* My TAP products: copied from the approved mockup (MyTap page), classes and values unchanged. */
+.mt-sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+.mt-stat { padding: 18px; border-radius: 22px; background: var(--surface); box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.mt-card { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 16px; border-radius: 22px; background: var(--surface); box-shadow: var(--shadow2); border: 0; color: var(--text); text-align: left; width: 100%; cursor: pointer; transition: transform 0.2s cubic-bezier(0.3, 1.4, 0.5, 1), box-shadow 0.2s; animation: rkRow 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.mt-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+@keyframes rkRow { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.mt-ph { width: 72px; height: 72px; border-radius: 16px; background-color: var(--surface2); background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 24px; color: #ffffff; }
+.mt-pill { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.mt-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
+.mt-step { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.mt-bar { height: 6px; border-radius: 999px; background: var(--seg); overflow: hidden; }
+.mt-bar span { display: block; height: 100%; border-radius: 999px; background: #00c073; transform-origin: left; animation: mtGrow 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+@keyframes mtGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.mt-sl { font-size: 11px; font-weight: 700; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mt-sl.on { color: var(--gink); }
+.mt-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; text-align: right; }
+.mt-ev { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 10px; position: relative; }
+.mt-dot { width: 12px; height: 12px; border-radius: 50%; margin-top: 3px; background: var(--seg); box-shadow: 0 0 0 3px var(--surface); }
+.mt-dot.on { background: #00c073; }
+.nv-chip { height: 34px; padding: 0 13px; border-radius: 999px; border: 1.5px solid var(--border); background: var(--surface); color: var(--body); font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; transition: background-color 0.2s, border-color 0.2s, color 0.2s; }
+.nv-chip:hover { border-color: var(--green); }
+.nv-chip.on { border-color: var(--green); background: var(--gsoft); color: var(--gink); }
+.nv-noscroll { scrollbar-width: none; }
+.nv-noscroll::-webkit-scrollbar { display: none; }
+@media (max-width: 720px) {
+  .mt-card { grid-template-columns: 56px minmax(0, 1fr); }
+  .mt-right { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; align-items: center; }
+  .mt-ph { width: 56px; height: 56px; }
+}
+@media (prefers-reduced-motion: reduce) { .mt-card, .mt-bar span { animation: none; } }

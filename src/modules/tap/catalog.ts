@@ -1,4 +1,8 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import type { GoldenSeller } from "./golden.ts";
+import { MK_SORTS } from "./sorts.ts";
+
+export { MK_SORTS };
 
 /** One TAP Marketplace product as creators see it. Rates are ×100 (600 = 6%). The campaign's total rate stays on the server. */
 export type TapProduct = {
@@ -22,8 +26,6 @@ export type TapProduct = {
   asOf: string;
 };
 
-export const SORTS = { sold: "sold.desc", today: "sold_today.desc,sold.desc", rate: "silver_rate.desc,sold.desc", "price-asc": "price_lo.asc", "price-desc": "price_lo.desc" } as const;
-export type Sort = keyof typeof SORTS;
 export const PAGE_SIZE = 24;
 
 const COLUMNS = "product_id,name,shop,category,image,price_lo,price_hi,open_rate,silver_rate,sold,sold_today,samples,stock,campaign_count,campaign_name,campaign_end,variants,as_of";
@@ -40,28 +42,59 @@ const toProduct = (r: Row): TapProduct => ({
   variants: r.variants ?? [], asOf: r.as_of,
 });
 
-/** Search text is used inside a PostgREST filter, so only letters, digits and spaces are kept. */
-export const cleanQuery = (q: string) => q.normalize("NFKC").replace(/[^\p{L}\p{N} ]+/gu, " ").replace(/\s+/g, " ").trim().slice(0, 60);
-
-export type ProductQuery = { q?: string; category?: string; shop?: string; samples?: boolean; sort?: Sort; page?: number };
-
-/** One page of products plus the total that match. */
-export async function searchProducts(o: ProductQuery): Promise<{ products: TapProduct[]; total: number }> {
-  const params = new URLSearchParams({ select: COLUMNS, order: SORTS[o.sort ?? "sold"] });
-  const q = cleanQuery(o.q ?? "");
-  if (q) {
-    const like = `*${q.replace(/ /g, "*")}*`;
-    params.set("or", `(name.ilike.${like},shop.ilike.${like},category.ilike.${like})`);
+/** Every Marketplace product, best-selling first. Kept in memory for 10 minutes; the catalog changes once a day. */
+let cached: { at: number; rows: TapProduct[] } | null = null;
+export async function allProducts(): Promise<TapProduct[]> {
+  if (cached && Date.now() - cached.at < 10 * 60_000) return cached.rows;
+  const rows: TapProduct[] = [];
+  // Supabase returns at most 1,000 rows per request.
+  for (let offset = 0; ; offset += 1000) {
+    const page = (await (await supabaseRest(`tap_catalog?select=${COLUMNS}&order=sold.desc,product_id.asc&offset=${offset}&limit=1000`)).json()) as Row[];
+    rows.push(...page.map(toProduct));
+    if (page.length < 1000) break;
   }
-  if (o.category) params.set("category", `eq.${o.category}`);
-  if (o.shop) params.set("shop", `eq.${o.shop}`);
-  if (o.samples) params.set("samples", "gt.0");
-  const page = Math.max(1, Math.min(200, Math.floor(o.page ?? 1)));
-  params.set("offset", String((page - 1) * PAGE_SIZE));
-  params.set("limit", String(PAGE_SIZE));
-  const res = await supabaseRest(`tap_catalog?${params}`, { headers: { prefer: "count=exact" } });
-  const total = Number((res.headers.get("content-range") ?? "*/0").split("/")[1]) || 0;
-  return { products: ((await res.json()) as Row[]).map(toProduct), total };
+  cached = { at: Date.now(), rows };
+  return rows;
+}
+
+export type BrowseQuery = { q?: string; cat?: string; shop?: string; only?: boolean; sort?: string; page?: number };
+export type BrowseResult = {
+  items: TapProduct[]; total: number; sort: string; sortLabel: string;
+  /** Categories with counts among products matching the search, shop and samples filters ("All" first). */
+  cats: [string, number][];
+  /** Every shop with its product count. */
+  shops: [string, number][];
+  all: number; asOf: string | null;
+};
+
+const countBy = (rows: TapProduct[], key: "category" | "shop") => {
+  const m = new Map<string, number>();
+  for (const p of rows) if (p[key]) m.set(p[key]!, (m.get(p[key]!) ?? 0) + 1);
+  return [...m.entries()].sort((a, b) => b[1] - a[1]);
+};
+
+/** The Marketplace list: same search, filters, counts and sorts as the mockup. Pure. */
+export function browse(all: TapProduct[], o: BrowseQuery): BrowseResult {
+  const q = (o.q ?? "").trim().toLowerCase();
+  const base = all.filter((p) => (!q || `${p.name} ${p.shop ?? ""} ${p.category ?? ""}`.toLowerCase().includes(q)) && (!o.only || p.samples > 0) && (!o.shop || p.shop === o.shop));
+  const sort = MK_SORTS.some(([v]) => v === o.sort) ? o.sort! : "sold-d";
+  const [field, dir] = sort.split("-");
+  const val = (p: TapProduct) => (field === "com" ? (p.silverRate ?? 0) : field === "price" ? (p.priceLo ?? 0) : field === "smp" ? p.samples : p.sold);
+  const cat = o.cat && o.cat !== "All" ? o.cat : "";
+  const list = base.filter((p) => !cat || p.category === cat).sort((a, b) => (dir === "d" ? val(b) - val(a) : val(a) - val(b)) || b.sold - a.sold);
+  const page = Math.max(1, Math.min(500, Math.floor(o.page ?? 1)));
+  return {
+    items: list.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), total: list.length, sort, sortLabel: MK_SORTS.find(([v]) => v === sort)![1],
+    cats: [["All", base.length] as [string, number], ...countBy(base, "category")], shops: countBy(all, "shop"), all: all.length, asOf: all[0]?.asOf ?? null,
+  };
+}
+
+/** The Golden Sellers saved by the last daily refresh, with each shop's 3 product images. Empty until the first refresh with sales data. */
+export async function latestGolden(): Promise<(GoldenSeller & { thumbs: (string | null)[] })[]> {
+  const [row] = (await (await supabaseRest("market_snapshots?dataset=eq.tap_golden&select=items&order=as_of.desc&limit=1")).json()) as { items: GoldenSeller[] }[];
+  if (!row?.items?.length) return [];
+  const byId = new Map((await allProducts()).map((p) => [p.id, p.image]));
+  return row.items.map((g) => ({ ...g, thumbs: g.ids.map((id) => byId.get(id) ?? null) }));
 }
 
 export async function getProduct(id: string): Promise<TapProduct | null> {
@@ -69,18 +102,6 @@ export async function getProduct(id: string): Promise<TapProduct | null> {
   const res = await supabaseRest(`tap_catalog?product_id=eq.${id}&select=${COLUMNS}&limit=1`);
   const [row] = (await res.json()) as Row[];
   return row ? toProduct(row) : null;
-}
-
-/** Categories and shops with product counts, for the filters. */
-export async function facets(): Promise<{ categories: [string, number][]; shops: [string, number][]; total: number; withSamples: number; asOf: string | null }> {
-  const res = await supabaseRest("tap_catalog?select=category,shop,samples,as_of&limit=10000");
-  const rows = (await res.json()) as { category: string | null; shop: string | null; samples: number; as_of: string }[];
-  const count = (key: "category" | "shop") => {
-    const m = new Map<string, number>();
-    for (const r of rows) if (r[key]) m.set(r[key]!, (m.get(r[key]!) ?? 0) + 1);
-    return [...m.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-  };
-  return { categories: count("category"), shops: count("shop"), total: rows.length, withSamples: rows.filter((r) => r.samples > 0).length, asOf: rows[0]?.as_of ?? null };
 }
 
 /** What a TAP link should pay the creator: Bronze gets the Open Plan rate; Silver and Gold get Open Plan + 1%, never above the campaign's total. */

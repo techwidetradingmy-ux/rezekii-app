@@ -1,29 +1,33 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import { allProducts, browse, latestGolden } from "@/modules/tap/catalog.ts";
 import { mySamples } from "@/modules/tap/samples.ts";
 import { currentUser } from "../../current-user";
 import { SiteFooter, SiteNav } from "../../site";
+import { pulled } from "./format";
 import { MarketplaceView } from "./marketplace-view";
 
 export const metadata: Metadata = { title: "TAP Marketplace · Rezekii" };
 export const dynamic = "force-dynamic";
 
+/** Every product in Techwide's live TAP campaigns, as designed in the mockup. The first page is rendered here so it shows at once. */
 export default async function MarketplacePage() {
   const user = await currentUser();
   if (!user) redirect("/signin");
-  const open = (await mySamples(user.id)).filter((r) => r.status === "requested" || r.status === "applied").map((r) => r.product_id);
+  const [initial, golden, samples] = await Promise.all([allProducts().then((all) => browse(all, {})), latestGolden(), mySamples(user.id)]);
+  const requested = samples.filter((r) => r.status === "requested" || r.status === "applied").map((r) => r.product_id);
   return (
     <>
       <SiteNav variant="app" />
-      <main className="site-wrap app-main">
-        <nav className="app-crumbs" aria-label="Breadcrumb"><Link href="/app">Today</Link><span aria-hidden="true">›</span><span>TAP Marketplace</span></nav>
-        <div className="tap-intro">
-          <h1>TAP Marketplace</h1>
-          <p>Products in Techwide&apos;s TikTok Shop campaigns. Add one to your showcase to earn commission, or ask for a free sample first.</p>
-        </div>
-        <MarketplaceView requestedIds={open} />
-      </main>
+      <div className="nv nv-page">
+        <main className="site-wrap app-main nv-main">
+          <div>
+            <h1 className="nv-title">TAP Marketplace</h1>
+            <p className="nv-sub">Every product in Techwide&apos;s live TikTok Shop TAP campaigns · real data, pulled {pulled(initial.asOf)}</p>
+          </div>
+          <MarketplaceView initial={initial} golden={golden} requestedIds={requested} />
+        </main>
+      </div>
       <SiteFooter />
     </>
   );

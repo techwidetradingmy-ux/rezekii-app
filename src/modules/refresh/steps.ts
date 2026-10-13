@@ -1,9 +1,10 @@
 import type { ApiReply } from "../../integrations/tiktok-shop/api.ts";
-import { listCampaignProducts, listCampaigns, type Campaign } from "../../integrations/tiktok-shop/partner.ts";
+import { listCampaignProductStats, listCampaignProducts, listCampaigns, type Campaign, type CampaignProduct, type CampaignProductStats } from "../../integrations/tiktok-shop/partner.ts";
+import { amount, goldenSellers, type StatRow } from "../tap/golden.ts";
 import { getBestselling, getMarketplaceCreator, searchMarketplaceCreators, type BestsellingKind } from "../../integrations/tiktok-shop/seller.ts";
 import { bestSlot, type PlannedTask } from "./plan.ts";
 import type { Sessions } from "./sessions.ts";
-import { creatorsNeedingDetail, openTaskCount, rebuildTapCatalog, saveDetail, saveSnapshot, upsertCreators, type TaskRow } from "./store.ts";
+import { catalogSales, creatorsNeedingDetail, openTaskCount, rebuildTapCatalog, saveDetail, saveSnapshot, snapshotItems, upsertCreators, type TaskRow } from "./store.ts";
 
 /** TikTok's "too many requests" code, shared by the app's whole API group. */
 export const RATE_LIMITED = 36009002;
@@ -68,11 +69,14 @@ async function tapCampaigns(t: TaskRow, { sessions }: Ctx): Promise<StepResult> 
   return { count: campaigns.length, followUps };
 }
 
-/** One campaign's approved products, every page, saved with the campaign they belong to. Holds seller and partner rates. */
+/**
+ * One campaign's approved products, every page, saved with the campaign they belong to. Holds seller and partner rates.
+ * Then the campaign's sales per product (for Golden Sellers); if TikTok refuses those, the products are still saved.
+ */
 async function tapProducts(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
   const c = (t.params as { campaign: Campaign }).campaign;
   const s = await sessions.partner();
-  const rows: unknown[] = [];
+  const rows: (CampaignProduct & Record<string, unknown>)[] = [];
   let pageToken: string | undefined;
   do {
     const data = ok(await listCampaignProducts(s.token, s.cipher, c.id, { reviewStatus: "APPROVED", pageSize: 50, pageToken }));
@@ -81,6 +85,25 @@ async function tapProducts(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
     if (pageToken) await wait(300);
   } while (pageToken);
   await saveSnapshot("tap_products", c.id, t.run_date, rows);
+
+  const shopOf = new Map(rows.map((p) => [p.id, p.shop_name ?? ""]));
+  const stats: StatRow[] = [];
+  try {
+    pageToken = undefined;
+    do {
+      const data: { campaign_product_statistics?: CampaignProductStats[]; next_page_token?: string } = ok(await listCampaignProductStats(s.token, s.cipher, c.id, { pageSize: 50, pageToken }));
+      for (const x of data.campaign_product_statistics ?? []) {
+        const d = x.campaign_product_detail;
+        if (d?.product_id) stats.push([d.product_id, shopOf.get(d.product_id) ?? "", amount(d.indicator_data?.estimated_amount)]);
+      }
+      pageToken = data.next_page_token || undefined;
+      if (pageToken) await wait(300);
+    } while (pageToken);
+    await saveSnapshot("tap_stats", c.id, t.run_date, stats);
+  } catch (err) {
+    if (err instanceof ApiError && err.code === RATE_LIMITED) throw err;
+    console.error("[refresh] campaign sales", c.id, err instanceof Error ? err.message : err);
+  }
   return { count: rows.length };
 }
 
@@ -88,7 +111,11 @@ async function tapProducts(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
 async function tapCatalog(t: TaskRow): Promise<StepResult> {
   if (await openTaskCount(t.run_date, "tap_products")) return { count: 0, more: true, waitMs: 60_000 };
   if (await openTaskCount(t.run_date, "tap_campaigns")) return { count: 0, more: true, waitMs: 60_000 };
-  return { count: await rebuildTapCatalog() };
+  const count = await rebuildTapCatalog();
+  // Golden Sellers from today's campaign sales (kept from the last good day if sales could not be read).
+  const stats = (await snapshotItems("tap_stats", t.run_date)) as StatRow[];
+  if (stats.length) await saveSnapshot("tap_golden", "top3", t.run_date, goldenSellers(stats, await catalogSales()));
+  return { count };
 }
 
 /** Full Creator Marketplace profiles for new creators, until the run's time is up or the daily cap is reached. */

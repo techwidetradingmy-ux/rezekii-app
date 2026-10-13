@@ -1,89 +1,142 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import type { TapProduct } from "@/modules/tap/catalog.ts";
-import { pct, perSale, priceRange, rm, short, tiktokProductUrl } from "./format";
-import { useTapActions } from "./use-tap-actions";
+import { perSale, pct, placeholder, priceText, pulled, rm, short, tiktokProductUrl } from "./format";
+import type { useTap } from "./use-tap-actions";
 
-/** One product in the Marketplace grid. Clicking it opens the product view. */
-export function ProductCard({ p, onOpen }: { p: TapProduct; onOpen: (p: TapProduct) => void }) {
+type Tap = ReturnType<typeof useTap>;
+
+const soldText = (p: TapProduct) => `${short(p.sold)} sold${p.soldToday ? ` · +${short(p.soldToday)} today` : ""}`;
+
+function Check({ size }: { size: number }) {
   return (
-    <button type="button" className="card tap-card" onClick={() => onOpen(p)}>
-      <span className="tap-img">
-        {/* TikTok's image CDN, already resized to 300px webp. */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        {p.image ? <img src={p.image} alt="" loading="lazy" width={300} height={300} /> : <span className="tap-noimg" aria-hidden="true">?</span>}
-        {p.samples > 0 && <span className="badge tap-samplebadge">Free sample</span>}
-      </span>
-      <span className="tap-name">{p.name}</span>
-      <span className="tap-meta">{rm(p.priceLo)} · {short(p.sold)} sold{p.soldToday > 0 && <b> · +{short(p.soldToday)} today</b>}</span>
-      <span className="tap-earn">
-        <b>Earn {pct(p.openRate)}</b>
-        {p.silverRate !== null && p.silverRate > (p.openRate ?? 0) && <small>Silver {pct(p.silverRate)}</small>}
-      </span>
-    </button>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path className="nv-check" d="m5 12 5 5 9-10" /></svg>
   );
 }
 
-/** The full product: used in the Marketplace panel and on its own page, so both look the same. */
-export function ProductView({ p, requested: wasRequested, onRequested, standalone = false }: { p: TapProduct; requested: boolean; onRequested?: (id: string) => void; standalone?: boolean }) {
-  const [justRequested, setJustRequested] = useState(false);
-  const requested = wasRequested || justRequested;
-  const { busy, message, addToShowcase, requestSample } = useTapActions((id) => {
-    setJustRequested(true);
-    onRequested?.(id);
-  });
-  const silver = p.silverRate !== null && p.silverRate > (p.openRate ?? 0);
-  const ends = p.campaignEnd ? new Date(p.campaignEnd * 1000).toLocaleDateString("en-MY", { day: "numeric", month: "short", year: "numeric" }) : null;
+function Photo({ p, className, style }: { p: TapProduct; className: string; style?: React.CSSProperties }) {
+  if (p.image) return <span className={`${className} mk-photo`} aria-hidden="true" style={{ backgroundImage: `url("${p.image}")`, ...style }} />;
+  const ph = placeholder(p.category);
+  return <span className={`${className} mk-ph`} aria-hidden="true" style={{ background: ph.background, ...style }}>{ph.initial}</span>;
+}
+
+/** The mockup's product card (_tap/tap.card.html). */
+export function ProductCard({ p, tap, onOpen }: { p: TapProduct; tap: Tap; onOpen: (p: TapProduct) => void }) {
+  const st = tap.addState(p.id);
   return (
-    <article className="tap-view">
-      <div className="tap-viewtop">
-        <span className="tap-img tap-img-lg">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          {p.image ? <img src={p.image} alt="" width={300} height={300} /> : <span className="tap-noimg" aria-hidden="true">?</span>}
+    <div className="nv-card nv-hover mk-card">
+      <button type="button" className="mk-img" onClick={() => onOpen(p)} aria-label={`Open ${p.name}`}>
+        <Photo p={p} className="mk-fill" />
+        <span className="nv-badge" style={{ position: "absolute", top: 10, right: 10, background: "rgba(255,255,255,0.94)", color: p.samples ? "#00704a" : "#5f6b7a" }}>
+          {p.samples ? `${short(p.samples)}${p.samples === 1 ? " sample" : " samples"}` : "No samples"}
         </span>
-        <div className="tap-viewhead">
-          <small className="tap-shop">{[p.shop, p.category].filter(Boolean).join(" · ")}</small>
-          <h2>{p.name}</h2>
-          <p className="tap-meta">
-            {priceRange(p.priceLo, p.priceHi)} · {short(p.sold)} sold{p.soldToday > 0 && <> · <b>+{short(p.soldToday)} today</b></>}
-            {p.stock !== null && <> · {short(p.stock)} in stock</>}
-          </p>
+      </button>
+      <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
+        <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.shop} · {p.category}</span>
+        <span className="mk-name">{p.name}</span>
+        <span style={{ fontSize: 13, color: "var(--muted)" }}>{priceText(p.priceLo, p.priceHi)} · {soldText(p)}</span>
+        <span style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+          <span style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+            <span style={{ fontSize: 15, fontWeight: 800, color: "var(--gink)" }}>Earn {pct(p.openRate)}</span>
+            <span style={{ fontSize: 12, color: "var(--muted)" }}>Silver {pct(p.silverRate)}</span>
+          </span>
+          <button
+            type="button"
+            className="nv-press"
+            onClick={() => tap.addToShowcase(p.id)}
+            aria-label={st === "done" ? "Opened in TikTok Shop" : `Add ${p.name} to showcase`}
+            style={{ height: 36, minWidth: 36, padding: "0 12px", borderRadius: 999, border: 0, background: st === "done" ? "var(--gsoft)" : "#00c073", color: st === "done" ? "var(--gink)" : "#0d1117", fontSize: 13, fontWeight: 800, display: "inline-flex", alignItems: "center", gap: 6 }}
+          >
+            {st === "loading" && <span className="nv-spin" aria-hidden="true" style={{ width: 14, height: 14 }} />}
+            {st === "done" && <Check size={16} />}
+            {st === "done" ? "Opened" : st === "loading" ? "" : "+ Showcase"}
+          </button>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/** The mockup's product view (_tap/tap.product.html): in the Marketplace panel and on the product page. */
+export function ProductBlock({ p, tap, headingId }: { p: TapProduct; tap: Tap; headingId: string }) {
+  const add = tap.addState(p.id);
+  const smp = tap.sampleState(p);
+  return (
+    <>
+      <div style={{ position: "relative", width: "100%", aspectRatio: "1 / 1", flexShrink: 0, borderRadius: 22, overflow: "hidden", background: "#f2f5f3" }}>
+        <Photo p={p} className="" style={{ position: "absolute", inset: 0 }} />
+      </div>
+      <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600 }}>{p.shop} · {p.category}</span>
+      <h3 id={headingId} style={{ margin: 0, fontSize: 20, fontWeight: 800, lineHeight: 1.3 }}>{p.name}</h3>
+      <span style={{ fontSize: 14, color: "var(--muted)" }}>{priceText(p.priceLo, p.priceHi)} · {soldText(p)} · {p.stock === null ? "—" : short(p.stock)} in stock</span>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+        <div style={{ background: "var(--surface2)", borderRadius: 14, padding: 12 }}>
+          <div style={{ fontSize: 11, color: "var(--muted)", fontWeight: 600 }}>Bronze (Open Plan)</div>
+          <div style={{ fontSize: 20, fontWeight: 800 }}>{pct(p.openRate)}</div>
+          <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{perSale(p.priceLo, p.openRate)} per sale</div>
+        </div>
+        <div style={{ background: "var(--gsoft)", borderRadius: 14, padding: 12 }}>
+          <div style={{ fontSize: 11, color: "var(--gink)", fontWeight: 700 }}>Silver</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: "var(--gink)" }}>{pct(p.silverRate)}</div>
+          <div style={{ fontSize: 12, color: "var(--gink)", fontWeight: 700 }}>{perSale(p.priceLo, p.silverRate)} per sale</div>
         </div>
       </div>
-
-      <dl className="tap-rates">
-        <div><dt>Bronze earns</dt><dd>{pct(p.openRate)}<small>{perSale(p.priceLo, p.openRate)} a sale</small></dd></div>
-        {silver && <div><dt>Silver &amp; Gold earn</dt><dd>{pct(p.silverRate)}<small>{perSale(p.priceLo, p.silverRate)} a sale</small></dd></div>}
-        <div><dt>Free samples</dt><dd>{p.samples > 0 ? short(p.samples) : "None"}<small>{p.samples > 0 ? "left in this campaign" : "right now"}</small></dd></div>
-      </dl>
-
-      {p.variants.length > 1 && (
-        <details className="tap-variants">
-          <summary>Options and stock</summary>
-          {/* Variant prices are TikTok's list price before discounts, so only names and stock are shown. */}
-          <ul>{p.variants.map(([name, , stock], i) => <li key={i}><span>{name}</span><span>{short(stock)} left</span></li>)}</ul>
-        </details>
-      )}
-
-      <div className="tap-cta">
-        <button type="button" className="np-btn" disabled={!!busy} onClick={() => addToShowcase(p.id)}>{busy === "link" ? "Making your link…" : "Add to showcase"}</button>
-        {p.samples > 0 && (
-          <button type="button" className="btn-outline tap-samplebtn" disabled={!!busy || requested} onClick={() => requestSample(p.id)}>
-            {requested ? "Sample requested" : busy === "sample" ? "Sending…" : "Request free sample"}
-          </button>
-        )}
+      <span style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>{p.samples ? `${short(p.samples)}${p.samples === 1 ? " sample available" : " samples available"}` : "No samples"}</span>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <span className="nv-cap">Variants · list price before shop discounts</span>
+        {p.variants.map(([name, price, stock], i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 12, background: "var(--surface2)" }}>
+            <span style={{ flex: 1, fontSize: 13, fontWeight: 600, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+            <span style={{ fontSize: 13, color: "var(--muted)" }}>{rm(price)}</span>
+            <span className={`nv-badge ${stock > 0 ? "b-green" : "b-gray"}`}>{stock > 0 ? `${short(stock)} in stock` : "Sold out"}</span>
+          </div>
+        ))}
       </div>
-      {message && <p className={message.kind === "ok" ? "np-note" : "np-error"} role="status">{message.text}</p>}
-      {requested && !message && <p className="np-note">You asked for this sample. <Link href="/app/samples">Follow it in My samples</Link>.</p>}
+      <button type="button" className="nv-btn nv-press nv-cta" onClick={() => tap.addToShowcase(p.id)} style={{ height: 54, fontSize: 16, background: add === "done" ? "var(--gsoft)" : "#00c073" }}>
+        {add === "loading" && <span className="nv-spin" aria-hidden="true" />}
+        {add === "done" && <Check size={20} />}
+        {add === "loading" ? "Adding via TikTok Shop…" : add === "done" ? "Opened in TikTok Shop" : "Add to showcase"}
+      </button>
+      <button
+        type="button"
+        className={`nv-press mk-sample mk-sample-lg ${smp === "none" ? "mk-sample-none" : smp === "done" ? "mk-sample-done" : ""}`}
+        onClick={() => tap.requestSample(p)}
+        aria-disabled={smp !== "idle" ? "true" : "false"}
+      >
+        {smp === "loading" && <span className="nv-spin" aria-hidden="true" style={{ width: 16, height: 16 }} />}
+        {smp === "done" && <Check size={18} />}
+        {smp === "none" ? "No free samples" : smp === "loading" ? "Requesting…" : smp === "done" ? "Sample requested" : "Request free sample"}
+      </button>
+      {smp === "done" && <Link href="/app/my-tap" className="nv-link" style={{ alignSelf: "center", fontSize: 14, fontWeight: 700 }}>See it in My TAP products</Link>}
+      <a href={tiktokProductUrl(p.id)} target="_blank" rel="noopener" className="nv-btn2 nv-press" style={{ height: 50 }}>Open on TikTok Shop</a>
+    </>
+  );
+}
 
-      <p className="tap-fine">
-        {p.campaignName && <>Techwide campaign: {p.campaignName}{ends && <>, until {ends}</>}. </>}
-        Numbers from TikTok Shop, updated {p.asOf.slice(0, 10)}.{" "}
-        <a href={tiktokProductUrl(p.id)} target="_blank" rel="noopener noreferrer">Open on TikTok Shop</a>
-        {!standalone && <> · <Link href={`/app/marketplace/${p.id}`}>Product page</Link></>}
-      </p>
-    </article>
+/** "From TikTok Shop · pulled 13 Oct 2026" line at the top of the panel and the product page. */
+export function Pulled({ asOf }: { asOf: string | null }) {
+  return (
+    <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>
+      <span className="nv-dot" aria-hidden="true" />From TikTok Shop · pulled {pulled(asOf)}
+    </span>
+  );
+}
+
+/** The mockup's side panel (_tap/tap.panel.html); a bottom sheet on phones. */
+export function ProductPanel({ p, tap, closing, onClose }: { p: TapProduct; tap: Tap; closing: boolean; onClose: () => void }) {
+  return (
+    <>
+      <button type="button" aria-label="Close" className={`nv-dim ${closing ? "out" : ""}`} onClick={onClose} />
+      <div role="dialog" aria-modal="true" aria-labelledby="mkpt" className={`nv-panel ${closing ? "out" : ""}`}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Pulled asOf={p.asOf} />
+          <button type="button" className="nv-press" aria-label="Close" onClick={onClose} style={{ width: 34, height: 34, borderRadius: "50%", border: 0, background: "var(--surface2)", color: "var(--text)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+          </button>
+        </div>
+        <ProductBlock p={p} tap={tap} headingId="mkpt" />
+      </div>
+    </>
   );
 }

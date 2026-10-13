@@ -1,145 +1,274 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { TapProduct } from "@/modules/tap/catalog.ts";
-import { ProductCard, ProductView } from "./product-view";
+import { useEffect, useRef, useState } from "react";
+import type { BrowseResult, TapProduct } from "@/modules/tap/catalog.ts";
+import type { GoldenSeller } from "@/modules/tap/golden.ts";
+import { MK_SORTS } from "@/modules/tap/sorts.ts";
+import { n, short } from "./format";
+import { ProductCard, ProductPanel } from "./product-view";
+import { Hud, useTap } from "./use-tap-actions";
+import "./marketplace.css";
 
-type Facets = { categories: [string, number][]; shops: [string, number][]; total: number; withSamples: number; asOf: string | null };
-type Filters = { q: string; category: string; shop: string; samples: boolean; sort: string };
+type Filters = { q: string; sort: string; cat: string; shop: string; only: boolean };
+type Golden = GoldenSeller & { thumbs: (string | null)[] };
+const START: Filters = { q: "", sort: "sold-d", cat: "All", shop: "", only: false };
+const PER = 24;
 
-const SORT_LABELS: [string, string][] = [["sold", "Best selling"], ["today", "Selling now"], ["rate", "Highest commission"], ["price-asc", "Price: low to high"], ["price-desc", "Price: high to low"]];
-const START: Filters = { q: "", category: "", shop: "", samples: false, sort: "sold" };
-
-async function fetchPage(f: Filters, page: number): Promise<{ products: TapProduct[]; total: number }> {
+async function fetchPage(f: Filters, page: number): Promise<BrowseResult> {
   const params = new URLSearchParams({ sort: f.sort, page: String(page) });
-  if (f.q) params.set("q", f.q);
-  if (f.category) params.set("category", f.category);
+  if (f.q.trim()) params.set("q", f.q.trim());
+  if (f.cat !== "All") params.set("cat", f.cat);
   if (f.shop) params.set("shop", f.shop);
-  if (f.samples) params.set("samples", "1");
+  if (f.only) params.set("only", "1");
   const r = await fetch(`/api/tap/products?${params}`);
   if (!r.ok) throw new Error("The Marketplace could not load. Please try again.");
   return r.json();
 }
 
-/** The TAP Marketplace: Techwide's campaign products, searchable, with the product view in a side panel. */
-export function MarketplaceView({ requestedIds }: { requestedIds: string[] }) {
-  const [facets, setFacets] = useState<Facets | null>(null);
+const Chev = () => (
+  <svg className="fb-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+);
+const Tick = ({ w = 12, sw = 3.4 }: { w?: number; sw?: number }) => (
+  <svg width={w} height={w} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg>
+);
+
+function Chip({ label, aria, onRemove }: { label: string; aria: string; onRemove: () => void }) {
+  return (
+    <span className="fb-chip">
+      <span>{label}</span>
+      <button type="button" className="fb-x" aria-label={aria} onClick={onRemove}>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+      </button>
+    </span>
+  );
+}
+
+/** The TAP Marketplace, built from the mockup (Marketplace page): Golden Sellers, filters, product grid and the product panel. */
+export function MarketplaceView({ initial, golden, requestedIds }: { initial: BrowseResult; golden: Golden[]; requestedIds: string[] }) {
+  const tap = useTap(requestedIds);
   const [filters, setFilters] = useState<Filters>(START);
   const [typed, setTyped] = useState("");
-  const [products, setProducts] = useState<TapProduct[]>([]);
-  const [total, setTotal] = useState(0);
+  const [data, setData] = useState<BrowseResult>(initial);
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [pop, setPop] = useState<"" | "sort" | "cat" | "shop">("");
+  const [popQ, setPopQ] = useState("");
   const [open, setOpen] = useState<TapProduct | null>(null);
-  const [requested, setRequested] = useState(() => new Set(requestedIds));
+  const [closing, setClosing] = useState(false);
   const asked = useRef(0);
+  const gridRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    fetch("/api/tap/facets").then((r) => (r.ok ? r.json() : null)).then(setFacets).catch(() => setFacets(null));
-  }, []);
-
-  // A new search starts on page 1. Loading is set here, where the change happens, so the fetch effect only fetches.
-  const apply = (f: Filters) => {
-    setFilters(f);
-    setPage(1);
-    setLoading(true);
+  // Loads one page; a reply that arrives after a newer search started is dropped.
+  const load = (f: Filters, p: number) => {
+    const ask = ++asked.current;
     setError("");
-  };
-
-  // Typing waits a moment before searching.
-  useEffect(() => {
-    if (typed === filters.q) return;
-    const t = setTimeout(() => apply({ ...filters, q: typed }), 350);
-    return () => clearTimeout(t);
-  }, [typed, filters]);
-
-  // Shows one page of results; a reply that arrives after a newer search started is dropped.
-  const show = useCallback((f: Filters, p: number) => {
-    const n = ++asked.current;
     fetchPage(f, p).then(
       (d) => {
-        if (n !== asked.current) return;
-        setProducts((prev) => (p === 1 ? d.products : [...prev, ...d.products]));
-        setTotal(d.total);
-        setLoading(false);
+        if (ask !== asked.current) return;
+        setData((prev) => (p === 1 ? d : { ...d, items: [...prev.items, ...d.items] }));
+        setPage(p);
       },
-      (err: Error) => {
-        if (n !== asked.current) return;
-        setError(err.message);
-        setLoading(false);
-      },
+      (err: Error) => ask === asked.current && setError(err.message),
     );
-  }, []);
+  };
+  const apply = (patch: Partial<Filters>) => {
+    const f = { ...filters, ...patch };
+    setFilters(f);
+    setPop("");
+    setPopQ("");
+    load(f, 1);
+  };
 
-  useEffect(() => show(filters, 1), [filters, show]);
+  // Typing searches after a short pause.
+  useEffect(() => {
+    if (typed === filters.q) return;
+    const t = setTimeout(() => apply({ q: typed }), 250);
+    return () => clearTimeout(t);
+  });
 
-  // Escape closes the panel.
+  const closePanel = () => {
+    setClosing(true);
+    setTimeout(() => {
+      setOpen(null);
+      setClosing(false);
+    }, 250);
+  };
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(null);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && closePanel();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+  });
 
-  const set = (patch: Partial<Filters>) => apply({ ...filters, ...patch });
-  const more = () => {
-    setPage(page + 1);
-    setLoading(true);
-    setError("");
-    show(filters, page + 1);
+  const menu = (k: "sort" | "cat" | "shop") => () => {
+    setPop(pop === k ? "" : k);
+    setPopQ("");
   };
-  const filtered = filters.q || filters.category || filters.shop || filters.samples;
+  const pq = popQ.trim().toLowerCase();
+  const catOpts = data.cats.filter(([c]) => !pq || c.toLowerCase().includes(pq));
+  const shopOpts = ([["", "All shops", data.all]] as [string, string, number][]).concat(data.shops.map(([s, c]) => [s, s, c])).filter(([, label]) => !pq || label.toLowerCase().includes(pq));
+  const hasActive = filters.cat !== "All" || !!filters.shop || filters.only || !!filters.q.trim();
+  const clearAll = () => {
+    setTyped("");
+    apply(START);
+  };
+  const shown = data.items.length;
+  const left = data.total - shown;
 
   return (
-    <div className="tap">
-      <section className="card tap-filters" aria-label="Search and filters">
-        <input className="np-input" type="search" placeholder="Search products, shops or categories" value={typed} onChange={(e) => setTyped(e.target.value)} aria-label="Search" />
-        <div className="tap-filterrow">
-          <select className="np-input" value={filters.category} onChange={(e) => set({ category: e.target.value })} aria-label="Category">
-            <option value="">All categories</option>
-            {facets?.categories.map(([c, n]) => <option key={c} value={c}>{c} ({n})</option>)}
-          </select>
-          <select className="np-input" value={filters.shop} onChange={(e) => set({ shop: e.target.value })} aria-label="Shop">
-            <option value="">All shops</option>
-            {facets?.shops.map(([s, n]) => <option key={s} value={s}>{s} ({n})</option>)}
-          </select>
-          <select className="np-input" value={filters.sort} onChange={(e) => set({ sort: e.target.value })} aria-label="Sort">
-            {SORT_LABELS.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
-          </select>
-          <label className="tap-check">
-            <input type="checkbox" checked={filters.samples} onChange={(e) => set({ samples: e.target.checked })} />
-            Free samples only
-          </label>
+    <>
+      {golden.length > 0 && (
+        <section className="gs-wrap" aria-labelledby="gshead">
+          <div className="gs-top">
+            <svg className="gs-crown" width="30" height="23" viewBox="0 0 34 26" aria-hidden="true"><path d="M3 22 1 6l9 7 7-12 7 12 9-7-2 16z" fill="#f2c230" stroke="#a86e00" strokeWidth="1.5" strokeLinejoin="round" /></svg>
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <h2 id="gshead" className="gs-title">Golden Sellers</h2>
+              <span className="gs-sub">Our top 3 partner brands, ranked by sales through our TAP campaigns</span>
+            </div>
+          </div>
+          <div className="gs-row">
+            {golden.map((g, i) => (
+              <button
+                key={g.shop}
+                type="button"
+                className="gs-card nv-press"
+                aria-label={`Golden Seller number ${i + 1}, ${g.shop}. Shop all ${g.count} products`}
+                onClick={() => {
+                  setTyped("");
+                  apply({ ...START, shop: g.shop });
+                  gridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+              >
+                <span className="gs-shine" aria-hidden="true" />
+                <span className="gs-rank">#{i + 1} Golden Seller</span>
+                <span className="gs-id">
+                  <span className="gs-mono" aria-hidden="true">{g.initial}</span>
+                  <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                    <strong className="gs-name">{g.shop}</strong>
+                    <span className="gs-meta">{g.count} live products · {short(g.sold)} sold</span>
+                  </span>
+                </span>
+                <span className="gs-thumbs" aria-hidden="true">
+                  {g.thumbs.map((t, k) => <span key={k} className="gs-thumb" style={t ? { backgroundImage: `url("${t}")` } : undefined} />)}
+                </span>
+                <span className="gs-cta">Shop all {g.count} products →</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section ref={gridRef} className="nv-card fb" aria-label="Find products" style={{ boxShadow: "var(--shadow)", borderRadius: 26, padding: 18, scrollMarginTop: 16 }}>
+        <div className="fb-row">
+          <div className="fb-search">
+            <label htmlFor="mksearch" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Search TAP products</label>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true" style={{ position: "absolute", left: 14, top: 13, color: "var(--muted)" }}><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-4.35-4.35" /></svg>
+            <input id="mksearch" type="text" className="nv-input" placeholder="Search product, shop or category" value={typed} onChange={(e) => setTyped(e.target.value)} style={{ paddingLeft: 42 }} />
+          </div>
+          <div className="fb-dd">
+            <button type="button" className="fb-btn" aria-haspopup="listbox" aria-expanded={pop === "sort"} onClick={menu("sort")}><span className="fb-lab">Sort</span><span className="fb-val">{data.sortLabel}</span><Chev /></button>
+            {pop === "sort" && (
+              <>
+                <button type="button" className="fb-shield" aria-label="Close menu" onClick={() => setPop("")} />
+                <div className="fb-pop right fit" role="listbox" aria-label="Sort products">
+                  <div className="fb-list">
+                    {MK_SORTS.map(([v, label]) => (
+                      <button key={v} type="button" role="option" aria-selected={v === filters.sort} className={`fb-opt ${v === filters.sort ? "on" : ""}`} onClick={() => apply({ sort: v })}>
+                        <span className="fb-name">{label}</span>
+                        {v === filters.sort && <span style={{ flexShrink: 0, display: "flex" }}><Tick w={16} sw={3} /></span>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </div>
-        <p className="tap-count">
-          {loading && page === 1 ? "Loading…" : <><b>{total.toLocaleString("en-US")}</b> {total === 1 ? "product" : "products"}</>}
-          {facets && !filtered && <> · {facets.withSamples.toLocaleString("en-US")} with free samples</>}
-          {filtered && <> · <button type="button" className="tap-clear" onClick={() => { setTyped(""); apply(START); }}>Clear filters</button></>}
-        </p>
+        <div className="fb-row">
+          <div className="fb-dd">
+            <button type="button" className={`fb-btn ${filters.cat !== "All" ? "on" : ""}`} aria-haspopup="listbox" aria-expanded={pop === "cat"} onClick={menu("cat")}><span className="fb-lab">Category</span><span className="fb-val">{filters.cat}</span><Chev /></button>
+            {pop === "cat" && (
+              <>
+                <button type="button" className="fb-shield" aria-label="Close menu" onClick={() => setPop("")} />
+                <div className="fb-pop" role="dialog" aria-label="Search categories">
+                  <input type="search" className="fb-psearch" aria-label="Search categories" placeholder="Search categories" value={popQ} onChange={(e) => setPopQ(e.target.value)} autoFocus />
+                  <div className="fb-list" role="listbox" aria-label="Category">
+                    {catOpts.map(([c, count]) => (
+                      <button key={c} type="button" role="option" aria-selected={filters.cat === c} className={`fb-opt ${filters.cat === c ? "on" : ""}`} onClick={() => apply({ cat: c })}>
+                        <span className="fb-name">{c}</span><span className="fb-n">{n(count)}</span>
+                      </button>
+                    ))}
+                    {!!pq && catOpts.length === 0 && <span className="fb-empty">No category matches.</span>}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          <div className="fb-dd">
+            <button type="button" className={`fb-btn ${filters.shop ? "on" : ""}`} aria-haspopup="listbox" aria-expanded={pop === "shop"} onClick={menu("shop")}><span className="fb-lab">Shop</span><span className="fb-val">{filters.shop || "All shops"}</span><Chev /></button>
+            {pop === "shop" && (
+              <>
+                <button type="button" className="fb-shield" aria-label="Close menu" onClick={() => setPop("")} />
+                <div className="fb-pop" role="dialog" aria-label="Search shops">
+                  <input type="search" className="fb-psearch" aria-label="Search shops" placeholder="Search shops" value={popQ} onChange={(e) => setPopQ(e.target.value)} autoFocus />
+                  <div className="fb-list" role="listbox" aria-label="Shop">
+                    {shopOpts.map(([v, label, count]) => (
+                      <button key={v || "all"} type="button" role="option" aria-selected={filters.shop === v} className={`fb-opt ${filters.shop === v ? "on" : ""}`} onClick={() => apply({ shop: v })}>
+                        <span className="fb-name">{label}</span><span className="fb-n">{n(count)}</span>
+                      </button>
+                    ))}
+                    {!!pq && shopOpts.length === 0 && <span className="fb-empty">No shop matches.</span>}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          <button type="button" className={`fb-btn ${filters.only ? "on" : ""}`} aria-pressed={filters.only} onClick={() => apply({ only: !filters.only })}>
+            <span className="fb-tick" aria-hidden="true"><Tick /></span>Samples available
+          </button>
+        </div>
+        {hasActive && (
+          <div className="fb-chips">
+            {filters.q.trim() && <Chip label={`Search: ${filters.q.trim()}`} aria="Remove search" onRemove={() => { setTyped(""); apply({ q: "" }); }} />}
+            {filters.cat !== "All" && <Chip label={`Category: ${filters.cat}`} aria="Remove category filter" onRemove={() => apply({ cat: "All" })} />}
+            {filters.shop && <Chip label={`Shop: ${filters.shop}`} aria="Remove shop filter" onRemove={() => apply({ shop: "" })} />}
+            {filters.only && <Chip label="Samples available" aria="Remove samples filter" onRemove={() => apply({ only: false })} />}
+            <button type="button" className="nv-link" onClick={clearAll} style={{ fontSize: 13 }}>Clear all</button>
+          </div>
+        )}
       </section>
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 15, fontWeight: 700 }}>{n(data.total)}{data.total === 1 ? " product" : " products"} · {data.sortLabel}</span>
+        <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--muted)" }}>
+          <span className="nv-dot" aria-hidden="true" />{`${n(data.all)} products from ${data.shops.length} shops in Techwide's live TAP campaigns`}
+        </span>
+      </div>
 
       {error && <p className="np-error" role="alert">{error}</p>}
-      {!loading && !error && products.length === 0 && (
-        <section className="card"><h2>No products match</h2><p>Try a different word, or clear the filters.</p></section>
-      )}
 
-      <section className="tap-grid" aria-label="Products" aria-busy={loading}>
-        {products.map((p) => <ProductCard key={p.id} p={p} onOpen={setOpen} />)}
-      </section>
-
-      {products.length > 0 && products.length < total && (
-        <button type="button" className="btn-outline tap-more" disabled={loading} onClick={more}>{loading ? "Loading…" : `Show more (${(total - products.length).toLocaleString("en-US")} left)`}</button>
-      )}
-
-      {open && (
-        <div className="tap-shade" onClick={() => setOpen(null)}>
-          <aside className="tap-panel" role="dialog" aria-modal="true" aria-label={open.name} onClick={(e) => e.stopPropagation()}>
-            <button type="button" className="tap-close" onClick={() => setOpen(null)} aria-label="Close">×</button>
-            <ProductView key={open.id} p={open} requested={requested.has(open.id)} onRequested={(id) => setRequested((s) => new Set(s).add(id))} />
-          </aside>
+      {data.total === 0 && (
+        <div className="nv-card" style={{ padding: "48px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, textAlign: "center" }}>
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true" style={{ color: "var(--muted)" }}><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-4.35-4.35" /></svg>
+          <span style={{ fontSize: 18, fontWeight: 800 }}>No TAP products match</span>
+          <span style={{ fontSize: 14, color: "var(--muted)" }}>Try another search, category or shop.</span>
+          <button type="button" className="nv-btn2 nv-press" onClick={clearAll}>Clear filters</button>
         </div>
       )}
-    </div>
+
+      <div className="mk-grid">
+        {data.items.map((p) => <ProductCard key={p.id} p={p} tap={tap} onOpen={(x) => { setClosing(false); setOpen(x); }} />)}
+      </div>
+      {left > 0 && (
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <button type="button" className="nv-btn2 nv-press" onClick={() => load(filters, page + 1)} style={{ minWidth: 260 }}>
+            Show {Math.min(PER, left)} more · {n(left)} left
+          </button>
+        </div>
+      )}
+
+      {open && <ProductPanel p={open} tap={tap} closing={closing} onClose={closePanel} />}
+      <Hud toast={tap.toast} />
+    </>
   );
 }

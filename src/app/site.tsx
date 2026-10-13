@@ -45,8 +45,7 @@ export async function SiteNav({ variant, staticPage = false }: { variant: "hero"
       ) : variant === "app" ? (
         <>
           <Link href="/app">Today</Link>
-          <Link href="/app/marketplace">TAP Marketplace</Link>
-          <Link href="/app/samples">My samples</Link>
+          <Link href="/app/marketplace">Marketplace</Link>
           <Link href="/app/posts">My posts</Link>
           {user?.role === "admin" && <Link href="/app/admin/samples">Sample queue</Link>}
         </>

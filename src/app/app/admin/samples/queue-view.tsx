@@ -2,7 +2,14 @@
 
 import { useEffect, useState } from "react";
 import type { SampleRequest } from "@/modules/tap/samples.ts";
-import { SAMPLE_STATUS, when } from "../../samples/samples-view";
+
+const SAMPLE_STATUS: Record<SampleRequest["status"], [string, string]> = {
+  requested: ["Waiting for Techwide", "badge-amber"],
+  applied: ["Applied in TikTok Shop", "badge"],
+  rejected: ["Not approved", "badge-red"],
+  cancelled: ["Cancelled", "badge-gray"],
+};
+const when = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { timeZone: "Asia/Kuala_Lumpur", day: "numeric", month: "short", year: "numeric" });
 
 type Row = SampleRequest & { creator: string };
 const TABS: [string, string][] = [["requested", "To apply"], ["applied", "Applied"], ["rejected", "Rejected"], ["all", "All"]];

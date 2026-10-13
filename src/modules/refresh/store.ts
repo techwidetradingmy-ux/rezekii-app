@@ -95,3 +95,19 @@ export async function rebuildTapCatalog(): Promise<number> {
   const res = await supabaseRest("rpc/rebuild_tap_catalog", json({}, "return=representation"));
   return Number(await res.json()) || 0;
 }
+
+/** Every item of one dataset's snapshots for a day, all slots joined (e.g. every campaign's sales). */
+export async function snapshotItems(dataset: string, asOf: string): Promise<unknown[]> {
+  const rows = (await (await supabaseRest(`market_snapshots?dataset=eq.${dataset}&as_of=eq.${asOf}&select=items`)).json()) as { items: unknown[] }[];
+  return rows.flatMap((r) => r.items ?? []);
+}
+
+/** Shop and units sold for every Marketplace product (for Golden Sellers). */
+export async function catalogSales(): Promise<{ id: string; shop: string | null; sold: number }[]> {
+  const out: { id: string; shop: string | null; sold: number }[] = [];
+  for (let offset = 0; ; offset += 1000) {
+    const page = (await (await supabaseRest(`tap_catalog?select=product_id,shop,sold&order=product_id&offset=${offset}&limit=1000`)).json()) as { product_id: string; shop: string | null; sold: number }[];
+    out.push(...page.map((r) => ({ id: r.product_id, shop: r.shop, sold: Number(r.sold) })));
+    if (page.length < 1000) return out;
+  }
+}
