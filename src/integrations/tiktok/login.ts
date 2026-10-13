@@ -17,8 +17,9 @@ function credentials(): { key: string; secret: string } {
   return { key, secret };
 }
 
+/** `disable_auto_auth=1` makes TikTok always show its permission screen, even for an account that authorized Rezekii before. */
 export function tiktokAuthUrl(state: string, redirectUri: string): string {
-  const q = new URLSearchParams({ client_key: credentials().key, scope: tiktokScopes().join(","), response_type: "code", redirect_uri: redirectUri, state });
+  const q = new URLSearchParams({ client_key: credentials().key, scope: tiktokScopes().join(","), response_type: "code", redirect_uri: redirectUri, state, disable_auto_auth: "1" });
   return `${AUTH_URL}?${q}`;
 }
 
