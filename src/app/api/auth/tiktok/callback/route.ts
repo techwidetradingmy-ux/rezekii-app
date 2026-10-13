@@ -29,7 +29,9 @@ export async function GET(req: NextRequest) {
     const profile = { open_id: tokens.open_id, username: info.user?.username, display_name: info.user?.display_name, avatar_url: info.user?.avatar_url };
     // Already signed in (Connect TikTok on My accounts): connect it to that account and go back there.
     const current = await userForSession(req.cookies.get(SESSION_COOKIE)?.value).catch(() => null);
-    const { user, linked } = await linkOrSignInTikTok(current, profile);
+    const result = await linkOrSignInTikTok(current, profile);
+    if ("taken" in result) return toSignin(req, "taken", "tiktok");
+    const { user, linked } = result;
     await saveTikTokConnection(user.id, profile, tokens);
     return signedIn(req, user.id, "tiktok", linked ? "/app/accounts?connected=tiktok" : "/app");
   } catch (err) {

@@ -12,6 +12,7 @@ export const dynamic = "force-dynamic";
 export default async function AppHome() {
   const user = await currentUser();
   if (!user) redirect("/signin");
+  if (user.role === "admin") redirect("/app/admin");
   const data = await todayData(user);
   const name = (user.display_name || user.tiktok_username || user.email?.split("@")[0] || "there").split(" ")[0];
   const who = user.tiktok_username ? `@${user.tiktok_username}` : user.email;

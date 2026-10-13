@@ -18,7 +18,7 @@ export function canonicalRedirect(req: NextRequest): NextResponse | null {
   return NextResponse.redirect(new URL(req.nextUrl.pathname + req.nextUrl.search, base));
 }
 
-export function toSignin(req: NextRequest, error: "denied" | "expired" | "failed" | "config", p?: Provider): NextResponse {
+export function toSignin(req: NextRequest, error: "denied" | "expired" | "failed" | "config" | "taken", p?: Provider): NextResponse {
   const res = NextResponse.redirect(`${appBase(req)}/signin?error=${error}`);
   if (p) res.cookies.set(oauthCookie(p), "", { ...OAUTH_COOKIE_OPTIONS, maxAge: 0 });
   return res;

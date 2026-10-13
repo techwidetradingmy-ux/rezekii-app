@@ -21,6 +21,13 @@ export function TikTokLogo({ size = 22 }: { size?: number }) {
   );
 }
 
+/** The signed-in menus from the mockup: creators', and Techwide admins'. */
+export const CREATOR_LINKS: [string, string][] = [["/app", "Today"], ["/app/marketplace", "Marketplace"], ["/app/posts", "My posts"], ["/app/levels", "Levels"], ["/app/rankings", "Rankings"], ["/app/accounts", "My accounts"]];
+export const ADMIN_LINKS: [string, string][] = [
+  ["/app/admin", "Today"], ["/app/admin/calendar", "Calendar"], ["/app/new", "New post"], ["/app/admin/drafts", "Drafts"], ["/app/admin/accounts", "Accounts"],
+  ["/app/admin/creators", "Creators"], ["/app/rankings", "Rankings"], ["/app/admin/tap", "TAP"], ["/app/admin/stats", "Stats"], ["/app/admin/settings", "Settings"],
+];
+
 /** Top bar. "hero" sits on the homepage band; "plain" is for legal pages; "app" is the signed-in menu. Signed-in people get "My account" instead of "Sign in". */
 export async function SiteNav({ variant, staticPage = false }: { variant: "hero" | "plain" | "app"; staticPage?: boolean }) {
   // The homepage stays static (served from the CDN); its account button is checked in the browser.
@@ -43,15 +50,9 @@ export async function SiteNav({ variant, staticPage = false }: { variant: "hero"
           <a href="#faq">FAQ</a>
         </>
       ) : variant === "app" ? (
-        <>
-          <Link href="/app">Today</Link>
-          <Link href="/app/marketplace">Marketplace</Link>
-          <Link href="/app/posts">My posts</Link>
-          <Link href="/app/levels">Levels</Link>
-          <Link href="/app/rankings">Rankings</Link>
-          <Link href="/app/accounts">My accounts</Link>
-          {user?.role === "admin" && <Link href="/app/admin/samples">Sample queue</Link>}
-        </>
+        (user?.role === "admin" ? ADMIN_LINKS : CREATOR_LINKS).map(([href, label]) => (
+          <Link key={href} href={href}>{label}</Link>
+        ))
       ) : (
         <>
           <Link href="/privacy">Privacy Policy</Link>
@@ -61,7 +62,7 @@ export async function SiteNav({ variant, staticPage = false }: { variant: "hero"
       {clientAccount ? (
         <NavAccount />
       ) : user ? (
-        <Link href={variant === "app" ? "/app/accounts" : "/app"} className="site-signin site-account">
+        <Link href={variant !== "app" ? "/app" : user.role === "admin" ? "/app/admin/settings" : "/app/accounts"} className="site-signin site-account">
           {user.avatar_url ? (
             // Avatars come from many TikTok and Google CDN hosts, so a plain img (as on /app).
             // eslint-disable-next-line @next/next/no-img-element

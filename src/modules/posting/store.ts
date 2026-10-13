@@ -117,10 +117,19 @@ export async function freshTikTokToken(openId: string): Promise<string> {
   return t.access_token;
 }
 
-/** The signed-in account's own TikTok connection. */
-export async function userTikTokOpenId(userId: string): Promise<string | null> {
-  const res = await supabaseRest(`tiktok_connections?user_id=eq.${userId}&select=open_id&order=updated_at.desc&limit=1`);
+/**
+ * The signed-in account's TikTok connection to post with: `requested` when it is one of theirs (admins can hold several
+ * Techwide team accounts), otherwise their most recent one.
+ */
+export async function userTikTokOpenId(userId: string, requested?: string | null): Promise<string | null> {
+  const filter = requested ? `&open_id=eq.${encodeURIComponent(requested)}` : "";
+  const res = await supabaseRest(`tiktok_connections?user_id=eq.${userId}${filter}&select=open_id&order=updated_at.desc&limit=1`);
   return ((await res.json()) as { open_id: string }[])[0]?.open_id ?? null;
+}
+
+/** Every TikTok account the user has connected (one for creators; admins may have several team accounts). */
+export async function userTikTokAccounts(userId: string): Promise<{ open_id: string; username: string | null; avatar_url: string | null }[]> {
+  return (await supabaseRest(`tiktok_connections?user_id=eq.${userId}&select=open_id,username,avatar_url&order=connected_at`)).json();
 }
 
 /** TikTok video ids of the account's posts that went out through Rezekii (only public posts get one), newest first. */

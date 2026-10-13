@@ -44,6 +44,7 @@ export type TikTokVideo = {
   like_count?: number;
   comment_count?: number;
   share_count?: number;
+  duration?: number;
 };
 
 const VIDEO_FIELDS = "id,title,video_description,cover_image_url,share_url,create_time,view_count,like_count,comment_count,share_count";
@@ -52,6 +53,12 @@ const VIDEO_FIELDS = "id,title,video_description,cover_image_url,share_url,creat
 export async function listRecentVideos(token: string, max = 12): Promise<StatsReply<TikTokVideo[]>> {
   const r = await call<{ videos?: TikTokVideo[] }>(token, `/video/list/?fields=${VIDEO_FIELDS}`, { max_count: Math.min(20, max) });
   return { data: r.data?.videos ?? (r.error ? undefined : []), error: r.error };
+}
+
+/** One page of the account's public videos, newest first (for the daily video stats). `cursor` comes from the previous page. */
+export async function listVideosPage(token: string, cursor?: number): Promise<StatsReply<{ videos: TikTokVideo[]; cursor?: number; has_more?: boolean }>> {
+  const r = await call<{ videos?: TikTokVideo[]; cursor?: number; has_more?: boolean }>(token, `/video/list/?fields=${VIDEO_FIELDS},duration`, { max_count: 20, ...(cursor ? { cursor } : {}) });
+  return { data: r.data ? { videos: r.data.videos ?? [], cursor: r.data.cursor, has_more: r.data.has_more } : undefined, error: r.error };
 }
 
 /** Views and likes for specific videos (up to 20 ids), e.g. the ones posted through Rezekii. */

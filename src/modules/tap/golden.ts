@@ -1,7 +1,8 @@
 /** Golden Sellers: the 3 shops with the most sales (GMV) through Techwide's TAP campaigns. Pure: no network, no database. */
 
 /** One campaign product's sales: [productId, shop name ("" if unknown), estimated GMV in RM]. */
-export type StatRow = [string, string, number];
+/** [productId, shop, paid GMV, settled GMV, estimated partner commission, settled partner commission] (RM). Older days have only the first 3. */
+export type StatRow = [string, string, number, number?, number?, number?];
 export type GoldenSeller = { shop: string; initial: string; count: number; sold: number; ids: string[] };
 
 /** TikTok sends amounts as strings, sometimes with thousands separators ("30,537.03"). */

@@ -10,6 +10,8 @@ test("admin role: allow-listed, verified Google email only (case and spaces igno
   assert.equal(roleForGoogle("techwidemarketingai@gmail.com", false), "creator");
   assert.equal(roleForGoogle("someone@gmail.com", true), "creator");
   assert.equal(roleForGoogle(undefined, true), "creator");
+  assert.equal(roleForGoogle("farah@techwide.my", true, ["farah@techwide.my"]), "admin");
+  assert.equal(roleForGoogle("farah@techwide.my", false, ["farah@techwide.my"]), "creator");
   delete process.env.ADMIN_EMAILS;
   assert.equal(roleForGoogle("techwidemarketingai@gmail.com", true), "admin");
 });

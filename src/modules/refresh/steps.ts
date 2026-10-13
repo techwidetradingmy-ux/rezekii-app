@@ -3,6 +3,7 @@ import { listCampaignProductStats, listCampaignProducts, listCampaigns, listProd
 import { amount, goldenSellers, type StatRow } from "../tap/golden.ts";
 import { smallImage } from "../tap/image.ts";
 import { updateLevels } from "../levels/store.ts";
+import { refreshVideos } from "../admin/videos.ts";
 import { buildRankings } from "../rankings/store.ts";
 import { getBestselling, getMarketplaceCreator, searchMarketplaceCreators, type BestsellingKind } from "../../integrations/tiktok-shop/seller.ts";
 import { bestSlot, type PlannedTask } from "./plan.ts";
@@ -100,7 +101,8 @@ async function tapProducts(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
       const data: { campaign_product_statistics?: CampaignProductStats[]; next_page_token?: string } = ok(await listCampaignProductStats(s.token, s.cipher, c.id, { pageSize: 50, pageToken }));
       for (const x of data.campaign_product_statistics ?? []) {
         const d = x.campaign_product_detail;
-        if (d?.product_id) stats.push([d.product_id, shopOf.get(d.product_id) ?? "", amount(d.indicator_data?.estimated_amount)]);
+        const k = d?.indicator_data;
+        if (d?.product_id) stats.push([d.product_id, shopOf.get(d.product_id) ?? "", amount(k?.estimated_amount), amount(k?.actual_amount), amount(k?.estimated_partner_commission), amount(k?.actual_partner_commission)]);
         const p = d?.product_id ? byId.get(d.product_id) : undefined;
         if (p && (x.promoted_creator_num ?? 0) > 0) promoted.push([p.id, p.name, p.shop_name ?? "", smallImage(p.main_image_url)]);
       }
@@ -128,6 +130,12 @@ async function rankings(t: TaskRow): Promise<StepResult> {
   if (await openTaskCount(t.run_date, "best")) return { count: 0, more: true, waitMs: 60_000 };
   const built = await buildRankings((t.params as { day: string }).day);
   return { count: built.creators["30D"].length };
+}
+
+/** Video numbers for every connected TikTok account (admin Video stats). Resumes by account when the tick runs out. */
+async function videos(t: TaskRow, { deadline }: Ctx): Promise<StepResult> {
+  const r = await refreshVideos(t.cursor ? Number(t.cursor) : 0, deadline - 8000);
+  return r.next === null ? { count: r.count } : { count: r.count, more: true, cursor: String(r.next) };
 }
 
 /** [productId, name, shop, image] */
@@ -219,6 +227,7 @@ export const STEPS: Record<string, (t: TaskRow, ctx: Ctx) => Promise<StepResult>
   tap_creators: tapCreators,
   levels,
   rankings,
+  videos,
   details,
   marketplace,
 };

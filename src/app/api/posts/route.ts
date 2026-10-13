@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { queryCreatorInfo, type PrivacyLevel } from "@/integrations/tiktok/posting.ts";
+import { postingHours } from "@/modules/posting/times.ts";
 import { nextRecommendedSlot, postProblems, type PostChoice } from "@/modules/posting/rules.ts";
 import { freshTikTokToken, insertPost, listPosts, scheduledTimes, userTikTokOpenId } from "@/modules/posting/store.ts";
 
@@ -13,7 +14,7 @@ export async function GET() {
   return NextResponse.json({ posts: await listPosts(user.id) });
 }
 
-type Body = Partial<PostChoice> & { source?: "upload" | "link"; storagePath?: string; linkUrl?: string; when?: string; consent?: boolean };
+type Body = Partial<PostChoice> & { source?: "upload" | "link"; storagePath?: string; linkUrl?: string; when?: string; consent?: boolean; account?: string };
 const bad = (error: string | string[]) => NextResponse.json({ error }, { status: 400 });
 
 /**
@@ -23,9 +24,9 @@ const bad = (error: string | string[]) => NextResponse.json({ error }, { status:
 export async function POST(req: NextRequest) {
   const user = await currentUser();
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
-  const openId = await userTikTokOpenId(user.id);
-  if (!openId) return NextResponse.json({ error: "Continue with TikTok to post." }, { status: 409 });
   const b = (await req.json().catch(() => ({}))) as Body;
+  const openId = await userTikTokOpenId(user.id, b.account);
+  if (!openId) return NextResponse.json({ error: b.account ? "That TikTok account isn't connected to your Rezekii account." : "Continue with TikTok to post." }, { status: 409 });
 
   if (b.source === "upload" ? !b.storagePath?.startsWith(`${user.id}/`) : b.source === "link" ? !/^https:\/\/\S+$/.test(b.linkUrl ?? "") : true)
     return bad("Add a video: upload one or paste an https link.");
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
     if (problems.length) return bad(problems);
     if (choice.mode === "direct" && !b.consent) return bad("Agree to TikTok's Music Usage Confirmation to post.");
     if (when === "now") scheduledAt = new Date();
-    else if (when === "recommended") scheduledAt = nextRecommendedSlot(new Date(), await scheduledTimes(openId));
+    else if (when === "recommended") scheduledAt = nextRecommendedSlot(new Date(), await scheduledTimes(openId), await postingHours());
     else {
       scheduledAt = new Date(when);
       if (isNaN(scheduledAt.getTime()) || scheduledAt.getTime() < Date.now() + 60e3) return bad("Pick a time at least a minute from now.");

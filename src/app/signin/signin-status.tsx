@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 const ERRORS: Record<string, string> = {
   denied: "Sign-in was cancelled. Try again when you're ready.",
   expired: "That sign-in took too long or was opened in another browser. Please try again.",
+  taken: "That TikTok account already belongs to another Rezekii account, so it wasn't connected here. Sign out first to use it, or pick a different TikTok account.",
   failed: "We couldn't finish signing you in. Please try again.",
   config: "Sign-in isn't switched on yet. Please try again later.",
 };

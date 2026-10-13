@@ -16,11 +16,14 @@ export type AppUser = {
 /** The columns an AppUser is made of. Password fields are never read into it. */
 export const USER_COLUMNS = "id,role,display_name,avatar_url,email,tiktok_open_id,tiktok_username";
 
-const DEFAULT_ADMINS = "techwidemarketingai@gmail.com";
+export const DEFAULT_ADMINS = "techwidemarketingai@gmail.com";
 
-/** Admins are Google accounts on the allow-list (env ADMIN_EMAILS, comma-separated), and only with a verified email. */
-export function roleForGoogle(email: string | undefined, verified: boolean | undefined): AppUser["role"] {
-  const admins = (process.env.ADMIN_EMAILS ?? DEFAULT_ADMINS).split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+/**
+ * Admins are Google accounts on the allow-list (env ADMIN_EMAILS, comma-separated, plus `added` from Settings),
+ * and only with a verified email.
+ */
+export function roleForGoogle(email: string | undefined, verified: boolean | undefined, added: string[] = []): AppUser["role"] {
+  const admins = [...(process.env.ADMIN_EMAILS ?? DEFAULT_ADMINS).split(","), ...added].map((e) => e.trim().toLowerCase()).filter(Boolean);
   return verified && email && admins.includes(email.trim().toLowerCase()) ? "admin" : "creator";
 }
 
@@ -43,7 +46,8 @@ async function insert(fields: Record<string, unknown>): Promise<AppUser> {
 
 /** Signs in with Google: finds the account by Google ID or creates it. The role is re-checked against the admin list every time. */
 export async function upsertGoogleUser(g: { sub: string; email?: string; email_verified?: boolean; name?: string; picture?: string }): Promise<AppUser> {
-  const fields = { email: g.email ?? null, display_name: g.name ?? null, avatar_url: g.picture ?? null, role: roleForGoogle(g.email, g.email_verified), last_sign_in_at: now() };
+  const added = ((await (await supabaseRest("admin_emails?select=email")).json()) as { email: string }[]).map((r) => r.email);
+  const fields = { email: g.email ?? null, display_name: g.name ?? null, avatar_url: g.picture ?? null, role: roleForGoogle(g.email, g.email_verified, added), last_sign_in_at: now() };
   const existing = await findBy("google_sub", g.sub);
   return existing ? patch(existing.id, fields) : insert({ ...fields, google_sub: g.sub });
 }
@@ -59,8 +63,18 @@ export async function upsertTikTokUser(t: { open_id: string; username?: string; 
  * TikTok from My accounts: when someone is already signed in and no other Rezekii account uses this TikTok account, it is
  * connected to the signed-in account (their own name and photo are kept). Otherwise it signs in as usual.
  */
-export async function linkOrSignInTikTok(current: AppUser | null, t: { open_id: string; username?: string; display_name?: string; avatar_url?: string }): Promise<{ user: AppUser; linked: boolean }> {
+export async function linkOrSignInTikTok(
+  current: AppUser | null,
+  t: { open_id: string; username?: string; display_name?: string; avatar_url?: string },
+): Promise<{ user: AppUser; linked: boolean } | { taken: true }> {
   const owner = await findBy("tiktok_open_id", t.open_id);
+  if (!owner) {
+    // Held as another account's connection (e.g. a Techwide team account): never sign in with it, and never move it.
+    const [conn] = (await (await supabaseRest(`tiktok_connections?open_id=eq.${encodeURIComponent(t.open_id)}&select=user_id&limit=1`)).json()) as { user_id: string }[];
+    if (conn && conn.user_id !== current?.id) return { taken: true };
+  }
+  // Signed in already and this TikTok has its own Rezekii account: keep the two apart (no silent switch of accounts).
+  if (current && owner && owner.id !== current.id) return { taken: true };
   if (current && (!owner || owner.id === current.id)) {
     const user = await patch(current.id, {
       tiktok_open_id: t.open_id,

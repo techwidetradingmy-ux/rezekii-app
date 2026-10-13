@@ -1,6 +1,6 @@
 /** What the daily refresh fetches, as a list of tasks. Pure: no network, no database. */
 
-export type TaskKind = "tap_campaigns" | "tap_products" | "tap_catalog" | "tap_creators" | "levels" | "rankings" | "best" | "details" | "marketplace";
+export type TaskKind = "tap_campaigns" | "tap_products" | "tap_catalog" | "tap_creators" | "levels" | "rankings" | "videos" | "best" | "details" | "marketplace";
 export type PlannedTask = { key: string; kind: TaskKind; params: Record<string, unknown>; priority: number };
 
 const DAY = 86_400_000;
@@ -59,6 +59,8 @@ export function planDay(now: number, haveDays: Set<string>): PlannedTask[] {
     { key: "levels", kind: "levels", params: {}, priority: 5 },
     // the Rankings page data, once every best-seller list is saved
     { key: "rankings", kind: "rankings", params: { day: newest }, priority: 5 },
+    // video numbers for every connected TikTok account (admin Video stats)
+    { key: "videos", kind: "videos", params: {}, priority: 6 },
   ];
 
   // Newest date: every period for every list.
