@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
     if ("taken" in result) return toSignin(req, "taken", "tiktok");
     const { user, linked } = result;
     await saveTikTokConnection(user.id, profile, tokens);
-    return signedIn(req, user.id, "tiktok", linked ? "/app/accounts?connected=tiktok" : "/app");
+    return signedIn(req, user.id, "tiktok", !linked ? "/app" : user.role === "admin" ? "/app/admin/accounts" : "/app/accounts?connected=tiktok");
   } catch (err) {
     console.error("[tiktok] callback error", err instanceof Error ? err.message : err);
     return toSignin(req, "failed", "tiktok");

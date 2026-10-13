@@ -145,3 +145,28 @@ export async function deleteDraft(id: string, actor: string): Promise<AdminPostR
   await logActivity(actor, "Posts", `deleted a draft on ${p.handle}`);
   return { ok: true };
 }
+
+export type CalWeek = { offset: number; startIso: string; endIso: string; days: { key: string; name: string; date: number; month: string }[]; todayKey: string; label: string };
+const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+/** A Monday-to-Sunday week in Malaysia time, `offset` weeks from this one. Pure apart from `now`. */
+export function calWeek(offset: number, now: number): CalWeek {
+  const MYT = 8 * 3600_000;
+  const today = new Date(now + MYT);
+  const todayKey = today.toISOString().slice(0, 10);
+  const monday = Date.parse(`${todayKey}T00:00:00Z`) - ((today.getUTCDay() + 6) % 7) * 86400_000 + offset * 7 * 86400_000;
+  const days = DAYS.map((name, i) => {
+    const d = new Date(monday + i * 86400_000);
+    return { key: d.toISOString().slice(0, 10), name, date: d.getUTCDate(), month: MON[d.getUTCMonth()] };
+  });
+  const label = `${offset === 0 ? "This week · " : ""}${days[0].date} ${days[0].month} – ${days[6].date} ${days[6].month}`;
+  return { offset, startIso: new Date(monday - MYT).toISOString(), endIso: new Date(monday - MYT + 7 * 86400_000).toISOString(), days, todayKey, label };
+}
+
+/** The calendar page: the week and every post in it. */
+export async function calendar(offset: number): Promise<{ week: CalWeek; posts: CalPost[]; now: number }> {
+  const now = Date.now();
+  const week = calWeek(offset, now);
+  return { week, posts: await postsBetween(week.startIso, week.endIso), now };
+}

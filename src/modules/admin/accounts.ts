@@ -1,4 +1,7 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import { revokeTikTokToken } from "../../integrations/tiktok/login.ts";
+import { decryptToken } from "../creator-accounts/token-crypto.ts";
+import { logActivity } from "./admins.ts";
 
 export type AdminAccount = {
   openId: string;
@@ -58,4 +61,21 @@ export async function allAccounts(): Promise<AdminAccount[]> {
 export async function shopPlacesUsed(): Promise<number> {
   const res = await supabaseRest("affiliate_connections?select=username", { headers: { prefer: "count=exact", range: "0-0" } });
   return Number((res.headers.get("content-range") ?? "*/0").split("/")[1]) || 0;
+}
+
+/**
+ * Removes a Techwide team account: Rezekii's TikTok access is revoked, the connection deleted and its queued posts cancelled.
+ * Its posted videos and link history stay as business records.
+ */
+export async function removeTeamAccount(openId: string, actor: string): Promise<{ ok: boolean; error?: string }> {
+  const [c] = (await (await supabaseRest(`tiktok_connections?open_id=eq.${encodeURIComponent(openId)}&select=user_id,username,access_token_enc&limit=1`)).json()) as { user_id: string; username: string | null; access_token_enc: string }[];
+  if (!c) return { ok: false, error: "That account is no longer connected." };
+  const [owner] = (await (await supabaseRest(`app_users?id=eq.${c.user_id}&select=role,tiktok_open_id&limit=1`)).json()) as { role: string; tiktok_open_id: string | null }[];
+  if (owner?.role !== "admin") return { ok: false, error: "That is a creator's account. Remove it from Creators instead." };
+  await Promise.resolve().then(() => revokeTikTokToken(decryptToken(c.access_token_enc))).catch((err) => console.error("[accounts] revoke failed", err instanceof Error ? err.message : err));
+  await supabaseRest(`posts?tiktok_open_id=eq.${encodeURIComponent(openId)}&status=in.(scheduled,failed)`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ status: "cancelled", next_attempt_at: null, updated_at: new Date().toISOString() }) });
+  await supabaseRest(`tiktok_connections?open_id=eq.${encodeURIComponent(openId)}`, { method: "DELETE", headers: { prefer: "return=minimal" } });
+  if (owner.tiktok_open_id === openId) await supabaseRest(`app_users?id=eq.${c.user_id}`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ tiktok_open_id: null, tiktok_username: null }) });
+  await logActivity(actor, "Connections", `removed @${c.username ?? openId} from Rezekii`);
+  return { ok: true };
 }
