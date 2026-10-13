@@ -3,6 +3,7 @@ import { listCampaignProductStats, listCampaignProducts, listCampaigns, listProd
 import { amount, goldenSellers, type StatRow } from "../tap/golden.ts";
 import { smallImage } from "../tap/image.ts";
 import { updateLevels } from "../levels/store.ts";
+import { buildRankings } from "../rankings/store.ts";
 import { getBestselling, getMarketplaceCreator, searchMarketplaceCreators, type BestsellingKind } from "../../integrations/tiktok-shop/seller.ts";
 import { bestSlot, type PlannedTask } from "./plan.ts";
 import type { Sessions } from "./sessions.ts";
@@ -122,6 +123,13 @@ async function levels(t: TaskRow): Promise<StepResult> {
   return { count: await updateLevels(t.run_date) };
 }
 
+/** The Rankings page data from the day's best-seller lists. Waits until every list (and older missing day) is saved. */
+async function rankings(t: TaskRow): Promise<StepResult> {
+  if (await openTaskCount(t.run_date, "best")) return { count: 0, more: true, waitMs: 60_000 };
+  const built = await buildRankings((t.params as { day: string }).day);
+  return { count: built.creators["30D"].length };
+}
+
 /** [productId, name, shop, image] */
 type CreatorTaskProduct = [string, string, string, string | null];
 
@@ -210,6 +218,7 @@ export const STEPS: Record<string, (t: TaskRow, ctx: Ctx) => Promise<StepResult>
   tap_catalog: tapCatalog,
   tap_creators: tapCreators,
   levels,
+  rankings,
   details,
   marketplace,
 };

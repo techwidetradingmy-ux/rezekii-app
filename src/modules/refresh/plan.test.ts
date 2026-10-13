@@ -30,6 +30,7 @@ test("refresh plan: first run fills 30 days, later runs only the missing ones", 
   assert.equal(first.filter((t) => t.kind === "marketplace").length, FOLLOWER_BANDS.length);
   assert.equal(first[0].kind, "tap_campaigns");
   assert.equal(first.filter((t) => t.kind === "levels").length, 1);
+  assert.deepEqual(first.find((t) => t.kind === "rankings")?.params, { day: "2026-10-11" });
 
   const have = new Set(Array.from({ length: 29 }, (_, i) => mytDay(now, i + 3)));
   have.delete("2026-10-05");
