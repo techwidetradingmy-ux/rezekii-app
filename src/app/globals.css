@@ -256,6 +256,13 @@ a { color: var(--gink); }
 .signin .btn-tiktok { color: #ffffff; }
 .btn-google { display: inline-flex; align-items: center; gap: 12px; padding: 0 22px; border-radius: 12px; background: #ffffff; color: #1f1f1f !important; border: 1px solid #747775; text-decoration: none; font-weight: 500; font-size: 16px; }
 .btn-google:hover { background: #f8faf9; }
+.btn-email { display: inline-flex; align-items: center; gap: 12px; padding: 0 22px; border-radius: 12px; background: var(--surface); color: var(--text); border: 1.5px solid var(--border); font: inherit; font-weight: 700; font-size: 16px; cursor: pointer; }
+.btn-email:hover { border-color: var(--green); }
+.email-signin { display: flex; flex-direction: column; gap: 12px; text-align: left; padding: 14px; border-radius: 16px; border: 1.5px solid var(--border); background: var(--surface); }
+.email-signin .np-seg { align-self: stretch; }
+.email-signin label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 700; color: var(--body); }
+.email-signin small { color: var(--muted); font-weight: 500; }
+.email-signin .np-btn { width: 100%; }
 .signin-error { padding: 10px 14px; border-radius: 12px; background: #fdecea; color: #b42318 !important; font-weight: 700; }
 .signin-note { font-size: 13px !important; color: #5f6b7a !important; }
 .signin-legal { font-size: 12px !important; color: #5f6b7a !important; }

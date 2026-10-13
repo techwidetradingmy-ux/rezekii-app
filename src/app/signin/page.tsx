@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { TikTokLogo } from "../site";
 import { Splash } from "../splash";
+import { EmailSignin } from "./email-signin";
 import { SigninStatus } from "./signin-status";
 
 export const metadata: Metadata = { title: "Sign in · Rezekii" };
@@ -38,7 +39,8 @@ export default function SignIn() {
           <GoogleG />
           Continue with Google
         </a>
-        <p className="signin-note">Creators: continue with TikTok to post from your own account. Techwide team: continue with Google.</p>
+        <EmailSignin />
+        <p className="signin-note">Creators: continue with TikTok to post from your own account, or use email. Techwide team: continue with Google.</p>
         <p className="signin-legal">
           By continuing you agree to our <Link href="/terms">Terms of Service</Link> and <Link href="/privacy">Privacy Policy</Link>.
         </p>

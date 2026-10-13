@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
-import type { AppUser } from "./users.ts";
+import { USER_COLUMNS, type AppUser } from "./users.ts";
 
 /** Sessions: a random token in an HTTP-only cookie; the database keeps only its SHA-256 hash. */
 export const SESSION_COOKIE = "rz_session";
@@ -27,7 +27,7 @@ export async function createSession(userId: string): Promise<{ token: string; ex
 export async function userForSession(token: string | undefined): Promise<AppUser | null> {
   if (!token) return null;
   const res = await supabaseRest(
-    `app_sessions?token_hash=eq.${hashToken(token)}&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&select=app_users(*)&limit=1`,
+    `app_sessions?token_hash=eq.${hashToken(token)}&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&select=app_users(${USER_COLUMNS})&limit=1`,
   );
   const [row] = (await res.json()) as { app_users: AppUser | null }[];
   return row?.app_users ?? null;
