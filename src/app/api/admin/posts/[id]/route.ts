@@ -15,10 +15,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const user = await currentUser();
   if (user?.role !== "admin") return NextResponse.json({ error: "Admins only." }, { status: 403 });
   const { id } = await params;
-  const b = (await req.json().catch(() => ({}))) as { action?: string; at?: string };
+  const b = (await req.json().catch(() => ({}))) as { action?: string; at?: string; privacy?: string; consent?: boolean };
   const actor = actorName(user.email);
   const r =
-    b.action === "move" ? await movePost(id, String(b.at ?? ""), actor)
+    b.action === "move" ? await movePost(id, String(b.at ?? ""), actor, { privacy: b.privacy, consent: !!b.consent })
     : b.action === "cancel" ? await cancelPost(id, actor)
     : b.action === "published" ? await markPublished(id, actor)
     : b.action === "delete" ? await deleteDraft(id, actor)

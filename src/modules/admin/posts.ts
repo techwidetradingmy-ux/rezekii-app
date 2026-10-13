@@ -1,5 +1,7 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
-import type { PostRow } from "../posting/store.ts";
+import { queryCreatorInfo } from "../../integrations/tiktok/posting.ts";
+import { deleteUpload } from "../posting/media.ts";
+import { freshTikTokToken, type PostRow } from "../posting/store.ts";
 import { logActivity } from "./admins.ts";
 
 /** How a post shows on the admin calendar. */
@@ -101,17 +103,27 @@ const when = (iso: string) => new Date(iso).toLocaleString("en-GB", { weekday: "
 export type AdminPostResult = { ok: true } | { ok: false; error: string; status: number };
 const notTeam: AdminPostResult = { ok: false, error: "Only posts on Techwide's own accounts can be changed here. Creators manage their own posts.", status: 403 };
 
-/** Schedule (or reschedule) a team post for a new time: scheduled, failed and draft posts. */
-export async function movePost(id: string, iso: string, actor: string): Promise<AdminPostResult> {
+/**
+ * Schedule (or reschedule) a team post for a new time: scheduled, failed and draft posts. A draft also needs who can view it
+ * (one of TikTok's options for the account) and the Music Usage Confirmation, as on New post.
+ */
+export async function movePost(id: string, iso: string, actor: string, draft: { privacy?: string; consent?: boolean } = {}): Promise<AdminPostResult> {
   const p = await teamPost(id);
   if (!p) return notTeam;
   if (!["scheduled", "failed", "draft"].includes(p.status)) return { ok: false, error: "This post can't be moved any more.", status: 409 };
   const t = Date.parse(iso);
   if (!Number.isFinite(t) || t < Date.now() + 60_000) return { ok: false, error: "Pick a time at least a minute from now.", status: 400 };
   if (t > Date.now() + 60 * 86400_000) return { ok: false, error: "Pick a time within the next 60 days.", status: 400 };
-  if (p.status === "draft" && !p.privacy_level && p.mode === "direct") return { ok: false, error: "Open this draft in New post to pick who can view it before scheduling.", status: 409 };
+  let privacy = p.privacy_level;
+  if (p.status === "draft" && p.mode === "direct") {
+    const info = await queryCreatorInfo(await freshTikTokToken(p.tiktok_open_id));
+    if (info.error || !info.data) return { ok: false, error: "TikTok says this account can't post right now. Try again later.", status: 503 };
+    if (!draft.privacy || !info.data.privacy_level_options.includes(draft.privacy as never)) return { ok: false, error: "Choose who can view this post.", status: 400 };
+    if (!draft.consent) return { ok: false, error: "Agree to TikTok's Music Usage Confirmation to post.", status: 400 };
+    privacy = draft.privacy as PostRow["privacy_level"];
+  }
   const at = new Date(t).toISOString();
-  await patch(id, { status: "scheduled", scheduled_at: at, next_attempt_at: at, attempts: 0, last_error: null });
+  await patch(id, { status: "scheduled", scheduled_at: at, next_attempt_at: at, attempts: 0, last_error: null, privacy_level: privacy });
   await logActivity(actor, "Posts", `${p.status === "scheduled" ? "rescheduled" : "scheduled"} ${p.handle} for ${when(at)}`);
   return { ok: true };
 }
@@ -136,12 +148,13 @@ export async function markPublished(id: string, actor: string): Promise<AdminPos
   return { ok: true };
 }
 
-/** Delete a team draft for good (its uploaded video stays until storage cleanup). */
+/** Delete a team draft for good, with its uploaded video. */
 export async function deleteDraft(id: string, actor: string): Promise<AdminPostResult> {
   const p = await teamPost(id);
   if (!p) return notTeam;
   if (p.status !== "draft") return { ok: false, error: "Only drafts can be deleted.", status: 409 };
   await patch(id, { status: "cancelled" });
+  if (p.storage_path) await deleteUpload(p.storage_path).catch((err) => console.error("[drafts] upload delete failed", err instanceof Error ? err.message : err));
   await logActivity(actor, "Posts", `deleted a draft on ${p.handle}`);
   return { ok: true };
 }

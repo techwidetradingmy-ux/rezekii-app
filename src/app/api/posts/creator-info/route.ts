@@ -14,7 +14,13 @@ export async function GET(req: NextRequest) {
   const account = req.nextUrl.searchParams.get("account");
   const openId = await userTikTokOpenId(user.id, account);
   if (!openId) return NextResponse.json({ error: account ? "That TikTok account isn't connected to your Rezekii account." : "Continue with TikTok to post." }, { status: 409 });
-  const info = await queryCreatorInfo(await freshTikTokToken(openId));
+  let token: string;
+  try {
+    token = await freshTikTokToken(openId);
+  } catch (err) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : "TikTok sign-in ran out. Continue with TikTok again." }, { status: 409 });
+  }
+  const info = await queryCreatorInfo(token);
   if (info.error || !info.data) return NextResponse.json({ error: `TikTok says this account can't post right now. Try again later. (${info.error?.message ?? "no reply"})` }, { status: 503 });
   return NextResponse.json({ ...info.data, nextRecommended: nextRecommendedSlot(new Date(), await scheduledTimes(openId), await postingHours()).toISOString() });
 }
