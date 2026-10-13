@@ -15,6 +15,7 @@ test("TikTok Login Kit link: client key, comma-separated scopes, code flow, redi
   assert.equal(u.searchParams.get("redirect_uri"), "https://rezekii.com/api/auth/tiktok/callback");
   assert.equal(u.searchParams.get("state"), "S1");
   assert.equal(u.searchParams.get("client_secret"), null);
+  assert.equal(u.searchParams.get("disable_auto_auth"), "1", "always show TikTok's permission screen");
   process.env.TIKTOK_SCOPES = "user.info.basic, video.upload";
   assert.equal(new URL(tiktokAuthUrl("S", "https://x.test/cb")).searchParams.get("scope"), "user.info.basic,video.upload");
   delete process.env.TIKTOK_SCOPES;
