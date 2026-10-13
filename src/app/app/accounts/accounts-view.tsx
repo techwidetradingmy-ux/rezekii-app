@@ -11,6 +11,15 @@ import "../marketplace/marketplace.css";
 import "../today.css";
 import "./accounts.css";
 
+const SHOP_NOTE: Record<AccountOverview["shop"]["status"], (s: AccountOverview["shop"]) => string> = {
+  none: () => "Affiliate links for any product, add to showcase, product facts",
+  waiting: () => "Linked · Techwide approves each new creator account",
+  approved: () => "Affiliate links, showcase and product facts are on",
+  rejected: (s) => `Not approved${s.reason ? `: ${s.reason}` : ""} · you can link again to ask again`,
+  waitlist: () => "All TikTok Shop places are taken · you'll be invited when one frees up",
+  invited: () => "A place is free for you · link TikTok Shop now",
+};
+
 type Me = { handle: string; avatar: string | null; initial: string; role: "admin" | "creator"; tiktokUsername: string | null };
 type Alert = "disconnect" | "delete" | null;
 
@@ -21,6 +30,7 @@ export function AccountsView({ me, o, justConnected }: { me: Me; o: AccountOverv
   const theme = useTheme();
   const [stats, setStats] = useState<AccountStats | null>(null);
   const [connecting, setConnecting] = useState(false);
+  const [linking, setLinking] = useState(false);
   const [alert, setAlert] = useState<Alert>(null);
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
@@ -90,7 +100,7 @@ export function AccountsView({ me, o, justConnected }: { me: Me; o: AccountOverv
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12, background: "var(--surface)", borderRadius: 26, padding: "18px 22px", boxShadow: "var(--shadow)" }}>
           <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <h2 id="maacc" className="nv-h2">TikTok accounts</h2>
-            <span style={{ fontSize: 13, color: "var(--muted)" }}>TikTok is for scheduling posts and video stats. TikTok Shop linking opens once TikTok approves Rezekii&apos;s Shop connection.</span>
+            <span style={{ fontSize: 13, color: "var(--muted)" }}>Each account is approved by Techwide. TikTok Shop linking is for affiliate links and showcase; TikTok is for posting and video stats.</span>
           </span>
         </div>
         <div className="nv-card nv-up" style={{ padding: 22, display: "flex", flexDirection: "column", gap: 16 }}>
@@ -113,11 +123,20 @@ export function AccountsView({ me, o, justConnected }: { me: Me; o: AccountOverv
               <span style={{ width: 36, height: 36, borderRadius: 10, background: "#0d1117", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#25f4ee" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M14 3v11.5a3.5 3.5 0 1 1-3.5-3.5" /><path d="M14 3c.5 2.8 2.4 4.6 5 5" /></svg>
               </span>
-              <span style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
-                <span style={{ fontWeight: 700 }}>TikTok Shop</span>
-                <span style={{ fontSize: 13, color: "var(--muted)" }}>{o.shop ? `Affiliate links, showcase, samples · linked ${o.shop.linkedAt}` : "Affiliate links for any product, once TikTok approves"}</span>
+              <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+                <span style={{ fontWeight: 700 }}>TikTok Shop{o.shop.handle ? ` · @${o.shop.handle}` : ""}</span>
+                <span style={{ fontSize: 13, color: "var(--muted)" }}>{SHOP_NOTE[o.shop.status](o.shop)}</span>
               </span>
-              <span className={`nv-badge ${o.shop ? "b-green" : "b-amber"}`}>{o.shop ? "Linked" : "Coming soon"}</span>
+              {o.shop.status === "approved" || o.shop.status === "waiting" ? (
+                <span className={`nv-badge ${o.shop.status === "approved" ? "b-green" : "b-amber"}`}>{o.shop.status === "approved" ? "Approved" : "Waiting for approval"}</span>
+              ) : o.shop.status === "waitlist" ? (
+                <span className="nv-badge b-gray">Waitlist #{o.shop.position ?? "?"}</span>
+              ) : (
+                <a href="/api/auth/tiktokshop/start" className="nv-btn3 nv-sm nv-press" onClick={() => setLinking(true)}>
+                  {linking && <span className="nv-sping" aria-hidden="true" />}
+                  {linking ? "Opening TikTok Shop…" : o.shop.status === "rejected" ? "Link again" : "Link TikTok Shop"}
+                </a>
+              )}
             </div>
             <div style={{ borderRadius: 18, background: "var(--surface2)", padding: 16, display: "flex", alignItems: "center", gap: 12 }}>
               <span style={{ width: 36, height: 36, borderRadius: 10, background: "var(--seg)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>

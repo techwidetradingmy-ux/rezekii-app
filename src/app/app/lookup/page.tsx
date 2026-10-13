@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { allProducts } from "@/modules/tap/catalog.ts";
-import { getAffiliateConnection } from "@/modules/creator-accounts/affiliate-connections.ts";
+import { accessFor } from "@/modules/creator-accounts/access.ts";
 import { currentUser } from "../../current-user";
 import { SiteFooter, SiteNav } from "../../site";
 import { tiktokProductUrl } from "../marketplace/format";
@@ -15,7 +15,7 @@ export default async function LookupPage() {
   const user = await currentUser();
   if (!user) redirect("/signin");
   const [linked, all] = await Promise.all([
-    user.tiktok_username ? getAffiliateConnection(user.tiktok_username).then((c) => !!c).catch(() => false) : false,
+    accessFor(user.id).then((a) => a?.status === "approved"),
     allProducts(),
   ]);
   return (

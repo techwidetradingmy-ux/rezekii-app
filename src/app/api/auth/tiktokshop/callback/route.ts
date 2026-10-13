@@ -6,7 +6,8 @@ import { getAuthorizedShops } from "@/integrations/tiktok-shop/seller.ts";
 import type { TokenSet } from "@/integrations/tiktok-shop/auth.ts";
 import { isAllowedPartnerDuringProof, savePartnerConnection } from "@/modules/marketplace/partner-connection.ts";
 import { isAllowedSellerDuringProof, saveSellerConnection } from "@/modules/marketplace/seller-connection.ts";
-import { isAllowedDuringProof, saveAffiliateConnection } from "@/modules/creator-accounts/affiliate-connections.ts";
+import { SESSION_COOKIE, userForSession } from "@/modules/accounts/session.ts";
+import { linkCreator } from "@/modules/creator-accounts/access.ts";
 import { STATE_COOKIE, STATE_COOKIE_OPTIONS, stateMatches } from "../state.ts";
 
 /** TikTok Shop returns here after the creator approves (the one registered return address). */
@@ -39,25 +40,15 @@ export async function GET(req: NextRequest) {
       return finish("error");
     }
     const profile = profileReply.data;
-
-    // v0.1 proof: any account outside the allow-list is discarded, never stored.
-    if (!isAllowedDuringProof(profile.username)) return finish("not-allowed");
-
     const openId = profile.creator_user_open_id || tokens.open_id;
     if (!openId) {
       console.error("[tiktokshop] no creator id in profile or token reply");
       return finish("error");
     }
-
-    await saveAffiliateConnection(
-      {
-        openId,
-        username: profile.username,
-        avatarUrl: profile.avatar?.url,
-      },
-      tokens,
-    );
-    return finish("connected");
+    // A creator links TikTok Shop to the Rezekii account they are signed in to; Techwide then approves it (see creator access).
+    const user = await userForSession(req.cookies.get(SESSION_COOKIE)?.value).catch(() => null);
+    if (!user) return finish("signin");
+    return finish(await linkCreator(user, { openId, username: profile.username, avatarUrl: profile.avatar?.url }, tokens));
   } catch (err) {
     console.error("[tiktokshop] callback error", err instanceof Error ? err.message : err);
     return finish("error");

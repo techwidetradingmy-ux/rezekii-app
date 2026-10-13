@@ -86,6 +86,18 @@ export function addShowcaseByLink(accessToken: string, link: string) {
   });
 }
 
+export type ShowcaseProduct = { id: string; title?: string; main_images?: { url?: string }[]; shop?: { name?: string } };
+
+/** The creator's showcase, one page of up to 20 products ("Get Showcase Products"). */
+export function getShowcaseProducts(accessToken: string, pageToken?: string) {
+  return callApi<{ products?: ShowcaseProduct[]; next_page_token?: string }>({
+    method: "GET",
+    path: "/affiliate_creator/202405/showcases/products",
+    accessToken,
+    query: { page_size: "20", origin: "SHOWCASE", ...(pageToken ? { page_token: pageToken } : {}) },
+  });
+}
+
 export type Money = { amount: string; currency: string };
 export type OrderSku = {
   id?: string;

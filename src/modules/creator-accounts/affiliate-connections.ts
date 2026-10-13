@@ -13,7 +13,7 @@ const isoFromUnix = (seconds: number) => new Date(seconds * 1000).toISOString();
 
 /** Saves or replaces a Creator Account's Affiliate Connection. Columns left out (e.g. no avatar on a token refresh) keep their stored value. */
 export async function saveAffiliateConnection(
-  profile: { openId: string; username: string; avatarUrl?: string },
+  profile: { openId: string; username: string; avatarUrl?: string; userId?: string },
   tokens: TokenSet,
 ): Promise<void> {
   await supabaseRest("affiliate_connections?on_conflict=creator_user_open_id", {
@@ -23,6 +23,7 @@ export async function saveAffiliateConnection(
       creator_user_open_id: profile.openId,
       username: profile.username.toLowerCase(),
       ...(profile.avatarUrl !== undefined ? { avatar_url: profile.avatarUrl } : {}),
+      ...(profile.userId !== undefined ? { user_id: profile.userId } : {}),
       access_token_enc: encryptToken(tokens.access_token),
       access_token_expires_at: isoFromUnix(tokens.access_token_expire_in),
       refresh_token_enc: encryptToken(tokens.refresh_token),
@@ -41,6 +42,23 @@ export type StoredConnection = {
   refreshToken: string;
 };
 
+const toStored = (row: Record<string, string> | undefined): StoredConnection | null =>
+  row
+    ? {
+        openId: row.creator_user_open_id,
+        username: row.username,
+        accessToken: decryptToken(row.access_token_enc),
+        accessExpiresAt: new Date(row.access_token_expires_at),
+        refreshToken: decryptToken(row.refresh_token_enc),
+      }
+    : null;
+
+/** The TikTok Shop creator account a Rezekii account linked, or null. */
+export async function connectionForUser(userId: string): Promise<StoredConnection | null> {
+  const [row] = (await (await supabaseRest(`affiliate_connections?user_id=eq.${userId}&select=*&order=updated_at.desc&limit=1`)).json()) as Record<string, string>[];
+  return toStored(row);
+}
+
 export async function getAffiliateConnection(username: string): Promise<StoredConnection | null> {
   const res = await supabaseRest(
     `affiliate_connections?username=eq.${encodeURIComponent(username.replace(/^@/, "").toLowerCase())}&select=*&limit=1`,
@@ -56,9 +74,8 @@ export async function getAffiliateConnection(username: string): Promise<StoredCo
   };
 }
 
-/** The creator's TikTok Shop access token (renewed when it expires within 10 minutes), or null when they have not linked TikTok Shop. */
-export async function freshCreatorToken(username: string): Promise<string | null> {
-  const conn = await getAffiliateConnection(username);
+/** A linked creator's TikTok Shop access token, renewed (and saved) when it expires within 10 minutes. */
+export async function freshCreatorToken(conn: StoredConnection | null): Promise<string | null> {
   if (!conn) return null;
   if (conn.accessExpiresAt.getTime() > Date.now() + 10 * 60_000) return conn.accessToken;
   const r = await refreshTokens(conn.refreshToken);

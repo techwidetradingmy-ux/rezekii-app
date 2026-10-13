@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
-import { creatorTokenFor, lookupLinks } from "@/modules/tap/convert.ts";
+import { approvedCreatorToken } from "@/modules/creator-accounts/access.ts";
+import { lookupLinks } from "@/modules/tap/convert.ts";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,7 @@ export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => ({}))) as { links?: unknown };
   const lines = (Array.isArray(body.links) ? body.links : []).filter((l): l is string => typeof l === "string" && l.trim().length > 0).map((l) => l.trim().slice(0, 500)).slice(0, 20);
   if (!lines.length) return NextResponse.json({ error: "Paste at least one product link." }, { status: 400 });
-  const token = await creatorTokenFor(user.tiktok_username);
+  const token = await approvedCreatorToken(user.id);
   try {
     return NextResponse.json({ rows: await lookupLinks(token, lines), linked: !!token });
   } catch (err) {

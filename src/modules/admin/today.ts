@@ -8,16 +8,16 @@ import { commission, type Commission } from "./tap.ts";
 
 export type Need = { kind: "failed" | "unconfirmed" | "reconnect"; title: string; detail: string; techwide: boolean; postId?: string };
 export type TimelineRow = { handle: string; posts: { time: string; left: number; status: CalStatus; title: string }[] };
-export type SampleWaiting = { id: string; product: string; image: string | null; who: string; at: string };
+export type CreatorWaiting = { id: string; handle: string; name: string; avatar: string | null; tiktok: boolean; at: string };
 export type AdminToday = {
   hello: string;
   sub: string;
   nowLeft: number;
   nowLabel: string;
-  stats: { posts: number; postsNote: string; linksToday: number; samplesWaiting: number; creators: number; creatorsShop: number };
+  stats: { posts: number; postsNote: string; linksToday: number; creatorsWaiting: number; samplesWaiting: number; creators: number; creatorsShop: number };
   needs: Need[];
   timeline: TimelineRow[];
-  samples: SampleWaiting[];
+  waiting: CreatorWaiting[];
   places: number;
   health: HealthLine[];
   tapLive: number;
@@ -38,18 +38,19 @@ export async function adminToday(): Promise<AdminToday> {
   const startIso = new Date(dayStart).toISOString();
   const endIso = new Date(dayStart + 86400_000).toISOString();
   const twoDaysAgo = new Date(now - 2 * 86400_000).toISOString();
-  const [today, recent, accounts, links, samplesWaiting, waitingRows, creators, places, health, tapLive, com] = await Promise.all([
+  const [today, recent, accounts, links, samplesWaiting, waitingRows, creators, places, health, tapLive, com, creatorsWaiting] = await Promise.all([
     postsBetween(startIso, endIso),
     postsBetween(twoDaysAgo, new Date(now).toISOString()),
     allAccounts(),
     count(`tap_links?made_at=gte.${startIso}&select=id`),
     count("sample_requests?status=eq.requested&select=id"),
-    supabaseRest("sample_requests?status=eq.requested&select=id,product_name,image,user_id,created_at&order=created_at&limit=3").then((r) => r.json() as Promise<{ id: string; product_name: string; image: string | null; user_id: string; created_at: string }[]>),
+    supabaseRest("creator_access?status=eq.waiting&select=user_id,username,requested_at&order=requested_at&limit=3").then((r) => r.json() as Promise<{ user_id: string; username: string | null; requested_at: string }[]>),
     count("app_users?role=eq.creator&select=id"),
     shopPlacesUsed(),
     systemHealth(),
     count("tap_catalog?select=product_id"),
     commission(),
+    count("creator_access?status=eq.waiting&select=user_id"),
   ]);
   const by = (s: CalStatus) => today.filter((p) => p.status === s).length;
   const seen = new Set<string>();
@@ -65,18 +66,28 @@ export async function adminToday(): Promise<AdminToday> {
     row.posts.push({ time: time(p.at), left: Math.round(((Date.parse(p.at) - dayStart) / 86400_000) * 1000) / 10, status: p.status, title: p.caption.split("\n")[0].slice(0, 80) });
     rows.set(p.openId, row);
   }
-  const users = waitingRows.length
-    ? new Map(((await (await supabaseRest(`app_users?id=in.(${waitingRows.map((w) => w.user_id).join(",")})&select=id,display_name,tiktok_username,email`)).json()) as { id: string; display_name: string | null; tiktok_username: string | null; email: string | null }[]).map((u) => [u.id, u.tiktok_username ? `@${u.tiktok_username}` : u.display_name || u.email || "Creator"]))
-    : new Map<string, string>();
+  type U = { id: string; display_name: string | null; email: string | null; avatar_url: string | null };
+  const ids = waitingRows.map((w) => w.user_id);
+  const [users, conns] = ids.length
+    ? await Promise.all([
+        supabaseRest(`app_users?id=in.(${ids.join(",")})&select=id,display_name,email,avatar_url`).then((r) => r.json() as Promise<U[]>),
+        supabaseRest(`tiktok_connections?user_id=in.(${ids.join(",")})&select=user_id`).then((r) => r.json() as Promise<{ user_id: string }[]>),
+      ])
+    : [[] as U[], [] as { user_id: string }[]];
+  const byId = new Map(users.map((u) => [u.id, u]));
+  const withTikTok = new Set(conns.map((c) => c.user_id));
   return {
     hello: `${greeting(now)}, Techwide team`,
     sub: `${longDay(now)} · ${time(new Date(now).toISOString())} Malaysia time`,
     nowLeft: Math.round(((now - dayStart) / 86400_000) * 1000) / 10,
     nowLabel: `Now ${time(new Date(now).toISOString())}`,
-    stats: { posts: today.length, postsNote: `${by("published")} published · ${by("scheduled") + by("sending") + by("paused")} scheduled · ${by("failed")} failed`, linksToday: links, samplesWaiting, creators, creatorsShop: places },
+    stats: { posts: today.length, postsNote: `${by("published")} published · ${by("scheduled") + by("sending") + by("paused")} scheduled · ${by("failed")} failed`, linksToday: links, creatorsWaiting, samplesWaiting, creators, creatorsShop: places },
     needs,
     timeline: [...rows.values()],
-    samples: waitingRows.map((w) => ({ id: w.id, product: w.product_name, image: w.image, who: users.get(w.user_id) ?? "Creator", at: w.created_at })),
+    waiting: waitingRows.map((w) => {
+      const u = byId.get(w.user_id);
+      return { id: w.user_id, handle: w.username ? `@${w.username}` : (u?.email ?? "Creator"), name: u?.display_name ?? u?.email ?? "", avatar: u?.avatar_url ?? null, tiktok: withTikTok.has(w.user_id), at: w.requested_at };
+    }),
     places,
     health: health.lines,
     tapLive,

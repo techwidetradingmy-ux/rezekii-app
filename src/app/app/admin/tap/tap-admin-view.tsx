@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Hud, useToast } from "../../marketplace/use-tap-actions";
 import type { AdminCampaign, AdminTapProduct } from "@/modules/admin/tap.ts";
 import { n, pct, pulled, rm } from "../../marketplace/format";
 import "../../marketplace/marketplace.css";
@@ -10,6 +11,8 @@ import "../../links/links.css";
 import "../admin.css";
 
 const COLS = "minmax(280px, 3fr) 70px 70px 100px 130px 120px";
+const REVIEW_COLS = "minmax(280px, 3fr) 70px 70px 100px 130px 230px";
+const REASONS: [string, string][] = [["COMMISSION_TOO_LOW", "Commission too low"], ["PRODUCT_HARD_TO_PROMOTE", "Hard to promote"], ["PRODUCT_TOO_EXPENSIVE", "Too expensive"], ["NO_SUITABLE_CREATOR", "No suitable creator"]];
 const day = (s: number | null, year = false) => (s ? new Date(s * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "short", ...(year ? { year: "numeric" } : {}), timeZone: "Asia/Kuala_Lumpur" }) : "");
 const STATUS: Record<AdminCampaign["status"], [string, string]> = { live: ["Live", "b-green"], upcoming: ["Upcoming", "b-blue"], ended: ["Ended", "b-gray"] };
 
@@ -23,6 +26,11 @@ export function TapAdminView({ asOf, campaigns, firstProducts }: { asOf: string 
   const [allCards, setAllCards] = useState(false);
   const [limit, setLimit] = useState(100);
   const [f, setF] = useState<0 | 1>(0);
+  const { toast, flash } = useToast();
+  const [pending, setPending] = useState<Record<string, AdminTapProduct[] | "error">>({});
+  const [declining, setDeclining] = useState<string | null>(null);
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState<string | null>(null);
   const [openRows, setOpenRows] = useState<Record<string, boolean>>({});
   const camp = campaigns.find((c) => c.id === sel);
   const all = products[sel] ?? [];
@@ -44,7 +52,36 @@ export function TapAdminView({ asOf, campaigns, firstProducts }: { asOf: string 
       .catch(() => setProducts((p) => ({ ...p, [id]: [] })))
       .finally(() => setLoading(false));
   }
-  const list = all.filter((p) => f === 0 || p.samples > 0);
+  const review = f === 1;
+  const waiting = pending[sel];
+  const list = review ? (Array.isArray(waiting) ? waiting : []) : all;
+  const cols = review ? REVIEW_COLS : COLS;
+
+  function showReview() {
+    setF(1);
+    setOpenRows({});
+    if (pending[sel] && pending[sel] !== "error") return;
+    setLoading(true);
+    fetch(`/api/admin/tap/review?campaign=${encodeURIComponent(sel)}`, { cache: "no-store" })
+      .then(async (r) => {
+        const d = (await r.json().catch(() => ({}))) as { products?: AdminTapProduct[]; error?: string };
+        setPending((x) => ({ ...x, [sel]: r.ok && d.products ? d.products : "error" }));
+      })
+      .catch(() => setPending((x) => ({ ...x, [sel]: "error" })))
+      .finally(() => setLoading(false));
+  }
+  async function decide(p: AdminTapProduct, approve: boolean) {
+    if (!approve && !reason) return flash("Pick a reason the shop will see", false);
+    setBusy(p.id);
+    const r = await fetch("/api/admin/tap/review", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ campaign: sel, product: p.id, name: p.name, decision: approve ? "approve" : "decline", reason: approve ? undefined : reason }) });
+    const d = (await r.json().catch(() => ({}))) as { error?: string };
+    setBusy(null);
+    if (!r.ok) return flash(d.error || "TikTok didn't take the decision.", false);
+    setDeclining(null);
+    setReason("");
+    setPending((x) => ({ ...x, [sel]: (Array.isArray(x[sel]) ? (x[sel] as AdminTapProduct[]) : []).filter((q) => q.id !== p.id) }));
+    flash(approve ? `${p.name.split(" ").slice(0, 3).join(" ")} is approved · it reaches creators with the next daily refresh` : "Declined · the shop sees the reason in TikTok Shop");
+  }
 
   return (
     <>
@@ -93,20 +130,20 @@ export function TapAdminView({ asOf, campaigns, firstProducts }: { asOf: string 
             <div className="nv-seg" role="group" aria-label="Show" style={{ width: 300, maxWidth: "100%" }}>
               <span className="nv-segthumb" aria-hidden="true" style={{ width: "calc(50% - 2px)", transform: f === 0 ? "translateX(0)" : "translateX(100%)" }} />
               <button type="button" className={f === 0 ? "on" : ""} aria-pressed={f === 0} onClick={() => setF(0)}>All products</button>
-              <button type="button" className={f === 1 ? "on" : ""} aria-pressed={f === 1} onClick={() => setF(1)}>With samples {all.filter((p) => p.samples > 0).length}</button>
+              <button type="button" className={f === 1 ? "on" : ""} aria-pressed={f === 1} onClick={showReview}>To review{Array.isArray(waiting) ? ` ${waiting.length}` : ""}</button>
             </div>
             <Link href="/app/admin/samples" className="nv-link" style={{ fontSize: 13 }}>Sample requests: Rezekii queue</Link>
           </div>
           <div className="nv-scrollx">
             <div role="table" aria-label="Campaign products" style={{ minWidth: 900 }}>
-              <div role="row" className="nv-tr nv-trh" style={{ gridTemplateColumns: COLS }}>
-                <span role="columnheader">Product</span><span role="columnheader">Open</span><span role="columnheader">TAP</span><span role="columnheader">Sold</span><span role="columnheader">Samples</span><span role="columnheader">Status</span>
+              <div role="row" className="nv-tr nv-trh" style={{ gridTemplateColumns: cols }}>
+                <span role="columnheader">Product</span><span role="columnheader">Open</span><span role="columnheader">TAP</span><span role="columnheader">Sold</span><span role="columnheader">Samples</span><span role="columnheader">{review ? "" : "Status"}</span>
               </div>
               {list.slice(0, limit).map((p) => {
                 const isOpen = !!openRows[p.id];
                 return (
                   <div key={p.id}>
-                    <div role="row" className="nv-tr nv-trow" style={{ gridTemplateColumns: COLS }}>
+                    <div role="row" className="nv-tr nv-trow" style={{ gridTemplateColumns: cols }}>
                       <span role="cell" style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
                         {p.image ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -127,7 +164,27 @@ export function TapAdminView({ asOf, campaigns, firstProducts }: { asOf: string 
                           {p.samples ? `${n(p.samples)} left` : "None"} <span style={{ color: "var(--muted)", fontWeight: 600 }}>{isOpen ? "▲" : "▼"}</span>
                         </button>
                       </span>
-                      <span role="cell"><span className={`nv-badge ${!p.available ? "b-gray" : camp.status === "ended" ? "b-gray" : "b-green"}`}>{!p.available ? "Not available" : camp.status === "ended" ? "Ended" : "Live"}</span></span>
+                      {review ? (
+                        <span role="cell" style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                          {declining === p.id ? (
+                            <span style={{ display: "inline-flex", gap: 6 }}>
+                              <label htmlFor={`tpwhy-${p.id}`} style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Reason for declining</label>
+                              <select id={`tpwhy-${p.id}`} className="nv-input" value={reason} onChange={(e) => setReason(e.target.value)} style={{ height: 36, width: 130, padding: "0 8px", fontSize: 13 }}>
+                                <option value="">Reason…</option>
+                                {REASONS.map(([k, label]) => <option key={k} value={k}>{label}</option>)}
+                              </select>
+                              <button type="button" className="nv-btnd nv-sm nv-press" disabled={busy === p.id} onClick={() => decide(p, false)}>Decline</button>
+                            </span>
+                          ) : (
+                            <span style={{ display: "inline-flex", gap: 6 }}>
+                              <button type="button" className="nv-btn2 nv-sm nv-press" onClick={() => { setDeclining(p.id); setReason(""); }} style={{ color: "var(--red)" }}>Decline</button>
+                              <button type="button" className="nv-btn nv-sm nv-press" disabled={busy === p.id} onClick={() => decide(p, true)}>Approve</button>
+                            </span>
+                          )}
+                        </span>
+                      ) : (
+                        <span role="cell"><span className={`nv-badge ${!p.available ? "b-gray" : camp.status === "ended" ? "b-gray" : "b-green"}`}>{!p.available ? "Not available" : camp.status === "ended" ? "Ended" : "Live"}</span></span>
+                      )}
                     </div>
                     {isOpen && (
                       <div className="nv-expand" style={{ display: "flex", flexWrap: "wrap", gap: 10, padding: "10px 12px 12px 70px", background: "var(--surface2)", borderBottom: "1px solid var(--line)" }}>
@@ -151,9 +208,10 @@ export function TapAdminView({ asOf, campaigns, firstProducts }: { asOf: string 
             </div>
           )}
           {loading && <div style={{ padding: 22, display: "flex", flexDirection: "column", gap: 10 }}>{[0, 1, 2].map((i) => <span key={i} className="nv-skel" style={{ height: 46 }} />)}</div>}
-          {!loading && !list.length && <div style={{ padding: 32, textAlign: "center", color: "var(--muted)", borderTop: "1px solid var(--line)" }}>{f === 1 ? "No products with free samples in this campaign." : "No products in this campaign."}</div>}
+          {!loading && !list.length && <div style={{ padding: 32, textAlign: "center", color: "var(--muted)", borderTop: "1px solid var(--line)" }}>{review ? (waiting === "error" ? "TikTok Shop didn't answer. Pick To review again to retry." : "No shop products waiting for review in this campaign.") : "No products in this campaign."}</div>}
         </section>
       )}
+      <Hud toast={toast} />
     </>
   );
 }

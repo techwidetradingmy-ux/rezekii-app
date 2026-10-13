@@ -10,13 +10,13 @@ export const dynamic = "force-dynamic";
 /** Creator accounts, as designed in the mockup (Creators). */
 export default async function AdminCreatorsPage() {
   await requireAdmin();
-  const { creators, places, now } = await creatorsPage();
+  const { creators, places, auto, now } = await creatorsPage();
   return (
     <>
       <SiteNav variant="app" />
       <div className="nv nv-page">
         <main className="site-wrap app-main nv-main">
-          <CreatorsView creators={creators} places={places} now={now} />
+          <CreatorsView creators={creators} places={places} auto={auto} now={now} />
         </main>
       </div>
       <SiteFooter />

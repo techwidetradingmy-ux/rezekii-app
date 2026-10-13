@@ -62,6 +62,14 @@ export function TodayView({ data }: { data: TodayData }) {
   const [phase, setPhase] = useState<"idle" | "loading" | "done">("idle");
   const [rows, setRows] = useState<ConvertRow[]>([]);
   const { toast: msg, flash } = useToast();
+  const [showcase, setShowcase] = useState<{ count: number; tap: number; more: boolean } | null>(null);
+  useEffect(() => {
+    // With TikTok Shop linked, the real showcase count from TikTok Shop.
+    fetch("/api/tap/showcase?count=1", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d: { linked?: boolean; count: number; tap: number; more: boolean }) => d.linked && setShowcase(d))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!data.camp) return;
@@ -136,7 +144,8 @@ export function TodayView({ data }: { data: TodayData }) {
       </section>
 
       <section className="nv-up nv-card" aria-label="This week" style={{ boxShadow: "var(--shadow)", borderRadius: 26, padding: "24px 12px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 8 }}>
-        {data.stats.map((st) => {
+        {data.stats.map((raw) => {
+          const st = raw.key === "showcase" && showcase ? { ...raw, value: showcase.count, note: `${showcase.tap} from TAP campaigns${showcase.more ? " · first 200" : ""}` } : raw;
           const [label, href, icon, bg, fg] = STAT_LOOK[st.key];
           return (
             <Link key={st.key} href={href} className="nv-row" style={{ display: "flex", flexDirection: "column", gap: 6, padding: "8px 16px", borderRadius: 16, textDecoration: "none", color: "var(--text)" }}>

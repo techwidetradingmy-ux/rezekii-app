@@ -3,7 +3,7 @@ import { DEFAULT_ADMINS } from "../accounts/users.ts";
 
 const json = (body: unknown, prefer = "return=minimal"): RequestInit => ({ method: "POST", headers: { prefer }, body: JSON.stringify(body) });
 
-export type ActivityKind = "Posts" | "Creators" | "Admins" | "Connections";
+export type ActivityKind = "Posts" | "Creators" | "Admins" | "Connections" | "TAP";
 export type Activity = { at: string; actor: string; kind: ActivityKind; what: string };
 
 /** Adds a line to the admin activity log (Settings · Activity log). A failed log never fails the action. */

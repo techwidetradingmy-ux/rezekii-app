@@ -64,6 +64,20 @@ export function listCampaignProducts(accessToken: string, cipher: string, campai
   });
 }
 
+export type ReviewResult = "APPROVE" | "REJECT";
+export type RejectReason = "COMMISSION_TOO_LOW" | "PRODUCT_HARD_TO_PROMOTE" | "PRODUCT_TOO_EXPENSIVE" | "NO_SUITABLE_CREATOR";
+
+/** Approve or decline a product a shop submitted to one of Techwide's TAP campaigns. */
+export function reviewCampaignProduct(accessToken: string, cipher: string, campaignId: string, productId: string, result: ReviewResult, reasons: RejectReason[] = []) {
+  return callApi<Record<string, never>>({
+    method: "POST",
+    path: `/affiliate_partner/202405/campaigns/${campaignId}/products/${productId}/review`,
+    accessToken,
+    query: { category_asset_cipher: cipher },
+    body: { review_result: result, ...(result === "REJECT" ? { reject_reasons: reasons } : {}) },
+  });
+}
+
 /**
  * A promotion link for one campaign product; sales through it count for the TAP campaign.
  * `creatorRate` (×100, e.g. 1100 = 11%) is required by TikTok; 0 is allowed. It cannot exceed the product's total rate.

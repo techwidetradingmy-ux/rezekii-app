@@ -4,6 +4,7 @@ import type { AppUser } from "../accounts/users.ts";
 import { USER_COLUMNS } from "../accounts/users.ts";
 import type { Level } from "../levels/rules.ts";
 import { mytDay } from "../refresh/plan.ts";
+import { autoApprove, type AccessStatus } from "../creator-accounts/access.ts";
 import { shopPlacesUsed } from "./accounts.ts";
 import { logActivity } from "./admins.ts";
 
@@ -20,6 +21,10 @@ export type CreatorRow = {
   goldInvited: boolean;
   links: number;
   samples: number;
+  /** TikTok Shop approval ("none" = never linked TikTok Shop) */
+  access: AccessStatus | "none";
+  reason: string | null;
+  requestedAt: string | null;
 };
 
 type U = AppUser & { google_sub: string | null; created_at: string };
@@ -27,14 +32,17 @@ const tally = <T,>(rows: T[], key: (r: T) => string) => rows.reduce((m, r) => m.
 
 /** Every creator account with how they sign in, their connections, level, links and samples. */
 export async function creatorList(): Promise<CreatorRow[]> {
-  const [users, levels, conns, shops, links, samples] = await Promise.all([
+  const [users, levels, conns, shops, links, samples, access] = await Promise.all([
     supabaseRest(`app_users?role=eq.creator&select=${USER_COLUMNS},google_sub,created_at&order=created_at.desc&limit=5000`).then((r) => r.json() as Promise<U[]>),
     supabaseRest("creator_levels?select=user_id,level,gold_invited&limit=5000").then((r) => r.json() as Promise<{ user_id: string; level: Level; gold_invited: boolean }[]>),
     supabaseRest("tiktok_connections?select=user_id&limit=5000").then((r) => r.json() as Promise<{ user_id: string }[]>),
-    supabaseRest("affiliate_connections?select=username&limit=5000").then((r) => r.json() as Promise<{ username: string }[]>),
+    supabaseRest("affiliate_connections?select=username,user_id&limit=5000").then((r) => r.json() as Promise<{ username: string; user_id: string | null }[]>),
     supabaseRest("tap_links?select=user_id&limit=100000").then((r) => r.json() as Promise<{ user_id: string }[]>),
     supabaseRest("sample_requests?status=neq.cancelled&select=user_id&limit=100000").then((r) => r.json() as Promise<{ user_id: string }[]>),
+    supabaseRest("creator_access?select=user_id,status,reason,requested_at&limit=5000").then((r) => r.json() as Promise<{ user_id: string; status: AccessStatus; reason: string | null; requested_at: string }[]>),
   ]);
+  const acc = new Map(access.map((a) => [a.user_id, a]));
+  const linkedUsers = new Set(shops.map((x) => x.user_id).filter(Boolean));
   const lv = new Map(levels.map((l) => [l.user_id, l]));
   const connected = new Set(conns.map((c) => c.user_id));
   const linked = new Set(shops.map((s) => s.username.toLowerCase()));
@@ -48,11 +56,14 @@ export async function creatorList(): Promise<CreatorRow[]> {
     signIn: u.tiktok_open_id ? "Signed in with TikTok" : u.google_sub ? `Signed in with Google${u.email ? ` · ${u.email}` : ""}` : `Signed in with email${u.email ? ` · ${u.email}` : ""}`,
     joined: u.created_at,
     tiktok: connected.has(u.id),
-    shop: !!u.tiktok_username && linked.has(u.tiktok_username.toLowerCase()),
+    shop: linkedUsers.has(u.id) || (!!u.tiktok_username && linked.has(u.tiktok_username.toLowerCase())),
     level: lv.get(u.id)?.level ?? "bronze",
     goldInvited: lv.get(u.id)?.gold_invited ?? false,
     links: l.get(u.id) ?? 0,
     samples: s.get(u.id) ?? 0,
+    access: acc.get(u.id)?.status ?? "none",
+    reason: acc.get(u.id)?.reason ?? null,
+    requestedAt: acc.get(u.id)?.requested_at ?? null,
   }));
 }
 
@@ -85,7 +96,7 @@ export async function removeCreator(id: string, actor: string): Promise<boolean>
 }
 
 /** The Creators page: every creator, TikTok Shop places used, and the time it was read. */
-export async function creatorsPage(): Promise<{ creators: CreatorRow[]; places: number; now: number }> {
-  const [creators, places] = await Promise.all([creatorList(), shopPlacesUsed()]);
-  return { creators, places, now: Date.now() };
+export async function creatorsPage(): Promise<{ creators: CreatorRow[]; places: number; auto: boolean; now: number }> {
+  const [creators, places, auto] = await Promise.all([creatorList(), shopPlacesUsed(), autoApprove()]);
+  return { creators, places, auto, now: Date.now() };
 }

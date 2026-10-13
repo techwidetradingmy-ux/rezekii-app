@@ -14,7 +14,8 @@ import "../admin.css";
 const COLORS = ["#7c3aed", "#e8005a", "#0e7490", "#334155", "#be185d", "#a16207", "#b45309", "#0f766e"];
 const colorOf = (s: string) => COLORS[[...s].reduce((h, c) => h + c.charCodeAt(0), 0) % COLORS.length];
 const LEVEL: Record<CreatorRow["level"], string> = { bronze: "Bronze", silver: "Silver", gold: "Gold" };
-const TABS = ["All", "TikTok Shop linked", "Gold", "New this week"];
+const TABS = ["Waiting", "Waitlist", "Approved", "Rejected", "All"];
+const ACCESS: Record<CreatorRow["access"], [string, string]> = { waiting: ["Waiting for approval", "b-amber"], approved: ["Approved", "b-green"], rejected: ["Rejected", "b-red"], waitlist: ["Waitlist", "b-gray"], invited: ["Invited to link", "b-blue"], none: ["TikTok Shop not linked", "b-gray"] };
 const ago = (iso: string, now: number) => {
   const d = Math.floor((now - Date.parse(iso)) / 86400_000);
   return d <= 0 ? "today" : d === 1 ? "yesterday" : d < 30 ? `${d} days ago` : new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kuala_Lumpur" });
@@ -30,7 +31,7 @@ function Avatar({ c, size }: { c: CreatorRow; size: number }) {
 }
 
 /** Creator accounts, as designed in the mockup (Creators): TikTok Shop places, summary, list and the creator panel. */
-export function CreatorsView({ creators, places, now }: { creators: CreatorRow[]; places: number; now: number }) {
+export function CreatorsView({ creators, places, auto, now }: { creators: CreatorRow[]; places: number; auto: boolean; now: number }) {
   const router = useRouter();
   const { toast, flash } = useToast();
   const [tab, setTab] = useState(0);
@@ -40,9 +41,11 @@ export function CreatorsView({ creators, places, now }: { creators: CreatorRow[]
   const [alert, setAlert] = useState(false);
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
+  const [rejecting, setRejecting] = useState<string | null>(null);
+  const [reason, setReason] = useState("");
   const used = Math.min(places, 25);
-  const isNew = (c: CreatorRow) => now - Date.parse(c.joined) < 7 * 86400_000;
-  const inTab = [() => true, (c: CreatorRow) => c.shop, (c: CreatorRow) => c.level === "gold" || c.goldInvited, isNew];
+  const waitlist = creators.filter((c) => c.access === "waitlist" || c.access === "invited").sort((a, b) => (a.requestedAt ?? "").localeCompare(b.requestedAt ?? ""));
+  const inTab = [(c: CreatorRow) => c.access === "waiting", (c: CreatorRow) => c.access === "waitlist" || c.access === "invited", (c: CreatorRow) => c.access === "approved", (c: CreatorRow) => c.access === "rejected", () => true];
   const s = q.trim().toLowerCase();
   const shown = creators.filter((c) => inTab[tab](c) && (!s || `${c.handle} ${c.name}`.toLowerCase().includes(s)));
   const counts = inTab.map((f) => creators.filter(f).length);
@@ -60,6 +63,27 @@ export function CreatorsView({ creators, places, now }: { creators: CreatorRow[]
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   });
+
+  async function decide(c: CreatorRow, approve: boolean) {
+    if (!approve && !reason.trim()) return flash("Add a reason the creator will see", false);
+    setBusy(true);
+    const r = await fetch(`/api/admin/creators/${c.id}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ decision: approve ? "approve" : "reject", reason: approve ? undefined : reason.trim() }) });
+    const j = (await r.json().catch(() => ({}))) as { error?: string; invited?: string | null };
+    setBusy(false);
+    if (!r.ok) return flash(j.error || "Could not save the decision.", false);
+    setRejecting(null);
+    setReason("");
+    flash(approve ? `${c.handle} approved` : j.invited ? `Place freed · ${j.invited} invited to link TikTok Shop` : `${c.handle} rejected`);
+    router.refresh();
+  }
+  async function setAuto(on: boolean) {
+    setBusy(true);
+    const r = await fetch("/api/admin/creators", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ auto: on }) });
+    setBusy(false);
+    if (!r.ok) return flash("Could not change the setting.", false);
+    flash(on ? "New creators are approved automatically" : "New creators wait for your approval");
+    router.refresh();
+  }
 
   async function gold(c: CreatorRow, invited: boolean) {
     setBusy(true);
@@ -85,17 +109,17 @@ export function CreatorsView({ creators, places, now }: { creators: CreatorRow[]
   }
 
   const summary = [
-    ["Creators", creators.length, "var(--text)", 0],
-    ["TikTok Shop linked", counts[1], "var(--gink)", 1],
-    ["Gold", counts[2], "var(--amber)", 2],
-    ["New this week", counts[3], "var(--blue)", 3],
+    ["Waiting", counts[0], "var(--amber)", 0],
+    ["Waitlist", counts[1], "var(--text)", 1],
+    ["Approved", counts[2], "var(--gink)", 2],
+    ["Rejected", counts[3], "var(--red)", 3],
   ] as const;
 
   return (
     <>
       <div>
         <h1 className="nv-title">Creators</h1>
-        <p className="nv-sub">Every creator account · TikTok Shop places, levels and Gold invitations</p>
+        <p className="nv-sub">Approve each creator account · manage the waitlist for TikTok Shop places</p>
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "stretch" }}>
@@ -108,7 +132,13 @@ export function CreatorsView({ creators, places, now }: { creators: CreatorRow[]
           <span style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <span style={{ fontSize: 18, fontWeight: 800 }}>TikTok Shop places</span>
             <span style={{ fontSize: 14, color: "var(--muted)", lineHeight: 1.45 }}>
-              {used >= 25 ? "All 25 places are taken until TikTok reviews Rezekii's Shop app." : `${25 - used} of 25 places free. Each account that links TikTok Shop takes one while Rezekii's Shop app is in beta.`}
+              {used >= 25
+                ? `All places are taken, so new creators join the waitlist${waitlist.length ? ` (${waitlist.length} waiting)` : ""}. Rejecting or removing an account frees a place, and the next creator on the waitlist is invited automatically.`
+                : `${25 - used} ${25 - used === 1 ? "place is" : "places are"} free. Each creator who links TikTok Shop takes one while Rezekii's Shop app is in beta.`}
+            </span>
+            <span style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6 }}>
+              <button type="button" role="switch" aria-checked={auto} aria-labelledby="crauto" className={`nv-switch${auto ? " on" : ""}`} disabled={busy} onClick={() => setAuto(!auto)}><span /></button>
+              <span id="crauto" style={{ fontSize: 13, fontWeight: 700 }}>Approve new creators automatically</span>
             </span>
           </span>
         </section>
@@ -127,13 +157,14 @@ export function CreatorsView({ creators, places, now }: { creators: CreatorRow[]
           <h2 id="crlist" className="nv-h2" style={{ flex: 1, minWidth: 180 }}>Creator accounts</h2>
           <label htmlFor="crq" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Search creators</label>
           <input id="crq" type="text" className="nv-input" placeholder="Search handle or name" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 240, maxWidth: "100%" }} />
-          <div className="nv-seg" role="group" aria-label="Show" style={{ width: 560, maxWidth: "100%" }}>
-            <span className="nv-segthumb" aria-hidden="true" style={{ width: "calc(25% - 1px)", transform: `translateX(${tab * 100}%)` }} />
+          <div className="nv-seg" role="group" aria-label="Status" style={{ width: 560, maxWidth: "100%" }}>
+            <span className="nv-segthumb" aria-hidden="true" style={{ width: "calc(20% - 1px)", transform: `translateX(${tab * 100}%)` }} />
             {TABS.map((label, i) => <button key={label} type="button" className={tab === i ? "on" : ""} aria-pressed={tab === i} onClick={() => setTab(i)}>{label} {counts[i]}</button>)}
           </div>
         </div>
         {shown.map((c) => (
-          <div key={c.id} className="nv-row" style={{ padding: "14px 22px", borderTop: "1px solid var(--line)", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 14 }}>
+          <div key={c.id} className="nv-row" style={{ padding: "14px 22px", borderTop: "1px solid var(--line)", display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 14 }}>
             <button type="button" onClick={() => { setClosing(false); setOpen(c); }} style={{ border: 0, background: "transparent", padding: 0, display: "flex", alignItems: "center", gap: 14, color: "var(--text)", textAlign: "left", flex: 1, minWidth: 240, cursor: "pointer" }}>
               <Avatar c={c} size={44} />
               <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
@@ -146,6 +177,24 @@ export function CreatorsView({ creators, places, now }: { creators: CreatorRow[]
               <span className={`nv-badge ${c.tiktok ? "b-blue" : "b-gray"}`}>{c.tiktok ? "TikTok connected" : "TikTok not connected"}</span>
               <span className={`nv-badge ${c.level === "gold" ? "b-amber" : "b-gray"}`}>{LEVEL[c.level]}{c.goldInvited && c.level !== "gold" ? " · Gold invited" : ""}</span>
             </span>
+            {c.access === "waiting" && rejecting !== c.id ? (
+              <span style={{ display: "flex", gap: 8 }}>
+                <button type="button" className="nv-btn2 nv-sm nv-press" onClick={() => { setRejecting(c.id); setReason(""); }} style={{ color: "var(--red)" }}>Reject</button>
+                <button type="button" className="nv-btn nv-sm nv-press" disabled={busy} onClick={() => decide(c, true)}>Approve</button>
+              </span>
+            ) : c.access !== "waiting" && c.access !== "none" ? (
+              <span className={`nv-badge ${ACCESS[c.access][1]}`}>{c.access === "waitlist" ? `Waitlist #${waitlist.findIndex((w) => w.id === c.id) + 1}` : c.access === "invited" ? "Invited · waiting for them to link" : ACCESS[c.access][0]}</span>
+            ) : null}
+          </div>
+          {rejecting === c.id && (
+            <div className="nv-expand" style={{ display: "flex", flexWrap: "wrap", gap: 8, paddingLeft: 58 }}>
+              <label htmlFor={`crwhy-${c.id}`} style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Reason for rejecting {c.handle}</label>
+              <input id={`crwhy-${c.id}`} type="text" className="nv-input" placeholder="Reason the creator will see" value={reason} onChange={(e) => setReason(e.target.value)} style={{ flex: 1, minWidth: 240, height: 40 }} />
+              <button type="button" className="nv-btn2 nv-sm nv-press" onClick={() => setRejecting(null)} style={{ height: 40 }}>Cancel</button>
+              <button type="button" className="nv-btnd nv-sm nv-press" disabled={busy} onClick={() => decide(c, false)} style={{ height: 40 }}>Send rejection</button>
+            </div>
+          )}
+          {c.access === "rejected" && c.reason && <span style={{ paddingLeft: 58, fontSize: 13, color: "var(--muted)" }}>Reason sent: &ldquo;{c.reason}&rdquo; · they can link again to ask again</span>}
           </div>
         ))}
         {!shown.length && <div style={{ padding: 32, borderTop: "1px solid var(--line)", textAlign: "center", color: "var(--muted)" }}>{s ? `No creators match "${q}".` : "Nobody here right now."}</div>}
@@ -169,7 +218,7 @@ export function CreatorsView({ creators, places, now }: { creators: CreatorRow[]
               </span>
             </div>
             <div style={{ borderRadius: 18, background: "var(--surface2)", overflow: "hidden" }}>
-              {([["TikTok Shop", open.shop ? "Linked" : "Not linked"], ["TikTok", open.tiktok ? "Connected" : "Not connected"], ["Level", `${LEVEL[open.level]}${open.goldInvited ? " · Gold invited" : ""}`], ["Links made", n(open.links)], ["Samples asked for", n(open.samples)], ["Joined", ago(open.joined, now)]] as const).map(([k, v], i) => (
+              {([["TikTok Shop", open.shop ? "Linked" : "Not linked"], ["Status", ACCESS[open.access][0]], ["TikTok", open.tiktok ? "Connected" : "Not connected"], ["Level", `${LEVEL[open.level]}${open.goldInvited ? " · Gold invited" : ""}`], ["Links made", n(open.links)], ["Samples asked for", n(open.samples)], ["Joined", ago(open.joined, now)]] as const).map(([k, v], i) => (
                 <div key={k} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "11px 14px", borderTop: i ? "1px solid var(--border)" : 0, fontSize: 14 }}>
                   <span style={{ color: "var(--muted)" }}>{k}</span><span style={{ fontWeight: 700, textAlign: "right" }}>{v}</span>
                 </div>

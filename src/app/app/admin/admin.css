@@ -11,3 +11,8 @@
 @media (max-width: 600px) { .nv-sheet { margin-left: 0; left: 0; } }
 .nv-thbtn { border: 0; background: transparent; padding: 0; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
 .nv-thbtn.on { color: var(--gink); }
+.nv-switch { width: 51px; height: 31px; border-radius: 999px; border: 0; padding: 2px; background: var(--seg); transition: background-color 0.2s; flex-shrink: 0; position: relative; cursor: pointer; }
+.nv-switch span { display: block; width: 27px; height: 27px; border-radius: 50%; background: #ffffff; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1); }
+.nv-switch.on { background: #00c073; }
+.nv-switch.on span { transform: translateX(20px); }
+.nv-switch[disabled] { opacity: 0.45; cursor: not-allowed; }

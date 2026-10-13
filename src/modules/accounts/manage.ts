@@ -2,6 +2,7 @@ import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { revokeTikTokToken } from "../../integrations/tiktok/login.ts";
 import { decryptToken } from "../creator-accounts/token-crypto.ts";
 import { deleteUpload } from "../posting/media.ts";
+import { accessFor, inviteNext, type AccessStatus } from "../creator-accounts/access.ts";
 import { myTapRows } from "../tap/mytap.ts";
 import type { AppUser } from "./users.ts";
 
@@ -10,7 +11,8 @@ export type AccountOverview = {
   /** How the account signs in: "TikTok · @handle", "Google · email", "email · address" */
   signIn: string[];
   tiktok: { username: string | null; connectedAt: string } | null;
-  shop: { linkedAt: string } | null;
+  /** The TikTok Shop link and where its approval stands ("none" = never linked). */
+  shop: { status: AccessStatus | "none"; reason: string | null; position: number | null; linked: boolean; handle: string | null };
   linksThisWeek: number;
   showcase: number;
 };
@@ -28,9 +30,10 @@ export async function accountOverview(user: AppUser): Promise<AccountOverview> {
     supabaseRest(`app_users?id=eq.${user.id}&select=google_sub,created_at`).then((r) => r.json() as Promise<{ google_sub: string | null; created_at: string }[]>),
     count(`app_users?id=eq.${user.id}&password_hash=not.is.null&select=id`),
     supabaseRest(`tiktok_connections?user_id=eq.${user.id}&select=username,connected_at&order=updated_at.desc&limit=1`).then((r) => r.json() as Promise<{ username: string | null; connected_at: string }[]>),
-    user.tiktok_username
-      ? supabaseRest(`affiliate_connections?username=eq.${encodeURIComponent(user.tiktok_username)}&select=updated_at&limit=1`).then((r) => r.json() as Promise<{ updated_at: string }[]>)
-      : Promise.resolve([]),
+    Promise.all([
+      accessFor(user.id),
+      supabaseRest(`affiliate_connections?user_id=eq.${user.id}&select=username&limit=1`).then((r) => r.json() as Promise<{ username: string }[]>),
+    ]),
     count(`tap_links?user_id=eq.${user.id}&made_at=gte.${weekAgo}&select=id`),
     myTapRows(user.id, user.tiktok_username),
   ]);
@@ -43,7 +46,7 @@ export async function accountOverview(user: AppUser): Promise<AccountOverview> {
     joined: row ? day(row.created_at) : "",
     signIn,
     tiktok: conn ? { username: conn.username, connectedAt: day(conn.connected_at) } : null,
-    shop: shop[0] ? { linkedAt: day(shop[0].updated_at) } : null,
+    shop: { status: shop[0]?.status ?? "none", reason: shop[0]?.reason ?? null, position: shop[0]?.position ?? null, linked: !!shop[1][0], handle: shop[1][0]?.username ?? null },
     linksThisWeek: links,
     showcase: tap.rows.filter((r) => r.campaignId).length,
   };
@@ -86,6 +89,9 @@ export async function deleteAccount(user: AppUser): Promise<void> {
   await revokeAll(user.id);
   const uploads = (await (await supabaseRest(`posts?user_id=eq.${user.id}&storage_path=not.is.null&select=storage_path`)).json()) as { storage_path: string }[];
   for (const u of uploads) await deleteUpload(u.storage_path).catch((err) => console.error("[account] upload delete failed", err instanceof Error ? err.message : err));
+  await supabaseRest(`affiliate_connections?user_id=eq.${user.id}`, { method: "DELETE", headers: { prefer: "return=minimal" } });
   if (user.tiktok_username) await supabaseRest(`affiliate_connections?username=eq.${encodeURIComponent(user.tiktok_username)}`, { method: "DELETE", headers: { prefer: "return=minimal" } });
   await supabaseRest(`app_users?id=eq.${user.id}`, { method: "DELETE", headers: { prefer: "return=minimal" } });
+  // Their TikTok Shop place is free again for the next creator on the waitlist.
+  await inviteNext().catch(() => null);
 }

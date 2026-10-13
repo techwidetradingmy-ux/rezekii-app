@@ -1,6 +1,5 @@
 import { generateGeneralLinks, generateTaggedLinks, lookupProducts, type LookedUpProduct } from "../../integrations/tiktok-shop/creator.ts";
 import { resolveProductId } from "../../integrations/tiktok-shop/product-id.ts";
-import { freshCreatorToken } from "../creator-accounts/affiliate-connections.ts";
 import { getProduct, type TapProduct } from "./catalog.ts";
 import { logLinks, makeTapLink } from "./links.ts";
 
@@ -14,15 +13,6 @@ export type ConvertRow = { input: string; kind: "aff" | "tap" | "shop" | "bad" |
 export function cleanTags(tags: unknown): string[] {
   const list = Array.isArray(tags) ? tags : [];
   return [...new Set(list.filter((t): t is string => typeof t === "string").map((t) => t.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 20)).filter(Boolean))].slice(0, 10);
-}
-
-/** The creator's TikTok Shop token, or null when they have not linked TikTok Shop (or it could not be renewed). */
-export async function creatorTokenFor(username: string | null): Promise<string | null> {
-  if (!username) return null;
-  return freshCreatorToken(username).catch((err) => {
-    console.error("[creator token]", err instanceof Error ? err.message : err);
-    return null;
-  });
 }
 
 /** Turns one pasted link into result rows. With a TikTok Shop link: one affiliate link per tag. Without: TAP products only. */

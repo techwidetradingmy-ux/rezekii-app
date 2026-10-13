@@ -1,5 +1,7 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
-import type { Campaign, CampaignProduct } from "../../integrations/tiktok-shop/partner.ts";
+import { listCampaignProducts, reviewCampaignProduct, type Campaign, type CampaignProduct, type RejectReason } from "../../integrations/tiktok-shop/partner.ts";
+import { storedSessions } from "../refresh/sessions.ts";
+import { logActivity } from "./admins.ts";
 import { smallImage } from "../tap/image.ts";
 import { unixSeconds } from "../tap/stages.ts";
 import type { StatRow } from "../tap/golden.ts";
@@ -114,4 +116,35 @@ export async function commission(): Promise<Commission> {
     top: per.filter((p) => p.est > 0).sort((a, b) => b.est - a.est).slice(0, 5).map((p) => ({ name: p.name, est: round(p.est) })),
     hasSettled: per.some((p) => p.full),
   };
+}
+
+/** Products shops submitted to a campaign that are waiting for Techwide's review (read live from TikTok). */
+export async function pendingProducts(campaignId: string): Promise<AdminTapProduct[]> {
+  const s = await storedSessions().partner();
+  const out: AdminTapProduct[] = [];
+  let pageToken: string | undefined;
+  for (let page = 0; page < 5; page++) {
+    const r = await listCampaignProducts(s.token, s.cipher, campaignId, { reviewStatus: "PENDING", pageSize: 50, pageToken });
+    if (r.code !== 0) throw new Error(`TikTok ${r.code}: ${r.message}`);
+    out.push(...(r.data?.products ?? []).map((p) => toAdminProduct(p as Raw)));
+    pageToken = r.data?.next_page_token || undefined;
+    if (!pageToken) break;
+  }
+  return out;
+}
+
+export const REJECT_REASONS: [RejectReason, string][] = [
+  ["COMMISSION_TOO_LOW", "Commission too low"],
+  ["PRODUCT_HARD_TO_PROMOTE", "Hard to promote"],
+  ["PRODUCT_TOO_EXPENSIVE", "Too expensive"],
+  ["NO_SUITABLE_CREATOR", "No suitable creator"],
+];
+
+/** Approve a submitted product (it reaches creators with the next daily refresh) or decline it with TikTok's reason. */
+export async function reviewProduct(campaignId: string, productId: string, approve: boolean, reason: RejectReason | null, name: string, actor: string): Promise<{ ok: boolean; error?: string }> {
+  const s = await storedSessions().partner();
+  const r = await reviewCampaignProduct(s.token, s.cipher, campaignId, productId, approve ? "APPROVE" : "REJECT", reason ? [reason] : []);
+  if (r.code !== 0) return { ok: false, error: `TikTok didn't take the decision (${r.code}: ${r.message}).` };
+  await logActivity(actor, "TAP", `${approve ? "approved" : "declined"} ${name.slice(0, 60)} for a TAP campaign${!approve && reason ? ` (${REJECT_REASONS.find(([k]) => k === reason)?.[1]})` : ""}`);
+  return { ok: true };
 }

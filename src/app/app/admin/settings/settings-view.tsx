@@ -12,7 +12,7 @@ import "../../accounts/accounts.css";
 import "../admin.css";
 
 const TABS = ["Admins", "Posting times", "Activity log", "System health", "Appearance"];
-const KIND_CLS: Record<ActivityKind, string> = { Posts: "b-green", Creators: "b-amber", Admins: "b-gray", Connections: "b-blue" };
+const KIND_CLS: Record<ActivityKind, string> = { Posts: "b-green", Creators: "b-amber", Admins: "b-gray", Connections: "b-blue", TAP: "b-green" };
 const COLORS = ["#00874f", "#7c3aed", "#0e7490", "#b45309", "#be185d", "#334155"];
 const label12 = (t: string) => {
   const [h, m] = t.split(":").map(Number);
@@ -162,7 +162,7 @@ export function SettingsView({ d, me, startTab }: { d: SettingsData; me: string;
             <input id="stlq" type="text" className="nv-input" placeholder="Search" value={lq} onChange={(e) => setLq(e.target.value)} style={{ width: 220, maxWidth: "100%" }} />
           </div>
           <div className="nv-noscroll" role="group" aria-label="Type" style={{ display: "flex", gap: 8, overflowX: "auto", padding: "0 22px 14px" }}>
-            {(["All", "Posts", "Creators", "Admins", "Connections"] as const).map((k) => (
+            {(["All", "Posts", "Creators", "TAP", "Admins", "Connections"] as const).map((k) => (
               <button key={k} type="button" className={`nv-chip nv-press${lf === k ? " on" : ""}`} aria-pressed={lf === k} onClick={() => setLf(k)}>{k}</button>
             ))}
           </div>

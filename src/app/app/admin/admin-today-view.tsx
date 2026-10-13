@@ -10,6 +10,7 @@ import { Hud, useToast } from "../marketplace/use-tap-actions";
 import "../marketplace/marketplace.css";
 import "../today.css";
 import "../links/links.css";
+import "../accounts/accounts.css";
 import "./admin.css";
 
 const ICON: Record<Need["kind"], [string, string, string]> = {
@@ -35,6 +36,21 @@ export function AdminTodayView({ d }: { d: AdminToday }) {
   const router = useRouter();
   const { toast, flash } = useToast();
   const [busy, setBusy] = useState<string | null>(null);
+  const [rejecting, setRejecting] = useState<string | null>(null);
+  const [reason, setReason] = useState("");
+
+  async function decide(id: string, handle: string, approve: boolean) {
+    if (!approve && !reason.trim()) return flash("Add a reason the creator will see", false);
+    setBusy(id);
+    const r = await fetch(`/api/admin/creators/${id}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ decision: approve ? "approve" : "reject", reason: approve ? undefined : reason.trim() }) });
+    const j = (await r.json().catch(() => ({}))) as { error?: string; invited?: string | null };
+    setBusy(null);
+    if (!r.ok) return flash(j.error || "Could not save the decision.", false);
+    setRejecting(null);
+    setReason("");
+    flash(approve ? `${handle} approved` : j.invited ? `Place freed · ${j.invited} invited to link TikTok Shop` : `${handle} rejected`);
+    router.refresh();
+  }
   const used = Math.min(d.places, 25);
   const c = d.commission;
 
@@ -51,10 +67,10 @@ export function AdminTodayView({ d }: { d: AdminToday }) {
   const stats = [
     { label: "Posts today", value: n(d.stats.posts), note: d.stats.postsNote, href: "/app/admin/calendar" },
     { label: "Links made today", value: n(d.stats.linksToday), note: "by all creators", href: "/app/admin/stats" },
-    { label: "Samples waiting", value: n(d.stats.samplesWaiting), note: "apply in TikTok Shop", href: "/app/admin/samples" },
+    { label: "Creators waiting", value: n(d.stats.creatorsWaiting), note: "approve each account", href: "/app/admin/creators" },
     { label: "Creator accounts", value: n(d.stats.creators), note: `${d.stats.creatorsShop} linked to TikTok Shop`, href: "/app/admin/accounts" },
   ];
-  const needCount = d.needs.length + d.stats.samplesWaiting;
+  const needCount = d.needs.length + d.stats.creatorsWaiting;
 
   return (
     <>
@@ -155,27 +171,46 @@ export function AdminTodayView({ d }: { d: AdminToday }) {
             )}
           </section>
 
-          <section className="nv-up nv-card" aria-labelledby="atsmp" style={{ animationDelay: "180ms", overflow: "hidden" }}>
+          <section className="nv-up nv-card" aria-labelledby="atcre" style={{ animationDelay: "180ms", overflow: "hidden" }}>
             <div style={{ padding: "20px 22px 14px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-              <h2 id="atsmp" className="nv-h2">Sample requests waiting</h2>
-              <Link href="/app/admin/samples" className="nv-link">Sample queue</Link>
+              <h2 id="atcre" className="nv-h2">Creators waiting for approval</h2>
+              <Link href="/app/admin/creators" className="nv-link">All creators</Link>
             </div>
-            {d.samples.map((s) => (
-              <div key={s.id} className="nv-row" style={{ padding: "14px 22px", borderTop: "1px solid var(--line)", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 14 }}>
-                {s.image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={s.image} alt="" style={{ width: 44, height: 44, borderRadius: 12, objectFit: "cover" }} />
-                ) : (
-                  <span aria-hidden="true" style={{ width: 44, height: 44, borderRadius: 12, background: "var(--surface2)" }} />
+            {d.waiting.map((c) => (
+              <div key={c.id} className="nv-row" style={{ padding: "14px 22px", borderTop: "1px solid var(--line)", display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 14 }}>
+                  {c.avatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={c.avatar} alt="" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover" }} />
+                  ) : (
+                    <span aria-hidden="true" style={{ width: 44, height: 44, borderRadius: "50%", background: "#7c3aed", color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800 }}>{c.handle.replace("@", "").charAt(0).toUpperCase()}</span>
+                  )}
+                  <span style={{ flex: 1, minWidth: 200, display: "flex", flexDirection: "column", gap: 3 }}>
+                    <span style={{ fontSize: 15, fontWeight: 800 }}>{c.handle}</span>
+                    <span style={{ fontSize: 13, color: "var(--muted)" }}>{c.name ? `${c.name} · ` : ""}linked TikTok Shop {new Date(c.at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kuala_Lumpur" })}</span>
+                  </span>
+                  <span style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    <span className="nv-badge b-green">TikTok Shop linked</span>
+                    <span className={`nv-badge ${c.tiktok ? "b-blue" : "b-gray"}`}>{c.tiktok ? "TikTok connected" : "TikTok not connected"}</span>
+                  </span>
+                  {rejecting !== c.id && (
+                    <span style={{ display: "flex", gap: 8 }}>
+                      <button type="button" className="nv-btn2 nv-sm nv-press" onClick={() => { setRejecting(c.id); setReason(""); }} style={{ color: "var(--red)" }}>Reject</button>
+                      <button type="button" className="nv-btn nv-sm nv-press" disabled={busy === c.id} onClick={() => decide(c.id, c.handle, true)}>Approve</button>
+                    </span>
+                  )}
+                </div>
+                {rejecting === c.id && (
+                  <div className="nv-expand" style={{ display: "flex", flexWrap: "wrap", gap: 8, paddingLeft: 58 }}>
+                    <label htmlFor={`atwhy-${c.id}`} style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Reason for rejecting {c.handle}</label>
+                    <input id={`atwhy-${c.id}`} type="text" className="nv-input" placeholder="Reason the creator will see" value={reason} onChange={(e) => setReason(e.target.value)} style={{ flex: 1, minWidth: 240, height: 40 }} />
+                    <button type="button" className="nv-btn2 nv-sm nv-press" onClick={() => setRejecting(null)} style={{ height: 40 }}>Cancel</button>
+                    <button type="button" className="nv-btnd nv-sm nv-press" disabled={busy === c.id} onClick={() => decide(c.id, c.handle, false)} style={{ height: 40 }}>Send rejection</button>
+                  </div>
                 )}
-                <span style={{ flex: 1, minWidth: 200, display: "flex", flexDirection: "column", gap: 3 }}>
-                  <span style={{ fontSize: 15, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.product}</span>
-                  <span style={{ fontSize: 13, color: "var(--muted)" }}>{s.who} · asked {new Date(s.at).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" })}</span>
-                </span>
-                <Link href="/app/admin/samples" className="nv-btn nv-sm nv-press" style={{ textDecoration: "none" }}>Review</Link>
               </div>
             ))}
-            {!d.samples.length && <div style={{ padding: 22, borderTop: "1px solid var(--line)", color: "var(--muted)", fontSize: 14 }}>No sample requests waiting. Nice work.</div>}
+            {!d.waiting.length && <div style={{ padding: 22, borderTop: "1px solid var(--line)", color: "var(--muted)", fontSize: 14 }}>No creators waiting. Nice work.</div>}
           </section>
         </div>
 

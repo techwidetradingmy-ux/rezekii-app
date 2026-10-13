@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getAffiliateConnection } from "@/modules/creator-accounts/affiliate-connections.ts";
+import { accessFor } from "@/modules/creator-accounts/access.ts";
 import { linkCounts } from "@/modules/tap/links.ts";
 import { currentUser } from "../../current-user";
 import { SiteFooter, SiteNav } from "../../site";
@@ -16,7 +16,7 @@ export default async function LinksPage({ searchParams }: { searchParams: Promis
   if (!user) redirect("/signin");
   const { add } = await searchParams;
   const [linked, { week, all }] = await Promise.all([
-    user.tiktok_username ? getAffiliateConnection(user.tiktok_username).then((c) => !!c).catch(() => false) : false,
+    accessFor(user.id).then((a) => a?.status === "approved"),
     linkCounts(user.id),
   ]);
   return (

@@ -20,27 +20,41 @@ export function useToast() {
 
 /**
  * The card and panel actions, shared by the Marketplace and the product page (as in the mockup).
- * Showcase: Techwide makes a TAP link and TikTok Shop opens on the product, where the creator taps Add to showcase.
+ * Showcase: Techwide makes a TAP link; with the creator's TikTok Shop linked and approved it goes straight into their showcase,
+ * otherwise TikTok Shop opens on the product, where the creator taps Add to showcase.
  * Free sample: goes to Techwide, who applies for it in TikTok Shop; it then shows in My TAP products.
  */
 export function useTap(requestedIds: string[]) {
   const [add, setAdd] = useState<Record<string, Flow>>({});
   const [sample, setSample] = useState<Record<string, Flow>>(() => Object.fromEntries(requestedIds.map((id) => [id, "done" as Flow])));
   const { toast, flash } = useToast();
+  // Approved creators with TikTok Shop linked get products added straight to their showcase.
+  const [linked, setLinked] = useState(false);
+  useEffect(() => {
+    fetch("/api/tap/showcase", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d: { linked?: boolean }) => setLinked(!!d.linked))
+      .catch(() => {});
+  }, []);
 
   async function addToShowcase(id: string) {
     if ((add[id] ?? "idle") !== "idle") return;
-    // Opened inside the click so the browser allows it; pointed at the link once TikTok returns it.
-    const tab = window.open("", "_blank");
+    // Without a linked TikTok Shop the TAP link opens in a new tab: opened inside the click so the browser allows it.
+    const tab = linked ? null : window.open("", "_blank");
     setAdd((a) => ({ ...a, [id]: "loading" }));
     try {
-      const r = await fetch("/api/tap/link", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ productId: id }) });
-      const d = (await r.json().catch(() => ({}))) as { link?: string; error?: string };
-      if (!r.ok || !d.link) throw new Error(d.error || "TikTok could not make the link. Please try again.");
+      const r = await fetch("/api/tap/showcase", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ productId: id }) });
+      const d = (await r.json().catch(() => ({}))) as { added?: boolean; link?: string; error?: string };
+      if (d.added) {
+        setAdd((a) => ({ ...a, [id]: "done" }));
+        flash("Added to your TikTok Shop showcase");
+        return;
+      }
+      if (!d.link) throw new Error(d.error || "TikTok could not make the link. Please try again.");
       if (tab) tab.location.href = d.link;
-      else window.location.href = d.link;
+      else if (!window.open(d.link, "_blank")) window.location.href = d.link;
       setAdd((a) => ({ ...a, [id]: "done" }));
-      flash("TikTok Shop opened. Tap Add to showcase there.");
+      flash(d.error ? `${d.error} TikTok Shop opened instead.` : "TikTok Shop opened. Tap Add to showcase there.");
     } catch (err) {
       tab?.close();
       setAdd((a) => ({ ...a, [id]: "idle" }));
