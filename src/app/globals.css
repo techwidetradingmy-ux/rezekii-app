@@ -427,3 +427,17 @@ textarea.np-input { resize: vertical; line-height: 1.5; }
 @media (max-width: 760px) {
   .tap-qact { grid-column: 1 / -1; }
 }
+
+/* Phone menu (mockup bottom nav): replaces the top links on small screens in the signed-in app. */
+.nv-bottom { display: none; }
+@media (max-width: 760px) {
+  .site-nav-app > a:not(.site-brand):not(.site-signin) { display: none; }
+  .nv-bottom { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: flex; padding: 8px 6px calc(10px + env(safe-area-inset-bottom, 0px)); background: rgba(255, 255, 255, 0.86); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%); border-top: 1px solid var(--border); }
+  .nv-bottom a { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; text-decoration: none; color: var(--muted); font-size: 10px; font-weight: 700; }
+  .nv-bottom a.on { color: var(--gink); }
+  .nv-bottom a.on svg { animation: nvIconPop 0.5s cubic-bezier(0.3, 1.5, 0.4, 1) both; }
+  body:has(.nv-bottom) { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+}
+@media (max-width: 760px) and (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .nv-bottom { background: rgba(19, 28, 24, 0.88); } }
+@media (max-width: 760px) { :root[data-theme="dark"] .nv-bottom { background: rgba(19, 28, 24, 0.88); } }
+@keyframes nvIconPop { 0% { transform: scale(0.7); } 60% { transform: scale(1.18); } 100% { transform: none; } }

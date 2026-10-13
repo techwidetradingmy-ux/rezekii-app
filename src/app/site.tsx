@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { currentUser } from "./current-user";
+import { BottomNav } from "./bottom-nav";
 import { NavAccount } from "./nav-account";
 
 export const COMPANY = "Techwide Marketing Sdn Bhd";
@@ -34,7 +35,7 @@ export async function SiteNav({ variant, staticPage = false }: { variant: "hero"
   const clientAccount = variant === "hero" || staticPage;
   const user = clientAccount ? null : await currentUser();
   const nav = (
-    <nav className="site-nav site-wrap" aria-label="Main">
+    <nav className={`site-nav site-wrap${variant === "app" ? " site-nav-app" : ""}`} aria-label="Main">
       <Link href="/" className="site-brand">
         <span>
           <Image src="/master-logo-transparent.png" alt="" width={30} height={30} priority />
@@ -77,7 +78,13 @@ export async function SiteNav({ variant, staticPage = false }: { variant: "hero"
       )}
     </nav>
   );
-  return variant === "hero" ? nav : <header className="site-plainnav">{nav}</header>;
+  if (variant === "hero") return nav;
+  return (
+    <>
+      <header className="site-plainnav">{nav}</header>
+      {variant === "app" && user && <BottomNav admin={user.role === "admin"} />}
+    </>
+  );
 }
 
 /** Footer with the legal links TikTok's review requires to be visible on every page. */
