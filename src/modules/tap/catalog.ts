@@ -111,9 +111,9 @@ export function creatorRateFor(level: "bronze" | "silver" | "gold", openRate: nu
 }
 
 /** The campaign a link is made in, and its total rate (server-only). */
-export async function linkTarget(id: string): Promise<{ campaignId: string; openRate: number; totalRate: number | null } | null> {
+export async function linkTarget(id: string): Promise<{ campaignId: string; openRate: number; totalRate: number | null; name: string; image: string | null } | null> {
   if (!/^\d{6,25}$/.test(id)) return null;
-  const res = await supabaseRest(`tap_catalog?product_id=eq.${id}&select=campaign_id,open_rate,total_rate&limit=1`);
-  const [row] = (await res.json()) as { campaign_id: string | null; open_rate: number | null; total_rate: number | null }[];
-  return row?.campaign_id ? { campaignId: row.campaign_id, openRate: row.open_rate ?? 0, totalRate: row.total_rate } : null;
+  const res = await supabaseRest(`tap_catalog?product_id=eq.${id}&select=campaign_id,open_rate,total_rate,name,image&limit=1`);
+  const [row] = (await res.json()) as { campaign_id: string | null; open_rate: number | null; total_rate: number | null; name: string; image: string | null }[];
+  return row?.campaign_id ? { campaignId: row.campaign_id, openRate: row.open_rate ?? 0, totalRate: row.total_rate, name: row.name, image: row.image } : null;
 }

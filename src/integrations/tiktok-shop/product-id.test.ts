@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { findProductId } from "./product-id.ts";
+import { findProductId, isTikTokUrl } from "./product-id.ts";
 
 const ID = "1729432293062249014";
 
@@ -20,4 +20,13 @@ test("returns null for short links and non-product links", () => {
   assert.equal(findProductId("https://vt.tiktok.com/ZSabc123/"), null);
   assert.equal(findProductId("https://www.tiktok.com/@tinawellnesshacks/video/7687790603727293716"), null);
   assert.equal(findProductId("hello"), null);
+});
+
+test("only TikTok's own https addresses are followed", () => {
+  assert.equal(isTikTokUrl("https://vt.tiktok.com/ZSabc123/"), true);
+  assert.equal(isTikTokUrl("https://tiktok.com/t/abc"), true);
+  assert.equal(isTikTokUrl("http://vt.tiktok.com/ZSabc123/"), false);
+  assert.equal(isTikTokUrl("https://tiktok.com.evil.example/x"), false);
+  assert.equal(isTikTokUrl("http://169.254.169.254/latest"), false);
+  assert.equal(isTikTokUrl("not a link"), false);
 });

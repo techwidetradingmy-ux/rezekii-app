@@ -1,0 +1,16 @@
+/* Link converter and Product lookup (mockup Links and Lookup pages). Base nv tokens come from marketplace.css. */
+.nv-scrollx { overflow-x: auto; }
+.nv-tr { display: grid; align-items: center; gap: 12px; padding: 12px; border-bottom: 1px solid var(--line); font-size: 14px; }
+.nv-tr.nv-trh { padding-top: 8px; padding-bottom: 8px; }
+.nv-trh > span { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+.nv-trow { transition: background-color 0.2s; }
+.nv-trow:hover { background: var(--surface2); }
+.nv-trow > *:first-child { transition: transform 0.2s; }
+.nv-trow:hover > *:first-child { transform: translateX(3px); }
+.nv-prog { height: 8px; border-radius: 999px; background: var(--seg); overflow: hidden; }
+.nv-prog span { display: block; height: 100%; border-radius: 999px; background: #00c073; transition: width 0.25s linear; background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0, rgba(255, 255, 255, 0.4) 50%, rgba(255, 255, 255, 0) 100%); background-size: 200px 100%; background-repeat: no-repeat; animation: nvShimmer 1.6s linear infinite; }
+.nv-skel { border-radius: 10px; background: linear-gradient(90deg, var(--line) 0px, var(--surface2) 120px, var(--line) 240px); background-size: 800px 100%; animation: nvShimmer 1.2s linear infinite; }
+.nv-expand { animation: nvExpand 0.25s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.lk-dot-off { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--amber); flex-shrink: 0; }
+@keyframes nvShimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
+@keyframes nvExpand { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }

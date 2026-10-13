@@ -15,15 +15,26 @@ export function findProductId(input: string): string | null {
   return null;
 }
 
+/** Only TikTok's own addresses are ever fetched (the link comes from a user). */
+export function isTikTokUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    return u.protocol === "https:" && (u.hostname === "tiktok.com" || u.hostname.endsWith(".tiktok.com"));
+  } catch {
+    return false;
+  }
+}
+
 /** Short share links (vt.tiktok.com/…) only reveal the product after following their redirects. */
 export async function resolveProductId(input: string): Promise<string | null> {
   let url = input.trim();
   for (let hop = 0; hop < 5; hop++) {
     const id = findProductId(url);
     if (id) return id;
-    if (!/^https?:\/\//i.test(url)) return null;
-    const res = await fetch(url, { redirect: "manual", cache: "no-store" });
-    const next = res.headers.get("location");
+    if (!isTikTokUrl(url)) return null;
+    const next = await fetch(url, { redirect: "manual", cache: "no-store", signal: AbortSignal.timeout(5000) })
+      .then((res) => res.headers.get("location"))
+      .catch(() => null);
     if (!next) return null;
     url = new URL(next, url).toString();
   }

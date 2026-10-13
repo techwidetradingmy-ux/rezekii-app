@@ -1,5 +1,5 @@
--- Today page: when each TAP product first appeared (for "+N new this week") and a log of the TAP links creators make
--- (for "Links made this week").
+-- Today page: when each TAP product first appeared (for "+N new this week") and a log of every link creators make on Rezekii
+-- (TAP links and TikTok Shop affiliate links) for "Links made this week" and the link history.
 
 alter table public.tap_catalog add column first_seen date;
 -- Backfill from the oldest saved TAP snapshot that lists the product.
@@ -19,6 +19,8 @@ create table public.tap_links (
   id bigint generated always as identity primary key,
   user_id uuid not null references public.app_users(id) on delete cascade,
   product_id text not null,
+  product_name text,
+  image text,
   tag text,
   link text not null,
   made_at timestamptz not null default now()

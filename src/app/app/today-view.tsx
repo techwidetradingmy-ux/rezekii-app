@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { TapProduct } from "@/modules/tap/catalog.ts";
 import type { TodayData, TodayStat } from "@/modules/today/today.ts";
-import type { ConvertRow } from "../api/tap/convert/route";
+import type { ConvertRow } from "@/modules/tap/convert.ts";
 import { n } from "./marketplace/format";
 import { ProductCard, ProductPanel } from "./marketplace/product-view";
 import { Hud, useTap, useToast } from "./marketplace/use-tap-actions";
@@ -95,7 +95,7 @@ export function TodayView({ data }: { data: TodayData }) {
     if (!lines.length) return flash("Paste at least one product link", false);
     setPhase("loading");
     try {
-      const r = await fetch("/api/tap/convert", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ links: lines }) });
+      const r = await fetch("/api/tap/convert", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ links: lines, tags }) });
       const d = (await r.json().catch(() => ({}))) as { rows?: ConvertRow[]; error?: string };
       if (!r.ok || !d.rows) throw new Error(d.error || "Could not convert the links. Please try again.");
       setRows(d.rows);
@@ -207,18 +207,16 @@ export function TodayView({ data }: { data: TodayData }) {
             <div style={{ borderRadius: 18, background: "var(--surface2)", overflow: "hidden" }}>
               {rows.map((r, i) => (
                 <div key={i} className="nv-up" style={{ animationDelay: `${i * 60}ms`, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, padding: "12px 14px", borderTop: i ? "1px solid var(--border)" : 0 }}>
-                  <span className={`nv-badge ${r.kind === "tap" ? "b-green" : r.kind === "shop" ? "b-amber" : "b-red"}`} style={{ background: r.kind === "tap" ? "var(--surface)" : undefined }}>
-                    {r.kind === "tap" ? "TAP · add to showcase" : r.note}
+                  <span className={`nv-badge ${r.kind === "tap" || r.kind === "aff" ? "b-green" : r.kind === "shop" ? "b-amber" : "b-red"}`} style={{ background: r.kind === "tap" || r.kind === "aff" ? "var(--surface)" : undefined }}>
+                    {r.kind === "aff" ? (r.tag ?? "no tag") : r.kind === "tap" ? "TAP · add to showcase" : r.tag ? `${r.tag} · ${r.note}` : r.note}
                   </span>
                   <span style={{ flex: 1, minWidth: 200, fontFamily: "ui-monospace, monospace", fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={r.link ?? r.input}>
                     {r.link ?? r.input}
                   </span>
-                  {r.link && (
-                    <>
-                      <a href={r.link} target="_blank" rel="noreferrer" className="nv-btn2 nv-sm nv-press" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}>Open</a>
-                      <button type="button" className="nv-btn2 nv-sm nv-press" onClick={() => copy(r.link!)}>Copy</button>
-                    </>
+                  {r.kind === "tap" && r.link && (
+                    <a href={r.link} target="_blank" rel="noreferrer" className="nv-btn2 nv-sm nv-press" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}>Open</a>
                   )}
+                  {r.link && <button type="button" className="nv-btn2 nv-sm nv-press" onClick={() => copy(r.link!)}>Copy</button>}
                 </div>
               ))}
               {hasWaiting && (

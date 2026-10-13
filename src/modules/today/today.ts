@@ -80,7 +80,7 @@ export async function todayData(user: { id: string; tiktok_username: string | nu
     hello: greeting(now),
     day: longDay(now),
     stats: [
-      { key: "links", value: links[0], delta: weekDelta(links[0], links[1]), note: links[1] ? "vs last week" : "TAP links made in the last 7 days" },
+      { key: "links", value: links[0], delta: weekDelta(links[0], links[1]), note: links[1] ? "vs last week" : "made in the last 7 days" },
       { key: "showcase", value: onTikTok.length, delta: "", note: "from Techwide TAP campaigns" },
       { key: "samples", value: samples.length, delta: "", note: `${samples.filter((r) => r.stage === 1).length} requested · ${samples.filter((r) => r.stage === 3).length} to post` },
       { key: "open", value: all.length, delta: fresh ? `+${fresh}` : "", note: fresh === null ? "in Techwide's live campaigns" : "new this week" },

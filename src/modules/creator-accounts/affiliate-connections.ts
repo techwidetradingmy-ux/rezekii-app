@@ -1,5 +1,5 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
-import type { TokenSet } from "../../integrations/tiktok-shop/auth.ts";
+import { refreshTokens, type TokenSet } from "../../integrations/tiktok-shop/auth.ts";
 import { decryptToken, encryptToken } from "./token-crypto.ts";
 
 /** During the v0.1 proof only these handles may connect (env PROOF_ALLOWED_HANDLES, comma-separated). */
@@ -54,4 +54,15 @@ export async function getAffiliateConnection(username: string): Promise<StoredCo
     accessExpiresAt: new Date(row.access_token_expires_at),
     refreshToken: decryptToken(row.refresh_token_enc),
   };
+}
+
+/** The creator's TikTok Shop access token (renewed when it expires within 10 minutes), or null when they have not linked TikTok Shop. */
+export async function freshCreatorToken(username: string): Promise<string | null> {
+  const conn = await getAffiliateConnection(username);
+  if (!conn) return null;
+  if (conn.accessExpiresAt.getTime() > Date.now() + 10 * 60_000) return conn.accessToken;
+  const r = await refreshTokens(conn.refreshToken);
+  if (r.code !== 0 || !r.data) throw new Error(`TikTok Shop token renewal failed: ${r.code} ${r.message}`);
+  await saveAffiliateConnection({ openId: conn.openId, username: conn.username }, r.data);
+  return r.data.access_token;
 }

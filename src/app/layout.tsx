@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Albert_Sans } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 const albertSans = Albert_Sans({ subsets: ["latin"], weight: ["400", "700", "800"], display: "swap" });
@@ -17,11 +18,11 @@ const THEME_SCRIPT = `try{var t=localStorage.getItem("rz_theme");if(t==="light"|
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
+      <body className={albertSans.className}>
         {/* Applies the Appearance choice from My accounts before the page paints (saved on this device only). */}
-        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
-      </head>
-      <body className={albertSans.className}>{children}</body>
+        <Script id="rz-theme" strategy="beforeInteractive">{THEME_SCRIPT}</Script>
+        {children}
+      </body>
     </html>
   );
 }
