@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { BrowseResult, TapProduct } from "@/modules/tap/catalog.ts";
 import type { GoldenSeller } from "@/modules/tap/golden.ts";
@@ -56,7 +57,6 @@ export function MarketplaceView({ initial, golden, requestedIds }: { initial: Br
   const [open, setOpen] = useState<TapProduct | null>(null);
   const [closing, setClosing] = useState(false);
   const asked = useRef(0);
-  const gridRef = useRef<HTMLDivElement>(null);
 
   // Loads one page; a reply that arrives after a newer search started is dropped.
   const load = (f: Filters, p: number) => {
@@ -128,17 +128,7 @@ export function MarketplaceView({ initial, golden, requestedIds }: { initial: Br
           </div>
           <div className="gs-row">
             {golden.map((g, i) => (
-              <button
-                key={g.shop}
-                type="button"
-                className="gs-card nv-press"
-                aria-label={`Golden Seller number ${i + 1}, ${g.shop}. Shop all ${g.count} products`}
-                onClick={() => {
-                  setTyped("");
-                  apply({ ...START, shop: g.shop });
-                  gridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
-              >
+              <Link key={g.shop} href={`/app/golden-sellers?shop=${encodeURIComponent(g.shop)}`} className="gs-card nv-press" aria-label={`Golden Seller number ${i + 1}, ${g.shop}. Shop all ${g.count} products`}>
                 <span className="gs-shine" aria-hidden="true" />
                 <span className="gs-rank">#{i + 1} Golden Seller</span>
                 <span className="gs-id">
@@ -152,13 +142,13 @@ export function MarketplaceView({ initial, golden, requestedIds }: { initial: Br
                   {g.thumbs.map((t, k) => <span key={k} className="gs-thumb" style={t ? { backgroundImage: `url("${t}")` } : undefined} />)}
                 </span>
                 <span className="gs-cta">Shop all {g.count} products →</span>
-              </button>
+              </Link>
             ))}
           </div>
         </section>
       )}
 
-      <section ref={gridRef} className="nv-card fb" aria-label="Find products" style={{ boxShadow: "var(--shadow)", borderRadius: 26, padding: 18, scrollMarginTop: 16 }}>
+      <section className="nv-card fb" aria-label="Find products" style={{ boxShadow: "var(--shadow)", borderRadius: 26, padding: 18, scrollMarginTop: 16 }}>
         <div className="fb-row">
           <div className="fb-search">
             <label htmlFor="mksearch" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Search TAP products</label>
