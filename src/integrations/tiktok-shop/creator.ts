@@ -135,13 +135,28 @@ export function searchCreatorOrders(accessToken: string, opts: { pageSize?: numb
  * TAP products need the campaign ID, so the request draws on that campaign's sample budget. The product must already be in the
  * creator's showcase (TikTok answers 16032001 otherwise).
  */
-export function getSampleDeeplink(accessToken: string, p: { productId: string; skuId: string; campaignId?: string }) {
+export function getSampleDeeplink(accessToken: string, p: { productId: string; skuId: string; campaignId?: string; redirect?: string }) {
   return callApi<{ deeplink?: string }>({
     method: "GET",
     path: "/affiliate_creator/202512/samples/deeplink",
     accessToken,
-    query: { product_id: p.productId, sku_id: p.skuId, ...(p.campaignId ? { campaign_id: p.campaignId } : {}) },
+    query: { product_id: p.productId, sku_id: p.skuId, ...(p.campaignId ? { campaign_id: p.campaignId } : {}), ...(p.redirect ? { redirect_schema: p.redirect } : {}) },
   });
+}
+
+export type SampleLabel = {
+  /** TO_APPLY (not asked yet), ONGOING (asked), UNKNOWN (no sample for this creator), … */
+  status?: string;
+  can_apply?: boolean;
+  reach_limit?: boolean;
+  /** Set when the creator already asked for this product. */
+  application_id?: string;
+  sample_product?: { sample_sku_list?: { id: string; is_available?: boolean; unavailable_reason?: string }[] };
+};
+
+/** "Get Creator Applicable Sample Label": whether this creator may ask for a sample of the product, and which options allow it. */
+export function getSampleLabel(accessToken: string, productId: string) {
+  return callApi<{ label?: SampleLabel }>({ method: "GET", path: "/affiliate_creator/202412/samples/labels", accessToken, query: { product_id: productId } });
 }
 export const NOT_IN_SHOWCASE = 16032001;
 

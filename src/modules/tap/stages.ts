@@ -37,9 +37,13 @@ export type MyTapRow = {
   paid: number;
   videos: number;
   lives: number;
-  /** Set for samples asked for on Rezekii that TikTok does not show yet. */
-  request?: { status: "requested" | "applied" | "rejected" | "cancelled"; note: string | null; createdAt: string; updatedAt: string };
+  /** Set for samples asked for on Rezekii that TikTok's TAP data doesn't show yet. `tiktok`: the creator's own TikTok status, if any. */
+  request?: { status: "requested" | "applied" | "rejected" | "cancelled"; note: string | null; createdAt: string; updatedAt: string; tiktok: string | null };
 };
+
+/** Pill for a My TAP row: a request TikTok has no record of is "not submitted", never a sample status. */
+export const rowLook = (r: Pick<MyTapRow, "stage" | "request">): [string, string, string] =>
+  r.request && !r.request.tiktok && r.stage !== -1 ? ["Not submitted in TikTok yet", "var(--asoft)", "var(--amber)"] : sampleLook(r.stage);
 
 /** Unix seconds from TikTok's dates, which come in seconds or milliseconds, as numbers or strings. */
 export const unixSeconds = (v: unknown) => {

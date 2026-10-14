@@ -2,7 +2,7 @@ import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { getSampleTracking, listCreatorContent, listProductCreators, type ProductCreator } from "../../integrations/tiktok-shop/partner.ts";
 import { storedSessions } from "../refresh/sessions.ts";
 import { amount } from "./golden.ts";
-import { mySamples } from "./samples.ts";
+import { mySamples, tiktokSampleStatus } from "./samples.ts";
 import { normalizeStatus, sampleStage, unixSeconds, type MyTapRow } from "./stages.ts";
 
 type Row = {
@@ -12,7 +12,8 @@ type Row = {
 
 /**
  * Everything a creator promotes in Techwide's TAP campaigns (TikTok's data, by their TikTok username), plus the samples they
- * asked for on Rezekii that TikTok does not show yet. Rezekii requests first, as in the mockup.
+ * asked for on Rezekii that TikTok's TAP data doesn't show yet. Those take their status from the creator's own TikTok sample
+ * requests; with none there, they are "not submitted in TikTok", never a sample status (owner's rule, 14 Oct 2026).
  */
 export async function myTapRows(userId: string, username: string | null): Promise<{ rows: MyTapRow[]; asOf: string | null }> {
   const [tiktok, requests] = await Promise.all([
@@ -28,12 +29,16 @@ export async function myTapRows(userId: string, username: string | null): Promis
     stage: sampleStage(normalizeStatus(r.sample_status)), paid: Number(r.paid), videos: r.videos, lives: r.lives,
   }));
   const onTikTok = new Set(rows.map((r) => r.productId));
-  const asked: MyTapRow[] = requests
-    .filter((x) => !onTikTok.has(x.product_id))
-    .map((x) => ({
-      key: `rz:${x.id}`, campaignId: null, productId: x.product_id, name: x.product_name, shop: x.shop ?? "", image: x.image, stage: x.status === "rejected" ? -1 : 1,
-      paid: 0, videos: 0, lives: 0, request: { status: x.status, note: x.note, createdAt: x.created_at, updatedAt: x.updated_at },
-    }));
+  const pending = requests.filter((x) => !onTikTok.has(x.product_id));
+  const live = pending.length ? await tiktokSampleStatus(userId) : new Map<string, string>();
+  const asked: MyTapRow[] = pending.map((x) => {
+    const st = live.get(x.product_id) ?? null;
+    return {
+      key: `rz:${x.id}`, campaignId: null, productId: x.product_id, name: x.product_name, shop: x.shop ?? "", image: x.image,
+      stage: st ? sampleStage(normalizeStatus(st)) : x.status === "rejected" ? -1 : 0,
+      paid: 0, videos: 0, lives: 0, request: { status: x.status, note: x.note, createdAt: x.created_at, updatedAt: x.updated_at, tiktok: st },
+    };
+  });
   return { rows: [...asked, ...rows], asOf: tiktok.reduce<string | null>((m, r) => (!m || r.as_of > m ? r.as_of : m), null) };
 }
 

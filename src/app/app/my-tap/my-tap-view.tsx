@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { normalizeStatus, sampleLook, sampleStage, type MyTapRow } from "@/modules/tap/stages.ts";
+import { normalizeStatus, rowLook, sampleLook, sampleStage, type MyTapRow } from "@/modules/tap/stages.ts";
 import type { SellerSample } from "@/modules/tap/samples.ts";
 import type { MyTapDetail } from "@/modules/tap/mytap.ts";
 import { n, rmx, short, tiktokProductUrl } from "../marketplace/format";
@@ -14,7 +14,7 @@ const TABS: [string, (r: MyTapRow) => boolean][] = [
   ["Samples on the way", (r) => [1, 2].includes(r.stage)],
   ["To post", (r) => r.stage === 3],
   ["Posted", (r) => r.stage === 4],
-  ["Selling, no sample", (r) => r.stage === 0],
+  ["Selling, no sample", (r) => r.stage === 0 && !r.request],
 ];
 /** TikTok's tracking events, in words (as in the mockup). */
 const EVN: Record<string, string> = {
@@ -149,7 +149,7 @@ export function MyTapView({ rows, hasTikTok }: { rows: MyTapRow[]; hasTikTok: bo
         )}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {shown.map((r, i) => {
-            const [status, bg, fg] = sampleLook(r.stage);
+            const [status, bg, fg] = rowLook(r);
             const requested = r.request ? dt(isoUnix(r.request.createdAt)) : "Done";
             const steps: [string, string][] = [["Requested", r.stage >= 1 ? requested : ""], ["Shipped", r.stage >= 2 ? "Done" : ""], ["Delivered", r.stage >= 3 ? "Done" : ""], ["Posted", r.stage >= 4 ? "Done" : ""]];
             return (
@@ -224,7 +224,7 @@ export function MyTapView({ rows, hasTikTok }: { rows: MyTapRow[]; hasTikTok: bo
           <button type="button" aria-label="Close" className={`nv-dim ${closing ? "out" : ""}`} onClick={closePanel} />
           <div role="dialog" aria-modal="true" aria-labelledby="mtpt" className={`nv-panel ${closing ? "out" : ""}`}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span className="mt-pill" style={{ background: sampleLook(panel.stage)[1], color: sampleLook(panel.stage)[2] }}>{sampleLook(panel.stage)[0]}</span>
+              <span className="mt-pill" style={{ background: rowLook(panel)[1], color: rowLook(panel)[2] }}>{rowLook(panel)[0]}</span>
               <button type="button" className="nv-press" aria-label="Close" onClick={closePanel} style={{ width: 34, height: 34, borderRadius: "50%", border: 0, background: "var(--surface2)", color: "var(--text)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
               </button>

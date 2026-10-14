@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { normalizeStatus, sampleStage, unixSeconds } from "./stages.ts";
+import { normalizeStatus, rowLook, sampleStage, unixSeconds } from "./stages.ts";
 
 test("my tap: TikTok sample statuses map to the mockup stages", () => {
   assert.equal(normalizeStatus("NotRequested"), "NOT_REQUESTED");
@@ -23,4 +23,11 @@ test("my tap: TikTok dates in seconds or milliseconds", () => {
   assert.equal(unixSeconds(1792598399000), 1792598399);
   assert.equal(unixSeconds(undefined), 0);
   assert.equal(unixSeconds("x"), 0);
+});
+
+test("a sample asked on Rezekii that TikTok has no record of is 'not submitted', not a sample status", () => {
+  const base = { stage: 0, request: { status: "applied" as const, note: null, createdAt: "", updatedAt: "", tiktok: null } };
+  assert.equal(rowLook(base)[0], "Not submitted in TikTok yet");
+  assert.equal(rowLook({ stage: 1, request: { ...base.request, tiktok: "PENDING" } })[0], "Sample requested");
+  assert.equal(rowLook({ stage: 2 })[0], "Sample on the way");
 });
