@@ -42,19 +42,16 @@ export function orderRows(userId: string, orders: AffiliateOrder[]) {
 
 /** Days re-read on every sync, so orders that settle or get refunded later are updated. */
 export const RESYNC_DAYS = 90;
+/** The first sync walks back in windows this long until it finds two empty ones in a row. */
+const WINDOW_DAYS = 180;
+const DAY = 86400;
 
-/**
- * Saves one creator's affiliate orders. The first time it reads everything TikTok has; after that the last 90 days.
- * Returns how many order lines were saved, or throws on a TikTok error.
- */
-export async function syncCreatorOrders(userId: string, token: string, stopAt: number): Promise<number> {
-  const [had] = (await (await supabaseRest(`creator_orders?user_id=eq.${userId}&select=order_id&limit=1`)).json()) as unknown[];
-  const now = Math.floor(Date.now() / 1000);
-  const since = had ? now - RESYNC_DAYS * 86400 : undefined;
+/** Saves every order created in [from, to), page by page. TikTok needs both dates: without a start it only returns recent orders. */
+async function syncWindow(userId: string, token: string, from: number, to: number, stopAt: number): Promise<number> {
   let pageToken: string | undefined;
   let saved = 0;
   for (let page = 0; page < 100 && Date.now() < stopAt; page++) {
-    const r = await searchCreatorOrders(token, { pageSize: 50, pageToken, createTimeGe: since, createTimeLt: now });
+    const r = await searchCreatorOrders(token, { pageSize: 50, pageToken, createTimeGe: from, createTimeLt: to });
     if (r.code !== 0) throw new Error(`orders ${r.code} ${r.message}`);
     const rows = orderRows(userId, r.data?.orders ?? []);
     if (rows.length)
@@ -62,6 +59,24 @@ export async function syncCreatorOrders(userId: string, token: string, stopAt: n
     saved += rows.length;
     pageToken = r.data?.next_page_token || undefined;
     if (!pageToken) break;
+  }
+  return saved;
+}
+
+/**
+ * Saves one creator's affiliate orders. The first time it reads their whole history (180-day windows going back until two
+ * come back empty); after that the last 90 days. Returns how many order lines were saved, or throws on a TikTok error.
+ */
+export async function syncCreatorOrders(userId: string, token: string, stopAt: number): Promise<number> {
+  const [had] = (await (await supabaseRest(`creator_orders?user_id=eq.${userId}&select=order_id&limit=1`)).json()) as unknown[];
+  const now = Math.floor(Date.now() / 1000);
+  if (had) return syncWindow(userId, token, now - RESYNC_DAYS * DAY, now, stopAt);
+  let saved = 0;
+  let empty = 0;
+  for (let to = now; empty < 2 && to > now - 6 * 365 * DAY && Date.now() < stopAt; to -= WINDOW_DAYS * DAY) {
+    const n = await syncWindow(userId, token, to - WINDOW_DAYS * DAY, to, stopAt);
+    empty = n ? 0 : empty + 1;
+    saved += n;
   }
   return saved;
 }
