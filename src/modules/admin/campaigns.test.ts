@@ -1,0 +1,32 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { campaignFields, toDay, type CampaignForm } from "./campaigns.ts";
+
+const form = (o: Partial<CampaignForm> = {}): CampaignForm => ({
+  name: "Wellness Year-End Push", description: "Health and beauty.", regStart: "2026-10-20", regEnd: "2026-11-15", start: "2026-11-01", end: "2026-12-31",
+  commission: 18, local: true, crossBorder: false, shopCodes: [], whatsapp: "+60123456789", email: "partners@techwide.my", phone: "", ...o,
+});
+
+test("campaignFields turns the form into TikTok's fields (Malaysia days, 0.01% units)", () => {
+  const r = campaignFields(form());
+  assert.ok(r.ok);
+  if (!r.ok) return;
+  assert.equal(r.fields.commission_rate, 1800);
+  assert.equal(r.fields.registration_start_time, Date.parse("2026-10-19T16:00:00Z") / 1000);
+  assert.equal(r.fields.campaign_end_time, Date.parse("2026-12-31T16:00:00Z") / 1000 - 1);
+  assert.deepEqual(r.fields.target_seller_types, ["LOCAL"]);
+  assert.deepEqual(r.fields.contact_info, { whatsapp: "+60123456789", email: "partners@techwide.my" });
+  assert.equal(toDay(r.fields.campaign_start_time), "2026-11-01");
+});
+
+test("campaignFields refuses what TikTok would refuse", () => {
+  const no = (o: Partial<CampaignForm>) => { const r = campaignFields(form(o)); return r.ok ? "" : r.error; };
+  assert.match(no({ name: "x".repeat(50) }), /under 50/);
+  assert.match(no({ commission: 1 }), /more than 1%/);
+  assert.match(no({ commission: 80 }), /less than 80%/);
+  assert.match(no({ start: "2026-12-31", end: "2026-11-01" }), /start before it ends/);
+  assert.match(no({ start: "2026-01-01", end: "2026-12-31" }), /360 days/);
+  assert.match(no({ local: false }), /which shops/);
+  assert.match(no({ whatsapp: " " }), /WhatsApp/);
+  assert.ok(campaignFields(form({ local: false, shopCodes: [" mylcabc123 "] })).ok);
+});

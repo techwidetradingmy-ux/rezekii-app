@@ -196,3 +196,39 @@ export function getSampleTracking(accessToken: string, cipher: string, campaignI
     query: { category_asset_cipher: cipher },
   });
 }
+
+/** A TAP campaign's editable fields, as TikTok's campaign detail and create/edit calls use them. */
+export type CampaignFields = {
+  name: string;
+  description: string;
+  campaign_start_time: number;
+  campaign_end_time: number;
+  registration_start_time: number;
+  registration_end_time: number;
+  /** The total commission shown to shops, in 0.01% units (1,800 = 18%). TikTok accepts more than 100 and less than 8,000. */
+  commission_rate: number;
+  contact_info: { email?: string; phone?: string; whatsapp?: string };
+  target_seller_types?: ("LOCAL" | "CROSS_BORDER")[];
+  target_shop_codes?: string[];
+};
+export type CampaignDetail = Partial<Omit<CampaignFields, "target_shop_codes">> & { id: string; status: string; region?: string; target_shops?: { shop_code?: string; shop_name?: string }[] };
+
+/** One campaign's full details (name, description, dates, commission, contact, who can register). */
+export function getCampaignDetail(accessToken: string, cipher: string, campaignId: string) {
+  return callApi<CampaignDetail>({ method: "GET", path: `/affiliate_partner/202405/campaigns/${campaignId}`, accessToken, query: { category_asset_cipher: cipher } });
+}
+
+/** Creates a campaign. It isn't shown to shops until it is published. */
+export function createCampaign(accessToken: string, cipher: string, fields: CampaignFields) {
+  return callApi<{ campaign_id?: string }>({ method: "POST", path: "/affiliate_partner/202405/campaigns", accessToken, query: { category_asset_cipher: cipher }, body: fields });
+}
+
+/** Changes a campaign (only the fields sent). TikTok allows no edits once it is closed. */
+export function editCampaign(accessToken: string, cipher: string, campaignId: string, fields: Partial<CampaignFields>) {
+  return callApi<Record<string, never>>({ method: "POST", path: `/affiliate_partner/202405/campaigns/${campaignId}/partial_edit`, accessToken, query: { category_asset_cipher: cipher }, body: fields });
+}
+
+/** Publishes a campaign, so shops can see it and register products. */
+export function publishCampaign(accessToken: string, cipher: string, campaignId: string) {
+  return callApi<Record<string, never>>({ method: "POST", path: `/affiliate_partner/202405/campaigns/${campaignId}/publish`, accessToken, query: { category_asset_cipher: cipher }, body: {} });
+}

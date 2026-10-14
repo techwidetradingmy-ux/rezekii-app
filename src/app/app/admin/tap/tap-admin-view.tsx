@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import type { CampaignOverview } from "@/modules/admin/campaigns.ts";
+import { CampaignSheet } from "./campaign-sheet";
 import { Hud, useToast } from "../../marketplace/use-tap-actions";
 import type { AdminCampaign, AdminTapProduct } from "@/modules/admin/tap.ts";
 import { n, pct, pulled, rm } from "../../marketplace/format";
@@ -14,6 +17,8 @@ const COLS = "minmax(280px, 3fr) 70px 70px 100px 130px 120px";
 const REVIEW_COLS = "minmax(280px, 3fr) 70px 70px 100px 130px 230px";
 const REASONS: [string, string][] = [["COMMISSION_TOO_LOW", "Commission too low"], ["PRODUCT_HARD_TO_PROMOTE", "Hard to promote"], ["PRODUCT_TOO_EXPENSIVE", "Too expensive"], ["NO_SUITABLE_CREATOR", "No suitable creator"]];
 const day = (s: number | null, year = false) => (s ? new Date(s * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "short", ...(year ? { year: "numeric" } : {}), timeZone: "Asia/Kuala_Lumpur" }) : "");
+/** TikTok's campaign statuses, in words. READY = created but not published (hidden from shops). */
+const CAMP_STATUS: Record<string, string> = { READY: "Draft · not shown to shops", UPCOMING: "Published · starts soon", ONGOING: "Live", CLOSED: "Ended" };
 const STATUS: Record<AdminCampaign["status"], [string, string]> = { live: ["Live", "b-green"], upcoming: ["Upcoming", "b-blue"], ended: ["Ended", "b-gray"] };
 
 /** Techwide's TAP campaigns, as designed in the mockup (TAP): campaign cards and each campaign's products. */
@@ -32,7 +37,38 @@ export function TapAdminView({ asOf, campaigns, firstProducts }: { asOf: string 
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [openRows, setOpenRows] = useState<Record<string, boolean>>({});
+  const router = useRouter();
+  // Each opened campaign's details from TikTok: status, the edit form, and product counts by review status.
+  const [info, setInfo] = useState<Record<string, CampaignOverview | "error">>({});
+  const [sheet, setSheet] = useState<{ id: string | null } | null>(null);
+  const [closingSheet, setClosingSheet] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const camp = campaigns.find((c) => c.id === sel);
+  const loadInfo = (id: string) =>
+    fetch(`/api/admin/tap/campaigns/${encodeURIComponent(id)}`, { cache: "no-store" })
+      .then(async (r) => {
+        const d = (await r.json().catch(() => ({}))) as CampaignOverview & { error?: string };
+        setInfo((x) => ({ ...x, [id]: r.ok ? d : "error" }));
+      })
+      .catch(() => setInfo((x) => ({ ...x, [id]: "error" })));
+  useEffect(() => {
+    if (sel && !info[sel]) loadInfo(sel);
+  }, [sel, info]);
+  const closeSheet = () => {
+    setClosingSheet(true);
+    setTimeout(() => { setSheet(null); setClosingSheet(false); }, 250);
+  };
+  async function publishSel() {
+    if (publishing || !camp) return;
+    setPublishing(true);
+    const r = await fetch(`/api/admin/tap/campaigns/${sel}/publish`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: camp.name }) });
+    const d = (await r.json().catch(() => ({}))) as { error?: string };
+    setPublishing(false);
+    if (!r.ok) return flash(d.error || "TikTok didn't publish it.", false);
+    flash(`${camp.name} published · shops can see it`);
+    loadInfo(sel);
+  }
+  const ci = info[sel] && info[sel] !== "error" ? (info[sel] as CampaignOverview) : null;
   const all = products[sel] ?? [];
   const ended = campaigns.filter((c) => c.status === "ended").length;
   const qq = cq.trim().toLowerCase();
@@ -90,7 +126,10 @@ export function TapAdminView({ asOf, campaigns, firstProducts }: { asOf: string 
           <h1 className="nv-title">TAP campaigns</h1>
           <p className="nv-sub">From Techwide&apos;s TikTok Shop partner account · what creators see in the Marketplace</p>
         </div>
-        <span className="ad-pill" style={{ fontWeight: 700 }}>{asOf ? `Refreshed daily · pulled ${pulled(asOf)}` : "Not refreshed yet"}</span>
+        <span style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+          <span className="ad-pill" style={{ fontWeight: 700 }}>{asOf ? `Refreshed daily · pulled ${pulled(asOf)}` : "Not refreshed yet"}</span>
+          <button type="button" className="nv-btn nv-press nv-cta" onClick={() => setSheet({ id: null })}>+ New campaign</button>
+        </span>
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
@@ -133,6 +172,24 @@ export function TapAdminView({ asOf, campaigns, firstProducts }: { asOf: string 
               <button type="button" className={f === 1 ? "on" : ""} aria-pressed={f === 1} onClick={showReview}>To review{Array.isArray(waiting) ? ` ${waiting.length}` : ""}</button>
             </div>
             <Link href="/app/admin/samples" className="nv-link" style={{ fontSize: 13 }}>Sample requests: Rezekii queue</Link>
+          </div>
+          <div className="cp-info">
+            {info[sel] === "error" ? (
+              <span style={{ color: "var(--muted)" }}>TikTok didn&apos;t send this campaign&apos;s details. <button type="button" className="nv-link" onClick={() => setInfo((x) => { const y = { ...x }; delete y[sel]; return y; })}>Try again</button></span>
+            ) : ci ? (
+              <>
+                <span className={`nv-badge ${ci.status === "READY" ? "b-amber" : ci.status === "CLOSED" ? "b-gray" : "b-green"}`}>{CAMP_STATUS[ci.status] ?? ci.status}</span>
+                <span><b>{n(ci.counts.approved)}</b> approved</span>
+                <span><b>{n(ci.counts.pending)}</b> waiting for review</span>
+                <span><b>{n(ci.counts.declined)}</b> declined</span>
+                <span style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+                  {ci.status === "READY" && <button type="button" className="nv-btn nv-sm nv-press" disabled={publishing} onClick={publishSel}>{publishing ? "Publishing…" : "Publish"}</button>}
+                  {ci.status !== "CLOSED" && <button type="button" className="nv-btn2 nv-sm nv-press" onClick={() => setSheet({ id: sel })}>Edit campaign</button>}
+                </span>
+              </>
+            ) : (
+              <span style={{ color: "var(--muted)", display: "inline-flex", alignItems: "center", gap: 8 }}><span className="nv-spin" aria-hidden="true" style={{ width: 14, height: 14 }} />Reading this campaign from TikTok…</span>
+            )}
           </div>
           <div className="nv-scrollx">
             <div role="table" aria-label="Campaign products" style={{ minWidth: 900 }}>
@@ -210,6 +267,22 @@ export function TapAdminView({ asOf, campaigns, firstProducts }: { asOf: string 
           {loading && <div style={{ padding: 22, display: "flex", flexDirection: "column", gap: 10 }}>{[0, 1, 2].map((i) => <span key={i} className="nv-skel" style={{ height: 46 }} />)}</div>}
           {!loading && !list.length && <div style={{ padding: 32, textAlign: "center", color: "var(--muted)", borderTop: "1px solid var(--line)" }}>{review ? (waiting === "error" ? "TikTok Shop didn't answer. Pick To review again to retry." : "No shop products waiting for review in this campaign.") : "No products in this campaign."}</div>}
         </section>
+      )}
+      {sheet && (
+        <CampaignSheet
+          key={sheet.id ?? "new"}
+          id={sheet.id}
+          initial={sheet.id && info[sheet.id] && info[sheet.id] !== "error" ? (info[sheet.id] as CampaignOverview).form : null}
+          closing={closingSheet}
+          onClose={closeSheet}
+          onSaved={(id, published, name) => {
+            const editing = !!sheet.id;
+            closeSheet();
+            flash(editing ? `${name} saved in TikTok Shop` : published ? `${name} created and published · it shows here after the next daily refresh` : `${name} saved as a draft · publish it when ready`);
+            setInfo((x) => { const y = { ...x }; delete y[id]; return y; });
+            router.refresh();
+          }}
+        />
       )}
       <Hud toast={toast} />
     </>

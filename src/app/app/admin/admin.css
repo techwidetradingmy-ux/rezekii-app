@@ -16,3 +16,17 @@
 .nv-switch.on { background: #00c073; }
 .nv-switch.on span { transform: translateX(20px); }
 .nv-switch[disabled] { opacity: 0.45; cursor: not-allowed; }
+
+/* TAP campaign tools: details row and the create/edit sheet. */
+.cp-info { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; padding: 0 22px 16px; font-size: 14px; color: var(--body); }
+.cp-info b { color: var(--text); font-variant-numeric: tabular-nums; }
+.cp-sheet { width: 640px; margin-left: -320px; }
+.cp-form { display: flex; flex-direction: column; gap: 16px; }
+.cp-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.cp-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.cp-help { font-size: 12px; color: var(--muted); line-height: 1.45; }
+.cp-check { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 14px; background: var(--surface2); font-weight: 600; cursor: pointer; }
+.cp-check input { width: 18px; height: 18px; accent-color: #00c073; }
+.cp-error { margin: 0; padding: 12px 14px; border-radius: 14px; background: var(--rsoft); color: var(--red); font-size: 14px; font-weight: 600; }
+.cp-acts { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
+@media (max-width: 700px) { .cp-sheet { width: 100%; margin-left: 0; left: 0; } .cp-grid { grid-template-columns: minmax(0, 1fr); } }
