@@ -41,6 +41,17 @@ async function salesSource(userId: string, linked: Set<string>): Promise<"orders
 }
 
 /**
+ * A creator's TAP sales in each month ('YYYY-MM', the current month up to now), from their own orders; null when Rezekii
+ * doesn't read their whole order history (the Rankings leaderboard then uses TikTok's TAP data). `linked`: linkedCreators().
+ */
+export async function monthlyTapSales(userId: string, months: string[], linked: Set<string>): Promise<Record<string, number> | null> {
+  if ((await salesSource(userId, linked)) !== "orders") return null;
+  const now = new Date().toISOString();
+  const sums = await Promise.all(months.map((m) => tapSales(userId, monthStart(m), m === mytDay(Date.now()).slice(0, 7) ? now : monthStart(nextMonth(m)))));
+  return Object.fromEntries(months.map((m, i) => [m, sums[i]]));
+}
+
+/**
  * Saves today's totals for every Rezekii creator, then sets each one's level: on the 1st from last month's TAP sales, and for a
  * new creator as soon as their sales are known. Returns how many changed.
  */

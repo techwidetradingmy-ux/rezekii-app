@@ -1,5 +1,7 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { monthSales, previousMonth, type Level } from "../levels/rules.ts";
+import { monthlyTapSales } from "../levels/store.ts";
+import { linkedCreators } from "../sales/orders.ts";
 import { mytDay } from "../refresh/plan.ts";
 
 /** `lv`: TikTok Shop creator level from their linked TikTok Shop account (null until checked). */
@@ -11,7 +13,10 @@ const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct
 const label = (key: string) => `${MON[Number(key.slice(5)) - 1]} ${key.slice(0, 4)}`;
 const nextFirst = (key: string) => { const [y, m] = key.split("-").map(Number); return m === 12 ? `1 Jan ${y + 1}` : `1 ${MON[m]} ${y}`; };
 
-/** Monthly GMV leaderboard of Rezekii creators for this month and the 5 before (sales through Techwide's TAP campaigns). */
+/**
+ * Monthly GMV leaderboard of Rezekii creators for this month and the 5 before: sales through Techwide's TAP campaigns, from
+ * each creator's own orders when Rezekii reads them (as Levels counts them), otherwise from TikTok's TAP data.
+ */
 export async function leaderboard(): Promise<BoardMonth[]> {
   const today = mytDay(Date.now());
   const keys = [today.slice(0, 7)];
@@ -25,6 +30,8 @@ export async function leaderboard(): Promise<BoardMonth[]> {
   const daily = (await (await supabaseRest(`creator_daily?day=gte.${from}&select=username,day,paid,videos&order=day&limit=100000`)).json()) as Daily[];
   const byUser = new Map<string, Daily[]>();
   for (const d of daily) byUser.set(d.username, [...(byUser.get(d.username) ?? []), { ...d, paid: Number(d.paid) }]);
+  const linked = new Set(await linkedCreators());
+  const fromOrders = new Map(await Promise.all(users.map(async (u) => [u.id, await monthlyTapSales(u.id, keys, linked).catch(() => null)] as const)));
 
   return keys.map((key) => {
     const rows = users.map((u) => {
@@ -33,7 +40,7 @@ export async function leaderboard(): Promise<BoardMonth[]> {
       const before = days.filter((d) => d.day < `${key}-01`).at(-1) ?? inMonth[0];
       return {
         handle: `@${u.tiktok_username}`, name: u.display_name ?? u.tiktok_username, avatar: u.avatar_url, level: levels.get(u.id) ?? "bronze", lv: ttLevels.get(u.id) ?? null,
-        gmv: monthSales(days, key) ?? 0, videos: inMonth.length && before ? Math.max(0, inMonth.at(-1)!.videos - before.videos) : 0,
+        gmv: fromOrders.get(u.id)?.[key] ?? monthSales(days, key) ?? 0, videos: inMonth.length && before ? Math.max(0, inMonth.at(-1)!.videos - before.videos) : 0,
       };
     });
     rows.sort((a, b) => b.gmv - a.gmv || a.handle.localeCompare(b.handle));
