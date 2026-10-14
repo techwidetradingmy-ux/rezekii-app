@@ -35,3 +35,6 @@
 @media (max-width: 900px) { .ac-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ac-smp { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 520px) { .ac-top { padding: 20px; } .ac-line { padding: 14px 18px; } }
 @media (prefers-reduced-motion: reduce) { .ac-av, .ac-ok, .ac-stat, .ac-bar span { animation: none; } }
+
+/* Account: when the numbers were last read from TikTok Shop (automatic, no button). */
+.ac-upd { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--muted); }

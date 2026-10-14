@@ -63,16 +63,22 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
     return () => clearTimeout(t);
   });
 
-  async function refresh() {
-    if (syncing) return;
-    setSyncing(true);
-    const r = await fetch("/api/sales/refresh", { method: "POST" });
-    const x = (await r.json().catch(() => ({}))) as { synced?: boolean; error?: string };
-    setSyncing(false);
-    if (!r.ok) return flash(x.error || "Couldn't update. Try again.", false);
-    flash(x.synced ? "Numbers updated from TikTok Shop" : "Already up to date");
-    router.refresh();
-  }
+  // The latest orders from TikTok when the page opens (at most every 15 minutes), so the numbers are current without a button.
+  const linked = !!d.shop && me.role !== "admin";
+  useEffect(() => {
+    if (!linked) return;
+    let stop = false;
+    (async () => {
+      for (let i = 0; i < 6 && !stop; i++) {
+        setSyncing(true);
+        const x = (await fetch("/api/sales/refresh", { method: "POST" }).then((r) => r.json()).catch(() => ({}))) as { synced?: boolean; done?: boolean };
+        if (x.synced) router.refresh();
+        if (!x.synced || x.done !== false) break;
+      }
+      if (!stop) setSyncing(false);
+    })();
+    return () => { stop = true; };
+  }, [linked, router]);
 
   async function confirm() {
     if (busy || (alert === "delete" && typed.trim() !== "DELETE")) return;
@@ -157,10 +163,10 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
           {shop && (
             <span className="ac-acts">
               <a href={`https://www.tiktok.com/@${shop.username}`} target="_blank" rel="noopener" className="nv-btn2 nv-sm nv-press">View on TikTok</a>
-              <button type="button" className="nv-btn2 nv-sm nv-press" onClick={refresh} disabled={syncing}>
+              <span className="ac-upd" role="status">
                 {syncing && <span className="nv-sping" aria-hidden="true" />}
-                {syncing ? "Updating…" : `Updated ${ago(s?.syncedAt ?? null, now)}`}
-              </button>
+                {syncing ? "Updating from TikTok Shop…" : `Updated ${ago(s?.syncedAt ?? null, now)}`}
+              </span>
             </span>
           )}
         </div>

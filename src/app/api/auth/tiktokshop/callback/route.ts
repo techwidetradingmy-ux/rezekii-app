@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { after, NextResponse, type NextRequest } from "next/server";
 import { exchangeAuthCode } from "@/integrations/tiktok-shop/auth.ts";
 import { getCreatorProfile } from "@/integrations/tiktok-shop/creator.ts";
 import { getCategoryAssets } from "@/integrations/tiktok-shop/partner.ts";
@@ -8,7 +8,11 @@ import { isAllowedPartnerDuringProof, savePartnerConnection } from "@/modules/ma
 import { isAllowedSellerDuringProof, saveSellerConnection } from "@/modules/marketplace/seller-connection.ts";
 import { SESSION_COOKIE, userForSession } from "@/modules/accounts/session.ts";
 import { linkCreator } from "@/modules/creator-accounts/access.ts";
+import { syncCreatorOrders } from "@/modules/sales/orders.ts";
 import { STATE_COOKIE, STATE_COOKIE_OPTIONS, stateMatches } from "../state.ts";
+
+// Linking also reads the creator's orders in the background, so Sales shows their GMV on the first visit.
+export const maxDuration = 60;
 
 const CREATOR_RESULTS = new Set(["connected", "waiting", "waitlist", "taken", "denied", "expired", "error"]);
 
@@ -53,7 +57,10 @@ export async function GET(req: NextRequest) {
     // A creator links TikTok Shop to the Rezekii account they are signed in to; Techwide then approves it (see creator access).
     const user = await userForSession(req.cookies.get(SESSION_COOKIE)?.value).catch(() => null);
     if (!user) return finish("signin");
-    return finish(await linkCreator(user, { openId, username: profile.username, avatarUrl: profile.avatar?.url }, tokens));
+    const linked = await linkCreator(user, { openId, username: profile.username, avatarUrl: profile.avatar?.url }, tokens);
+    if (linked === "connected")
+      after(() => syncCreatorOrders(user.id, tokens.access_token, Date.now() + 50_000).catch((err) => console.error("[tiktokshop] first order read", err instanceof Error ? err.message : err)));
+    return finish(linked);
   } catch (err) {
     console.error("[tiktokshop] callback error", err instanceof Error ? err.message : err);
     return finish("error");

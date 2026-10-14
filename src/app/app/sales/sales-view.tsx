@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from "react";
 import type { SalesPageData } from "@/modules/sales/page.ts";
 import type { Source } from "@/modules/sales/summary.ts";
 import { GmvChart } from "../gmv-chart";
-import { Hud, useToast } from "../marketplace/use-tap-actions";
 import "../marketplace/marketplace.css";
 import "./sales.css";
 
@@ -53,7 +52,6 @@ function Tile({ label, value, format, note, noteColor, delay }: { label: string;
 /** Sales, as chosen from the mockup (direction A): totals, GMV per day, top products and top videos and LIVEs. */
 export function SalesView({ d, handle, syncedAt }: { d: SalesPageData; handle: string | null; syncedAt: string | null }) {
   const router = useRouter();
-  const { toast, flash } = useToast();
   const [period, setPeriod] = useState(30);
   const [source, setSource] = useState<Source>("all");
   const s = d.summaries[`${period}|${source}`];
@@ -61,14 +59,21 @@ export function SalesView({ d, handle, syncedAt }: { d: SalesPageData; handle: s
   const change = s.prevGmv > 0 ? Math.round(((s.gmv - s.prevGmv) / s.prevGmv) * 100) : null;
   const key = `${period}|${source}`;
 
-  // The latest orders from TikTok, in the background (at most every 15 minutes).
+  // The latest orders from TikTok, in the background (at most every 15 minutes), with no button to press. Right after
+  // linking, TikTok's older history can take a few reads: keep asking until it is all in.
+  const [reading, setReading] = useState(false);
   useEffect(() => {
-    fetch("/api/sales/refresh", { method: "POST" })
-      .then((r) => r.json())
-      .then((x: { synced?: boolean; lines?: number }) => {
+    let stop = false;
+    (async () => {
+      for (let i = 0; i < 6 && !stop; i++) {
+        setReading(true);
+        const x = (await fetch("/api/sales/refresh", { method: "POST" }).then((r) => r.json()).catch(() => ({}))) as { synced?: boolean; done?: boolean };
         if (x.synced) router.refresh();
-      })
-      .catch(() => {});
+        if (!x.synced || x.done !== false) break;
+      }
+      if (!stop) setReading(false);
+    })();
+    return () => { stop = true; };
   }, [router]);
 
   const pIdx = PERIODS.findIndex(([p]) => p === period);
@@ -156,10 +161,8 @@ export function SalesView({ d, handle, syncedAt }: { d: SalesPageData; handle: s
         </section>
       </div>
       <p className="sl-foot">
-        From your TikTok Shop affiliate orders, all shops, updated every day and when you open this page{synced ? ` · last read ${synced}` : ""}. GMV is what buyers paid; commission is TikTok&apos;s estimate until the order settles.
-        <button type="button" className="nv-link" onClick={() => { flash("Checking TikTok Shop…"); fetch("/api/sales/refresh", { method: "POST" }).then((r) => r.json()).then((x: { synced?: boolean; error?: string }) => { if (x.error) flash(x.error, false); else { flash(x.synced ? "Updated" : "Already up to date"); router.refresh(); } }).catch(() => flash("Couldn't update.", false)); }}>Update now</button>
+        From your TikTok Shop affiliate orders, all shops, updated automatically{reading ? " · reading your latest orders from TikTok Shop…" : synced ? ` · last read ${synced}` : ""}. GMV is what buyers paid; commission is TikTok&apos;s estimate until the order settles.
       </p>
-      <Hud toast={toast} />
     </>
   );
 }
