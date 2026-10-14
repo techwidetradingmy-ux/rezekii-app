@@ -8,6 +8,7 @@ import type { AccountPageData } from "@/modules/accounts/account-page.ts";
 import { sampleLook, statusLook } from "@/modules/tap/stages.ts";
 import { Emblem } from "../../emblems";
 import { TikTokShopLogo, TikTokTile } from "../../tiktok-logo";
+import { LevelFace, LevelIcon } from "../../tts-ring";
 import { GmvChart } from "../gmv-chart";
 import { Hud, useToast } from "../marketplace/use-tap-actions";
 import { saveTheme, useTheme } from "../use-theme";
@@ -117,7 +118,9 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
   const tiles = s
     ? [
         ["GMV · 30 days", rm(s.gmv), change === null ? "Your affiliate sales, all shops" : `${change >= 0 ? "▲" : "▼"} ${Math.abs(change)}% vs the 30 days before`, change !== null && change < 0 ? "var(--red)" : "var(--gink)"],
-        s.partnerShare > 0
+        s.partnerShare > 0 && s.commission < 0.005
+          ? ["Commission earned · 30 days", rm(s.earned), "TikTok pays this to your agency", "var(--muted)"]
+          : s.partnerShare > 0
           ? ["Commission earned · 30 days", rm(s.earned), `${rm(s.partnerShare)} to your partner · you keep ${rm(s.commission)}`, "var(--muted)"]
           : ["Commission · 30 days", rm(s.commission), s.toSettle ? `${rm(s.toSettle)} still to settle` : "All settled", "var(--muted)"],
         ["Orders", s.orders.toLocaleString("en-US"), `${s.items.toLocaleString("en-US")} ${s.items === 1 ? "item" : "items"} sold`, "var(--muted)"],
@@ -130,8 +133,10 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
     <>
       <section className="nv-up nv-card ac-banner" aria-labelledby="acname">
         <div className="ac-top">
-          <span className="ac-av">
-            {avatar ? (
+          <span className={`ac-av ${typeof shop?.ttLevel === "number" ? "ac-av-lv" : ""}`}>
+            {typeof shop?.ttLevel === "number" ? (
+              <LevelFace lv={shop.ttLevel} size={92} img={avatar} name={me.name} />
+            ) : avatar ? (
               // TikTok's avatar CDN hosts vary, so a plain img (as elsewhere for avatars).
               // eslint-disable-next-line @next/next/no-img-element
               <img src={avatar} alt="" width={92} height={92} />
@@ -161,6 +166,8 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
             <span className="ac-chips">
               {shop && <span className="nv-badge b-green" style={{ paddingLeft: 4 }}><TikTokShopLogo size={18} />TikTok Shop linked</span>}
               {shop?.approvedAt && <span className="nv-badge b-green">Approved by Techwide</span>}
+              {typeof shop?.ttLevel === "number" && <span className="nv-badge ac-tts"><LevelIcon lv={shop.ttLevel} size={15} />TikTok Shop Lv{shop.ttLevel}</span>}
+              {shop?.agency === "managed" && <span className="nv-badge b-gray" title="TikTok's Creator Marketplace lists you as managed by an agency">Agency managed</span>}
               {me.role === "admin" ? <span className="nv-badge b-blue">Techwide admin</span> : <span className={`ac-lvl ac-lvl-${d.level.level}`}><Emblem level={d.level.level} size={18} />{LEVEL_NAME[d.level.level]} level</span>}
             </span>
           </span>
@@ -184,7 +191,7 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
             <h2 id="acchart" className="nv-h2">GMV · last 30 days</h2>
             <Link href="/app/sales" className="nv-link" style={{ fontSize: 14, fontWeight: 700 }}>See your sales</Link>
           </div>
-          <GmvChart daily={s.daily} now={now} />
+          <GmvChart values={s.daily} labels={s.daily.map((_, i) => (i === s.daily.length - 1 ? "Today" : new Date(now - (s.daily.length - 1 - i) * 86400_000).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" })))} height={160} />
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--muted)" }}>
             <span>{new Date(now - 29 * 86400_000).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" })}</span>
             <span>Through Techwide TAP {rm0(s.techwideGmv)} · other shops {rm0(s.otherGmv)}</span>

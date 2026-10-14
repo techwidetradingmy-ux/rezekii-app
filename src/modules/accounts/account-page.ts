@@ -12,7 +12,8 @@ import type { AppUser } from "./users.ts";
 export type AccountPageData = {
   overview: AccountOverview;
   /** The linked TikTok Shop creator account, as TikTok Shop describes it. */
-  shop: { username: string; avatar: string | null; linkedAt: string | null; approvedAt: string | null; region: string | null; permissions: string[] } | null;
+  /** `ttLevel`: TikTok Shop creator level 0-8; `agency`: how TikTok's Creator Marketplace lists them (null until checked). */
+  shop: { username: string; avatar: string | null; linkedAt: string | null; approvedAt: string | null; region: string | null; permissions: string[]; ttLevel: number | null; agency: "managed" | "independent" | null } | null;
   sales: SalesSummary | null;
   level: { level: Level; monthSales: number; keep: number; lifetime: number };
   samples: { requested: number; shipping: number; toPost: number; posted: number; recent: { name: string; image: string | null; stage: number; status: string | null }[] };
@@ -40,7 +41,7 @@ async function shopProfile(userId: string) {
 export async function accountPage(user: AppUser): Promise<AccountPageData> {
   const [overview, [conn], [access], sales, level, tap, showcase, profile] = await Promise.all([
     accountOverview(user),
-    supabaseRest(`affiliate_connections?user_id=eq.${user.id}&select=username,avatar_url,connected_at&limit=1`).then((r) => r.json() as Promise<{ username: string; avatar_url: string | null; connected_at: string }[]>),
+    supabaseRest(`affiliate_connections?user_id=eq.${user.id}&select=username,avatar_url,connected_at,tt_level,agency&limit=1`).then((r) => r.json() as Promise<{ username: string; avatar_url: string | null; connected_at: string; tt_level: number | null; agency: "managed" | "independent" | null }[]>),
     supabaseRest(`creator_access?user_id=eq.${user.id}&select=decided_at,status&limit=1`).then((r) => r.json() as Promise<{ decided_at: string | null; status: string }[]>),
     user.role === "creator" ? salesSummary(user.id, 30) : Promise.resolve(null),
     levelPage(user.id, user.tiktok_username),
@@ -51,7 +52,7 @@ export async function accountPage(user: AppUser): Promise<AccountPageData> {
   const withSample = tap.rows.filter((r) => r.stage > 0);
   return {
     overview,
-    shop: conn ? { username: conn.username, avatar: conn.avatar_url, linkedAt: day(conn.connected_at), approvedAt: access?.status === "approved" ? day(access.decided_at) : null, region: profile.region, permissions: profile.permissions } : null,
+    shop: conn ? { username: conn.username, avatar: conn.avatar_url, linkedAt: day(conn.connected_at), approvedAt: access?.status === "approved" ? day(access.decided_at) : null, region: profile.region, permissions: profile.permissions, ttLevel: conn.tt_level, agency: conn.agency } : null,
     sales,
     level: { level: level.level, monthSales: level.month?.sales ?? 0, keep: KEEP_MONTHLY, lifetime: level.lifetime },
     samples: {

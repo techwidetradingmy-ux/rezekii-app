@@ -93,13 +93,30 @@
 .cj-bar i { display: block; height: 100%; background: var(--c); transform-origin: left; animation: csGrow 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
 .cj-arrow { flex: 0 0 34px; align-self: center; height: 4px; margin: 0 2px; border-radius: 2px; background: repeating-linear-gradient(90deg, #00c073 0 8px, transparent 8px 14px); background-size: 28px 4px; animation: cjFlow 0.9s linear infinite; position: relative; }
 .cj-arrow::after { content: ""; position: absolute; right: -2px; top: -5px; border: 7px solid transparent; border-left: 9px solid #00c073; border-right: 0; }
-.cj-leaks { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding-left: 6px; }
-.cj-drop { font-size: 22px; font-weight: 900; color: var(--red); }
-.cj-leak { all: unset; box-sizing: border-box; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; border: 2px dashed rgba(229, 72, 77, 0.45); color: var(--text); font-size: 13px; font-weight: 700; transition: transform 0.2s, background 0.2s; }
-.cj-leak:hover { transform: translateY(-2px); }
-.cj-leak b { color: var(--red); font-variant-numeric: tabular-nums; }
-.cj-leak small { color: var(--muted); font-weight: 700; }
-.cj-leak.on { background: var(--rsoft); border-style: solid; }
+.cj-lost { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 18px; background: var(--surface2); }
+.cj-losthead { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 13px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.cj-losthead b { font-size: 16px; color: var(--red); letter-spacing: 0; font-variant-numeric: tabular-nums; }
+.cj-lostrow { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.cj-miss { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: flex-start; gap: 12px; padding: 14px; border-radius: 16px; background: var(--surface); border: 1.5px solid var(--line); transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s; min-width: 0; }
+.cj-miss:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(13, 17, 23, 0.08); }
+.cj-miss.on { border-color: var(--c); box-shadow: 0 0 0 3px var(--s); }
+.cj-miss .cj-ic { background: var(--s); color: var(--c); flex: none; }
+.cj-misst { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.cj-misst b { font-size: 18px; font-weight: 800; color: var(--c); font-variant-numeric: tabular-nums; }
+.cj-misst small { font-size: 12px; font-weight: 600; color: var(--muted); }
+.cj-misst .cj-help { font-weight: 500; line-height: 1.4; }
+.cj-miss:focus-visible { outline: 2px solid #00c073; outline-offset: 2px; }
+@media (max-width: 560px) { .cj-lostrow { grid-template-columns: minmax(0, 1fr); } }
+.sl-share { display: flex; flex-direction: column; gap: 8px; }
+.sl-sharehead { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; font-size: 12px; font-weight: 700; color: var(--muted); }
+.sl-sharehead span { display: inline-flex; align-items: center; gap: 6px; }
+.sl-sharehead i { width: 10px; height: 10px; border-radius: 3px; }
+.sl-sharehead b { color: var(--text); font-variant-numeric: tabular-nums; }
+.sl-pic { position: relative; width: 44px; height: 44px; border-radius: 12px; background: var(--surface2); color: var(--muted); display: flex; align-items: center; justify-content: center; overflow: visible; }
+.sl-pic img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
+.sl-picn { position: absolute; top: -6px; left: -6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; background: var(--text); color: var(--surface); font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--surface); }
+.sl-btn { all: unset; box-sizing: border-box; display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); cursor: pointer; width: 100%; color: var(--text); animation: slRise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.sl-btn:focus-visible { outline: 2px solid #00c073; outline-offset: 2px; border-radius: 12px; }
 .cj-detail { display: grid; grid-template-columns: minmax(150px, 1.3fr) repeat(4, minmax(0, 1fr)); gap: 12px; align-items: center; padding: 14px 16px; border-radius: 16px; background: var(--surface2); border-left: 5px solid var(--c); animation: slPop 0.25s ease both; }
 .cj-detail span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .cj-detail small { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }

@@ -1,11 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { LookupRow } from "@/modules/tap/convert.ts";
 import { n, pct, perSale, priceText, tiktokProductUrl } from "../marketplace/format";
 import { Hud, useToast } from "../marketplace/use-tap-actions";
-import { copyText } from "../links/file-tools";
+import { ProductCard } from "../product-card";
 import { linksFromFile, saveRows, type ExportFormat } from "./files";
 import "../marketplace/marketplace.css";
 import "../today.css";
@@ -39,25 +38,16 @@ export function LookupView({ linked, samples }: { linked: boolean; samples: stri
   const [rows, setRows] = useState<LookupRow[]>([]);
   const [done, setDone] = useState(0);
   const [open, setOpen] = useState<LookupRow | null>(null);
-  const [closing, setClosing] = useState(false);
   const [menu, setMenu] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [more, setMore] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const lines = paste.split("\n").map((l) => l.trim()).filter(Boolean);
   const found = rows.filter((r) => r.ok);
 
-  const show = (r: LookupRow) => { setClosing(false); setMore(false); setOpen(r); };
-  const closePanel = () => {
-    setClosing(true);
-    setTimeout(() => {
-      setOpen(null);
-      setClosing(false);
-    }, 250);
-  };
+  const show = (r: LookupRow) => setOpen(r);
   useEffect(() => {
-    if (!open && !menu) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { if (open) closePanel(); setMenu(false); } };
+    if (!menu) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenu(false);
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   });
@@ -99,19 +89,6 @@ export function LookupView({ linked, samples }: { linked: boolean; samples: stri
       flash(err instanceof Error ? err.message : String(err), false);
     }
   }
-
-  const facts = (r: LookupRow): [string, string][] => [
-    ["Brand", r.brand ?? "—"],
-    ["Shop", r.shop ? `${r.shop}${r.shopRating !== null ? ` · ★ ${r.shopRating.toFixed(1)}` : ""}` : "—"],
-    ["Category", r.category ?? "—"],
-    ["Price", priceText(r.priceLo, r.priceHi)],
-    [r.source === "tap" ? "Open Plan commission" : "Open commission", pct(r.rate)],
-    ["You earn per sale", perSale(r.priceLo, r.rate)],
-    ["Sold, all time", r.sold !== null ? n(r.sold) : "—"],
-    ["Stock", stockText(r)],
-    ["Rating", r.rating !== null ? `★ ${r.rating.toFixed(1)}${r.reviews !== null ? ` · ${n(r.reviews)} reviews` : ""}` : "—"],
-    ["Product ID", r.id ?? "—"],
-  ];
 
   /** Every fact for every row, plus the creator's own affiliate link for each product found. */
   async function exportAs(format: ExportFormat) {
@@ -239,55 +216,7 @@ export function LookupView({ linked, samples }: { linked: boolean; samples: stri
         </section>
       )}
 
-      {open && (
-        <>
-          <button type="button" aria-label="Close" className={`nv-dim ${closing ? "out" : ""}`} onClick={closePanel} />
-          <div role="dialog" aria-modal="true" aria-labelledby="lupt" className={`nv-panel ${closing ? "out" : ""}`}>
-            <span className="lu-grab" aria-hidden="true" />
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>
-                <span className="nv-dot" aria-hidden="true" />{open.tap ? "In Techwide's TAP · full listing" : "From TikTok Shop · just now"}
-              </span>
-              <button type="button" className="nv-press" aria-label="Close" onClick={closePanel} style={{ width: 34, height: 34, borderRadius: "50%", border: 0, background: "var(--surface2)", color: "var(--text)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
-              </button>
-            </div>
-            {open.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={open.image} alt="" className="lu-pimg" />
-            ) : null}
-            <h3 id="lupt" style={{ margin: 0, fontSize: 20, fontWeight: 800, lineHeight: 1.25 }}>{open.name}</h3>
-            <div style={{ borderRadius: 18, background: "var(--surface2)", overflow: "hidden" }}>
-              {facts(open).map(([k, v], i) => (
-                <div key={k} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "11px 14px", borderTop: i ? "1px solid var(--border)" : 0, fontSize: 14 }}>
-                  <span style={{ color: "var(--muted)" }}>{k}</span><span style={{ fontWeight: 700, textAlign: "right" }}>{v}</span>
-                </div>
-              ))}
-            </div>
-            {open.variants.length > 0 && (
-              <>
-                <strong style={{ fontSize: 15 }}>Variants</strong>
-                <div style={{ borderRadius: 18, background: "var(--surface2)", overflow: "hidden" }}>
-                  <div className="lu-sku h"><span>Variant</span><span>Price</span><span>Stock</span></div>
-                  {open.variants.map(([v, p, s], i) => <div key={i} className="lu-sku"><span>{v}</span><span>RM{p}</span><span>{n(s)}</span></div>)}
-                </div>
-              </>
-            )}
-            {open.description && (
-              <>
-                <strong style={{ fontSize: 15 }}>Description</strong>
-                <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: "var(--body)", whiteSpace: "pre-line" }}>{more || open.description.length <= 420 ? open.description : `${open.description.slice(0, 420)}…`}</p>
-                {open.description.length > 420 && <button type="button" className="nv-link" style={{ alignSelf: "flex-start" }} onClick={() => setMore(!more)}>{more ? "Show less" : "Read more"}</button>}
-              </>
-            )}
-            {!open.tap && <p style={{ margin: 0, padding: "12px 14px", borderRadius: 14, background: "var(--surface2)", fontSize: 13, lineHeight: 1.55, color: "var(--muted)" }}>TikTok doesn&apos;t share this product&apos;s description, variants, extra photos, videos or price after vouchers. Techwide TAP products show them.</p>}
-            <div className="lu-act">
-              <button type="button" className="nv-btn2 nv-press" style={{ flex: 1 }} onClick={async () => flash((await copyText(`${open.name}\n${facts(open).map(([k, v]) => `${k}: ${v}`).join("\n")}`)) ? "Product facts copied" : "Copy did not work.", true)}>Copy facts</button>
-              {open.id && <Link href={`/app/links?add=${open.id}`} className="nv-btn nv-press" style={{ flex: 1, textDecoration: "none" }}>Make my affiliate link</Link>}
-            </div>
-          </div>
-        </>
-      )}
+      {open && <ProductCard row={open} onClose={() => setOpen(null)} onCopied={(ok) => flash(ok ? "Product facts copied" : "Copy did not work.", ok)} />}
       <Hud toast={toast} />
     </>
   );

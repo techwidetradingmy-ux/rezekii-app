@@ -1,4 +1,6 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import { lookupProducts } from "../../integrations/tiktok-shop/creator.ts";
+import { approvedCreatorToken } from "../creator-accounts/access.ts";
 import { lineCommission, lineEarned, lineGmv, linePartner, techwideCampaigns, type OrderLine, type Source } from "./summary.ts";
 
 /** Sales time frames (owner's list), plus any calendar month as "m:YYYY-MM". */
@@ -82,7 +84,8 @@ export type FrameStats = {
   commission: number; earned: number; partnerShare: number;
   buckets: number[];
   status: StatusRow[];
-  products: { productId: string; name: string; shop: string; gmv: number; orders: number; commission: number }[];
+  /** `earned`: the full commission (what TikTok shows when it pays the creator's agency); `image` added by salesFrame. */
+  products: { productId: string; name: string; shop: string; gmv: number; orders: number; commission: number; earned: number; image?: string | null }[];
   content: { id: string; type: string; gmv: number; orders: number }[];
   techwideGmv: number; otherGmv: number;
 };
@@ -114,10 +117,11 @@ export function frameStats(lines: OrderLine[], r: Range, techwide: Set<string>, 
     st.commission += lost ? Number(l.commission_estimated ?? 0) || earnedRaw(l) : kept(l);
     st.earned += earnedRaw(l);
     const key = l.product_id ?? l.product_name ?? "?";
-    const p = products.get(key) ?? { productId: l.product_id ?? "", name: (l.product_name ?? "TikTok Shop product").replace(/\s+/g, " ").trim(), shop: l.shop_name ?? "", gmv: 0, orders: 0, commission: 0 };
+    const p = products.get(key) ?? { productId: l.product_id ?? "", name: (l.product_name ?? "TikTok Shop product").replace(/\s+/g, " ").trim(), shop: l.shop_name ?? "", gmv: 0, orders: 0, commission: 0, earned: 0 };
     p.gmv += g;
     p.orders += 1;
     p.commission += lineCommission(l);
+    p.earned += lineEarned(l);
     products.set(key, p);
     if (l.content_id) {
       const c = content.get(l.content_id) ?? { id: l.content_id, type: l.content_type ?? "VIDEO", gmv: 0, orders: 0 };
@@ -137,7 +141,7 @@ export function frameStats(lines: OrderLine[], r: Range, techwide: Set<string>, 
     partnerShare: round(inRange.reduce((a, l) => a + linePartner(l), 0)),
     buckets: buckets.map(round),
     status: keys.map((k) => { const s = status.get(k)!; return { key: k, orders: s.orders.size, gmv: round(s.gmv), commission: round(s.commission), earned: round(s.earned) }; }),
-    products: [...products.values()].sort((a, b) => b.gmv - a.gmv).slice(0, 10).map((p) => ({ ...p, gmv: round(p.gmv), commission: round(p.commission) })),
+    products: [...products.values()].sort((a, b) => b.gmv - a.gmv).slice(0, 10).map((p) => ({ ...p, gmv: round(p.gmv), commission: round(p.commission), earned: round(p.earned) })),
     content: [...content.values()].sort((a, b) => b.gmv - a.gmv).slice(0, 10).map((c) => ({ ...c, gmv: round(c.gmv) })),
     techwideGmv: round(techwideGmv),
     otherGmv: round(gmv - techwideGmv),
@@ -173,6 +177,26 @@ export type FrameData = {
   now: number;
 };
 
+/** Product photos already looked up, so switching time frames doesn't ask TikTok again. */
+const photos = new Map<string, string | null>();
+
+/** A photo for each product: Techwide's TAP catalog first, then TikTok Shop's Product Lookup with the creator's sign-in. */
+async function productImages(userId: string, ids: string[]): Promise<Map<string, string | null>> {
+  const want = [...new Set(ids.filter((id) => /^\d{15,21}$/.test(id) && !photos.has(id)))];
+  if (want.length) {
+    const rows = (await (await supabaseRest(`tap_catalog?product_id=in.(${want.join(",")})&select=product_id,image`)).json()) as { product_id: string; image: string | null }[];
+    for (const r of rows) if (r.image) photos.set(r.product_id, r.image);
+    const rest = want.filter((id) => !photos.has(id));
+    const token = rest.length ? await approvedCreatorToken(userId) : null;
+    if (token) {
+      const r = await lookupProducts(token, rest.slice(0, 20)).catch(() => null);
+      for (const x of r?.data?.products ?? []) photos.set(x.id, x.main_image_url ?? null);
+      for (const id of rest.slice(0, 20)) if (!photos.has(id)) photos.set(id, null);
+    }
+  }
+  return photos;
+}
+
 /** Everything the Sales page shows for one time frame, source and comparison. */
 export async function salesFrame(userId: string, key: string, source: Source, how: Compare, now = Date.now()): Promise<FrameData | null> {
   const [firstRow] = (await (await supabaseRest(`creator_orders?user_id=eq.${userId}&select=created_at&order=created_at.asc&limit=1`)).json()) as { created_at: string }[];
@@ -185,6 +209,8 @@ export async function salesFrame(userId: string, key: string, source: Source, ho
   const compare = cmp ? (() => { const c = frameStats(lines, cmp, techwide, source); return { range: cmp, gmv: c.gmv, buckets: c.buckets }; })() : null;
   const ids = stats.content.map((c) => c.id).filter((id) => /^\d{5,25}$/.test(id));
   const videos: FrameData["videos"] = {};
+  const pics = await productImages(userId, stats.products.slice(0, 6).map((p) => p.productId)).catch(() => photos);
+  for (const p of stats.products) p.image = pics.get(p.productId) ?? null;
   if (ids.length) {
     const rows = (await (await supabaseRest(`tiktok_videos?video_id=in.(${ids.join(",")})&select=video_id,title,cover,share_url`)).json()) as { video_id: string; title: string | null; cover: string | null; share_url: string | null }[];
     for (const r of rows) videos[r.video_id] = { title: r.title || "Untitled video", cover: r.cover, url: r.share_url };

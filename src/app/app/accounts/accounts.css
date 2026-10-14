@@ -40,3 +40,8 @@
 .ac-tt { display: flex; flex-direction: column; gap: 2px; color: inherit; text-decoration: none; border-radius: 10px; }
 .ac-tt:hover h2 { text-decoration: underline; text-underline-offset: 3px; }
 .ac-tt:focus-visible { outline: 2px solid #00c073; outline-offset: 3px; }
+
+/* With a TikTok Shop level, the level ring replaces the green ring (owner's pick C, 14 Oct 2026). */
+.ac-av-lv { box-shadow: none; }
+.ac-av-lv .ac-ok { z-index: 5; }
+.ac-tts { background: #18181c; color: #ffffff; padding-left: 5px; }

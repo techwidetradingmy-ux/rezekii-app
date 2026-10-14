@@ -1,0 +1,29 @@
+/* TikTok Shop level ring around a profile photo (tts-ring.tsx). */
+.tr-face { position: relative; display: inline-flex; flex-shrink: 0; border-radius: 50%; transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.tr-face:hover { transform: scale(1.06); }
+.tr-ring { position: absolute; inset: -4px; border-radius: 50%; }
+.tr-in { position: relative; z-index: 1; width: 100%; height: 100%; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; color: #ffffff; font-weight: 800; border: 2px solid var(--surface, #ffffff); box-sizing: border-box; }
+.tr-in img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tr-face > .tr-in:only-child { border: 0; }
+.tr-shine {
+  position: absolute; inset: -4px; border-radius: 50%; z-index: 2; pointer-events: none;
+  background: conic-gradient(from 0deg, transparent 0 78%, rgba(255, 255, 255, 0.95) 88%, transparent 98%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px));
+  animation: trSpin 2.8s linear infinite;
+}
+.tr-face:hover .tr-shine { animation-duration: 1s; }
+.tr-glow { animation: trGlow 2.2s ease-in-out infinite; }
+.tr-tt { background: conic-gradient(from 0deg, #25f4ee, #fe2c55, #ffd54f, #25f4ee) !important; animation: trSpin 2.4s linear infinite; }
+.tr-spark { position: absolute; width: 6px; height: 6px; border-radius: 50%; background: #fff59d; z-index: 3; box-shadow: 0 0 6px #fff59d; animation: trTwinkle 1.6s ease-in-out infinite; }
+.tr-badge {
+  position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%); z-index: 4;
+  display: inline-flex; align-items: center; gap: 2px; padding: 1px 6px 1px 2px; border-radius: 999px;
+  background: #18181c; color: #ffffff; font-size: 10px; font-weight: 900; line-height: 1.4; white-space: nowrap;
+  box-shadow: 0 0 0 2px var(--surface, #ffffff);
+}
+.tr-icon { display: block; flex-shrink: 0; }
+@keyframes trSpin { to { transform: rotate(360deg); } }
+@keyframes trGlow { 0%, 100% { box-shadow: 0 0 6px 1px rgba(255, 179, 0, 0.45); } 50% { box-shadow: 0 0 16px 4px rgba(255, 179, 0, 0.85); } }
+@keyframes trTwinkle { 0%, 100% { opacity: 0; transform: scale(0.4); } 50% { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .tr-shine, .tr-glow, .tr-tt, .tr-spark { animation: none; } .tr-face:hover { transform: none; } }

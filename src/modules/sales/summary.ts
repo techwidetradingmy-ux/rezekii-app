@@ -19,7 +19,8 @@ export type SalesSummary = {
   /** GMV per Malaysia day, oldest first, `days` long. */
   daily: number[];
   /** Top products by GMV. */
-  products: { productId: string; name: string; shop: string; gmv: number; orders: number; commission: number }[];
+  /** `earned`: the full commission (what TikTok shows when it pays the creator's agency); `image` added by the page. */
+  products: { productId: string; name: string; shop: string; gmv: number; orders: number; commission: number; earned: number; image?: string | null }[];
   /** Sales per video or LIVE (content id), best first. */
   content: { id: string; type: string; gmv: number; orders: number }[];
   /** GMV through Techwide's TAP campaigns and through everything else (other shops and partners). */
@@ -65,10 +66,11 @@ export function summarize(lines: OrderLine[], days: number, now: number, techwid
     if (i !== undefined) daily[i] += g;
     if (l.campaign_id && techwide.has(l.campaign_id)) techwideGmv += g;
     const key = l.product_id ?? l.product_name ?? "?";
-    const p = products.get(key) ?? { productId: l.product_id ?? "", name: (l.product_name ?? "TikTok Shop product").replace(/\s+/g, " ").trim(), shop: l.shop_name ?? "", gmv: 0, orders: 0, commission: 0 };
+    const p = products.get(key) ?? { productId: l.product_id ?? "", name: (l.product_name ?? "TikTok Shop product").replace(/\s+/g, " ").trim(), shop: l.shop_name ?? "", gmv: 0, orders: 0, commission: 0, earned: 0 };
     p.gmv += g;
     p.orders += 1;
     p.commission += lineCommission(l);
+    p.earned += lineEarned(l);
     products.set(key, p);
     if (l.content_id) {
       const c = content.get(l.content_id) ?? { id: l.content_id, type: l.content_type ?? "VIDEO", gmv: 0, orders: 0 };
@@ -91,7 +93,7 @@ export function summarize(lines: OrderLine[], days: number, now: number, techwid
     orders: new Set(inRange.map((l) => l.order_id)).size,
     items: inRange.reduce((a, l) => a + (/REFUND/i.test(l.status ?? "") ? 0 : Math.max(0, l.quantity - l.refunded_quantity - l.returned_quantity)), 0),
     daily: daily.map(round),
-    products: [...products.values()].sort((a, b) => b.gmv - a.gmv).slice(0, 10).map((p) => ({ ...p, gmv: round(p.gmv), commission: round(p.commission) })),
+    products: [...products.values()].sort((a, b) => b.gmv - a.gmv).slice(0, 10).map((p) => ({ ...p, gmv: round(p.gmv), commission: round(p.commission), earned: round(p.earned) })),
     content: [...content.values()].sort((a, b) => b.gmv - a.gmv).slice(0, 10).map((c) => ({ ...c, gmv: round(c.gmv) })),
     techwideGmv: round(techwideGmv),
     otherGmv: round(gmv - techwideGmv),

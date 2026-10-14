@@ -210,6 +210,20 @@
 /* GMV chart (Account, Sales): a filled line that draws itself in, with a day tooltip. */
 .gc-reveal { transform-box: fill-box; transform-origin: left center; transform: scaleX(0); animation: gcDraw 1.1s cubic-bezier(0.3, 0.7, 0.2, 1) 0.15s forwards; }
 .gc-area { opacity: 0; animation: gcFade 0.8s ease 0.6s forwards; }
+.gc-peak { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #00c073; box-shadow: 0 0 0 3px var(--surface); pointer-events: none; opacity: 0; animation: gcFade 0.4s ease 1.2s forwards; }
+.gc-peak i { position: absolute; inset: -6px; border-radius: 50%; border: 2px solid #00c073; animation: gcPulse 2s ease-out 1.4s infinite; }
+.gc-dot { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: #00c073; box-shadow: 0 0 0 3px var(--surface), 0 0 14px rgba(0, 192, 115, 0.6); pointer-events: none; transition: left 0.12s ease, top 0.12s ease; }
+.gc-dot2 { background: #2f80ed; box-shadow: 0 0 0 3px var(--surface), 0 0 12px rgba(47, 128, 237, 0.5); }
+.gc-card { position: absolute; top: -10px; transform: translate(-50%, -100%); display: flex; flex-direction: column; gap: 1px; padding: 8px 12px; border-radius: 14px; background: #0d1117; color: #ffffff; white-space: nowrap; pointer-events: none; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25); transition: left 0.12s ease; z-index: 3; }
+.gc-card.l { transform: translate(-12px, -100%); }
+.gc-card.r { transform: translate(calc(-100% + 12px), -100%); }
+.gc-card small { font-size: 11px; font-weight: 700; opacity: 0.7; }
+.gc-card b { font-size: 15px; font-variant-numeric: tabular-nums; }
+.gc-card span { font-size: 11px; opacity: 0.85; display: flex; gap: 6px; align-items: center; }
+.gc-card em { font-style: normal; font-weight: 800; }
+.gc-card em.up { color: #5fe3ab; }
+.gc-card em.dn { color: #ff8a8a; }
+@keyframes gcPulse { 0% { transform: scale(0.6); opacity: 0.9; } 100% { transform: scale(1.8); opacity: 0; } }
 .gc-tip { position: absolute; top: -6px; transform: translate(-50%, -100%); padding: 6px 10px; border-radius: 10px; background: #0d1117; color: #ffffff; font-size: 12px; font-weight: 700; white-space: nowrap; pointer-events: none; }
 @keyframes gcDraw { to { transform: scaleX(1); } }
 @keyframes gcFade { to { opacity: 1; } }
