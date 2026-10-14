@@ -125,7 +125,9 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
   const tiles = s
     ? [
         ["GMV · 30 days", rm(s.gmv), change === null ? "Your affiliate sales, all shops" : `${change >= 0 ? "▲" : "▼"} ${Math.abs(change)}% vs the 30 days before`, change !== null && change < 0 ? "var(--red)" : "var(--gink)"],
-        ["Commission · 30 days", rm(s.commission), s.toSettle ? `${rm(s.toSettle)} still to settle` : "All settled", "var(--muted)"],
+        s.partnerShare > 0
+          ? ["Commission earned · 30 days", rm(s.earned), `${rm(s.partnerShare)} to your partner · you keep ${rm(s.commission)}`, "var(--muted)"]
+          : ["Commission · 30 days", rm(s.commission), s.toSettle ? `${rm(s.toSettle)} still to settle` : "All settled", "var(--muted)"],
         ["Orders", s.orders.toLocaleString("en-US"), `${s.items.toLocaleString("en-US")} ${s.items === 1 ? "item" : "items"} sold`, "var(--muted)"],
         ["Top product", s.products[0]?.name ?? "No sales yet", s.products[0] ? `${rm0(s.products[0].gmv)} GMV · ${s.products[0].orders} ${s.products[0].orders === 1 ? "order" : "orders"}` : "Your best seller shows here", "var(--muted)"],
       ]

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { money, orderRows } from "./orders.ts";
+import { commissionSplit, money, orderRows } from "./orders.ts";
 
 test("money reads TikTok's RM text", () => {
   assert.equal(money({ amount: "RM12.00" }), 12);
@@ -31,4 +31,17 @@ test("orderRows makes one row per line, with the sale's video and campaign", () 
   assert.equal(rows[1].campaign_id, null);
   assert.equal(rows[2].created_at, new Date(1791000500000).toISOString());
   assert.equal(rows[2].refunded_quantity, 1);
+});
+
+test("commissionSplit: a creator who shares commission with a partner (agency)", () => {
+  // Shapes TikTok returned for @homefithacksofficial on 14 Oct 2026.
+  const settled = commissionSplit({ actual_commission: { amount: "RM0.00", currency: "MYR" }, actual_standard_commission: { amount: "RM0.95", currency: "MYR" }, estimated_standard_commission: { amount: "RM0.95", currency: "MYR" }, shared_with_partner: { amount: "RM-0.95", currency: "MYR" } });
+  assert.deepEqual(settled, { earnedEst: 0.95, earnedAct: 0.95, partner: 0.95 });
+  const pending = commissionSplit({ estimated_commission: { amount: "RM0.00", currency: "MYR" }, estimated_standard_commission: { amount: "RM5.51", currency: "MYR" } });
+  assert.deepEqual(pending, { earnedEst: 5.51, earnedAct: null, partner: 5.51 });
+});
+
+test("commissionSplit: a creator without a partner keeps everything", () => {
+  assert.deepEqual(commissionSplit({ estimated_commission: { amount: "RM3.99", currency: "MYR" }, estimated_standard_commission: { amount: "RM3.99", currency: "MYR" } }), { earnedEst: 3.99, earnedAct: null, partner: 0 });
+  assert.deepEqual(commissionSplit({ estimated_commission: { amount: "RM3.99", currency: "MYR" } }), { earnedEst: null, earnedAct: null, partner: null });
 });

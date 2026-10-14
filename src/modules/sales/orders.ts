@@ -10,6 +10,27 @@ export const money = (v: { amount?: string } | string | undefined | null): numbe
 };
 
 type Line = OrderSku & { last_update_time?: number };
+
+/** Sum of the amounts TikTok sent (null when it sent none of them). */
+const total = (...vs: (OrderSku["price"] | undefined)[]) => {
+  const got = vs.map((v) => money(v)).filter((v): v is number => v !== null);
+  return got.length ? Math.round(got.reduce((a, b) => a + b, 0) * 100) / 100 : null;
+};
+
+/**
+ * The commission split of one line: the full commission (standard + shop ads + bonus + reward fee) and the partner's part.
+ * Until an order settles TikTok leaves shared_with_partner empty, so the partner's part is the full commission minus what the
+ * creator keeps.
+ */
+export function commissionSplit(s: OrderSku) {
+  const earnedEst = total(s.estimated_standard_commission, s.estimated_shop_ads_commission, s.estimated_bonus_commission, s.estimated_creator_commission_reward_fee);
+  const earnedAct = total(s.actual_standard_commission, s.actual_shop_ads_commission, s.actual_bonus_commission, s.actual_creator_commission_reward_fee);
+  const shared = money(s.shared_with_partner);
+  const keep = money(s.actual_commission) ?? money(s.estimated_commission);
+  const earned = earnedAct ?? earnedEst;
+  const partner = shared !== null ? Math.abs(shared) : earned !== null && keep !== null && earned - keep > 0.005 ? Math.round((earned - keep) * 100) / 100 : earned !== null ? 0 : null;
+  return { earnedEst, earnedAct, partner };
+}
 const iso = (unix?: number) => (unix ? new Date((unix > 1e12 ? unix : unix * 1000)).toISOString() : null);
 
 /** One saved row per order line. */
@@ -28,6 +49,7 @@ export function orderRows(userId: string, orders: AffiliateOrder[]) {
       returned_quantity: s.returned_quantity ?? 0,
       commission_estimated: money(s.estimated_commission),
       commission_actual: money(s.actual_commission),
+      ...(() => { const c = commissionSplit(s); return { commission_earned_estimated: c.earnedEst, commission_earned_actual: c.earnedAct, partner_share: c.partner }; })(),
       campaign_id: s.campaign_id || null,
       link_tag: s.tag || null,
       content_type: s.content_type ?? null,
@@ -42,8 +64,14 @@ export function orderRows(userId: string, orders: AffiliateOrder[]) {
 
 /** Days re-read on every sync, so orders that settle or get refunded later are updated. */
 export const RESYNC_DAYS = 90;
-/** The first sync walks back in windows this long until it finds two empty ones in a row. */
-const WINDOW_DAYS = 180;
+/**
+ * The first sync walks back in windows this long until a year passes with no orders. 30 days keeps a window small enough to
+ * finish within one refresh even for very busy LIVE sellers (180-day windows hit the page cap at 5,000 lines and lost orders).
+ */
+const WINDOW_DAYS = 30;
+const EMPTY_WINDOWS_TO_STOP = 12;
+/** Safety cap per window: 1,000 pages of 50 lines. */
+const MAX_PAGES = 1000;
 const DAY = 86400;
 
 /**
@@ -53,7 +81,7 @@ const DAY = 86400;
 async function syncWindow(userId: string, token: string, from: number, to: number, stopAt: number): Promise<{ saved: number; done: boolean }> {
   let pageToken: string | undefined;
   let saved = 0;
-  for (let page = 0; page < 100; page++) {
+  for (let page = 0; page < MAX_PAGES; page++) {
     if (Date.now() >= stopAt) return { saved, done: false };
     const r = await searchCreatorOrders(token, { pageSize: 50, pageToken, createTimeGe: from, createTimeLt: to });
     if (r.code !== 0) throw new Error(`orders ${r.code} ${r.message}`);
@@ -65,6 +93,13 @@ async function syncWindow(userId: string, token: string, from: number, to: numbe
     if (!pageToken) break;
   }
   return { saved, done: true };
+}
+
+/** Re-reads the last 90 days, newest window first, so refunds and settlements are picked up even if time runs out. */
+async function recent(userId: string, token: string, now: number, stopAt: number): Promise<number> {
+  let saved = 0;
+  for (let to = now; to > now - RESYNC_DAYS * DAY && Date.now() < stopAt; to -= WINDOW_DAYS * DAY) saved += (await syncWindow(userId, token, to - WINDOW_DAYS * DAY, to, stopAt)).saved;
+  return saved;
 }
 
 /** How far the first read of a creator's whole history has got: `to` is the next window's end, `empty` the empty windows in a row. */
@@ -82,28 +117,28 @@ export async function historyDone(userId: string): Promise<boolean> {
 }
 
 /**
- * Saves one creator's affiliate orders. Until their whole history is read it walks back in 180-day windows until two come back
- * empty, carrying on next time from where time ran out; after that it re-reads the last 90 days. Returns how many order lines
+ * Saves one creator's affiliate orders. Until their whole history is read it walks back in 30-day windows until a year passes
+ * with no orders, carrying on next time from where time ran out; after that it re-reads the last 90 days. Returns how many order lines
  * were saved, or throws on a TikTok error.
  */
 export async function syncCreatorOrders(userId: string, token: string, stopAt: number): Promise<number> {
   const now = Math.floor(Date.now() / 1000);
   const history = await readHistory(userId);
-  if (history?.done) return (await syncWindow(userId, token, now - RESYNC_DAYS * DAY, now, stopAt)).saved;
+  if (history?.done) return recent(userId, token, now, stopAt);
   let saved = 0;
   // Carrying on from an unfinished read: keep the recent days up to date first.
-  if (history) saved += (await syncWindow(userId, token, now - RESYNC_DAYS * DAY, now, stopAt)).saved;
+  if (history) saved += await recent(userId, token, now, stopAt);
   let to = history?.to ?? now;
   let empty = history?.empty ?? 0;
   const oldest = now - 6 * 365 * DAY;
-  while (empty < 2 && to > oldest) {
+  while (empty < EMPTY_WINDOWS_TO_STOP && to > oldest) {
     const w = await syncWindow(userId, token, to - WINDOW_DAYS * DAY, to, stopAt);
     saved += w.saved;
     if (!w.done) break; // read this window again next time
     empty = w.saved ? 0 : empty + 1;
     to -= WINDOW_DAYS * DAY;
   }
-  const value: History = { to, empty, done: empty >= 2 || to <= oldest };
+  const value: History = { to, empty, done: empty >= EMPTY_WINDOWS_TO_STOP || to <= oldest };
   await supabaseRest("app_settings?on_conflict=key", { method: "POST", headers: { prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify({ key: `orders_history:${userId}`, value, updated_at: new Date().toISOString() }) });
   return saved;
 }

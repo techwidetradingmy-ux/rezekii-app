@@ -4,6 +4,8 @@ import { supabaseRest } from "../../integrations/supabase/rest.ts";
 export type OrderLine = {
   order_id: string; product_id: string | null; product_name: string | null; shop_name: string | null; price: number; quantity: number;
   refunded_quantity: number; returned_quantity: number; commission_estimated: number | null; commission_actual: number | null;
+  /** The full commission before a partner's share, and the partner's part (creators who work with an agency). */
+  commission_earned_estimated?: number | null; commission_earned_actual?: number | null; partner_share?: number | null;
   campaign_id: string | null; content_type: string | null; content_id: string | null; status: string | null; created_at: string; synced_at: string;
 };
 
@@ -11,6 +13,8 @@ export type Source = "all" | "techwide" | "other";
 export type SalesSummary = {
   days: number;
   gmv: number; prevGmv: number; commission: number; toSettle: number; refunded: number;
+  /** The full commission before a partner's share, and the partner's part; `commission` is what the creator keeps. */
+  earned: number; partnerShare: number;
   orders: number; items: number;
   /** GMV per Malaysia day, oldest first, `days` long. */
   daily: number[];
@@ -31,6 +35,8 @@ const mytDay = (t: number) => new Date(t + MYT).toISOString().slice(0, 10);
 export const lineGmv = (l: Pick<OrderLine, "price" | "quantity" | "refunded_quantity" | "returned_quantity" | "status">) =>
   /REFUND/i.test(l.status ?? "") ? 0 : Number(l.price) * Math.max(0, l.quantity - l.refunded_quantity - l.returned_quantity);
 const lineCommission = (l: OrderLine) => (/REFUND/i.test(l.status ?? "") ? 0 : Number(l.commission_actual ?? l.commission_estimated ?? 0));
+const lineEarned = (l: OrderLine) => (/REFUND/i.test(l.status ?? "") ? 0 : Number(l.commission_earned_actual ?? l.commission_earned_estimated ?? l.commission_actual ?? l.commission_estimated ?? 0));
+const linePartner = (l: OrderLine) => (/REFUND/i.test(l.status ?? "") ? 0 : Number(l.partner_share ?? 0));
 
 let campaignCache: { at: number; ids: Set<string> } | null = null;
 /** Techwide's TAP campaign IDs, from the latest daily refresh (kept 10 minutes). */
@@ -78,6 +84,8 @@ export function summarize(lines: OrderLine[], days: number, now: number, techwid
     gmv: round(gmv),
     prevGmv: round(prev.reduce((a, l) => a + lineGmv(l), 0)),
     commission: round(inRange.reduce((a, l) => a + lineCommission(l), 0)),
+    earned: round(inRange.reduce((a, l) => a + lineEarned(l), 0)),
+    partnerShare: round(inRange.reduce((a, l) => a + linePartner(l), 0)),
     toSettle: round(inRange.filter((l) => /TO.?SETTLE/i.test(l.status ?? "")).reduce((a, l) => a + lineCommission(l), 0)),
     refunded: round(inRange.filter((l) => /REFUND/i.test(l.status ?? "")).reduce((a, l) => a + Number(l.price) * l.quantity, 0)),
     orders: new Set(inRange.map((l) => l.order_id)).size,
@@ -96,8 +104,9 @@ export async function orderLines(userId: string, days: number, now = Date.now())
   const since = new Date(now - days * 2 * DAY).toISOString();
   const out: OrderLine[] = [];
   for (let offset = 0; ; offset += 1000) {
-    const page = (await (await supabaseRest(`creator_orders?user_id=eq.${userId}&created_at=gte.${since}&select=order_id,product_id,product_name,shop_name,price,quantity,refunded_quantity,returned_quantity,commission_estimated,commission_actual,campaign_id,content_type,content_id,status,created_at,synced_at&order=created_at.desc&offset=${offset}&limit=1000`)).json()) as OrderLine[];
-    out.push(...page.map((l) => ({ ...l, price: Number(l.price), commission_estimated: l.commission_estimated === null ? null : Number(l.commission_estimated), commission_actual: l.commission_actual === null ? null : Number(l.commission_actual) })));
+    const page = (await (await supabaseRest(`creator_orders?user_id=eq.${userId}&created_at=gte.${since}&select=order_id,product_id,product_name,shop_name,price,quantity,refunded_quantity,returned_quantity,commission_estimated,commission_actual,commission_earned_estimated,commission_earned_actual,partner_share,campaign_id,content_type,content_id,status,created_at,synced_at&order=created_at.desc&offset=${offset}&limit=1000`)).json()) as OrderLine[];
+    const num = (v: number | null | undefined) => (v === null || v === undefined ? null : Number(v));
+    out.push(...page.map((l) => ({ ...l, price: Number(l.price), commission_estimated: num(l.commission_estimated), commission_actual: num(l.commission_actual), commission_earned_estimated: num(l.commission_earned_estimated), commission_earned_actual: num(l.commission_earned_actual), partner_share: num(l.partner_share) })));
     if (page.length < 1000) return out;
   }
 }

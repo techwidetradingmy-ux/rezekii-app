@@ -98,7 +98,11 @@ export function SalesView({ d, handle, syncedAt }: { d: SalesPageData; handle: s
 
       <section className="sl-tiles" aria-label="Totals for the period">
         <Tile label="GMV" value={s.gmv} format={money} note={change === null ? `Last ${days} days` : `${change >= 0 ? "▲" : "▼"} ${Math.abs(change)}% vs the ${days} days before`} noteColor={change !== null && change < 0 ? "var(--red)" : "var(--gink)"} delay={0} />
-        <Tile label="Commission" value={s.commission} format={money} note={s.toSettle ? `${money(s.toSettle)} to settle` : "All settled"} noteColor="var(--muted)" delay={60} />
+        {s.partnerShare > 0 ? (
+          <Tile label="Commission earned" value={s.earned} format={money} note={`${money(s.partnerShare)} to your partner · you keep ${money(s.commission)}`} noteColor="var(--muted)" delay={60} />
+        ) : (
+          <Tile label="Commission" value={s.commission} format={money} note={s.toSettle ? `${money(s.toSettle)} to settle` : "All settled"} noteColor="var(--muted)" delay={60} />
+        )}
         <Tile label="Orders" value={s.orders} format={(v) => Math.round(v).toLocaleString("en-US")} note={`${s.items.toLocaleString("en-US")} ${s.items === 1 ? "item" : "items"} sold`} noteColor="var(--muted)" delay={120} />
         <Tile label="Refunded" value={s.refunded} format={money} note={s.gmv + s.refunded > 0 ? `${Math.round((s.refunded / (s.gmv + s.refunded)) * 100)}% of sales` : "No refunds"} noteColor={s.refunded ? "var(--red)" : "var(--muted)"} delay={180} />
       </section>

@@ -108,9 +108,21 @@ export type OrderSku = {
   quantity?: number;
   refunded_quantity?: number;
   returned_quantity?: number;
+  /** What the creator keeps (after any partner's share). */
   estimated_commission?: Money;
   actual_commission?: Money;
   actual_commission_base?: Money;
+  /** The full commission, by kind, before any partner's share. */
+  estimated_standard_commission?: Money;
+  actual_standard_commission?: Money;
+  estimated_shop_ads_commission?: Money;
+  actual_shop_ads_commission?: Money;
+  estimated_bonus_commission?: Money;
+  actual_bonus_commission?: Money;
+  estimated_creator_commission_reward_fee?: Money;
+  actual_creator_commission_reward_fee?: Money;
+  /** The partner's (agency's) part, as a negative amount, once settled. */
+  shared_with_partner?: Money;
   campaign_id?: string;
   content_id?: string;
   content_type?: string;
