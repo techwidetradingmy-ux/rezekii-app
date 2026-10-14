@@ -18,8 +18,8 @@ import { catalogSales, creatorsNeedingDetail, linkedUsername, upsertCreatorProdu
 export const RATE_LIMITED = 36009002;
 /** TikTok's "Internal error. Retry later." */
 export const INTERNAL_ERROR = 36009003;
-/** Creator profiles fetched per day (about 1 a second, backing off on rate limits); the rest wait for the next day, best-seller creators first. */
-export const DETAILS_PER_DAY = 5000;
+/** Creator profiles fetched per day: high enough never to stop early (owner, 14 Oct 2026: WhatsApp first); TikTok's rate limit paces it. */
+export const DETAILS_PER_DAY = 20000;
 /** Pages per marketplace search (20 creators each). TikTok stops at about 1,000 results anyway. */
 export const MARKET_PAGES = 55;
 
