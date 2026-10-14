@@ -11,6 +11,12 @@ export async function hasTasks(runDate: string): Promise<boolean> {
   return ((await res.json()) as unknown[]).length > 0;
 }
 
+/** True when the day's task list has a task with this key. */
+export async function hasTask(runDate: string, key: string): Promise<boolean> {
+  const res = await supabaseRest(`refresh_tasks?run_date=eq.${runDate}&key=eq.${encodeURIComponent(key)}&select=key&limit=1`);
+  return ((await res.json()) as unknown[]).length > 0;
+}
+
 /** Adds the day's tasks. Tasks already there (another run planned first) are left alone. */
 export async function addTasks(runDate: string, tasks: PlannedTask[]): Promise<void> {
   for (let i = 0; i < tasks.length; i += 500)

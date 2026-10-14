@@ -11,9 +11,11 @@ export const mytDay = (now: number, n = 0) => new Date(now + MYT - n * DAY).toIS
 /** Malaysia's hour of the day, 0-23. */
 export const mytHour = (now: number) => new Date(now + MYT).getUTCHours();
 
-/** Tasks are planned from this hour (Malaysia time). TikTok's best-seller data runs two days behind. */
+/** Tasks are planned from this hour (Malaysia time). At that hour TikTok's newest best-seller lists are two days old. */
 export const PLAN_HOUR = 6;
 export const DATA_LAG_DAYS = 2;
+/** TikTok publishes yesterday's lists later in the day (by 17:00 on 14 Oct 2026); from this hour Rezekii checks for them. */
+export const LATE_HOUR = 12;
 /** Daily lists are kept for this many days; missing days are filled in (the first run fills all of them). */
 export const DAILY_DAYS = 30;
 
@@ -49,6 +51,21 @@ function best(kind: string, date: string, timeSlot: string, currency: string, ex
  * The whole day's work. `haveDays` holds the data dates whose daily lists are already saved, so only missing days are fetched.
  * Order (priority): TAP campaigns, the newest lists, older missing days, then creator profiles. The marketplace pass runs alongside.
  */
+/** One data date as the newest: every period for every best-seller list, then the Rankings page data built from them. */
+export function planNewest(date: string): PlannedTask[] {
+  const tasks: PlannedTask[] = [];
+  for (const timeSlot of SLOTS)
+    for (const currency of CURRENCIES) {
+      for (const authorType of AUTHOR_TYPES) tasks.push(best("creators", date, timeSlot, currency, { authorType }, 3));
+      for (const categoryId of CATEGORIES) tasks.push(best("products", date, timeSlot, currency, { categoryId }, 3));
+      tasks.push(best("videos", date, timeSlot, currency, {}, 3));
+      tasks.push(best("lives", date, timeSlot, currency, {}, 3));
+    }
+  // the Rankings page data, once every best-seller list is saved
+  tasks.push({ key: `rankings|${date}`, kind: "rankings", params: { day: date }, priority: 5 });
+  return tasks;
+}
+
 export function planDay(now: number, haveDays: Set<string>): PlannedTask[] {
   const newest = mytDay(now, DATA_LAG_DAYS);
   const tasks: PlannedTask[] = [
@@ -57,22 +74,13 @@ export function planDay(now: number, haveDays: Set<string>): PlannedTask[] {
     { key: "tap_catalog", kind: "tap_catalog", params: {}, priority: 3 },
     // creator levels, once every campaign's creators are read (tap_creators)
     { key: "levels", kind: "levels", params: {}, priority: 5 },
-    // the Rankings page data, once every best-seller list is saved
-    { key: "rankings", kind: "rankings", params: { day: newest }, priority: 5 },
     // video numbers for every connected TikTok account (admin Video stats)
     { key: "videos", kind: "videos", params: {}, priority: 6 },
     // every linked creator's own affiliate orders (Sales page, admin Stats, Rankings by real GMV)
     { key: "orders", kind: "orders", params: {}, priority: 6 },
   ];
 
-  // Newest date: every period for every list.
-  for (const timeSlot of SLOTS)
-    for (const currency of CURRENCIES) {
-      for (const authorType of AUTHOR_TYPES) tasks.push(best("creators", newest, timeSlot, currency, { authorType }, 3));
-      for (const categoryId of CATEGORIES) tasks.push(best("products", newest, timeSlot, currency, { categoryId }, 3));
-      tasks.push(best("videos", newest, timeSlot, currency, {}, 3));
-      tasks.push(best("lives", newest, timeSlot, currency, {}, 3));
-    }
+  tasks.push(...planNewest(newest));
 
   // Older days: only the daily (1D) creator and product lists, and only days not saved yet.
   for (let n = DATA_LAG_DAYS + 1; n < DATA_LAG_DAYS + DAILY_DAYS; n++) {

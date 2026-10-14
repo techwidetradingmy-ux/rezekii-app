@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { AUTHOR_TYPES, CATEGORIES, FOLLOWER_BANDS, bestSlot, mytDay, mytHour, planDay } from "./plan.ts";
+import { AUTHOR_TYPES, CATEGORIES, FOLLOWER_BANDS, bestSlot, mytDay, mytHour, planDay, planNewest } from "./plan.ts";
 
 // 2026-10-13 06:30 in Malaysia = 2026-10-12 22:30 UTC.
 const now = Date.parse("2026-10-12T22:30:00Z");
@@ -48,4 +48,11 @@ test("a capped marketplace search splits by GMV range, then by units sold, then 
   assert.equal(u.length, 4);
   assert.equal(u[3].key, "marketplace|0-999|GMV_RANGE_0_100|UNITS_SOLD_RANGE_1000_AND_ABOVE");
   assert.deepEqual(marketSplits(u[0].params as { min: number; max: number | null; gmv: string; units: string }), []);
+});
+
+test("planNewest plans one data date in full: every list, then its own Rankings build", () => {
+  const t = planNewest("2026-10-13");
+  assert.ok(t.some((x) => x.key === "rankings|2026-10-13" && (x.params as { day: string }).day === "2026-10-13"));
+  assert.ok(t.some((x) => x.kind === "best" && (x.params as { kind: string; date: string; timeSlot: string }).kind === "creators" && (x.params as { date: string }).date === "2026-10-13" && (x.params as { timeSlot: string }).timeSlot === "1D"));
+  assert.equal(new Set(t.map((x) => x.key)).size, t.length);
 });
