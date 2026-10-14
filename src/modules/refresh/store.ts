@@ -172,7 +172,26 @@ export async function catalogSales(): Promise<{ id: string; shop: string | null;
   }
 }
 
+/**
+ * One row per campaign, product and creator. TikTok lists a creator twice for a product they promote through two links (each with
+ * its own numbers, seen 14 Oct 2026), and one save can't hold the same key twice: their sales, videos and LIVEs are added up, and
+ * the row of the link that sold more is kept for the rest.
+ */
+export function mergeCreatorRows(rows: Record<string, unknown>[]): Record<string, unknown>[] {
+  const out = new Map<string, Record<string, unknown>>();
+  for (const r of rows) {
+    const key = `${r.campaign_id}|${r.product_id}|${r.username}`;
+    const m = out.get(key);
+    if (!m) { out.set(key, { ...r }); continue; }
+    const sum = (k: string) => (Number(m[k]) || 0) + (Number(r[k]) || 0);
+    const merged: Record<string, unknown> = { ...(Number(r.paid) > Number(m.paid) ? r : m), paid: sum("paid"), videos: sum("videos"), lives: sum("lives") };
+    if (!merged.sample_status || /not.?requested/i.test(String(merged.sample_status))) merged.sample_status = [m.sample_status, r.sample_status].find((x) => x && !/not.?requested/i.test(String(x))) ?? merged.sample_status;
+    out.set(key, merged);
+  }
+  return [...out.values()];
+}
+
 /** Saves creator rows for My TAP products (one per campaign, product and creator; newer numbers replace older ones). */
 export async function upsertCreatorProducts(rows: Record<string, unknown>[]): Promise<void> {
-  await supabaseRest("tap_creator_products?on_conflict=campaign_id,product_id,username", json(rows, "resolution=merge-duplicates,return=minimal"));
+  await supabaseRest("tap_creator_products?on_conflict=campaign_id,product_id,username", json(mergeCreatorRows(rows), "resolution=merge-duplicates,return=minimal"));
 }
