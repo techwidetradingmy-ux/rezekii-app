@@ -42,6 +42,21 @@ async function placesTaken(exceptUser: string): Promise<number> {
   return linked + invited;
 }
 
+/** True when every place is taken for this creator: not linked yet and no invitation of their own. */
+export async function placesFull(userId: string): Promise<boolean> {
+  const [current, linked] = await Promise.all([accessFor(userId), count(`affiliate_connections?user_id=eq.${userId}&select=user_id`)]);
+  if (linked > 0 || current?.status === "invited") return false;
+  return (await placesTaken(userId)) >= PLACES;
+}
+
+/** Joins the waitlist without linking (every place is taken). Keeps an earlier place in the queue. */
+export async function joinWaitlist(user: { id: string; tiktok_username: string | null }): Promise<"waitlist" | "free"> {
+  if (!(await placesFull(user.id))) return "free";
+  const current = await accessFor(user.id);
+  await supabaseRest("creator_access?on_conflict=user_id", json({ user_id: user.id, status: "waitlist", username: user.tiktok_username?.toLowerCase() ?? null, reason: null, requested_at: current?.status === "waitlist" ? current.requestedAt : now(), decided_at: null, decided_by: null }));
+  return "waitlist";
+}
+
 /**
  * A signed-in creator came back from TikTok Shop. Saves the link if a place is free (or theirs already) and sets them waiting,
  * or approved when they were approved before, automatic approval is on, or the handle is on the pre-approved list.
@@ -95,6 +110,12 @@ export async function decideCreator(userId: string, approve: boolean, reason: st
   await supabaseRest(`affiliate_connections?user_id=eq.${userId}`, { method: "DELETE", headers: { prefer: "return=minimal" } });
   await logActivity(actor, "Creators", `rejected ${who}${reason ? `: ${reason}` : ""}`);
   return { ok: true, invited: await inviteNext() };
+}
+
+/** A creator may use Rezekii once their TikTok Shop is linked and Techwide has approved it. */
+export async function creatorReady(userId: string): Promise<boolean> {
+  const [access, linked] = await Promise.all([accessFor(userId), count(`affiliate_connections?user_id=eq.${userId}&select=user_id`)]);
+  return access?.status === "approved" && linked > 0;
 }
 
 /** The TikTok Shop token of an approved creator, or null (not linked, not approved yet, or it could not be renewed). */

@@ -10,11 +10,16 @@ import { SESSION_COOKIE, userForSession } from "@/modules/accounts/session.ts";
 import { linkCreator } from "@/modules/creator-accounts/access.ts";
 import { STATE_COOKIE, STATE_COOKIE_OPTIONS, stateMatches } from "../state.ts";
 
+const CREATOR_RESULTS = new Set(["connected", "waiting", "waitlist", "taken", "denied", "expired", "error"]);
+
 /** TikTok Shop returns here after the creator approves (the one registered return address). */
 export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
-  const finish = (result: string) => {
-    const res = NextResponse.redirect(new URL(`/connected?result=${result}`, req.nextUrl));
+  // A creator goes back to Getting set up with the result; Techwide's partner and shop logins keep the /connected page.
+  const finish = async (result: string) => {
+    const user = CREATOR_RESULTS.has(result) ? await userForSession(req.cookies.get(SESSION_COOKIE)?.value).catch(() => null) : null;
+    const to = user && user.role !== "admin" ? `/onboarding?result=${result}` : `/connected?result=${result}`;
+    const res = NextResponse.redirect(new URL(to, req.nextUrl));
     res.cookies.set(STATE_COOKIE, "", { ...STATE_COOKIE_OPTIONS, maxAge: 0 });
     return res;
   };

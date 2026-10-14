@@ -35,7 +35,7 @@ export default async function Connected({ searchParams }: { searchParams: Promis
       </p>
       {["connected", "waiting", "waitlist", "taken"].includes(result ?? "") && (
         <p>
-          <a href="/app/accounts">Back to My accounts</a>
+          <a href="/onboarding">Continue</a>
         </p>
       )}
     </Splash>

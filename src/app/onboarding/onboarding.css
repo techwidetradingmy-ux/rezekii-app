@@ -1,0 +1,28 @@
+/* Getting set up (the mockup's Creator onboarding board). Tokens come from marketplace.css (.nv). */
+.ob-head { background: #00874f; color: #ffffff; border-radius: 0 0 36px 36px; padding: 22px 16px 96px; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ob-head { background: #0f3d29; } }
+:root[data-theme="dark"] .ob-head { background: #0f3d29; }
+.ob-wrap { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+.ob-main { max-width: 760px; margin: -64px auto 0; padding: 0 16px 60px; position: relative; display: flex; flex-direction: column; gap: 16px; }
+.ob-logo { position: relative; width: 44px; height: 44px; border-radius: 13px; background: #ffffff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ob-out { border: 0; background: none; color: #ffffff; font: inherit; font-weight: 700; font-size: 14px; cursor: pointer; padding: 6px 0; }
+.ob-steps { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.ob-steps li { display: flex; flex-direction: column; gap: 8px; font-size: 13px; font-weight: 700; }
+.ob-steps li span { height: 6px; border-radius: 999px; background: rgba(255, 255, 255, 0.28); transition: background-color 0.3s; }
+.ob-steps li.on span { background: #ffffff; }
+.ob-steps li:not(.on) { opacity: 0.7; }
+.ob-card { box-shadow: var(--shadow); padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+.ob-row { display: flex; align-items: center; gap: 14px; }
+.ob-ico { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ob-card h2 { margin: 0; font-size: 18px; font-weight: 800; }
+.ob-sub { font-size: 14px; color: var(--muted); }
+.ob-note { padding: 12px 14px; border-radius: 14px; font-size: 14px; font-weight: 600; line-height: 1.45; animation: obExpand 0.25s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.ob-box { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 18px; animation: obExpand 0.25s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.ob-big { height: 54px; font-size: 16px; text-decoration: none; }
+.ob-av { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: #7c3aed; color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 20px; }
+.ob-result { padding: 26px 22px; align-items: center; text-align: center; gap: 12px; }
+.b-amber { background: var(--asoft); color: var(--amber); }
+.b-red { background: var(--rsoft); color: var(--red); }
+.b-solid { background: #00c073; color: #0d1117; }
+@keyframes obExpand { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .ob-note, .ob-box { animation: none; } }
