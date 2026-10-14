@@ -68,12 +68,17 @@ const fromTap = (input: string, p: TapProduct): LookupRow => ({
   input, ok: true, id: p.id, name: p.name, image: p.image, shop: p.shop, category: p.category, priceLo: p.priceLo, priceHi: p.priceHi,
   rate: p.openRate, sold: p.sold, stock: p.stock, source: "tap", note: "",
 });
-const fromTikTok = (input: string, p: LookedUpProduct): LookupRow => ({
-  input, ok: true, id: p.id, name: p.title, image: p.main_image_url ?? null, shop: p.shop?.name ?? null,
-  category: p.category_chains?.find((c) => c.is_leaf)?.local_name ?? p.category_chains?.at(-1)?.local_name ?? null,
-  priceLo: p.sales_price ? Number(p.sales_price.minimum_amount) : null, priceHi: p.sales_price ? Number(p.sales_price.maximum_amount) : null,
-  rate: p.commission?.rate ?? null, sold: p.units_sold ?? null, stock: null, source: "tiktok", note: p.has_inventory === false ? "Out of stock" : "",
-});
+/** TikTok often sends `sales_price` with empty amounts; the price is then in `original_price`. */
+const amount = (s: string | undefined) => (s ? Number(s) : null);
+export const fromTikTok = (input: string, p: LookedUpProduct): LookupRow => {
+  const price = p.sales_price?.minimum_amount ? p.sales_price : p.original_price;
+  return {
+    input, ok: true, id: p.id, name: p.title, image: p.main_image_url ?? null, shop: p.shop?.name ?? null,
+    category: p.category_chains?.find((c) => c.is_leaf)?.local_name ?? p.category_chains?.at(-1)?.local_name ?? null,
+    priceLo: amount(price?.minimum_amount), priceHi: amount(price?.maximum_amount),
+    rate: p.commission?.rate ?? null, sold: p.units_sold ?? null, stock: null, source: "tiktok", note: p.has_inventory === false ? "Out of stock" : "",
+  };
+};
 
 /**
  * Facts for up to 20 pasted links. With a TikTok Shop link, from TikTok Shop's Product Lookup; otherwise from Techwide's TAP
