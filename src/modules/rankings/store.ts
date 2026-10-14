@@ -129,18 +129,47 @@ export async function buildRankings(day: string): Promise<Built> {
   const bv = bestVideos([...byDay.values()], details, videos["30D"]);
 
   const built: Built = { asOf: day, rates, dropped, tier1, creators, pm, products, videos, lives, details, find, vid: bv.VID, cbest: bv.CBEST, videoDays: { n: bv.nDays, first: bv.first, last: bv.last } };
-  await supabaseRest("market_snapshots?on_conflict=dataset,slot,as_of", json({ dataset: "rankings", slot: "built", as_of: day, items: [built], fetched_at: new Date().toISOString() }, "resolution=merge-duplicates,return=minimal"));
-  cache = { at: Date.now(), data: built };
+  // Saved in three rows: the product details and the Creator Marketplace list are large (several MB each) and only the
+  // Top products and Find creators views need them. The parts go first, so the main row never points at missing parts.
+  const save = (slot: string, items: unknown) =>
+    supabaseRest("market_snapshots?on_conflict=dataset,slot,as_of", json({ dataset: "rankings", slot, as_of: day, items: [items], fetched_at: new Date().toISOString() }, "resolution=merge-duplicates,return=minimal"));
+  await save("built-pm", { pm });
+  await save("built-find", { find });
+  await save("built", { ...built, pm: [], find: [] });
+  cache = { at: Date.now(), data: { ...built, pm: [], find: [] } };
+  parts.clear();
   return built;
 }
 
 const emptyDetail = (): Detail => ({ a: null, x: 0, xu: 0, band: "", vg: 0, lg: 0, u: 0, c: [], bio: "", wa: "", em: "", ig: "", com: 0, ev: 0, el: 0, f: 0, m: 0, age: "", loc: "", br: 0, pr: 0, vs: -1, nick: "" });
 
 let cache: { at: number; data: Built | null } | null = null;
-/** The newest built rankings (kept in memory for 10 minutes), or null before the first build. */
-export async function rankings(): Promise<Built | null> {
-  if (cache && Date.now() - cache.at < 10 * 60_000) return cache.data;
-  const [row] = (await (await supabaseRest("market_snapshots?dataset=eq.rankings&slot=eq.built&select=items&order=as_of.desc&limit=1")).json()) as { items: Built[] }[];
-  cache = { at: Date.now(), data: row?.items?.[0] ?? null };
-  return cache.data;
+type Part = "pm" | "find";
+const parts = new Map<string, { at: number; data: unknown }>();
+
+/**
+ * The newest built rankings (kept in memory for 10 minutes), or null before the first build. The large parts are loaded only
+ * when asked for: "pm" (product details, for Top products) and "find" (the Creator Marketplace list, for Find creators).
+ */
+export async function rankings(...want: Part[]): Promise<Built | null> {
+  if (!cache || Date.now() - cache.at > 10 * 60_000) {
+    const [row] = (await (await supabaseRest("market_snapshots?dataset=eq.rankings&slot=eq.built&select=items&order=as_of.desc&limit=1")).json()) as { items: Built[] }[];
+    cache = { at: Date.now(), data: row?.items?.[0] ?? null };
+  }
+  const base = cache.data;
+  if (!base) return null;
+  const out: Built = { ...base };
+  for (const p of want) {
+    // Rankings saved before the split keep these parts inside the main row.
+    if ((base[p] as unknown[]).length) continue;
+    const key = `${base.asOf}|${p}`;
+    let hit = parts.get(key);
+    if (!hit || Date.now() - hit.at > 10 * 60_000) {
+      const [row] = (await (await supabaseRest(`market_snapshots?dataset=eq.rankings&slot=eq.built-${p}&as_of=eq.${base.asOf}&select=items&limit=1`)).json()) as { items: Record<Part, unknown>[] }[];
+      hit = { at: Date.now(), data: row?.items?.[0]?.[p] ?? [] };
+      parts.set(key, hit);
+    }
+    (out as Record<Part, unknown>)[p] = hit.data;
+  }
+  return out;
 }

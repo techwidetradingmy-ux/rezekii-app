@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 /** Creator Marketplace search: ?q=&f=0101 (10k+ followers, mostly video, mostly LIVE, shares exact GMV)&sort=gmv|fol&pg= */
 export async function GET(req: NextRequest) {
   if (!(await currentUser())) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
-  const b = await rankings();
+  const b = await rankings("find");
   if (!b) return NextResponse.json({ error: "The rankings are being prepared." }, { status: 503 });
   const p = req.nextUrl.searchParams;
   const f = (p.get("f") ?? "").split("").map((c) => c === "1");
