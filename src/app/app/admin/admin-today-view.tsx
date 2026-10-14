@@ -253,7 +253,7 @@ export function AdminTodayView({ d }: { d: AdminToday }) {
                 <div style={{ fontSize: 26, fontWeight: 800 }}>{n(d.tapLive)}</div><div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>TAP products live</div>
               </Link>
               <Link href="/app/admin/samples" style={{ background: "var(--asoft)", borderRadius: 16, padding: 14, textDecoration: "none", color: "var(--amber)" }}>
-                <div style={{ fontSize: 26, fontWeight: 800 }}>{n(d.stats.samplesWaiting)}</div><div style={{ fontSize: 12, fontWeight: 700 }}>Samples to apply for</div>
+                <div style={{ fontSize: 26, fontWeight: 800 }}>{n(d.stats.samplesWaiting)}</div><div style={{ fontSize: 12, fontWeight: 700 }}>Sample requests · 7 days</div>
               </Link>
             </div>
             <a href="https://partner.tiktokshop.com" target="_blank" rel="noreferrer" className="nv-link" style={{ fontSize: 14 }}>Open Partner Center ↗</a>

@@ -1,26 +1,13 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { currentUser } from "@/app/current-user";
-import { sampleQueue, setSampleStatus, type SampleRequest } from "@/modules/tap/samples.ts";
+import { adminSamples } from "@/modules/tap/samples.ts";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 30;
 
-const STATUSES = ["requested", "applied", "rejected", "cancelled", "all"] as const;
-
-/** Techwide's sample queue (admins only). */
-export async function GET(req: NextRequest) {
+/** Samples creators asked for on Rezekii, each with its live status from TikTok (admins only). Creators submit them in TikTok. */
+export async function GET() {
   const user = await currentUser();
   if (user?.role !== "admin") return NextResponse.json({ error: "Admins only." }, { status: 403 });
-  const s = req.nextUrl.searchParams.get("status") ?? "requested";
-  const status = (STATUSES as readonly string[]).includes(s) ? (s as SampleRequest["status"] | "all") : "requested";
-  return NextResponse.json({ requests: await sampleQueue(status) }, { headers: { "cache-control": "private, no-store" } });
-}
-
-/** Marks a request applied (sample requested in TikTok Shop) or rejected. */
-export async function PATCH(req: NextRequest) {
-  const user = await currentUser();
-  if (user?.role !== "admin") return NextResponse.json({ error: "Admins only." }, { status: 403 });
-  const { id, status, note } = (await req.json().catch(() => ({}))) as { id?: string; status?: string; note?: string };
-  if (!id || (status !== "applied" && status !== "rejected")) return NextResponse.json({ error: "Choose applied or rejected." }, { status: 400 });
-  const ok = await setSampleStatus(id, status, note ?? null);
-  return ok ? NextResponse.json({ ok }) : NextResponse.json({ error: "That request was already closed." }, { status: 409 });
+  return NextResponse.json({ samples: await adminSamples() }, { headers: { "cache-control": "private, no-store" } });
 }

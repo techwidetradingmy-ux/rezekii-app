@@ -1,10 +1,9 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { NOT_IN_SHOWCASE, getSampleDeeplink, lookupProducts, searchSampleApplications } from "../../integrations/tiktok-shop/creator.ts";
 import { approvedCreatorToken } from "../creator-accounts/access.ts";
-import { getProduct } from "./catalog.ts";
 import { addToShowcase } from "./showcase.ts";
 
-/** A creator's free-sample request. Techwide applies for it in TikTok Shop; after that the sample follows TikTok's own status. */
+/** A free sample a creator asked for on Rezekii. Since 14 Oct 2026 they submit it in TikTok themselves (status "applied"); older rows were Rezekii's own queue. */
 export type SampleRequest = {
   id: string;
   user_id: string;
@@ -18,24 +17,6 @@ export type SampleRequest = {
   updated_at: string;
 };
 
-export type RequestResult = { ok: true; request: SampleRequest } | { ok: false; error: string; status: number };
-
-/** Files a request for a product that offers free samples. A second open request for the same product is refused. */
-export async function requestSample(userId: string, productId: string): Promise<RequestResult> {
-  const product = await getProduct(productId);
-  if (!product) return { ok: false, error: "This product is no longer in a Techwide TAP campaign.", status: 404 };
-  if (product.samples <= 0) return { ok: false, error: "This product has no free samples right now.", status: 409 };
-  const open = await supabaseRest(`sample_requests?user_id=eq.${userId}&product_id=eq.${productId}&status=in.(requested,applied)&select=id&limit=1`);
-  if (((await open.json()) as unknown[]).length) return { ok: false, error: "You already asked for this sample. Follow it in My samples.", status: 409 };
-  const res = await supabaseRest("sample_requests", {
-    method: "POST",
-    headers: { prefer: "return=representation" },
-    body: JSON.stringify({ user_id: userId, product_id: productId, product_name: product.name, shop: product.shop, image: product.image }),
-  });
-  const [request] = (await res.json()) as SampleRequest[];
-  return { ok: true, request };
-}
-
 export async function mySamples(userId: string): Promise<SampleRequest[]> {
   const res = await supabaseRest(`sample_requests?user_id=eq.${userId}&status=neq.cancelled&order=created_at.desc&limit=200`);
   return res.json();
@@ -47,25 +28,6 @@ export async function cancelSample(userId: string, id: string): Promise<boolean>
     method: "PATCH",
     headers: { prefer: "return=representation" },
     body: JSON.stringify({ status: "cancelled", updated_at: new Date().toISOString() }),
-  });
-  return ((await res.json()) as unknown[]).length > 0;
-}
-
-/** Techwide's queue: every request with the creator's name, newest first. */
-export async function sampleQueue(status: SampleRequest["status"] | "all" = "requested"): Promise<(SampleRequest & { creator: string })[]> {
-  const filter = status === "all" ? "" : `status=eq.${status}&`;
-  const res = await supabaseRest(`sample_requests?${filter}select=*,app_users(display_name,tiktok_username,email)&order=created_at.desc&limit=300`);
-  type Row = SampleRequest & { app_users: { display_name: string | null; tiktok_username: string | null; email: string | null } | null };
-  return ((await res.json()) as Row[]).map(({ app_users: u, ...r }) => ({ ...r, creator: u?.tiktok_username ? `@${u.tiktok_username}` : u?.display_name || u?.email || "Unknown" }));
-}
-
-/** Techwide marks a request applied (sample requested in TikTok Shop) or rejected, with an optional note for the creator. */
-export async function setSampleStatus(id: string, status: "applied" | "rejected", note: string | null): Promise<boolean> {
-  if (!/^[0-9a-f-]{36}$/.test(id)) return false;
-  const res = await supabaseRest(`sample_requests?id=eq.${id}&status=in.(requested,applied)`, {
-    method: "PATCH",
-    headers: { prefer: "return=representation" },
-    body: JSON.stringify({ status, note: note?.slice(0, 300) || null, updated_at: new Date().toISOString() }),
   });
   return ((await res.json()) as unknown[]).length > 0;
 }
@@ -118,6 +80,33 @@ export async function sampleLink(userId: string, productId: string): Promise<Sam
   return { ok: true, deeplink: r.data.deeplink, addedToShowcase: added };
 }
 
+type Application = { id: string; productId: string; variant: string; status: string; dueAt: number | null };
+const appCache = new Map<string, { at: number; apps: Application[] }>();
+
+/** The creator's own sample requests from TikTok (every status, newest 200), kept 10 minutes. */
+async function applications(userId: string): Promise<Application[] | null> {
+  const hit = appCache.get(userId);
+  if (hit && Date.now() - hit.at < 10 * 60_000) return hit.apps;
+  const token = await approvedCreatorToken(userId);
+  if (!token) return null;
+  const apps: Application[] = [];
+  let pageToken: string | undefined;
+  for (let page = 0; page < 4; page++) {
+    const r = await searchSampleApplications(token, pageToken);
+    if (r.code !== 0) {
+      console.error("[sample applications]", r.code, r.message);
+      return null;
+    }
+    for (const a of r.data?.sample_applications ?? [])
+      if (a.sample_product?.id)
+        apps.push({ id: a.id, productId: a.sample_product.id, variant: (a.sample_product.sku_sale_property_value_names ?? []).join(" / "), status: a.status, dueAt: a.creator_fulfillment?.expiration_time ?? null });
+    pageToken = r.data?.next_page_token || undefined;
+    if (!pageToken) break;
+  }
+  appCache.set(userId, { at: Date.now(), apps });
+  return apps;
+}
+
 export type SellerSample = { id: string; productId: string; name: string; shop: string; image: string | null; variant: string; status: string; dueAt: number | null };
 const sellerCache = new Map<string, { at: number; rows: SellerSample[] }>();
 
@@ -129,21 +118,8 @@ export async function sellerSamples(userId: string, tapProducts: Set<string>): P
   const hit = sellerCache.get(userId);
   if (hit && Date.now() - hit.at < 10 * 60_000) return hit.rows.filter((r) => !tapProducts.has(r.productId));
   const token = await approvedCreatorToken(userId);
-  if (!token) return [];
-  const apps: { id: string; productId: string; variant: string; status: string; dueAt: number | null }[] = [];
-  let pageToken: string | undefined;
-  for (let page = 0; page < 4; page++) {
-    const r = await searchSampleApplications(token, pageToken);
-    if (r.code !== 0) {
-      console.error("[seller samples]", r.code, r.message);
-      break;
-    }
-    for (const a of r.data?.sample_applications ?? [])
-      if (a.sample_product?.id)
-        apps.push({ id: a.id, productId: a.sample_product.id, variant: (a.sample_product.sku_sale_property_value_names ?? []).join(" / "), status: a.status, dueAt: a.creator_fulfillment?.expiration_time ?? null });
-    pageToken = r.data?.next_page_token || undefined;
-    if (!pageToken) break;
-  }
+  const apps = token ? await applications(userId) : null;
+  if (!token || !apps) return [];
   const ids = [...new Set(apps.map((a) => a.productId))];
   const facts = new Map<string, { title: string; main_image_url?: string; shop?: { name: string } }>();
   for (let i = 0; i < ids.length; i += 20) {
@@ -156,4 +132,42 @@ export async function sellerSamples(userId: string, tapProducts: Set<string>): P
   });
   sellerCache.set(userId, { at: Date.now(), rows });
   return rows.filter((r) => !tapProducts.has(r.productId));
+}
+
+/** One sample a creator asked for on Rezekii, with TikTok's own status when TikTok has it. */
+export type AdminSample = {
+  id: string;
+  creator: string;
+  productId: string;
+  name: string;
+  shop: string | null;
+  image: string | null;
+  askedAt: string;
+  /** TikTok's status, e.g. PENDING or SHIPPED; null when TikTok has no request (not submitted in TikTok, or before 14 Oct 2026). */
+  tiktok: { status: string; variant: string; dueAt: number | null } | null;
+  /** False when the creator's TikTok Shop couldn't be read (unlinked or TikTok error). */
+  checked: boolean;
+};
+
+/** Every sample creators asked for on Rezekii (newest 300), each with its live status from the creator's TikTok sample requests. */
+export async function adminSamples(): Promise<AdminSample[]> {
+  type Row = SampleRequest & { app_users: { display_name: string | null; tiktok_username: string | null; email: string | null } | null };
+  const rows = (await (await supabaseRest("sample_requests?status=neq.cancelled&select=*,app_users(display_name,tiktok_username,email)&order=created_at.desc&limit=300")).json()) as Row[];
+  const byUser = new Map<string, Application[] | null>();
+  await Promise.all([...new Set(rows.map((r) => r.user_id))].map(async (u) => byUser.set(u, await applications(u).catch(() => null))));
+  return rows.map(({ app_users: u, ...r }) => {
+    const apps = byUser.get(r.user_id) ?? null;
+    const a = apps?.find((x) => x.productId === r.product_id);
+    return {
+      id: r.id,
+      creator: u?.tiktok_username ? `@${u.tiktok_username}` : u?.display_name || u?.email || "Unknown",
+      productId: r.product_id,
+      name: r.product_name,
+      shop: r.shop,
+      image: r.image,
+      askedAt: r.created_at,
+      tiktok: a ? { status: a.status, variant: a.variant, dueAt: a.dueAt } : null,
+      checked: apps !== null,
+    };
+  });
 }

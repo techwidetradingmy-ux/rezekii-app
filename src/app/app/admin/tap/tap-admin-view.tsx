@@ -171,7 +171,7 @@ export function TapAdminView({ asOf, campaigns, firstProducts }: { asOf: string 
               <button type="button" className={f === 0 ? "on" : ""} aria-pressed={f === 0} onClick={() => setF(0)}>All products</button>
               <button type="button" className={f === 1 ? "on" : ""} aria-pressed={f === 1} onClick={showReview}>To review{Array.isArray(waiting) ? ` ${waiting.length}` : ""}</button>
             </div>
-            <Link href="/app/admin/samples" className="nv-link" style={{ fontSize: 13 }}>Sample requests: Rezekii queue</Link>
+            <Link href="/app/admin/samples" className="nv-link" style={{ fontSize: 13 }}>Sample requests and their TikTok status</Link>
           </div>
           <div className="cp-info">
             {info[sel] === "error" ? (

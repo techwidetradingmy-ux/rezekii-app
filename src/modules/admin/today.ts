@@ -43,7 +43,7 @@ export async function adminToday(): Promise<AdminToday> {
     postsBetween(twoDaysAgo, new Date(now).toISOString()),
     allAccounts(),
     count(`tap_links?made_at=gte.${startIso}&select=id`),
-    count("sample_requests?status=eq.requested&select=id"),
+    count(`sample_requests?created_at=gte.${new Date(Date.now() - 7 * 86400_000).toISOString()}&status=neq.cancelled&select=id`),
     supabaseRest("creator_access?status=eq.waiting&select=user_id,username,requested_at&order=requested_at&limit=3").then((r) => r.json() as Promise<{ user_id: string; username: string | null; requested_at: string }[]>),
     count("app_users?role=eq.creator&select=id"),
     shopPlacesUsed(),

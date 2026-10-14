@@ -1,93 +1,85 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { SampleRequest } from "@/modules/tap/samples.ts";
+import type { AdminSample } from "@/modules/tap/samples.ts";
+import { sampleStage } from "@/modules/tap/stages.ts";
 
-const SAMPLE_STATUS: Record<SampleRequest["status"], [string, string]> = {
-  requested: ["Waiting for Techwide", "badge-amber"],
-  applied: ["Applied in TikTok Shop", "badge"],
-  rejected: ["Not approved", "badge-red"],
-  cancelled: ["Cancelled", "badge-gray"],
-};
 const when = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { timeZone: "Asia/Kuala_Lumpur", day: "numeric", month: "short", year: "numeric" });
 
-type Row = SampleRequest & { creator: string };
-const TABS: [string, string][] = [["requested", "To apply"], ["applied", "Applied"], ["rejected", "Rejected"], ["all", "All"]];
+/** TikTok's sample statuses in words, with the badge colour. */
+const TIKTOK: Record<string, [string, string]> = {
+  PENDING: ["Waiting for approval", "badge-amber"],
+  AWAITING_SHIPMENT: ["Approved · to ship", "badge"],
+  SHIPPED: ["Shipped", "badge"],
+  CONTENT_PENDING: ["Delivered · content due", "badge-amber"],
+  COMPLETED: ["Content posted", "badge"],
+  REJECT_CANCELLED: ["Rejected", "badge-red"],
+  OVERDUE_CANCELLED: ["Cancelled · content overdue", "badge-gray"],
+  WITHDRAW_CANCELLED: ["Withdrawn by the creator", "badge-gray"],
+  SELLER_NOT_SHIP_CANCELLED: ["Cancelled · seller didn't ship", "badge-gray"],
+  UNFULFILL_CANCELLED: ["Cancelled · couldn't be fulfilled", "badge-gray"],
+  UNFULFILLABLE_CANCELLED: ["Cancelled · couldn't be fulfilled", "badge-gray"],
+};
+const look = (r: AdminSample): [string, string] =>
+  r.tiktok ? TIKTOK[r.tiktok.status] ?? [r.tiktok.status.replace(/_/g, " ").toLowerCase(), "badge-gray"] : r.checked ? ["Not submitted in TikTok", "badge-gray"] : ["TikTok Shop not readable", "badge-gray"];
 
-/**
- * Techwide's sample queue. For each request: apply for the sample in TikTok Shop (Partner Center), then mark it Applied here.
- * Reject with a short note if it can't be sent; the creator sees the note.
- */
+type Tab = "all" | "open" | "done" | "none";
+const TABS: [Tab, string][] = [["all", "All"], ["open", "In progress"], ["done", "Posted or cancelled"], ["none", "Not submitted"]];
+const inTab = (r: AdminSample, t: Tab) => {
+  if (t === "all") return true;
+  if (!r.tiktok) return t === "none";
+  const stage = sampleStage(r.tiktok.status);
+  return t === "open" ? stage >= 1 && stage <= 3 : t === "done" ? stage === 4 || stage === -1 : false;
+};
+
+/** Read-only: every sample creators asked for on Rezekii with TikTok's status. Approvals happen in TikTok Shop Partner Center. */
 export function QueueView() {
-  const [tab, setTab] = useState("requested");
-  const [rows, setRows] = useState<Row[] | null>(null);
+  const [tab, setTab] = useState<Tab>("all");
+  const [rows, setRows] = useState<AdminSample[] | null>(null);
   const [error, setError] = useState("");
-  const [busy, setBusy] = useState("");
-  const [notes, setNotes] = useState<Record<string, string>>({});
 
   useEffect(() => {
     let live = true;
-    fetch(`/api/admin/samples?status=${tab}`)
+    fetch("/api/admin/samples", { cache: "no-store" })
       .then(async (r) => {
         if (!live) return;
-        if (!r.ok) return setError("The queue could not load. Please refresh.");
-        const d = (await r.json()) as { requests: Row[] };
-        if (live) setRows(d.requests);
+        if (!r.ok) return setError("The sample requests could not load. Please refresh.");
+        const d = (await r.json()) as { samples: AdminSample[] };
+        if (live) setRows(d.samples);
       })
-      .catch(() => live && setError("The queue could not load. Please refresh."));
+      .catch(() => live && setError("The sample requests could not load. Please refresh."));
     return () => {
       live = false;
     };
-  }, [tab]);
+  }, []);
 
-  const pick = (v: string) => {
-    if (v === tab) return;
-    setTab(v);
-    setRows(null);
-    setError("");
-  };
-
-  async function decide(id: string, status: "applied" | "rejected") {
-    setBusy(id);
-    setError("");
-    const r = await fetch("/api/admin/samples", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ id, status, note: notes[id] ?? "" }) });
-    const d = (await r.json().catch(() => ({}))) as { error?: string };
-    if (r.ok) setRows((list) => (tab === "all" ? list?.map((x) => (x.id === id ? { ...x, status, note: notes[id] || x.note } : x)) : list?.filter((x) => x.id !== id)) ?? null);
-    else setError(d.error || "Could not save. Please try again.");
-    setBusy("");
-  }
-
+  const shown = rows?.filter((r) => inTab(r, tab)) ?? null;
   return (
     <>
       <div className="np-seg" role="tablist" aria-label="Status">
-        {TABS.map(([v, label]) => <button key={v} type="button" role="tab" aria-selected={tab === v} className={tab === v ? "on" : ""} onClick={() => pick(v)}>{label}</button>)}
+        {TABS.map(([v, label]) => (
+          <button key={v} type="button" role="tab" aria-selected={tab === v} className={tab === v ? "on" : ""} onClick={() => setTab(v)}>
+            {label}{rows ? ` ${rows.filter((r) => inTab(r, v)).length}` : ""}
+          </button>
+        ))}
       </div>
       {error && <p className="np-error" role="alert">{error}</p>}
-      {!rows && !error && <p className="tap-count">Loading…</p>}
-      {rows && !rows.length && <section className="card mp-empty"><h2>Nothing here</h2><p>{tab === "requested" ? "No sample requests are waiting." : "No requests with this status."}</p></section>}
-      {rows && rows.length > 0 && (
+      {!rows && !error && <p className="tap-count">Reading each creator&apos;s sample requests from TikTok…</p>}
+      {shown && !shown.length && <section className="card mp-empty"><h2>Nothing here</h2><p>No sample requests with this status.</p></section>}
+      {shown && shown.length > 0 && (
         <section className="card">
           <ul className="tap-list">
-            {rows.map((r) => {
-              const [label, badge] = SAMPLE_STATUS[r.status];
-              const open = r.status === "requested" || r.status === "applied";
+            {shown.map((r) => {
+              const [label, badge] = look(r);
               return (
-                <li key={r.id} className="tap-row tap-qrow">
+                <li key={r.id} className="tap-row">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   {r.image ? <img src={r.image} alt="" width={56} height={56} loading="lazy" /> : <span className="tap-rowimg" aria-hidden="true" />}
                   <div className="tap-rowmain">
-                    <a href={`/app/marketplace/${r.product_id}`} className="tap-rowname" target="_blank" rel="noopener">{r.product_name}</a>
-                    <small><b>{r.creator}</b> · {[r.shop, when(r.created_at), `ID ${r.product_id}`].filter(Boolean).join(" · ")}</small>
-                    {r.note && <small className="tap-rownote">Note: {r.note}</small>}
+                    <a href={`/app/marketplace/${r.productId}`} className="tap-rowname" target="_blank" rel="noopener">{r.name}</a>
+                    <small><b>{r.creator}</b> · {[r.shop, `asked ${when(r.askedAt)}`, r.tiktok?.variant, `ID ${r.productId}`].filter(Boolean).join(" · ")}</small>
                   </div>
                   <span className={`badge ${badge}`}>{label}</span>
-                  {open && (
-                    <div className="tap-qact">
-                      <input className="np-input" placeholder="Note for the creator (optional)" maxLength={300} value={notes[r.id] ?? ""} onChange={(e) => setNotes({ ...notes, [r.id]: e.target.value })} aria-label="Note for the creator" />
-                      {r.status === "requested" && <button type="button" className="np-btn" disabled={busy === r.id} onClick={() => decide(r.id, "applied")}>Mark applied</button>}
-                      <button type="button" className="btn-outline" disabled={busy === r.id} onClick={() => decide(r.id, "rejected")}>Reject</button>
-                    </div>
-                  )}
                 </li>
               );
             })}

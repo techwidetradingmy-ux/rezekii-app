@@ -18,8 +18,8 @@ const TABS: [string, (r: MyTapRow) => boolean][] = [
 ];
 /** TikTok's tracking events, in words (as in the mockup). */
 const EVN: Record<string, string> = {
-  REZEKII_REQUEST: "Requested on Rezekii · Techwide applies for you next",
-  TIKTOK_REQUEST: "Requested in TikTok through Techwide's TAP campaign · TikTok's update follows",
+  REZEKII_REQUEST: "Asked on Rezekii before samples moved to TikTok · tap Request free sample to send it to TikTok",
+  TIKTOK_REQUEST: "TikTok's sample page opened with Techwide's TAP campaign · TikTok's status shows here once you submit it",
   TECHWIDE_APPLIED: "Techwide applied for it in TikTok Shop",
   ORDER_PLACED: "Sample ordered",
   ORDER_PACKED_AND_READY_FOR_DROP_OFF_AT_CARRIERS_FACILITY: "Packed and handed to the courier",
