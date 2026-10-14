@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Benefit, LevelPage } from "@/modules/levels/store.ts";
 import { Emblem, type Level } from "../../emblems";
+import { GetThereFaster } from "./get-there-faster";
 import { BLESS } from "./share-card";
 import { ShareSheet } from "./share-sheet";
 import "../marketplace/marketplace.css";
@@ -123,6 +124,8 @@ export function LevelsView({ data, benefits, firstName, handle, username }: { da
             </div>
           </section>
         )}
+
+        <GetThereFaster bronze={level === "bronze"} sampleVideos={data.sampleVideos} />
 
         <section className="nv-up nv-card" aria-labelledby="lvl" style={{ animationDelay: "140ms", padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
           <h2 id="lvl" className="nv-h2">The levels</h2>

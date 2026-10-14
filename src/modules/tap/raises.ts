@@ -23,6 +23,14 @@ const TECHWIDE = /techwide/i;
  * in the showcase are left out: TikTok won't take them again through any link (owner, 14 Oct 2026).
  */
 export function findRaises(showcase: ShowcaseEntry[], catalog: Map<string, TapProduct>, level: "bronze" | "silver" | "gold"): Raise[] {
+  return findMatches(showcase, catalog, level).filter((r) => r.tapRate > r.nowRate).sort((a, b) => b.tapRate - b.nowRate - (a.tapRate - a.nowRate));
+}
+
+/**
+ * Showcase products also in the Rezekii Marketplace but not added through Techwide's TAP, whatever they pay: their sales don't
+ * count toward the creator's Rezekii level until the Rezekii version is added (Levels, "Get there faster", owner 14 Oct 2026).
+ */
+export function findMatches(showcase: ShowcaseEntry[], catalog: Map<string, TapProduct>, level: "bronze" | "silver" | "gold"): Raise[] {
   const out: Raise[] = [];
   for (const p of showcase) {
     if (TECHWIDE.test(p.collaboration?.partner?.name ?? "")) continue;
@@ -30,13 +38,12 @@ export function findRaises(showcase: ShowcaseEntry[], catalog: Map<string, TapPr
     const tap = catalog.get(String(p.id));
     if (!tap) continue;
     const tapRate = (level === "bronze" ? tap.openRate : tap.silverRate ?? tap.openRate) ?? 0;
-    const nowRate = Number(p.commission?.rate ?? 0);
-    if (tapRate > nowRate) out.push({ productId: String(p.id), name: tap.name, shop: tap.shop ?? p.shop?.name ?? "", image: tap.image, price: tap.priceLo, nowRate, tapRate });
+    out.push({ productId: String(p.id), name: tap.name, shop: tap.shop ?? p.shop?.name ?? "", image: tap.image, price: tap.priceLo, nowRate: Number(p.commission?.rate ?? 0), tapRate });
   }
-  return out.sort((a, b) => b.tapRate - b.nowRate - (a.tapRate - a.nowRate));
+  return out;
 }
 
-const cache = new Map<string, { at: number; raises: Raise[] }>();
+const cache = new Map<string, { at: number; raises: Raise[]; matches: Raise[] }>();
 
 /** How long a product TikTok refused to add for a creator stays out of their raises. */
 const REFUSED_DAYS = 30;
@@ -59,8 +66,17 @@ async function noteRefused(userId: string, ids: string[]) {
 
 /** The creator's commission raises (whole showcase, up to TikTok's 2,000), kept 30 minutes; null when TikTok Shop isn't linked. */
 export async function commissionRaises(userId: string): Promise<Raise[] | null> {
+  return (await showcaseVsTap(userId))?.raises ?? null;
+}
+
+/** Showcase products also in the Rezekii Marketplace, not added through Rezekii; null when TikTok Shop isn't linked. */
+export async function rezekiiMatches(userId: string): Promise<Raise[] | null> {
+  return (await showcaseVsTap(userId))?.matches ?? null;
+}
+
+async function showcaseVsTap(userId: string): Promise<{ raises: Raise[]; matches: Raise[] } | null> {
   const hit = cache.get(userId);
-  if (hit && Date.now() - hit.at < 30 * 60_000) return hit.raises;
+  if (hit && Date.now() - hit.at < 30 * 60_000) return hit;
   const token = await approvedCreatorToken(userId);
   if (!token) return null;
   const showcase: ShowcaseEntry[] = [];
@@ -69,16 +85,19 @@ export async function commissionRaises(userId: string): Promise<Raise[] | null> 
     const r = await getShowcaseProducts(token, pageToken);
     if (r.code !== 0) {
       console.error("[raises] showcase", r.code, r.message);
-      return hit?.raises ?? [];
+      return hit ?? { raises: [], matches: [] };
     }
     showcase.push(...((r.data?.products ?? []) as ShowcaseEntry[]));
     pageToken = r.data?.next_page_token || undefined;
     if (!pageToken) break;
   }
   const [catalog, level, refused] = await Promise.all([allProducts(), levelOf(userId), refusedProducts(userId)]);
-  const raises = findRaises(showcase, new Map(catalog.map((p) => [p.id, p])), level).filter((r) => !refused[r.productId]);
-  cache.set(userId, { at: Date.now(), raises });
-  return raises;
+  const byId = new Map(catalog.map((p) => [p.id, p]));
+  const raises = findRaises(showcase, byId, level).filter((r) => !refused[r.productId]);
+  const matches = findMatches(showcase, byId, level).filter((r) => !refused[r.productId]);
+  const out = { at: Date.now(), raises, matches };
+  cache.set(userId, out);
+  return out;
 }
 
 /** Bulk Add to Showcase through Techwide's TAP link for the chosen products, one by one; then the raises are read again. */
