@@ -129,3 +129,38 @@ export function searchCreatorOrders(accessToken: string, opts: { pageSize?: numb
     body: { ...(opts.createTimeGe ? { create_time_ge: opts.createTimeGe } : {}), create_time_lt: opts.createTimeLt ?? Math.floor(Date.now() / 1000) },
   });
 }
+
+/**
+ * A one-time TikTok link (valid 30 minutes, for this creator only) that opens TikTok's sample request page for a product.
+ * TAP products need the campaign ID, so the request draws on that campaign's sample budget. The product must already be in the
+ * creator's showcase (TikTok answers 16032001 otherwise).
+ */
+export function getSampleDeeplink(accessToken: string, p: { productId: string; skuId: string; campaignId?: string }) {
+  return callApi<{ deeplink?: string }>({
+    method: "GET",
+    path: "/affiliate_creator/202512/samples/deeplink",
+    accessToken,
+    query: { product_id: p.productId, sku_id: p.skuId, ...(p.campaignId ? { campaign_id: p.campaignId } : {}) },
+  });
+}
+export const NOT_IN_SHOWCASE = 16032001;
+
+export type SampleApplication = {
+  id: string;
+  status: string;
+  main_order_id?: string;
+  sample_product?: { id: string; sku_id?: string; sku_sale_property_value_names?: string[] };
+  creator_fulfillment?: { status?: string; expiration_time?: number };
+};
+export const SAMPLE_STATUSES = ["PENDING", "AWAITING_SHIPMENT", "SHIPPED", "CONTENT_PENDING", "COMPLETED", "REJECT_CANCELLED", "OVERDUE_CANCELLED", "UNFULFILL_CANCELLED", "SELLER_NOT_SHIP_CANCELLED", "WITHDRAW_CANCELLED", "UNFULFILLABLE_CANCELLED"];
+
+/** The creator's own sample requests, every status, 50 a page. */
+export function searchSampleApplications(accessToken: string, pageToken?: string) {
+  return callApi<{ sample_applications?: SampleApplication[]; next_page_token?: string }>({
+    method: "POST",
+    path: "/affiliate_creator/202412/sample_applications/search",
+    accessToken,
+    query: { page_size: "50", ...(pageToken ? { page_token: pageToken } : {}) },
+    body: { application_statuses: SAMPLE_STATUSES },
+  });
+}

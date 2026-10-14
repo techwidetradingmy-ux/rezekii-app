@@ -2,7 +2,7 @@
 
 import type { TapProduct } from "@/modules/tap/catalog.ts";
 import { ProductBlock, Pulled } from "./product-view";
-import { Hud, useTap } from "./use-tap-actions";
+import { Hud, SampleSheet, useTap } from "./use-tap-actions";
 import "./marketplace.css";
 
 /** The product page body from the mockup (Product page): the same product view as the Marketplace panel, in a card. */
@@ -15,6 +15,7 @@ export function ProductPageView({ p, requested }: { p: TapProduct; requested: bo
         <ProductBlock p={p} tap={tap} headingId="mkpt" />
       </section>
       <Hud toast={tap.toast} />
+      <SampleSheet qr={tap.qr} onClose={tap.closeQr} />
     </>
   );
 }

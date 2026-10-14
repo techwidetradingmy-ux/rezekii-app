@@ -45,7 +45,7 @@ export function ProductCard({ p, tap, onOpen }: { p: TapProduct; tap: Tap; onOpe
             type="button"
             className="nv-press"
             onClick={() => tap.addToShowcase(p.id)}
-            aria-label={st === "done" ? "Opened in TikTok Shop" : `Add ${p.name} to showcase`}
+            aria-label={st === "done" ? (tap.linked ? "In your showcase" : "Opened in TikTok Shop") : `Add ${p.name} to showcase`}
             style={{ height: 36, minWidth: 36, padding: "0 12px", borderRadius: 999, border: 0, background: st === "done" ? "var(--gsoft)" : "#00c073", color: st === "done" ? "var(--gink)" : "#0d1117", fontSize: 13, fontWeight: 800, display: "inline-flex", alignItems: "center", gap: 6 }}
           >
             {st === "loading" && <span className="nv-spin" aria-hidden="true" style={{ width: 14, height: 14 }} />}
@@ -96,7 +96,7 @@ export function ProductBlock({ p, tap, headingId }: { p: TapProduct; tap: Tap; h
       <button type="button" className="nv-btn nv-press nv-cta" onClick={() => tap.addToShowcase(p.id)} style={{ height: 54, fontSize: 16, background: add === "done" ? "var(--gsoft)" : "#00c073" }}>
         {add === "loading" && <span className="nv-spin" aria-hidden="true" />}
         {add === "done" && <Check size={20} />}
-        {add === "loading" ? "Adding via TikTok Shop…" : add === "done" ? "Opened in TikTok Shop" : "Add to showcase"}
+        {add === "loading" ? "Adding via TikTok Shop…" : add === "done" ? (tap.linked ? "In your showcase" : "Opened in TikTok Shop") : "Add to showcase"}
       </button>
       <button
         type="button"

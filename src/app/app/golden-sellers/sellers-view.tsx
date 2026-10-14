@@ -5,7 +5,7 @@ import type { TapProduct } from "@/modules/tap/catalog.ts";
 import type { GoldenSeller } from "@/modules/tap/golden.ts";
 import { pct, short } from "../marketplace/format";
 import { ProductCard, ProductPanel } from "../marketplace/product-view";
-import { Hud, useTap } from "../marketplace/use-tap-actions";
+import { Hud, SampleSheet, useTap } from "../marketplace/use-tap-actions";
 import "../marketplace/marketplace.css";
 
 const SORTS = ["Best-selling", "Commission", "Price"];
@@ -98,6 +98,7 @@ export function SellersView({ golden, products, initialShop, requestedIds }: { g
 
       {open && <ProductPanel p={open} tap={tap} closing={closing} onClose={closePanel} />}
       <Hud toast={tap.toast} />
+      <SampleSheet qr={tap.qr} onClose={tap.closeQr} />
     </>
   );
 }

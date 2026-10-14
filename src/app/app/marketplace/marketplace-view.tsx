@@ -7,7 +7,7 @@ import type { GoldenSeller } from "@/modules/tap/golden.ts";
 import { MK_SORTS } from "@/modules/tap/sorts.ts";
 import { n, short } from "./format";
 import { ProductCard, ProductPanel } from "./product-view";
-import { Hud, useTap } from "./use-tap-actions";
+import { Hud, SampleSheet, useTap } from "./use-tap-actions";
 import "./marketplace.css";
 
 type Filters = { q: string; sort: string; cat: string; shop: string; only: boolean };
@@ -259,6 +259,7 @@ export function MarketplaceView({ initial, golden, requestedIds }: { initial: Br
 
       {open && <ProductPanel p={open} tap={tap} closing={closing} onClose={closePanel} />}
       <Hud toast={tap.toast} />
+      <SampleSheet qr={tap.qr} onClose={tap.closeQr} />
     </>
   );
 }

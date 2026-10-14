@@ -7,7 +7,7 @@ import type { TodayData, TodayStat } from "@/modules/today/today.ts";
 import type { ConvertRow } from "@/modules/tap/convert.ts";
 import { n } from "./marketplace/format";
 import { ProductCard, ProductPanel } from "./marketplace/product-view";
-import { Hud, useTap, useToast } from "./marketplace/use-tap-actions";
+import { Hud, SampleSheet, useTap, useToast } from "./marketplace/use-tap-actions";
 import "./marketplace/marketplace.css";
 import "./today.css";
 
@@ -304,6 +304,7 @@ export function TodayView({ data }: { data: TodayData }) {
 
       {open && <ProductPanel p={open} tap={tap} closing={closing} onClose={closePanel} />}
       <Hud toast={msg ?? tap.toast} />
+      <SampleSheet qr={tap.qr} onClose={tap.closeQr} />
     </>
   );
 }

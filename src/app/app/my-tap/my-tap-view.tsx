@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { sampleLook, type MyTapRow } from "@/modules/tap/stages.ts";
+import { normalizeStatus, sampleLook, sampleStage, type MyTapRow } from "@/modules/tap/stages.ts";
+import type { SellerSample } from "@/modules/tap/samples.ts";
 import type { MyTapDetail } from "@/modules/tap/mytap.ts";
 import { n, rmx, short, tiktokProductUrl } from "../marketplace/format";
 import "../marketplace/marketplace.css";
@@ -18,6 +19,7 @@ const TABS: [string, (r: MyTapRow) => boolean][] = [
 /** TikTok's tracking events, in words (as in the mockup). */
 const EVN: Record<string, string> = {
   REZEKII_REQUEST: "Requested on Rezekii · Techwide applies for you next",
+  TIKTOK_REQUEST: "Requested in TikTok through Techwide's TAP campaign · TikTok's update follows",
   TECHWIDE_APPLIED: "Techwide applied for it in TikTok Shop",
   ORDER_PLACED: "Sample ordered",
   ORDER_PACKED_AND_READY_FOR_DROP_OFF_AT_CARRIERS_FACILITY: "Packed and handed to the courier",
@@ -33,6 +35,8 @@ const pri = (r: MyTapRow) => (r.request ? -1 : r.stage === 3 ? 0 : r.stage === 1
 
 function requestEvents(r: MyTapRow): [string, number][] {
   const q = r.request!;
+  // Requests made in TikTok through the TAP campaign (Request sample) have no Techwide step.
+  if (q.note?.startsWith("Requested in TikTok")) return [["TIKTOK_REQUEST", isoUnix(q.createdAt)]];
   const ev: [string, number][] = [["REZEKII_REQUEST", isoUnix(q.createdAt)]];
   if (q.status === "applied") ev.push(["TECHWIDE_APPLIED", isoUnix(q.updatedAt)]);
   if (q.status === "rejected") ev.push([`Techwide could not apply${q.note ? `: ${q.note}` : ""}`, isoUnix(q.updatedAt)]);
@@ -55,6 +59,14 @@ export function MyTapView({ rows, hasTikTok }: { rows: MyTapRow[]; hasTikTok: bo
   const [panel, setPanel] = useState<MyTapRow | null>(null);
   const [closing, setClosing] = useState(false);
   const [detail, setDetail] = useState<{ key: string; data: MyTapDetail | null; error: string } | null>(null);
+  // Samples asked for directly from sellers (not through Techwide's TAP campaigns), from TikTok, after the page opens.
+  const [seller, setSeller] = useState<SellerSample[]>([]);
+  useEffect(() => {
+    fetch("/api/tap/samples?from=seller", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d: { samples?: SellerSample[] }) => setSeller(d.samples ?? []))
+      .catch(() => {});
+  }, []);
 
   const openPanel = (r: MyTapRow) => {
     setClosing(false);
@@ -177,6 +189,35 @@ export function MyTapView({ rows, hasTikTok }: { rows: MyTapRow[]; hasTikTok: bo
             : "Sign in with TikTok to see the products you promote, with your sales, samples and posts from TikTok. Samples you request on Rezekii show here either way."}
         </p>
       </section>
+
+      {seller.length > 0 && (
+        <section className="nv-card" aria-labelledby="mtseller" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <h2 id="mtseller" style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>Samples from sellers</h2>
+            <span style={{ fontSize: 13, color: "var(--muted)" }}>Asked for directly in TikTok Shop, not through Techwide&apos;s TAP campaigns. Shown here so you can track every sample in one place.</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {seller.map((x) => {
+              const [label, bg, fg] = sampleLook(sampleStage(normalizeStatus(x.status)));
+              return (
+                <a key={x.id} href={tiktokProductUrl(x.productId)} target="_blank" rel="noopener" className="mt-card" style={{ textDecoration: "none", color: "var(--text)" }}>
+                  <span className="mt-ph" aria-hidden="true" style={x.image ? { backgroundImage: `url("${x.image}")` } : undefined} />
+                  <span style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <span className="mt-pill" style={{ background: bg, color: fg }}>{label}</span>
+                      <span style={{ fontSize: 12, color: "var(--muted)" }}>{[x.shop, x.variant].filter(Boolean).join(" · ")}</span>
+                    </span>
+                    <strong style={{ fontSize: 15, lineHeight: 1.35 }}>{x.name}</strong>
+                  </span>
+                  <span className="mt-right">
+                    <span style={{ fontSize: 12, color: "var(--muted)" }}>{x.dueAt ? `Post by ${dt(x.dueAt)}` : "From the seller"}</span>
+                  </span>
+                </a>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {panel && (
         <>

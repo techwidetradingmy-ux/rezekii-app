@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import QRCode from "qrcode";
 import type { TapProduct } from "@/modules/tap/catalog.ts";
 
 export type Flow = "idle" | "loading" | "done";
@@ -22,12 +23,14 @@ export function useToast() {
  * The card and panel actions, shared by the Marketplace and the product page (as in the mockup).
  * Showcase: Techwide makes a TAP link; with the creator's TikTok Shop linked and approved it goes straight into their showcase,
  * otherwise TikTok Shop opens on the product, where the creator taps Add to showcase.
- * Free sample: goes to Techwide, who applies for it in TikTok Shop; it then shows in My TAP products.
+ * Free sample: TikTok's own sample request page through Techwide's TAP campaign (its sample budget). On a phone the TikTok app
+ * opens straight away; on a computer a QR code opens it on the creator's phone. It then shows in My TAP products.
  */
 export function useTap(requestedIds: string[]) {
   const [add, setAdd] = useState<Record<string, Flow>>({});
   const [sample, setSample] = useState<Record<string, Flow>>(() => Object.fromEntries(requestedIds.map((id) => [id, "done" as Flow])));
   const { toast, flash } = useToast();
+  const [qr, setQr] = useState<{ url: string; name: string } | null>(null);
   // Approved creators with TikTok Shop linked get products added straight to their showcase.
   const [linked, setLinked] = useState(false);
   useEffect(() => {
@@ -67,11 +70,13 @@ export function useTap(requestedIds: string[]) {
     setSample((s) => ({ ...s, [p.id]: "loading" }));
     try {
       const r = await fetch("/api/tap/samples", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ productId: p.id }) });
-      const d = (await r.json().catch(() => ({}))) as { error?: string };
-      // 409 = already requested earlier (for example in another tab): show it as requested.
-      if (!r.ok && r.status !== 409) throw new Error(d.error || "Could not send the request. Please try again.");
+      const d = (await r.json().catch(() => ({}))) as { error?: string; deeplink?: string; phoneUrl?: string; addedToShowcase?: boolean };
+      if (!r.ok || !d.deeplink || !d.phoneUrl) throw new Error(d.error || "TikTok didn't open the sample request. Please try again.");
       setSample((s) => ({ ...s, [p.id]: "done" }));
-      flash("Sample requested. It is now in My TAP products.");
+      if (d.addedToShowcase) setAdd((a) => ({ ...a, [p.id]: "done" }));
+      // A phone has the TikTok app: go straight to TikTok's sample request page. A computer gets a QR code for the phone.
+      if (window.matchMedia("(pointer: coarse)").matches) window.location.href = d.deeplink;
+      else setQr({ url: d.phoneUrl, name: p.name });
     } catch (err) {
       setSample((s) => ({ ...s, [p.id]: "idle" }));
       flash(err instanceof Error ? err.message : String(err), false);
@@ -84,6 +89,9 @@ export function useTap(requestedIds: string[]) {
     addToShowcase,
     requestSample,
     toast,
+    linked,
+    qr,
+    closeQr: () => setQr(null),
   };
 }
 
@@ -99,5 +107,35 @@ export function Hud({ toast }: { toast: Toast | null }) {
       )}
       {toast.text}
     </div>
+  );
+}
+
+/** Request sample on a computer: scan with the phone to finish in the TikTok app (TikTok's sample page is app-only). */
+export function SampleSheet({ qr, onClose }: { qr: { url: string; name: string } | null; onClose: () => void }) {
+  const [svg, setSvg] = useState("");
+  useEffect(() => {
+    if (!qr) return;
+    let live = true;
+    QRCode.toString(qr.url, { type: "svg", margin: 1, errorCorrectionLevel: "M" })
+      .then((s) => live && setSvg(s))
+      .catch(() => live && setSvg(""));
+    return () => {
+      live = false;
+    };
+  }, [qr]);
+  if (!qr) return null;
+  return (
+    <>
+      <button type="button" aria-label="Close" className="nv-dim" onClick={onClose} />
+      <div role="dialog" aria-modal="true" aria-labelledby="mkqrt" className="nv-qr">
+        <h3 id="mkqrt" style={{ margin: 0, fontSize: 21, fontWeight: 800 }}>Finish on your phone</h3>
+        <p style={{ margin: 0, fontSize: 15, color: "var(--body)", lineHeight: 1.5 }}>
+          TikTok&apos;s sample request opens in the TikTok app. Scan this with your phone&apos;s camera, then tap Submit in TikTok for <strong>{qr.name}</strong>.
+        </p>
+        <div className="nv-qr-code" aria-label="QR code that opens the sample request on your phone" role="img" dangerouslySetInnerHTML={{ __html: svg }} />
+        <p style={{ margin: 0, fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>The request uses Techwide&apos;s TAP campaign sample budget. Its status shows in My TAP products.</p>
+        <button type="button" className="nv-btn2 nv-press" onClick={onClose}>Done</button>
+      </div>
+    </>
   );
 }
