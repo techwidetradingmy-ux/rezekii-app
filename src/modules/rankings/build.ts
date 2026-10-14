@@ -167,15 +167,20 @@ export function buildLives(L: Raw[], U: Raw[], avatar: (user: string) => string 
 }
 
 /** WhatsApp number (60…), email and Instagram handle found in a TikTok bio. */
-export function contacts(bio: string): { wa: string; em: string; ig: string } {
+/**
+ * WhatsApp number, email and Instagram from a bio. Fancy Unicode letters and digits are read as plain ones first, and numbers
+ * may be written "+60 12-345 6789", "012.345.6789" or as a wa.me / api.whatsapp.com link (owner, 14 Oct 2026: miss none).
+ */
+export function contacts(raw: string): { wa: string; em: string; ig: string } {
+  const bio = raw.normalize("NFKC");
   let wa = "";
-  const link = bio.match(/wa\.me\/(\d{9,13})/);
+  const link = bio.match(/(?:wa\.me|whatsapp\.com\/send\?phone=)\/?\+?(\d{9,13})/i);
   if (link) wa = link[1];
   else {
-    const m = bio.match(/(?<!\d)(\+?60|0)(1\d)[\s-]?(\d{3,4})[\s-]?(\d{4})(?!\d)/);
+    const m = bio.match(/(?<!\d)(\+?\s?60|0)[\s.-]?(1\d)[\s.-]?(\d{3,4})[\s.-]?(\d{4})(?!\d)/);
     if (m) wa = `60${m[2]}${m[3]}${m[4]}`;
   }
-  const em = bio.match(/[\w.+-]+@[\w-]+\.[A-Za-z.]{2,}/)?.[0] ?? "";
+  const em = bio.match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)*\.[A-Za-z]{2,}/)?.[0] ?? "";
   const ig = bio.match(/(?:\big|\binsta(?:gram)?)\s*[:：@-]+\s*@?([A-Za-z0-9._]{3,30})/i)?.[1]?.replace(/\.$/, "") ?? "";
   return { wa, em, ig };
 }

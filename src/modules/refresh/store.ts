@@ -89,10 +89,18 @@ export async function upsertCreators(rows: CreatorUpsert[]): Promise<void> {
     await supabaseRest("market_creators?on_conflict=creator_key", json([...byKey.values()], "resolution=merge-duplicates,return=minimal"));
 }
 
-/** New creators still without a profile, best-seller creators first. */
+/** How old a profile may get before it is read again, so a WhatsApp number or email added to a bio later is picked up. */
+export const DETAIL_REFRESH_DAYS = 30;
+
+/**
+ * Creators whose profile is due: never read yet (best-seller creators first), then, once everyone has one, profiles older
+ * than DETAIL_REFRESH_DAYS, oldest first (owner, 14 Oct 2026: no creator with WhatsApp or email missed).
+ */
 export async function creatorsNeedingDetail(limit: number): Promise<{ creator_key: string; open_id: string }[]> {
-  const res = await supabaseRest(`market_creators?detail_at=is.null&open_id=not.is.null&select=creator_key,open_id&order=best_rank.asc.nullslast&limit=${limit}`);
-  return res.json();
+  const fresh = (await (await supabaseRest(`market_creators?detail_at=is.null&open_id=not.is.null&select=creator_key,open_id&order=best_rank.asc.nullslast&limit=${limit}`)).json()) as { creator_key: string; open_id: string }[];
+  if (fresh.length) return fresh;
+  const old = new Date(Date.now() - DETAIL_REFRESH_DAYS * 86_400_000).toISOString();
+  return (await supabaseRest(`market_creators?detail_at=lt.${old}&open_id=not.is.null&select=creator_key,open_id&order=detail_at.asc&limit=${limit}`)).json();
 }
 
 export async function saveDetail(key: string, detail: unknown, error: string | null): Promise<void> {
@@ -109,16 +117,24 @@ export async function levelPassOpen(): Promise<boolean> {
   return ((await res.json()) as unknown[]).length > 0;
 }
 
-/** Linked creators whose agency status is due (never checked, or checked over `days` days ago), oldest first. */
-export async function agencyDue(days: number, limit: number): Promise<{ user_id: string; username: string }[]> {
+/** Linked creators whose labels are due: agency not checked in `days` days, or TikTok level not checked since `levelSince`. */
+export async function tagsDue(days: number, levelSince: string): Promise<{ user_id: string }[]> {
   const since = new Date(Date.now() - days * 86_400_000).toISOString();
-  const res = await supabaseRest(`affiliate_connections?user_id=not.is.null&username=not.is.null&or=(agency_at.is.null,agency_at.lt.${since})&select=user_id,username&order=agency_at.asc.nullsfirst&limit=${limit}`);
+  const due = `or=(agency_at.is.null,agency_at.lt.${since},tt_level_at.is.null,tt_level_at.lt.${encodeURIComponent(levelSince)})`;
+  const res = await supabaseRest(`affiliate_connections?user_id=not.is.null&username=not.is.null&${due}&select=user_id&limit=2000`);
   return res.json();
 }
 
-/** Saves a creator's agency status (null: TikTok's marketplace doesn't list them). */
-export async function saveAgency(userId: string, agency: "managed" | "independent" | null): Promise<void> {
-  await supabaseRest(`affiliate_connections?user_id=eq.${userId}`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ agency, agency_at: new Date().toISOString() }) });
+/** A linked creator's TikTok username, or null. */
+export async function linkedUsername(userId: string): Promise<string | null> {
+  const [row] = (await (await supabaseRest(`affiliate_connections?user_id=eq.${userId}&username=not.is.null&select=username&limit=1`)).json()) as { username: string }[];
+  return row?.username ?? null;
+}
+
+/** Saves a creator's labels (both null: TikTok's marketplace doesn't list them). */
+export async function saveTags(userId: string, agency: "managed" | "independent" | null, level: number | null): Promise<void> {
+  const at = new Date().toISOString();
+  await supabaseRest(`affiliate_connections?user_id=eq.${userId}`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ agency, agency_at: at, tt_level: level, tt_level_at: at }) });
 }
 
 /** Tasks of one kind still waiting or running for a day; `except`: leave out tasks parked with this cursor. */

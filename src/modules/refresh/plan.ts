@@ -103,7 +103,7 @@ export function planDay(now: number, haveDays: Set<string>, newestBuilt = false,
   }
 
   tasks.push({ key: "details", kind: "details", params: {}, priority: 5 });
-  // linked creators' agency status, each checked every 2 weeks
+  // linked creators' agency status (every 2 weeks) and TikTok level (on the 1st): queues one task per creator who is due
   tasks.push({ key: "agency", kind: "agency", params: {}, priority: 6 });
   // On the 1st the marketplace search is also split by TikTok's creator level, so each creator's level comes with it (levels
   // change monthly). It takes more than a day, so it carries on past midnight and the usual search waits for it.

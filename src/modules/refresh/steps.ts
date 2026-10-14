@@ -9,12 +9,15 @@ import { approvedCreatorToken } from "../creator-accounts/access.ts";
 import { linkedCreators, syncCreatorOrders } from "../sales/orders.ts";
 import { buildRankings } from "../rankings/store.ts";
 import { getBestselling, getMarketplaceCreator, searchMarketplaceCreators, type BestsellingKind } from "../../integrations/tiktok-shop/seller.ts";
-import { TT_LEVELS, bestSlot, type PlannedTask } from "./plan.ts";
+import { TT_LEVELS, bestSlot, mytDay, type PlannedTask } from "./plan.ts";
+import { TAG_START, tagFilters, tagNext, tagTask, type TagState } from "../accounts/tags.ts";
 import type { Sessions } from "./sessions.ts";
-import { agencyDue, catalogSales, creatorsNeedingDetail, upsertCreatorProducts, openTaskCount, rebuildTapCatalog, saveAgency, saveDetail, saveSnapshot, snapshotItems, upsertCreators, type TaskRow } from "./store.ts";
+import { catalogSales, creatorsNeedingDetail, linkedUsername, upsertCreatorProducts, openTaskCount, rebuildTapCatalog, saveDetail, saveSnapshot, saveTags, snapshotItems, tagsDue, upsertCreators, type TaskRow } from "./store.ts";
 
 /** TikTok's "too many requests" code, shared by the app's whole API group. */
 export const RATE_LIMITED = 36009002;
+/** TikTok's "Internal error. Retry later." */
+export const INTERNAL_ERROR = 36009003;
 /** Creator profiles fetched per day (about 1 a second, backing off on rate limits); the rest wait for the next day, best-seller creators first. */
 export const DETAILS_PER_DAY = 5000;
 /** Pages per marketplace search (20 creators each). TikTok stops at about 1,000 results anyway. */
@@ -233,7 +236,8 @@ async function details(t: TaskRow, { sessions, deadline }: Ctx): Promise<StepRes
   for (const c of todo) {
     if (Date.now() > deadline) break;
     const r = await getMarketplaceCreator(s.token, s.cipher, c.open_id);
-    if (r.code === RATE_LIMITED) return { count, more: true, waitMs: 60_000 };
+    // Too many calls, or TikTok's own "internal error, retry later": try again in a minute, nothing saved.
+    if (r.code === RATE_LIMITED || r.code === INTERNAL_ERROR) return { count, more: true, waitMs: 60_000 };
     // A creator TikTok won't show (left the marketplace, private) is marked so it isn't asked for again.
     await saveDetail(c.creator_key, r.code === 0 ? (r.data?.creator ?? null) : null, r.code === 0 ? null : `${r.code} ${r.message}`.slice(0, 200));
     count++;
@@ -284,29 +288,28 @@ async function marketplace(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
   return { count: items.length, more, cursor: more ? next : null, waitMs: 20_000, followUps: capped ? marketSplits(p) : undefined };
 }
 
-/** How often a linked creator's agency status is checked again (owner, 14 Oct 2026). */
+/** How often a linked creator's agency status is checked again (owner, 14 Oct 2026); their TikTok level, on the 1st. */
 export const AGENCY_DAYS = 14;
-const AGENCY_FILTERS = [["AGENCY_MANAGED", "managed"], ["INDEPENDENT", "independent"]] as const;
 
 /**
- * One linked creator's agency status a run, from TikTok's Creator Marketplace (it says managed or independent, never which
- * agency): their username searched with each agency filter; listed in neither, null. One creator a minute, as the
- * marketplace search allows only a few calls a minute.
+ * A linked creator's agency status and TikTok level (modules/accounts/tags.ts): one marketplace search per run, about 20
+ * seconds apart, carrying on from `cursor`. Without a creator, it queues one such task for every linked creator who is due.
  */
 async function agency(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
-  const [c] = await agencyDue(AGENCY_DAYS, 1);
-  if (!c) return { count: 0 };
-  const s = await sessions.seller();
-  let found: "managed" | "independent" | null = null;
-  for (const [status, label] of AGENCY_FILTERS) {
-    const data = ok(await searchMarketplaceCreators(s.token, s.cipher, { keyword: c.username, affiliate_data: { creator_agency_staus: status } }, { pageSize: 20 }));
-    if ((data.creators ?? []).some((x) => x.username?.toLowerCase() === c.username.toLowerCase())) {
-      found = label;
-      break;
-    }
+  const userId = (t.params as { userId?: string }).userId;
+  if (!userId) {
+    const due = await tagsDue(AGENCY_DAYS, `${mytDay(Date.now()).slice(0, 7)}-01T00:00:00+08:00`);
+    return { count: due.length, followUps: due.map((c) => tagTask(c.user_id)) };
   }
-  await saveAgency(c.user_id, found);
-  return { count: 1, more: true, waitMs: 60_000 };
+  const username = await linkedUsername(userId);
+  if (!username) return { count: 0 };
+  const state: TagState = t.cursor ? JSON.parse(t.cursor) : TAG_START;
+  const s = await sessions.seller();
+  const data = ok(await searchMarketplaceCreators(s.token, s.cipher, { keyword: username, ...tagFilters(state) }, { pageSize: 20 }));
+  const r = tagNext(state, (data.creators ?? []).some((x) => x.username?.toLowerCase() === username.toLowerCase()));
+  if (!r.done) return { count: 0, more: true, cursor: JSON.stringify(r.state), waitMs: 20_000 };
+  await saveTags(userId, r.done.agency, r.done.level);
+  return { count: 1 };
 }
 
 export const STEPS: Record<string, (t: TaskRow, ctx: Ctx) => Promise<StepResult>> = {

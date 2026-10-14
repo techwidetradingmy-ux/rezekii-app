@@ -45,6 +45,13 @@ test("rankings: contacts from a TikTok bio", () => {
   assert.deepEqual(contacts("Collab: 012-345 6789 | hello@shop.my | IG: @ana.reviews."), { wa: "60123456789", em: "hello@shop.my", ig: "ana.reviews" });
   assert.equal(contacts("wa.me/60198765432 for orders").wa, "60198765432");
   assert.deepEqual(contacts("just vibes"), { wa: "", em: "", ig: "" });
+  // Real bio shapes from 14 Oct 2026 that were missed before.
+  assert.equal(contacts("Official Account Any Inquiries 📲 +60 14-226 6531 (Alif)").wa, "60142266531");
+  assert.equal(contacts("For paid collab: +60 12 946 8584 (Admin)").wa, "60129468584");
+  assert.equal(contacts("0 18-785 0641").wa, "60187850641");
+  assert.equal(contacts("𝗪𝗔 𝟬𝟭𝟮-𝟯𝟰𝟱 𝟲𝟳𝟴𝟵").wa, "60123456789");
+  assert.equal(contacts("api.whatsapp.com/send?phone=60198765432").wa, "60198765432");
+  assert.equal(contacts("biz: 𝗵𝗲𝗹𝗹𝗼@𝘀𝗵𝗼𝗽.𝗺𝘆").em, "hello@shop.my");
 });
 
 test("rankings: a Creator Marketplace profile in the panel's shape", () => {
