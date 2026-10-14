@@ -14,8 +14,11 @@ export const mytHour = (now: number) => new Date(now + MYT).getUTCHours();
 /** Tasks are planned from this hour (Malaysia time). At that hour TikTok's newest best-seller lists are two days old. */
 export const PLAN_HOUR = 6;
 export const DATA_LAG_DAYS = 2;
-/** TikTok publishes yesterday's lists later in the day (by 17:00 on 14 Oct 2026); from this hour Rezekii checks for them. */
-export const LATE_HOUR = 12;
+/**
+ * TikTok publishes yesterday's lists later in the day (by 17:00 on 14 Oct 2026). Once the day is planned, Rezekii checks for
+ * them every 15 minutes, so the newest lists arrive within 15 minutes of TikTok publishing them (owner: always the latest).
+ */
+export const LATE_HOUR = PLAN_HOUR;
 /** Daily lists are kept for this many days; missing days are filled in (the first run fills all of them). */
 export const DAILY_DAYS = 30;
 

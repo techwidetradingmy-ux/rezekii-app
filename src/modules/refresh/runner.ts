@@ -49,7 +49,7 @@ async function listsOut(sessions: Sessions, date: string): Promise<boolean> {
 }
 
 /**
- * One timer tick. From 06:00 Malaysia time the day's tasks are planned (once), and from noon yesterday's lists once TikTok has them. Then one Creator Marketplace page
+ * One timer tick. From 06:00 Malaysia time the day's tasks are planned (once), and yesterday's lists as soon as TikTok has them. Then one Creator Marketplace page
  * (that search allows about 3 calls a minute), then other tasks until `deadline`, about 1.2 s apart.
  */
 export async function runRefresh(sessions: Sessions, deadline: number, now = Date.now()): Promise<RunSummary> {
@@ -61,8 +61,8 @@ export async function runRefresh(sessions: Sessions, deadline: number, now = Dat
     await addTasks(runDate, tasks);
     planned = tasks.length;
   }
-  // TikTok publishes yesterday's lists during the day: from noon, every 15 minutes, check whether TikTok has them and, once it
-  // does, plan that day as the newest too (its Rankings build waits for every list).
+  // TikTok publishes yesterday's lists during the day: once the day is planned, every 15 minutes, check whether TikTok has them
+  // and, once it does, plan that day as the newest too (its Rankings build waits for every list).
   const yesterday = mytDay(now, 1);
   if (mytHour(now) >= LATE_HOUR && new Date(now).getUTCMinutes() % 15 === 0 && !(await hasTask(runDate, `rankings|${yesterday}`)) && (await listsOut(sessions, yesterday))) {
     const late = planNewest(yesterday);
