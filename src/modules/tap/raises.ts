@@ -8,18 +8,24 @@ import { addToShowcase } from "./showcase.ts";
 export type Raise = { productId: string; name: string; shop: string; image: string | null; price: number | null; nowRate: number; tapRate: number };
 
 /** What TikTok's showcase list says about one product (the fields Rezekii reads). */
-export type ShowcaseEntry = { id: string; title?: string; commission?: { rate?: number }; collaboration?: { partner?: { id?: string; name?: string } }; shop?: { name?: string } };
+export type ShowcaseEntry = {
+  id: string; title?: string; commission?: { rate?: number }; collaboration?: { partner?: { id?: string; name?: string } }; shop?: { name?: string };
+  /** e.g. { added_status: "REJECTED", review_status: "UNAVAILABLE" } for a product TikTok refused in this showcase. */
+  status?: { added_status?: string; review_status?: string };
+};
 
 const TECHWIDE = /techwide/i;
 
 /**
  * Showcase products not linked to Techwide's TAP that are in Techwide's campaigns at a higher rate for the creator's level
- * (Bronze: the Open Plan rate; Silver and Gold: the Silver rate). Rates are ×100. Biggest raise first.
+ * (Bronze: the Open Plan rate; Silver and Gold: the Silver rate). Rates are ×100. Biggest raise first. Products TikTok rejected
+ * in the showcase are left out: TikTok won't take them again through any link (owner, 14 Oct 2026).
  */
 export function findRaises(showcase: ShowcaseEntry[], catalog: Map<string, TapProduct>, level: "bronze" | "silver" | "gold"): Raise[] {
   const out: Raise[] = [];
   for (const p of showcase) {
     if (TECHWIDE.test(p.collaboration?.partner?.name ?? "")) continue;
+    if (p.status?.added_status === "REJECTED" || p.status?.review_status === "UNAVAILABLE") continue;
     const tap = catalog.get(String(p.id));
     if (!tap) continue;
     const tapRate = (level === "bronze" ? tap.openRate : tap.silverRate ?? tap.openRate) ?? 0;

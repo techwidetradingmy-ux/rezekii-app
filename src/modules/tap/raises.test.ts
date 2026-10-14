@@ -20,3 +20,8 @@ test("findRaises flags showcase products not linked to Techwide that pay more th
 test("findRaises uses the Silver rate for Silver and Gold creators", () => {
   assert.deepEqual(findRaises(showcase, catalog, "silver").map((r) => [r.productId, r.tapRate]), [["1", 600]]);
 });
+
+test("findRaises leaves out products TikTok rejected in the showcase", () => {
+  const rejected = [{ id: "1", commission: {}, status: { added_status: "REJECTED", review_status: "UNAVAILABLE" } }, { id: "3", commission: { rate: 100 }, status: { added_status: "ADDED", review_status: "APPROVED" } }];
+  assert.deepEqual(findRaises(rejected, catalog, "bronze").map((r) => r.productId), ["3"]);
+});

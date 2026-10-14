@@ -1,4 +1,5 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import { pairRm, type Raw } from "./build.ts";
 import { rankings } from "./store.ts";
 
 /** One creator on one day's TikTok top 100. GMV is TikTok's range in RM. `prev`: rank the day before (null: not in it). */
@@ -20,7 +21,8 @@ export type DailyBoard = {
   first: string | null;
 };
 
-type Item = { rank?: number; user_name?: string; nick_name?: string; followers_count?: number; gmv_range?: string };
+/** `lo`/`hi`: RM amounts worked out by usdOrder (otherwise read from `gmv_range`). */
+type Item = { rank?: number; user_name?: string; nick_name?: string; followers_count?: number; gmv_range?: string; lo?: number; hi?: number };
 type Day = { as_of: string; items: Item[] };
 
 /** "MYR5496500.68~MYR10232198.52" → [5496500.68, 10232198.52]. */
@@ -28,6 +30,19 @@ export const gmvRange = (s: string | undefined): [number, number] => {
   const [lo, hi] = String(s ?? "").split("~").map((x) => Number(x.replace(/[^0-9.]/g, "")) || 0);
   return [lo ?? 0, hi ?? lo ?? 0];
 };
+
+/**
+ * One day's list the way Top creators reads it: TikTok's US$ list decides who is in and in what order; amounts are TikTok's RM
+ * figures where the creator is in both lists, otherwise US$ × TikTok's rate. Creators only in the RM list are left out, as their
+ * figures don't add up (13 Oct 2026: one showed RM43.6M for the day but wasn't in the 30-day top 3).
+ */
+export function usdOrder(L: Item[], U: Item[]): Item[] {
+  const { rm } = pairRm(L as Raw[], U as Raw[], "user_name");
+  return U.map((u) => {
+    const [lo, hi] = rm.get(String(u.user_name)) ?? [0, 0];
+    return { ...u, lo, hi };
+  });
+}
 
 /**
  * One day's top 100 with each creator's change, days in the top 100 (every saved day) and rank history; the Hall of Fame is
@@ -61,7 +76,7 @@ export function buildBoard(days: Day[], date: string, rezekii: Set<string>, avat
     .sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0))
     .map((it) => {
       const u = it.user_name!.toLowerCase();
-      const [lo, hi] = gmvRange(it.gmv_range);
+      const [lo, hi] = it.lo !== undefined ? [it.lo, it.hi ?? it.lo] : gmvRange(it.gmv_range);
       return {
         rank: it.rank!, user: it.user_name!, nick: it.nick_name ?? it.user_name!, followers: it.followers_count ?? 0, lo, hi, avatar: avatars[u] ?? null,
         prev: before ? rankOn.get(before)?.get(u) ?? null : null, days: count.get(u) ?? 1, history: history(u), rezekii: rezekii.has(u),
@@ -76,11 +91,21 @@ export function buildBoard(days: Day[], date: string, rezekii: Set<string>, avat
 
 let cache: { at: number; days: Day[] } | null = null;
 
-/** TikTok's saved daily top-100 creator lists (all creators, RM), kept 10 minutes. */
+/** TikTok's saved daily top-100 creator lists (all creators), in US$ order with RM amounts, kept 10 minutes. */
 async function savedDays(): Promise<Day[]> {
   if (cache && Date.now() - cache.at < 10 * 60_000) return cache.days;
-  const rows = (await (await supabaseRest(`market_snapshots?dataset=eq.creators&slot=eq.${encodeURIComponent("1D|ALL|LOCAL")}&select=as_of,items&order=as_of.desc&limit=60`)).json()) as Day[];
-  cache = { at: Date.now(), days: rows.filter((r) => Array.isArray(r.items) && r.items.length) };
+  const slots = ["1D|ALL|LOCAL", "1D|ALL|USD"].map(encodeURIComponent).join(",");
+  const rows = (await (await supabaseRest(`market_snapshots?dataset=eq.creators&slot=in.(${slots})&select=as_of,slot,items&order=as_of.desc&limit=120`)).json()) as (Day & { slot: string })[];
+  const byDay = new Map<string, { L: Item[]; U: Item[] }>();
+  for (const r of rows) {
+    if (!Array.isArray(r.items) || !r.items.length) continue;
+    const d = byDay.get(r.as_of) ?? { L: [], U: [] };
+    if (r.slot.endsWith("USD")) d.U = r.items;
+    else d.L = r.items;
+    byDay.set(r.as_of, d);
+  }
+  // A day without its US$ list keeps the RM list.
+  cache = { at: Date.now(), days: [...byDay.entries()].map(([as_of, d]) => ({ as_of, items: d.U.length ? usdOrder(d.L, d.U) : d.L })) };
   return cache.days;
 }
 
