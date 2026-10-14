@@ -1,11 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { dailyTop100 } from "@/modules/rankings/daily.ts";
+import { isWarmCall } from "@/modules/refresh/warm.ts";
 
 export const dynamic = "force-dynamic";
 
 /** Daily Top 100 Creators: TikTok's top 100 for one saved day (?date=YYYY-MM-DD, default the newest; &period=7D for Weekly), with history. */
 export async function GET(req: NextRequest) {
+  if (await isWarmCall(req)) return NextResponse.json({ warmed: !!(await Promise.all([dailyTop100(), dailyTop100(undefined, "7D")]))[0] });
   const user = await currentUser();
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   const d = req.nextUrl.searchParams.get("date") ?? undefined;

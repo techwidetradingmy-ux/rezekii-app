@@ -2,11 +2,13 @@ import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { listRankings } from "@/modules/rankings/query.ts";
 import { rankings } from "@/modules/rankings/store.ts";
+import { isWarmCall } from "@/modules/refresh/warm.ts";
 
 export const dynamic = "force-dynamic";
 
 /** One TikTok best-seller list: ?view=0-3 (creators, products, videos, LIVEs)&slot=0-2 (1, 7, 30 days)&cat=&ctype=0-2&wa=1&em=1&x=1&sort=&pg= */
 export async function GET(req: NextRequest) {
+  if (await isWarmCall(req)) return NextResponse.json({ warmed: !!(await rankings("pm")) });
   if (!(await currentUser())) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   const p = req.nextUrl.searchParams;
   // Top products (view 1) needs the product details part.

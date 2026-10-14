@@ -26,6 +26,8 @@ export type Built = {
   videoDays: { n: number; first: string | null; last: string | null };
   /** Lists TikTok hadn't published for `asOf` yet, with the earlier day shown instead (e.g. videos: "2026-10-12"). */
   listDays?: Partial<Record<"creators" | "products" | "videos" | "lives", string>>;
+  /** TikTok Shop creator levels (0-8) by lower-case username, from the monthly level pass. */
+  lv?: Record<string, number>;
 };
 
 async function rpc<T>(name: string, args: Record<string, unknown>): Promise<T> {
@@ -147,7 +149,8 @@ export async function buildRankings(day: string): Promise<Built> {
   }
   const bv = bestVideos([...byDay.values()], details, videos["30D"]);
 
-  const built: Built = { asOf: day, rates, dropped, tier1, creators, pm, products, videos, lives, details, find, vid: bv.VID, cbest: bv.CBEST, videoDays: { n: bv.nDays, first: bv.first, last: bv.last }, listDays };
+  const lv = await savedLevels();
+  const built: Built = { asOf: day, rates, dropped, tier1, creators, pm, products, videos, lives, details, find, vid: bv.VID, cbest: bv.CBEST, videoDays: { n: bv.nDays, first: bv.first, last: bv.last }, listDays, lv };
   // Saved in three rows: the product details and the Creator Marketplace list are large (several MB each) and only the
   // Top products and Find creators views need them. The parts go first, so the main row never points at missing parts.
   const save = (slot: string, items: unknown) =>
@@ -158,6 +161,14 @@ export async function buildRankings(day: string): Promise<Built> {
   cache = { at: Date.now(), data: { ...built, pm: [], find: [] } };
   parts.clear();
   return built;
+}
+
+/** Every TikTok Shop creator level the level pass has found, by lower-case username (read once per build: a full table scan). */
+export async function savedLevels(): Promise<Record<string, number>> {
+  const out: Record<string, number> = {};
+  for (const r of await paged<{ username: string | null; tt_level: number }>("market_creators?tt_level=not.is.null&select=username,tt_level&order=creator_key"))
+    if (r.username) out[r.username.toLowerCase()] = r.tt_level;
+  return out;
 }
 
 const emptyDetail = (): Detail => ({ a: null, x: 0, xu: 0, band: "", vg: 0, lg: 0, u: 0, c: [], bio: "", wa: "", em: "", ig: "", com: 0, ev: 0, el: 0, f: 0, m: 0, age: "", loc: "", br: 0, pr: 0, vs: -1, nick: "" });

@@ -6,7 +6,7 @@
 :root[data-theme="dark"] .nv { --bg: #0b1210; --surface: #131c18; --surface2: #0e1613; --line: #1f2a25; --border: #26332d; --text: #eef3f1; --body: #c6d0cb; --muted: #9aa8a1; --gink: #5fe3ab; --gsoft: #0f2e21; --red: #ff8a80; --rsoft: #3a1714; --amber: #ffc56b; --asoft: #33250c; --blue: #a9c1ff; --bsoft: #17213b; --seg: #1f2a25; --thumb: #2c3a33; --shadow: 0 0 0 1px #1f2a25; --shadow2: 0 0 0 1px #1f2a25; }
 .nv-page { background: var(--bg); color: var(--text); }
 .nv-page .app-main { gap: 24px; }
-.nv-title { margin: 0; font-size: 34px !important; font-weight: 800; letter-spacing: -0.02em; animation: nvTitle 0.6s 0.05s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.nv-title { margin: 0; font-size: 34px !important; font-weight: 800; letter-spacing: -0.02em; animation: nvTitle 0.28s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
 .nv-sub { margin: 4px 0 0; color: var(--muted); font-size: 15px; line-height: 1.5; }
 .nv * { box-sizing: border-box; }
 .nv button, .nv input, .nv select, .nv textarea { font: inherit; }
@@ -27,7 +27,9 @@
 @keyframes nvStagger { from { opacity: 0; transform: translateY(18px) scale(0.985); } to { opacity: 1; transform: none; } }
 @keyframes nvTitle { from { opacity: 0; transform: translateY(10px); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
 
-.nv-up { animation: nvUp 0.42s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.nv-up { animation: nvUp 0.26s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+/* Sections inside a page appear with the page, not one after another. */
+.nv-main .nv-up { animation-delay: 0s !important; }
 .nv-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #00c073; animation: nvPulse 2s ease-in-out infinite; flex-shrink: 0; }
 .nv-press { transition: transform 0.12s cubic-bezier(0.2, 0.7, 0.2, 1), background-color 0.2s, box-shadow 0.2s, color 0.2s, border-color 0.2s; }
 .nv-press:active { transform: scale(0.97); }
@@ -60,8 +62,8 @@
 /* Keep every part at full size and let the panel scroll (otherwise the buttons shrink to fit a short window). */
 .nv-panel > *, .pd-wrap > * { flex-shrink: 0; }
 .nv-hud { position: fixed; left: 50%; bottom: 34px; display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 999px; background: rgba(13, 17, 23, 0.9); color: #ffffff; font-size: 14px; font-weight: 700; z-index: 60; animation: nvHud 1.8s cubic-bezier(0.2, 0.7, 0.2, 1) both; white-space: nowrap; max-width: calc(100% - 32px); }
-.nv-main > * { animation: nvStagger 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
-.nv-main > *:nth-child(2) { animation-delay: 0.07s; } .nv-main > *:nth-child(3) { animation-delay: 0.14s; } .nv-main > *:nth-child(4) { animation-delay: 0.21s; } .nv-main > *:nth-child(5) { animation-delay: 0.28s; } .nv-main > *:nth-child(n + 6) { animation-delay: 0.34s; }
+.nv-main > * { animation: nvStagger 0.28s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.nv-main > *:nth-child(2) { animation-delay: 0.03s; } .nv-main > *:nth-child(3) { animation-delay: 0.06s; } .nv-main > *:nth-child(n + 4) { animation-delay: 0.09s; }
 @media (max-width: 760px) {
   .nv-panel { top: auto; left: 0; right: 0; bottom: 0; width: 100%; max-width: 100%; max-height: 90vh; border-radius: 28px 28px 0 0; animation-name: nvSheetIn; }
   .nv-panel.out { animation-name: nvSheetOut; }
