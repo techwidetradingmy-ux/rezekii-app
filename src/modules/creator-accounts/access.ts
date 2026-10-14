@@ -112,6 +112,14 @@ export async function decideCreator(userId: string, approve: boolean, reason: st
   return { ok: true, invited: await inviteNext() };
 }
 
+/** The creator unlinks TikTok Shop themselves: the link and their approval go, and the next creator on the waitlist is invited. */
+export async function unlinkCreator(userId: string, username: string | null): Promise<void> {
+  await supabaseRest(`affiliate_connections?user_id=eq.${userId}`, { method: "DELETE", headers: { prefer: "return=minimal" } });
+  await supabaseRest(`creator_access?user_id=eq.${userId}`, { method: "DELETE", headers: { prefer: "return=minimal" } });
+  await logActivity(username ? `@${username}` : "A creator", "Creators", "unlinked their TikTok Shop");
+  await inviteNext();
+}
+
 /** A creator may use Rezekii once their TikTok Shop is linked and Techwide has approved it. */
 export async function creatorReady(userId: string): Promise<boolean> {
   const [access, linked] = await Promise.all([accessFor(userId), count(`affiliate_connections?user_id=eq.${userId}&select=user_id`)]);
@@ -122,8 +130,11 @@ export async function creatorReady(userId: string): Promise<boolean> {
 export async function approvedCreatorToken(userId: string): Promise<string | null> {
   const access = await accessFor(userId);
   if (access?.status !== "approved") return null;
-  return freshCreatorToken(await connectionForUser(userId)).catch((err) => {
+  try {
+    return await freshCreatorToken(await connectionForUser(userId));
+  } catch (err) {
+    // A stored token that can't be read or renewed counts as not linked, rather than breaking the page.
     console.error("[creator token]", err instanceof Error ? err.message : err);
     return null;
-  });
+  }
 }
