@@ -32,3 +32,23 @@
 .td-camp-cell b { font-size: clamp(19px, 2.2vw, 24px); font-weight: 800; font-variant-numeric: tabular-nums; }
 .td-camp-cell small { font-size: 11px; font-weight: 700; }
 @media (max-width: 720px) { .td-camp { border-radius: 22px; } .td-camp-time { flex-basis: 100%; } }
+
+/* Commission raises: showcase products that pay more through Techwide's TAP campaign (top of Today). */
+.cr-wrap { border-radius: 26px; padding: clamp(18px, 3vw, 26px); background: linear-gradient(135deg, #00a862, #007a4d); color: #ffffff; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 14px 34px rgba(0, 135, 79, 0.25); transition: opacity 0.4s, transform 0.4s; }
+.cr-out { opacity: 0; transform: translateY(-8px) scale(0.98); }
+.cr-head { display: flex; gap: 14px; align-items: flex-start; }
+.cr-badge { width: 44px; height: 44px; border-radius: 14px; background: #f7c948; color: #3b2a00; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 900; flex-shrink: 0; animation: nvIconPop 0.6s cubic-bezier(0.3, 1.5, 0.4, 1) both; }
+.cr-list { display: flex; flex-direction: column; gap: 8px; max-height: 360px; overflow-y: auto; }
+.cr-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 16px; background: var(--card); color: var(--text); cursor: pointer; border: 2px solid transparent; flex-wrap: wrap; }
+.cr-row.on { border-color: #f7c948; }
+.cr-row input { width: 18px; height: 18px; accent-color: #00a862; flex-shrink: 0; }
+.cr-img { width: 44px; height: 44px; border-radius: 12px; background: var(--surface2) center / cover; flex-shrink: 0; }
+.cr-name { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cr-rate { display: inline-flex; align-items: center; gap: 6px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.cr-now { color: var(--muted); text-decoration: line-through; }
+.cr-rate b { color: #00874f; font-size: 17px; }
+.cr-gain { padding: 4px 10px; border-radius: 999px; background: var(--gsoft); color: #00704a; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.cr-acts { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
+.cr-btn { display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 999px; padding: 12px 20px; background: #f7c948; color: #3b2a00; font: inherit; font-weight: 900; cursor: pointer; }
+.cr-btn:disabled { opacity: 0.6; cursor: default; }
+@media (prefers-reduced-motion: reduce) { .cr-badge { animation: none; } .cr-wrap { transition: none; } }

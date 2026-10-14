@@ -8,6 +8,7 @@ import type { ConvertRow } from "@/modules/tap/convert.ts";
 import { n } from "./marketplace/format";
 import { ProductCard, ProductPanel } from "./marketplace/product-view";
 import { Hud, SampleSheet, useTap, useToast } from "./marketplace/use-tap-actions";
+import { CommissionRaises } from "./commission-raises";
 import "./marketplace/marketplace.css";
 import "./today.css";
 
@@ -132,6 +133,7 @@ export function TodayView({ data }: { data: TodayData }) {
 
   return (
     <>
+      <CommissionRaises flash={flash} />
       <section className="nv-up" aria-label="Quick actions" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 }}>
         {QUICK.map(([label, note, href, icon, bg, fg]) => (
           <Link key={label} href={href} className="nv-card nv-press td-quick" style={{ textDecoration: "none", color: "var(--text)", padding: 16, display: "flex", flexDirection: "column", gap: 10, borderRadius: 22 }}>
