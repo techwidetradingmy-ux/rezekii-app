@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { rowLook, statusLook, type MyTapRow } from "@/modules/tap/stages.ts";
+import { approvedToShip, awaitingApproval, rowLook, statusLook, type MyTapRow } from "@/modules/tap/stages.ts";
 import type { SellerSample } from "@/modules/tap/samples.ts";
 import type { MyTapDetail } from "@/modules/tap/mytap.ts";
 import { n, rmx, short, tiktokProductUrl } from "../marketplace/format";
@@ -11,7 +11,9 @@ import "./my-tap.css";
 
 const TABS: [string, (r: MyTapRow) => boolean][] = [
   ["All", () => true],
-  ["Samples on the way", (r) => [1, 2].includes(r.stage)],
+  ["Awaiting approval", awaitingApproval],
+  ["Approved · to ship", approvedToShip],
+  ["On the way", (r) => r.stage === 2],
   ["To post", (r) => r.stage === 3],
   ["Posted", (r) => r.stage === 4],
   ["Selling, no sample", (r) => r.stage === 0 && !r.request],
@@ -103,7 +105,7 @@ export function MyTapView({ rows, hasTikTok }: { rows: MyTapRow[]; hasTikTok: bo
   const sums: [string, string, string][] = [
     ["Products promoting", n(rows.length), "From Rezekii TAP campaigns"],
     ["Sales", rmx(rows.reduce((a, r) => a + r.paid, 0)), "What buyers paid through your links"],
-    ["Samples", n(rows.filter((r) => r.stage > 0).length), `${rows.filter((r) => [1, 2].includes(r.stage)).length} on the way · ${due} to post`],
+    ["Samples", n(rows.filter((r) => r.stage > 0).length), ([[rows.filter(awaitingApproval).length, "awaiting approval"], [rows.filter(approvedToShip).length, "to ship"], [rows.filter((r) => r.stage === 2).length, "on the way"], [due, "to post"]] as [number, string][]).filter(([v]) => v > 0).map(([v, w]) => `${v} ${w}`).join(" · ") || "None requested yet"],
     ["Content posted", n(videos + lives), `${videos.toLocaleString("en-US")} videos · ${lives.toLocaleString("en-US")} LIVEs`],
   ];
   const d = panel && detail?.key === panel.key ? detail : null;
@@ -131,15 +133,16 @@ export function MyTapView({ rows, hasTikTok }: { rows: MyTapRow[]; hasTikTok: bo
       <section className="nv-card" aria-label="Your TAP products" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
         <div className="fb-row">
           <div className="nv-noscroll" role="group" aria-label="Status" style={{ display: "flex", gap: 8, overflowX: "auto" }}>
-            {TABS.map(([label, fn], i) => (
+            {TABS.map(([label, fn], i) => (i > 0 && tab !== i && !rows.some(fn) ? null :
               <button key={label} type="button" className={`nv-chip nv-press ${tab === i ? "on" : ""}`} aria-pressed={tab === i} onClick={() => { setTab(i); setPg(1); }}>
                 {label} <span style={{ opacity: 0.7 }}>{rows.filter(fn).length}</span>
               </button>
             ))}
           </div>
           <span style={{ flex: "1 1 0" }} />
-          <div className="fb-search" style={{ flex: "0 1 280px" }}>
-            <input type="search" className="nv-input" aria-label="Search your products" placeholder="Search your products" value={q} onChange={(e) => { setQ(e.target.value); setPg(1); }} />
+          <div className="fb-search mt-search" style={{ flex: "0 1 200px" }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+            <input type="search" className="nv-input" aria-label="Search your products" placeholder="Search" value={q} onChange={(e) => { setQ(e.target.value); setPg(1); }} />
           </div>
         </div>
         {list.length === 0 && (

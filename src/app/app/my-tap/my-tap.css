@@ -29,3 +29,7 @@
   .mt-ph { width: 56px; height: 56px; }
 }
 @media (prefers-reduced-motion: reduce) { .mt-card, .mt-bar span { animation: none; } }
+
+/* A compact search box (owner, 14 Oct 2026: it doesn't need to be big). */
+.mt-search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+.mt-search .nv-input { height: 36px; padding: 0 12px 0 32px; border-radius: 10px; font-size: 13px; }

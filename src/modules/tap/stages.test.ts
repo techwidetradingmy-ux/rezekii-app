@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { normalizeStatus, rowLook, sampleStage, statusLook, unixSeconds } from "./stages.ts";
+import { approvedToShip, awaitingApproval, normalizeStatus, rowLook, sampleStage, statusLook, unixSeconds } from "./stages.ts";
 
 test("my tap: TikTok sample statuses map to the mockup stages", () => {
   assert.equal(normalizeStatus("NotRequested"), "NOT_REQUESTED");
@@ -41,4 +41,12 @@ test("stage 1 in TikTok's words: awaiting approval, or approved and waiting to s
   assert.equal(statusLook("AWAITING_SHIPMENT")[0], "Approved · waiting to ship");
   assert.equal(statusLook("Completed")[0], "Content posted");
   assert.equal(rowLook({ stage: 1, status: "Pending" })[0], "Awaiting sample approval");
+});
+
+test("my tap: a sample still with the seller is awaiting approval, not on the way", () => {
+  assert.equal(awaitingApproval({ stage: 1, status: "PENDING" }), true);
+  assert.equal(approvedToShip({ stage: 1, status: "PENDING" }), false);
+  assert.equal(awaitingApproval({ stage: 1, status: "AWAITING_SHIPMENT" }), false);
+  assert.equal(approvedToShip({ stage: 1, status: "AwaitingShipment" }), true);
+  assert.equal(awaitingApproval({ stage: 2, status: "SHIPPED" }), false);
 });

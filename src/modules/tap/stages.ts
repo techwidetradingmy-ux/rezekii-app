@@ -56,6 +56,11 @@ export const rowLook = (r: Pick<MyTapRow, "stage" | "request" | "status">): [str
     : r.request && !r.request.tiktok && r.stage !== -1 ? ["Not submitted in TikTok yet", "var(--asoft)", "var(--amber)"]
     : r.request?.tiktok || r.status ? statusLook(r.request?.tiktok ?? r.status) : sampleLook(r.stage);
 
+/** A requested sample still with the seller (TikTok's "Pending"), not yet approved (owner, 14 Oct 2026: it isn't on the way). */
+export const awaitingApproval = (r: Pick<MyTapRow, "stage" | "request" | "status">) => r.stage === 1 && normalizeStatus(r.request?.tiktok ?? r.status) !== "AWAITING_SHIPMENT";
+/** Approved by the seller, not shipped yet. */
+export const approvedToShip = (r: Pick<MyTapRow, "stage" | "request" | "status">) => r.stage === 1 && normalizeStatus(r.request?.tiktok ?? r.status) === "AWAITING_SHIPMENT";
+
 /** Unix seconds from TikTok's dates, which come in seconds or milliseconds, as numbers or strings. */
 export const unixSeconds = (v: unknown) => {
   const f = Number(v);
