@@ -31,3 +31,7 @@ test("a sample asked on Rezekii that TikTok has no record of is 'not submitted',
   assert.equal(rowLook({ stage: 1, request: { ...base.request, tiktok: "PENDING" } })[0], "Sample requested");
   assert.equal(rowLook({ stage: 2 })[0], "Sample on the way");
 });
+
+test("a request for a product TikTok offers no sample of reads 'No sample'", () => {
+  assert.equal(rowLook({ stage: 0, request: { status: "applied", note: null, createdAt: "", updatedAt: "", tiktok: null, noSample: true } })[0], "No sample");
+});

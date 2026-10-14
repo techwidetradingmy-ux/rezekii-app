@@ -2,7 +2,8 @@ import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { getSampleTracking, listCreatorContent, listProductCreators, type ProductCreator } from "../../integrations/tiktok-shop/partner.ts";
 import { storedSessions } from "../refresh/sessions.ts";
 import { amount } from "./golden.ts";
-import { mySamples, tiktokSampleStatus } from "./samples.ts";
+import { mySamples, sampleOffered, tiktokSampleStatus } from "./samples.ts";
+import { approvedCreatorToken } from "../creator-accounts/access.ts";
 import { normalizeStatus, sampleStage, unixSeconds, type MyTapRow } from "./stages.ts";
 
 type Row = {
@@ -31,12 +32,15 @@ export async function myTapRows(userId: string, username: string | null): Promis
   const onTikTok = new Set(rows.map((r) => r.productId));
   const pending = requests.filter((x) => !onTikTok.has(x.product_id));
   const live = pending.length ? await tiktokSampleStatus(userId) : new Map<string, string>();
+  // A request TikTok has no record of: if TikTok offers no sample of that product (none allocated, or none left), say so.
+  const token = pending.some((x) => !live.has(x.product_id)) ? await approvedCreatorToken(userId) : null;
+  const offered = new Map(await Promise.all(pending.filter((x) => token && !live.has(x.product_id)).map(async (x) => [x.product_id, await sampleOffered(token!, x.product_id)] as const)));
   const asked: MyTapRow[] = pending.map((x) => {
     const st = live.get(x.product_id) ?? null;
     return {
       key: `rz:${x.id}`, campaignId: null, productId: x.product_id, name: x.product_name, shop: x.shop ?? "", image: x.image,
       stage: st ? sampleStage(normalizeStatus(st)) : x.status === "rejected" ? -1 : 0,
-      paid: 0, videos: 0, lives: 0, request: { status: x.status, note: x.note, createdAt: x.created_at, updatedAt: x.updated_at, tiktok: st },
+      paid: 0, videos: 0, lives: 0, request: { status: x.status, note: x.note, createdAt: x.created_at, updatedAt: x.updated_at, tiktok: st, noSample: offered.get(x.product_id) === false },
     };
   });
   return { rows: [...asked, ...rows], asOf: tiktok.reduce<string | null>((m, r) => (!m || r.as_of > m ? r.as_of : m), null) };

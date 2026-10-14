@@ -80,7 +80,12 @@ export async function sampleLink(userId: string, productId: string): Promise<Sam
   const label = await getSampleLabel(token, productId);
   if (label.code !== 0) console.error("[sample label]", label.code, label.message);
   const pick = sampleChoice(label.code === 0 ? label.data?.label : undefined, t.skuId);
-  if (!pick.ok) return pick;
+  if (!pick.ok) {
+    // No option has samples left: the seller set the samples when registering for the campaign and can't add more, so the
+    // product shows "No samples" until the next daily refresh reads TikTok's campaign data again.
+    if (pick.error.includes("out of stock")) await supabaseRest(`tap_catalog?product_id=eq.${productId}`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ samples: 0 }) }).catch(() => undefined);
+    return pick;
+  }
   const ask = (redirect?: string) => getSampleDeeplink(token, { productId, skuId: pick.skuId, campaignId: t.campaign_id, redirect });
   let r = await ask(BACK_TO_REZEKII);
   if (r.code !== 0) r = await ask();
@@ -197,4 +202,13 @@ export async function tiktokSampleStatus(userId: string): Promise<Map<string, st
   const out = new Map<string, string>();
   for (const a of apps ?? []) if (!out.has(a.productId)) out.set(a.productId, a.status);
   return out;
+}
+
+/** Whether TikTok offers this creator a sample of the product right now (null when TikTok didn't answer). */
+export async function sampleOffered(token: string, productId: string): Promise<boolean | null> {
+  const r = await getSampleLabel(token, productId).catch(() => null);
+  if (!r || r.code !== 0) return null;
+  const l = r.data?.label;
+  if (l?.application_id) return true;
+  return l?.can_apply !== false && (l?.sample_product?.sample_sku_list ?? []).some((o) => o.is_available);
 }
