@@ -5,6 +5,8 @@ import { smallImage } from "../tap/image.ts";
 import { updateLevels } from "../levels/store.ts";
 import { pruneActivity } from "../admin/admins.ts";
 import { refreshVideos } from "../admin/videos.ts";
+import { approvedCreatorToken } from "../creator-accounts/access.ts";
+import { linkedCreators, syncCreatorOrders } from "../sales/orders.ts";
 import { buildRankings } from "../rankings/store.ts";
 import { getBestselling, getMarketplaceCreator, searchMarketplaceCreators, type BestsellingKind } from "../../integrations/tiktok-shop/seller.ts";
 import { bestSlot, type PlannedTask } from "./plan.ts";
@@ -133,6 +135,23 @@ async function rankings(t: TaskRow): Promise<StepResult> {
   return { count: built.creators["30D"].length };
 }
 
+/** Each linked creator's own affiliate orders, creator by creator, carrying on from `cursor` when time runs out. */
+async function orders(t: TaskRow, { deadline }: Ctx): Promise<StepResult> {
+  const ids = await linkedCreators();
+  let count = 0;
+  for (let i = t.cursor ? Number(t.cursor) : 0; i < ids.length; i++) {
+    if (Date.now() > deadline - 8000) return { count, more: true, cursor: String(i) };
+    const token = await approvedCreatorToken(ids[i]);
+    if (!token) continue;
+    try {
+      count += await syncCreatorOrders(ids[i], token, deadline - 5000);
+    } catch (err) {
+      console.error("[orders]", ids[i], err instanceof Error ? err.message : err);
+    }
+  }
+  return { count };
+}
+
 /** Video numbers for every connected TikTok account (admin Video stats), then trims the admin activity log to 90 days. */
 async function videos(t: TaskRow, { deadline }: Ctx): Promise<StepResult> {
   const r = await refreshVideos(t.cursor ? Number(t.cursor) : 0, deadline - 8000);
@@ -231,6 +250,7 @@ export const STEPS: Record<string, (t: TaskRow, ctx: Ctx) => Promise<StepResult>
   levels,
   rankings,
   videos,
+  orders,
   details,
   marketplace,
 };
