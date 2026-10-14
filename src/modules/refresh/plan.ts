@@ -11,8 +11,8 @@ export const mytDay = (now: number, n = 0) => new Date(now + MYT - n * DAY).toIS
 /** Malaysia's hour of the day, 0-23. */
 export const mytHour = (now: number) => new Date(now + MYT).getUTCHours();
 
-/** Tasks are planned from this hour (Malaysia time). At that hour TikTok's newest best-seller lists are two days old. */
-export const PLAN_HOUR = 6;
+/** Tasks are planned right after midnight (Malaysia time), so the new day starts with fresh data (owner, 14 Oct 2026). */
+export const PLAN_HOUR = 0;
 export const DATA_LAG_DAYS = 2;
 /**
  * TikTok publishes yesterday's lists later in the day (by 17:00 on 14 Oct 2026). Once the day is planned, Rezekii checks for
@@ -69,7 +69,8 @@ export function planNewest(date: string): PlannedTask[] {
   return tasks;
 }
 
-export function planDay(now: number, haveDays: Set<string>): PlannedTask[] {
+/** `newestBuilt`: Rankings were already built for the day-2 date (yesterday's late check did it), so it isn't fetched again. */
+export function planDay(now: number, haveDays: Set<string>, newestBuilt = false): PlannedTask[] {
   const newest = mytDay(now, DATA_LAG_DAYS);
   const tasks: PlannedTask[] = [
     { key: "tap_campaigns", kind: "tap_campaigns", params: {}, priority: 1 },
@@ -83,7 +84,7 @@ export function planDay(now: number, haveDays: Set<string>): PlannedTask[] {
     { key: "orders", kind: "orders", params: {}, priority: 6 },
   ];
 
-  tasks.push(...planNewest(newest));
+  if (!newestBuilt) tasks.push(...planNewest(newest));
 
   // Older days: only the daily (1D) creator and product lists, and only days not saved yet.
   for (let n = DATA_LAG_DAYS + 1; n < DATA_LAG_DAYS + DAILY_DAYS; n++) {

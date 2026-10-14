@@ -17,6 +17,17 @@ export async function hasTask(runDate: string, key: string): Promise<boolean> {
   return ((await res.json()) as unknown[]).length > 0;
 }
 
+/** True when Rankings were built for this data date. */
+export async function rankingsBuilt(day: string): Promise<boolean> {
+  const res = await supabaseRest(`market_snapshots?dataset=eq.rankings&slot=eq.built&as_of=eq.${day}&select=as_of&limit=1`);
+  return ((await res.json()) as unknown[]).length > 0;
+}
+
+/** Notes the first time TikTok's lists for `date` were seen (to learn when TikTok publishes them). */
+export async function notePublished(date: string, at: string): Promise<void> {
+  await supabaseRest("app_settings?on_conflict=key", { method: "POST", headers: { prefer: "resolution=ignore-duplicates,return=minimal" }, body: JSON.stringify({ key: `best_lists_published:${date}`, value: { at }, updated_at: at }) });
+}
+
 /** Adds the day's tasks. Tasks already there (another run planned first) are left alone. */
 export async function addTasks(runDate: string, tasks: PlannedTask[]): Promise<void> {
   for (let i = 0; i < tasks.length; i += 500)

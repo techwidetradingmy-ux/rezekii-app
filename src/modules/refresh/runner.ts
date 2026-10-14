@@ -1,8 +1,8 @@
 import { getBestselling } from "../../integrations/tiktok-shop/seller.ts";
-import { AUTHOR_TYPES, CATEGORIES, LATE_HOUR, PLAN_HOUR, mytDay, mytHour, planDay, planNewest, type TaskKind } from "./plan.ts";
+import { AUTHOR_TYPES, CATEGORIES, DATA_LAG_DAYS, LATE_HOUR, PLAN_HOUR, mytDay, mytHour, planDay, planNewest, type TaskKind } from "./plan.ts";
 import type { Sessions } from "./sessions.ts";
 import { ApiError, RATE_LIMITED, STEPS } from "./steps.ts";
-import { addTasks, claimTask, completeDailyDays, hasTask, hasTasks, pruneMarketData, updateTask, type TaskRow } from "./store.ts";
+import { addTasks, claimTask, completeDailyDays, hasTask, notePublished, pruneMarketData, rankingsBuilt, updateTask, type TaskRow } from "./store.ts";
 
 /** Daily lists per data date: creators (4 author types) and products (29 category lists), each in RM and US$. */
 const DAILY_LISTS = (AUTHOR_TYPES.length + CATEGORIES.length) * 2;
@@ -49,24 +49,26 @@ async function listsOut(sessions: Sessions, date: string): Promise<boolean> {
 }
 
 /**
- * One timer tick. From 06:00 Malaysia time the day's tasks are planned (once), and yesterday's lists as soon as TikTok has them. Then one Creator Marketplace page
+ * One timer tick. Right after midnight (Malaysia time) the day's tasks are planned (once), and yesterday's lists as soon as TikTok has them. Then one Creator Marketplace page
  * (that search allows about 3 calls a minute), then other tasks until `deadline`, about 1.2 s apart.
  */
 export async function runRefresh(sessions: Sessions, deadline: number, now = Date.now()): Promise<RunSummary> {
   const runDate = mytDay(now);
   let planned = 0;
-  if (mytHour(now) >= PLAN_HOUR && !(await hasTasks(runDate))) {
+  // The day's plan is marked by its first task, so yesterday's lists (planned on their own) don't count as the plan.
+  if (mytHour(now) >= PLAN_HOUR && !(await hasTask(runDate, "tap_campaigns"))) {
     await pruneMarketData(runDate);
-    const tasks = planDay(now, await completeDailyDays(DAILY_LISTS));
+    const tasks = planDay(now, await completeDailyDays(DAILY_LISTS), await rankingsBuilt(mytDay(now, DATA_LAG_DAYS)));
     await addTasks(runDate, tasks);
     planned = tasks.length;
   }
-  // TikTok publishes yesterday's lists during the day: once the day is planned, every 15 minutes, check whether TikTok has them
-  // and, once it does, plan that day as the newest too (its Rankings build waits for every list).
+  // TikTok publishes yesterday's lists during the day: every 15 minutes check whether TikTok has them and, once it does, plan
+  // that day as the newest too (its Rankings build waits for every list), and note when TikTok published them.
   const yesterday = mytDay(now, 1);
   if (mytHour(now) >= LATE_HOUR && new Date(now).getUTCMinutes() % 15 === 0 && !(await hasTask(runDate, `rankings|${yesterday}`)) && (await listsOut(sessions, yesterday))) {
     const late = planNewest(yesterday);
     await addTasks(runDate, late);
+    await notePublished(yesterday, new Date(now).toISOString()).catch(() => undefined);
     planned += late.length;
   }
 

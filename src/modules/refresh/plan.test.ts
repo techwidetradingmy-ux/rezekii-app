@@ -56,3 +56,11 @@ test("planNewest plans one data date in full: every list, then its own Rankings 
   assert.ok(t.some((x) => x.kind === "best" && (x.params as { kind: string; date: string; timeSlot: string }).kind === "creators" && (x.params as { date: string }).date === "2026-10-13" && (x.params as { timeSlot: string }).timeSlot === "1D"));
   assert.equal(new Set(t.map((x) => x.key)).size, t.length);
 });
+
+test("planDay skips the day-2 lists when yesterday's late check already built them", () => {
+  const all = planDay(now, new Set());
+  const skip = planDay(now, new Set(), true);
+  assert.ok(all.some((t) => t.kind === "rankings"));
+  assert.ok(!skip.some((t) => t.kind === "rankings"));
+  assert.ok(skip.some((t) => t.key === "tap_campaigns") && skip.some((t) => t.kind === "orders"));
+});
