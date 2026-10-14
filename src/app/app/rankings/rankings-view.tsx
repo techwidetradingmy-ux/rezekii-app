@@ -266,7 +266,7 @@ export function RankingsView({ board, you, asOf }: { board: BoardMonth[]; you: s
               {VIEW_ORDER.map((i) => <button key={VIEWS[i]} type="button" className={`nv-chip nv-press ${mview === i ? "on" : ""}`} aria-pressed={mview === i} onClick={() => pickView(i)}>{VIEWS[i]}</button>)}
             </div>
             {error && <p className="np-error" role="alert">{error}</p>}
-            {mview === 5 && <DailyTop100 />}
+            {mview === 5 && <DailyTop100 onOpen={openCp} />}
 
             {mview < 4 && (
               <section className="nv-card" aria-label={`${["Bestselling creators", "Bestselling products", "Bestselling videos", "Bestselling LIVEs"][mview]} · TikTok Shop Malaysia`} style={{ padding: "18px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
@@ -501,10 +501,10 @@ export function RankingsView({ board, you, asOf }: { board: BoardMonth[]; you: s
                 <div className="rk-cards">
                   {found?.rows.map(([handle, nick, fol, gmv, vp2, views, , avatar], i) => (
                     <div key={handle} className="rk-card" style={{ animationDelay: `${Math.min(i % 24, 12) * 40}ms` }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                      <button type="button" className="rk-who2" onClick={() => openCp(handle.replace(/^@/, ""))} aria-label={`Details for ${handle}`}>
                         {avatar ? <span className="rk-face rk-photo" aria-hidden="true" style={{ width: 44, height: 44, backgroundImage: `url("${avatar}")` }} /> : <span style={{ width: 44, height: 44, borderRadius: "50%", background: COL[(i + 1) % COL.length], color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, flexShrink: 0 }}>{(handle[1] || "?").toUpperCase()}</span>}
                         <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}><strong style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{handle}</strong><span style={{ fontSize: 13, color: "var(--muted)" }}>{nick} · {short(fol)} followers</span></span>
-                      </div>
+                      </button>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}><span className="nv-cap">GMV, 30 days</span><span style={{ fontSize: 20, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{gmv}</span></div>
                       <div className="rk-split" aria-hidden="true"><span style={{ width: `${vp2 < 0 ? 0 : vp2}%`, background: "#00c073" }} /><span style={{ width: `${vp2 < 0 ? 0 : 100 - vp2}%`, background: "#7c3aed" }} /></div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--muted)" }}><span>Video {vp2 < 0 ? 0 : vp2}%</span><span>LIVE {vp2 < 0 ? 0 : 100 - vp2}%</span></div>

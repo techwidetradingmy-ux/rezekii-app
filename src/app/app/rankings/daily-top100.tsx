@@ -33,7 +33,7 @@ function Strip({ history, days }: { history: (number | null)[]; days: string[] }
 }
 
 /** Daily Top 100 Creators: TikTok Shop Malaysia's top 100 creators for each day, a proud leaderboard (mockup A with B and C). */
-export function DailyTop100() {
+export function DailyTop100({ onOpen }: { onOpen: (user: string) => void }) {
   const [date, setDate] = useState<string | null>(null);
   const [b, setB] = useState<Board | null>(null);
   const [error, setError] = useState("");
@@ -98,7 +98,7 @@ export function DailyTop100() {
             const first = r.rank === 1;
             const [chg, color] = change(r);
             return (
-              <div key={r.user} className="dt-p">
+              <button key={r.user} type="button" className="dt-p dt-tap" onClick={() => onOpen(r.user)}>
                 <span style={{ fontSize: first ? 32 : 26, lineHeight: 1 }} aria-hidden="true">{first ? "👑" : r.rank === 2 ? "🥈" : "🥉"}</span>
                 <Face src={r.avatar} name={r.user} i={r.rank} size={first ? 92 : 74} />
                 <strong className="dt-ellip" style={{ fontSize: 15, maxWidth: "100%" }}>@{r.user}</strong>
@@ -106,7 +106,7 @@ export function DailyTop100() {
                 <span className="dt-streak">🔥 {r.days} {r.days === 1 ? "day" : "days"} in the top 100</span>
                 <span style={{ fontSize: 12, fontWeight: 800, color }}>{chg}</span>
                 <span className={`dt-step dt-step${r.rank}`}>{r.rank}</span>
-              </div>
+              </button>
             );
           })}
         </div>
@@ -118,7 +118,7 @@ export function DailyTop100() {
           {rest.map((r) => {
             const [chg, color] = change(r);
             return (
-              <div key={r.user} className={`dt-row ${r.rezekii ? "dt-ourrow" : ""} ${b.me && r.user.toLowerCase() === b.me ? "dt-merow" : ""}`}>
+              <button key={r.user} type="button" className={`dt-row dt-tap ${r.rezekii ? "dt-ourrow" : ""} ${b.me && r.user.toLowerCase() === b.me ? "dt-merow" : ""}`} onClick={() => onOpen(r.user)}>
                 <span className="dt-rank">{r.rank}</span>
                 <Face src={r.avatar} name={r.user} i={r.rank} size={40} />
                 <span style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
@@ -129,7 +129,7 @@ export function DailyTop100() {
                 <span><span className={`dt-streak ${r.days >= 20 ? "" : "dt-streak-low"}`}>🔥 {r.days} {r.days === 1 ? "day" : "days"}</span></span>
                 <Strip history={r.history} days={b.historyDays} />
                 <span style={{ fontWeight: 700, fontVariantNumeric: "tabular-nums", fontSize: 13 }}>{r.lo || r.hi ? `RM${big(r.lo)} – ${big(r.hi)}` : "–"}</span>
-              </div>
+              </button>
             );
           })}
           {b.rows.length > 20 && (
