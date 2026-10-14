@@ -66,29 +66,47 @@
 @keyframes slPop { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
 @media (max-width: 700px) { .sl-pop { position: fixed; left: 16px; right: 16px; top: auto; bottom: 16px; width: auto; max-height: 80vh; overflow-y: auto; } .sl-presets { flex: 1 1 100%; flex-direction: row; flex-wrap: wrap; border-right: 0; padding-right: 0; } }
 
-/* Commission settled: the second section (owner: the most important part). */
-.cs-wrap { display: flex; flex-direction: column; gap: 18px; }
-.cs-head { display: flex; flex-wrap: wrap; gap: 22px; align-items: center; justify-content: space-between; }
-.cs-big { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.cs-big b { font-size: clamp(30px, 5vw, 40px); font-weight: 900; letter-spacing: -0.02em; color: var(--gink); font-variant-numeric: tabular-nums; }
-.cs-big span { font-size: 16px; color: var(--muted); font-weight: 700; }
-.cs-pill { align-self: flex-start; padding: 6px 12px; border-radius: 999px; background: var(--gsoft); color: var(--gink); font-size: 13px; font-weight: 800; }
-.cs-sub { font-size: 13px; color: var(--muted); line-height: 1.5; }
-.cs-ring { width: 150px; height: 150px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.cs-hole { width: 104px; height: 104px; border-radius: 50%; background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.cs-hole strong { font-size: 26px; font-weight: 900; color: var(--gink); }
-.cs-hole span { font-size: 12px; color: var(--muted); font-weight: 700; }
-.cs-track { display: flex; height: 34px; border-radius: 12px; overflow: hidden; background: var(--seg); gap: 2px; }
-.cs-track i { display: flex; align-items: center; justify-content: center; height: 100%; overflow: hidden; transform-origin: left; animation: csGrow 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
-.cs-track i span { font-style: normal; font-size: 12px; font-weight: 800; color: #ffffff; white-space: nowrap; padding: 0 6px; }
-.cs-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
-.cs-tile { border: 1px solid var(--border); border-top: 5px solid; border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-.cs-tl { display: flex; align-items: center; gap: 8px; }
-.cs-ic { width: 28px; height: 28px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.cs-n { font-size: 24px; font-weight: 900; font-variant-numeric: tabular-nums; }
-.cs-n small { font-size: 13px; font-weight: 700; color: var(--muted); }
-.cs-row { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); }
-.cs-row strong { color: var(--text); font-variant-numeric: tabular-nums; }
-.cs-help { font-size: 12px; color: var(--muted); line-height: 1.4; }
+/* Commission: an interactive journey (awaiting -> to settle -> settled, lost branch), few words (owner's comment). */
+.cj-wrap { display: flex; flex-direction: column; gap: 18px; }
+.cj-top { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.cj-ring { width: 118px; height: 118px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.cj-hole { width: 84px; height: 84px; border-radius: 50%; background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.cj-hole b { font-size: 24px; font-weight: 900; color: var(--gink); }
+.cj-hole span { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.cj-big { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.cj-big b { font-size: clamp(30px, 4.5vw, 42px); font-weight: 900; letter-spacing: -0.02em; color: var(--gink); font-variant-numeric: tabular-nums; }
+.cj-big span { font-size: 18px; font-weight: 800; color: var(--muted); }
+.cj-meter { display: flex; width: min(420px, 100%); height: 10px; border-radius: 999px; overflow: hidden; background: var(--seg); gap: 2px; }
+.cj-meter i { display: block; height: 100%; transform-origin: left; animation: csGrow 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both; transition: opacity 0.25s; }
+.cj-flow { display: flex; align-items: stretch; }
+.cj-stage { all: unset; box-sizing: border-box; flex: 1 1 0; min-width: 0; cursor: pointer; display: flex; flex-direction: column; gap: 6px; padding: 16px; border-radius: 20px; border: 2px solid var(--border); background: var(--surface); transition: transform 0.2s cubic-bezier(0.3, 1.4, 0.5, 1), border-color 0.2s, box-shadow 0.2s; }
+.cj-stage:hover { transform: translateY(-3px); }
+.cj-stage:focus-visible, .cj-leak:focus-visible { outline: 2px solid #00c073; outline-offset: 2px; }
+.cj-stage.on { border-color: var(--c); background: var(--s); box-shadow: var(--shadow2); }
+.cj-ic { width: 36px; height: 36px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: var(--s, var(--surface2)); color: var(--c, var(--muted)); }
+.cj-ic.sm { width: 26px; height: 26px; border-radius: 8px; background: var(--rsoft); color: var(--red); }
+.cj-lab { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+.cj-amt { font-size: 24px; font-weight: 900; font-variant-numeric: tabular-nums; color: var(--c); }
+.cj-n { font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.cj-n small { font-size: 12px; font-weight: 700; color: var(--muted); }
+.cj-bar { height: 6px; border-radius: 999px; background: var(--seg); overflow: hidden; }
+.cj-bar i { display: block; height: 100%; background: var(--c); transform-origin: left; animation: csGrow 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.cj-arrow { flex: 0 0 34px; align-self: center; height: 4px; margin: 0 2px; border-radius: 2px; background: repeating-linear-gradient(90deg, #00c073 0 8px, transparent 8px 14px); background-size: 28px 4px; animation: cjFlow 0.9s linear infinite; position: relative; }
+.cj-arrow::after { content: ""; position: absolute; right: -2px; top: -5px; border: 7px solid transparent; border-left: 9px solid #00c073; border-right: 0; }
+.cj-leaks { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding-left: 6px; }
+.cj-drop { font-size: 22px; font-weight: 900; color: var(--red); }
+.cj-leak { all: unset; box-sizing: border-box; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; border: 2px dashed rgba(229, 72, 77, 0.45); color: var(--text); font-size: 13px; font-weight: 700; transition: transform 0.2s, background 0.2s; }
+.cj-leak:hover { transform: translateY(-2px); }
+.cj-leak b { color: var(--red); font-variant-numeric: tabular-nums; }
+.cj-leak small { color: var(--muted); font-weight: 700; }
+.cj-leak.on { background: var(--rsoft); border-style: solid; }
+.cj-detail { display: grid; grid-template-columns: minmax(150px, 1.3fr) repeat(4, minmax(0, 1fr)); gap: 12px; align-items: center; padding: 14px 16px; border-radius: 16px; background: var(--surface2); border-left: 5px solid var(--c); animation: slPop 0.25s ease both; }
+.cj-detail span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cj-detail small { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.cj-detail b { font-size: 17px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.cj-detail .cj-dt { flex-direction: row; align-items: center; gap: 8px; font-weight: 900; font-size: 15px; }
+.cj-dt i { width: 12px; height: 12px; border-radius: 4px; display: inline-block; }
+@keyframes cjFlow { to { background-position: 28px 0; } }
 @keyframes csGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-@media (prefers-reduced-motion: reduce) { .cs-track i, .sl-pop { animation: none; } }
+@media (max-width: 760px) { .cj-flow { flex-direction: column; } .cj-arrow { flex-basis: 22px; width: 4px; height: 22px; background: repeating-linear-gradient(180deg, #00c073 0 6px, transparent 6px 11px); background-size: 4px 22px; animation: none; } .cj-arrow::after { display: none; } .cj-detail { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (prefers-reduced-motion: reduce) { .cj-arrow, .cj-meter i, .cj-bar i, .sl-pop { animation: none; } }

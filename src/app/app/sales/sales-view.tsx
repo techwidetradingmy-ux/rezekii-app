@@ -17,6 +17,7 @@ const PRESETS: [string, string][] = [["yesterday", "Yesterday"], ["7d", "7 days"
 const WEEK = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 const FULL_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const COMPARE: [Compare, string, string][] = [["none", "Don't compare", "Just this period"], ["prev", "The period before", "Same length, just before"], ["year", "Same time last year", "The same dates a year earlier"]];
+const SHORT: Record<StatusKey, string> = { settled: "Settled", toSettle: "To settle", awaiting: "Awaiting", refunded: "Refunded", ineligible: "Ineligible" };
 const STATUS: Record<StatusKey, [string, string, string, string, string]> = {
   settled: ["Settled", "#00a862", "var(--gsoft)", "TikTok has paid this commission into your account.", "m5 12 5 5 9-10"],
   toSettle: ["To settle", "#2f80ed", "var(--bsoft)", "Delivered. TikTok pays it after the return window closes.", "M12 7v5l3 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18"],
@@ -117,6 +118,8 @@ export function SalesView({ initial, handle, syncedAt }: { initial: FrameData; h
   /** The calendar's month (0 = this month) and the first day tapped for a custom range (Malaysian midnight). */
   const [calM, setCalM] = useState(0);
   const [pick, setPick] = useState<number | null>(null);
+  /** The status shown in the commission detail strip. */
+  const [stage, setStage] = useState<StatusKey>("settled");
   /** Bumped when new orders were read, so the chosen view is read again. */
   const [tick, setTick] = useState(0);
   const first = useRef(true);
@@ -163,10 +166,10 @@ export function SalesView({ initial, handle, syncedAt }: { initial: FrameData; h
   // Commission settled: what each status earns (the full commission when the creator shares it with a partner).
   const comOf = (k: StatusKey) => { const r = s.status.find((x) => x.key === k)!; return shared && k !== "refunded" && k !== "ineligible" ? r.earned : r.commission; };
   const settled = comOf("settled"), pending = comOf("toSettle") + comOf("awaiting"), total = settled + pending;
-  const lost = comOf("refunded") + comOf("ineligible");
   const settledPct = total > 0 ? Math.round((settled / total) * 100) : 0;
   const orderTotal = s.status.reduce((a, r) => a + r.orders, 0) || 1;
   const ringA = total > 0 ? (settled / total) * 360 : 0, ringB = total > 0 ? ((settled + comOf("toSettle")) / total) * 360 : 0;
+  const hi = (k: StatusKey) => (stage === k || stage === "refunded" || stage === "ineligible" ? "" : "66");
   // The calendar month on show, its days (Malaysian midnights) and the chosen range to highlight.
   const today = ymd(d.now);
   const todayStart = Date.UTC(today.y, today.m, today.d) - MYT;
@@ -247,36 +250,62 @@ export function SalesView({ initial, handle, syncedAt }: { initial: FrameData; h
         <Tile label="Refunded" value={s.refunded} format={money} note={s.gmv + s.refunded > 0 ? `${Math.round((s.refunded / (s.gmv + s.refunded)) * 100)}% of sales` : "No refunds"} noteColor={s.refunded ? "var(--red)" : "var(--muted)"} delay={180} />
       </section>
 
-      <section className="nv-card sl-card cs-wrap" aria-labelledby="cshead">
-        <div className="cs-head">
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-            <h2 id="cshead" className="nv-h2">Commission settled · {d.range.label}</h2>
-            <div className="cs-big"><b>{money(settled)}</b><span>of {money(total)} {shared ? "commission earned" : "commission"}</span></div>
-            <span className="cs-pill">{settledPct}% of your commission is settled (paid by TikTok)</span>
-            <span className="cs-sub"><strong>{n(s.status.find((r) => r.key === "settled")!.orders)}</strong> of {n(orderTotal)} orders settled · {money(s.status.find((r) => r.key === "settled")!.gmv)} in sales{lost > 0 ? ` · ${money(lost)} commission lost to refunds and ineligible orders` : ""}{shared ? " · your partner gets their share of it" : ""}</span>
+      <section className="nv-card sl-card cj-wrap" aria-labelledby="cjhead">
+        <div className="cj-top">
+          <div className="cj-ring" role="img" aria-label={`${settledPct}% of commission settled`} style={{ background: `conic-gradient(${STATUS.settled[1]}${hi("settled")} 0deg ${ringA}deg, ${STATUS.toSettle[1]}${hi("toSettle")} ${ringA}deg ${ringB}deg, ${STATUS.awaiting[1]}${hi("awaiting")} ${ringB}deg 360deg)` }}>
+            <div className="cj-hole"><b>{settledPct}%</b><span>settled</span></div>
           </div>
-          <div className="cs-ring" role="img" aria-label={`${settledPct}% of commission settled`} style={{ background: `conic-gradient(#00a862 0deg ${ringA}deg, #2f80ed ${ringA}deg ${ringB}deg, #f2a93b ${ringB}deg 360deg)` }}>
-            <div className="cs-hole"><strong>{settledPct}%</strong><span>settled</span></div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+            <h2 id="cjhead" className="nv-h2">{shared ? "Commission earned" : "Commission"}</h2>
+            <div className="cj-big"><b>{money(settled)}</b><span>/ {money(total)}</span></div>
+            <div className="cj-meter" aria-hidden="true">
+              {(["settled", "toSettle", "awaiting"] as StatusKey[]).map((k) => <i key={`${key}-${k}`} style={{ width: `${total > 0 ? (comOf(k) / total) * 100 : 0}%`, background: STATUS[k][1], opacity: hi(k) ? 0.45 : 1 }} />)}
+            </div>
           </div>
         </div>
-        <div className="cs-track" role="img" aria-label={`Orders by status for ${d.range.label}`}>
-          {s.status.map((r) => r.orders > 0 && <i key={`${key}-${r.key}`} style={{ width: `${(r.orders / orderTotal) * 100}%`, background: STATUS[r.key][1] }}><span>{r.orders / orderTotal > 0.09 ? `${STATUS[r.key][0]} ${Math.round((r.orders / orderTotal) * 100)}%` : ""}</span></i>)}
-        </div>
-        <div className="cs-tiles">
-          {s.status.map((r) => {
-            const [label, color, soft, help, icon] = STATUS[r.key];
-            const isLost = r.key === "refunded" || r.key === "ineligible";
+        <div className="cj-flow" role="group" aria-label="Where your commission is">
+          {(["awaiting", "toSettle", "settled"] as StatusKey[]).map((k, i) => {
+            const r = s.status.find((x) => x.key === k)!;
+            const [, color, soft, help, icon] = STATUS[k];
             return (
-              <div key={r.key} className="cs-tile" style={{ borderTopColor: color }}>
-                <span className="cs-tl"><span className="cs-ic" style={{ background: soft, color }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={icon} /></svg></span><strong>{label}</strong></span>
-                <span className="cs-n">{n(r.orders)} <small>orders · {Math.round((r.orders / orderTotal) * 100)}%</small></span>
-                <span className="cs-row"><span>Sales</span><strong>{money(r.gmv)}</strong></span>
-                <span className="cs-row"><span>Commission</span><strong style={{ color: r.key === "settled" ? "var(--gink)" : isLost ? "var(--red)" : "var(--text)" }}>{isLost ? (r.commission > 0 ? `None (${money(r.commission)} lost)` : "None") : money(comOf(r.key))}</strong></span>
-                <span className="cs-help">{help}</span>
+              <div key={k} style={{ display: "contents" }}>
+                <button type="button" className={`cj-stage ${stage === k ? "on" : ""}`} style={{ ["--c" as string]: color, ["--s" as string]: soft }} aria-pressed={stage === k} title={help} onClick={() => setStage(k)}>
+                  <span className="cj-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={icon} /></svg></span>
+                  <span className="cj-lab">{SHORT[k]}</span>
+                  <b className="cj-amt">{money(comOf(k))}</b>
+                  <span className="cj-n">{n(r.orders)}<small> orders</small></span>
+                  <span className="cj-bar"><i key={`${key}-${k}`} style={{ width: `${(r.orders / orderTotal) * 100}%` }} /></span>
+                </button>
+                {i < 2 && <span className="cj-arrow" aria-hidden="true" />}
               </div>
             );
           })}
         </div>
+        <div className="cj-leaks" role="group" aria-label="Lost commission">
+          <span className="cj-drop" aria-hidden="true">↘</span>
+          {(["refunded", "ineligible"] as StatusKey[]).map((k) => {
+            const r = s.status.find((x) => x.key === k)!;
+            return (
+              <button key={k} type="button" className={`cj-leak ${stage === k ? "on" : ""}`} aria-pressed={stage === k} title={STATUS[k][3]} onClick={() => setStage(k)}>
+                <span className="cj-ic sm"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={STATUS[k][4]} /></svg></span>
+                <span>{SHORT[k]}</span><b>−{money(r.commission)}</b><small>{n(r.orders)}</small>
+              </button>
+            );
+          })}
+        </div>
+        {(() => {
+          const r = s.status.find((x) => x.key === stage)!;
+          const lostK = stage === "refunded" || stage === "ineligible";
+          return (
+            <div key={`${key}-${stage}`} className="cj-detail" style={{ ["--c" as string]: STATUS[stage][1] }}>
+              <span className="cj-dt"><i style={{ background: STATUS[stage][1] }} />{STATUS[stage][0]}</span>
+              <span><small>Sales</small><b>{money(r.gmv)}</b></span>
+              <span><small>Orders</small><b>{n(r.orders)}</b></span>
+              <span><small>Per order</small><b>{lostK || !r.orders ? "RM 0.00" : money(comOf(stage) / r.orders)}</b></span>
+              <span><small>Of all orders</small><b>{Math.round((r.orders / orderTotal) * 100)}%</b></span>
+            </div>
+          );
+        })()}
       </section>
 
       <section className="nv-card sl-card" aria-labelledby="slchart">
