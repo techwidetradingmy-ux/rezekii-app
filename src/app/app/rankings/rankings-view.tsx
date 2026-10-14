@@ -5,6 +5,7 @@ import type { BoardMonth } from "@/modules/rankings/leaderboard.ts";
 import type { ListResult } from "@/modules/rankings/query.ts";
 import type { BestVideo, CreatorRow, Detail, FindRow } from "@/modules/rankings/build.ts";
 import { Hud, useToast } from "../marketplace/use-tap-actions";
+import { DailyTop100 } from "./daily-top100";
 import "../marketplace/marketplace.css";
 import "../levels/levels.css";
 import "./rankings.css";
@@ -20,7 +21,9 @@ const COL = ["#00874f", "#7c3aed", "#e8005a", "#0e7490", "#f2a93b", "#1d4ed8", "
 const LV: Record<string, string> = { gold: "b-amber", silver: "b-gray", bronze: "b-green" };
 const LVN: Record<string, string> = { gold: "Gold", silver: "Silver", bronze: "Bronze" };
 const SLOTS = ["1 day", "7 days", "30 days"];
-const VIEWS = ["Top creators", "Top products", "Top videos", "Top LIVEs", "Find creators"];
+// Index 5 (Daily Top 100 Creators) is shown first: the leaderboard.
+const VIEWS = ["Top creators", "Top products", "Top videos", "Top LIVEs", "Find creators", "Daily Top 100 Creators"];
+const VIEW_ORDER = [5, 0, 1, 2, 3, 4];
 const SORTS: [string, string][][] = [
   [["gmv-d", "GMV: high to low"], ["gmv-a", "GMV: low to high"], ["fol-d", "Followers: high to low"], ["fol-a", "Followers: low to high"]],
   [["gmv-d", "GMV: high to low"], ["gmv-a", "GMV: low to high"], ["rat-d", "Rating: high to low"], ["rat-a", "Rating: low to high"]],
@@ -59,7 +62,7 @@ export function RankingsView({ board, you, asOf }: { board: BoardMonth[]; you: s
   const { toast, flash } = useToast();
   const [tab, setTab] = useState(0);
   const [month, setMonth] = useState(0);
-  const [mview, setMview] = useState(0);
+  const [mview, setMview] = useState(5);
   const [slot, setSlot] = useState(2);
   const [ctype, setCtype] = useState(0);
   const [cat, setCat] = useState("");
@@ -257,9 +260,10 @@ export function RankingsView({ board, you, asOf }: { board: BoardMonth[]; you: s
         {tab === 1 && (
           <>
             <div className="nv-noscroll" role="group" aria-label="Marketplace view" style={{ display: "flex", gap: 8, overflowX: "auto" }}>
-              {VIEWS.map((label, i) => <button key={label} type="button" className={`nv-chip nv-press ${mview === i ? "on" : ""}`} aria-pressed={mview === i} onClick={() => pickView(i)}>{label}</button>)}
+              {VIEW_ORDER.map((i) => <button key={VIEWS[i]} type="button" className={`nv-chip nv-press ${mview === i ? "on" : ""}`} aria-pressed={mview === i} onClick={() => pickView(i)}>{VIEWS[i]}</button>)}
             </div>
             {error && <p className="np-error" role="alert">{error}</p>}
+            {mview === 5 && <DailyTop100 />}
 
             {mview < 4 && (
               <section className="nv-card" aria-label={`${["Bestselling creators", "Bestselling products", "Bestselling videos", "Bestselling LIVEs"][mview]} · TikTok Shop Malaysia`} style={{ padding: "18px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
