@@ -441,3 +441,13 @@ textarea.np-input { resize: vertical; line-height: 1.5; }
 @media (max-width: 760px) and (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .nv-bottom { background: rgba(19, 28, 24, 0.88); } }
 @media (max-width: 760px) { :root[data-theme="dark"] .nv-bottom { background: rgba(19, 28, 24, 0.88); } }
 @keyframes nvIconPop { 0% { transform: scale(0.7); } 60% { transform: scale(1.18); } 100% { transform: none; } }
+
+/* Signed-in menu: the current section, and a section's sub-menu under the top bar. */
+.site-nav a.site-on { color: var(--gink); position: relative; }
+.site-nav a.site-on::after { content: ""; position: absolute; left: 0; right: 0; bottom: -8px; height: 3px; border-radius: 999px; background: #00c073; animation: subIn 0.3s cubic-bezier(0.32, 0.72, 0, 1) both; }
+.sub-wrap { background: var(--bg); }
+.sub-menu { display: flex; gap: 8px; overflow-x: auto; padding-top: 14px; padding-bottom: 2px; }
+.sub-menu a { flex-shrink: 0; height: 36px; padding: 0 14px; border-radius: 999px; display: inline-flex; align-items: center; font-size: 14px; font-weight: 700; color: var(--body); background: var(--surface); border: 1px solid var(--border); text-decoration: none; transition: background-color 0.2s, color 0.2s, border-color 0.2s; }
+.sub-menu a:hover { border-color: #00c073; color: var(--text); }
+.sub-menu a.on { background: var(--text); color: var(--bg); border-color: var(--text); }
+@keyframes subIn { from { transform: scaleX(0); } to { transform: none; } }

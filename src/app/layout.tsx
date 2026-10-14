@@ -19,7 +19,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={albertSans.className}>
-        {/* Applies the Appearance choice from My accounts before the page paints (saved on this device only). */}
+        {/* Applies the Appearance choice from Account before the page paints (saved on this device only). */}
         <Script id="rz-theme" strategy="beforeInteractive">{THEME_SCRIPT}</Script>
         {children}
       </body>

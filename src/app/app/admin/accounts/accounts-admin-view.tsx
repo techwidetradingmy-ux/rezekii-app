@@ -166,7 +166,7 @@ export function AccountsAdminView({ accounts }: { accounts: AdminAccount[] }) {
                 {sp.tiktok === "expired" && sp.techwide ? (
                   <a href="/api/auth/tiktok/start" className="nv-btn3 nv-sm nv-press">Reconnect now</a>
                 ) : sp.tiktok === "expired" ? (
-                  <span style={{ fontSize: 12, color: "var(--muted)", textAlign: "right" }}>The owner reconnects on My accounts</span>
+                  <span style={{ fontSize: 12, color: "var(--muted)", textAlign: "right" }}>The owner reconnects on Account</span>
                 ) : (
                   <span className={`nv-badge ${spl!.tt[1]}`}>{spl!.tt[0]}</span>
                 )}

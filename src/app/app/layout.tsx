@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { creatorReady } from "@/modules/creator-accounts/access.ts";
 import { currentUser } from "../current-user";
+import { SubMenu } from "../menu-links";
 import { SiteFooter, SiteNav } from "../site";
 
 /**
@@ -13,6 +14,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <>
       <SiteNav variant="app" />
+      {user && <SubMenu admin={user.role === "admin"} />}
       {children}
       <SiteFooter />
     </>

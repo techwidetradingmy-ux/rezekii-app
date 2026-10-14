@@ -60,7 +60,7 @@ export async function upsertTikTokUser(t: { open_id: string; username?: string; 
 }
 
 /**
- * TikTok from My accounts: when someone is already signed in and no other Rezekii account uses this TikTok account, it is
+ * TikTok from Account: when someone is already signed in and no other Rezekii account uses this TikTok account, it is
  * connected to the signed-in account (their own name and photo are kept). Otherwise it signs in as usual.
  */
 export async function linkOrSignInTikTok(

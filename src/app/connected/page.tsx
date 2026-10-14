@@ -2,10 +2,10 @@ import { Splash } from "../splash";
 
 const MESSAGES: Record<string, { title: string; body: string; retry?: boolean }> = {
   connected: { title: "TikTok Shop linked", body: "Your TikTok Shop account is linked and approved. Affiliate links, product lookup and showcase are ready on Rezekii." },
-  waiting: { title: "TikTok Shop linked", body: "Techwide approves each new creator account. You'll see it on My accounts once it's approved." },
-  waitlist: { title: "You're on the waitlist", body: "All of Rezekii's TikTok Shop places are taken for now, so nothing was saved. When a place frees up you'll be invited to link again from My accounts." },
+  waiting: { title: "TikTok Shop linked", body: "Techwide approves each new creator account. You'll see the result on Getting set up." },
+  waitlist: { title: "You're on the waitlist", body: "All of Rezekii's TikTok Shop places are taken for now, so nothing was saved. When a place frees up you'll be invited to link again on Getting set up." },
   taken: { title: "Already linked", body: "This TikTok Shop account is already linked to a different Rezekii account." },
-  signin: { title: "Sign in first", body: "Sign in to Rezekii, then link TikTok Shop from My accounts.", retry: true },
+  signin: { title: "Sign in first", body: "Sign in to Rezekii, then link TikTok Shop on Getting set up.", retry: true },
   "not-allowed": { title: "Not part of this test", body: "This TikTok account isn't in the current test, so nothing was saved." },
   denied: { title: "Linking cancelled", body: "You didn't approve Rezekii in TikTok Shop.", retry: true },
   expired: { title: "Link expired", body: "This link expired or was opened in a different browser.", retry: true },

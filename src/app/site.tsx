@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { currentUser } from "./current-user";
 import { BottomNav } from "./bottom-nav";
+import { MenuLinks } from "./menu-links";
 import { NavAccount } from "./nav-account";
 
 export const COMPANY = "Techwide Marketing Sdn Bhd";
@@ -10,14 +11,7 @@ export const SUPPORT_EMAIL = "support@rezekii.com";
 
 export { TikTokLogo } from "./tiktok-logo";
 
-/** The signed-in menus from the mockup: creators', and Techwide admins'. */
-export const CREATOR_LINKS: [string, string][] = [["/app", "Today"], ["/app/marketplace", "Marketplace"], ["/app/posts", "My posts"], ["/app/levels", "Levels"], ["/app/rankings", "Rankings"], ["/app/accounts", "My accounts"]];
-export const ADMIN_LINKS: [string, string][] = [
-  ["/app/admin", "Today"], ["/app/admin/calendar", "Calendar"], ["/app/new", "New post"], ["/app/admin/drafts", "Drafts"], ["/app/admin/accounts", "Accounts"],
-  ["/app/admin/creators", "Creators"], ["/app/rankings", "Rankings"], ["/app/admin/tap", "TAP"], ["/app/admin/stats", "Stats"], ["/app/admin/settings", "Settings"],
-];
-
-/** Top bar. "hero" sits on the homepage band; "plain" is for legal pages; "app" is the signed-in menu. Signed-in people get "My account" instead of "Sign in". */
+/** Top bar. "hero" sits on the homepage band; "plain" is for legal pages; "app" is the signed-in menu. Signed-in people get their photo and Account (Settings for admins) instead of "Sign in". */
 export async function SiteNav({ variant, staticPage = false }: { variant: "hero" | "plain" | "app"; staticPage?: boolean }) {
   // The homepage stays static (served from the CDN); its account button is checked in the browser.
   const clientAccount = variant === "hero" || staticPage;
@@ -39,9 +33,7 @@ export async function SiteNav({ variant, staticPage = false }: { variant: "hero"
           <a href="#faq">FAQ</a>
         </>
       ) : variant === "app" ? (
-        (user?.role === "admin" ? ADMIN_LINKS : CREATOR_LINKS).map(([href, label]) => (
-          <Link key={href} href={href}>{label}</Link>
-        ))
+        <MenuLinks admin={user?.role === "admin"} />
       ) : (
         <>
           <Link href="/privacy">Privacy Policy</Link>
@@ -51,13 +43,13 @@ export async function SiteNav({ variant, staticPage = false }: { variant: "hero"
       {clientAccount ? (
         <NavAccount />
       ) : user ? (
-        <Link href={variant !== "app" ? "/app" : user.role === "admin" ? "/app/admin/settings" : "/app/accounts"} className="site-signin site-account">
+        <Link href={variant !== "app" ? "/app" : user.role === "admin" ? "/app/admin/settings" : "/app/accounts"} className="site-signin site-account" aria-label={variant === "app" ? (user.role === "admin" ? "Settings" : "Account") : "Open Rezekii"}>
           {user.avatar_url ? (
             // Avatars come from many TikTok and Google CDN hosts, so a plain img (as on /app).
             // eslint-disable-next-line @next/next/no-img-element
             <img src={user.avatar_url} alt="" width={26} height={26} />
           ) : null}
-          My account
+          {variant === "app" ? (user.role === "admin" ? "Settings" : "Account") : "My account"}
         </Link>
       ) : (
         <Link href="/signin" className="site-signin">

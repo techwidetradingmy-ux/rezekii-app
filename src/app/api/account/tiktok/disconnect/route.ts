@@ -4,7 +4,7 @@ import { disconnectTikTok } from "@/modules/accounts/manage.ts";
 
 export const dynamic = "force-dynamic";
 
-/** Disconnect TikTok (My accounts). Same-origin only. */
+/** Disconnect TikTok (Account). Same-origin only. */
 export async function POST(req: NextRequest) {
   const origin = req.headers.get("origin");
   if (origin && origin !== req.nextUrl.origin) return NextResponse.json({ error: "Please do this from rezekii.com." }, { status: 403 });

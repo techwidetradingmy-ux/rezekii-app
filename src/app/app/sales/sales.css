@@ -1,0 +1,38 @@
+/* Sales (mockup direction A): soft iOS-style motion — sliding segment thumbs, count-up numbers, a chart that draws in, growing bars. */
+.sl-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.sl-seg { width: 520px; max-width: 100%; }
+.sl-period { width: 380px; }
+.sl-seg .nv-segthumb { transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1); }
+.sl-note { margin: -10px 0 0; font-size: 13px; color: var(--muted); animation: slFade 0.35s ease both; }
+.sl-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+.sl-tile { padding: 20px; display: flex; flex-direction: column; gap: 6px; min-width: 0; box-shadow: var(--shadow); animation: slRise 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.sl-tile b { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.sl-card { padding: 20px 22px; display: flex; flex-direction: column; gap: 10px; min-width: 0; animation: slRise 0.6s 0.1s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.sl-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; justify-content: space-between; }
+.sl-split { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-size: 12px; font-weight: 700; color: var(--muted); }
+.sl-split i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: -6px; }
+.sl-stack { display: flex; height: 8px; border-radius: 999px; overflow: hidden; background: var(--seg); }
+.sl-stack span { display: block; height: 100%; transition: width 0.6s cubic-bezier(0.32, 0.72, 0, 1); }
+.sl-axis { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+.sl-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 24px; align-items: start; }
+.sl-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); color: var(--text); text-decoration: none; animation: slRise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.sl-row:nth-of-type(1) { border-top: 0; }
+.sl-link { border-radius: 12px; transition: background-color 0.2s; }
+.sl-link:hover { background: var(--surface2); }
+.sl-rank { width: 44px; height: 44px; border-radius: 12px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-weight: 800; color: var(--muted); }
+.sl-cover { width: 44px; height: 58px; border-radius: 10px; background: var(--surface2) center / cover no-repeat; }
+.sl-kind { display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 10px; font-weight: 800; }
+.sl-name { display: block; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sl-muted { font-size: 13px; color: var(--muted); }
+.sl-meter { display: block; height: 6px; margin-top: 6px; border-radius: 999px; background: var(--seg); overflow: hidden; }
+.sl-meter i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #00c073, #25f4ee); transform-origin: left; animation: slGrow 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.sl-amt { text-align: right; font-variant-numeric: tabular-nums; display: flex; flex-direction: column; gap: 2px; }
+.sl-amt span { font-size: 12px; color: var(--gink); font-weight: 700; }
+.sl-empty { margin: 8px 0; color: var(--muted); font-size: 14px; }
+.sl-foot { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.6; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; }
+.sl-foot .nv-link { font-size: 12px; }
+@keyframes slRise { from { opacity: 0; transform: translateY(12px) scale(0.99); } to { opacity: 1; transform: none; } }
+@keyframes slGrow { from { transform: scaleX(0); } to { transform: none; } }
+@keyframes slFade { from { opacity: 0; } to { opacity: 1; } }
+@media (max-width: 760px) { .sl-seg, .sl-period { width: 100%; } .sl-two { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .sl-tile, .sl-card, .sl-row, .sl-meter i, .sl-note { animation: none; } }

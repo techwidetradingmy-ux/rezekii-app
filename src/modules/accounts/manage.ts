@@ -23,7 +23,7 @@ const count = async (path: string) => {
 };
 const day = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kuala_Lumpur" });
 
-/** What My accounts shows: sign-in methods, the TikTok posting connection, the TikTok Shop link and this week's numbers. */
+/** What Account shows: sign-in methods, the TikTok posting connection, the TikTok Shop link and this week's numbers. */
 export async function accountOverview(user: AppUser): Promise<AccountOverview> {
   const weekAgo = new Date(Date.now() - 7 * 86400_000).toISOString();
   const [[row], hasPassword, [conn], shop, links, tap] = await Promise.all([
