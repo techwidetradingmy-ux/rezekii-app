@@ -120,7 +120,7 @@ export async function buildRankings(day: string): Promise<Built> {
   const detailRows = await paged<{ username: string; detail: Raw }>("market_creators?detail=not.is.null&select=username,detail&order=username");
   const details: Record<string, Detail> = {};
   for (const r of detailRows) if (r.username && r.detail && typeof r.detail === "object" && !("error" in r.detail)) details[r.username] = detailOf(r.detail, rate30);
-  const find = (await rpc<Raw[]>("rank_find_json", {})).map((m) => findRow(m, rate30)).sort((a, b) => b[8] - a[8] || b[2] - a[2]);
+  const find = (await rpc<Raw[]>("rank_find_json", {})).map((m) => findRow(m)).sort((a, b) => b[8] - a[8] || b[2] - a[2]);
   const avatarOf = new Map(find.map((f) => [f[0].slice(1), f[7]]));
   const avatar = (user: string) => details[user]?.a ?? avatarOf.get(user) ?? null;
 

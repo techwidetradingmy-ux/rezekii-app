@@ -16,7 +16,7 @@ export default async function BenefitsPage() {
   const [b, lv] = await Promise.all([benefits(), levelPage(user.id, user.tiktok_username)]);
   const next =
     lv.level === "bronze"
-      ? `RM${n(lv.lifetime)} of RM1,000 in sales · ${lv.sampleVideos} of 10 sample videos`
+      ? `RM${n(lv.month?.sales ?? 0)} of RM1,000 in TAP sales this month · ${lv.sampleVideos} of 10 sample videos`
       : lv.level === "silver" && lv.month
         ? `RM${n(lv.month.sales)} of RM1,000 in sales this month`
         : null;

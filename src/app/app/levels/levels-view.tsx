@@ -45,20 +45,23 @@ export function LevelsView({ data, benefits, firstName, handle, username }: { da
 
   const line =
     level === "silver"
-      ? `${keyRow.v[1]} on every Techwide campaign link. Keep it with RM1,000 in sales each month.`
+      ? `${keyRow.v[1]} on every Techwide campaign link. Keep it with RM1,000 in TAP sales each month.`
       : level === "gold"
         ? `${keyRow.v[2]} on every Techwide campaign link.`
         : `${keyRow.v[0]} on every Techwide campaign link, and free samples. Reach Silver for ${keyRow.v[1]}.`;
-  const salesLeft = Math.max(0, 1000 - data.lifetime);
+  // This month's TAP sales decide next month's level (levels change on the 1st).
+  const monthSales = data.month?.sales ?? 0;
+  const nextFirst = `1 ${new Date(new Date().setDate(28) + 5 * 86400_000).toLocaleDateString("en-GB", { month: "short", timeZone: "Asia/Kuala_Lumpur" })}`;
+  const salesLeft = Math.max(0, 1000 - monthSales);
   const videosLeft = Math.max(0, 10 - data.sampleVideos);
   const tip =
     salesLeft && videosLeft
       ? `You're RM${n(salesLeft)} and ${videosLeft} sample ${videosLeft === 1 ? "video" : "videos"} away.`
       : salesLeft
-        ? `Your sample videos are done. RM${n(salesLeft)} in sales to go.`
+        ? `Your sample videos are done. RM${n(salesLeft)} in TAP sales this month to go.`
         : videosLeft
           ? `Your sales are there. ${videosLeft} sample ${videosLeft === 1 ? "video" : "videos"} to go.`
-          : "You qualify: Silver comes back at the end of a month with RM1,000 in sales.";
+          : `You qualify: Silver from ${nextFirst}.`;
   const monthStart = new Date().toLocaleDateString("en-GB", { month: "short", timeZone: "Asia/Kuala_Lumpur" });
   const month = data.month;
   const tiles: [string, string, string][] = [
@@ -98,7 +101,7 @@ export function LevelsView({ data, benefits, firstName, handle, username }: { da
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
               {[
-                { label: "Lifetime sales", value: `RM${n(data.lifetime)} / 1,000`, note: "From Techwide TAP campaigns", frac: data.lifetime / 1000, color: "#00c073" },
+                { label: "TAP sales this month", value: `RM${n(monthSales)} / 1,000`, note: `Decides your level on ${nextFirst}`, frac: monthSales / 1000, color: "#00c073" },
                 { label: "Sample videos", value: `${n(data.sampleVideos)} / 10`, note: "Videos posted for samples you received", frac: data.sampleVideos / 10, color: "#f2a93b" },
               ].map((g) => (
                 <div key={g.label} style={{ display: "flex", gap: 18, alignItems: "center", padding: 18, borderRadius: 22, background: "var(--surface2)" }}>
@@ -142,7 +145,7 @@ export function LevelsView({ data, benefits, firstName, handle, username }: { da
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", justifyContent: "space-between" }}>
             <p style={{ margin: 0, fontSize: 13, color: "var(--muted)", lineHeight: 1.5, flex: "1 1 320px" }}>
-              Silver comes as soon as you reach RM1,000 lifetime sales and post videos for 10 samples. Keep it with RM1,000 in sales every month; a month below that returns you to Bronze. Levels change automatically at month end.
+              Your level each month comes from the month before: RM1,000 in sales through Techwide&apos;s TAP campaigns and videos posted for 10 samples give you Silver. Levels change on the 1st of every month.
             </p>
             <Link href="/app/levels/benefits" className="nv-btn3 nv-sm nv-press">Compare all benefits</Link>
           </div>

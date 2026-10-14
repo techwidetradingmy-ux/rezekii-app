@@ -217,7 +217,7 @@ export function detailOf(d: Raw, rate30: number): Detail {
 /** [username, nickname, followers, GMV text, video share % (-1 unknown), avg video views text, exact GMV shared, avatar, GMV US$ for sorting] */
 export type FindRow = [string, string, number, string, number, string, boolean, string | null, number];
 const short = (v: number) => (v >= 1e6 ? `${(v / 1e6).toFixed(1)}M` : v >= 1e3 ? `${(v / 1e3).toFixed(1)}k` : String(Math.round(v)));
-export function findRow(m: Raw, rate30: number): FindRow {
+export function findRow(m: Raw): FindRow {
   const xu = amt(m.gmv), vu = amt(m.video_gmv), lu = amt(m.live_gmv);
   const range = m.gmv_range as { formatted_range?: string; minimum_amount?: string; maximum_amount?: string } | undefined;
   return [

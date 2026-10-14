@@ -243,12 +243,12 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
             </div>
             {d.level.level !== "bronze" ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <span style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 700 }}><span>Keep {LEVEL_NAME[d.level.level]} this month</span><span style={{ fontVariantNumeric: "tabular-nums" }}>{rm0(d.level.monthSales)} / {rm0(d.level.keep)}</span></span>
+                <span style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 700 }}><span>Keep {LEVEL_NAME[d.level.level]} next month</span><span style={{ fontVariantNumeric: "tabular-nums" }}>{rm0(d.level.monthSales)} / {rm0(d.level.keep)}</span></span>
                 <span className="ac-bar" role="progressbar" aria-label={`TAP sales towards keeping ${LEVEL_NAME[d.level.level]}`} aria-valuemin={0} aria-valuemax={d.level.keep} aria-valuenow={Math.round(d.level.monthSales)}><span style={{ width: `${keepPct}%` }} /></span>
-                <span style={{ fontSize: 13, color: "var(--muted)" }}>{keepPct >= 100 ? "You've kept your level this month." : `${rm0(d.level.keep - d.level.monthSales)} more in TAP sales this month keeps your rate.`}</span>
+                <span style={{ fontSize: 13, color: "var(--muted)" }}>{keepPct >= 100 ? `You keep ${LEVEL_NAME[d.level.level]} next month.` : `${rm0(d.level.keep - d.level.monthSales)} more in TAP sales this month keeps your rate next month.`}</span>
               </div>
             ) : (
-              <span style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>Lifetime TAP sales {rm0(d.level.lifetime)}. Reach Silver with 10 sample videos and RM 1,000 in lifetime TAP sales.</span>
+              <span style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>TAP sales this month {rm0(d.level.monthSales)}. Reach Silver next month with 10 sample videos and RM1,000 in TAP sales this month.</span>
             )}
             <Link href="/app/levels" className="nv-btn2 nv-sm nv-press" style={{ alignSelf: "flex-start", textDecoration: "none" }}>Levels and benefits</Link>
           </section>

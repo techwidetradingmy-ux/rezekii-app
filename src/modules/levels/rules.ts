@@ -1,25 +1,24 @@
 /**
- * Creator levels, from the approved benefits list:
+ * Creator levels (owner, 14 Oct 2026):
  *   Bronze: when you join, always kept.
- *   Silver: 10 sample videos + RM1,000 lifetime sales; kept with RM1,000 in sales every month, a month below returns you to Bronze.
+ *   Silver: this month's level comes from last month: RM1,000 in TAP sales last month and videos posted for 10 samples.
  *   Gold:   by invitation from Techwide.
- * Levels change automatically at month end. The first Silver comes as soon as you qualify; after a demotion it comes back
- * at a month end, once that month's sales reach RM1,000 again (so one good day cannot bounce a creator straight back).
+ * Levels change on the 1st of each month (Malaysia time), never mid-month. A new creator gets theirs from last month's
+ * numbers when they join. Only sales through Techwide's TAP campaigns count.
  * Pure: no network, no database.
  */
 export type Level = "bronze" | "silver" | "gold";
 export const LEVELS: Level[] = ["bronze", "silver", "gold"];
 export const SILVER_SALES = 1000;
 export const SILVER_VIDEOS = 10;
-export const KEEP_MONTHLY = 1000;
+export const KEEP_MONTHLY = SILVER_SALES;
 
 export type LevelState = { level: Level; levelSince: string | null; goldInvited: boolean; demotedAt: string | null; checkedMonth: string | null };
-export type Totals = { today: string; lifetime: number; sampleVideos: number; lastMonthSales: number | null };
+/** `lastMonthSales`: TAP sales in the month before `today`; null when they can't be known yet. */
+export type Totals = { today: string; sampleVideos: number; lastMonthSales: number | null };
 
 export function nextLevel(s: LevelState, t: Totals): LevelState {
   const month = t.today.slice(0, 7);
-  const monthEnd = s.checkedMonth !== null && s.checkedMonth < month;
-  const qualified = t.lifetime >= SILVER_SALES && t.sampleVideos >= SILVER_VIDEOS;
   const next = { ...s, checkedMonth: month };
   const set = (level: Level) => {
     if (next.level !== level) {
@@ -32,18 +31,17 @@ export function nextLevel(s: LevelState, t: Totals): LevelState {
     set("gold");
     return next;
   }
-  if (next.level === "gold") set(qualified ? "silver" : "bronze"); // invitation withdrawn
-
-  if (monthEnd && t.lastMonthSales !== null) {
-    if (next.level === "silver" && t.lastMonthSales < KEEP_MONTHLY) {
-      set("bronze");
-      next.demotedAt = t.today;
-    } else if (next.level === "bronze" && next.demotedAt && qualified && t.lastMonthSales >= KEEP_MONTHLY) {
-      set("silver");
-      next.demotedAt = null;
+  // A new month, a creator's first check, or a Gold invitation withdrawn: the level last month earned.
+  if (s.checkedMonth === null || s.checkedMonth < month || next.level === "gold") {
+    if (t.lastMonthSales === null) {
+      if (next.level === "gold") set("bronze");
+      return next;
     }
+    const earned: Level = t.lastMonthSales >= SILVER_SALES && t.sampleVideos >= SILVER_VIDEOS ? "silver" : "bronze";
+    if (next.level === "silver" && earned === "bronze") next.demotedAt = t.today;
+    if (earned === "silver") next.demotedAt = null;
+    set(earned);
   }
-  if (next.level === "bronze" && !next.demotedAt && qualified) set("silver");
   return next;
 }
 

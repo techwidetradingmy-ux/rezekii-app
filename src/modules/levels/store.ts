@@ -1,5 +1,6 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { mytDay } from "../refresh/plan.ts";
+import { historyDone, linkedCreators } from "../sales/orders.ts";
 import { monthSales, nextLevel, previousMonth, type Level, type LevelState } from "./rules.ts";
 
 const json = (body: unknown, prefer = "return=minimal"): RequestInit => ({ method: "POST", headers: { prefer }, body: JSON.stringify(body) });
@@ -18,18 +19,46 @@ async function dailyRows(username: string, today: string): Promise<DailyRow[]> {
   return rows.map((r) => ({ ...r, paid: Number(r.paid) }));
 }
 
-/** Saves today's totals for every Rezekii creator, then moves each one to the level the rules give. Returns how many changed. */
+/** Malaysian midnight starting a month ('YYYY-MM'), as an ISO time. */
+const monthStart = (month: string) => `${month}-01T00:00:00+08:00`;
+const nextMonth = (month: string) => {
+  const [y, m] = month.split("-").map(Number);
+  return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
+};
+
+/** A creator's sales through Techwide's TAP campaigns between two times, from their own orders. */
+async function tapSales(userId: string, from: string, to: string): Promise<number> {
+  return Number(await (await supabaseRest("rpc/tap_sales", json({ p_user: userId, p_from: from, p_to: to }, "return=representation"))).json()) || 0;
+}
+
+/**
+ * Where a creator's TAP sales come from: their own orders once their whole order history is read ("orders"); still being read
+ * ("wait": no level yet, so a half-read history can't decide it); or TikTok's TAP data for creators whose orders Rezekii can't read.
+ */
+async function salesSource(userId: string, linked: Set<string>): Promise<"orders" | "wait" | "tap"> {
+  if (!linked.has(userId)) return "tap";
+  return (await historyDone(userId)) ? "orders" : "wait";
+}
+
+/**
+ * Saves today's totals for every Rezekii creator, then sets each one's level: on the 1st from last month's TAP sales, and for a
+ * new creator as soon as their sales are known. Returns how many changed.
+ */
 export async function updateLevels(today: string): Promise<number> {
   await supabaseRest("rpc/record_creator_daily", json({ d: today }));
   const users = (await (await supabaseRest("app_users?tiktok_username=not.is.null&role=eq.creator&select=id,tiktok_username&limit=5000")).json()) as { id: string; tiktok_username: string }[];
   const levels = (await (await supabaseRest("creator_levels?select=*&limit=5000")).json()) as LevelRow[];
   const byUser = new Map(levels.map((l) => [l.user_id, l]));
+  const linked = new Set(await linkedCreators());
+  const last = previousMonth(today);
   let changed = 0;
   for (const u of users) {
+    const source = await salesSource(u.id, linked);
+    if (source === "wait") continue;
     const days = await dailyRows(u.tiktok_username.toLowerCase(), today);
-    const last = days.at(-1);
     const before = toState(byUser.get(u.id));
-    const after = nextLevel(before, { today, lifetime: last?.paid ?? 0, sampleVideos: last?.sample_videos ?? 0, lastMonthSales: monthSales(days, previousMonth(today)) });
+    const lastMonthSales = source === "orders" ? await tapSales(u.id, monthStart(last), monthStart(nextMonth(last))) : monthSales(days, last);
+    const after = nextLevel(before, { today, sampleVideos: days.at(-1)?.sample_videos ?? 0, lastMonthSales });
     if (after.level !== before.level) changed++;
     await supabaseRest("creator_levels?on_conflict=user_id", json({
       user_id: u.id, level: after.level, level_since: after.levelSince, gold_invited: after.goldInvited, demoted_at: after.demotedAt, checked_month: after.checkedMonth, updated_at: new Date().toISOString(),
@@ -46,6 +75,8 @@ export async function levelOf(userId: string): Promise<Level> {
 
 export type LevelPage = {
   level: Level; levelSince: string | null; celebrated: Level; lifetime: number; sampleVideos: number;
+  /** TAP sales last month: what decided this month's level. */
+  lastMonth: number | null;
   month: { sales: number; videos: number; sampleVideos: number; delivered: number; shipping: number } | null; asOf: string | null;
 };
 
@@ -56,12 +87,21 @@ export async function levelPage(userId: string, username: string | null): Promis
   const days = username ? await dailyRows(username.toLowerCase(), today) : [];
   const last = days.at(-1);
   const month = today.slice(0, 7);
+  const prev = previousMonth(today);
   const before = [...days].filter((d) => d.day < `${month}-01`).at(-1) ?? days.find((d) => d.day.startsWith(month));
+  // TAP sales from the creator's own orders when Rezekii reads them (the full history); otherwise from TikTok's TAP data.
+  const fromOrders = (await salesSource(userId, new Set(await linkedCreators()))) === "orders";
+  const [lifetime, thisMonth, lastMonth] = fromOrders
+    ? await Promise.all([tapSales(userId, "2000-01-01T00:00:00Z", new Date().toISOString()), tapSales(userId, monthStart(month), new Date().toISOString()), tapSales(userId, monthStart(prev), monthStart(month))])
+    : [last?.paid ?? 0, last && before ? monthSales(days, month) ?? 0 : null, monthSales(days, prev)];
   return {
     level: row?.level ?? "bronze", levelSince: row?.level_since ?? null, celebrated: row?.celebrated ?? "bronze",
-    lifetime: last?.paid ?? 0, sampleVideos: last?.sample_videos ?? 0,
-    month: last && before ? { sales: monthSales(days, month) ?? 0, videos: Math.max(0, last.videos - before.videos), sampleVideos: Math.max(0, last.sample_videos - before.sample_videos), delivered: last.samples_delivered, shipping: last.samples_shipping } : null,
-    asOf: last?.day ?? null,
+    lifetime, sampleVideos: last?.sample_videos ?? 0, lastMonth,
+    month: thisMonth !== null ? {
+      sales: thisMonth, videos: last && before ? Math.max(0, last.videos - before.videos) : 0, sampleVideos: last && before ? Math.max(0, last.sample_videos - before.sample_videos) : 0,
+      delivered: last?.samples_delivered ?? 0, shipping: last?.samples_shipping ?? 0,
+    } : null,
+    asOf: fromOrders ? today : last?.day ?? null,
   };
 }
 
@@ -76,8 +116,8 @@ export const DEFAULT_BENEFITS: Benefit[] = [
   { label: "Commission on Techwide campaign links", v: ["Open Plan rate", "Open Plan + 1%", "Special rate for you"], key: true },
   { label: "Free product samples", v: ["yes", "yes", "yes"] },
   { label: "Level emblem on your profile and in Rankings", v: ["yes", "yes", "yes"] },
-  { label: "How you get it", v: ["When you join", "10 sample videos + RM1,000 lifetime sales", "By invitation"] },
-  { label: "How you keep it", v: ["Always", "RM1,000 in sales every month", "Set by Techwide"] },
+  { label: "How you get it", v: ["When you join", "10 sample videos + RM1,000 TAP sales last month", "By invitation"] },
+  { label: "How you keep it", v: ["Always", "RM1,000 TAP sales every month", "Set by Techwide"] },
 ];
 
 /** The level benefits list, edited by Techwide on the Benefits screen. */
