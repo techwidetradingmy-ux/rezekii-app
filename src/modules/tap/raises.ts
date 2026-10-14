@@ -74,9 +74,25 @@ export async function rezekiiMatches(userId: string): Promise<Raise[] | null> {
   return (await showcaseVsTap(userId))?.matches ?? null;
 }
 
+/** The last showcase check, shared by every server through the database (reading a big showcase takes TikTok ~20 seconds). */
+const scanKey = (userId: string) => `showcase_scan:${userId}`;
+async function savedScan(userId: string): Promise<{ at: number; raises: Raise[]; matches: Raise[] } | null> {
+  const [row] = (await (await supabaseRest(`app_settings?key=eq.${encodeURIComponent(scanKey(userId))}&select=value&limit=1`)).json()) as { value: { at: number; raises: Raise[]; matches: Raise[] } | null }[];
+  return row?.value && Date.now() - row.value.at < 30 * 60_000 ? row.value : null;
+}
+async function saveScan(userId: string, value: { at: number; raises: Raise[]; matches: Raise[] }) {
+  await supabaseRest("app_settings?on_conflict=key", { method: "POST", headers: { prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify({ key: scanKey(userId), value, updated_at: new Date().toISOString() }) });
+}
+
 async function showcaseVsTap(userId: string): Promise<{ raises: Raise[]; matches: Raise[] } | null> {
-  const hit = cache.get(userId);
-  if (hit && Date.now() - hit.at < 30 * 60_000) return hit;
+  const fresh = (x: { at: number } | null | undefined) => !!x && Date.now() - x.at < 30 * 60_000;
+  const mem = cache.get(userId);
+  if (fresh(mem)) return mem!;
+  const hit = await savedScan(userId).catch(() => null);
+  if (hit) {
+    cache.set(userId, hit);
+    return hit;
+  }
   const token = await approvedCreatorToken(userId);
   if (!token) return null;
   const showcase: ShowcaseEntry[] = [];
@@ -85,7 +101,7 @@ async function showcaseVsTap(userId: string): Promise<{ raises: Raise[]; matches
     const r = await getShowcaseProducts(token, pageToken);
     if (r.code !== 0) {
       console.error("[raises] showcase", r.code, r.message);
-      return hit ?? { raises: [], matches: [] };
+      return mem ?? { raises: [], matches: [] };
     }
     showcase.push(...((r.data?.products ?? []) as ShowcaseEntry[]));
     pageToken = r.data?.next_page_token || undefined;
@@ -97,6 +113,7 @@ async function showcaseVsTap(userId: string): Promise<{ raises: Raise[]; matches
   const matches = findMatches(showcase, byId, level).filter((r) => !refused[r.productId]);
   const out = { at: Date.now(), raises, matches };
   cache.set(userId, out);
+  await saveScan(userId, out).catch(() => undefined);
   return out;
 }
 
@@ -107,5 +124,6 @@ export async function takeRaises(userId: string, productIds: string[]): Promise<
   const failed = results.flatMap((x) => (x.result.added ? [] : [{ productId: x.productId, error: x.result.error || "TikTok Shop didn't add it." }]));
   await noteRefused(userId, failed.filter((f) => REFUSED.test(f.error)).map((f) => f.productId)).catch(() => undefined);
   cache.delete(userId);
+  await saveScan(userId, { at: 0, raises: [], matches: [] }).catch(() => undefined);
   return { added, failed };
 }

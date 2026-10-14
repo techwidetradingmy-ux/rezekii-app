@@ -132,15 +132,15 @@ export function RankingsView({ board, you, asOf }: { board: BoardMonth[]; you: s
   const podium = [1, 0, 2].filter((i) => cur[i]);
 
   // ---- TikTok lists ----
-  const sorts = SORTS[lview] ?? SORTS[1];
+  const sorts = SORTS[lview || 1];
   const head = (k: string, label: string) => {
     const on = sort.startsWith(`${k}-`), desc = sort === `${k}-d`;
     return { cls: on ? "on" : "", arrow: on ? (desc ? "↓" : "↑") : "↕", go: () => { setSort(on && desc ? `${k}-a` : `${k}-d`); setPop(""); },
       aria: `Sort by ${label}${on ? (desc ? " (now high to low, click for low to high)" : " (now low to high, click for high to low)") : ""}` };
   };
   const g = head("gmv", "GMV");
-  const xk = (sorts[2] ?? sorts[0])[0].split("-")[0];
-  const x = head(xk, (sorts[2] ?? sorts[0])[1].split(":")[0]);
+  const xk = sorts[2][0].split("-")[0];
+  const x = head(xk, sorts[2][1].split(":")[0]);
   const gmvHead = `GMV, ${SLOTS[slot]}`;
   const pq = popQ.trim().toLowerCase();
   const catOpts: [string, number][] = data ? ([["", data.view === 1 ? data.total + (cat ? 0 : 0) : data.ctypes[0]], ...data.cats] as [string, number][]).filter(([c]) => !pq || (c ? CAT[c] ?? c : "all").toLowerCase().includes(pq)) : [];
