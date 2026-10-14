@@ -2,7 +2,7 @@ import { getBestselling } from "../../integrations/tiktok-shop/seller.ts";
 import { AUTHOR_TYPES, CATEGORIES, DATA_LAG_DAYS, LATE_HOUR, PLAN_HOUR, mytDay, mytHour, planDay, planNewest, type TaskKind } from "./plan.ts";
 import type { Sessions } from "./sessions.ts";
 import { ApiError, RATE_LIMITED, STEPS } from "./steps.ts";
-import { addTasks, claimTask, completeDailyDays, hasTask, levelPassOpen, notePublished, pruneMarketData, rankingsBuilt, updateTask, type TaskRow } from "./store.ts";
+import { addTasks, claimTask, completeDailyDays, hasTask, levelPassOpen, notePublished, profilesWaiting, pruneMarketData, rankingsBuilt, updateTask, type TaskRow } from "./store.ts";
 
 /** Daily lists per data date: creators (4 author types) and products (29 category lists), each in RM and US$. */
 const DAILY_LISTS = (AUTHOR_TYPES.length + CATEGORIES.length) * 2;
@@ -73,7 +73,9 @@ export async function runRefresh(sessions: Sessions, deadline: number, now = Dat
   }
 
   const ran: Record<string, string> = {};
-  const page = await claimTask(["marketplace"]);
+  // Profiles first (owner, 14 Oct 2026: WhatsApp numbers are the urgent part): while any creator has none, the marketplace
+  // search, the monthly level pass included, waits, so profiles get all of TikTok's shared rate limit.
+  const page = (await profilesWaiting()) ? null : await claimTask(["marketplace"]);
   if (page) await runTask(page, sessions, deadline, ran);
 
   while (Date.now() < deadline) {

@@ -89,6 +89,12 @@ export async function upsertCreators(rows: CreatorUpsert[]): Promise<void> {
     await supabaseRest("market_creators?on_conflict=creator_key", json([...byKey.values()], "resolution=merge-duplicates,return=minimal"));
 }
 
+/** True while some creator still has no profile (their WhatsApp and email come from it). */
+export async function profilesWaiting(): Promise<boolean> {
+  const res = await supabaseRest("market_creators?detail_at=is.null&open_id=not.is.null&select=creator_key&limit=1");
+  return ((await res.json()) as unknown[]).length > 0;
+}
+
 /** How old a profile may get before it is read again, so a WhatsApp number or email added to a bio later is picked up. */
 export const DETAIL_REFRESH_DAYS = 30;
 
