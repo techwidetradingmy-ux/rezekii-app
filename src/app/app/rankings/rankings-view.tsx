@@ -3,9 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import type { BoardMonth } from "@/modules/rankings/leaderboard.ts";
 import type { ListResult } from "@/modules/rankings/query.ts";
-import type { BestVideo, CreatorRow, Detail, FindRow } from "@/modules/rankings/build.ts";
+import type { BestVideo, CreatorRow, Detail } from "@/modules/rankings/build.ts";
+import { LevelFace } from "../../tts-ring";
 import { Hud, useToast } from "../marketplace/use-tap-actions";
 import { DailyTop100 } from "./daily-top100";
+import { Crown } from "./rank-icons";
+import { TopCreators } from "./top-creators";
+import { TopSellers } from "./top-sellers";
 import "../marketplace/marketplace.css";
 import "../levels/levels.css";
 import "./rankings.css";
@@ -21,17 +25,20 @@ const COL = ["#00874f", "#7c3aed", "#e8005a", "#0e7490", "#f2a93b", "#1d4ed8", "
 const LV: Record<string, string> = { gold: "b-amber", silver: "b-gray", bronze: "b-green" };
 const LVN: Record<string, string> = { gold: "Gold", silver: "Silver", bronze: "Bronze" };
 const SLOTS = ["1 day", "7 days", "30 days"];
-// Index 5 (Daily Top 100 Creators) is shown first: the leaderboard.
-const VIEWS = ["Top creators", "Top products", "Top videos", "Top LIVEs", "Find creators", "Daily Top 100 Creators"];
-const VIEW_ORDER = [5, 0, 1, 2, 3, 4];
+/**
+ * The TikTok marketplace views (owner, 14 Oct 2026): Daily Top 100 first; Top creators joins TikTok's affiliate top 100 with
+ * the Creator Marketplace (it replaces Find creators); shop accounts are on Top sellers. Products, videos and LIVEs use TikTok's
+ * lists (list views 1-3).
+ */
+const VIEWS: [View, string][] = [["daily", "Daily Top 100"], ["creators", "Top creators"], ["sellers", "Top sellers"], ["products", "Top products"], ["videos", "Top videos"], ["lives", "Top LIVEs"]];
+type View = "daily" | "creators" | "sellers" | "products" | "videos" | "lives";
+const LIST_VIEW: Partial<Record<View, 1 | 2 | 3>> = { products: 1, videos: 2, lives: 3 };
 const SORTS: [string, string][][] = [
-  [["gmv-d", "GMV: high to low"], ["gmv-a", "GMV: low to high"], ["fol-d", "Followers: high to low"], ["fol-a", "Followers: low to high"]],
+  [],
   [["gmv-d", "GMV: high to low"], ["gmv-a", "GMV: low to high"], ["rat-d", "Rating: high to low"], ["rat-a", "Rating: low to high"]],
   [["gmv-d", "GMV: high to low"], ["gmv-a", "GMV: low to high"], ["vw-d", "Views: high to low"], ["vw-a", "Views: low to high"]],
   [["gmv-d", "GMV: high to low"], ["gmv-a", "GMV: low to high"], ["len-d", "Length: longest first"], ["len-a", "Length: shortest first"]],
 ];
-const FIND_FILTERS = ["10k+ followers", "Mostly video", "Mostly LIVE", "Shares exact GMV"];
-const MORE: [string, "wa" | "em" | "x"][] = [["Has WhatsApp", "wa"], ["Has email", "em"], ["Shares exact GMV", "x"]];
 
 const n = (v: number) => Math.round(v).toLocaleString("en-US");
 const short = (v: number) => (v >= 1e6 ? `${(v / 1e6).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v));
@@ -54,7 +61,7 @@ const Chev = () => <svg className="fb-chev" width="14" height="14" viewBox="0 0 
 const Tick16 = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}><path d="m5 12 5 5 9-10" /></svg>;
 const Close = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>;
 
-type Panel = { user: string; row: CreatorRow | null; det: Detail | null; vid: { id: string; v: BestVideo } | null; nDays: number; first: string | null; last: string | null; rate30: number };
+type Panel = { user: string; row: CreatorRow | null; det: Detail | null; vid: { id: string; v: BestVideo } | null; nDays: number; first: string | null; last: string | null; rate30: number; lv: number | null };
 type Video = { id: string; title: string; seconds: number; stats: number[]; products: string[]; lo: number; hi: number; conv: boolean; posted: string };
 
 /** The Rankings page from the mockup: Rezekii creators' monthly leaderboard, and TikTok Shop Malaysia's best-seller lists. */
@@ -62,25 +69,19 @@ type Video = { id: string; title: string; seconds: number; stats: number[]; prod
 const dayLabel = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
 
 export function RankingsView({ board, you, asOf }: { board: BoardMonth[]; you: string | null; asOf: string | null }) {
-  const { toast, flash } = useToast();
+  const { toast } = useToast();
   const [tab, setTab] = useState(0);
   const [month, setMonth] = useState(0);
-  const [mview, setMview] = useState(5);
+  const [mview, setMview] = useState<View>("daily");
+  const lview = LIST_VIEW[mview] ?? 0;
   const [slot, setSlot] = useState(2);
-  const [ctype, setCtype] = useState(0);
   const [cat, setCat] = useState("");
-  const [more, setMore] = useState({ wa: false, em: false, x: false });
   const [sort, setSort] = useState("gmv-d");
   const [pg, setPg] = useState(1);
   const [pop, setPop] = useState<"" | "cat" | "more" | "sort">("");
   const [popQ, setPopQ] = useState("");
   const [data, setData] = useState<ListResult | null>(null);
   const [error, setError] = useState("");
-  const [q, setQ] = useState("");
-  const [f, setF] = useState([false, false, false, false]);
-  const [fsort, setFsort] = useState("gmv");
-  const [fpg, setFpg] = useState(1);
-  const [found, setFound] = useState<{ total: number; rows: FindRow[]; all?: number } | null>(null);
   const [cp, setCp] = useState<{ user: string; data: Panel | null } | null>(null);
   const [cpOut, setCpOut] = useState(false);
   const [vp, setVp] = useState<{ id: string; data: Video | null } | null>(null);
@@ -89,29 +90,17 @@ export function RankingsView({ board, you, asOf }: { board: BoardMonth[]; you: s
   const ask = useRef(0);
 
   // The TikTok lists come from the server one view at a time.
-  const listKey = `${mview}|${slot}|${ctype}|${cat}|${more.wa}|${more.em}|${more.x}|${sort}|${pg}`;
+  const listKey = `${lview}|${slot}|${cat}|${sort}|${pg}`;
   useEffect(() => {
-    if (tab !== 1 || mview > 3) return;
+    if (tab !== 1 || !lview) return;
     const id = ++ask.current;
-    const p = new URLSearchParams({ view: String(mview), slot: String(slot), ctype: String(ctype), sort, pg: String(pg) });
+    const p = new URLSearchParams({ view: String(lview), slot: String(slot), sort, pg: String(pg) });
     if (cat) p.set("cat", cat);
-    for (const k of ["wa", "em", "x"] as const) if (more[k]) p.set(k, "1");
     fetch(`/api/rankings/list?${p}`)
       .then(async (r) => { const d = await r.json(); if (id !== ask.current) return; if (!r.ok) setError(d.error || "The rankings could not load."); else { setError(""); setData(d); } })
       .catch(() => id === ask.current && setError("The rankings could not load. Refresh the page to try again."));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, listKey]);
-  const findKey = `${q}|${f.join("")}|${fsort}|${fpg}`;
-  useEffect(() => {
-    if (tab !== 1 || mview !== 4) return;
-    const t = setTimeout(() => {
-      const p = new URLSearchParams({ q, f: f.map((v) => (v ? "1" : "0")).join(""), sort: fsort, pg: String(fpg) });
-      fetch(`/api/rankings/find?${p}`).then((r) => r.json()).then((d) => setFound((prev) => ({ ...d, all: !q && !f.some(Boolean) ? d.total : prev?.all ?? d.total }))).catch(() => {});
-    }, 200);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, mview, findKey]);
-
   const openCp = (user: string) => {
     setCpOut(false);
     setCp({ user, data: null });
@@ -132,7 +121,7 @@ export function RankingsView({ board, you, asOf }: { board: BoardMonth[]; you: s
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  const pickView = (i: number) => { setMview(i); setPg(1); setSort("gmv-d"); setPop(""); setCat(""); setData(null); };
+  const pickView = (v: View) => { setMview(v); setPg(1); setSort("gmv-d"); setPop(""); setCat(""); setData(null); setError(""); };
   const reset = (fn: () => void) => { fn(); setPg(1); setPop(""); setPopQ(""); };
 
   // ---- Rezekii leaderboard ----
@@ -143,31 +132,28 @@ export function RankingsView({ board, you, asOf }: { board: BoardMonth[]; you: s
   const podium = [1, 0, 2].filter((i) => cur[i]);
 
   // ---- TikTok lists ----
-  const sorts = SORTS[Math.min(mview, 3)];
+  const sorts = SORTS[lview] ?? SORTS[1];
   const head = (k: string, label: string) => {
     const on = sort.startsWith(`${k}-`), desc = sort === `${k}-d`;
     return { cls: on ? "on" : "", arrow: on ? (desc ? "↓" : "↑") : "↕", go: () => { setSort(on && desc ? `${k}-a` : `${k}-d`); setPop(""); },
       aria: `Sort by ${label}${on ? (desc ? " (now high to low, click for low to high)" : " (now low to high, click for high to low)") : ""}` };
   };
   const g = head("gmv", "GMV");
-  const xk = sorts[2][0].split("-")[0];
-  const x = head(xk, sorts[2][1].split(":")[0]);
+  const xk = (sorts[2] ?? sorts[0])[0].split("-")[0];
+  const x = head(xk, (sorts[2] ?? sorts[0])[1].split(":")[0]);
   const gmvHead = `GMV, ${SLOTS[slot]}`;
   const pq = popQ.trim().toLowerCase();
   const catOpts: [string, number][] = data ? ([["", data.view === 1 ? data.total + (cat ? 0 : 0) : data.ctypes[0]], ...data.cats] as [string, number][]).filter(([c]) => !pq || (c ? CAT[c] ?? c : "all").toLowerCase().includes(pq)) : [];
   const allCount = data ? (data.view === 1 ? data.cats.reduce((a, c) => a + c[1], 0) : data.ctypes[0]) : 0;
-  const rate = data ? data.rate30 : 4.08;
   const footNote = data
-    ? `${data.view === 0 && data.slot !== "1D" ? `#1–${data.tier1} use TikTok's own ${data.slot === "7D" ? "7" : "30"}-day figures; the rest add up TikTok's daily figures (days in a daily top 100). ` : ""}` +
+    ? 
       `${data.view === 1 ? "TikTok ranks the top 100 in each of 28 categories; with a category chosen, the order is TikTok's own. For 7 and 30 days, products past each top 100 come from TikTok's daily lists added up (marked Daily figures). " : ""}` +
       "Numbers show the position in the list you are viewing. " +
       `${data.conv ? `${data.conv} ${data.conv === 1 ? "amount" : "amounts"} marked ≈ are converted from US$ at TikTok's rate. ` : ""}` +
-      `${data.view === 0 && data.slot === "30D" ? `Exact figures are converted from US$ at RM${rate.toFixed(2)}. ` : ""}` +
       `${data.dropped ? `Left out: ${data.dropped} from TikTok's RM list that are missing from its US$ list.` : "TikTok's RM and US$ lists match."}`
     : "";
-  const listNote = mview === 0 && more.x && slot !== 2 ? "Exact figures cover the last 30 days, so this view shows TikTok's range. Switch to 30 days to see them." : slot === 2 && (mview === 2 || mview === 3) ? "TikTok's documentation says its 30-day video and LIVE lists cover the last 14 days." : "";
-  const hasActive = (mview === 0 && (!!cat || more.wa || more.em || more.x)) || (mview === 1 && !!cat);
-  const moreOn = [more.wa, more.em, more.x].filter(Boolean).length;
+  const listNote = slot === 2 && (lview === 2 || lview === 3) ? "TikTok's documentation says its 30-day video and LIVE lists cover the last 14 days." : "";
+  const hasActive = lview === 1 && !!cat;
   const left = data ? data.total - data.shown : 0;
 
   return (
@@ -214,9 +200,8 @@ export function RankingsView({ board, you, asOf }: { board: BoardMonth[]; you: s
                     return (
                       <div key={c.handle} className="rk-col">
                         <a className="rk-who rk-link" href={`https://www.tiktok.com/${c.handle}`} target="_blank" rel="noopener" aria-label={`Open ${c.handle} on TikTok`} style={{ animationDelay: `${350 + pos * 120}ms` }}>
-                          {idx === 0 && <svg className="rk-crown" width="34" height="26" viewBox="0 0 34 26" aria-hidden="true"><path d="M3 22 1 6l9 7 7-12 7 12 9-7-2 16z" fill="#f2c230" stroke="#a86e00" strokeWidth="1.5" strokeLinejoin="round" /></svg>}
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          {c.avatar ? <img className="rk-av" src={c.avatar} alt="" /> : <span className="rk-av" style={{ background: COL[idx % COL.length] }}>{c.handle[1]?.toUpperCase()}</span>}
+                          {idx === 0 && <span className="rk-crown"><Crown size={34} /></span>}
+                          <LevelFace lv={c.lv} size={idx === 0 ? 76 : 64} img={c.avatar} name={c.handle.slice(1)} />
                           <strong style={{ fontSize: 15, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.handle}</strong>
                           <span className={`nv-badge ${LV[c.level]}`}>{LVN[c.level]}</span>
                           <span style={{ fontSize: 20, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{rmWhole(c.gmv)}</span>
@@ -240,8 +225,7 @@ export function RankingsView({ board, you, asOf }: { board: BoardMonth[]; you: s
                   <div key={c.handle} className={`rk-row ${c.handle === you ? "rk-you" : ""}`} style={{ animationDelay: `${200 + i * 50}ms` }}>
                     <span style={{ fontWeight: 800, fontSize: 17, color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>{i + 1}</span>
                     <a className="rk-link" href={`https://www.tiktok.com/${c.handle}`} target="_blank" rel="noopener" aria-label={`Open ${c.handle} on TikTok`} style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      {c.avatar ? <img className="rk-pic" src={c.avatar} alt="" style={{ width: 36, height: 36 }} /> : <span style={{ width: 36, height: 36, borderRadius: "50%", background: COL[i % COL.length], color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, flexShrink: 0 }}>{c.handle[1]?.toUpperCase()}</span>}
+                      <LevelFace lv={c.lv} size={36} img={c.avatar} name={c.handle.slice(1)} badge={false} />
                       <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
                         <strong style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.handle}{c.handle === you ? " (signed in)" : ""}</strong>
                         <span className={`nv-badge ${LV[c.level]}`} style={{ alignSelf: "flex-start", marginTop: 2 }}>{LVN[c.level]}</span>
@@ -263,15 +247,17 @@ export function RankingsView({ board, you, asOf }: { board: BoardMonth[]; you: s
         {tab === 1 && (
           <>
             <div className="nv-noscroll" role="group" aria-label="Marketplace view" style={{ display: "flex", gap: 8, overflowX: "auto" }}>
-              {VIEW_ORDER.map((i) => <button key={VIEWS[i]} type="button" className={`nv-chip nv-press ${mview === i ? "on" : ""}`} aria-pressed={mview === i} onClick={() => pickView(i)}>{VIEWS[i]}</button>)}
+              {VIEWS.map(([v, label]) => <button key={v} type="button" className={`nv-chip nv-press ${mview === v ? "on" : ""}`} aria-pressed={mview === v} onClick={() => pickView(v)}>{label}</button>)}
             </div>
             {error && <p className="np-error" role="alert">{error}</p>}
-            {mview === 5 && <DailyTop100 onOpen={openCp} />}
+            {mview === "daily" && <DailyTop100 onOpen={openCp} />}
+            {mview === "creators" && <TopCreators onOpen={openCp} />}
+            {mview === "sellers" && <TopSellers />}
 
-            {mview < 4 && (
-              <section className="nv-card" aria-label={`${["Bestselling creators", "Bestselling products", "Bestselling videos", "Bestselling LIVEs"][mview]} · TikTok Shop Malaysia`} style={{ padding: "18px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
+            {lview > 0 && (
+              <section className="nv-card" aria-label={`${["", "Bestselling products", "Bestselling videos", "Bestselling LIVEs"][lview]} · TikTok Shop Malaysia`} style={{ padding: "18px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", justifyContent: "space-between", padding: "0 14px 10px" }}>
-                  <strong style={{ fontSize: 17 }}>{["Bestselling creators", "Bestselling products", "Bestselling videos", "Bestselling LIVEs"][mview]} · TikTok Shop Malaysia{data && asOf && data.asOf < asOf ? ` · ${dayLabel(data.asOf)}` : ""}</strong>
+                  <strong style={{ fontSize: 17 }}>{["", "Bestselling products", "Bestselling videos", "Bestselling LIVEs"][lview]} · TikTok Shop Malaysia{data && asOf && data.asOf < asOf ? ` · ${dayLabel(data.asOf)}` : ""}</strong>
                   <div className="nv-seg" role="group" aria-label="Period" style={{ width: 300, maxWidth: "100%" }}>
                     <span className="nv-segthumb" aria-hidden="true" style={{ width: "calc(33.333% - 1.4px)", transform: `translateX(${slot * 100}%)` }} />
                     {SLOTS.map((label, i) => <button key={label} type="button" className={slot === i ? "on" : ""} aria-pressed={slot === i} onClick={() => reset(() => setSlot(i))}>{label}</button>)}
@@ -279,13 +265,7 @@ export function RankingsView({ board, you, asOf }: { board: BoardMonth[]; you: s
                 </div>
                 <div className="fb" style={{ padding: "0 14px 12px" }}>
                   <div className="fb-row">
-                    {mview === 0 && (
-                      <div className="nv-seg" role="group" aria-label="Creator type" style={{ width: 330, maxWidth: "100%" }}>
-                        <span className="nv-segthumb" aria-hidden="true" style={{ width: "calc(33.333% - 1.4px)", transform: `translateX(${ctype * 100}%)` }} />
-                        {["All", "Video", "LIVE"].map((label, i) => <button key={label} type="button" className={ctype === i ? "on" : ""} aria-pressed={ctype === i} onClick={() => reset(() => setCtype(i))}>{`${label} ${data ? n(data.ctypes[i]) : ""}`}</button>)}
-                      </div>
-                    )}
-                    {(mview === 0 || mview === 1) && (
+                    {lview === 1 && (
                       <div className="fb-dd">
                         <button type="button" className={`fb-btn ${cat ? "on" : ""}`} aria-haspopup="listbox" aria-expanded={pop === "cat"} onClick={() => { setPop(pop === "cat" ? "" : "cat"); setPopQ(""); }}><span className="fb-lab">Category</span><span className="fb-val">{cat ? CAT[cat] ?? cat : "All"}</span><Chev /></button>
                         {pop === "cat" && (
@@ -300,26 +280,6 @@ export function RankingsView({ board, you, asOf }: { board: BoardMonth[]; you: s
                                   </button>
                                 ))}
                                 {!!pq && catOpts.length === 0 && <span className="fb-empty">No category matches.</span>}
-                              </div>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    )}
-                    {mview === 0 && (
-                      <div className="fb-dd">
-                        <button type="button" className={`fb-btn ${moreOn ? "on" : ""}`} aria-haspopup="listbox" aria-expanded={pop === "more"} onClick={() => setPop(pop === "more" ? "" : "more")}><span className="fb-lab">Filters</span><span className="fb-val">{moreOn ? `${moreOn} on` : "None"}</span><Chev /></button>
-                        {pop === "more" && (
-                          <>
-                            <button type="button" className="fb-shield" aria-label="Close menu" onClick={() => setPop("")} />
-                            <div className="fb-pop" role="dialog" aria-label="Filters">
-                              <div className="fb-list" role="listbox" aria-label="Filters" aria-multiselectable="true">
-                                {MORE.map(([label, k]) => (
-                                  <button key={k} type="button" role="option" aria-selected={more[k]} className={`fb-opt ${more[k] ? "on" : ""}`} onClick={() => { setMore({ ...more, [k]: !more[k] }); setPg(1); }}>
-                                    <span className="fb-tick" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 5 5 9-10" /></svg></span>
-                                    <span className="fb-name">{label}</span><span className="fb-n">{data ? n(data.more[k]) : ""}</span>
-                                  </button>
-                                ))}
                               </div>
                             </div>
                           </>
@@ -344,61 +304,12 @@ export function RankingsView({ board, you, asOf }: { board: BoardMonth[]; you: s
                   {hasActive && (
                     <div className="fb-chips">
                       {cat && <Chip label={`Category: ${CAT[cat] ?? cat}`} aria="Remove category filter" onRemove={() => reset(() => setCat(""))} />}
-                      {mview === 0 && MORE.map(([label, k]) => more[k] && <Chip key={k} label={label} aria={`Remove ${label}`} onRemove={() => { setMore({ ...more, [k]: false }); setPg(1); }} />)}
-                      <button type="button" className="nv-link" onClick={() => reset(() => { setCat(""); setMore({ wa: false, em: false, x: false }); })} style={{ fontSize: 13 }}>Clear all</button>
+                      <button type="button" className="nv-link" onClick={() => reset(() => setCat(""))} style={{ fontSize: 13 }}>Clear all</button>
                     </div>
                   )}
                 </div>
                 {listNote && <p style={{ margin: 0, padding: "0 14px 12px", fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>{listNote}</p>}
                 {!data && !error && <span style={{ padding: "18px 14px", color: "var(--muted)", display: "flex", alignItems: "center", gap: 8 }}><span className="nv-spin" aria-hidden="true" />Loading TikTok&apos;s lists…</span>}
-
-                {data?.creators && (
-                  <>
-                    <div className="rk-row rk-crow rk-head" style={{ animation: "none" }}>
-                      <span>#</span><span>Creator</span>
-                      <span><button type="button" className={`rk-hs ${g.cls}`} onClick={g.go} aria-label={g.aria}>{gmvHead}<span className="rk-hsa" aria-hidden="true">{g.arrow}</span></button></span>
-                      <span className="rk-hide">Top video</span>
-                      <span className="rk-hide"><button type="button" className={`rk-hs ${x.cls}`} onClick={x.go} aria-label={x.aria}>Followers<span className="rk-hsa" aria-hidden="true">{x.arrow}</span></button></span>
-                      <span className="rk-hide">Contact</span>
-                    </div>
-                    {data.creators.length === 0 && <span style={{ padding: "18px 14px", color: "var(--muted)" }}>No creators match these filters for this period.</span>}
-                    {data.creators.map(({ row, det, vid }, i) => {
-                      const [, user, nick, fol, , lo, hi, conv, tier, nd] = row;
-                      const c0 = det?.c?.[0] ? CAT[det.c[0]] : "";
-                      const gm = det?.x ? { gmv: rmx(det.x), exact: true, note: "" } : { gmv: band(lo, hi, conv), exact: false, note: tier === 2 ? `Daily figures, ${nd} ${nd === 1 ? "day" : "days"}` : conv ? "Converted from TikTok's US$ range" : "TikTok's range" };
-                      return (
-                        <div key={user} className="rk-row rk-crow" style={{ animationDelay: `${60 + Math.min(i, 12) * 40}ms` }}>
-                          <span style={{ fontWeight: 800, fontSize: 17, color: "var(--muted)" }}>{i + 1}</span>
-                          <button type="button" className="rk-who2" onClick={() => openCp(user)} aria-label={`Details for @${user}`}>
-                            <Face src={det?.a} name={user} i={i} size={40} />
-                            <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-                              <strong className="rk-ellip">@{user}</strong>
-                              <span className="rk-ellip" style={{ fontSize: 12, color: "var(--muted)" }}>{nick}{c0 ? ` · ${c0}` : ""}{det && det.vs >= 0 ? ` · ${det.vs >= 50 ? `Video ${det.vs}` : `LIVE ${100 - det.vs}`}%` : ""}</span>
-                            </span>
-                          </button>
-                          <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                            <span style={{ fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{gm.gmv}</span>
-                            {gm.exact ? <span className="nv-badge b-green" style={{ alignSelf: "flex-start" }}>Exact</span> : <span style={{ fontSize: 12, color: "var(--muted)" }}>{gm.note}</span>}
-                          </span>
-                          <span className="rk-hide" style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                            {vid ? (
-                              <button type="button" className="rk-who2" onClick={() => openVp(vid.id)} aria-label={`Watch @${user}'s best-selling video on TikTok`} style={{ flexDirection: "column", alignItems: "flex-start", gap: 0 }}>
-                                <strong style={{ fontSize: 13, fontVariantNumeric: "tabular-nums" }}>▶ {vid.hi ? band(vid.lo, vid.hi) : `Best day ${rmx(vid.peak)}`}</strong>
-                                <span className="rk-ellip" style={{ fontSize: 12, color: "var(--muted)", maxWidth: "100%" }}>{`${short(vid.views)} views · ${vid.posted}`}</span>
-                              </button>
-                            ) : <span style={{ fontSize: 12, color: "var(--muted)" }}>–</span>}
-                          </span>
-                          <span className="rk-hide" style={{ color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>{short(fol)}</span>
-                          <span className="rk-hide" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                            {det?.em && <button type="button" className="rk-em nv-press" onClick={() => { const em = det.em; navigator.clipboard?.writeText(em).then(() => flash(`Email copied: ${em}`), () => flash(em)); }} aria-label={`Copy email for @${user}`}>Email</button>}
-                            {det?.wa && <a className="rk-wa nv-press" href={`https://wa.me/${det.wa}`} target="_blank" rel="noopener" aria-label={`WhatsApp @${user}`}>WhatsApp</a>}
-                            <a className="nv-link" href={`https://www.tiktok.com/@${user}`} target="_blank" rel="noopener" style={{ fontSize: 13 }}>Profile</a>
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </>
-                )}
 
                 {data?.products && (
                   <>
@@ -483,38 +394,6 @@ export function RankingsView({ board, you, asOf }: { board: BoardMonth[]; you: s
               </section>
             )}
 
-            {mview === 4 && (
-              <section className="nv-card" aria-label="Find creators" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
-                <input type="search" className="nv-input" aria-label="Search creators by username or name" placeholder="Search by username or name" value={q} onChange={(e) => { setQ(e.target.value); setFpg(1); }} />
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {FIND_FILTERS.map((label, i) => <button key={label} type="button" className={`nv-chip nv-press ${f[i] ? "on" : ""}`} aria-pressed={f[i]} onClick={() => { setF(f.map((v, j) => (j === i ? !v : v))); setFpg(1); }}>{label}</button>)}
-                </div>
-                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                  <span style={{ fontSize: 13, color: "var(--muted)" }}>
-                    {found ? (found.total ? `${found.total.toLocaleString("en-US")}${found.all && found.total < found.all ? ` of ${found.all.toLocaleString("en-US")} creators match` : " creators on TikTok Creator Marketplace"} · showing ${Math.min(found.rows.length, found.total).toLocaleString("en-US")}` : "No creators match. Try fewer filters.") : "Loading…"}
-                  </span>
-                  <div role="group" aria-label="Sort creators" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    <span style={{ fontSize: 13, color: "var(--muted)" }}>Sort</span>
-                    {[["gmv", "GMV"], ["fol", "Followers"]].map(([v, label]) => <button key={v} type="button" className={`nv-chip nv-press ${fsort === v ? "on" : ""}`} aria-pressed={fsort === v} onClick={() => { setFsort(v); setFpg(1); }}>{label}</button>)}
-                  </div>
-                </div>
-                <div className="rk-cards">
-                  {found?.rows.map(([handle, nick, fol, gmv, vp2, views, , avatar], i) => (
-                    <div key={handle} className="rk-card" style={{ animationDelay: `${Math.min(i % 24, 12) * 40}ms` }}>
-                      <button type="button" className="rk-who2" onClick={() => openCp(handle.replace(/^@/, ""))} aria-label={`Details for ${handle}`}>
-                        {avatar ? <span className="rk-face rk-photo" aria-hidden="true" style={{ width: 44, height: 44, backgroundImage: `url("${avatar}")` }} /> : <span style={{ width: 44, height: 44, borderRadius: "50%", background: COL[(i + 1) % COL.length], color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, flexShrink: 0 }}>{(handle[1] || "?").toUpperCase()}</span>}
-                        <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}><strong style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{handle}</strong><span style={{ fontSize: 13, color: "var(--muted)" }}>{nick} · {short(fol)} followers</span></span>
-                      </button>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}><span className="nv-cap">GMV, 30 days</span><span style={{ fontSize: 20, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{gmv}</span></div>
-                      <div className="rk-split" aria-hidden="true"><span style={{ width: `${vp2 < 0 ? 0 : vp2}%`, background: "#00c073" }} /><span style={{ width: `${vp2 < 0 ? 0 : 100 - vp2}%`, background: "#7c3aed" }} /></div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--muted)" }}><span>Video {vp2 < 0 ? 0 : vp2}%</span><span>LIVE {vp2 < 0 ? 0 : 100 - vp2}%</span></div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "var(--muted)" }}><span>{views} avg video views</span><a className="nv-link" href={`https://www.tiktok.com/${handle}`} target="_blank" rel="noopener">View on TikTok</a></div>
-                    </div>
-                  ))}
-                </div>
-                {found && found.rows.length < found.total && <div style={{ display: "flex", justifyContent: "center" }}><button type="button" className="nv-btn2 nv-sm nv-press" onClick={() => setFpg(fpg + 1)}>{`Show ${Math.min(48, found.total - found.rows.length)} more`}</button></div>}
-              </section>
-            )}
           </>
         )}
       </div>
@@ -587,7 +466,7 @@ function CreatorPanel({ cp, out, onClose, onPlay }: { cp: { user: string; data: 
           <button type="button" className="nv-press" aria-label="Close" onClick={onClose} style={{ width: 34, height: 34, borderRadius: "50%", border: 0, background: "var(--surface2)", color: "var(--text)", display: "flex", alignItems: "center", justifyContent: "center" }}><Close /></button>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
-          <Face src={d?.a} name={cp.user} i={0} size={72} />
+          <LevelFace lv={p?.lv} size={72} img={d?.a} name={cp.user} />
           <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
             <h3 id="rkcpt" className="rk-ellip" style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>@{cp.user}</h3>
             <span className="rk-ellip" style={{ fontSize: 14, color: "var(--muted)" }}>{row ? `${row[2]} · ${short(row[3])} followers` : d?.nick ?? ""}</span>

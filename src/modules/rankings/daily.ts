@@ -1,12 +1,15 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import { levelMap } from "./levels-map.ts";
 import { rankings } from "./store.ts";
 
 /** One creator on one day's TikTok top 100. GMV is TikTok's range in RM. `prev`: rank the day before (null: not in it). */
 export type DailyRow = {
   rank: number; user: string; nick: string; followers: number; lo: number; hi: number; avatar: string | null;
   prev: number | null; days: number; history: (number | null)[]; rezekii: boolean;
+  /** TikTok Shop creator level, when the monthly level pass has found it. */
+  lv?: number | null;
 };
-export type HallRow = { user: string; nick: string; avatar: string | null; days: number; best: number; history: (number | null)[]; rezekii: boolean };
+export type HallRow = { user: string; nick: string; avatar: string | null; days: number; best: number; history: (number | null)[]; rezekii: boolean; lv?: number | null };
 export type DailyBoard = {
   date: string;
   /** Every saved day, newest first. */
@@ -18,6 +21,8 @@ export type DailyBoard = {
   /** Days saved in all (since Rezekii started saving TikTok's daily list). */
   saved: number;
   first: string | null;
+  /** "1D": TikTok's daily list; "7D": its list for the 7 days to `date` (Weekly). */
+  period?: "1D" | "7D";
 };
 
 type Item = { rank?: number; user_name?: string; nick_name?: string; followers_count?: number; gmv_range?: string };
@@ -74,7 +79,7 @@ export function buildBoard(days: Day[], date: string, rezekii: Set<string>, avat
   return { date, dates: sorted.map((d) => d.as_of), historyDays, rows, hall, saved: sorted.length, first: sorted.at(-1)?.as_of ?? null };
 }
 
-let cache: { at: number; days: Day[] } | null = null;
+const cache = new Map<string, { at: number; days: Day[] }>();
 
 /**
  * One day's list: TikTok's RM list as TikTok gives it (no conversion), keeping only creators TikTok's US$ list also has. A creator
@@ -88,12 +93,13 @@ export function inBoth(L: Item[], U: Item[]): Item[] {
 }
 
 /**
- * TikTok's saved daily top-100 lists of affiliate creators, kept 10 minutes. Shop accounts (a brand's official account and its
- * channel accounts) are sellers and are left out (owner, 14 Oct 2026).
+ * TikTok's saved top-100 lists of affiliate creators (daily, or for the 7 days to each day), kept 10 minutes. Shop accounts (a
+ * brand's official account and its channel accounts) are sellers and are left out (owner, 14 Oct 2026).
  */
-async function savedDays(): Promise<Day[]> {
-  if (cache && Date.now() - cache.at < 10 * 60_000) return cache.days;
-  const slots = ["1D|AFFILIATE|LOCAL", "1D|AFFILIATE|USD"].map(encodeURIComponent).join(",");
+async function savedDays(period: "1D" | "7D"): Promise<Day[]> {
+  const hit = cache.get(period);
+  if (hit && Date.now() - hit.at < 10 * 60_000) return hit.days;
+  const slots = [`${period}|AFFILIATE|LOCAL`, `${period}|AFFILIATE|USD`].map(encodeURIComponent).join(",");
   const rows = (await (await supabaseRest(`market_snapshots?dataset=eq.creators&slot=in.(${slots})&select=as_of,slot,items&order=as_of.desc&limit=120`)).json()) as (Day & { slot: string })[];
   const byDay = new Map<string, { L: Item[]; U: Item[] }>();
   for (const r of rows) {
@@ -103,8 +109,9 @@ async function savedDays(): Promise<Day[]> {
     else d.L = r.items;
     byDay.set(r.as_of, d);
   }
-  cache = { at: Date.now(), days: [...byDay.entries()].filter(([, d]) => d.L.length).map(([as_of, d]) => ({ as_of, items: inBoth(d.L, d.U) })) };
-  return cache.days;
+  const days = [...byDay.entries()].filter(([, d]) => d.L.length).map(([as_of, d]) => ({ as_of, items: inBoth(d.L, d.U) }));
+  cache.set(period, { at: Date.now(), days });
+  return days;
 }
 
 /** Linked Rezekii creators' TikTok usernames, lower case. */
@@ -113,13 +120,16 @@ async function rezekiiCreators(): Promise<Set<string>> {
   return new Set(rows.map((r) => r.username).filter((x): x is string => !!x).map((x) => x.toLowerCase()));
 }
 
-/** The Daily Top 100 Creators board for `date` (the newest saved day when not given or not saved). */
-export async function dailyTop100(date?: string): Promise<DailyBoard | null> {
-  const days = await savedDays();
+/** The Daily Top 100 Creators board for `date` (the newest saved day when not given or not saved); `period` "7D": Weekly. */
+export async function dailyTop100(date?: string, period: "1D" | "7D" = "1D"): Promise<DailyBoard | null> {
+  const days = await savedDays(period);
   if (!days.length) return null;
   const pick = date && days.some((d) => d.as_of === date) ? date : days[0].as_of;
-  const [rezekii, built] = await Promise.all([rezekiiCreators().catch(() => new Set<string>()), rankings().catch(() => null)]);
+  const [rezekii, built, lv] = await Promise.all([rezekiiCreators().catch(() => new Set<string>()), rankings().catch(() => null), levelMap().catch(() => new Map<string, number>())]);
   const avatars: Record<string, string | null> = {};
   for (const [u, d] of Object.entries(built?.details ?? {})) avatars[u.toLowerCase()] = (d as { a?: string | null }).a ?? null;
-  return buildBoard(days, pick, rezekii, avatars);
+  const board = buildBoard(days, pick, rezekii, avatars);
+  if (!board) return null;
+  for (const r of [...board.rows, ...board.hall]) r.lv = lv.get(r.user.toLowerCase()) ?? null;
+  return { ...board, period };
 }

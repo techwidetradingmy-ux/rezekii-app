@@ -2,7 +2,8 @@ import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { monthSales, previousMonth, type Level } from "../levels/rules.ts";
 import { mytDay } from "../refresh/plan.ts";
 
-export type BoardRow = { handle: string; name: string; avatar: string | null; level: Level; gmv: number; videos: number };
+/** `lv`: TikTok Shop creator level from their linked TikTok Shop account (null until checked). */
+export type BoardRow = { handle: string; name: string; avatar: string | null; level: Level; gmv: number; videos: number; lv: number | null };
 export type BoardMonth = { key: string; label: string; final: string; rows: BoardRow[] };
 type Daily = { username: string; day: string; paid: number; videos: number };
 
@@ -19,6 +20,7 @@ export async function leaderboard(): Promise<BoardMonth[]> {
   const users = (await (await supabaseRest("app_users?role=eq.creator&tiktok_username=not.is.null&select=id,tiktok_username,display_name,avatar_url&limit=5000")).json()) as U[];
   if (!users.length) return keys.map((key) => ({ key, label: label(key), final: nextFirst(key), rows: [] }));
   const levels = new Map(((await (await supabaseRest("creator_levels?select=user_id,level&limit=5000")).json()) as { user_id: string; level: Level }[]).map((l) => [l.user_id, l.level]));
+  const ttLevels = new Map(((await (await supabaseRest("affiliate_connections?tt_level=not.is.null&select=user_id,tt_level&limit=5000")).json()) as { user_id: string; tt_level: number }[]).map((l) => [l.user_id, l.tt_level]));
   const from = `${previousMonth(`${keys.at(-1)}-01`)}-25`;
   const daily = (await (await supabaseRest(`creator_daily?day=gte.${from}&select=username,day,paid,videos&order=day&limit=100000`)).json()) as Daily[];
   const byUser = new Map<string, Daily[]>();
@@ -30,7 +32,7 @@ export async function leaderboard(): Promise<BoardMonth[]> {
       const inMonth = days.filter((d) => d.day.startsWith(key));
       const before = days.filter((d) => d.day < `${key}-01`).at(-1) ?? inMonth[0];
       return {
-        handle: `@${u.tiktok_username}`, name: u.display_name ?? u.tiktok_username, avatar: u.avatar_url, level: levels.get(u.id) ?? "bronze",
+        handle: `@${u.tiktok_username}`, name: u.display_name ?? u.tiktok_username, avatar: u.avatar_url, level: levels.get(u.id) ?? "bronze", lv: ttLevels.get(u.id) ?? null,
         gmv: monthSales(days, key) ?? 0, videos: inMonth.length && before ? Math.max(0, inMonth.at(-1)!.videos - before.videos) : 0,
       };
     });
