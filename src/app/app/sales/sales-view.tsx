@@ -107,7 +107,7 @@ function SalesChart({ d }: { d: FrameData }) {
 }
 
 /** Sales, as chosen from the mockup (direction A, with the owner's changes). */
-export function SalesView({ initial, handle, syncedAt }: { initial: FrameData; handle: string | null; syncedAt: string | null }) {
+export function SalesView({ initial, handle }: { initial: FrameData; handle: string | null }) {
   const router = useRouter();
   const [frame, setFrame] = useState("30d");
   const [source, setSource] = useState<Source>("all");
@@ -137,12 +137,10 @@ export function SalesView({ initial, handle, syncedAt }: { initial: FrameData; h
   }, [frame, source, compare, tick]);
 
   // The latest orders from TikTok, in the background (at most every 15 minutes), with no button to press.
-  const [reading, setReading] = useState(false);
   useEffect(() => {
     let stop = false;
     (async () => {
       for (let i = 0; i < 6 && !stop; i++) {
-        setReading(true);
         const x = (await fetch("/api/sales/refresh", { method: "POST" }).then((r) => r.json()).catch(() => ({}))) as { synced?: boolean; done?: boolean };
         if (x.synced) {
           first.current = false;
@@ -151,7 +149,6 @@ export function SalesView({ initial, handle, syncedAt }: { initial: FrameData; h
         }
         if (!x.synced || x.done !== false) break;
       }
-      if (!stop) setReading(false);
     })();
     return () => { stop = true; };
   }, [router]);
@@ -161,7 +158,6 @@ export function SalesView({ initial, handle, syncedAt }: { initial: FrameData; h
   const sIdx = SOURCES.findIndex(([v]) => v === source);
   const topProduct = s.products[0]?.gmv || 1;
   const topContent = s.content[0]?.gmv || 1;
-  const synced = syncedAt ? new Date(syncedAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kuala_Lumpur" }) : null;
   const shared = s.partnerShare > 0;
   // Commission settled: what each status earns (the full commission when the creator shares it with a partner).
   const comOf = (k: StatusKey) => { const r = s.status.find((x) => x.key === k)!; return shared && k !== "refunded" && k !== "ineligible" ? r.earned : r.commission; };
@@ -375,7 +371,7 @@ export function SalesView({ initial, handle, syncedAt }: { initial: FrameData; h
         </section>
       </div>
       <p className="sl-foot">
-        From your TikTok Shop affiliate orders, all shops, updated automatically{reading ? " · reading your latest orders from TikTok Shop…" : synced ? ` · last read ${synced}` : ""}. GMV is what buyers paid; commission is TikTok&apos;s estimate until the order settles.
+        From your TikTok Shop affiliate orders, all shops, updated automatically. GMV is what buyers paid; commission is TikTok&apos;s estimate until the order settles.
       </p>
     </>
   );

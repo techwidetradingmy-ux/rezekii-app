@@ -22,11 +22,6 @@ const LEVEL_NAME = { bronze: "Bronze", silver: "Silver", gold: "Gold" } as const
 const LEVEL_RATE = { bronze: "Open Plan rate on Techwide campaign links", silver: "Open Plan + 1% on Techwide campaign links", gold: "Special rate for you on Techwide campaign links" } as const;
 const rm = (v: number) => `RM ${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const rm0 = (v: number) => `RM ${Math.round(v).toLocaleString("en-US")}`;
-const ago = (iso: string | null, now: number) => {
-  if (!iso) return "not yet";
-  const m = Math.round((now - Date.parse(iso)) / 60_000);
-  return m < 1 ? "just now" : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`;
-};
 
 /**
  * Account, as chosen from the mockup (direction A): the TikTok Shop profile with its 30-day numbers and GMV chart,
@@ -43,7 +38,6 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
   const [busy, setBusy] = useState(false);
   const [deleted, setDeleted] = useState(false);
   const [welcomed, setWelcomed] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   const o = d.overview;
 
   useEffect(() => {
@@ -70,12 +64,10 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
     let stop = false;
     (async () => {
       for (let i = 0; i < 6 && !stop; i++) {
-        setSyncing(true);
         const x = (await fetch("/api/sales/refresh", { method: "POST" }).then((r) => r.json()).catch(() => ({}))) as { synced?: boolean; done?: boolean };
         if (x.synced) router.refresh();
         if (!x.synced || x.done !== false) break;
       }
-      if (!stop) setSyncing(false);
     })();
     return () => { stop = true; };
   }, [linked, router]);
@@ -154,23 +146,24 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
             )}
           </span>
           <span className="ac-who">
-            <h2 id="acname">{me.name}</h2>
-            <span className="ac-sub">{handle}{shop ? ` · TikTok Shop${shop.region ? ` ${shop.region}` : ""}` : ""}</span>
+            {/* The name and handle open the creator's TikTok profile. */}
+            {shop ? (
+              <a href={`https://www.tiktok.com/@${shop.username}`} target="_blank" rel="noopener" className="ac-tt" aria-label={`${me.name}, ${handle} on TikTok`}>
+                <h2 id="acname">{me.name}</h2>
+                <span className="ac-sub">{handle} · TikTok Shop{shop.region ? ` ${shop.region}` : ""}</span>
+              </a>
+            ) : (
+              <>
+                <h2 id="acname">{me.name}</h2>
+                <span className="ac-sub">{handle}</span>
+              </>
+            )}
             <span className="ac-chips">
               {shop && <span className="nv-badge b-green" style={{ paddingLeft: 4 }}><TikTokShopLogo size={18} />TikTok Shop linked</span>}
               {shop?.approvedAt && <span className="nv-badge b-green">Approved by Techwide</span>}
               {me.role === "admin" ? <span className="nv-badge b-blue">Techwide admin</span> : <span className={`ac-lvl ac-lvl-${d.level.level}`}><Emblem level={d.level.level} size={18} />{LEVEL_NAME[d.level.level]} level</span>}
             </span>
           </span>
-          {shop && (
-            <span className="ac-acts">
-              <a href={`https://www.tiktok.com/@${shop.username}`} target="_blank" rel="noopener" className="nv-btn2 nv-sm nv-press">View on TikTok</a>
-              <span className="ac-upd" role="status">
-                {syncing && <span className="nv-sping" aria-hidden="true" />}
-                {syncing ? "Updating from TikTok Shop…" : `Updated ${ago(s?.syncedAt ?? null, now)}`}
-              </span>
-            </span>
-          )}
         </div>
         {s && (
           <div className="ac-stats" role="list" aria-label="Your TikTok Shop affiliate numbers, last 30 days">

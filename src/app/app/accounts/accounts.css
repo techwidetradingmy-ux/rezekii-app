@@ -36,5 +36,7 @@
 @media (max-width: 520px) { .ac-top { padding: 20px; } .ac-line { padding: 14px 18px; } }
 @media (prefers-reduced-motion: reduce) { .ac-av, .ac-ok, .ac-stat, .ac-bar span { animation: none; } }
 
-/* Account: when the numbers were last read from TikTok Shop (automatic, no button). */
-.ac-upd { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--muted); }
+/* Account: the name and handle link to the creator's TikTok profile. */
+.ac-tt { display: flex; flex-direction: column; gap: 2px; color: inherit; text-decoration: none; border-radius: 10px; }
+.ac-tt:hover h2 { text-decoration: underline; text-underline-offset: 3px; }
+.ac-tt:focus-visible { outline: 2px solid #00c073; outline-offset: 3px; }
