@@ -7,7 +7,9 @@ const dayLabel = (now: number, daysAgo: number) =>
   new Date(now - daysAgo * 86400_000).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" });
 
 /**
- * GMV per day as a filled line (the mockup's creator-card chart), drawn in with a short animation.
+ * GMV per day as a filled line (the mockup's creator-card chart), revealed left to right with a short animation.
+ * The reveal is a growing clip, not a stroke dash: a dash is measured before the chart is stretched to fit, so tall spikes
+ * left the end of the line undrawn.
  * Hovering or tapping shows that day's GMV. `daily` is oldest first; the last value is today.
  */
 export function GmvChart({ daily, now, height = 140, tone = "green" }: { daily: number[]; now: number; height?: number; tone?: "green" | "light" }) {
@@ -45,9 +47,12 @@ export function GmvChart({ daily, now, height = 140, tone = "green" }: { daily: 
             <stop offset="0" stopColor={stroke} stopOpacity="0.32" />
             <stop offset="1" stopColor={stroke} stopOpacity="0" />
           </linearGradient>
+          <clipPath id={`${id}c`}>
+            <rect className="gc-reveal" x={-4} y={-20} width={W + 8} height={height + 40} />
+          </clipPath>
         </defs>
         <path className="gc-area" d={`${line} L${W} ${height} L0 ${height} Z`} fill={`url(#${id}f)`} />
-        <path className="gc-line" d={line} fill="none" stroke={stroke} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" pathLength={1} />
+        <path className="gc-line" d={line} clipPath={`url(#${id}c)`} fill="none" stroke={stroke} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
         {at !== null && <line x1={x(at)} x2={x(at)} y1="0" y2={height} stroke={stroke} strokeOpacity="0.35" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />}
       </svg>
       {at !== null && (
