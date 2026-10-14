@@ -77,6 +77,27 @@ export function lookupProducts(accessToken: string, productIds: string[]) {
   });
 }
 
+/** What "Creator Select Affiliate Product" adds for a product (tested 14 Oct 2026): brand, rating, stock, all-time sold, shop rating. */
+export type SelectedProduct = {
+  id: string;
+  brand_name?: string;
+  review?: { count?: number; overall_score?: string };
+  stock?: { quantity?: number };
+  market_performance?: { historical_sold_quantity?: number };
+  shop?: { name?: string; rating?: string };
+};
+
+/** Creator Select Affiliate Product, filtered to up to 20 product IDs. */
+export function selectProducts(accessToken: string, productIds: string[]) {
+  return callApi<{ products?: SelectedProduct[] }>({
+    method: "POST",
+    path: "/affiliate_creator/202501/selection/products/search",
+    accessToken,
+    query: { page_size: String(Math.min(20, Math.max(1, productIds.length))) },
+    body: { filter_params: { product_ids: productIds } },
+  });
+}
+
 export type ShowcaseAddResult = { errors?: { code: number; message: string; detail?: { product_id: string } }[] };
 
 /** Add to Showcase by product link (e.g. a TAP campaign product link). Max 20 links. */

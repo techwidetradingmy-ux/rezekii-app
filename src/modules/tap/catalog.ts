@@ -97,6 +97,14 @@ export async function latestGolden(): Promise<(GoldenSeller & { thumbs: (string 
   return row.items.map((g) => ({ ...g, thumbs: g.ids.map((id) => byId.get(id) ?? null) }));
 }
 
+/** TAP products by ID with their listing description (plain text), for Product Lookup. */
+export async function tapProductsWithDescription(ids: string[]): Promise<Map<string, TapProduct & { description: string | null }>> {
+  const clean = ids.filter((x) => /^\d{6,25}$/.test(x));
+  if (!clean.length) return new Map();
+  const rows = (await (await supabaseRest(`tap_catalog?product_id=in.(${clean.join(",")})&select=${COLUMNS},description`)).json()) as (Row & { description: string | null })[];
+  return new Map(rows.map((r) => [r.product_id, { ...toProduct(r), description: r.description }]));
+}
+
 export async function getProduct(id: string): Promise<TapProduct | null> {
   if (!/^\d{6,25}$/.test(id)) return null;
   const res = await supabaseRest(`tap_catalog?product_id=eq.${id}&select=${COLUMNS}&limit=1`);

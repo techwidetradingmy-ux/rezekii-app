@@ -1,6 +1,6 @@
-import { generateGeneralLinks, generateTaggedLinks, lookupProducts, type LookedUpProduct } from "../../integrations/tiktok-shop/creator.ts";
+import { generateGeneralLinks, generateTaggedLinks, lookupProducts, selectProducts, type LookedUpProduct, type SelectedProduct } from "../../integrations/tiktok-shop/creator.ts";
 import { resolveProductId } from "../../integrations/tiktok-shop/product-id.ts";
-import { getProduct, type TapProduct } from "./catalog.ts";
+import { getProduct, tapProductsWithDescription, type TapProduct } from "./catalog.ts";
 import { logLinks, makeTapLink } from "./links.ts";
 
 /**
@@ -63,45 +63,82 @@ export type LookupRow = {
   stock: number | null;
   source: "tiktok" | "tap" | null;
   note: string;
+  brand: string | null;
+  rating: number | null;
+  reviews: number | null;
+  shopRating: number | null;
+  /** In Techwide's TAP: the listing's description and its variants ([name, price, stock]). */
+  tap: boolean;
+  description: string | null;
+  variants: [string, number, number][];
 };
 
-const fromTap = (input: string, p: TapProduct): LookupRow => ({
+type TapInfo = TapProduct & { description?: string | null };
+const num = (s: string | number | undefined | null) => (s === undefined || s === null || s === "" ? null : Number(s));
+const extras = (x: SelectedProduct | undefined, t: TapInfo | undefined) => ({
+  brand: x?.brand_name || null, rating: num(x?.review?.overall_score), reviews: x?.review?.count ?? null, shopRating: num(x?.shop?.rating),
+  tap: !!t, description: t?.description ?? null, variants: t?.variants ?? [],
+});
+
+const fromTap = (input: string, p: TapInfo, x?: SelectedProduct): LookupRow => ({
   input, ok: true, id: p.id, name: p.name, image: p.image, shop: p.shop, category: p.category, priceLo: p.priceLo, priceHi: p.priceHi,
-  rate: p.openRate, sold: p.sold, stock: p.stock, source: "tap", note: "",
+  rate: p.openRate, sold: x?.market_performance?.historical_sold_quantity ?? p.sold, stock: x?.stock?.quantity ?? p.stock, source: "tap", note: "", ...extras(x, p),
 });
 /** TikTok often sends `sales_price` with empty amounts; the price is then in `original_price`. */
 const amount = (s: string | undefined) => (s ? Number(s) : null);
-export const fromTikTok = (input: string, p: LookedUpProduct): LookupRow => {
+export const fromTikTok = (input: string, p: LookedUpProduct, x?: SelectedProduct, t?: TapInfo): LookupRow => {
   const price = p.sales_price?.minimum_amount ? p.sales_price : p.original_price;
   return {
     input, ok: true, id: p.id, name: p.title, image: p.main_image_url ?? null, shop: p.shop?.name ?? null,
     category: p.category_chains?.find((c) => c.is_leaf)?.local_name ?? p.category_chains?.at(-1)?.local_name ?? null,
     priceLo: amount(price?.minimum_amount), priceHi: amount(price?.maximum_amount),
-    rate: p.commission?.rate ?? null, sold: p.units_sold ?? null, stock: null, source: "tiktok", note: p.has_inventory === false ? "Out of stock" : "",
+    rate: p.commission?.rate ?? null, sold: x?.market_performance?.historical_sold_quantity ?? p.units_sold ?? null, stock: x?.stock?.quantity ?? null,
+    source: "tiktok", note: p.has_inventory === false ? "Out of stock" : "", ...extras(x, t),
   };
 };
 
 /**
- * Facts for up to 20 pasted links. With a TikTok Shop link, from TikTok Shop's Product Lookup; otherwise from Techwide's TAP
- * catalog (other products then need the creator's TikTok Shop link).
+ * Facts for up to 20 pasted links. With a TikTok Shop link: TikTok Shop's Product Lookup plus its product search (brand, rating,
+ * stock, all-time sold, shop rating); Techwide TAP products also get their description and variants. Without one, TAP only.
  */
 export async function lookupLinks(token: string | null, inputs: string[]): Promise<LookupRow[]> {
   const ids = await Promise.all(inputs.map((l) => resolveProductId(l)));
   const facts = new Map<string, LookedUpProduct>();
+  const more = new Map<string, SelectedProduct>();
   const wanted = [...new Set(ids.filter((x): x is string => !!x))];
-  if (token && wanted.length) for (const p of (await lookupProducts(token, wanted)).data?.products ?? []) facts.set(p.id, p);
+  const [tap] = await Promise.all([
+    tapProductsWithDescription(wanted),
+    token && wanted.length
+      ? Promise.all([
+          lookupProducts(token, wanted).then((r) => { for (const p of r.data?.products ?? []) facts.set(p.id, p); }),
+          selectProducts(token, wanted).then((r) => { for (const p of r.data?.products ?? []) more.set(p.id, p); }).catch(() => undefined),
+        ])
+      : null,
+  ]);
   const none = (input: string, id: string | null, note: string): LookupRow => ({
     input, ok: false, id, name: input, image: null, shop: null, category: null, priceLo: null, priceHi: null, rate: null, sold: null, stock: null, source: null, note,
+    brand: null, rating: null, reviews: null, shopRating: null, tap: false, description: null, variants: [],
   });
-  return Promise.all(
-    inputs.map(async (input, i) => {
-      const id = ids[i];
-      if (!id) return none(input, null, "Not a TikTok Shop product link");
-      const f = facts.get(id);
-      if (f) return fromTikTok(input, f);
-      const tap = await getProduct(id);
-      if (tap) return fromTap(input, tap);
-      return none(input, id, token ? "TikTok: this product is not open for affiliate promotion" : "Needs your TikTok Shop link");
-    }),
-  );
+  return inputs.map((input, i) => {
+    const id = ids[i];
+    if (!id) return none(input, null, "Not a TikTok Shop product link");
+    const f = facts.get(id);
+    if (f) return fromTikTok(input, f, more.get(id), tap.get(id));
+    const t = tap.get(id);
+    if (t) return fromTap(input, t, more.get(id));
+    return none(input, id, token ? "TikTok: this product is not open for affiliate promotion" : "Needs your TikTok Shop link");
+  });
+}
+
+/**
+ * The creator's own affiliate link for each product (TikTok's general sharing link, made with their TikTok Shop sign-in), for the
+ * lookup export: shared anywhere, sales through it are credited to them. Up to 50 IDs per TikTok call.
+ */
+export async function lookupAffiliateLinks(token: string, ids: string[]): Promise<Record<string, string>> {
+  const out: Record<string, string> = {};
+  for (let i = 0; i < ids.length; i += 50) {
+    const r = await generateGeneralLinks(token, ids.slice(i, i + 50));
+    for (const l of r.data?.sharing_links ?? []) if (l.sharing_link) out[l.material_id] = l.sharing_link;
+  }
+  return out;
 }
