@@ -29,7 +29,8 @@ export async function convertLink(user: { id: string }, token: string | null, in
     if (tags.length) {
       const r = await generateTaggedLinks(token, id, tags);
       for (const l of r.data?.affiliate_sharing_links ?? []) made.push({ ...base, kind: "aff", productId: id, name, image, tag: l.tag, link: l.affiliate_sharing_link, note: "" });
-      for (const e of r.data?.errors ?? []) made.push({ ...base, kind: "error", productId: id, name, image, tag: e.detail?.tag ?? null, note: e.detail?.fail_reason || e.message });
+      // TikTok also sends an empty error entry for every link that worked.
+      for (const e of r.data?.errors ?? []) if (e.detail?.fail_reason || e.message) made.push({ ...base, kind: "error", productId: id, name, image, tag: e.detail?.tag ?? null, note: e.detail?.fail_reason || e.message });
       if (r.code !== 0 && !made.length) made.push({ ...base, kind: "error", productId: id, name, image, note: r.message || `TikTok error ${r.code}` });
     } else {
       const r = await generateGeneralLinks(token, [id]);

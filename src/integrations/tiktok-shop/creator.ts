@@ -39,13 +39,16 @@ export type TaggedLinks = {
   errors?: { code: number; message: string; detail?: { tag: string; fail_reason: string } }[];
 };
 
-/** "Generate Affiliate Sharing Link": one link per tag (e.g. threads, whatsapp) for one product. */
+/**
+ * "Generate Affiliate Sharing Link": one link per tag (e.g. threads, whatsapp) for one product. TikTok requires `channel`, and
+ * takes the product type as "1" although its docs say "PRODUCT" (tested 14 Oct 2026: "PRODUCT" is refused, "1" opens the product).
+ */
 export function generateTaggedLinks(accessToken: string, productId: string, tags: string[]) {
   return callApi<TaggedLinks>({
     method: "POST",
     path: "/affiliate_creator/202501/affiliate_sharing_links/generate_batch",
     accessToken,
-    body: { material: { type: "PRODUCT", id: productId }, tags },
+    body: { channel: "rezekii", material: { type: "1", id: productId }, tags },
   });
 }
 

@@ -17,10 +17,11 @@ export async function hasTask(runDate: string, key: string): Promise<boolean> {
   return ((await res.json()) as unknown[]).length > 0;
 }
 
-/** True when Rankings were built for this data date. */
+/** True when Rankings were built for this data date from that date's own lists (none borrowed from an earlier day). */
 export async function rankingsBuilt(day: string): Promise<boolean> {
-  const res = await supabaseRest(`market_snapshots?dataset=eq.rankings&slot=eq.built&as_of=eq.${day}&select=as_of&limit=1`);
-  return ((await res.json()) as unknown[]).length > 0;
+  const res = await supabaseRest(`market_snapshots?dataset=eq.rankings&slot=eq.built&as_of=eq.${day}&select=as_of,borrowed:items->0->listDays&limit=1`);
+  const [row] = (await res.json()) as { borrowed: Record<string, string> | null }[];
+  return !!row && !Object.keys(row.borrowed ?? {}).length;
 }
 
 /** Notes the first time TikTok's lists for `date` were seen (to learn when TikTok publishes them). */
@@ -101,9 +102,10 @@ export async function saveDetail(key: string, detail: unknown, error: string | n
   });
 }
 
-/** Tasks of one kind still waiting or running for a day. */
-export async function openTaskCount(runDate: string, kind: string): Promise<number> {
-  const res = await supabaseRest(`refresh_tasks?run_date=eq.${runDate}&kind=eq.${kind}&status=in.(pending,running)&select=key`, { headers: { prefer: "count=exact", range: "0-0" } });
+/** Tasks of one kind still waiting or running for a day; `except`: leave out tasks parked with this cursor. */
+export async function openTaskCount(runDate: string, kind: string, except?: string): Promise<number> {
+  const skip = except ? `&or=(cursor.is.null,cursor.neq.${except})` : "";
+  const res = await supabaseRest(`refresh_tasks?run_date=eq.${runDate}&kind=eq.${kind}&status=in.(pending,running)${skip}&select=key`, { headers: { prefer: "count=exact", range: "0-0" } });
   return Number((res.headers.get("content-range") ?? "*/0").split("/")[1]) || 0;
 }
 

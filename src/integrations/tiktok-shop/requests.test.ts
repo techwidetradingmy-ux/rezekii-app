@@ -1,6 +1,6 @@
 import { test, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { lookupProducts, addShowcaseByLink } from "./creator.ts";
+import { lookupProducts, addShowcaseByLink, generateTaggedLinks } from "./creator.ts";
 import { TAP_CATEGORY, campaignProductLink, listCampaignProductStats, listCampaignProducts, listCampaigns, listCreatorContent, listProductCreators, tapAsset } from "./partner.ts";
 import { partnerAuthUrl, creatorAuthUrl } from "./auth.ts";
 import { signRequest } from "./sign.ts";
@@ -97,6 +97,13 @@ test("TAP asset is picked by category name and market, not the first asset", () 
 test("showcase add uses PRODUCT_LINK", async () => {
   await addShowcaseByLink("tok", "https://example.test/p");
   assert.equal(calls[0].init.body, JSON.stringify({ add_type: "PRODUCT_LINK", product_link: "https://example.test/p" }));
+  assert.ok(signatureMatches(calls[0]));
+});
+
+test("generateTaggedLinks: sends the channel and the product type as \"1\", as TikTok's server takes them", async () => {
+  await generateTaggedLinks("tok", "1729492565465531395", ["whatsapp", "threads"]);
+  assert.equal(calls[0].url.pathname, "/affiliate_creator/202501/affiliate_sharing_links/generate_batch");
+  assert.equal(calls[0].init.body, JSON.stringify({ channel: "rezekii", material: { type: "1", id: "1729492565465531395" }, tags: ["whatsapp", "threads"] }));
   assert.ok(signatureMatches(calls[0]));
 });
 

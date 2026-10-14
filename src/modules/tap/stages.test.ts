@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { normalizeStatus, rowLook, sampleStage, unixSeconds } from "./stages.ts";
+import { normalizeStatus, rowLook, sampleStage, statusLook, unixSeconds } from "./stages.ts";
 
 test("my tap: TikTok sample statuses map to the mockup stages", () => {
   assert.equal(normalizeStatus("NotRequested"), "NOT_REQUESTED");
@@ -28,10 +28,17 @@ test("my tap: TikTok dates in seconds or milliseconds", () => {
 test("a sample asked on Rezekii that TikTok has no record of is 'not submitted', not a sample status", () => {
   const base = { stage: 0, request: { status: "applied" as const, note: null, createdAt: "", updatedAt: "", tiktok: null } };
   assert.equal(rowLook(base)[0], "Not submitted in TikTok yet");
-  assert.equal(rowLook({ stage: 1, request: { ...base.request, tiktok: "PENDING" } })[0], "Sample requested");
+  assert.equal(rowLook({ stage: 1, request: { ...base.request, tiktok: "PENDING" } })[0], "Awaiting sample approval");
   assert.equal(rowLook({ stage: 2 })[0], "Sample on the way");
 });
 
 test("a request for a product TikTok offers no sample of reads 'No sample'", () => {
   assert.equal(rowLook({ stage: 0, request: { status: "applied", note: null, createdAt: "", updatedAt: "", tiktok: null, noSample: true } })[0], "No sample");
+});
+
+test("stage 1 in TikTok's words: awaiting approval, or approved and waiting to ship", () => {
+  assert.equal(statusLook("Pending")[0], "Awaiting sample approval");
+  assert.equal(statusLook("AWAITING_SHIPMENT")[0], "Approved · waiting to ship");
+  assert.equal(statusLook("Completed")[0], "Content posted");
+  assert.equal(rowLook({ stage: 1, status: "Pending" })[0], "Awaiting sample approval");
 });

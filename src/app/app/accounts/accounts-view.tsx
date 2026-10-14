@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { shortCount, type AccountStats } from "@/integrations/tiktok/stats.ts";
 import type { AccountPageData } from "@/modules/accounts/account-page.ts";
-import { sampleLook } from "@/modules/tap/stages.ts";
+import { sampleLook, statusLook } from "@/modules/tap/stages.ts";
 import { Emblem } from "../../emblems";
 import { TikTokShopLogo, TikTokTile } from "../../tiktok-logo";
 import { GmvChart } from "../gmv-chart";
@@ -275,7 +275,7 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
           {d.samples.recent.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column" }}>
               {d.samples.recent.map((r, i) => {
-                const [label, bg, fg] = sampleLook(r.stage);
+                const [label, bg, fg] = r.status ? statusLook(r.status) : sampleLook(r.stage);
                 return (
                   <div key={i} className="ac-line" style={{ padding: "10px 0" }}>
                     {r.image ? <span className="ac-thumb" style={{ backgroundImage: `url("${r.image}")` }} aria-hidden="true" /> : <span className="ac-thumb" aria-hidden="true" />}

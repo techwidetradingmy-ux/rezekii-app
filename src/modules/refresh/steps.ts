@@ -45,10 +45,24 @@ type BestParams = { kind: BestsellingKind; date: string; timeSlot: "1D" | "7D" |
 type BestCreator = { rank?: number; open_id?: string; user_name?: string };
 type MarketCreator = { creator_open_id?: string; username?: string };
 
+/** A best-seller list TikTok hasn't published yet waits here; the Rankings build doesn't wait for it. */
+export const WAITING = "waiting";
+const QUARTER = 15 * 60_000;
+/** TikTok's reply when the date is newer than its newest list ("date must be on or before 2026-10-12"). */
+export const notPublished = (err: unknown) => err instanceof ApiError && /must be on or before/i.test(err.message);
+
 async function best(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
   const p = t.params as BestParams;
   const s = await sessions.seller();
-  const data = ok(await getBestselling(s.token, s.cipher, p.kind, p));
+  let data: Record<string, unknown[] | undefined>;
+  try {
+    data = ok(await getBestselling(s.token, s.cipher, p.kind, p));
+  } catch (err) {
+    // Not published yet (TikTok's video lists come out later than the others): check again on the next quarter hour, so a
+    // day's lists all come in together. The next day's plan closes anything still waiting.
+    if (notPublished(err)) return { count: 0, more: true, cursor: WAITING, waitMs: QUARTER - (Date.now() % QUARTER) + 30_000 };
+    throw err;
+  }
   const items = data[p.kind] ?? [];
   await saveSnapshot(p.kind, bestSlot(p), p.date, items);
   if (p.kind === "creators")
@@ -57,7 +71,9 @@ async function best(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
         .filter((c) => c.open_id || c.user_name)
         .map((c) => ({ creator_key: c.open_id ?? `u:${c.user_name}`, open_id: c.open_id ?? null, username: c.user_name ?? null, best: c, best_rank: c.rank ?? null })),
     );
-  return { count: items.length };
+  // A list that came in late: rebuild that day's Rankings with it (once per kind of list).
+  const followUps: PlannedTask[] = t.cursor === WAITING ? [{ key: `rankings|${p.date}|${p.kind}`, kind: "rankings", params: { day: p.date }, priority: 5 }] : [];
+  return { count: items.length, followUps };
 }
 
 /** Every Techwide TAP campaign (all statuses), then one follow-up task per campaign for its approved products. */
@@ -128,9 +144,9 @@ async function levels(t: TaskRow): Promise<StepResult> {
   return { count: await updateLevels(t.run_date) };
 }
 
-/** The Rankings page data from the day's best-seller lists. Waits until every list (and older missing day) is saved. */
+/** The Rankings page data from the day's best-seller lists. Waits until every list (and older missing day) is saved, except lists TikTok hasn't published yet. */
 async function rankings(t: TaskRow, { deadline }: Ctx): Promise<StepResult> {
-  if (await openTaskCount(t.run_date, "best")) return { count: 0, more: true, waitMs: 60_000 };
+  if (await openTaskCount(t.run_date, "best", WAITING)) return { count: 0, more: true, waitMs: 60_000 };
   // The full build and its three saves take about 35 seconds: start it only at the beginning of a tick, so it isn't cut off.
   if (Date.now() > deadline - 40_000) return { count: 0, more: true, waitMs: 0 };
   const built = await buildRankings((t.params as { day: string }).day);

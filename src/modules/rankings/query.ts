@@ -39,8 +39,9 @@ export function listRankings(b: Built, q: ListQuery): ListResult {
     const sign = (field === "gmv" ? -1 : 1) * (dir === "d" ? -1 : 1);
     return [...list].sort((a, c) => (field === "gmv" ? rank(a) - rank(c) : key(a) - key(c)) * sign || rank(a) - rank(c));
   };
-  const base = { view, slot, sort, sortLabel: sorts.find(([v]) => v === sort)![1], tier1: b.tier1[slot], rate30: b.rates.creators["30D"] ?? 4.08, asOf: b.asOf };
-  const name = ["creators", "products", "videos", "lives"][view];
+  const name = (["creators", "products", "videos", "lives"] as const)[view];
+  // The list's own day: earlier than asOf when TikTok hadn't published this list yet.
+  const base = { view, slot, sort, sortLabel: sorts.find(([v]) => v === sort)![1], tier1: b.tier1[slot], rate30: b.rates.creators["30D"] ?? 4.08, asOf: b.listDays?.[name] ?? b.asOf };
   const dropped = b.dropped[name]?.[slot] ?? 0;
 
   if (view === 0) {

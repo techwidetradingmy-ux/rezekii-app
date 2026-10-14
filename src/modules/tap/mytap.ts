@@ -27,7 +27,7 @@ export async function myTapRows(userId: string, username: string | null): Promis
   ]);
   const rows: MyTapRow[] = tiktok.map((r) => ({
     key: `${r.campaign_id}:${r.product_id}`, campaignId: r.campaign_id, productId: r.product_id, name: (r.product_name ?? "").trim(), shop: r.shop ?? "", image: r.image,
-    stage: sampleStage(normalizeStatus(r.sample_status)), paid: Number(r.paid), videos: r.videos, lives: r.lives,
+    stage: sampleStage(normalizeStatus(r.sample_status)), status: r.sample_status, paid: Number(r.paid), videos: r.videos, lives: r.lives,
   }));
   const onTikTok = new Set(rows.map((r) => r.productId));
   const pending = requests.filter((x) => !onTikTok.has(x.product_id));

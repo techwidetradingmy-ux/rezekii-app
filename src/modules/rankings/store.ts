@@ -24,6 +24,8 @@ export type Built = {
   vid: Record<string, BestVideo>;
   cbest: Record<string, string>;
   videoDays: { n: number; first: string | null; last: string | null };
+  /** Lists TikTok hadn't published for `asOf` yet, with the earlier day shown instead (e.g. videos: "2026-10-12"). */
+  listDays?: Partial<Record<"creators" | "products" | "videos" | "lives", string>>;
 };
 
 async function rpc<T>(name: string, args: Record<string, unknown>): Promise<T> {
@@ -37,6 +39,22 @@ async function lists(dataset: string, day: string): Promise<Map<string, Raw[]>> 
   for (const r of rows) m.set(r.slot, [...(m.get(r.slot) ?? []), r.item]);
   for (const l of m.values()) l.sort((a, b) => Number(a.rank) - Number(b.rank));
   return m;
+}
+
+/** The newest day on or before `day` with saved lists for a dataset, or null. */
+async function newestDay(dataset: string, day: string): Promise<string | null> {
+  const [row] = (await (await supabaseRest(`market_snapshots?dataset=eq.${dataset}&as_of=lte.${day}&select=as_of&order=as_of.desc&limit=1`)).json()) as { as_of: string }[];
+  return row?.as_of ?? null;
+}
+
+/** One day's lists for a dataset; when TikTok hasn't published that day yet, the newest earlier day's (noted in `listDays`). */
+async function listsOrEarlier(dataset: "creators" | "products" | "videos" | "lives", day: string, listDays: NonNullable<Built["listDays"]>): Promise<Map<string, Raw[]>> {
+  const m = await lists(dataset, day);
+  if (m.size) return m;
+  const earlier = await newestDay(dataset, day);
+  if (!earlier || earlier === day) return m;
+  listDays[dataset] = earlier;
+  return lists(dataset, earlier);
 }
 
 /** Daily sums over a window, in chunks so each database call stays well under its time limit. */
@@ -64,7 +82,8 @@ async function paged<T>(path: string): Promise<T[]> {
 
 /** Builds the rankings from the lists saved for `day` (TikTok's newest data date) and saves them. */
 export async function buildRankings(day: string): Promise<Built> {
-  const [cLists, pLists, vLists, lLists] = await Promise.all([lists("creators", day), lists("products", day), lists("videos", day), lists("lives", day)]);
+  const listDays: NonNullable<Built["listDays"]> = {};
+  const [cLists, pLists, vLists, lLists] = await Promise.all((["creators", "products", "videos", "lives"] as const).map((d) => listsOrEarlier(d, day, listDays)));
   const [c7, c30] = await Promise.all([dailySums("creators", day, 7, 7), dailySums("creators", day, 30, 30)]);
   // Products: one pass over 30 days in 5-day chunks; the first 7 days are also the 7-day figures.
   const p7 = await dailySums("products", day, 7, 5);
@@ -128,7 +147,7 @@ export async function buildRankings(day: string): Promise<Built> {
   }
   const bv = bestVideos([...byDay.values()], details, videos["30D"]);
 
-  const built: Built = { asOf: day, rates, dropped, tier1, creators, pm, products, videos, lives, details, find, vid: bv.VID, cbest: bv.CBEST, videoDays: { n: bv.nDays, first: bv.first, last: bv.last } };
+  const built: Built = { asOf: day, rates, dropped, tier1, creators, pm, products, videos, lives, details, find, vid: bv.VID, cbest: bv.CBEST, videoDays: { n: bv.nDays, first: bv.first, last: bv.last }, listDays };
   // Saved in three rows: the product details and the Creator Marketplace list are large (several MB each) and only the
   // Top products and Find creators views need them. The parts go first, so the main row never points at missing parts.
   const save = (slot: string, items: unknown) =>

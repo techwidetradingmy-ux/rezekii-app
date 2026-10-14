@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { normalizeStatus, rowLook, sampleLook, sampleStage, type MyTapRow } from "@/modules/tap/stages.ts";
+import { rowLook, statusLook, type MyTapRow } from "@/modules/tap/stages.ts";
 import type { SellerSample } from "@/modules/tap/samples.ts";
 import type { MyTapDetail } from "@/modules/tap/mytap.ts";
 import { n, rmx, short, tiktokProductUrl } from "../marketplace/format";
@@ -198,7 +198,7 @@ export function MyTapView({ rows, hasTikTok }: { rows: MyTapRow[]; hasTikTok: bo
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {seller.map((x) => {
-              const [label, bg, fg] = sampleLook(sampleStage(normalizeStatus(x.status)));
+              const [label, bg, fg] = statusLook(x.status);
               return (
                 <a key={x.id} href={tiktokProductUrl(x.productId)} target="_blank" rel="noopener" className="mt-card" style={{ textDecoration: "none", color: "var(--text)" }}>
                   <span className="mt-ph" aria-hidden="true" style={x.image ? { backgroundImage: `url("${x.image}")` } : undefined} />

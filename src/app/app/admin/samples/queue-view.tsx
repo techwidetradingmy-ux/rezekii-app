@@ -8,8 +8,8 @@ const when = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { timeZo
 
 /** TikTok's sample statuses in words, with the badge colour. */
 const TIKTOK: Record<string, [string, string]> = {
-  PENDING: ["Waiting for approval", "badge-amber"],
-  AWAITING_SHIPMENT: ["Approved · to ship", "badge"],
+  PENDING: ["Awaiting sample approval", "badge-amber"],
+  AWAITING_SHIPMENT: ["Approved · waiting to ship", "badge"],
   SHIPPED: ["Shipped", "badge"],
   CONTENT_PENDING: ["Delivered · content due", "badge-amber"],
   COMPLETED: ["Content posted", "badge"],

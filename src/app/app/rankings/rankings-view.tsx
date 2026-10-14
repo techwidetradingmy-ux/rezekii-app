@@ -58,6 +58,9 @@ type Panel = { user: string; row: CreatorRow | null; det: Detail | null; vid: { 
 type Video = { id: string; title: string; seconds: number; stats: number[]; products: string[]; lo: number; hi: number; conv: boolean; posted: string };
 
 /** The Rankings page from the mockup: Rezekii creators' monthly leaderboard, and TikTok Shop Malaysia's best-seller lists. */
+/** "2026-10-12" as "12 Oct": a list TikTok published later than the others shows its own day. */
+const dayLabel = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+
 export function RankingsView({ board, you, asOf }: { board: BoardMonth[]; you: string | null; asOf: string | null }) {
   const { toast, flash } = useToast();
   const [tab, setTab] = useState(0);
@@ -268,7 +271,7 @@ export function RankingsView({ board, you, asOf }: { board: BoardMonth[]; you: s
             {mview < 4 && (
               <section className="nv-card" aria-label={`${["Bestselling creators", "Bestselling products", "Bestselling videos", "Bestselling LIVEs"][mview]} · TikTok Shop Malaysia`} style={{ padding: "18px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", justifyContent: "space-between", padding: "0 14px 10px" }}>
-                  <strong style={{ fontSize: 17 }}>{["Bestselling creators", "Bestselling products", "Bestselling videos", "Bestselling LIVEs"][mview]} · TikTok Shop Malaysia</strong>
+                  <strong style={{ fontSize: 17 }}>{["Bestselling creators", "Bestselling products", "Bestselling videos", "Bestselling LIVEs"][mview]} · TikTok Shop Malaysia{data && asOf && data.asOf < asOf ? ` · ${dayLabel(data.asOf)}` : ""}</strong>
                   <div className="nv-seg" role="group" aria-label="Period" style={{ width: 300, maxWidth: "100%" }}>
                     <span className="nv-segthumb" aria-hidden="true" style={{ width: "calc(33.333% - 1.4px)", transform: `translateX(${slot * 100}%)` }} />
                     {SLOTS.map((label, i) => <button key={label} type="button" className={slot === i ? "on" : ""} aria-pressed={slot === i} onClick={() => reset(() => setSlot(i))}>{label}</button>)}

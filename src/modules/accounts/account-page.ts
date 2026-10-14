@@ -15,7 +15,7 @@ export type AccountPageData = {
   shop: { username: string; avatar: string | null; linkedAt: string | null; approvedAt: string | null; region: string | null; permissions: string[] } | null;
   sales: SalesSummary | null;
   level: { level: Level; monthSales: number; keep: number; lifetime: number };
-  samples: { requested: number; shipping: number; toPost: number; posted: number; recent: { name: string; image: string | null; stage: number }[] };
+  samples: { requested: number; shipping: number; toPost: number; posted: number; recent: { name: string; image: string | null; stage: number; status: string | null }[] };
   showcase: number | null;
   now: number;
 };
@@ -59,7 +59,7 @@ export async function accountPage(user: AppUser): Promise<AccountPageData> {
       shipping: withSample.filter((r) => r.stage === 2).length,
       toPost: withSample.filter((r) => r.stage === 3).length,
       posted: withSample.filter((r) => r.stage === 4).length,
-      recent: withSample.slice(0, 3).map((r) => ({ name: r.name, image: r.image, stage: r.stage })),
+      recent: withSample.slice(0, 3).map((r) => ({ name: r.name, image: r.image, stage: r.stage, status: r.request?.tiktok ?? r.status ?? null })),
     },
     showcase: showcase?.count ?? null,
     now: Date.now(),
