@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { CampaignForm } from "@/modules/admin/campaigns.ts";
 
-const EMPTY: CampaignForm = { name: "", description: "", regStart: "", regEnd: "", start: "", end: "", commission: 18, local: true, crossBorder: false, shopCodes: [], whatsapp: "", email: "", phone: "" };
+const EMPTY: CampaignForm = { name: "", description: "", regEnd: "", start: "", end: "", commission: 18, local: true, crossBorder: false, shopCodes: [], whatsapp: "", email: "", phone: "" };
 const label = { position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" } as const;
 
 /**
@@ -70,10 +70,9 @@ export function CampaignSheet({ id, initial, closing, onClose, onSaved }: {
             <textarea id="cpcodes" className="nv-input" rows={2} placeholder="MYLCXXXXXX" value={f.shopCodes.join("\n")} onChange={(e) => set("shopCodes", e.target.value.split(/[\s,]+/))} />
           </fieldset>
           <div className="cp-grid">
-            <div className="cp-field"><label htmlFor="cprs" className="nv-label">Shops can register from</label><input id="cprs" type="date" className="nv-input" value={f.regStart} onChange={(e) => set("regStart", e.target.value)} required /></div>
-            <div className="cp-field"><label htmlFor="cpre" className="nv-label">Registration closes</label><input id="cpre" type="date" className="nv-input" value={f.regEnd} onChange={(e) => set("regEnd", e.target.value)} required /></div>
-            <div className="cp-field"><label htmlFor="cpcs" className="nv-label">Campaign starts</label><input id="cpcs" type="date" className="nv-input" value={f.start} onChange={(e) => set("start", e.target.value)} required /></div>
+            <div className="cp-field"><label htmlFor="cpcs" className="nv-label">Campaign starts</label><input id="cpcs" type="date" className="nv-input" value={f.start} onChange={(e) => set("start", e.target.value)} required /><span className="cp-help">Shops can register from this day too.</span></div>
             <div className="cp-field"><label htmlFor="cpce" className="nv-label">Campaign ends</label><input id="cpce" type="date" className="nv-input" value={f.end} onChange={(e) => set("end", e.target.value)} required /><span className="cp-help">Up to 360 days after it starts. Set an earlier date to end it sooner.</span></div>
+            <div className="cp-field"><label htmlFor="cpre" className="nv-label">Registration closes</label><input id="cpre" type="date" className="nv-input" value={f.regEnd} onChange={(e) => set("regEnd", e.target.value)} required /><span className="cp-help">Between the start and end days.</span></div>
           </div>
           <div className="cp-field">
             <label htmlFor="cpcom" className="nv-label">Total commission shown to shops</label>

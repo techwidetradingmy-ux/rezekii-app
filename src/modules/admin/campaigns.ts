@@ -6,7 +6,7 @@ import { logActivity } from "./admins.ts";
 export type CampaignForm = {
   name: string;
   description: string;
-  regStart: string;
+  /** Shops can register from the campaign's start day (TikTok requires the two to match) until this day. */
   regEnd: string;
   start: string;
   end: string;
@@ -33,13 +33,13 @@ export function campaignFields(f: CampaignForm): { ok: true; fields: CampaignFie
   if (!name) return { ok: false, error: "Give the campaign a name." };
   if (name.length >= 50) return { ok: false, error: "The name must be under 50 characters." };
   if (f.description.length >= 1000) return { ok: false, error: "The description must be under 1,000 characters." };
-  if (![f.regStart, f.regEnd, f.start, f.end].every(isDay)) return { ok: false, error: "Fill in all four dates." };
-  const reg = [dayStart(f.regStart), dayEnd(f.regEnd)];
+  if (![f.start, f.end, f.regEnd].every(isDay)) return { ok: false, error: "Fill in all three dates." };
   const run = [dayStart(f.start), dayEnd(f.end)];
-  if (reg[0] >= reg[1]) return { ok: false, error: "Registration has to open before it closes." };
+  // TikTok: registration_start_time must equal campaign_start_time.
+  const reg = [run[0], dayEnd(f.regEnd)];
   if (run[0] >= run[1]) return { ok: false, error: "The campaign has to start before it ends." };
   if (run[1] - run[0] >= 360 * DAY) return { ok: false, error: "A campaign can run for at most 360 days." };
-  if (reg[0] > run[1]) return { ok: false, error: "Registration has to open before the campaign ends." };
+  if (reg[1] < run[0] || reg[1] > run[1]) return { ok: false, error: "Registration has to close between the campaign's start and end days." };
   const rate = Math.round(Number(f.commission) * 100);
   if (!(rate > 100 && rate < 8000)) return { ok: false, error: "Commission must be more than 1% and less than 80%." };
   const shopCodes = f.shopCodes.map((c) => c.trim().toUpperCase()).filter(Boolean);
@@ -83,7 +83,7 @@ export async function campaignOverview(campaignId: string): Promise<{ ok: true; 
       counts: { approved: count(approved), pending: count(pending), declined: count(declined) },
       form: {
         name: c.name ?? "", description: c.description ?? "",
-        regStart: toDay(c.registration_start_time), regEnd: toDay(c.registration_end_time), start: toDay(c.campaign_start_time), end: toDay(c.campaign_end_time),
+        regEnd: toDay(c.registration_end_time), start: toDay(c.campaign_start_time), end: toDay(c.campaign_end_time),
         commission: (c.commission_rate ?? 0) / 100,
         local: !!c.target_seller_types?.includes("LOCAL"), crossBorder: !!c.target_seller_types?.includes("CROSS_BORDER"),
         shopCodes: (c.target_shops ?? []).map((x) => x.shop_code ?? "").filter(Boolean),
