@@ -30,6 +30,10 @@ export type MarketplaceCreator = {
 
 export type CreatorSearch = {
   keyword?: string;
+  /** TikTok's spelling ("staus"). Says only managed or independent, never which agency. */
+  affiliate_data?: { creator_agency_staus?: "AGENCY_MANAGED" | "INDEPENDENT" };
+  /** e.g. ["Lv. 3"]: TikTok's creator levels for the market (see TT_LEVELS). */
+  advanced_filters?: { creator_level?: string[] };
   gmv_ranges?: string[];
   units_sold_ranges?: string[];
   follower_demographics?: { count_range?: { count_ge?: number; count_le?: number } };

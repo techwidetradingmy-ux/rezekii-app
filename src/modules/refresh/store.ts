@@ -79,7 +79,8 @@ export async function saveSnapshot(dataset: string, slot: string, asOf: string, 
   });
 }
 
-export type CreatorUpsert = { creator_key: string; open_id: string | null; username: string | null } & ({ best: unknown; best_rank: number | null } | { market: unknown });
+/** `tt_level`: TikTok's creator level (0-8), known when the marketplace search was split by level. */
+export type CreatorUpsert = { creator_key: string; open_id: string | null; username: string | null } & ({ best: unknown; best_rank: number | null } | { market: unknown; tt_level?: number });
 
 /** Records creators seen in a list. Each source only overwrites its own column, so a profile fetched earlier is kept. */
 export async function upsertCreators(rows: CreatorUpsert[]): Promise<void> {
@@ -100,6 +101,24 @@ export async function saveDetail(key: string, detail: unknown, error: string | n
     headers: { prefer: "return=minimal" },
     body: JSON.stringify({ detail, detail_error: error, detail_at: new Date().toISOString() }),
   });
+}
+
+/** True while the month's level-split marketplace search (planned on the 1st) is still running, on any day. */
+export async function levelPassOpen(): Promise<boolean> {
+  const res = await supabaseRest(`refresh_tasks?kind=eq.marketplace&key=like.${encodeURIComponent("marketplace|lv*")}&status=in.(pending,running)&select=key&limit=1`);
+  return ((await res.json()) as unknown[]).length > 0;
+}
+
+/** Linked creators whose agency status is due (never checked, or checked over `days` days ago), oldest first. */
+export async function agencyDue(days: number, limit: number): Promise<{ user_id: string; username: string }[]> {
+  const since = new Date(Date.now() - days * 86_400_000).toISOString();
+  const res = await supabaseRest(`affiliate_connections?user_id=not.is.null&username=not.is.null&or=(agency_at.is.null,agency_at.lt.${since})&select=user_id,username&order=agency_at.asc.nullsfirst&limit=${limit}`);
+  return res.json();
+}
+
+/** Saves a creator's agency status (null: TikTok's marketplace doesn't list them). */
+export async function saveAgency(userId: string, agency: "managed" | "independent" | null): Promise<void> {
+  await supabaseRest(`affiliate_connections?user_id=eq.${userId}`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ agency, agency_at: new Date().toISOString() }) });
 }
 
 /** Tasks of one kind still waiting or running for a day; `except`: leave out tasks parked with this cursor. */

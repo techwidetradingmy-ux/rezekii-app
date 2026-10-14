@@ -9,9 +9,9 @@ import { approvedCreatorToken } from "../creator-accounts/access.ts";
 import { linkedCreators, syncCreatorOrders } from "../sales/orders.ts";
 import { buildRankings } from "../rankings/store.ts";
 import { getBestselling, getMarketplaceCreator, searchMarketplaceCreators, type BestsellingKind } from "../../integrations/tiktok-shop/seller.ts";
-import { bestSlot, type PlannedTask } from "./plan.ts";
+import { TT_LEVELS, bestSlot, type PlannedTask } from "./plan.ts";
 import type { Sessions } from "./sessions.ts";
-import { catalogSales, creatorsNeedingDetail, upsertCreatorProducts, openTaskCount, rebuildTapCatalog, saveDetail, saveSnapshot, snapshotItems, upsertCreators, type TaskRow } from "./store.ts";
+import { agencyDue, catalogSales, creatorsNeedingDetail, upsertCreatorProducts, openTaskCount, rebuildTapCatalog, saveAgency, saveDetail, saveSnapshot, snapshotItems, upsertCreators, type TaskRow } from "./store.ts";
 
 /** TikTok's "too many requests" code, shared by the app's whole API group. */
 export const RATE_LIMITED = 36009002;
@@ -245,11 +245,12 @@ async function details(t: TaskRow, { sessions, deadline }: Ctx): Promise<StepRes
 /** TikTok's GMV and units-sold ranges, used to split a search that hits its ~1,000-result limit. */
 export const GMV_RANGES = ["GMV_RANGE_0_100", "GMV_RANGE_100_1000", "GMV_RANGE_1000_10000", "GMV_RANGE_10000_AND_ABOVE"];
 export const UNITS_RANGES = ["UNITS_SOLD_RANGE_0_10", "UNITS_SOLD_RANGE_10_100", "UNITS_SOLD_RANGE_100_1000", "UNITS_SOLD_RANGE_1000_AND_ABOVE"];
-type MarketParams = { min: number; max: number | null; gmv?: string; units?: string };
+/** `level`: TikTok's creator level, set for the month's level-split search (e.g. "Lv. 3"). */
+type MarketParams = { min: number; max: number | null; gmv?: string; units?: string; level?: string };
 
 /** The narrower searches for one that hit TikTok's limit: by GMV range first, then by units sold. */
 export function marketSplits(p: MarketParams): PlannedTask[] {
-  const band = `${p.min}-${p.max ?? "up"}`;
+  const band = `${p.level ? `lv${TT_LEVELS.indexOf(p.level)}|` : ""}${p.min}-${p.max ?? "up"}`;
   if (!p.gmv) return GMV_RANGES.map((gmv) => ({ key: `marketplace|${band}|${gmv}`, kind: "marketplace", params: { ...p, gmv }, priority: 6 }));
   if (!p.units) return UNITS_RANGES.map((units) => ({ key: `marketplace|${band}|${p.gmv}|${units}`, kind: "marketplace", params: { ...p, units }, priority: 6 }));
   return [];
@@ -263,13 +264,17 @@ async function marketplace(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
   const p = t.params as MarketParams;
   const s = await sessions.seller();
   const range = { count_ge: p.min, ...(p.max === null ? {} : { count_le: p.max }) };
-  const filters = { follower_demographics: { count_range: range }, ...(p.gmv ? { gmv_ranges: [p.gmv] } : {}), ...(p.units ? { units_sold_ranges: [p.units] } : {}) };
+  const filters = {
+    follower_demographics: { count_range: range }, ...(p.gmv ? { gmv_ranges: [p.gmv] } : {}), ...(p.units ? { units_sold_ranges: [p.units] } : {}),
+    ...(p.level ? { advanced_filters: { creator_level: [p.level] } } : {}),
+  };
   const data = ok(await searchMarketplaceCreators(s.token, s.cipher, filters, { pageSize: 20, pageToken: t.cursor ?? undefined }));
   const items = (data.creators ?? []) as MarketCreator[];
+  const level = p.level ? { tt_level: TT_LEVELS.indexOf(p.level) } : {};
   await upsertCreators(
     items
       .filter((c) => c.creator_open_id || c.username)
-      .map((c) => ({ creator_key: c.creator_open_id ?? `u:${c.username}`, open_id: c.creator_open_id ?? null, username: c.username ?? null, market: c })),
+      .map((c) => ({ creator_key: c.creator_open_id ?? `u:${c.username}`, open_id: c.creator_open_id ?? null, username: c.username ?? null, market: c, ...level })),
   );
   const next = data.next_page_token;
   const total = t.result_count + items.length;
@@ -277,6 +282,31 @@ async function marketplace(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
   // Ended at TikTok's ~1,000-result limit (or ours): the slice has more creators than TikTok shows, so search narrower slices.
   const capped = !more && total >= 980;
   return { count: items.length, more, cursor: more ? next : null, waitMs: 20_000, followUps: capped ? marketSplits(p) : undefined };
+}
+
+/** How often a linked creator's agency status is checked again (owner, 14 Oct 2026). */
+export const AGENCY_DAYS = 14;
+const AGENCY_FILTERS = [["AGENCY_MANAGED", "managed"], ["INDEPENDENT", "independent"]] as const;
+
+/**
+ * One linked creator's agency status a run, from TikTok's Creator Marketplace (it says managed or independent, never which
+ * agency): their username searched with each agency filter; listed in neither, null. One creator a minute, as the
+ * marketplace search allows only a few calls a minute.
+ */
+async function agency(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
+  const [c] = await agencyDue(AGENCY_DAYS, 1);
+  if (!c) return { count: 0 };
+  const s = await sessions.seller();
+  let found: "managed" | "independent" | null = null;
+  for (const [status, label] of AGENCY_FILTERS) {
+    const data = ok(await searchMarketplaceCreators(s.token, s.cipher, { keyword: c.username, affiliate_data: { creator_agency_staus: status } }, { pageSize: 20 }));
+    if ((data.creators ?? []).some((x) => x.username?.toLowerCase() === c.username.toLowerCase())) {
+      found = label;
+      break;
+    }
+  }
+  await saveAgency(c.user_id, found);
+  return { count: 1, more: true, waitMs: 60_000 };
 }
 
 export const STEPS: Record<string, (t: TaskRow, ctx: Ctx) => Promise<StepResult>> = {
@@ -291,4 +321,5 @@ export const STEPS: Record<string, (t: TaskRow, ctx: Ctx) => Promise<StepResult>
   orders,
   details,
   marketplace,
+  agency,
 };

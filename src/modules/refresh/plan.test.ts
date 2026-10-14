@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { AUTHOR_TYPES, CATEGORIES, FOLLOWER_BANDS, bestSlot, mytDay, mytHour, planDay, planNewest } from "./plan.ts";
+import { AUTHOR_TYPES, CATEGORIES, FOLLOWER_BANDS, TT_LEVELS, bestSlot, mytDay, mytHour, planDay, planNewest } from "./plan.ts";
 
 // 2026-10-13 06:30 in Malaysia = 2026-10-12 22:30 UTC.
 const now = Date.parse("2026-10-12T22:30:00Z");
@@ -63,4 +63,15 @@ test("planDay skips the day-2 lists when yesterday's late check already built th
   assert.ok(all.some((t) => t.kind === "rankings"));
   assert.ok(!skip.some((t) => t.kind === "rankings"));
   assert.ok(skip.some((t) => t.key === "tap_campaigns") && skip.some((t) => t.kind === "orders"));
+});
+
+test("refresh plan: on the 1st the marketplace search is split by creator level; the usual one waits while it runs", async () => {
+  const first = Date.parse("2026-10-31T16:30:00Z"); // 1 November, 00:30 in Malaysia
+  const day1 = planDay(first, new Set()).filter((t) => t.kind === "marketplace");
+  assert.equal(day1.length, TT_LEVELS.length * FOLLOWER_BANDS.length);
+  assert.deepEqual(day1[0], { key: "marketplace|lv0|0-999", kind: "marketplace", params: { min: 0, max: 999, level: "Lv. 0" }, priority: 6 });
+  assert.equal(planDay(now, new Set(), false, true).filter((t) => t.kind === "marketplace").length, 0);
+  assert.equal(planDay(now, new Set()).filter((t) => t.kind === "agency").length, 1);
+  const { marketSplits } = await import("./steps.ts");
+  assert.equal(marketSplits({ min: 0, max: 999, level: "Lv. 3" })[0].key, "marketplace|lv3|0-999|GMV_RANGE_0_100");
 });

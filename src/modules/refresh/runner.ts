@@ -2,11 +2,11 @@ import { getBestselling } from "../../integrations/tiktok-shop/seller.ts";
 import { AUTHOR_TYPES, CATEGORIES, DATA_LAG_DAYS, LATE_HOUR, PLAN_HOUR, mytDay, mytHour, planDay, planNewest, type TaskKind } from "./plan.ts";
 import type { Sessions } from "./sessions.ts";
 import { ApiError, RATE_LIMITED, STEPS } from "./steps.ts";
-import { addTasks, claimTask, completeDailyDays, hasTask, notePublished, pruneMarketData, rankingsBuilt, updateTask, type TaskRow } from "./store.ts";
+import { addTasks, claimTask, completeDailyDays, hasTask, levelPassOpen, notePublished, pruneMarketData, rankingsBuilt, updateTask, type TaskRow } from "./store.ts";
 
 /** Daily lists per data date: creators (4 author types) and products (29 category lists), each in RM and US$. */
 const DAILY_LISTS = (AUTHOR_TYPES.length + CATEGORIES.length) * 2;
-const QUEUE: TaskKind[] = ["tap_campaigns", "tap_products", "tap_catalog", "tap_creators", "levels", "best", "rankings", "videos", "orders", "details"];
+const QUEUE: TaskKind[] = ["tap_campaigns", "tap_products", "tap_catalog", "tap_creators", "levels", "best", "rankings", "videos", "orders", "details", "agency"];
 /** Gap between calls to TikTok's analytics and partner APIs. */
 const GAP_MS = 1200;
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -58,7 +58,7 @@ export async function runRefresh(sessions: Sessions, deadline: number, now = Dat
   // The day's plan is marked by its first task, so yesterday's lists (planned on their own) don't count as the plan.
   if (mytHour(now) >= PLAN_HOUR && !(await hasTask(runDate, "tap_campaigns"))) {
     await pruneMarketData(runDate);
-    const tasks = planDay(now, await completeDailyDays(DAILY_LISTS), await rankingsBuilt(mytDay(now, DATA_LAG_DAYS)));
+    const tasks = planDay(now, await completeDailyDays(DAILY_LISTS), await rankingsBuilt(mytDay(now, DATA_LAG_DAYS)), await levelPassOpen());
     await addTasks(runDate, tasks);
     planned = tasks.length;
   }

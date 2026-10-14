@@ -1,6 +1,6 @@
 /** What the daily refresh fetches, as a list of tasks. Pure: no network, no database. */
 
-export type TaskKind = "tap_campaigns" | "tap_products" | "tap_catalog" | "tap_creators" | "levels" | "rankings" | "videos" | "orders" | "best" | "details" | "marketplace";
+export type TaskKind = "tap_campaigns" | "tap_products" | "tap_catalog" | "tap_creators" | "levels" | "rankings" | "videos" | "orders" | "best" | "details" | "marketplace" | "agency";
 export type PlannedTask = { key: string; kind: TaskKind; params: Record<string, unknown>; priority: number };
 
 const DAY = 86_400_000;
@@ -39,6 +39,9 @@ export const FOLLOWER_BANDS: [number, number | null][] = [
   [50000, 99999], [100000, 199999], [200000, 499999], [500000, 999999], [1000000, null],
 ];
 
+/** TikTok's creator levels in Malaysia (from Get Seller Search Creator Marketplace Advanced Filters, 14 Oct 2026). */
+export const TT_LEVELS = ["Lv. 0", "Lv. 1", "Lv. 2", "Lv. 3", "Lv. 4", "Lv. 5", "Lv. 6", "Lv. 7", "Lv. 8"];
+
 /** Snapshot slot for a best-seller list, e.g. "30D|AFFILIATE|LOCAL" or "1D|600001|USD" ("ALL" = every category). */
 export function bestSlot(p: { kind: string; timeSlot: string; currency: string; authorType?: string; categoryId?: string }): string {
   const who = p.kind === "creators" ? p.authorType : p.kind === "products" ? p.categoryId || "ALL" : undefined;
@@ -69,8 +72,11 @@ export function planNewest(date: string): PlannedTask[] {
   return tasks;
 }
 
-/** `newestBuilt`: Rankings were already built for the day-2 date (yesterday's late check did it), so it isn't fetched again. */
-export function planDay(now: number, haveDays: Set<string>, newestBuilt = false): PlannedTask[] {
+/**
+ * `newestBuilt`: Rankings were already built for the day-2 date (yesterday's late check did it), so it isn't fetched again.
+ * `levelPassOpen`: the month's level-split marketplace search is still running, so the usual one waits for it.
+ */
+export function planDay(now: number, haveDays: Set<string>, newestBuilt = false, levelPassOpen = false): PlannedTask[] {
   const newest = mytDay(now, DATA_LAG_DAYS);
   const tasks: PlannedTask[] = [
     { key: "tap_campaigns", kind: "tap_campaigns", params: {}, priority: 1 },
@@ -97,7 +103,17 @@ export function planDay(now: number, haveDays: Set<string>, newestBuilt = false)
   }
 
   tasks.push({ key: "details", kind: "details", params: {}, priority: 5 });
-  for (const [min, max] of FOLLOWER_BANDS)
-    tasks.push({ key: `marketplace|${min}-${max ?? "up"}`, kind: "marketplace", params: { min, max }, priority: 6 });
+  // linked creators' agency status, each checked every 2 weeks
+  tasks.push({ key: "agency", kind: "agency", params: {}, priority: 6 });
+  // On the 1st the marketplace search is also split by TikTok's creator level, so each creator's level comes with it (levels
+  // change monthly). It takes more than a day, so it carries on past midnight and the usual search waits for it.
+  if (mytDay(now).endsWith("-01")) {
+    for (const [i, level] of TT_LEVELS.entries())
+      for (const [min, max] of FOLLOWER_BANDS)
+        tasks.push({ key: `marketplace|lv${i}|${min}-${max ?? "up"}`, kind: "marketplace", params: { min, max, level }, priority: 6 });
+  } else if (!levelPassOpen) {
+    for (const [min, max] of FOLLOWER_BANDS)
+      tasks.push({ key: `marketplace|${min}-${max ?? "up"}`, kind: "marketplace", params: { min, max }, priority: 6 });
+  }
   return tasks;
 }
