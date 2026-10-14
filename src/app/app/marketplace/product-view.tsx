@@ -63,10 +63,11 @@ export function ProductBlock({ p, tap, headingId }: { p: TapProduct; tap: Tap; h
   const add = tap.addState(p.id);
   const smp = tap.sampleState(p);
   return (
-    <>
-      <div style={{ position: "relative", width: "100%", aspectRatio: "1 / 1", flexShrink: 0, borderRadius: 22, overflow: "hidden", background: "#f2f5f3" }}>
+    <div className="pb">
+      <div className="pb-media" style={{ position: "relative", width: "100%", aspectRatio: "1 / 1", flexShrink: 0, borderRadius: 22, overflow: "hidden", background: "#f2f5f3" }}>
         <Photo p={p} className="" style={{ position: "absolute", inset: 0 }} />
       </div>
+      <div className="pb-info">
       <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600 }}>{p.shop} · {p.category}</span>
       <h3 id={headingId} style={{ margin: 0, fontSize: 20, fontWeight: 800, lineHeight: 1.3 }}>{p.name}</h3>
       <span style={{ fontSize: 14, color: "var(--muted)" }}>{priceText(p.priceLo, p.priceHi)} · {soldText(p)} · {p.stock === null ? "—" : short(p.stock)} in stock</span>
@@ -110,7 +111,8 @@ export function ProductBlock({ p, tap, headingId }: { p: TapProduct; tap: Tap; h
       </button>
       {smp === "done" && <Link href="/app/my-tap" className="nv-link" style={{ alignSelf: "center", fontSize: 14, fontWeight: 700 }}>See it in My TAP products</Link>}
       <a href={tiktokProductUrl(p.id)} target="_blank" rel="noopener" className="nv-btn2 nv-press" style={{ height: 50 }}>Open on TikTok Shop</a>
-    </>
+      </div>
+    </div>
   );
 }
 
@@ -128,7 +130,7 @@ export function ProductPanel({ p, tap, closing, onClose }: { p: TapProduct; tap:
   return (
     <>
       <button type="button" aria-label="Close" className={`nv-dim ${closing ? "out" : ""}`} onClick={onClose} />
-      <div role="dialog" aria-modal="true" aria-labelledby="mkpt" className={`nv-panel ${closing ? "out" : ""}`}>
+      <div role="dialog" aria-modal="true" aria-labelledby="mkpt" className={`nv-panel nv-panel-wide ${closing ? "out" : ""}`}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <Pulled asOf={p.asOf} />
           <button type="button" className="nv-press" aria-label="Close" onClick={onClose} style={{ width: 34, height: 34, borderRadius: "50%", border: 0, background: "var(--surface2)", color: "var(--text)", display: "flex", alignItems: "center", justifyContent: "center" }}>
