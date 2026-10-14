@@ -34,9 +34,9 @@ const mytDay = (t: number) => new Date(t + MYT).toISOString().slice(0, 10);
 /** What a line sold for: TikTok's price is per unit, so the units that weren't refunded or returned times the price. */
 export const lineGmv = (l: Pick<OrderLine, "price" | "quantity" | "refunded_quantity" | "returned_quantity" | "status">) =>
   /REFUND/i.test(l.status ?? "") ? 0 : Number(l.price) * Math.max(0, l.quantity - l.refunded_quantity - l.returned_quantity);
-const lineCommission = (l: OrderLine) => (/REFUND/i.test(l.status ?? "") ? 0 : Number(l.commission_actual ?? l.commission_estimated ?? 0));
-const lineEarned = (l: OrderLine) => (/REFUND/i.test(l.status ?? "") ? 0 : Number(l.commission_earned_actual ?? l.commission_earned_estimated ?? l.commission_actual ?? l.commission_estimated ?? 0));
-const linePartner = (l: OrderLine) => (/REFUND/i.test(l.status ?? "") ? 0 : Number(l.partner_share ?? 0));
+export const lineCommission = (l: OrderLine) => (/REFUND/i.test(l.status ?? "") ? 0 : Number(l.commission_actual ?? l.commission_estimated ?? 0));
+export const lineEarned = (l: OrderLine) => (/REFUND/i.test(l.status ?? "") ? 0 : Number(l.commission_earned_actual ?? l.commission_earned_estimated ?? l.commission_actual ?? l.commission_estimated ?? 0));
+export const linePartner = (l: OrderLine) => (/REFUND/i.test(l.status ?? "") ? 0 : Number(l.partner_share ?? 0));
 
 let campaignCache: { at: number; ids: Set<string> } | null = null;
 /** Techwide's TAP campaign IDs, from the latest daily refresh (kept 10 minutes). */
