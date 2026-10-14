@@ -62,8 +62,9 @@ test("rankings: a Creator Marketplace profile in the panel's shape", () => {
 });
 
 test("rankings: Find creators rows", () => {
-  const r = findRow({ username: "ana", nickname: "Ana", follower_count: 1200, gmv: { amount: "1456.4" }, video_gmv: { amount: "1148.1" }, live_gmv: { amount: "308.3" }, avg_ec_video_view_count: 1410 }, 4);
-  assert.deepEqual(r.slice(0, 7), ["@ana", "Ana", 1200, "RM5.8k", 79, "1.4k", true]);
+  // With an exact US$ figure from TikTok, the card still shows TikTok's own RM band, never a conversion.
+  const r = findRow({ username: "ana", nickname: "Ana", follower_count: 1200, gmv: { amount: "1456.4" }, gmv_range: { formatted_range: "RM1K-RM10K" }, video_gmv: { amount: "1148.1" }, live_gmv: { amount: "308.3" }, avg_ec_video_view_count: 1410 }, 4);
+  assert.deepEqual(r.slice(0, 7), ["@ana", "Ana", 1200, "RM1K-RM10K", 79, "1.4k", true]);
   assert.equal(findRow({ username: "b", gmv_range: { formatted_range: "RM1K-RM10K", minimum_amount: "1000", maximum_amount: "10000" } }, 4)[3], "RM1K-RM10K");
 });
 

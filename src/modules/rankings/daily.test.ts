@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildBoard, gmvRange, usdOrder } from "./daily.ts";
+import { buildBoard, gmvRange, inBoth } from "./daily.ts";
 
 const day = (as_of: string, users: string[]) => ({ as_of, items: users.map((u, i) => ({ rank: i + 1, user_name: u, nick_name: u.toUpperCase(), followers_count: 10, gmv_range: "MYR100.5~MYR200" })) });
 const days = [day("2026-10-13", ["aria", "vault", "lane"]), day("2026-10-12", ["lane", "glow", "vault"]), day("2026-10-11", ["lane", "vault"])];
@@ -24,13 +24,9 @@ test("buildBoard: an older day has the day before it as the comparison", () => {
   assert.deepEqual(gmvRange(undefined), [0, 0]);
 });
 
-test("usdOrder: TikTok's US$ list sets who is in and the order; RM figures where in both, else US$ × TikTok's rate", () => {
-  const L = [{ rank: 1, user_name: "aria", gmv_range: "MYR43605399~MYR73273364" }, { rank: 2, user_name: "fly", gmv_range: "MYR1032191~MYR1617435" }, { rank: 3, user_name: "shar", gmv_range: "MYR439043~MYR860310" }];
-  const U = [{ rank: 1, user_name: "fly", gmv_range: "$252678~$395945" }, { rank: 2, user_name: "shar", gmv_range: "$107477~$210602" }, { rank: 3, user_name: "andy", gmv_range: "$112758~$176482" }];
-  const out = usdOrder(L, U);
-  assert.deepEqual(out.map((x) => x.user_name), ["fly", "shar", "andy"]);
-  assert.deepEqual([out[0].lo, out[0].hi], [1032191, 1617435]);
-  assert.ok(out[2].lo! > 400000 && out[2].lo! < 500000, "andy: US$ × TikTok's rate");
-  const b = buildBoard([{ as_of: "2026-10-13", items: out }], "2026-10-13", new Set(), {})!;
-  assert.deepEqual([b.rows[0].user, b.rows[0].lo], ["fly", 1032191]);
+test("inBoth: TikTok's RM list as given, minus creators missing from its US$ list", () => {
+  const L = [{ rank: 1, user_name: "aria", gmv_range: "MYR43605399~MYR73273364" }, { rank: 2, user_name: "fly", gmv_range: "MYR1032191~MYR1617435" }];
+  const U = [{ rank: 1, user_name: "fly", gmv_range: "$252678~$395945" }];
+  assert.deepEqual(inBoth(L, U), [{ ...L[1], rank: 1 }]);
+  assert.deepEqual(inBoth(L, []), L);
 });

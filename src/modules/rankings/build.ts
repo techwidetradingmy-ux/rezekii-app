@@ -222,7 +222,8 @@ export function findRow(m: Raw, rate30: number): FindRow {
   const range = m.gmv_range as { formatted_range?: string; minimum_amount?: string; maximum_amount?: string } | undefined;
   return [
     `@${String(m.username ?? "?")}`, String(m.nickname ?? ""), Number(m.follower_count) || 0,
-    xu ? `RM${short(xu * rate30)}` : (range?.formatted_range ?? "–"), vu + lu ? Math.round((vu / (vu + lu)) * 100) : -1,
+    // TikTok's own band, as TikTok shows it: never an RM estimate from its US$ figure (owner, 14 Oct 2026)
+    range?.formatted_range ?? "–", vu + lu ? Math.round((vu / (vu + lu)) * 100) : -1,
     short(Number(m.avg_ec_video_view_count) || 0), !!xu, ((m.avatar as { url?: string } | undefined)?.url) ?? null,
     xu || (Number(range?.minimum_amount) + Number(range?.maximum_amount)) / 2 || 0,
   ];

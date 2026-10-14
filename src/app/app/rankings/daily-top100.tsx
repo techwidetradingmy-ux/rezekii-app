@@ -92,7 +92,7 @@ export function DailyTop100({ onOpen }: { onOpen: (user: string) => void }) {
       )}
 
       <section className="nv-up nv-card dt-podium-card" aria-label={`Top 3 on ${dayName(b.date)}`}>
-        <div className="dt-head"><strong style={{ fontSize: 18 }}>{dayName(b.date)} · Top 3</strong><span>TikTok&apos;s best-seller list · ranked by sales</span></div>
+        <div className="dt-head"><strong style={{ fontSize: 18 }}>{dayName(b.date)} · Top 3</strong><span>TikTok&apos;s affiliate creators · ranked by sales</span></div>
         <div className="dt-podium">
           {podium.map((r) => {
             const first = r.rank === 1;

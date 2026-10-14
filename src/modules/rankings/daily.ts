@@ -1,5 +1,4 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
-import { pairRm, type Raw } from "./build.ts";
 import { rankings } from "./store.ts";
 
 /** One creator on one day's TikTok top 100. GMV is TikTok's range in RM. `prev`: rank the day before (null: not in it). */
@@ -21,8 +20,7 @@ export type DailyBoard = {
   first: string | null;
 };
 
-/** `lo`/`hi`: RM amounts worked out by usdOrder (otherwise read from `gmv_range`). */
-type Item = { rank?: number; user_name?: string; nick_name?: string; followers_count?: number; gmv_range?: string; lo?: number; hi?: number };
+type Item = { rank?: number; user_name?: string; nick_name?: string; followers_count?: number; gmv_range?: string };
 type Day = { as_of: string; items: Item[] };
 
 /** "MYR5496500.68~MYR10232198.52" → [5496500.68, 10232198.52]. */
@@ -30,19 +28,6 @@ export const gmvRange = (s: string | undefined): [number, number] => {
   const [lo, hi] = String(s ?? "").split("~").map((x) => Number(x.replace(/[^0-9.]/g, "")) || 0);
   return [lo ?? 0, hi ?? lo ?? 0];
 };
-
-/**
- * One day's list the way Top creators reads it: TikTok's US$ list decides who is in and in what order; amounts are TikTok's RM
- * figures where the creator is in both lists, otherwise US$ × TikTok's rate. Creators only in the RM list are left out, as their
- * figures don't add up (13 Oct 2026: one showed RM43.6M for the day but wasn't in the 30-day top 3).
- */
-export function usdOrder(L: Item[], U: Item[]): Item[] {
-  const { rm } = pairRm(L as Raw[], U as Raw[], "user_name");
-  return U.map((u) => {
-    const [lo, hi] = rm.get(String(u.user_name)) ?? [0, 0];
-    return { ...u, lo, hi };
-  });
-}
 
 /**
  * One day's top 100 with each creator's change, days in the top 100 (every saved day) and rank history; the Hall of Fame is
@@ -76,7 +61,7 @@ export function buildBoard(days: Day[], date: string, rezekii: Set<string>, avat
     .sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0))
     .map((it) => {
       const u = it.user_name!.toLowerCase();
-      const [lo, hi] = it.lo !== undefined ? [it.lo, it.hi ?? it.lo] : gmvRange(it.gmv_range);
+      const [lo, hi] = gmvRange(it.gmv_range);
       return {
         rank: it.rank!, user: it.user_name!, nick: it.nick_name ?? it.user_name!, followers: it.followers_count ?? 0, lo, hi, avatar: avatars[u] ?? null,
         prev: before ? rankOn.get(before)?.get(u) ?? null : null, days: count.get(u) ?? 1, history: history(u), rezekii: rezekii.has(u),
@@ -91,10 +76,24 @@ export function buildBoard(days: Day[], date: string, rezekii: Set<string>, avat
 
 let cache: { at: number; days: Day[] } | null = null;
 
-/** TikTok's saved daily top-100 creator lists (all creators), in US$ order with RM amounts, kept 10 minutes. */
+/**
+ * One day's list: TikTok's RM list as TikTok gives it (no conversion), keeping only creators TikTok's US$ list also has. A creator
+ * in the RM list alone has figures that don't add up (13 Oct 2026: RM43.6M for one day, yet missing from TikTok's 30-day top 3).
+ */
+export function inBoth(L: Item[], U: Item[]): Item[] {
+  if (!U.length) return L;
+  const us = new Set(U.map((u) => u.user_name));
+  // Numbered again from 1 in TikTok's order, so a left-out creator leaves no gap.
+  return L.filter((l) => us.has(l.user_name)).sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0)).map((l, i) => ({ ...l, rank: i + 1 }));
+}
+
+/**
+ * TikTok's saved daily top-100 lists of affiliate creators, kept 10 minutes. Shop accounts (a brand's official account and its
+ * channel accounts) are sellers and are left out (owner, 14 Oct 2026).
+ */
 async function savedDays(): Promise<Day[]> {
   if (cache && Date.now() - cache.at < 10 * 60_000) return cache.days;
-  const slots = ["1D|ALL|LOCAL", "1D|ALL|USD"].map(encodeURIComponent).join(",");
+  const slots = ["1D|AFFILIATE|LOCAL", "1D|AFFILIATE|USD"].map(encodeURIComponent).join(",");
   const rows = (await (await supabaseRest(`market_snapshots?dataset=eq.creators&slot=in.(${slots})&select=as_of,slot,items&order=as_of.desc&limit=120`)).json()) as (Day & { slot: string })[];
   const byDay = new Map<string, { L: Item[]; U: Item[] }>();
   for (const r of rows) {
@@ -104,8 +103,7 @@ async function savedDays(): Promise<Day[]> {
     else d.L = r.items;
     byDay.set(r.as_of, d);
   }
-  // A day without its US$ list keeps the RM list.
-  cache = { at: Date.now(), days: [...byDay.entries()].map(([as_of, d]) => ({ as_of, items: d.U.length ? usdOrder(d.L, d.U) : d.L })) };
+  cache = { at: Date.now(), days: [...byDay.entries()].filter(([, d]) => d.L.length).map(([as_of, d]) => ({ as_of, items: inBoth(d.L, d.U) })) };
   return cache.days;
 }
 
