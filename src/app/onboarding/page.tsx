@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { onboardingState } from "@/modules/creator-accounts/onboarding.ts";
 import { currentUser } from "../current-user";
+import { TikTokShopLogo } from "../tiktok-logo";
 import { WaitlistButton } from "./waitlist-button";
 import "../app/marketplace/marketplace.css";
 import "./onboarding.css";
@@ -19,9 +20,6 @@ const RESULT: Record<string, { text: string; tone: "red" | "amber" }> = {
 
 const Check = ({ size = 20, color = "#0d1117" }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path className="nv-check" d="m5 12 5 5 9-10" /></svg>
-);
-const TikTokMark = ({ stroke = "#25f4ee" }: { stroke?: string }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M14 3v11.5a3.5 3.5 0 1 1-3.5-3.5" /><path d="M14 3c.5 2.8 2.4 4.6 5 5" /></svg>
 );
 
 /**
@@ -79,7 +77,7 @@ export default async function Onboarding({ searchParams }: { searchParams: Promi
 
         <section className="nv-up nv-card ob-card" aria-labelledby="ob2" style={{ animationDelay: "80ms", border: `2px solid ${linked ? "transparent" : "#00c073"}` }}>
           <div className="ob-row">
-            <span className="ob-ico" style={{ background: "#0d1117" }}><TikTokMark /></span>
+            <span className="ob-ico"><TikTokShopLogo size={38} /></span>
             <span style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
               <h2 id="ob2">Link your TikTok Shop</h2>
               <span className="ob-sub">Required · makes your affiliate links and manages your showcase</span>

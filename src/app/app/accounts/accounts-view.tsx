@@ -7,7 +7,7 @@ import { shortCount, type AccountStats } from "@/integrations/tiktok/stats.ts";
 import type { AccountPageData } from "@/modules/accounts/account-page.ts";
 import { sampleLook } from "@/modules/tap/stages.ts";
 import { Emblem } from "../../emblems";
-import { TikTokLogo } from "../../tiktok-logo";
+import { TikTokShopLogo, TikTokTile } from "../../tiktok-logo";
 import { GmvChart } from "../gmv-chart";
 import { Hud, useToast } from "../marketplace/use-tap-actions";
 import { saveTheme, useTheme } from "../use-theme";
@@ -27,15 +27,6 @@ const ago = (iso: string | null, now: number) => {
   const m = Math.round((now - Date.parse(iso)) / 60_000);
   return m < 1 ? "just now" : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`;
 };
-
-/** TikTok's mark on its black rounded tile: TikTok Shop's own icon is the same TikTok logo. */
-export function TikTokTile({ size = 40 }: { size?: number }) {
-  return (
-    <span aria-hidden="true" style={{ width: size, height: size, borderRadius: size * 0.28, background: "#000000", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-      <TikTokLogo size={Math.round(size * 0.56)} />
-    </span>
-  );
-}
 
 /**
  * Account, as chosen from the mockup (direction A): the TikTok Shop profile with its 30-day numbers and GMV chart,
@@ -158,7 +149,7 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
             <h2 id="acname">{me.name}</h2>
             <span className="ac-sub">{handle}{shop ? ` · TikTok Shop${shop.region ? ` ${shop.region}` : ""}` : ""}</span>
             <span className="ac-chips">
-              {shop && <span className="nv-badge b-green" style={{ paddingLeft: 3 }}><TikTokTile size={18} />TikTok Shop linked</span>}
+              {shop && <span className="nv-badge b-green" style={{ paddingLeft: 4 }}><TikTokShopLogo size={18} />TikTok Shop linked</span>}
               {shop?.approvedAt && <span className="nv-badge b-green">Approved by Techwide</span>}
               {me.role === "admin" ? <span className="nv-badge b-blue">Techwide admin</span> : <span className={`ac-lvl ac-lvl-${d.level.level}`}><Emblem level={d.level.level} size={18} />{LEVEL_NAME[d.level.level]} level</span>}
             </span>
@@ -208,7 +199,7 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
             <span style={{ fontSize: 13, color: "var(--muted)" }}>TikTok Shop is required to use Rezekii. TikTok is needed only to post and see video stats.</span>
           </div>
           <div className="ac-line" style={{ alignItems: "flex-start" }}>
-            <TikTokTile />
+            <TikTokShopLogo />
             <span style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
               <span style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}><strong>TikTok Shop</strong><span className={`nv-badge ${shop ? "b-green" : "b-amber"}`}>{shop ? "Linked" : "Not linked"}</span></span>
               <span style={{ fontSize: 13, color: "var(--muted)" }}>{shop ? `${handle}${shop.linkedAt ? ` · linked ${shop.linkedAt}` : ""}${shop.approvedAt ? ` · approved ${shop.approvedAt}` : ""}` : "Link it to use Rezekii"}</span>
