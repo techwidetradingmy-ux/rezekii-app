@@ -32,7 +32,7 @@ async function rpc<T>(name: string, args: Record<string, unknown>): Promise<T> {
 
 /** One day's lists for a dataset, grouped by slot ("30D|AFFILIATE|USD", ...). */
 async function lists(dataset: string, day: string): Promise<Map<string, Raw[]>> {
-  const rows = await rpc<{ slot: string; item: Raw }[]>("rank_items", { p_dataset: dataset, p_as_of: day, p_like: "%" });
+  const rows = await rpc<{ slot: string; item: Raw }[]>("rank_items_json", { p_dataset: dataset, p_as_of: day, p_like: "%" });
   const m = new Map<string, Raw[]>();
   for (const r of rows) m.set(r.slot, [...(m.get(r.slot) ?? []), r.item]);
   for (const l of m.values()) l.sort((a, b) => Number(a.rank) - Number(b.rank));
@@ -44,7 +44,7 @@ async function dailySums(dataset: string, to: string, days: number, chunk: numbe
   const merged = new Map<string, DailySum>();
   for (let start = 0; start < days; start += chunk) {
     const from = minus(to, Math.min(days, start + chunk) - 1), until = minus(to, start);
-    for (const r of await rpc<DailySum[]>("rank_daily_sums", { p_dataset: dataset, p_from: from, p_to: until })) {
+    for (const r of await rpc<DailySum[]>("rank_daily_sums_json", { p_dataset: dataset, p_from: from, p_to: until })) {
       const m = merged.get(r.id);
       if (!m) merged.set(r.id, { ...r, lo: Number(r.lo), hi: Number(r.hi) });
       else Object.assign(m, { lo: m.lo + Number(r.lo), hi: m.hi + Number(r.hi), conv: m.conv || r.conv, days: m.days + r.days, grp: m.grp < r.grp ? m.grp : r.grp });
@@ -101,7 +101,7 @@ export async function buildRankings(day: string): Promise<Built> {
   const detailRows = await paged<{ username: string; detail: Raw }>("market_creators?detail=not.is.null&select=username,detail&order=username");
   const details: Record<string, Detail> = {};
   for (const r of detailRows) if (r.username && r.detail && typeof r.detail === "object" && !("error" in r.detail)) details[r.username] = detailOf(r.detail, rate30);
-  const find = (await rpc<{ m: Raw }[]>("rank_find", {})).map((r) => findRow(r.m, rate30)).sort((a, b) => b[8] - a[8] || b[2] - a[2]);
+  const find = (await rpc<Raw[]>("rank_find_json", {})).map((m) => findRow(m, rate30)).sort((a, b) => b[8] - a[8] || b[2] - a[2]);
   const avatarOf = new Map(find.map((f) => [f[0].slice(1), f[7]]));
   const avatar = (user: string) => details[user]?.a ?? avatarOf.get(user) ?? null;
 
