@@ -35,6 +35,18 @@ export function frameRange(key: string, now: number, first: number | null): Rang
     case "1y": { const from = monthStart(now, -11); return { key, from, to: end, unit: "month", buckets: 12, label: "1 year", dates: `${monthLabel(from)} – ${monthLabel(today)}` }; }
     case "all": { const from = monthStart(first ?? now, 0); return { key, from, to: end, unit: "month", buckets: monthsBetween(from, today) + 1, label: "All time", dates: first ? `Since ${dayLabel(first)} ${ymd(first).y}` : "No orders yet" }; }
   }
+  // A custom range from the calendar: c:YYYY-MM-DD:YYYY-MM-DD (both days included).
+  const c = /^c:(\d{4}-\d{2}-\d{2}):(\d{4}-\d{2}-\d{2})$/.exec(key);
+  if (c) {
+    const a = Date.parse(`${c[1]}T00:00:00Z`) - MYT, b = Date.parse(`${c[2]}T00:00:00Z`) - MYT;
+    if (Number.isNaN(a) || Number.isNaN(b)) return null;
+    const from = Math.min(a, b), to = Math.min(Math.max(a, b) + DAY, end);
+    if (from >= to) return null;
+    const n = Math.round((to - from) / DAY);
+    // Long ranges are charted per month, like 1 year.
+    if (n > 120) return { key, from: monthStart(from), to, unit: "month", buckets: monthsBetween(from, to - DAY) + 1, label: "Custom dates", dates: `${dayLabel(from)} ${ymd(from).y} – ${dayLabel(to - DAY)} ${ymd(to - DAY).y}` };
+    return { key, from, to, unit: "day", buckets: n, label: "Custom dates", dates: n === 1 ? dayLabel(from) : `${dayLabel(from)} – ${dayLabel(to - DAY)}` };
+  }
   const m = /^m:(\d{4})-(\d{2})$/.exec(key);
   if (!m) return null;
   const from = Date.UTC(Number(m[1]), Number(m[2]) - 1, 1) - MYT;
@@ -50,7 +62,7 @@ export function compareRange(r: Range, how: Compare): Range | null {
     const back = (t: number) => { const d = new Date(t + MYT); return Date.UTC(d.getUTCFullYear() - 1, d.getUTCMonth(), d.getUTCDate(), d.getUTCHours()) - MYT; };
     return { ...r, from: back(r.from), to: back(r.to), label: "Same time last year", dates: r.unit === "month" ? `${monthLabel(back(r.from))} – ${monthLabel(back(r.to - DAY))}` : `${dayLabel(back(r.from))} – ${dayLabel(back(r.to - 1))}` };
   }
-  if (r.unit === "month" || r.key === "lastmonth" || r.key.startsWith("m:")) {
+  if ((r.unit === "month" && !r.key.startsWith("c:")) || r.key === "lastmonth" || r.key.startsWith("m:")) {
     const months = r.unit === "month" ? r.buckets : 1;
     const from = monthStart(r.from, -months), to = r.from;
     return { ...r, from, to, buckets: r.unit === "month" ? months : Math.round((to - from) / DAY), label: "The period before", dates: r.unit === "month" ? `${monthLabel(from)} – ${monthLabel(to - DAY)}` : FULL[ymd(from).m] };

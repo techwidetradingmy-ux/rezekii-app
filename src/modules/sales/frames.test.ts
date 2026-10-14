@@ -52,3 +52,17 @@ test("frameStats: buckets, statuses and lost commission", () => {
   const by = Object.fromEntries(s.status.map((x) => [x.key, x]));
   assert.deepEqual([by.settled.orders, by.settled.commission, by.toSettle.orders, by.refunded.orders, by.refunded.commission, by.refunded.gmv], [1, 1, 1, 1, 1, 10]);
 });
+
+test("frameRange: custom dates from the calendar", () => {
+  const c = frameRange("c:2026-10-08:2026-10-12", now, null)!;
+  assert.deepEqual([c.from, c.to, c.unit, c.buckets, c.dates], [myt("2026-10-08T00:00:00"), myt("2026-10-13T00:00:00"), "day", 5, "8 Oct – 12 Oct"]);
+  const back = frameRange("c:2026-10-12:2026-10-08", now, null)!;
+  assert.equal(back.from, c.from);
+  const one = frameRange("c:2026-10-01:2026-10-01", now, null)!;
+  assert.deepEqual([one.buckets, one.dates], [1, "1 Oct"]);
+  const long = frameRange("c:2025-11-03:2026-10-14", now, null)!;
+  assert.equal(long.unit, "month");
+  const prev = compareRange(c, "prev")!;
+  assert.deepEqual([prev.from, prev.to], [myt("2026-10-03T00:00:00"), myt("2026-10-08T00:00:00")]);
+  assert.equal(frameRange("c:2026-13-01:2026-10-01", now, null), null);
+});

@@ -41,20 +41,30 @@
 .sl-ddw { position: relative; }
 .sl-dd { display: inline-flex; align-items: center; gap: 10px; border: 1px solid var(--border); border-radius: 16px; padding: 9px 14px; background: var(--surface); color: var(--gink); font: inherit; font-size: 14px; cursor: pointer; box-shadow: var(--shadow2); }
 .sl-popdim { position: fixed; inset: 0; z-index: 40; border: 0; background: transparent; cursor: default; }
-.sl-pop { position: absolute; right: 0; top: calc(100% + 8px); z-index: 41; width: 440px; max-width: calc(100vw - 32px); padding: 16px; border-radius: 22px; background: var(--surface); color: var(--text); box-shadow: 0 18px 48px rgba(0, 0, 0, 0.18); display: flex; flex-direction: column; gap: 14px; animation: slPop 0.18s ease both; }
-.sl-grp { display: flex; flex-direction: column; gap: 8px; }
-.sl-gt { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
-.sl-opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 8px; }
-.sl-opt { border: 1px solid var(--border); border-radius: 14px; padding: 9px 11px; background: var(--surface); color: var(--text); font: inherit; font-size: 14px; font-weight: 700; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
-.sl-opt span { font-size: 11px; font-weight: 500; color: var(--muted); }
-.sl-opt.on { border-color: #00c073; background: var(--gsoft); }
-.sl-opt:disabled { opacity: 0.45; cursor: default; }
-.sl-cal { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
-.sl-mo { border: 1px solid var(--border); border-radius: 10px; padding: 8px 0; background: var(--surface); color: var(--text); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
-.sl-mo.on { background: #00c073; border-color: #00c073; color: #ffffff; }
+.sl-pop { position: absolute; right: 0; top: calc(100% + 8px); z-index: 41; width: 600px; max-width: calc(100vw - 32px); padding: 16px; border-radius: 22px; background: var(--surface); color: var(--text); box-shadow: 0 18px 48px rgba(0, 0, 0, 0.18); display: flex; flex-wrap: wrap; gap: 16px; animation: slPop 0.18s ease both; }
+.sl-presets { display: flex; flex-direction: column; gap: 4px; flex: 0 0 150px; border-right: 1px solid var(--line); padding-right: 12px; }
+.sl-pre { border: 0; border-radius: 10px; padding: 8px 10px; background: transparent; color: var(--text); font: inherit; font-size: 13px; font-weight: 700; text-align: left; cursor: pointer; }
+.sl-pre:hover { background: var(--surface2); }
+.sl-pre.on { background: var(--gsoft); color: var(--gink); }
+.sl-pre:disabled { opacity: 0.45; cursor: default; }
+.sl-calw { flex: 1 1 300px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.sl-calhead { display: flex; align-items: center; justify-content: space-between; }
+.sl-nav { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 18px; cursor: pointer; }
+.sl-nav:disabled { opacity: 0.35; cursor: default; }
+.sl-week, .sl-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; }
+.sl-week span { font-size: 11px; font-weight: 800; color: var(--muted); padding: 4px 0; }
+.sl-day { border: 0; height: 36px; border-radius: 10px; background: transparent; color: var(--text); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; font-variant-numeric: tabular-nums; }
+.sl-day:hover:not(:disabled) { background: var(--surface2); }
+.sl-day.in { background: var(--gsoft); color: var(--gink); border-radius: 0; }
+.sl-day.edge { background: #00c073; color: #ffffff; }
+.sl-day.today { box-shadow: inset 0 0 0 2px #00c073; }
+.sl-day.off { opacity: 0.3; cursor: default; }
+.sl-hint { font-size: 12px; color: var(--muted); }
+.sl-gt { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+.sl-cmp { display: flex; flex-wrap: wrap; gap: 4px; }
 .sl-delta { align-self: flex-start; padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 800; }
 @keyframes slPop { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
-@media (max-width: 700px) { .sl-pop { position: fixed; left: 16px; right: 16px; top: auto; bottom: 16px; width: auto; max-height: 80vh; overflow-y: auto; } }
+@media (max-width: 700px) { .sl-pop { position: fixed; left: 16px; right: 16px; top: auto; bottom: 16px; width: auto; max-height: 80vh; overflow-y: auto; } .sl-presets { flex: 1 1 100%; flex-direction: row; flex-wrap: wrap; border-right: 0; padding-right: 0; } }
 
 /* Commission settled: the second section (owner: the most important part). */
 .cs-wrap { display: flex; flex-direction: column; gap: 18px; }

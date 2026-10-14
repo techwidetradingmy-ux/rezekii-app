@@ -12,13 +12,10 @@ const SOURCES: [Source, string, string][] = [
   ["techwide", "Through Techwide TAP", "Sales of products in Techwide's TAP campaigns. These count for your Rezekii level and Rankings."],
   ["other", "Other shops", "Sales from shops and campaigns outside Techwide's TAP campaigns."],
 ];
-/** The owner's time frames, grouped as in the mockup's calendar picker. */
-const GROUPS: [string, [string, string][]][] = [
-  ["Recent", [["yesterday", "Yesterday"], ["7d", "7 days"], ["14d", "14 days"]]],
-  ["Days", [["30d", "30 days"], ["60d", "60 days"], ["90d", "90 days"]]],
-  ["Months", [["month", "This month"], ["lastmonth", "Last month"]]],
-  ["Longer", [["1y", "1 year"], ["all", "All time"]]],
-];
+/** The owner's quick choices, listed beside the calendar. */
+const PRESETS: [string, string][] = [["yesterday", "Yesterday"], ["7d", "7 days"], ["14d", "14 days"], ["30d", "30 days"], ["60d", "60 days"], ["90d", "90 days"], ["month", "This month"], ["lastmonth", "Last month"], ["1y", "1 year"], ["all", "All time"]];
+const WEEK = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+const FULL_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const COMPARE: [Compare, string, string][] = [["none", "Don't compare", "Just this period"], ["prev", "The period before", "Same length, just before"], ["year", "Same time last year", "The same dates a year earlier"]];
 const STATUS: Record<StatusKey, [string, string, string, string, string]> = {
   settled: ["Settled", "#00a862", "var(--gsoft)", "TikTok has paid this commission into your account.", "m5 12 5 5 9-10"],
@@ -117,6 +114,9 @@ export function SalesView({ initial, handle, syncedAt }: { initial: FrameData; h
   const [d, setD] = useState<FrameData>(initial);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  /** The calendar's month (0 = this month) and the first day tapped for a custom range (Malaysian midnight). */
+  const [calM, setCalM] = useState(0);
+  const [pick, setPick] = useState<number | null>(null);
   /** Bumped when new orders were read, so the chosen view is read again. */
   const [tick, setTick] = useState(0);
   const first = useRef(true);
@@ -167,7 +167,21 @@ export function SalesView({ initial, handle, syncedAt }: { initial: FrameData; h
   const settledPct = total > 0 ? Math.round((settled / total) * 100) : 0;
   const orderTotal = s.status.reduce((a, r) => a + r.orders, 0) || 1;
   const ringA = total > 0 ? (settled / total) * 360 : 0, ringB = total > 0 ? ((settled + comOf("toSettle")) / total) * 360 : 0;
-  const months = Array.from({ length: 12 }, (_, i) => { const t = ymd(d.now); const m = t.m - 11 + i; const yy = t.y + Math.floor(m / 12); const mm = ((m % 12) + 12) % 12; return [`m:${yy}-${String(mm + 1).padStart(2, "0")}`, `${MONTHS[mm]} ${String(yy).slice(2)}`] as const; });
+  // The calendar month on show, its days (Malaysian midnights) and the chosen range to highlight.
+  const today = ymd(d.now);
+  const todayStart = Date.UTC(today.y, today.m, today.d) - MYT;
+  const calY = today.y + Math.floor((today.m + calM) / 12), calMo = (((today.m + calM) % 12) + 12) % 12;
+  const daysIn = new Date(Date.UTC(calY, calMo + 1, 0)).getUTCDate();
+  const lead = (new Date(Date.UTC(calY, calMo, 1)).getUTCDay() + 6) % 7;
+  const iso = (t: number) => new Date(t + MYT).toISOString().slice(0, 10);
+  const tapDay = (t: number) => {
+    if (t > todayStart) return;
+    if (pick === null) return setPick(t);
+    const [a, b] = t < pick ? [t, pick] : [pick, t];
+    setFrame(`c:${iso(a)}:${iso(b)}`);
+    setPick(null);
+    setOpen(false);
+  };
   const key = `${frame}|${source}|${compare}`;
 
   return (
@@ -188,21 +202,32 @@ export function SalesView({ initial, handle, syncedAt }: { initial: FrameData; h
           </button>
           {open && (
             <>
-              <button type="button" aria-label="Close" className="sl-popdim" onClick={() => setOpen(false)} />
-              <div className="sl-pop" role="dialog" aria-label="Choose a time frame">
-                {GROUPS.map(([title, items]) => (
-                  <div key={title} className="sl-grp">
-                    <span className="sl-gt">{title}</span>
-                    <div className="sl-opts">{items.map(([k, label]) => <button key={k} type="button" className={`sl-opt ${frame === k ? "on" : ""}`} onClick={() => { setFrame(k); setOpen(false); }}>{label}</button>)}</div>
-                  </div>
-                ))}
-                <div className="sl-grp">
-                  <span className="sl-gt">Compare</span>
-                  <div className="sl-opts">{COMPARE.map(([c, label, note]) => <button key={c} type="button" className={`sl-opt ${compare === c ? "on" : ""}`} disabled={c === "prev" && frame === "all"} onClick={() => { setCompare(c); setOpen(false); }}><strong>{label}</strong><span>{c === "prev" && frame === "all" ? "Not for all time" : note}</span></button>)}</div>
+              <button type="button" aria-label="Close" className="sl-popdim" onClick={() => { setOpen(false); setPick(null); }} />
+              <div className="sl-pop" role="dialog" aria-label="Choose dates">
+                <div className="sl-presets" role="group" aria-label="Quick choices">
+                  {PRESETS.map(([k, label]) => <button key={k} type="button" className={`sl-pre ${frame === k ? "on" : ""}`} onClick={() => { setFrame(k); setPick(null); setCalM(0); setOpen(false); }}>{label}</button>)}
                 </div>
-                <div className="sl-grp">
-                  <span className="sl-gt">Pick a month</span>
-                  <div className="sl-cal">{months.map(([k, label]) => <button key={k} type="button" className={`sl-mo ${frame === k ? "on" : ""}`} onClick={() => { setFrame(k); setOpen(false); }}>{label}</button>)}</div>
+                <div className="sl-calw">
+                  <div className="sl-calhead">
+                    <button type="button" className="sl-nav" aria-label="Previous month" onClick={() => setCalM(calM - 1)}>‹</button>
+                    <strong>{FULL_MONTHS[calMo]} {calY}</strong>
+                    <button type="button" className="sl-nav" aria-label="Next month" disabled={calM >= 0} onClick={() => setCalM(calM + 1)}>›</button>
+                  </div>
+                  <div className="sl-week" aria-hidden="true">{WEEK.map((w) => <span key={w}>{w}</span>)}</div>
+                  <div className="sl-days">
+                    {Array.from({ length: lead }, (_, i) => <span key={`b${i}`} />)}
+                    {Array.from({ length: daysIn }, (_, i) => {
+                      const t = Date.UTC(calY, calMo, i + 1) - MYT;
+                      const picked = pick !== null ? t === pick : t >= d.range.from && t < d.range.to;
+                      const edge = pick !== null ? t === pick : t === d.range.from || t === d.range.to - DAY;
+                      return (
+                        <button key={t} type="button" className={`sl-day ${t > todayStart ? "off" : ""} ${picked ? (edge ? "edge" : "in") : ""} ${t === todayStart ? "today" : ""}`} disabled={t > todayStart} onClick={() => tapDay(t)} aria-label={`${i + 1} ${FULL_MONTHS[calMo]} ${calY}`}>{i + 1}</button>
+                      );
+                    })}
+                  </div>
+                  <span className="sl-hint">{pick !== null ? "Now tap the last day." : "Pick a quick choice, or tap a start day and an end day."}</span>
+                  <span className="sl-gt">Compare with</span>
+                  <div className="sl-cmp">{COMPARE.map(([c, label]) => <button key={c} type="button" className={`sl-pre ${compare === c ? "on" : ""}`} disabled={c === "prev" && frame === "all"} onClick={() => { setCompare(c); setOpen(false); }}>{label}</button>)}</div>
                 </div>
               </div>
             </>
