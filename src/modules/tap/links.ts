@@ -20,12 +20,12 @@ export async function logLinks(userId: string, links: MadeLink[]): Promise<void>
  * A TAP promotion link for one product, made with Techwide's partner account (no creator sign-in needed) at the rate for the
  * creator's level, and logged.
  */
-export async function makeTapLink(userId: string, productId: string): Promise<LinkResult> {
+export async function makeTapLink(userId: string, productId: string, level?: Awaited<ReturnType<typeof levelOf>>): Promise<LinkResult> {
   const target = await linkTarget(productId);
   if (!target) return { ok: false, error: "This product is no longer in a Techwide TAP campaign.", status: 404 };
   try {
     const partner = await storedSessions().partner();
-    const r = await campaignProductLink(partner.token, partner.cipher, target.campaignId, productId, creatorRateFor(await levelOf(userId), target.openRate, target.totalRate));
+    const r = await campaignProductLink(partner.token, partner.cipher, target.campaignId, productId, creatorRateFor(level ?? (await levelOf(userId)), target.openRate, target.totalRate));
     const link = r.data?.product_promotion_link;
     if (r.code !== 0 || !link) return { ok: false, error: `TikTok could not make the link right now (${r.code}). Please try again.`, status: 502 };
     await logLinks(userId, [{ productId, name: target.name, image: target.image, tag: null, link }]);

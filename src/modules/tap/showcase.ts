@@ -2,6 +2,7 @@ import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { addShowcaseByLink, getShowcaseProducts } from "../../integrations/tiktok-shop/creator.ts";
 import { approvedCreatorToken } from "../creator-accounts/access.ts";
 import { allProducts } from "./catalog.ts";
+import { levelOf } from "../levels/store.ts";
 import { makeTapLink } from "./links.ts";
 
 export type AddResult = { added: true } | { added: false; link?: string; error?: string; status: number };
@@ -10,9 +11,9 @@ export type AddResult = { added: true } | { added: false; link?: string; error?:
  * + Showcase. An approved creator with TikTok Shop linked gets the product added straight to their showcase through a TAP link
  * (so sales count for Techwide's campaign). Everyone else gets the TAP link to open in TikTok Shop and add it there.
  */
-export async function addToShowcase(userId: string, productId: string): Promise<AddResult> {
-  const token = await approvedCreatorToken(userId);
-  const tap = await makeTapLink(userId, productId);
+export async function addToShowcase(userId: string, productId: string, ctx?: { token: string | null; level: Awaited<ReturnType<typeof levelOf>>; bulk: true }): Promise<AddResult> {
+  const token = ctx ? ctx.token : await approvedCreatorToken(userId);
+  const tap = await makeTapLink(userId, productId, ctx?.level);
   if (!tap.ok) return { added: false, error: tap.error, status: tap.status };
   if (!token) return { added: false, link: tap.link, status: 200 };
   const r = await addShowcaseByLink(token, tap.link);
@@ -21,9 +22,26 @@ export async function addToShowcase(userId: string, productId: string): Promise<
     console.error("[showcase add]", r.code, r.message, failed?.code, failed?.message);
     return { added: false, link: tap.link, error: failed?.message || r.message || "TikTok Shop didn't add it. Open the link to add it in TikTok Shop.", status: 502 };
   }
-  const saved = await savedShowcase(userId);
-  if (saved) await saveShowcase(userId, { count: saved.count + 1, tap: saved.tap + 1, more: saved.more }, saved.at);
+  if (!ctx) await countAdded(userId, 1);
   return { added: true };
+}
+
+async function countAdded(userId: string, n: number) {
+  const saved = await savedShowcase(userId);
+  if (saved && n) await saveShowcase(userId, { count: saved.count + n, tap: saved.tap + n, more: saved.more }, saved.at);
+}
+
+/**
+ * Several products at once (owner, 14 Oct 2026: one by one took over a minute for 21): the creator's sign-in and level read
+ * once, 5 products in parallel, the showcase count saved once at the end.
+ */
+export async function addManyToShowcase(userId: string, productIds: string[]): Promise<{ productId: string; result: AddResult }[]> {
+  const [token, level] = await Promise.all([approvedCreatorToken(userId), levelOf(userId)]);
+  const out: { productId: string; result: AddResult }[] = [];
+  for (let i = 0; i < productIds.length; i += 5)
+    out.push(...(await Promise.all(productIds.slice(i, i + 5).map(async (productId) => ({ productId, result: await addToShowcase(userId, productId, { token, level, bulk: true }) })))));
+  await countAdded(userId, out.filter((x) => x.result.added).length);
+  return out;
 }
 
 export type ShowcaseSummary = { linked: boolean; count: number; tap: number; more: boolean };

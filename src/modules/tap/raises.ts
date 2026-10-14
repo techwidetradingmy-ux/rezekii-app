@@ -2,7 +2,8 @@ import { getShowcaseProducts } from "../../integrations/tiktok-shop/creator.ts";
 import { approvedCreatorToken } from "../creator-accounts/access.ts";
 import { levelOf } from "../levels/store.ts";
 import { allProducts, type TapProduct } from "./catalog.ts";
-import { addToShowcase } from "./showcase.ts";
+import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import { addManyToShowcase } from "./showcase.ts";
 
 /** A product in the creator's showcase that pays more through Techwide's TAP campaign than it pays them now. */
 export type Raise = { productId: string; name: string; shop: string; image: string | null; price: number | null; nowRate: number; tapRate: number };
@@ -37,6 +38,25 @@ export function findRaises(showcase: ShowcaseEntry[], catalog: Map<string, TapPr
 
 const cache = new Map<string, { at: number; raises: Raise[] }>();
 
+/** How long a product TikTok refused to add for a creator stays out of their raises. */
+const REFUSED_DAYS = 30;
+/** TikTok's refusal for a product it won't take into this creator's showcase ("Adding product failed. Please contact TikTok.").*/
+const REFUSED = /adding product failed/i;
+
+/** Products TikTok refused to add for this creator in the last REFUSED_DAYS days: { productId: when }. */
+export async function refusedProducts(userId: string): Promise<Record<string, string>> {
+  const [row] = (await (await supabaseRest(`app_settings?key=eq.${encodeURIComponent(`showcase_refused:${userId}`)}&select=value&limit=1`)).json()) as { value: Record<string, string> }[];
+  const since = Date.now() - REFUSED_DAYS * 86_400_000;
+  return Object.fromEntries(Object.entries(row?.value ?? {}).filter(([, at]) => Date.parse(at) > since));
+}
+
+async function noteRefused(userId: string, ids: string[]) {
+  if (!ids.length) return;
+  const now = new Date().toISOString();
+  const value = { ...(await refusedProducts(userId)), ...Object.fromEntries(ids.map((id) => [id, now])) };
+  await supabaseRest("app_settings?on_conflict=key", { method: "POST", headers: { prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify({ key: `showcase_refused:${userId}`, value, updated_at: now }) });
+}
+
 /** The creator's commission raises (whole showcase, up to TikTok's 2,000), kept 30 minutes; null when TikTok Shop isn't linked. */
 export async function commissionRaises(userId: string): Promise<Raise[] | null> {
   const hit = cache.get(userId);
@@ -55,21 +75,18 @@ export async function commissionRaises(userId: string): Promise<Raise[] | null> 
     pageToken = r.data?.next_page_token || undefined;
     if (!pageToken) break;
   }
-  const [catalog, level] = await Promise.all([allProducts(), levelOf(userId)]);
-  const raises = findRaises(showcase, new Map(catalog.map((p) => [p.id, p])), level);
+  const [catalog, level, refused] = await Promise.all([allProducts(), levelOf(userId), refusedProducts(userId)]);
+  const raises = findRaises(showcase, new Map(catalog.map((p) => [p.id, p])), level).filter((r) => !refused[r.productId]);
   cache.set(userId, { at: Date.now(), raises });
   return raises;
 }
 
 /** Bulk Add to Showcase through Techwide's TAP link for the chosen products, one by one; then the raises are read again. */
 export async function takeRaises(userId: string, productIds: string[]): Promise<{ added: string[]; failed: { productId: string; error: string }[] }> {
-  const added: string[] = [];
-  const failed: { productId: string; error: string }[] = [];
-  for (const id of productIds.filter((x) => /^\d{6,25}$/.test(x)).slice(0, 50)) {
-    const r = await addToShowcase(userId, id);
-    if (r.added) added.push(id);
-    else failed.push({ productId: id, error: r.error || "TikTok Shop didn't add it." });
-  }
+  const results = await addManyToShowcase(userId, productIds.filter((x) => /^\d{6,25}$/.test(x)).slice(0, 50));
+  const added = results.filter((x) => x.result.added).map((x) => x.productId);
+  const failed = results.flatMap((x) => (x.result.added ? [] : [{ productId: x.productId, error: x.result.error || "TikTok Shop didn't add it." }]));
+  await noteRefused(userId, failed.filter((f) => REFUSED.test(f.error)).map((f) => f.productId)).catch(() => undefined);
   cache.delete(userId);
   return { added, failed };
 }
