@@ -128,7 +128,7 @@ export function TodayView({ data }: { data: TodayData }) {
   const left = camp ? Math.max(0, Math.floor((camp.end * 1000 - now) / 1000)) : 0;
   const campDay = camp ? new Date(camp.end * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" }) : "";
   const best = data.best[sort].map((id) => byId.get(id)).filter((p): p is TapProduct => !!p);
-  const picks = data.picks.map(([id, why]) => [byId.get(id), why] as const).filter((x): x is readonly [TapProduct, string] => !!x[0]);
+  const picks = data.picks.map((id) => byId.get(id)).filter((p): p is TapProduct => !!p);
   const hasWaiting = rows.some((r) => r.kind === "shop");
 
   return (
@@ -178,9 +178,8 @@ export function TodayView({ data }: { data: TodayData }) {
           <Link href="/app/marketplace" className="nv-link">See all</Link>
         </div>
         <div className="mk-grid">
-          {picks.map(([p, why]) => (
+          {picks.map((p) => (
             <div key={p.id} className="td-rec">
-              <span className="td-why">{why}</span>
               <ProductCard p={p} tap={tap} onOpen={openPanel} />
             </div>
           ))}

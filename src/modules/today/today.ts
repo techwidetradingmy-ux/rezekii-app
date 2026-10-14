@@ -1,10 +1,13 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import { lookupProducts } from "../../integrations/tiktok-shop/creator.ts";
+import { approvedCreatorToken } from "../creator-accounts/access.ts";
+import { salesSummary } from "../sales/summary.ts";
 import { allProducts, type TapProduct } from "../tap/catalog.ts";
 import { myTapRows } from "../tap/mytap.ts";
 import { savedShowcase, showcaseStale } from "../tap/showcase.ts";
 import { listPosts } from "../posting/store.ts";
 import { mytDay } from "../refresh/plan.ts";
-import { bestSelling, closingSoon, creatorCategories, greeting, longDay, pickForYou, postWhen, weekDelta, type ClosingSoon, type TodayPick } from "./rules.ts";
+import { activeSeasons, bestCategories, bestSelling, closingSoon, creatorCategories, greeting, longDay, pickForYou, postWhen, weekDelta, type ClosingSoon } from "./rules.ts";
 
 export type TodayStat = { key: "links" | "showcase" | "samples" | "open"; value: number; delta: string; note: string };
 export type NextPost = { title: string; when: string; status: string; tone: "green" | "blue" | "amber" | "red"; posted: boolean };
@@ -14,7 +17,8 @@ export type TodayData = {
   hello: string;
   day: string;
   stats: TodayStat[];
-  picks: TodayPick[];
+  /** "Recommended for you": product IDs, best match first. */
+  picks: string[];
   basis: string;
   camp: ClosingSoon | null;
   best: [string[], string[]];
@@ -37,6 +41,21 @@ async function linkCounts(userId: string, now: number): Promise<[number, number]
     count(`tap_links?user_id=eq.${userId}&made_at=gte.${iso(7)}&select=id`),
     count(`tap_links?user_id=eq.${userId}&made_at=gte.${iso(14)}&made_at=lt.${iso(7)}&select=id`),
   ]);
+}
+
+/** Categories of products outside the TAP Marketplace, from TikTok Shop's Product Lookup, kept while the server runs. */
+const lookedUp = new Map<string, string | null>();
+
+/** The categories the creator sold most in the last 30 days, all shops (TAP products from the catalog, others from TikTok). */
+async function monthBest(userId: string, categoryOf: Map<string, string | null>, sold: Promise<{ productId: string; gmv: number }[]>): Promise<Set<string>> {
+  const top = await sold;
+  const missing = top.map((p) => p.productId).filter((id) => /^\d{15,21}$/.test(id) && !categoryOf.has(id) && !lookedUp.has(id));
+  const token = missing.length ? await approvedCreatorToken(userId) : null;
+  if (token) {
+    const r = await lookupProducts(token, missing.slice(0, 20)).catch(() => null);
+    for (const p of r?.data?.products ?? []) lookedUp.set(p.id, p.category_chains?.find((c) => c.is_leaf)?.local_name ?? p.category_chains?.at(-1)?.local_name ?? null);
+  }
+  return bestCategories(top, (id) => categoryOf.get(id) ?? lookedUp.get(id));
 }
 
 /** Products that joined the Marketplace in the last 7 days, or null while the catalog is younger than a week. */
@@ -67,13 +86,17 @@ function nextPostsFrom(posts: Awaited<ReturnType<typeof listPosts>>, now: number
 /** Everything the Today page shows for one creator, from Rezekii's own data and Techwide's TAP campaigns. */
 export async function todayData(user: { id: string; tiktok_username: string | null }): Promise<TodayData> {
   const now = Date.now();
+  // The month's best sellers load alongside everything else (reading 30 days of orders is the slowest part).
+  const sold = salesSummary(user.id, 30).then((s) => s.products, () => []);
   const [all, tap, links, fresh, posts, showcase] = await Promise.all([allProducts(), myTapRows(user.id, user.tiktok_username), linkCounts(user.id, now), newThisWeek(now), listPosts(user.id, 50), savedShowcase(user.id)]);
   const categoryOf = new Map(all.map((p) => [p.id, p.category]));
   const { top, niche } = creatorCategories(tap.rows, categoryOf);
   const promoted = new Set(tap.rows.filter((r) => r.campaignId).map((r) => r.productId));
-  const picks = pickForYou(all, top, niche, promoted);
-  const best: [string[], string[]] = [bestSelling(all, 0), bestSelling(all, 1)];
-  const wanted = new Set([...picks.map(([id]) => id), ...best[0], ...best[1]]);
+  const best = await monthBest(user.id, categoryOf, sold);
+  const seasons = activeSeasons(now);
+  const picks = pickForYou(all, { top, niche, best, seasons }, promoted);
+  const selling: [string[], string[]] = [bestSelling(all, 0), bestSelling(all, 1)];
+  const wanted = new Set([...picks, ...selling[0], ...selling[1]]);
   const onTikTok = tap.rows.filter((r) => r.campaignId);
   const samples = tap.rows.filter((r) => r.stage >= 1 && r.stage <= 3);
   const others = niche.size - 1;
@@ -91,11 +114,13 @@ export async function todayData(user: { id: string; tiktok_username: string | nu
       { key: "open", value: all.length, delta: fresh ? `+${fresh}` : "", note: fresh === null ? "in Techwide's live campaigns" : "new this week" },
     ],
     picks,
-    basis: top
-      ? `Picked from the categories you promote (${top}${others > 0 ? ` and ${others} more` : ""}) and what is selling on TikTok Shop right now.`
-      : "Picked from what is selling on TikTok Shop right now. Promote a few TAP products and these picks follow your own categories.",
+    basis: [
+      top || best.size ? `Picked for your niche${top ? ` (${top}${others > 0 ? ` and ${others} more` : ""})` : ""}${best.size ? " and your best sellers this month" : ""}` : "Picked from what is selling on TikTok Shop right now",
+      seasons.length ? `, with ${seasons.map((x) => x.name).join(" and ")} coming up` : "",
+      ".",
+    ].join(""),
     camp: closingSoon(all, Math.floor(now / 1000)),
-    best,
+    best: selling,
     products: all.filter((p) => wanted.has(p.id)),
     nextPosts: nextPostsFrom(posts, now),
     requestedIds: tap.rows.filter((r) => r.request && (r.request.status === "requested" || r.request.status === "applied")).map((r) => r.productId),

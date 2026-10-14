@@ -1,15 +1,44 @@
 import type { TapProduct } from "../tap/catalog.ts";
 import { unixSeconds } from "../tap/stages.ts";
 
-/** [productId, why it is picked] */
-export type TodayPick = [string, string];
+/**
+ * Malaysia's selling seasons (owner, 15 Oct 2026): products for a season are pushed from 6 weeks before it until a few days
+ * after. Islamic dates are the expected dates. A product belongs to a season when its name has one of the season's words.
+ */
+export type Season = { name: string; days: string[]; after: number; words: RegExp };
+export const SEASONS: Season[] = [
+  { name: "Ramadan", days: ["2027-02-08", "2028-01-28"], after: 28, words: /\b(ramadan|ramadhan|puasa|iftar|sahur|kurma|tamar|telekung|sejadah|al-?quran|tasbih)\b/i },
+  { name: "Raya", days: ["2027-03-10", "2028-02-27"], after: 14, words: /\b(raya|lebaran|aidilfitri|kurung|kebaya|baju melayu|songkok|sampin|samping|telekung|sejadah|kurma|kuih|ketupat|langsir|duit raya|sampul|pelita|jubah|abaya|kopiah|pelikat)\b/i },
+  { name: "Chinese New Year", days: ["2027-02-06", "2028-01-26"], after: 7, words: /\b(chinese new year|cny|lunar new year|ang ?pao|ang ?pow|red packet|mandarin orange|lantern|tanglung|cheongsam|bak ?kwa)\b/i },
+  { name: "Deepavali", days: ["2026-11-08", "2027-10-29", "2028-10-17"], after: 3, words: /\b(deepavali|diwali|saree|sari|kurta|lehenga|kolam|diya|murukku)\b/i },
+  { name: "Christmas", days: ["2026-12-25", "2027-12-25", "2028-12-25"], after: 1, words: /\b(christmas|xmas|santa|reindeer|snowman|advent|ornament|hamper)\b/i },
+  { name: "Back to school", days: ["2027-01-11", "2028-01-10"], after: 14, words: /\b(school|sekolah|stationery|alat tulis|pencil case|kotak pensel|backpack|uniform|lunch ?box|bekas makanan|water bottle|botol air)\b/i },
+  { name: "Hari Raya Haji", days: ["2027-05-17", "2028-05-05"], after: 3, words: /\b(aidiladha|raya haji|korban|qurban)\b/i },
+  { name: "Merdeka", days: ["2027-08-31", "2028-08-31"], after: 16, words: /\b(merdeka|jalur gemilang|bendera)\b/i },
+];
+const LEAD_DAYS = 42;
 
-const k = (v: number) => (v >= 1000 ? `${(v / 1000).toFixed(1).replace(/\.0$/, "")}k` : String(v));
-const rate = (r: number | null) => `${((r ?? 0) / 100).toString()}%`;
+/** The seasons whose window (6 weeks before until a few days after) includes `now`. */
+export function activeSeasons(now: number, seasons = SEASONS): Season[] {
+  return seasons.filter((x) => x.days.some((d) => { const t = Date.parse(`${d}T00:00:00+08:00`); return now >= t - LEAD_DAYS * 86400_000 && now < t + (x.after + 1) * 86400_000; }));
+}
+
+/**
+ * The creator's categories with the most sales in the last 30 days, all shops (owner, 15 Oct 2026: recommend from what sells
+ * best for them this month). `products` are their top products by GMV; `categoryOf` gives each product's category.
+ */
+export function bestCategories(products: { productId: string; gmv: number }[], categoryOf: (id: string) => string | null | undefined, n = 3): Set<string> {
+  const gmv = new Map<string, number>();
+  for (const p of products) {
+    const c = categoryOf(p.productId);
+    if (c) gmv.set(c, (gmv.get(c) ?? 0) + p.gmv);
+  }
+  return new Set([...gmv.entries()].sort((a, b) => b[1] - a[1]).slice(0, n).map(([c]) => c));
+}
 
 /**
  * The creator's own categories from the TAP products they promote or asked samples for: the one with the most sales
- * (or, before any sales, the most products) is their top category.
+ * (or, before any sales, the most products) is their top category, and their niche is their 5 biggest categories.
  */
 export function creatorCategories(rows: { productId: string; paid: number }[], categoryOf: Map<string, string | null>): { top: string | null; niche: Set<string> } {
   const paid = new Map<string, number>(), count = new Map<string, number>();
@@ -19,33 +48,37 @@ export function creatorCategories(rows: { productId: string; paid: number }[], c
     paid.set(c, (paid.get(c) ?? 0) + r.paid);
     count.set(c, (count.get(c) ?? 0) + 1);
   }
-  const top = [...count.keys()].sort((a, b) => (paid.get(b) ?? 0) - (paid.get(a) ?? 0) || (count.get(b) ?? 0) - (count.get(a) ?? 0) || a.localeCompare(b))[0] ?? null;
-  return { top, niche: new Set(count.keys()) };
+  const ranked = [...count.keys()].sort((a, b) => (paid.get(b) ?? 0) - (paid.get(a) ?? 0) || (count.get(b) ?? 0) - (count.get(a) ?? 0) || a.localeCompare(b));
+  return { top: ranked[0] ?? null, niche: new Set(ranked.slice(0, 5)) };
 }
 
+/** What "Recommended for you" goes on: the creator's niche, their best sellers this month, and the seasons coming up. */
+export type Signals = { top: string | null; niche: Set<string>; best: Set<string>; seasons: Season[] };
+
 /**
- * "Recommended for you", scored as in the mockup: top category +3, own category +2, free sample +1, then units sold today,
- * then the Silver rate. At most 2 per category and 6 in all. Products the creator already promotes are left out; when their
- * own categories run short, the rest comes from what is selling now.
+ * "Recommended for you": TAP Marketplace products that best match the creator (owner, 15 Oct 2026). A product scores for being
+ * in their top category (+3), any of their categories (+2), a category of their best sellers this month (+3), a season coming up
+ * (+3) and a free sample (+1); then units sold since yesterday, then the Silver rate. At most 2 per category, 3 seasonal ones
+ * outside their categories, 6 in all; products they already promote are left out; the rest is filled with what is selling now.
  */
-export function pickForYou(all: TapProduct[], top: string | null, niche: Set<string>, promoted: Set<string>): TodayPick[] {
-  const score = (p: TapProduct) => ((p.category === top ? 3 : 0) + (niche.has(p.category ?? "") ? 2 : 0) + (p.samples > 0 ? 1 : 0)) * 1e9 + p.soldToday * 1e3 + (p.silverRate ?? 0);
-  const picks: TodayPick[] = [];
+export function pickForYou(all: TapProduct[], s: Signals, promoted: Set<string>): string[] {
+  const inSeason = (p: TapProduct) => s.seasons.some((x) => x.words.test(p.name));
+  const own = (p: TapProduct) => s.niche.has(p.category ?? "") || s.best.has(p.category ?? "");
+  const fit = (p: TapProduct) => (p.category === s.top ? 3 : 0) + (s.niche.has(p.category ?? "") ? 2 : 0) + (s.best.has(p.category ?? "") ? 3 : 0) + (inSeason(p) ? 3 : 0) + (p.samples > 0 ? 1 : 0);
+  const score = (p: TapProduct) => fit(p) * 1e9 + p.soldToday * 1e3 + (p.silverRate ?? 0);
+  const picks: string[] = [];
   const perCat = new Map<string, number>();
-  const taken = new Set<string>();
-  const add = (pool: TapProduct[], own: boolean) => {
-    for (const p of [...pool].sort((a, b) => score(b) - score(a) || b.sold - a.sold)) {
-      if (picks.length === 6) return;
-      const cat = p.category ?? "";
-      if (taken.has(p.id) || promoted.has(p.id) || (perCat.get(cat) ?? 0) >= 2) continue;
-      perCat.set(cat, (perCat.get(cat) ?? 0) + 1);
-      taken.add(p.id);
-      const label = own ? (cat === top ? "Your top category" : "Your niche") : "Selling now";
-      picks.push([p.id, `${label} · ${p.soldToday ? `+${k(p.soldToday)} sold today` : p.samples > 0 ? "free sample" : `Silver ${rate(p.silverRate)}`}`]);
-    }
-  };
-  if (niche.size) add(all.filter((p) => niche.has(p.category ?? "")), true);
-  add(all, false);
+  let seasonal = 0;
+  for (const p of [...all].sort((a, b) => score(b) - score(a) || b.sold - a.sold)) {
+    if (picks.length === 6) break;
+    const cat = p.category ?? "";
+    if (promoted.has(p.id) || (perCat.get(cat) ?? 0) >= 2) continue;
+    const extra = inSeason(p) && !own(p);
+    if (extra && seasonal >= 3) continue;
+    if (extra) seasonal++;
+    perCat.set(cat, (perCat.get(cat) ?? 0) + 1);
+    picks.push(p.id);
+  }
   return picks;
 }
 

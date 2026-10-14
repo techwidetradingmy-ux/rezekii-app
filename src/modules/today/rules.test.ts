@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { TapProduct } from "../tap/catalog.ts";
-import { bestSelling, closingSoon, creatorCategories, greeting, longDay, pickForYou, postWhen, weekDelta } from "./rules.ts";
+import { SEASONS, activeSeasons, bestCategories, bestSelling, closingSoon, creatorCategories, greeting, longDay, pickForYou, postWhen, weekDelta } from "./rules.ts";
 
 const P = (id: string, o: Partial<TapProduct>): TapProduct => ({
   id, name: `Product ${id}`, shop: "Shop A", category: "Blenders", image: null, priceLo: 10, priceHi: 10, openRate: 500, silverRate: 600,
@@ -15,7 +15,7 @@ test("today: top category is the one with the most sales, then the most products
   assert.deepEqual(creatorCategories([{ productId: "d", paid: 5 }], cat), { top: null, niche: new Set() });
 });
 
-test("today: picks favour the top category, keep 2 per category, skip promoted products and fill up with what is selling", () => {
+test("today: picks favour the creator's top category, keep 2 per category, skip promoted products and fill up with what is selling", () => {
   const all = [
     P("1", { category: "Blenders", soldToday: 1500 }),
     P("2", { category: "Blenders", samples: 2 }),
@@ -25,17 +25,40 @@ test("today: picks favour the top category, keep 2 per category, skip promoted p
     P("6", { category: "Pots", soldToday: 2 }),
     P("7", { category: "Bags", soldToday: 40 }),
   ];
-  const picks = pickForYou(all, "Blenders", new Set(["Blenders", "Pots"]), new Set(["3"]));
-  assert.deepEqual(picks, [
-    ["2", "Your top category · free sample"],
-    ["1", "Your top category · +1.5k sold today"],
-    ["6", "Your niche · +2 sold today"],
-    ["4", "Your niche · Silver 12%"],
-    ["5", "Selling now · +50 sold today"],
-    ["7", "Selling now · +40 sold today"],
-  ]);
-  // No own categories yet: everything comes from what is selling now.
-  assert.equal(pickForYou(all, null, new Set(), new Set())[1][1], "Selling now · +9k sold today");
+  const none = { top: null, niche: new Set<string>(), best: new Set<string>(), seasons: [] };
+  assert.deepEqual(pickForYou(all, { ...none, top: "Blenders", niche: new Set(["Blenders", "Pots"]) }, new Set(["3"])), ["2", "1", "6", "4", "5", "7"]);
+  // No own categories yet: free samples first, then what is selling now.
+  assert.deepEqual(pickForYou(all, none, new Set()).slice(0, 2), ["2", "3"]);
+});
+
+test("today: best sellers this month and a season coming up lift products, at most 3 seasonal ones outside the creator's niche", () => {
+  const raya = SEASONS.find((x) => x.name === "Raya")!;
+  const all = [
+    P("t1", { category: "Fitness Machines", name: "Walking pad treadmill" }),
+    P("t2", { category: "Fitness Machines", name: "Foldable treadmill" }),
+    P("r1", { category: "Muslim Wear", name: "Baju Kurung Moden Raya 2027", soldToday: 5 }),
+    P("r2", { category: "Muslim Wear", name: "Kebaya Nyonya" }),
+    P("r3", { category: "Snacks", name: "Kuih Raya Tart Nenas" }),
+    P("r4", { category: "Snacks", name: "Biskut Raya Almond London" }),
+    P("x", { category: "Pots", soldToday: 9000 }),
+  ];
+  const picks = pickForYou(all, { top: null, niche: new Set(), best: new Set(["Fitness Machines"]), seasons: [raya] }, new Set());
+  assert.ok(picks.includes("t1") && picks.includes("t2"));
+  assert.equal(picks.filter((id) => id.startsWith("r")).length, 3);
+  assert.ok(picks.includes("x"));
+});
+
+test("today: seasons switch on 6 weeks before and stay a few days after", () => {
+  const on = (iso: string) => activeSeasons(Date.parse(iso)).map((x) => x.name);
+  assert.deepEqual(on("2026-10-15T12:00:00+08:00"), ["Deepavali"]);
+  assert.ok(on("2027-01-30T12:00:00+08:00").includes("Raya") && on("2027-01-30T12:00:00+08:00").includes("Chinese New Year"));
+  assert.ok(!on("2027-01-20T12:00:00+08:00").includes("Raya"));
+  assert.ok(!on("2027-03-26T12:00:00+08:00").includes("Raya"));
+});
+
+test("today: best categories add up a creator's top products by sales", () => {
+  const cat = new Map([["a", "Fitness Machines"], ["b", "Fitness Machines"], ["c", "Pedometers"], ["d", "Pots"]]);
+  assert.deepEqual([...bestCategories([{ productId: "c", gmv: 90 }, { productId: "a", gmv: 60 }, { productId: "b", gmv: 50 }, { productId: "d", gmv: 1 }, { productId: "z", gmv: 999 }], (id) => cat.get(id), 2)], ["Fitness Machines", "Pedometers"]);
 });
 
 test("today: closing soon counts products and campaigns ending within 30 days", () => {
