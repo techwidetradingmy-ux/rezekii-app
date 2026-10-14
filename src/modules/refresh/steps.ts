@@ -15,8 +15,8 @@ import { catalogSales, creatorsNeedingDetail, upsertCreatorProducts, openTaskCou
 
 /** TikTok's "too many requests" code, shared by the app's whole API group. */
 export const RATE_LIMITED = 36009002;
-/** New creator profiles fetched per day; the rest wait for the next day, best-seller creators first. */
-export const DETAILS_PER_DAY = 1500;
+/** Creator profiles fetched per day (about 1 a second, backing off on rate limits); the rest wait for the next day, best-seller creators first. */
+export const DETAILS_PER_DAY = 5000;
 /** Pages per marketplace search (20 creators each). TikTok stops at about 1,000 results anyway. */
 export const MARKET_PAGES = 55;
 
@@ -226,12 +226,29 @@ async function details(t: TaskRow, { sessions, deadline }: Ctx): Promise<StepRes
   return { count, more: true, waitMs: 0 };
 }
 
-/** One page of a Creator Marketplace search for one follower band. Its search allows about 3 calls a minute. */
+/** TikTok's GMV and units-sold ranges, used to split a search that hits its ~1,000-result limit. */
+export const GMV_RANGES = ["GMV_RANGE_0_100", "GMV_RANGE_100_1000", "GMV_RANGE_1000_10000", "GMV_RANGE_10000_AND_ABOVE"];
+export const UNITS_RANGES = ["UNITS_SOLD_RANGE_0_10", "UNITS_SOLD_RANGE_10_100", "UNITS_SOLD_RANGE_100_1000", "UNITS_SOLD_RANGE_1000_AND_ABOVE"];
+type MarketParams = { min: number; max: number | null; gmv?: string; units?: string };
+
+/** The narrower searches for one that hit TikTok's limit: by GMV range first, then by units sold. */
+export function marketSplits(p: MarketParams): PlannedTask[] {
+  const band = `${p.min}-${p.max ?? "up"}`;
+  if (!p.gmv) return GMV_RANGES.map((gmv) => ({ key: `marketplace|${band}|${gmv}`, kind: "marketplace", params: { ...p, gmv }, priority: 6 }));
+  if (!p.units) return UNITS_RANGES.map((units) => ({ key: `marketplace|${band}|${p.gmv}|${units}`, kind: "marketplace", params: { ...p, units }, priority: 6 }));
+  return [];
+}
+
+/**
+ * One page of a Creator Marketplace search: a follower band, narrowed by GMV range and units sold when needed. Its search
+ * allows about 3 calls a minute and stops at about 1,000 results, so a search that reaches the limit splits into narrower ones.
+ */
 async function marketplace(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
-  const { min, max } = t.params as { min: number; max: number | null };
+  const p = t.params as MarketParams;
   const s = await sessions.seller();
-  const range = { count_ge: min, ...(max === null ? {} : { count_le: max }) };
-  const data = ok(await searchMarketplaceCreators(s.token, s.cipher, { follower_demographics: { count_range: range } }, { pageSize: 20, pageToken: t.cursor ?? undefined }));
+  const range = { count_ge: p.min, ...(p.max === null ? {} : { count_le: p.max }) };
+  const filters = { follower_demographics: { count_range: range }, ...(p.gmv ? { gmv_ranges: [p.gmv] } : {}), ...(p.units ? { units_sold_ranges: [p.units] } : {}) };
+  const data = ok(await searchMarketplaceCreators(s.token, s.cipher, filters, { pageSize: 20, pageToken: t.cursor ?? undefined }));
   const items = (data.creators ?? []) as MarketCreator[];
   await upsertCreators(
     items
@@ -239,8 +256,11 @@ async function marketplace(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
       .map((c) => ({ creator_key: c.creator_open_id ?? `u:${c.username}`, open_id: c.creator_open_id ?? null, username: c.username ?? null, market: c })),
   );
   const next = data.next_page_token;
-  const more = !!next && items.length > 0 && t.result_count + items.length < MARKET_PAGES * 20;
-  return { count: items.length, more, cursor: more ? next : null, waitMs: 20_000 };
+  const total = t.result_count + items.length;
+  const more = !!next && items.length > 0 && total < MARKET_PAGES * 20;
+  // Ended at TikTok's ~1,000-result limit (or ours): the slice has more creators than TikTok shows, so search narrower slices.
+  const capped = !more && total >= 980;
+  return { count: items.length, more, cursor: more ? next : null, waitMs: 20_000, followUps: capped ? marketSplits(p) : undefined };
 }
 
 export const STEPS: Record<string, (t: TaskRow, ctx: Ctx) => Promise<StepResult>> = {

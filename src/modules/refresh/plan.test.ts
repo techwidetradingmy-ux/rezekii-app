@@ -38,3 +38,14 @@ test("refresh plan: first run fills 30 days, later runs only the missing ones", 
   assert.equal(later.length, lists);
   assert.ok(later.every((t) => (t.params as { date: string }).date === "2026-10-05"));
 });
+
+test("a capped marketplace search splits by GMV range, then by units sold, then stops", async () => {
+  const { marketSplits } = await import("./steps.ts");
+  const g = marketSplits({ min: 0, max: 999 });
+  assert.equal(g.length, 4);
+  assert.equal(g[0].key, "marketplace|0-999|GMV_RANGE_0_100");
+  const u = marketSplits(g[0].params as { min: number; max: number | null; gmv: string });
+  assert.equal(u.length, 4);
+  assert.equal(u[3].key, "marketplace|0-999|GMV_RANGE_0_100|UNITS_SOLD_RANGE_1000_AND_ABOVE");
+  assert.deepEqual(marketSplits(u[0].params as { min: number; max: number | null; gmv: string; units: string }), []);
+});
