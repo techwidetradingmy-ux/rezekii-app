@@ -30,6 +30,10 @@
 .lk-barv { text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
 .lk-barv small { display: block; font-size: 11px; color: var(--muted); font-weight: 700; }
 .lk-cols { grid-template-columns: 104px minmax(220px, 2fr) 150px 70px 104px 104px 104px 76px; }
+.lk-cols2 { grid-template-columns: minmax(260px, 2fr) 150px 70px 104px 104px 120px; }
+.lk-subh { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-top: 6px; }
+.lk-subh h3 { margin: 0; font-size: 16px; font-weight: 800; color: var(--text); }
+.lk-subh span { font-size: 13px; color: var(--muted); line-height: 1.5; }
 .lk-num { font-weight: 800; font-variant-numeric: tabular-nums; }
 .lk-zero { color: var(--muted); font-weight: 600; }
 .lk-sort { display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; color: inherit; font: inherit; font-weight: 700; cursor: pointer; padding: 0; text-transform: inherit; letter-spacing: inherit; }

@@ -15,13 +15,19 @@ const MAX = 50;
 type HistoryRow = { product_id: string; product_name: string | null; image: string | null; tag: string | null; link: string; made_at: string; when?: string };
 /** A link's sales in TikTok's link-share channel (from /api/tap/history). */
 type Perf = { orders: number; items: number; gmv: number; commission: number; last: string | null; lastWhen?: string };
-type HistoryReply = { links?: HistoryRow[]; perf?: Record<string, Perf> };
+/** Link-share sales of one product through links made outside Rezekii (TikTok doesn't say which link). */
+type Outside = Perf & { product_id: string; product_name: string | null; image: string | null; tag: string | null };
+/** Orders counted once each: all, via Rezekii links, via other links, and by tag. */
+type Counts = { all: number; mine: number; outside: number; byTag: Record<string, number> };
+type HistoryReply = { links?: HistoryRow[]; perf?: Record<string, Perf>; outside?: Outside[]; counts?: Counts | null };
 /** Dates as labels, worked out once when the data arrives. */
 function labelled(d: HistoryReply) {
   const now = Date.now();
   return {
     links: (d.links ?? []).map((h) => ({ ...h, when: when(h.made_at, now) })),
     perf: Object.fromEntries(Object.entries(d.perf ?? {}).map(([k, p]) => [k, { ...p, lastWhen: p.last ? when(p.last, now) : undefined }])),
+    outside: (d.outside ?? []).map((o) => ({ ...o, lastWhen: o.last ? when(o.last, now) : undefined })),
+    counts: d.counts ?? null,
   };
 }
 const getHistory = () => fetch("/api/tap/history", { cache: "no-store" }).then((r) => r.json() as Promise<HistoryReply>).then(labelled);
@@ -29,6 +35,7 @@ const rm = (v: number) => `RM${v.toLocaleString("en-US", { minimumFractionDigits
 /** A Techwide TAP link adds the product to the showcase; it isn't a share link. */
 const isTap = (link: string) => link.startsWith("https://affiliate.tiktok.com/");
 const tagOf = (h: HistoryRow) => (isTap(h.link) ? "TAP" : h.tag ?? "no tag");
+const outTag = (o: Outside) => o.tag ?? "no tag";
 type SortKey = "made" | "orders" | "gmv";
 
 // Custom tags are kept on this device, "saved for next time" as in the mockup.
@@ -107,6 +114,8 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
   const [made, setMade] = useState(0);
   const [history, setHistory] = useState<HistoryRow[] | null>(null);
   const [perf, setPerf] = useState<Record<string, Perf>>({});
+  const [outside, setOutside] = useState<Outside[]>([]);
+  const [counts, setCounts] = useState<Counts | null>(null);
   const [hq, setHq] = useState("");
   const [soldOnly, setSoldOnly] = useState(false);
   const [pickTag, setPickTag] = useState<string | null>(null);
@@ -120,12 +129,13 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
   const waiting = rows.filter((r) => r.kind === "shop").length;
   const failed = rows.length - ok.length - waiting;
 
+  const show = (d: Awaited<ReturnType<typeof getHistory>>) => { setHistory(d.links); setPerf(d.perf); setOutside(d.outside); setCounts(d.counts); };
   function loadHistory() {
-    getHistory().then((d) => { setHistory(d.links); setPerf(d.perf); }).catch(() => setHistory([]));
+    getHistory().then(show).catch(() => setHistory([]));
   }
   useEffect(() => {
     let live = true;
-    getHistory().then((d) => { if (live) { setHistory(d.links); setPerf(d.perf); } }).catch(() => live && setHistory([]));
+    getHistory().then((d) => { if (live) { setHistory(d.links); setPerf(d.perf); setOutside(d.outside); setCounts(d.counts); } }).catch(() => live && setHistory([]));
     return () => { live = false; };
   }, []);
 
@@ -175,20 +185,31 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
   const none: Perf = { orders: 0, items: 0, gmv: 0, commission: 0, last: null };
   const pf = (h: HistoryRow) => perf[h.link] ?? none;
   const shareLinks = (history ?? []).filter((h) => !isTap(h.link));
-  const tot = shareLinks.reduce((a, h) => { const p = pf(h); return { o: a.o + p.orders, g: a.g + p.gmv, c: a.c + p.commission, sold: a.sold + (p.orders ? 1 : 0) }; }, { o: 0, g: 0, c: 0, sold: 0 });
-  // Sales by tag (the channel a link was shared on), most first.
-  const byTag = Object.values(shareLinks.reduce<Record<string, { tag: string; o: number; g: number }>>((a, h) => {
-    const t = tagOf(h); const p = pf(h);
+  const mine = shareLinks.reduce((a, h) => { const p = pf(h); return { o: a.o + p.orders, g: a.g + p.gmv, c: a.c + p.commission, sold: a.sold + (p.orders ? 1 : 0) }; }, { o: 0, g: 0, c: 0, sold: 0 });
+  const other = outside.reduce((a, o) => ({ o: a.o + o.orders, g: a.g + o.gmv, c: a.c + o.commission }), { o: 0, g: 0, c: 0 });
+  // Order totals count an order once even when it holds several products (counts from the server).
+  const tot = { o: counts?.all ?? mine.o + other.o, g: mine.g + other.g, c: mine.c + other.c };
+  // Sales by tag (the channel a link was shared on), from both kinds of link, most first.
+  const byTag = Object.values([...shareLinks.map((h) => [tagOf(h), pf(h)] as const), ...outside.map((o) => [outTag(o), o] as const)].reduce<Record<string, { tag: string; o: number; g: number }>>((a, [t, p]) => {
     a[t] ??= { tag: t, o: 0, g: 0 }; a[t].o += p.orders; a[t].g += p.gmv;
     return a;
-  }, {})).sort((x, y) => y.g - x.g || y.o - x.o);
+  }, {})).map((t) => ({ ...t, o: counts?.byTag[t.tag] ?? t.o })).sort((x, y) => y.g - x.g || y.o - x.o);
   const topTag = Math.max(1, ...byTag.map((t) => t.g));
+  const best = byTag.find((t) => t.g > 0 && t.tag !== "no tag");
   const key = (h: HistoryRow) => (sort.k === "orders" ? pf(h).orders : sort.k === "gmv" ? pf(h).gmv : Date.parse(h.made_at));
   const histF = (history ?? [])
     .filter((h) => (!q || `${h.product_name ?? ""} ${tagOf(h)} ${h.product_id}`.toLowerCase().includes(q)) && (!soldOnly || pf(h).orders > 0) && (!pickTag || tagOf(h) === pickTag))
     .sort((a, b) => (sort.d === "d" ? key(b) - key(a) : key(a) - key(b)));
+  const okey = (o: Outside) => (sort.k === "orders" ? o.orders : sort.k === "gmv" ? o.gmv : Date.parse(o.last ?? "") || 0);
+  const outF = outside
+    .filter((o) => (!q || `${o.product_name ?? ""} ${outTag(o)} ${o.product_id}`.toLowerCase().includes(q)) && (!soldOnly || o.orders > 0) && (!pickTag || outTag(o) === pickTag))
+    .sort((a, b) => (sort.d === "d" ? okey(b) - okey(a) : okey(a) - okey(b)));
   const flip = (k: SortKey) => setSort((x) => ({ k, d: x.k === k && x.d === "d" ? "a" : "d" }));
-  const exportHistory = () => downloadCsv("rezekii-link-sales.csv", [["Made", "Product", "Product ID", "Tags", "Link", "Orders", "GMV (RM)", "Commission (RM)", "Last sale"], ...histF.map((h) => { const p = pf(h); return [h.made_at, h.product_name, h.product_id, tagOf(h), h.link, String(p.orders), p.gmv.toFixed(2), p.commission.toFixed(2), p.last ?? ""]; })]);
+  const exportHistory = () => downloadCsv("rezekii-link-sales.csv", [
+    ["Link made", "Made", "Product", "Product ID", "Tags", "Link", "Orders", "GMV (RM)", "Commission (RM)", "Last sale"],
+    ...histF.map((h) => { const p = pf(h); return ["In Rezekii", h.made_at, h.product_name, h.product_id, tagOf(h), h.link, String(p.orders), p.gmv.toFixed(2), p.commission.toFixed(2), p.last ?? ""]; }),
+    ...outF.map((o) => ["Outside Rezekii", "", o.product_name, o.product_id, outTag(o), "", String(o.orders), o.gmv.toFixed(2), o.commission.toFixed(2), o.last ?? ""]),
+  ]);
   const copy = async (link: string) => flash((await copyText(link)) ? "Link copied" : "Copy did not work. Select the link and copy it.", true);
 
   return (
@@ -322,16 +343,16 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 10 }}>
           <span style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, flex: "1 1 360px" }}>
             <h2 id="lktrackh" className="nv-h2">Link-share sales · {handle}</h2>
-            <span style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>Sales through the links you made here and shared outside TikTok, from TikTok&apos;s link-share orders. Kept apart from your Sales page. TikTok doesn&apos;t share link clicks.</span>
+            <span style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>Every link-share order on your TikTok account, from the links you made here and the links you made in the TikTok app. Kept apart from your Sales page. TikTok doesn&apos;t share link clicks.</span>
           </span>
         </div>
 
         <div className="lk-tiles">
           {([
-            ["Link-share GMV", rm(tot.g), "Since each link was made"],
-            ["Orders", n(tot.o), `${tot.sold} of ${shareLinks.length} links sold`],
+            ["Link-share GMV", rm(tot.g), "All your link-share orders"],
+            ["Orders", n(tot.o), `${n(counts?.mine ?? mine.o)} via Rezekii links · ${n(counts?.outside ?? other.o)} via other links`],
             ["Commission", rm(tot.c), "Before any agency share"],
-            ["Best channel", byTag[0]?.g ? byTag[0].tag : "–", byTag[0]?.g ? rm(byTag[0].g) : "No sales yet"],
+            ["Best channel", best ? best.tag : "–", best ? rm(best.g) : tot.o ? "No tagged sales yet" : "No sales yet"],
           ] as [string, string, string][]).map(([k, v, note]) => (
             <div key={k} className="lk-tile"><span className="nv-cap">{k}</span><b>{history === null ? "…" : v}</b><span>{note}</span></div>
           ))}
@@ -356,7 +377,12 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
           <span style={{ flex: "1 1 0" }} />
           <label htmlFor="lkq" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Search links</label>
           <input id="lkq" type="text" className="nv-input" placeholder="Search product or tag" value={hq} onChange={(e) => setHq(e.target.value)} style={{ width: 220, maxWidth: "100%", height: 38, fontSize: 13 }} />
-          <button type="button" className="nv-btn2 nv-press" onClick={exportHistory} disabled={!histF.length}>Export CSV</button>
+          <button type="button" className="nv-btn2 nv-press" onClick={exportHistory} disabled={!histF.length && !outF.length}>Export CSV</button>
+        </div>
+
+        <div className="lk-subh">
+          <h3>Links made in Rezekii</h3>
+          {history !== null && <span>{mine.sold} of {shareLinks.length} share {shareLinks.length === 1 ? "link" : "links"} sold</span>}
         </div>
 
         {history === null ? (
@@ -406,6 +432,43 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
         )}
         {history !== null && !histF.length && (
           <span style={{ padding: 24, textAlign: "center", color: "var(--muted)" }}>{q || soldOnly || pickTag ? "No links match these filters." : "No links yet. Convert a product link to start tracking its sales."}</span>
+        )}
+
+        {history !== null && outside.length > 0 && (
+          <>
+            <div className="lk-subh">
+              <h3>Links made outside Rezekii</h3>
+              <span>Link-share orders from links you made in the TikTok app. TikTok doesn&apos;t say which link, so they&apos;re added up by product.</span>
+            </div>
+            <div className="nv-scrollx">
+              <div role="table" aria-label="Link-share sales from links made outside Rezekii" style={{ minWidth: 860 }}>
+                <div role="row" className="nv-tr nv-trh lk-cols2">
+                  <span role="columnheader">Product</span><span role="columnheader">Tags</span>
+                  <span role="columnheader"><SortHead label="Orders" on={sort.k === "orders"} d={sort.d} go={() => flip("orders")} /></span>
+                  <span role="columnheader"><SortHead label="GMV" on={sort.k === "gmv"} d={sort.d} go={() => flip("gmv")} /></span>
+                  <span role="columnheader">Commission</span>
+                  <span role="columnheader"><SortHead label="Last sale" on={sort.k === "made"} d={sort.d} go={() => flip("made")} /></span>
+                </div>
+                {outF.map((o) => (
+                  <div key={`${o.product_id}|${o.tag ?? ""}`} role="row" className="nv-tr nv-trow lk-cols2">
+                    <span role="cell" style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                      <Thumb src={o.image} size={36} />
+                      <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                        <span style={{ fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{o.product_name ?? `Product ${o.product_id}`}</span>
+                        <span style={{ fontFamily: "ui-monospace, monospace", fontSize: 12, color: "var(--muted)" }}>Product ID {o.product_id}</span>
+                      </span>
+                    </span>
+                    <span role="cell"><span className={`nv-badge ${o.tag ? "b-green" : "b-gray"}`} style={{ maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>{outTag(o)}</span></span>
+                    <span role="cell" className={`lk-num ${o.orders ? "" : "lk-zero"}`}>{n(o.orders)}</span>
+                    <span role="cell" className={`lk-num ${o.orders ? "" : "lk-zero"}`}>{o.gmv ? rm(o.gmv) : "–"}</span>
+                    <span role="cell" className={`lk-num ${o.orders ? "" : "lk-zero"}`}>{o.commission ? rm(o.commission) : "–"}</span>
+                    <span role="cell" style={{ fontSize: 13, color: "var(--muted)", whiteSpace: "nowrap" }}>{o.lastWhen ?? "–"}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {!outF.length && <span style={{ padding: 24, textAlign: "center", color: "var(--muted)" }}>No products match these filters.</span>}
+          </>
         )}
       </section>
       <Hud toast={toast} />
