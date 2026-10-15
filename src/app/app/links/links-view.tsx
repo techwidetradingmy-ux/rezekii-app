@@ -214,7 +214,7 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
   const key = (h: HistoryRow) => (sort.k === "orders" ? pf(h).orders : sort.k === "gmv" ? pf(h).gmv : Date.parse(h.made_at));
   const match = (name: string | null, tag: string, id: string) => (!q || `${name ?? ""} ${tag} ${id}`.toLowerCase().includes(q)) && (!pickTag || tag === pickTag);
   // Only links that sold in the chosen dates are listed; the rest wait in a folded list, and TAP showcase links aren't
-  // share links, so they're left out (owner, 16 Oct 2026).
+  // share links, so they're left out (owner, 15 Oct 2026).
   const linksF = shareLinks.filter((h) => match(h.product_name, tagOf(h), h.product_id));
   const soldF = linksF.filter((h) => pf(h).orders > 0).sort((a, b) => (sort.d === "d" ? key(b) - key(a) : key(a) - key(b)));
   const unsoldF = linksF.filter((h) => !pf(h).orders);

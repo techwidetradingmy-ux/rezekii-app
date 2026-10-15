@@ -34,7 +34,7 @@ const done = ({ ids, ...p }: Acc): LinkPerf => ({ ...p, orders: ids.size, gmv: r
  * link share is its own sales channel; nothing else is counted here or changed elsewhere). TikTok puts the link's tag on each
  * order, so an order belongs to the Rezekii link with the same product and tag, the newest one made before the order
  * (`byLink`). Every other link-share order came from a link made outside Rezekii; those are added up by product and tag
- * (`outside`, owner 16 Oct 2026), since TikTok doesn't say which link. Pure.
+ * (`outside`, owner 15 Oct 2026), since TikTok doesn't say which link. Pure.
  */
 export function attributeLinkSales(links: LinkRef[], lines: Line[]): { byLink: Record<string, LinkPerf>; outside: (LinkPerf & { product_id: string; tag: string | null })[]; counts: LinkShareCounts } {
   const groups = new Map<string, LinkRef[]>();
@@ -89,7 +89,7 @@ async function productImages(ids: string[]): Promise<Map<string, string>> {
 export const isTapLink = (link: string) => link.startsWith("https://affiliate.tiktok.com/");
 
 /**
- * The creator's link-share sales in a time frame (the Sales page's frames and words, Malaysia time; owner, 16 Oct 2026): by
+ * The creator's link-share sales in a time frame (the Sales page's frames and words, Malaysia time; owner, 15 Oct 2026): by
  * Rezekii share link (TAP links left out), and from links made outside Rezekii, newest first. Null for an unknown frame.
  */
 export async function linkShareReport(userId: string, links: LinkRef[], frame = "all", now = Date.now()): Promise<{ perf: Record<string, LinkPerf>; outside: OutsideSales[]; counts: LinkShareCounts; range: Range } | null> {

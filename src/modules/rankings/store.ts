@@ -150,7 +150,7 @@ export async function buildRankings(day: string): Promise<Built> {
   const bv = bestVideos([...byDay.values()], details, videos["30D"]);
 
   // Profiles are kept only for creators the Rankings views can show: those in a saved creators list from the last 60 days
-  // (owner, 16 Oct 2026). Keeping every profile read for the level pass (12,258 on 15 Oct, 7.7 MB) made this row too large
+  // (owner, 15 Oct 2026). Keeping every profile read for the level pass (12,258 on 15 Oct, 7.7 MB) made this row too large
   // to read in time; the creator panel reads anyone else's profile on its own (creatorDetail).
   const listed = await listedCreators(day);
   for (const s of SLOTS) for (const r of creators[s]) listed.add(r[1]);
