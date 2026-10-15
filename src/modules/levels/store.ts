@@ -94,14 +94,17 @@ export type LevelPage = {
 /** Everything the Levels page shows for one creator, as of today (Malaysia time). */
 export async function levelPage(userId: string, username: string | null): Promise<LevelPage> {
   const today = mytDay(Date.now());
-  const [row] = (await (await supabaseRest(`creator_levels?user_id=eq.${userId}&select=*&limit=1`)).json()) as LevelRow[];
-  const days = username ? await dailyRows(username.toLowerCase(), today) : [];
+  // The level, the daily totals and where the sales come from are read at the same time.
+  const [[row], days, fromOrders] = await Promise.all([
+    supabaseRest(`creator_levels?user_id=eq.${userId}&select=*&limit=1`).then((r) => r.json() as Promise<LevelRow[]>),
+    username ? dailyRows(username.toLowerCase(), today) : Promise.resolve([] as DailyRow[]),
+    linkedCreators().then(async (l) => (await salesSource(userId, new Set(l))) === "orders"),
+  ]);
   const last = days.at(-1);
   const month = today.slice(0, 7);
   const prev = previousMonth(today);
   const before = [...days].filter((d) => d.day < `${month}-01`).at(-1) ?? days.find((d) => d.day.startsWith(month));
   // TAP sales from the creator's own orders when Rezekii reads them (the full history); otherwise from TikTok's TAP data.
-  const fromOrders = (await salesSource(userId, new Set(await linkedCreators()))) === "orders";
   const [lifetime, thisMonth, lastMonth] = fromOrders
     ? await Promise.all([tapSales(userId, "2000-01-01T00:00:00Z", new Date().toISOString()), tapSales(userId, monthStart(month), new Date().toISOString()), tapSales(userId, monthStart(prev), monthStart(month))])
     : [last?.paid ?? 0, last && before ? monthSales(days, month) ?? 0 : null, monthSales(days, prev)];

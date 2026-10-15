@@ -23,8 +23,11 @@ const count = async (path: string) => {
 };
 const day = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kuala_Lumpur" });
 
-/** What Account shows: sign-in methods, the TikTok posting connection, the TikTok Shop link and this week's numbers. */
-export async function accountOverview(user: AppUser): Promise<AccountOverview> {
+/**
+ * What Account shows: sign-in methods, the TikTok posting connection, the TikTok Shop link and this week's numbers.
+ * `tapRows`: the creator's My TAP rows when the caller already reads them (the Account page).
+ */
+export async function accountOverview(user: AppUser, tapRows?: ReturnType<typeof myTapRows>): Promise<AccountOverview> {
   const weekAgo = new Date(Date.now() - 7 * 86400_000).toISOString();
   const [[row], hasPassword, [conn], shop, links, tap] = await Promise.all([
     supabaseRest(`app_users?id=eq.${user.id}&select=google_sub,created_at`).then((r) => r.json() as Promise<{ google_sub: string | null; created_at: string }[]>),
@@ -35,7 +38,7 @@ export async function accountOverview(user: AppUser): Promise<AccountOverview> {
       supabaseRest(`affiliate_connections?user_id=eq.${user.id}&select=username&limit=1`).then((r) => r.json() as Promise<{ username: string }[]>),
     ]),
     count(`tap_links?user_id=eq.${user.id}&made_at=gte.${weekAgo}&select=id`),
-    myTapRows(user.id, user.tiktok_username),
+    tapRows ?? myTapRows(user.id, user.tiktok_username),
   ]);
   const signIn = [
     ...(user.tiktok_open_id ? [`TikTok${user.tiktok_username ? ` · @${user.tiktok_username}` : ""}`] : []),
