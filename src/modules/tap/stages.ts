@@ -14,20 +14,32 @@ export function sampleStage(status: string): number {
   return 0;
 }
 
-/** Label, background and text colour for each stage. */
+/** Label, background and text colour for each stage, in TikTok's own sample status words (owner, 15 Oct 2026). */
 export const SAMPLE_LOOK: Record<string, [string, string, string]> = {
-  "4": ["Content posted", "var(--gsoft)", "var(--gink)"],
-  "3": ["Delivered · waiting for your post", "var(--asoft)", "var(--amber)"],
-  "2": ["Sample on the way", "var(--bsoft)", "var(--blue)"],
-  "1": ["Sample requested", "var(--bsoft)", "var(--blue)"],
-  "-1": ["Sample cancelled", "var(--surface2)", "var(--muted)"],
-  "0": ["Selling, no sample", "var(--surface2)", "var(--muted)"],
+  "4": ["Completed", "var(--gsoft)", "var(--gink)"],
+  "3": ["Content pending", "var(--asoft)", "var(--amber)"],
+  "2": ["Shipped", "var(--bsoft)", "var(--blue)"],
+  "1": ["Pending", "var(--asoft)", "var(--amber)"],
+  "-1": ["Cancelled", "var(--surface2)", "var(--muted)"],
+  "0": ["No sample", "var(--surface2)", "var(--muted)"],
 };
 export const sampleLook = (stage: number) => SAMPLE_LOOK[String(stage)];
-/** Stage 1 in TikTok's own words: still with the seller, or approved and not shipped yet (owner, 14 Oct 2026). */
+const CANCELLED = "var(--surface2)", MUTED = "var(--muted)";
+/** Each of TikTok's sample statuses, as TikTok names it (owner, 15 Oct 2026: follow TikTok's exact sample status). */
 const STATUS_LOOK: Record<string, [string, string, string]> = {
-  PENDING: ["Awaiting sample approval", "var(--asoft)", "var(--amber)"],
-  AWAITING_SHIPMENT: ["Approved · waiting to ship", "var(--bsoft)", "var(--blue)"],
+  PENDING: ["Pending", "var(--asoft)", "var(--amber)"],
+  AWAITING_SHIPMENT: ["Awaiting shipment", "var(--bsoft)", "var(--blue)"],
+  AWAITING_COLLECTION: ["Awaiting collection", "var(--bsoft)", "var(--blue)"],
+  SHIPPED: ["Shipped", "var(--bsoft)", "var(--blue)"],
+  CONTENT_PENDING: ["Content pending", "var(--asoft)", "var(--amber)"],
+  COMPLETED: ["Completed", "var(--gsoft)", "var(--gink)"],
+  REJECT_CANCELLED: ["Cancelled · rejected", CANCELLED, MUTED],
+  OVERDUE_CANCELLED: ["Cancelled · overdue", CANCELLED, MUTED],
+  UNFULFILL_CANCELLED: ["Cancelled · unfulfilled", CANCELLED, MUTED],
+  UN_FULFIL_CANCELLED: ["Cancelled · unfulfilled", CANCELLED, MUTED],
+  UNFULFILLABLE_CANCELLED: ["Cancelled · unfulfillable", CANCELLED, MUTED],
+  SELLER_NOT_SHIP_CANCELLED: ["Cancelled · seller didn't ship", CANCELLED, MUTED],
+  WITHDRAW_CANCELLED: ["Cancelled · withdrawn", CANCELLED, MUTED],
 };
 /** Pill for one of TikTok's sample statuses ("Pending", "AWAITING_SHIPMENT", ...). */
 export const statusLook = (status: string | null | undefined) => STATUS_LOOK[normalizeStatus(status)] ?? sampleLook(sampleStage(status ?? ""));
@@ -56,7 +68,7 @@ export const rowLook = (r: Pick<MyTapRow, "stage" | "request" | "status">): [str
     : r.request && !r.request.tiktok && r.stage !== -1 ? ["Not submitted in TikTok yet", "var(--asoft)", "var(--amber)"]
     : r.request?.tiktok || r.status ? statusLook(r.request?.tiktok ?? r.status) : sampleLook(r.stage);
 
-/** A requested sample still with the seller (TikTok's "Pending"), not yet approved (owner, 14 Oct 2026: it isn't on the way). */
+/** A requested sample still with the seller (TikTok's "Pending"), not yet approved. */
 export const awaitingApproval = (r: Pick<MyTapRow, "stage" | "request" | "status">) => r.stage === 1 && normalizeStatus(r.request?.tiktok ?? r.status) !== "AWAITING_SHIPMENT";
 /** Approved by the seller, not shipped yet. */
 export const approvedToShip = (r: Pick<MyTapRow, "stage" | "request" | "status">) => r.stage === 1 && normalizeStatus(r.request?.tiktok ?? r.status) === "AWAITING_SHIPMENT";

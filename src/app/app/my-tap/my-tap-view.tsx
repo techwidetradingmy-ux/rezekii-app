@@ -11,12 +11,12 @@ import "./my-tap.css";
 
 const TABS: [string, (r: MyTapRow) => boolean][] = [
   ["All", () => true],
-  ["Awaiting approval", awaitingApproval],
-  ["Approved · to ship", approvedToShip],
-  ["On the way", (r) => r.stage === 2],
-  ["To post", (r) => r.stage === 3],
-  ["Posted", (r) => r.stage === 4],
-  ["Selling, no sample", (r) => r.stage === 0 && !r.request],
+  ["Pending", awaitingApproval],
+  ["Awaiting shipment", approvedToShip],
+  ["Shipped", (r) => r.stage === 2],
+  ["Content pending", (r) => r.stage === 3],
+  ["Completed", (r) => r.stage === 4],
+  ["Cancelled", (r) => r.stage === -1],
 ];
 /** TikTok's tracking events, in words (as in the mockup). */
 const EVN: Record<string, string> = {
@@ -97,7 +97,9 @@ export function MyTapView({ rows, hasTikTok }: { rows: MyTapRow[]; hasTikTok: bo
   });
 
   const term = q.trim().toLowerCase();
-  const list = rows.filter(TABS[tab][1]).filter((r) => !term || `${r.name} ${r.shop}`.toLowerCase().includes(term)).sort((a, b) => pri(a) - pri(b) || b.paid - a.paid);
+  // Only samples are listed (owner, 15 Oct 2026): products sold without a sample stay out of the list.
+  const samples = rows.filter((r) => r.stage !== 0 || r.request);
+  const list = samples.filter(TABS[tab][1]).filter((r) => !term || `${r.name} ${r.shop}`.toLowerCase().includes(term)).sort((a, b) => pri(a) - pri(b) || b.paid - a.paid);
   const shown = list.slice(0, pg * 15);
   const videos = rows.reduce((a, r) => a + r.videos, 0);
   const lives = rows.reduce((a, r) => a + r.lives, 0);
@@ -105,7 +107,7 @@ export function MyTapView({ rows, hasTikTok }: { rows: MyTapRow[]; hasTikTok: bo
   const sums: [string, string, string][] = [
     ["Products promoting", n(rows.length), "From Rezekii TAP campaigns"],
     ["Sales", rmx(rows.reduce((a, r) => a + r.paid, 0)), "What buyers paid through your links"],
-    ["Samples", n(rows.filter((r) => r.stage > 0).length), ([[rows.filter(awaitingApproval).length, "awaiting approval"], [rows.filter(approvedToShip).length, "to ship"], [rows.filter((r) => r.stage === 2).length, "on the way"], [due, "to post"]] as [number, string][]).filter(([v]) => v > 0).map(([v, w]) => `${v} ${w}`).join(" · ") || "None requested yet"],
+    ["Samples", n(rows.filter((r) => r.stage > 0).length), ([[rows.filter(awaitingApproval).length, "pending"], [rows.filter(approvedToShip).length, "awaiting shipment"], [rows.filter((r) => r.stage === 2).length, "shipped"], [due, "content pending"], [rows.filter((r) => r.stage === 4).length, "completed"]] as [number, string][]).filter(([v]) => v > 0).map(([v, w]) => `${v} ${w}`).join(" · ") || "None requested yet"],
     ["Content posted", n(videos + lives), `${videos.toLocaleString("en-US")} videos · ${lives.toLocaleString("en-US")} LIVEs`],
   ];
   const d = panel && detail?.key === panel.key ? detail : null;
@@ -126,16 +128,16 @@ export function MyTapView({ rows, hasTikTok }: { rows: MyTapRow[]; hasTikTok: bo
       {due > 0 && (
         <div className="mt-alert" role="status">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true" style={{ flexShrink: 0 }}><path d="M12 8v5M12 16h.01" /><circle cx="12" cy="12" r="9" /></svg>
-          <span>{`${due} ${due === 1 ? "sample is" : "samples are"} waiting for your post. TikTok marks each one completed once you post.`}</span>
+          <span>{`${due} ${due === 1 ? "sample is" : "samples are"} Content pending: waiting for your post. TikTok marks each one Completed once you post.`}</span>
         </div>
       )}
 
       <section className="nv-card" aria-label="Your TAP products" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
         <div className="fb-row">
           <div className="nv-noscroll" role="group" aria-label="Status" style={{ display: "flex", gap: 8, overflowX: "auto" }}>
-            {TABS.map(([label, fn], i) => (i > 0 && tab !== i && !rows.some(fn) ? null :
+            {TABS.map(([label, fn], i) => (i > 0 && tab !== i && !samples.some(fn) ? null :
               <button key={label} type="button" className={`nv-chip nv-press ${tab === i ? "on" : ""}`} aria-pressed={tab === i} onClick={() => { setTab(i); setPg(1); }}>
-                {label} <span style={{ opacity: 0.7 }}>{rows.filter(fn).length}</span>
+                {label} <span style={{ opacity: 0.7 }}>{samples.filter(fn).length}</span>
               </button>
             ))}
           </div>
@@ -154,7 +156,7 @@ export function MyTapView({ rows, hasTikTok }: { rows: MyTapRow[]; hasTikTok: bo
           {shown.map((r, i) => {
             const [status, bg, fg] = rowLook(r);
             const requested = r.request ? dt(isoUnix(r.request.createdAt)) : "Done";
-            const steps: [string, string][] = [["Requested", r.stage >= 1 ? requested : ""], ["Shipped", r.stage >= 2 ? "Done" : ""], ["Delivered", r.stage >= 3 ? "Done" : ""], ["Posted", r.stage >= 4 ? "Done" : ""]];
+            const steps: [string, string][] = [["Pending", r.stage >= 1 ? requested : ""], ["Shipped", r.stage >= 2 ? "Done" : ""], ["Content pending", r.stage >= 3 ? "Done" : ""], ["Completed", r.stage >= 4 ? "Done" : ""]];
             return (
               <button key={r.key} type="button" className="mt-card" onClick={() => openPanel(r)} aria-label={`Details for ${r.name}`} style={{ animationDelay: `${Math.min(i, 10) * 40}ms` }}>
                 <Thumb r={r} />

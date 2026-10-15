@@ -127,7 +127,7 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
         ["Top product", s.products[0]?.name ?? "No sales yet", s.products[0] ? `${rm0(s.products[0].gmv)} GMV · ${s.products[0].orders} ${s.products[0].orders === 1 ? "order" : "orders"}` : "Your best seller shows here", "var(--muted)"],
       ]
     : [];
-  const sampleCounts: [string, number, number][] = [["Requested", d.samples.requested, 1], ["On the way", d.samples.shipping, 2], ["To post", d.samples.toPost, 3], ["Posted", d.samples.posted, 4]];
+  const sampleCounts: [string, number, number][] = [["Pending", d.samples.requested, 1], ["Shipped", d.samples.shipping, 2], ["Content pending", d.samples.toPost, 3], ["Completed", d.samples.posted, 4]];
 
   return (
     <>

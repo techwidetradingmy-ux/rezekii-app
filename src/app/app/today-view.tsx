@@ -34,7 +34,7 @@ const QUICK: [string, string, string, keyof typeof IC, string, string][] = [
 const STAT_LOOK: Record<TodayStat["key"], [string, string, keyof typeof IC, string, string]> = {
   links: ["Links made this week", "/app/links", "link", "#d9f6fd", "#0e7490"],
   showcase: ["Products in showcase", "/app/marketplace", "cart", "#fff4c2", "#8a6100"],
-  samples: ["Samples on the way", "/app/my-tap", "box", "#ffe4ea", "#c21f45"],
+  samples: ["Samples in progress", "/app/my-tap", "box", "#ffe4ea", "#c21f45"],
   open: ["TAP products open", "/app/marketplace", "store", "#e1f8eb", "#007a4b"],
 };
 

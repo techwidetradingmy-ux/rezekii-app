@@ -110,7 +110,7 @@ export async function todayData(user: { id: string; tiktok_username: string | nu
       showcase
         ? { key: "showcase", value: showcase.count, delta: "", note: `${showcase.tap} from TAP campaigns${showcase.more ? " · first 200" : ""}` }
         : { key: "showcase", value: onTikTok.length, delta: "", note: "from Techwide TAP campaigns" },
-      { key: "samples", value: samples.length, delta: "", note: `${samples.filter((r) => r.stage === 1).length} requested · ${samples.filter((r) => r.stage === 3).length} to post` },
+      { key: "samples", value: samples.length, delta: "", note: `${samples.filter((r) => r.stage === 1).length} pending · ${samples.filter((r) => r.stage === 3).length} content pending` },
       { key: "open", value: all.length, delta: fresh ? `+${fresh}` : "", note: fresh === null ? "in Techwide's live campaigns" : "new this week" },
     ],
     picks,

@@ -6,19 +6,19 @@ import { sampleStage } from "@/modules/tap/stages.ts";
 
 const when = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { timeZone: "Asia/Kuala_Lumpur", day: "numeric", month: "short", year: "numeric" });
 
-/** TikTok's sample statuses in words, with the badge colour. */
+/** TikTok's sample statuses as TikTok names them (owner, 15 Oct 2026), with the badge colour. */
 const TIKTOK: Record<string, [string, string]> = {
-  PENDING: ["Awaiting sample approval", "badge-amber"],
-  AWAITING_SHIPMENT: ["Approved · waiting to ship", "badge"],
+  PENDING: ["Pending", "badge-amber"],
+  AWAITING_SHIPMENT: ["Awaiting shipment", "badge"],
   SHIPPED: ["Shipped", "badge"],
-  CONTENT_PENDING: ["Delivered · content due", "badge-amber"],
-  COMPLETED: ["Content posted", "badge"],
-  REJECT_CANCELLED: ["Rejected", "badge-red"],
-  OVERDUE_CANCELLED: ["Cancelled · content overdue", "badge-gray"],
-  WITHDRAW_CANCELLED: ["Withdrawn by the creator", "badge-gray"],
+  CONTENT_PENDING: ["Content pending", "badge-amber"],
+  COMPLETED: ["Completed", "badge"],
+  REJECT_CANCELLED: ["Cancelled · rejected", "badge-red"],
+  OVERDUE_CANCELLED: ["Cancelled · overdue", "badge-gray"],
+  WITHDRAW_CANCELLED: ["Cancelled · withdrawn", "badge-gray"],
   SELLER_NOT_SHIP_CANCELLED: ["Cancelled · seller didn't ship", "badge-gray"],
-  UNFULFILL_CANCELLED: ["Cancelled · couldn't be fulfilled", "badge-gray"],
-  UNFULFILLABLE_CANCELLED: ["Cancelled · couldn't be fulfilled", "badge-gray"],
+  UNFULFILL_CANCELLED: ["Cancelled · unfulfilled", "badge-gray"],
+  UNFULFILLABLE_CANCELLED: ["Cancelled · unfulfillable", "badge-gray"],
 };
 const look = (r: AdminSample): [string, string] =>
   r.tiktok ? TIKTOK[r.tiktok.status] ?? [r.tiktok.status.replace(/_/g, " ").toLowerCase(), "badge-gray"] : r.checked ? ["Not submitted in TikTok", "badge-gray"] : ["TikTok Shop not readable", "badge-gray"];
