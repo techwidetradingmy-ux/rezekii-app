@@ -95,6 +95,16 @@ export async function profilesWaiting(): Promise<boolean> {
   return ((await res.json()) as unknown[]).length > 0;
 }
 
+/**
+ * Whether any Creator Marketplace search (the monthly level pass included) is still to run, on any day. Each page it reads can
+ * add creators without a profile, so the profile task stays open until the searches are done (15 Oct 2026: it closed for the
+ * day, the next page found 79 new creators, and the level pass then waited on them with nothing left to read them).
+ */
+export async function marketplaceOpen(): Promise<boolean> {
+  const res = await supabaseRest("refresh_tasks?kind=eq.marketplace&status=in.(pending,running)&select=key&limit=1");
+  return ((await res.json()) as unknown[]).length > 0;
+}
+
 /** How old a profile may get before it is read again, so a WhatsApp number or email added to a bio later is picked up. */
 export const DETAIL_REFRESH_DAYS = 30;
 

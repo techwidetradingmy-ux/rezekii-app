@@ -12,7 +12,7 @@ import { getBestselling, getMarketplaceCreator, searchMarketplaceCreators, type 
 import { TT_LEVELS, bestSlot, mytDay, type PlannedTask } from "./plan.ts";
 import { TAG_START, tagFilters, tagNext, tagTask, type TagState } from "../accounts/tags.ts";
 import type { Sessions } from "./sessions.ts";
-import { catalogSales, creatorsNeedingDetail, linkedUsername, upsertCreatorProducts, openTaskCount, rebuildTapCatalog, saveDetail, saveSnapshot, saveTags, snapshotItems, tagsDue, upsertCreators, type TaskRow } from "./store.ts";
+import { catalogSales, creatorsNeedingDetail, linkedUsername, marketplaceOpen, openTaskCount, rebuildTapCatalog, saveDetail, saveSnapshot, saveTags, snapshotItems, tagsDue, type TaskRow, upsertCreatorProducts, upsertCreators } from "./store.ts";
 
 /** TikTok's "too many requests" code, shared by the app's whole API group. */
 export const RATE_LIMITED = 36009002;
@@ -231,7 +231,8 @@ async function details(t: TaskRow, { sessions, deadline }: Ctx): Promise<StepRes
   if (t.result_count >= DETAILS_PER_DAY) return { count: 0 };
   const s = await sessions.seller();
   const todo = await creatorsNeedingDetail(Math.min(60, DETAILS_PER_DAY - t.result_count));
-  if (!todo.length) return { count: 0 };
+  // Nothing to read now: while marketplace searches still run, check again in a minute for the creators they add.
+  if (!todo.length) return (await marketplaceOpen()) ? { count: 0, more: true, waitMs: 60_000 } : { count: 0 };
   let count = 0;
   for (const c of todo) {
     if (Date.now() > deadline) break;
