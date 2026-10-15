@@ -131,7 +131,7 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
   const [today, setToday] = useState("");
   const [busy, setBusy] = useState(false);
   const [hq, setHq] = useState("");
-  const [soldOnly, setSoldOnly] = useState(false);
+  const [showUnsold, setShowUnsold] = useState(false);
   const [pickTag, setPickTag] = useState<string | null>(null);
   const [sort, setSort] = useState<{ k: SortKey; d: "a" | "d" }>({ k: "made", d: "d" });
 
@@ -208,24 +208,36 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
   const byTag = Object.values([...shareLinks.map((h) => [tagOf(h), pf(h)] as const), ...outside.map((o) => [outTag(o), o] as const)].reduce<Record<string, { tag: string; o: number; g: number }>>((a, [t, p]) => {
     a[t] ??= { tag: t, o: 0, g: 0 }; a[t].o += p.orders; a[t].g += p.gmv;
     return a;
-  }, {})).map((t) => ({ ...t, o: counts?.byTag[t.tag] ?? t.o })).sort((x, y) => y.g - x.g || y.o - x.o);
+  }, {})).map((t) => ({ ...t, o: counts?.byTag[t.tag] ?? t.o })).filter((t) => t.o > 0).sort((x, y) => y.g - x.g || y.o - x.o);
   const topTag = Math.max(1, ...byTag.map((t) => t.g));
   const best = byTag.find((t) => t.g > 0 && t.tag !== "no tag");
   const key = (h: HistoryRow) => (sort.k === "orders" ? pf(h).orders : sort.k === "gmv" ? pf(h).gmv : Date.parse(h.made_at));
-  const histF = (history ?? [])
-    .filter((h) => (!q || `${h.product_name ?? ""} ${tagOf(h)} ${h.product_id}`.toLowerCase().includes(q)) && (!soldOnly || pf(h).orders > 0) && (!pickTag || tagOf(h) === pickTag))
-    .sort((a, b) => (sort.d === "d" ? key(b) - key(a) : key(a) - key(b)));
+  const match = (name: string | null, tag: string, id: string) => (!q || `${name ?? ""} ${tag} ${id}`.toLowerCase().includes(q)) && (!pickTag || tag === pickTag);
+  // Only links that sold in the chosen dates are listed; the rest wait in a folded list, and TAP showcase links aren't
+  // share links, so they're left out (owner, 16 Oct 2026).
+  const linksF = shareLinks.filter((h) => match(h.product_name, tagOf(h), h.product_id));
+  const soldF = linksF.filter((h) => pf(h).orders > 0).sort((a, b) => (sort.d === "d" ? key(b) - key(a) : key(a) - key(b)));
+  const unsoldF = linksF.filter((h) => !pf(h).orders);
   const okey = (o: Outside) => (sort.k === "orders" ? o.orders : sort.k === "gmv" ? o.gmv : Date.parse(o.last ?? "") || 0);
   const outF = outside
-    .filter((o) => (!q || `${o.product_name ?? ""} ${outTag(o)} ${o.product_id}`.toLowerCase().includes(q)) && (!soldOnly || o.orders > 0) && (!pickTag || outTag(o) === pickTag))
+    .filter((o) => o.orders > 0 && match(o.product_name, outTag(o), o.product_id))
     .sort((a, b) => (sort.d === "d" ? okey(b) - okey(a) : okey(a) - okey(b)));
   const flip = (k: SortKey) => setSort((x) => ({ k, d: x.k === k && x.d === "d" ? "a" : "d" }));
   const exportHistory = () => downloadCsv("rezekii-link-sales.csv", [
     ["Link made", "Made", "Product", "Product ID", "Tags", "Link", "Orders", "GMV (RM)", "Commission (RM)", "Last sale"],
-    ...histF.map((h) => { const p = pf(h); return ["In Rezekii", h.made_at, h.product_name, h.product_id, tagOf(h), h.link, String(p.orders), p.gmv.toFixed(2), p.commission.toFixed(2), p.last ?? ""]; }),
-    ...outF.map((o) => ["Outside Rezekii", "", o.product_name, o.product_id, outTag(o), "", String(o.orders), o.gmv.toFixed(2), o.commission.toFixed(2), o.last ?? ""]),
+    ...[...soldF, ...unsoldF].map((h) => { const p = pf(h); return ["Converted in Rezekii", h.made_at, h.product_name, h.product_id, tagOf(h), h.link, String(p.orders), p.gmv.toFixed(2), p.commission.toFixed(2), p.last ?? ""]; }),
+    ...outF.map((o) => ["From TikTok Shop", "", o.product_name, o.product_id, outTag(o), "", String(o.orders), o.gmv.toFixed(2), o.commission.toFixed(2), o.last ?? ""]),
   ]);
   const copy = async (link: string) => flash((await copyText(link)) ? "Link copied" : "Copy did not work. Select the link and copy it.", true);
+  const linkCell = (h: HistoryRow) => (
+    <span role="cell" style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+      <Thumb src={h.image} size={36} />
+      <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+        <span style={{ fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{h.product_name ?? `Product ${h.product_id}`}</span>
+        <span title={h.link} style={{ fontFamily: "ui-monospace, monospace", fontSize: 12, color: "var(--muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{h.link}</span>
+      </span>
+    </span>
+  );
 
   return (
     <>
@@ -358,7 +370,7 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 10 }}>
           <span style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, flex: "1 1 360px" }}>
             <h2 id="lktrackh" className="nv-h2">Link-share sales · {handle}</h2>
-            <span style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>Every link-share order on your TikTok account, from the links you made here and the links you made in the TikTok app. Kept apart from your Sales page. TikTok doesn&apos;t share link clicks.</span>
+            <span style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>Every link-share order on your TikTok account, from Links Converted in Rezekii and Links From TikTok Shop. Kept apart from your Sales page. TikTok doesn&apos;t share link clicks.</span>
           </span>
           {range && today && (
             <CalendarPicker
@@ -381,7 +393,7 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
         <div className="lk-tiles">
           {([
             [`Link-share GMV · ${range?.label ?? "All time"}`, rm(tot.g), range?.dates ?? "All your link-share orders"],
-            ["Orders", n(tot.o), `${n(counts?.mine ?? mine.o)} via Rezekii links · ${n(counts?.outside ?? other.o)} via other links`],
+            ["Orders", n(tot.o), `${n(counts?.mine ?? mine.o)} converted in Rezekii · ${n(counts?.outside ?? other.o)} from TikTok Shop`],
             ["Commission", rm(tot.c), "Before any agency share"],
             ["Best channel", best ? best.tag : "–", best ? rm(best.g) : tot.o ? "No tagged sales yet" : "No sales yet"],
           ] as [string, string, string][]).map(([k, v, note]) => (
@@ -403,26 +415,25 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
         )}
 
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-          <button type="button" className={`nv-chip nv-press ${soldOnly ? "on" : ""}`} aria-pressed={soldOnly} onClick={() => setSoldOnly(!soldOnly)}>With sales only</button>
           {pickTag && <button type="button" className="nv-chip nv-press on" onClick={() => setPickTag(null)} aria-label={`Remove the ${pickTag} filter`}>Tag: {pickTag} ✕</button>}
           <span style={{ flex: "1 1 0" }} />
           <label htmlFor="lkq" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Search links</label>
           <input id="lkq" type="text" className="nv-input" placeholder="Search product or tag" value={hq} onChange={(e) => setHq(e.target.value)} style={{ width: 220, maxWidth: "100%", height: 38, fontSize: 13 }} />
-          <button type="button" className="nv-btn2 nv-press" onClick={exportHistory} disabled={!histF.length && !outF.length}>Export CSV</button>
+          <button type="button" className="nv-btn2 nv-press" onClick={exportHistory} disabled={!soldF.length && !unsoldF.length && !outF.length}>Export CSV</button>
         </div>
 
         <div className="lk-subh">
-          <h3>Links made in Rezekii</h3>
-          {history !== null && <span>{mine.sold} of {shareLinks.length} share {shareLinks.length === 1 ? "link" : "links"} sold</span>}
+          <h3>Links Converted in Rezekii</h3>
+          {history !== null && <span>{mine.sold} of {shareLinks.length} {shareLinks.length === 1 ? "link" : "links"} sold · {range?.label ?? "All time"}</span>}
         </div>
 
         {history === null ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {[0, 1, 2].map((i) => <span key={i} className="nv-skel" style={{ height: 44 }} />)}
           </div>
-        ) : (
+        ) : soldF.length > 0 && (
           <div className="nv-scrollx">
-            <div role="table" aria-label="Your links and their link-share sales" style={{ minWidth: 980 }}>
+            <div role="table" aria-label="Your links that sold, and their link-share sales" style={{ minWidth: 980 }}>
               <div role="row" className="nv-tr nv-trh lk-cols">
                 {([["made", "Made"]] as [SortKey, string][]).map(([k, label]) => <span key={k} role="columnheader"><SortHead label={label} on={sort.k === k} d={sort.d} go={() => flip(k)} /></span>)}
                 <span role="columnheader">Product</span><span role="columnheader">Tags</span>
@@ -430,30 +441,17 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
                 <span role="columnheader"><SortHead label="GMV" on={sort.k === "gmv"} d={sort.d} go={() => flip("gmv")} /></span>
                 <span role="columnheader">Commission</span><span role="columnheader">Last sale</span><span role="columnheader" />
               </div>
-              {histF.map((h, i) => {
+              {soldF.map((h, i) => {
                 const p = pf(h);
-                const tap = isTap(h.link);
                 return (
                   <div key={i} role="row" className="nv-tr nv-trow lk-cols">
                     <span role="cell" style={{ whiteSpace: "nowrap", color: "var(--muted)" }}>{h.when}</span>
-                    <span role="cell" style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                      <Thumb src={h.image} size={36} />
-                      <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-                        <span style={{ fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{h.product_name ?? `Product ${h.product_id}`}</span>
-                        <span title={h.link} style={{ fontFamily: "ui-monospace, monospace", fontSize: 12, color: "var(--muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{h.link}</span>
-                      </span>
-                    </span>
-                    <span role="cell"><span className={`nv-badge ${tap ? "b-gray" : "b-green"}`} style={{ maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>{tagOf(h)}</span></span>
-                    {tap ? (
-                      <span role="cell" style={{ gridColumn: "span 4", fontSize: 13, color: "var(--muted)" }}>Adds the product to your showcase · not a share link</span>
-                    ) : (
-                      <>
-                        <span role="cell" className={`lk-num ${p.orders ? "" : "lk-zero"}`}>{n(p.orders)}</span>
-                        <span role="cell" className={`lk-num ${p.orders ? "" : "lk-zero"}`}>{p.gmv ? rm(p.gmv) : "–"}</span>
-                        <span role="cell" className={`lk-num ${p.orders ? "" : "lk-zero"}`}>{p.commission ? rm(p.commission) : "–"}</span>
-                        <span role="cell" style={{ fontSize: 13, color: "var(--muted)", whiteSpace: "nowrap" }}>{p.lastWhen ?? "–"}</span>
-                      </>
-                    )}
+                    {linkCell(h)}
+                    <span role="cell"><span className="nv-badge b-green" style={{ maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>{tagOf(h)}</span></span>
+                    <span role="cell" className="lk-num">{n(p.orders)}</span>
+                    <span role="cell" className="lk-num">{p.gmv ? rm(p.gmv) : "–"}</span>
+                    <span role="cell" className="lk-num">{p.commission ? rm(p.commission) : "–"}</span>
+                    <span role="cell" style={{ fontSize: 13, color: "var(--muted)", whiteSpace: "nowrap" }}>{p.lastWhen ?? "–"}</span>
                     <span role="cell" style={{ textAlign: "right" }}><button type="button" className="nv-btn2 nv-sm nv-press" onClick={() => copy(h.link)}>Copy</button></span>
                   </div>
                 );
@@ -461,18 +459,44 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
             </div>
           </div>
         )}
-        {history !== null && !histF.length && (
-          <span style={{ padding: 24, textAlign: "center", color: "var(--muted)" }}>{q || soldOnly || pickTag ? "No links match these filters." : "No links yet. Convert a product link to start tracking its sales."}</span>
+        {history !== null && !soldF.length && (
+          <span style={{ padding: 20, textAlign: "center", color: "var(--muted)" }}>
+            {!shareLinks.length ? "No share links yet. Convert a product link to start tracking its sales." : q || pickTag ? "No links that sold match these filters." : "None of the links made here sold in these dates."}
+          </span>
         )}
 
-        {history !== null && outside.length > 0 && (
+        {history !== null && unsoldF.length > 0 && (
+          <div className="lk-fold">
+            <button type="button" className="lk-foldbtn nv-press" aria-expanded={showUnsold} onClick={() => setShowUnsold(!showUnsold)}>
+              <span>Links with no sales {range?.key === "all" ? "yet" : "in these dates"} · {unsoldF.length}</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+            </button>
+            {showUnsold && (
+              <div className="nv-scrollx">
+                <div role="table" aria-label="Links made here with no sales in these dates" style={{ minWidth: 700 }}>
+                  <div role="row" className="nv-tr nv-trh lk-cols3"><span role="columnheader">Made</span><span role="columnheader">Product</span><span role="columnheader">Tags</span><span role="columnheader" /></div>
+                  {unsoldF.map((h, i) => (
+                    <div key={i} role="row" className="nv-tr nv-trow lk-cols3">
+                      <span role="cell" style={{ whiteSpace: "nowrap", color: "var(--muted)" }}>{h.when}</span>
+                      {linkCell(h)}
+                      <span role="cell"><span className="nv-badge b-gray" style={{ maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>{tagOf(h)}</span></span>
+                      <span role="cell" style={{ textAlign: "right" }}><button type="button" className="nv-btn2 nv-sm nv-press" onClick={() => copy(h.link)}>Copy</button></span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {history !== null && outside.some((o) => o.orders > 0) && (
           <>
             <div className="lk-subh">
-              <h3>Links made outside Rezekii</h3>
-              <span>Link-share orders from links you made in the TikTok app. TikTok doesn&apos;t say which link, so they&apos;re added up by product.</span>
+              <h3>Links From TikTok Shop</h3>
+              <span>Link-share orders from links made in TikTok Shop. TikTok doesn&apos;t say which link, so they&apos;re added up by product.</span>
             </div>
             <div className="nv-scrollx">
-              <div role="table" aria-label="Link-share sales from links made outside Rezekii" style={{ minWidth: 860 }}>
+              <div role="table" aria-label="Link-share sales from links made in TikTok Shop" style={{ minWidth: 860 }}>
                 <div role="row" className="nv-tr nv-trh lk-cols2">
                   <span role="columnheader">Product</span><span role="columnheader">Tags</span>
                   <span role="columnheader"><SortHead label="Orders" on={sort.k === "orders"} d={sort.d} go={() => flip("orders")} /></span>
