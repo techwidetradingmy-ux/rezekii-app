@@ -188,7 +188,7 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
                 <textarea id="lkpaste" className="nv-input" rows={5} value={paste} placeholder="https://shop.tiktok.com/view/product/…" onChange={(e) => { setPaste(e.target.value); setPhase("idle"); }} style={{ fontFamily: "ui-monospace, monospace", fontSize: 13 }} />
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <span className="nv-label">Tags · one link per tag, so you can see which platform sells</span>
+                <span className="nv-label">Tags · one link carries every tag you pick (e.g. {tags.length > 1 ? tags.join("-") : "threads-whatsapp"}), so you can see where it sold</span>
                 <div role="group" aria-label="Link tags" style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
                   {allTags.map((t) => {
                     const on = tags.includes(t);

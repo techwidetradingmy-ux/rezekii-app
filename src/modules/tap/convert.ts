@@ -4,10 +4,15 @@ import { getProduct, tapProductsWithDescription, type TapProduct } from "./catal
 import { logLinks, makeTapLink } from "./links.ts";
 
 /**
- * One result row. "aff" = the creator's own TikTok Shop affiliate link (one per tag), "tap" = a Techwide TAP link,
+ * One result row. "aff" = the creator's own TikTok Shop affiliate link, "tap" = a Techwide TAP link,
  * "shop" = needs the creator's TikTok Shop link, "bad" = not a product link, "error" = TikTok refused.
  */
 export type ConvertRow = { input: string; kind: "aff" | "tap" | "shop" | "bad" | "error"; productId: string | null; name: string | null; image: string | null; tag: string | null; link: string | null; note: string };
+
+/** The longest tag TikTok accepts on a link (tested 15 Oct 2026: 100 characters work, 255 fail). */
+export const TAG_MAX = 100;
+/** Several tags in one link, joined as "facebook-threads-whatsapp" (owner, 15 Oct 2026: TikTok allows one tag per link). */
+export const joinTags = (tags: string[]) => tags.join("-").slice(0, TAG_MAX).replace(/-+$/, "");
 
 /** Tags as TikTok takes them: lower-case letters, digits, _ and -, at most 20 characters, no repeats. */
 export function cleanTags(tags: unknown): string[] {
@@ -15,7 +20,7 @@ export function cleanTags(tags: unknown): string[] {
   return [...new Set(list.filter((t): t is string => typeof t === "string").map((t) => t.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 20)).filter(Boolean))].slice(0, 10);
 }
 
-/** Turns one pasted link into result rows. With a TikTok Shop link: one affiliate link per tag. Without: TAP products only. */
+/** Turns one pasted link into result rows. With a TikTok Shop link: one affiliate link carrying all the tags. Without: TAP products only. */
 export async function convertLink(user: { id: string }, token: string | null, input: string, tags: string[]): Promise<ConvertRow[]> {
   const base = { input, productId: null, name: null, image: null, tag: null, link: null };
   const id = await resolveProductId(input);
@@ -27,7 +32,7 @@ export async function convertLink(user: { id: string }, token: string | null, in
     const image = tap?.image ?? facts?.main_image_url ?? null;
     const made: ConvertRow[] = [];
     if (tags.length) {
-      const r = await generateTaggedLinks(token, id, tags);
+      const r = await generateTaggedLinks(token, id, [joinTags(tags)]);
       for (const l of r.data?.affiliate_sharing_links ?? []) made.push({ ...base, kind: "aff", productId: id, name, image, tag: l.tag, link: l.affiliate_sharing_link, note: "" });
       // TikTok also sends an empty error entry for every link that worked.
       for (const e of r.data?.errors ?? []) if (e.detail?.fail_reason || e.message) made.push({ ...base, kind: "error", productId: id, name, image, tag: e.detail?.tag ?? null, note: e.detail?.fail_reason || e.message });
