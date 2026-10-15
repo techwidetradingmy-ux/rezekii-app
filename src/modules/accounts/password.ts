@@ -33,6 +33,19 @@ export function cleanEmail(email: unknown): string | null {
   return e.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e) ? e : null;
 }
 
+/**
+ * Why an account can't add (or change) its email and password, or null when it can (owner, 15 Oct 2026: any creator account,
+ * however it was made, can also sign in with email). Admin accounts sign in with Google only. An account that also signs in
+ * with Google keeps its Google email, because Google sign-in writes that email to the account each time.
+ */
+export function emailLoginProblem(a: { role: string; email: string | null; googleEmail: string | null; hasPassword: boolean; currentOk: boolean }): string | null {
+  if (a.role !== "creator") return "Admin accounts sign in with Google.";
+  if (!a.email) return "Enter a valid email address.";
+  if (a.googleEmail && a.email !== a.googleEmail.toLowerCase()) return "This account signs in with Google, so use your Google email.";
+  if (a.hasPassword && !a.currentOk) return "Your current password is wrong.";
+  return null;
+}
+
 /** Why a new password is not accepted, or null when it is fine. */
 export function passwordProblem(password: unknown): string | null {
   const pw = String(password ?? "");

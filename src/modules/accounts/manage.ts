@@ -15,6 +15,8 @@ export type AccountOverview = {
   shop: { status: AccessStatus | "none"; reason: string | null; position: number | null; linked: boolean; handle: string | null };
   linksThisWeek: number;
   showcase: number;
+  /** The email this account signs in with (if any), whether it has a password, and the Google email it must keep. */
+  emailLogin: { email: string | null; has: boolean; googleEmail: string | null };
 };
 
 const count = async (path: string) => {
@@ -52,6 +54,7 @@ export async function accountOverview(user: AppUser, tapRows?: ReturnType<typeof
     shop: { status: shop[0]?.status ?? "none", reason: shop[0]?.reason ?? null, position: shop[0]?.position ?? null, linked: !!shop[1][0], handle: shop[1][0]?.username ?? null },
     linksThisWeek: links,
     showcase: tap.rows.filter((r) => r.campaignId).length,
+    emailLogin: { email: user.email, has: !!hasPassword, googleEmail: row?.google_sub ? user.email : null },
   };
 }
 

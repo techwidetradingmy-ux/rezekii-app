@@ -10,6 +10,7 @@ import { Emblem } from "../../emblems";
 import { TikTokShopLogo, TikTokTile } from "../../tiktok-logo";
 import { LevelFace, LevelIcon } from "../../tts-ring";
 import { GmvChart } from "../gmv-chart";
+import { EmailLogin } from "./email-login";
 import { Hud, useToast } from "../marketplace/use-tap-actions";
 import { saveTheme, useTheme } from "../use-theme";
 import "../marketplace/marketplace.css";
@@ -304,9 +305,12 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
               <span style={{ fontWeight: 700 }}>Sign-in</span>
               <span style={{ fontSize: 13, color: "var(--muted)", overflowWrap: "anywhere" }}>{o.signIn.join(" or ") || me.name} · joined {o.joined}</span>
             </span>
-            <form action="/api/auth/signout" method="post">
-              <button type="submit" className="nv-btn2 nv-sm nv-press">Sign out</button>
-            </form>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "flex-end" }}>
+              {me.role === "creator" && <EmailLogin email={o.emailLogin.email} has={o.emailLogin.has} googleEmail={o.emailLogin.googleEmail} onDone={(m) => { flash(m); router.refresh(); }} />}
+              <form action="/api/auth/signout" method="post">
+                <button type="submit" className="nv-btn2 nv-sm nv-press">Sign out</button>
+              </form>
+            </div>
           </div>
           <div className="ac-line" style={{ flexWrap: "wrap" }}>
             <span style={{ flex: 1, fontWeight: 700 }}>Appearance</span>
