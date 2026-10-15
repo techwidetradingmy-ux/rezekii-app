@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { levelMap } from "@/modules/rankings/levels-map.ts";
 import { creatorPanel } from "@/modules/rankings/query.ts";
-import { rankings } from "@/modules/rankings/store.ts";
+import { creatorDetail, rankings } from "@/modules/rankings/store.ts";
 import { isWarmCall } from "@/modules/refresh/warm.ts";
 
 export const dynamic = "force-dynamic";
@@ -15,5 +15,7 @@ export async function GET(req: NextRequest) {
   const u = (req.nextUrl.searchParams.get("u") ?? "").slice(0, 40);
   if (!b || !u) return NextResponse.json({ error: "Not found." }, { status: 404 });
   const lv = (await levelMap().catch(() => new Map<string, number>())).get(u.toLowerCase()) ?? null;
-  return NextResponse.json({ ...creatorPanel(b, u), lv }, { headers: { "cache-control": "private, max-age=300" } });
+  const panel = creatorPanel(b, u);
+  const det = panel.det ?? (await creatorDetail(u, panel.rate30).catch(() => null));
+  return NextResponse.json({ ...panel, det, lv }, { headers: { "cache-control": "private, max-age=300" } });
 }

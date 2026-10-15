@@ -149,8 +149,15 @@ export async function buildRankings(day: string): Promise<Built> {
   }
   const bv = bestVideos([...byDay.values()], details, videos["30D"]);
 
+  // Profiles are kept only for creators the Rankings views can show: those in a saved creators list from the last 60 days
+  // (owner, 16 Oct 2026). Keeping every profile read for the level pass (12,258 on 15 Oct, 7.7 MB) made this row too large
+  // to read in time; the creator panel reads anyone else's profile on its own (creatorDetail).
+  const listed = await listedCreators(day);
+  for (const s of SLOTS) for (const r of creators[s]) listed.add(r[1]);
+  const shown = Object.fromEntries(Object.entries(details).filter(([u]) => listed.has(u)));
+
   const lv = await savedLevels();
-  const built: Built = { asOf: day, rates, dropped, tier1, creators, pm, products, videos, lives, details, find, vid: bv.VID, cbest: bv.CBEST, videoDays: { n: bv.nDays, first: bv.first, last: bv.last }, listDays, lv };
+  const built: Built = { asOf: day, rates, dropped, tier1, creators, pm, products, videos, lives, details: shown, find, vid: bv.VID, cbest: bv.CBEST, videoDays: { n: bv.nDays, first: bv.first, last: bv.last }, listDays, lv };
   // Saved in three rows: the product details and the Creator Marketplace list are large (several MB each) and only the
   // Top products and Find creators views need them. The parts go first, so the main row never points at missing parts.
   const save = (slot: string, items: unknown) =>
@@ -161,6 +168,20 @@ export async function buildRankings(day: string): Promise<Built> {
   cache = { at: Date.now(), data: { ...built, pm: [], find: [] } };
   parts.clear();
   return built;
+}
+
+/** Every creator in a saved creators list (any period or type) from the 60 days up to `day`. */
+async function listedCreators(day: string): Promise<Set<string>> {
+  const out = new Set<string>();
+  for (const r of await paged<{ items: Raw[] | null }>(`market_snapshots?dataset=eq.creators&as_of=gte.${minus(day, 59)}&as_of=lte.${day}&select=items&order=as_of,slot`))
+    for (const it of r.items ?? []) if (typeof it.user_name === "string") out.add(it.user_name);
+  return out;
+}
+
+/** One creator's profile read on its own, for a creator outside the Rankings lists (no profile in the built rankings). */
+export async function creatorDetail(user: string, rate30: number): Promise<Detail | null> {
+  const [r] = (await (await supabaseRest(`market_creators?username=eq.${encodeURIComponent(user)}&detail=not.is.null&select=detail&limit=1`)).json()) as { detail: Raw }[];
+  return r?.detail && typeof r.detail === "object" && !("error" in r.detail) ? detailOf(r.detail, rate30) : null;
 }
 
 /** Every TikTok Shop creator level the level pass has found, by lower-case username (read once per build: a full table scan). */
