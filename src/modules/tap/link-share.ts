@@ -52,9 +52,13 @@ async function linkShareLines(userId: string, productIds: string[]): Promise<Lin
   return out;
 }
 
-/** Each converted link's link-share sales, by link. */
+/** A Techwide TAP link adds the product to the creator's showcase; it isn't a share link, so it has no link-share sales. */
+export const isTapLink = (link: string) => link.startsWith("https://affiliate.tiktok.com/");
+
+/** Each converted share link's link-share sales, by link (TAP links left out). */
 export async function linkPerformance(userId: string, links: LinkRef[]): Promise<Record<string, LinkPerf>> {
-  const ids = [...new Set(links.map((l) => l.product_id).filter((id) => /^\d{5,25}$/.test(id)))];
+  const share = links.filter((l) => !isTapLink(l.link));
+  const ids = [...new Set(share.map((l) => l.product_id).filter((id) => /^\d{5,25}$/.test(id)))];
   if (!ids.length) return {};
-  return attributeLinkSales(links, await linkShareLines(userId, ids));
+  return attributeLinkSales(share, await linkShareLines(userId, ids));
 }

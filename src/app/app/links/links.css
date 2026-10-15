@@ -14,3 +14,28 @@
 .lk-dot-off { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--amber); flex-shrink: 0; }
 @keyframes nvShimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
 @keyframes nvExpand { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+/* Link-share sales (owner's pick A with C's chart by tag). */
+.lk-sales { padding: 22px; display: flex; flex-direction: column; gap: 16px; box-shadow: var(--shadow); border-radius: 26px; scroll-margin-top: 90px; }
+.lk-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.lk-tile { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-radius: 18px; background: var(--surface2); min-width: 0; }
+.lk-tile b { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lk-tile > span:last-child { font-size: 12px; color: var(--muted); }
+.lk-bars { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; border-radius: 18px; background: var(--surface2); }
+.lk-bar { all: unset; box-sizing: border-box; cursor: pointer; display: grid; grid-template-columns: 180px minmax(0, 1fr) 120px; gap: 12px; align-items: center; padding: 6px 8px; border-radius: 12px; transition: background-color 0.2s; }
+.lk-bar:hover, .lk-bar.on { background: var(--surface); }
+.lk-bar:focus-visible { outline: 2px solid #00c073; outline-offset: 2px; }
+.lk-track { display: block; height: 12px; border-radius: 999px; background: var(--seg); overflow: hidden; }
+.lk-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #00c073, #25f4ee); transform-origin: left; animation: lkGrow 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.lk-barv { text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
+.lk-barv small { display: block; font-size: 11px; color: var(--muted); font-weight: 700; }
+.lk-cols { grid-template-columns: 104px minmax(220px, 2fr) 150px 70px 104px 104px 104px 76px; }
+.lk-num { font-weight: 800; font-variant-numeric: tabular-nums; }
+.lk-zero { color: var(--muted); font-weight: 600; }
+.lk-sort { display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; color: inherit; font: inherit; font-weight: 700; cursor: pointer; padding: 0; text-transform: inherit; letter-spacing: inherit; }
+.lk-sort.on { color: var(--text); }
+.lk-ar { display: inline-flex; flex-direction: column; line-height: 0.6; font-size: 9px; opacity: 0.55; }
+.lk-ar b.on { color: #00c073; opacity: 1; }
+@keyframes lkGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (max-width: 760px) { .lk-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } .lk-bar { grid-template-columns: 110px minmax(0, 1fr) 90px; } }
+@media (prefers-reduced-motion: reduce) { .lk-track i { animation: none; } }

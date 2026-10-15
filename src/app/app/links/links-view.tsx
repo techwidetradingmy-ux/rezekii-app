@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import type { ConvertRow } from "@/modules/tap/convert.ts";
 import { n } from "../marketplace/format";
 import { Hud, useToast } from "../marketplace/use-tap-actions";
@@ -13,6 +13,23 @@ import "./links.css";
 const PRESETS = ["threads", "whatsapp", "facebook", "instagram", "telegram", "youtube"];
 const MAX = 50;
 type HistoryRow = { product_id: string; product_name: string | null; image: string | null; tag: string | null; link: string; made_at: string; when?: string };
+/** A link's sales in TikTok's link-share channel (from /api/tap/history). */
+type Perf = { orders: number; items: number; gmv: number; commission: number; last: string | null; lastWhen?: string };
+type HistoryReply = { links?: HistoryRow[]; perf?: Record<string, Perf> };
+/** Dates as labels, worked out once when the data arrives. */
+function labelled(d: HistoryReply) {
+  const now = Date.now();
+  return {
+    links: (d.links ?? []).map((h) => ({ ...h, when: when(h.made_at, now) })),
+    perf: Object.fromEntries(Object.entries(d.perf ?? {}).map(([k, p]) => [k, { ...p, lastWhen: p.last ? when(p.last, now) : undefined }])),
+  };
+}
+const getHistory = () => fetch("/api/tap/history", { cache: "no-store" }).then((r) => r.json() as Promise<HistoryReply>).then(labelled);
+const rm = (v: number) => `RM${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+/** A Techwide TAP link adds the product to the showcase; it isn't a share link. */
+const isTap = (link: string) => link.startsWith("https://affiliate.tiktok.com/");
+const tagOf = (h: HistoryRow) => (isTap(h.link) ? "TAP" : h.tag ?? "no tag");
+type SortKey = "made" | "orders" | "gmv";
 
 // Custom tags are kept on this device, "saved for next time" as in the mockup.
 const tagListeners = new Set<() => void>();
@@ -54,6 +71,15 @@ const when = (iso: string, now: number) => {
   return `${label} ${d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Kuala_Lumpur" })}`;
 };
 
+/** A sort heading with ▲▼: the first click sorts high to low, the next low to high. */
+function SortHead({ label, on, d, go }: { label: string; on: boolean; d: "a" | "d"; go: () => void }) {
+  return (
+    <button type="button" className={`lk-sort ${on ? "on" : ""}`} onClick={go} aria-label={`Sort by ${label}${on ? (d === "d" ? ", high to low" : ", low to high") : ""}`}>
+      {label}<span className="lk-ar" aria-hidden="true"><b className={on && d === "a" ? "on" : ""}>▲</b><b className={on && d === "d" ? "on" : ""}>▼</b></span>
+    </button>
+  );
+}
+
 function Thumb({ src, size }: { src: string | null; size: number }) {
   return src ? (
     // TikTok's image CDN hosts vary, so a plain img.
@@ -64,11 +90,13 @@ function Thumb({ src, size }: { src: string | null; size: number }) {
   );
 }
 
-/** The Link converter, as designed in the mockup (Links page): Convert with tags, and the link history. */
+/**
+ * The Link converter and, on the same page, the link-share sales of every link made here (owner, 15 Oct 2026: layout A with
+ * C's chart of sales by tag; link-share is its own channel, kept apart from the Sales page).
+ */
 export function LinksView({ handle, linked, weekCount, allCount, start }: { handle: string; linked: boolean; weekCount: number; allCount: number; start: string }) {
   const { toast, flash } = useToast();
   const custom = useSyncExternalStore(subscribeTags, readTags, () => NO_TAGS);
-  const [view, setView] = useState<0 | 1>(0);
   const [paste, setPaste] = useState(start);
   const [tags, setTags] = useState<string[]>(["threads", "whatsapp"]);
   const [adding, setAdding] = useState(false);
@@ -78,7 +106,11 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
   const [rows, setRows] = useState<ConvertRow[]>([]);
   const [made, setMade] = useState(0);
   const [history, setHistory] = useState<HistoryRow[] | null>(null);
+  const [perf, setPerf] = useState<Record<string, Perf>>({});
   const [hq, setHq] = useState("");
+  const [soldOnly, setSoldOnly] = useState(false);
+  const [pickTag, setPickTag] = useState<string | null>(null);
+  const [sort, setSort] = useState<{ k: SortKey; d: "a" | "d" }>({ k: "made", d: "d" });
 
   const allTags = [...PRESETS, ...custom.filter((t) => !PRESETS.includes(t))];
   const lines = paste.split("\n").map((l) => l.trim()).filter(Boolean);
@@ -88,16 +120,14 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
   const waiting = rows.filter((r) => r.kind === "shop").length;
   const failed = rows.length - ok.length - waiting;
 
-  function openHistory() {
-    setView(1);
-    fetch("/api/tap/history", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((d: { links?: HistoryRow[] }) => {
-        const now = Date.now();
-        setHistory((d.links ?? []).map((h) => ({ ...h, when: when(h.made_at, now) })));
-      })
-      .catch(() => setHistory([]));
+  function loadHistory() {
+    getHistory().then((d) => { setHistory(d.links); setPerf(d.perf); }).catch(() => setHistory([]));
   }
+  useEffect(() => {
+    let live = true;
+    getHistory().then((d) => { if (live) { setHistory(d.links); setPerf(d.perf); } }).catch(() => live && setHistory([]));
+    return () => { live = false; };
+  }, []);
 
   function saveTag() {
     const t = newTag.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 20);
@@ -131,8 +161,8 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
     }
     setRows(out);
     setMade((m) => m + out.filter((r) => r.link).length);
-    setHistory(null);
     setPhase("done");
+    loadHistory();
   }
 
   const rowName = (r: ConvertRow, i: number) => r.name ?? (r.productId ? `Product ${r.productId}` : `Unknown product (line ${i + 1})`);
@@ -142,8 +172,23 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
   }
   const exportRows = () => downloadCsv("rezekii-links.csv", [["Product", "Product ID", "Tag", "Link", "Note"], ...rows.map((r, i) => [rowName(r, i), r.productId, r.kind === "tap" ? "TAP" : r.tag, r.link, r.link ? "" : r.note])]);
   const q = hq.trim().toLowerCase();
-  const histF = (history ?? []).filter((h) => !q || `${h.product_name ?? ""} ${h.tag ?? ""} ${h.product_id}`.toLowerCase().includes(q));
-  const exportHistory = () => downloadCsv("rezekii-link-history.csv", [["Made", "Product", "Product ID", "Tag", "Link"], ...histF.map((h) => [h.made_at, h.product_name, h.product_id, h.tag ?? "TAP", h.link])]);
+  const none: Perf = { orders: 0, items: 0, gmv: 0, commission: 0, last: null };
+  const pf = (h: HistoryRow) => perf[h.link] ?? none;
+  const shareLinks = (history ?? []).filter((h) => !isTap(h.link));
+  const tot = shareLinks.reduce((a, h) => { const p = pf(h); return { o: a.o + p.orders, g: a.g + p.gmv, c: a.c + p.commission, sold: a.sold + (p.orders ? 1 : 0) }; }, { o: 0, g: 0, c: 0, sold: 0 });
+  // Sales by tag (the channel a link was shared on), most first.
+  const byTag = Object.values(shareLinks.reduce<Record<string, { tag: string; o: number; g: number }>>((a, h) => {
+    const t = tagOf(h); const p = pf(h);
+    a[t] ??= { tag: t, o: 0, g: 0 }; a[t].o += p.orders; a[t].g += p.gmv;
+    return a;
+  }, {})).sort((x, y) => y.g - x.g || y.o - x.o);
+  const topTag = Math.max(1, ...byTag.map((t) => t.g));
+  const key = (h: HistoryRow) => (sort.k === "orders" ? pf(h).orders : sort.k === "gmv" ? pf(h).gmv : Date.parse(h.made_at));
+  const histF = (history ?? [])
+    .filter((h) => (!q || `${h.product_name ?? ""} ${tagOf(h)} ${h.product_id}`.toLowerCase().includes(q)) && (!soldOnly || pf(h).orders > 0) && (!pickTag || tagOf(h) === pickTag))
+    .sort((a, b) => (sort.d === "d" ? key(b) - key(a) : key(a) - key(b)));
+  const flip = (k: SortKey) => setSort((x) => ({ k, d: x.k === k && x.d === "d" ? "a" : "d" }));
+  const exportHistory = () => downloadCsv("rezekii-link-sales.csv", [["Made", "Product", "Product ID", "Tags", "Link", "Orders", "GMV (RM)", "Commission (RM)", "Last sale"], ...histF.map((h) => { const p = pf(h); return [h.made_at, h.product_name, h.product_id, tagOf(h), h.link, String(p.orders), p.gmv.toFixed(2), p.commission.toFixed(2), p.last ?? ""]; })]);
   const copy = async (link: string) => flash((await copyText(link)) ? "Link copied" : "Copy did not work. Select the link and copy it.", true);
 
   return (
@@ -153,15 +198,10 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
           <h1 className="nv-title">Link converter</h1>
           <p className="nv-sub">Turn any TikTok product link into your own affiliate link · no phone needed · via TikTok Shop</p>
         </div>
-        <div className="nv-seg" role="group" aria-label="View" style={{ width: 240 }}>
-          <span className="nv-segthumb" aria-hidden="true" style={{ width: "calc(50% - 2px)", transform: view === 0 ? "translateX(0)" : "translateX(100%)" }} />
-          <button type="button" className={view === 0 ? "on" : ""} aria-pressed={view === 0} onClick={() => setView(0)}>Convert</button>
-          <button type="button" className={view === 1 ? "on" : ""} aria-pressed={view === 1} onClick={openHistory}>History</button>
-        </div>
+        <a href="#lktrack" className="nv-btn2 nv-press" style={{ textDecoration: "none" }}>Link-share sales</a>
       </div>
 
-      {view === 0 && (
-        <>
+      <>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start" }}>
             <section className="nv-up nv-card" aria-labelledby="lkform" style={{ flex: "999 1 560px", minWidth: 0, boxShadow: "var(--shadow)", borderRadius: 26, padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
               <h2 id="lkform" className="nv-h2">Convert links</h2>
@@ -228,7 +268,7 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
                 linked
                   ? "Rezekii asks TikTok Shop for your affiliate link through your linked account."
                   : "Products in Techwide's TAP campaigns get a TAP link now. Other products need your TikTok Shop link, which opens once TikTok approves Rezekii.",
-                linked ? "Copy a link per platform tag. Sales are credited to your TikTok account." : "Open a TAP link to add the product to your showcase, then share it as usual.",
+                linked ? "Copy your link and share it. Sales are credited to your TikTok account and show in Link-share sales below." : "Open a TAP link to add the product to your showcase, then share it as usual.",
               ].map((t, i) => (
                 <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                   <span style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--gsoft)", color: "var(--gink)", fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{i + 1}</span>
@@ -276,47 +316,98 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
               </div>
             </section>
           )}
-        </>
-      )}
+      </>
 
-      {view === 1 && (
-        <section className="nv-up nv-card" aria-labelledby="lkhist" style={{ boxShadow: "var(--shadow)", borderRadius: 26, padding: 22, display: "flex", flexDirection: "column", gap: 14 }}>
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
-            <h2 id="lkhist" className="nv-h2" style={{ flex: 1 }}>Link history · {handle}</h2>
-            <label htmlFor="lkq" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Search history</label>
-            <input id="lkq" type="text" className="nv-input" placeholder="Search product or tag" value={hq} onChange={(e) => setHq(e.target.value)} style={{ width: 260, maxWidth: "100%" }} />
-            <button type="button" className="nv-btn2 nv-press" onClick={exportHistory} disabled={!histF.length}>Export CSV</button>
+      <section id="lktrack" className="nv-up nv-card lk-sales" aria-labelledby="lktrackh" style={{ animationDelay: "120ms" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 10 }}>
+          <span style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, flex: "1 1 360px" }}>
+            <h2 id="lktrackh" className="nv-h2">Link-share sales · {handle}</h2>
+            <span style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>Sales through the links you made here and shared outside TikTok, from TikTok&apos;s link-share orders. Kept apart from your Sales page. TikTok doesn&apos;t share link clicks.</span>
+          </span>
+        </div>
+
+        <div className="lk-tiles">
+          {([
+            ["Link-share GMV", rm(tot.g), "Since each link was made"],
+            ["Orders", n(tot.o), `${tot.sold} of ${shareLinks.length} links sold`],
+            ["Commission", rm(tot.c), "Before any agency share"],
+            ["Best channel", byTag[0]?.g ? byTag[0].tag : "–", byTag[0]?.g ? rm(byTag[0].g) : "No sales yet"],
+          ] as [string, string, string][]).map(([k, v, note]) => (
+            <div key={k} className="lk-tile"><span className="nv-cap">{k}</span><b>{history === null ? "…" : v}</b><span>{note}</span></div>
+          ))}
+        </div>
+
+        {tot.o > 0 && (
+          <div className="lk-bars" role="group" aria-label="Sales by tag">
+            <span className="nv-cap">Where your links sell · tap a tag to see its links</span>
+            {byTag.map((t, i) => (
+              <button key={t.tag} type="button" className={`lk-bar ${pickTag === t.tag ? "on" : ""}`} aria-pressed={pickTag === t.tag} onClick={() => setPickTag(pickTag === t.tag ? null : t.tag)}>
+                <span className="nv-badge b-green" style={{ justifySelf: "start", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>{t.tag}</span>
+                <span className="lk-track"><i style={{ width: `${Math.max(2, Math.round((t.g / topTag) * 100))}%`, animationDelay: `${i * 70}ms` }} /></span>
+                <span className="lk-barv">{t.g ? rm(t.g) : "–"}<small>{t.o} {t.o === 1 ? "order" : "orders"}</small></span>
+              </button>
+            ))}
           </div>
-          {history === null ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {[0, 1, 2].map((i) => <span key={i} className="nv-skel" style={{ height: 44 }} />)}
-            </div>
-          ) : (
-            <div className="nv-scrollx">
-              <div role="table" aria-label="Link history" style={{ minWidth: 820 }}>
-                <div role="row" className="nv-tr nv-trh" style={{ gridTemplateColumns: "140px minmax(240px, 2fr) 110px minmax(240px, 2fr) 90px" }}>
-                  <span role="columnheader">Made</span><span role="columnheader">Product</span><span role="columnheader">Tag</span><span role="columnheader">Link</span><span role="columnheader" />
-                </div>
-                {histF.map((h, i) => (
-                  <div key={i} role="row" className="nv-tr nv-trow" style={{ gridTemplateColumns: "140px minmax(240px, 2fr) 110px minmax(240px, 2fr) 90px" }}>
+        )}
+
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+          <button type="button" className={`nv-chip nv-press ${soldOnly ? "on" : ""}`} aria-pressed={soldOnly} onClick={() => setSoldOnly(!soldOnly)}>With sales only</button>
+          {pickTag && <button type="button" className="nv-chip nv-press on" onClick={() => setPickTag(null)} aria-label={`Remove the ${pickTag} filter`}>Tag: {pickTag} ✕</button>}
+          <span style={{ flex: "1 1 0" }} />
+          <label htmlFor="lkq" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Search links</label>
+          <input id="lkq" type="text" className="nv-input" placeholder="Search product or tag" value={hq} onChange={(e) => setHq(e.target.value)} style={{ width: 220, maxWidth: "100%", height: 38, fontSize: 13 }} />
+          <button type="button" className="nv-btn2 nv-press" onClick={exportHistory} disabled={!histF.length}>Export CSV</button>
+        </div>
+
+        {history === null ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {[0, 1, 2].map((i) => <span key={i} className="nv-skel" style={{ height: 44 }} />)}
+          </div>
+        ) : (
+          <div className="nv-scrollx">
+            <div role="table" aria-label="Your links and their link-share sales" style={{ minWidth: 980 }}>
+              <div role="row" className="nv-tr nv-trh lk-cols">
+                {([["made", "Made"]] as [SortKey, string][]).map(([k, label]) => <span key={k} role="columnheader"><SortHead label={label} on={sort.k === k} d={sort.d} go={() => flip(k)} /></span>)}
+                <span role="columnheader">Product</span><span role="columnheader">Tags</span>
+                <span role="columnheader"><SortHead label="Orders" on={sort.k === "orders"} d={sort.d} go={() => flip("orders")} /></span>
+                <span role="columnheader"><SortHead label="GMV" on={sort.k === "gmv"} d={sort.d} go={() => flip("gmv")} /></span>
+                <span role="columnheader">Commission</span><span role="columnheader">Last sale</span><span role="columnheader" />
+              </div>
+              {histF.map((h, i) => {
+                const p = pf(h);
+                const tap = isTap(h.link);
+                return (
+                  <div key={i} role="row" className="nv-tr nv-trow lk-cols">
                     <span role="cell" style={{ whiteSpace: "nowrap", color: "var(--muted)" }}>{h.when}</span>
                     <span role="cell" style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                       <Thumb src={h.image} size={36} />
-                      <span style={{ fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{h.product_name ?? `Product ${h.product_id}`}</span>
+                      <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                        <span style={{ fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{h.product_name ?? `Product ${h.product_id}`}</span>
+                        <span title={h.link} style={{ fontFamily: "ui-monospace, monospace", fontSize: 12, color: "var(--muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{h.link}</span>
+                      </span>
                     </span>
-                    <span role="cell"><span className="nv-badge b-green">{h.tag ?? "TAP"}</span></span>
-                    <span role="cell" title={h.link} style={{ fontFamily: "ui-monospace, monospace", fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{h.link}</span>
+                    <span role="cell"><span className={`nv-badge ${tap ? "b-gray" : "b-green"}`} style={{ maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>{tagOf(h)}</span></span>
+                    {tap ? (
+                      <span role="cell" style={{ gridColumn: "span 4", fontSize: 13, color: "var(--muted)" }}>Adds the product to your showcase · not a share link</span>
+                    ) : (
+                      <>
+                        <span role="cell" className={`lk-num ${p.orders ? "" : "lk-zero"}`}>{n(p.orders)}</span>
+                        <span role="cell" className={`lk-num ${p.orders ? "" : "lk-zero"}`}>{p.gmv ? rm(p.gmv) : "–"}</span>
+                        <span role="cell" className={`lk-num ${p.orders ? "" : "lk-zero"}`}>{p.commission ? rm(p.commission) : "–"}</span>
+                        <span role="cell" style={{ fontSize: 13, color: "var(--muted)", whiteSpace: "nowrap" }}>{p.lastWhen ?? "–"}</span>
+                      </>
+                    )}
                     <span role="cell" style={{ textAlign: "right" }}><button type="button" className="nv-btn2 nv-sm nv-press" onClick={() => copy(h.link)}>Copy</button></span>
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
-          )}
-          {history !== null && !histF.length && (
-            <span style={{ padding: 24, textAlign: "center", color: "var(--muted)" }}>{q ? `No links match "${hq}".` : "No links yet. Convert a product link to start your history."}</span>
-          )}
-        </section>
-      )}
+          </div>
+        )}
+        {history !== null && !histF.length && (
+          <span style={{ padding: 24, textAlign: "center", color: "var(--muted)" }}>{q || soldOnly || pickTag ? "No links match these filters." : "No links yet. Convert a product link to start tracking its sales."}</span>
+        )}
+      </section>
       <Hud toast={toast} />
     </>
   );
