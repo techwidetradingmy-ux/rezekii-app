@@ -1,4 +1,5 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import { frameRange, type Range } from "../sales/frames.ts";
 import { lineGmv, type OrderLine } from "../sales/summary.ts";
 
 /** What one converted link sold through TikTok's link-share channel. */
@@ -87,17 +88,24 @@ async function productImages(ids: string[]): Promise<Map<string, string>> {
 /** A Techwide TAP link adds the product to the creator's showcase; it isn't a share link, so it has no link-share sales. */
 export const isTapLink = (link: string) => link.startsWith("https://affiliate.tiktok.com/");
 
-/** The creator's link-share sales: by Rezekii share link (TAP links left out), and from links made outside Rezekii, newest first. */
-export async function linkShareReport(userId: string, links: LinkRef[]): Promise<{ perf: Record<string, LinkPerf>; outside: OutsideSales[]; counts: LinkShareCounts }> {
-  const lines = await linkShareLines(userId);
+/**
+ * The creator's link-share sales in a time frame (the Sales page's frames and words, Malaysia time; owner, 16 Oct 2026): by
+ * Rezekii share link (TAP links left out), and from links made outside Rezekii, newest first. Null for an unknown frame.
+ */
+export async function linkShareReport(userId: string, links: LinkRef[], frame = "all", now = Date.now()): Promise<{ perf: Record<string, LinkPerf>; outside: OutsideSales[]; counts: LinkShareCounts; range: Range } | null> {
+  const all = await linkShareLines(userId);
+  const range = frameRange(frame, now, all.length ? Date.parse(all[0].created_at) : null);
+  if (!range) return null;
+  const lines = all.filter((l) => { const t = Date.parse(l.created_at); return t >= range.from && t < range.to; });
   const { byLink, outside, counts } = attributeLinkSales(links.filter((l) => !isTapLink(l.link)), lines);
-  if (!lines.length) return { perf: {}, outside: [], counts };
+  if (!lines.length) return { perf: {}, outside: [], counts, range };
   const names = new Map(lines.filter((l) => l.product_name).map((l) => [l.product_id, l.product_name ?? null]));
   const ids = [...new Set(outside.map((o) => o.product_id))].filter((id) => /^\d{5,25}$/.test(id));
   const images = await productImages(ids).catch(() => new Map<string, string>());
   return {
     perf: byLink,
     counts,
+    range,
     outside: outside
       .map((o) => ({ ...o, product_name: names.get(o.product_id) ?? null, image: images.get(o.product_id) ?? null }))
       .sort((a, b) => (b.last ?? "").localeCompare(a.last ?? "")),

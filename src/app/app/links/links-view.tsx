@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { ConvertRow } from "@/modules/tap/convert.ts";
+import { CalendarPicker } from "../calendar-picker";
 import { n } from "../marketplace/format";
 import { Hud, useToast } from "../marketplace/use-tap-actions";
 import { copyText, downloadCsv } from "./file-tools";
@@ -19,7 +20,14 @@ type Perf = { orders: number; items: number; gmv: number; commission: number; la
 type Outside = Perf & { product_id: string; product_name: string | null; image: string | null; tag: string | null };
 /** Orders counted once each: all, via Rezekii links, via other links, and by tag. */
 type Counts = { all: number; mine: number; outside: number; byTag: Record<string, number> };
-type HistoryReply = { links?: HistoryRow[]; perf?: Record<string, Perf>; outside?: Outside[]; counts?: Counts | null };
+/** The time frame the sales cover (Malaysia time; `to` is the midnight after the last day). */
+type RangeInfo = { key: string; from: number; to: number; label: string; dates: string };
+type HistoryReply = { links?: HistoryRow[]; perf?: Record<string, Perf>; outside?: Outside[]; counts?: Counts | null; range?: RangeInfo | null; now?: number };
+/** The same quick choices as the Sales page's calendar. */
+const FRAMES: [string, string][] = [["yesterday", "Yesterday"], ["7d", "7 days"], ["14d", "14 days"], ["30d", "30 days"], ["60d", "60 days"], ["90d", "90 days"], ["month", "This month"], ["lastmonth", "Last month"], ["1y", "1 year"], ["all", "All time"]];
+const DAY = 86400_000;
+/** "2026-10-16": the Malaysia day of time `t`. */
+const isoDay = (t: number) => new Date(t + 8 * 3600_000).toISOString().slice(0, 10);
 /** Dates as labels, worked out once when the data arrives. */
 function labelled(d: HistoryReply) {
   const now = Date.now();
@@ -28,9 +36,11 @@ function labelled(d: HistoryReply) {
     perf: Object.fromEntries(Object.entries(d.perf ?? {}).map(([k, p]) => [k, { ...p, lastWhen: p.last ? when(p.last, now) : undefined }])),
     outside: (d.outside ?? []).map((o) => ({ ...o, lastWhen: o.last ? when(o.last, now) : undefined })),
     counts: d.counts ?? null,
+    range: d.range ?? null,
+    today: isoDay(d.now ?? now),
   };
 }
-const getHistory = () => fetch("/api/tap/history", { cache: "no-store" }).then((r) => r.json() as Promise<HistoryReply>).then(labelled);
+const getHistory = (frame: string) => fetch(`/api/tap/history?frame=${encodeURIComponent(frame)}`, { cache: "no-store" }).then((r) => r.json() as Promise<HistoryReply>).then(labelled);
 const rm = (v: number) => `RM${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 /** A Techwide TAP link adds the product to the showcase; it isn't a share link. */
 const isTap = (link: string) => link.startsWith("https://affiliate.tiktok.com/");
@@ -116,6 +126,10 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
   const [perf, setPerf] = useState<Record<string, Perf>>({});
   const [outside, setOutside] = useState<Outside[]>([]);
   const [counts, setCounts] = useState<Counts | null>(null);
+  const [frame, setFrame] = useState("all");
+  const [range, setRange] = useState<RangeInfo | null>(null);
+  const [today, setToday] = useState("");
+  const [busy, setBusy] = useState(false);
   const [hq, setHq] = useState("");
   const [soldOnly, setSoldOnly] = useState(false);
   const [pickTag, setPickTag] = useState<string | null>(null);
@@ -129,15 +143,16 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
   const waiting = rows.filter((r) => r.kind === "shop").length;
   const failed = rows.length - ok.length - waiting;
 
-  const show = (d: Awaited<ReturnType<typeof getHistory>>) => { setHistory(d.links); setPerf(d.perf); setOutside(d.outside); setCounts(d.counts); };
+  const show = (d: Awaited<ReturnType<typeof getHistory>>) => { setHistory(d.links); setPerf(d.perf); setOutside(d.outside); setCounts(d.counts); setRange(d.range); setToday(d.today); setBusy(false); };
   function loadHistory() {
-    getHistory().then(show).catch(() => setHistory([]));
+    getHistory(frame).then(show).catch(() => { setHistory([]); setBusy(false); });
   }
+  const pickFrame = (f: string) => { if (f === frame) return; setBusy(true); setFrame(f); };
   useEffect(() => {
     let live = true;
-    getHistory().then((d) => { if (live) { setHistory(d.links); setPerf(d.perf); setOutside(d.outside); setCounts(d.counts); } }).catch(() => live && setHistory([]));
+    getHistory(frame).then((d) => { if (live) { setHistory(d.links); setPerf(d.perf); setOutside(d.outside); setCounts(d.counts); setRange(d.range); setToday(d.today); setBusy(false); } }).catch(() => { if (live) { setHistory([]); setBusy(false); } });
     return () => { live = false; };
-  }, []);
+  }, [frame]);
 
   function saveTag() {
     const t = newTag.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 20);
@@ -345,11 +360,27 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
             <h2 id="lktrackh" className="nv-h2">Link-share sales · {handle}</h2>
             <span style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>Every link-share order on your TikTok account, from the links you made here and the links you made in the TikTok app. Kept apart from your Sales page. TikTok doesn&apos;t share link clicks.</span>
           </span>
+          {range && today && (
+            <CalendarPicker
+              mode="range"
+              label={range.label}
+              sub={range.dates}
+              loading={busy}
+              today={today}
+              from={isoDay(range.from)}
+              to={isoDay(range.to - DAY)}
+              onRange={(a, b) => pickFrame(`c:${a}:${b}`)}
+              presets={FRAMES}
+              preset={FRAMES.some(([k]) => k === frame) ? frame : null}
+              onPreset={pickFrame}
+              ariaLabel="Choose dates for link-share sales"
+            />
+          )}
         </div>
 
         <div className="lk-tiles">
           {([
-            ["Link-share GMV", rm(tot.g), "All your link-share orders"],
+            [`Link-share GMV · ${range?.label ?? "All time"}`, rm(tot.g), range?.dates ?? "All your link-share orders"],
             ["Orders", n(tot.o), `${n(counts?.mine ?? mine.o)} via Rezekii links · ${n(counts?.outside ?? other.o)} via other links`],
             ["Commission", rm(tot.c), "Before any agency share"],
             ["Best channel", best ? best.tag : "–", best ? rm(best.g) : tot.o ? "No tagged sales yet" : "No sales yet"],
