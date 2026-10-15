@@ -57,3 +57,23 @@
 .nv-alert-b button + button { border-left: 1px solid var(--border); }
 .nv-alert-b button.danger { color: #ff3b30; font-weight: 700; }
 @keyframes nvAlertIn { from { opacity: 0; transform: translate(-50%, -50%) scale(1.08); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+
+/* Sign-in & security (owner's pick C): the ways to sign in, then email and password side by side. */
+.ac-sig { padding: 22px; display: flex; flex-direction: column; gap: 16px; box-shadow: var(--shadow); }
+.ac-sig-head { display: flex; flex-direction: column; gap: 4px; }
+.ac-sig-head span { font-size: 13px; color: var(--muted); }
+.ac-ways { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.ac-way { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 16px; background: var(--surface2); min-width: 0; }
+.ac-way > span:not(.nv-badge) { flex: 1; min-width: 0; font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ac-sig-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.ac-sig-card { display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: 20px; border: 1.5px solid var(--line); min-width: 0; transition: opacity 0.2s; }
+.ac-sig-card h3 { margin: 0; font-size: 17px; font-weight: 800; }
+.ac-sig-card .nv-btn { align-self: flex-start; }
+.ac-fs { border: 0; padding: 0; margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.ac-note { font-size: 13px; color: var(--muted); line-height: 1.5; }
+.ac-f { display: flex; flex-direction: column; gap: 5px; font-size: 13px; font-weight: 700; color: var(--body); }
+.ac-f input { height: 42px; font-size: 14px; border: 1.5px solid var(--border); }
+.ac-f input[readonly] { color: var(--muted); }
+.ac-err { font-size: 13px; color: var(--red); font-weight: 700; }
+.ac-off { opacity: 0.55; }
+@media (max-width: 760px) { .ac-sig-grid { grid-template-columns: minmax(0, 1fr); } }

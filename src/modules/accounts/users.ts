@@ -1,7 +1,7 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import type { TikTokTokens } from "../../integrations/tiktok/login.ts";
 import { encryptToken } from "../creator-accounts/token-crypto.ts";
-import { emailLoginProblem, hashPassword, passwordProblem, verifyPassword } from "./password.ts";
+import { emailLoginProblem, hashPassword, verifyPassword } from "./password.ts";
 
 export type AppUser = {
   id: string;
@@ -131,19 +131,24 @@ export async function createEmailUser(email: string, password: string, name: str
   }
 }
 
-/** Adds an email and password to a signed-in account, or changes them; the rules are in emailLoginProblem. */
-export async function setEmailLogin(userId: string, email: string | null, password: string, current: string): Promise<EmailResult> {
+/** Adds email sign-in to a signed-in account, or changes its email or password; the rules are in emailLoginProblem. */
+export async function setEmailLogin(userId: string, change: { email?: string | null; password?: string }, current: string): Promise<EmailResult> {
   type Row = { role: string; email: string | null; google_sub: string | null; password_hash: string | null };
   const [me] = (await (await supabaseRest(`app_users?id=eq.${userId}&select=role,email,google_sub,password_hash&limit=1`)).json()) as Row[];
   if (!me) return { ok: false, error: "Sign in first.", status: 401 };
   const currentOk = !!me.password_hash && (await verifyPassword(current, me.password_hash));
-  const problem = emailLoginProblem({ role: me.role, email, googleEmail: me.google_sub ? me.email : null, hasPassword: !!me.password_hash, currentOk }) ?? passwordProblem(password);
+  const problem = emailLoginProblem({ role: me.role, hasPassword: !!me.password_hash, currentOk, ...change, googleEmail: me.google_sub ? me.email : null });
   if (problem) return { ok: false, error: problem, status: me.role !== "creator" || (me.password_hash && !currentOk) ? 403 : 400 };
   const taken: EmailResult = { ok: false, error: "Another Rezekii account already signs in with this email.", status: 409 };
-  const others = (await (await supabaseRest(`app_users?email=eq.${encodeURIComponent(email!)}&password_hash=not.is.null&id=neq.${userId}&select=id&limit=1`)).json()) as unknown[];
-  if (others.length) return taken;
+  if (change.email) {
+    const others = (await (await supabaseRest(`app_users?email=eq.${encodeURIComponent(change.email)}&password_hash=not.is.null&id=neq.${userId}&select=id&limit=1`)).json()) as unknown[];
+    if (others.length) return taken;
+  }
+  const fields: Record<string, unknown> = { failed_logins: 0, locked_until: null };
+  if (change.email) fields.email = change.email;
+  if (change.password !== undefined) fields.password_hash = await hashPassword(change.password);
   try {
-    return { ok: true, user: await patch(userId, { email, password_hash: await hashPassword(password), failed_logins: 0, locked_until: null }) };
+    return { ok: true, user: await patch(userId, fields) };
   } catch (err) {
     // The unique index on email logins refuses an email another account took at the same moment.
     if (err instanceof Error && err.message.startsWith("Supabase 409")) return taken;
