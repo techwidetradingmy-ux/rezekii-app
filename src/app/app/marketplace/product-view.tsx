@@ -7,7 +7,8 @@ import type { useTap } from "./use-tap-actions";
 
 type Tap = ReturnType<typeof useTap>;
 
-const soldText = (p: TapProduct) => `${short(p.sold)} sold${p.soldToday ? ` · +${short(p.soldToday)} today` : ""}`;
+/** All-time units sold, and the units sold since the day before (owner, 15 Oct 2026: "since yesterday", not "today"). */
+const soldText = (p: TapProduct) => `${short(p.sold)} sold${p.soldToday ? ` · +${short(p.soldToday)} since yesterday` : ""}`;
 
 function Check({ size }: { size: number }) {
   return (
