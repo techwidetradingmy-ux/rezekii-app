@@ -3,6 +3,7 @@ import { getSampleDeeplink, getSampleLabel, lookupProducts, searchSampleApplicat
 import { approvedCreatorToken } from "../creator-accounts/access.ts";
 import { linkedCreators } from "../sales/orders.ts";
 import { addToShowcase } from "./showcase.ts";
+import { sampleStage } from "./stages.ts";
 
 /** A free sample a creator asked for on Rezekii. Since 14 Oct 2026 they submit it in TikTok themselves (status "applied"); older rows were Rezekii's own queue. */
 export type SampleRequest = {
@@ -134,7 +135,7 @@ export async function checkCreatorSamples(userId: string): Promise<CreatorOffers
   try {
     const token = await approvedCreatorToken(userId);
     if (!token) return null;
-    const confirmed = await sampleOffers();
+    const [confirmed, asked] = await Promise.all([sampleOffers(), tiktokSampleStatus(userId).catch(() => new Map<string, string>())]);
     const ids = (await campaignSampleProducts()).filter((id) => !(id in confirmed) || confirmed[id] === 1);
     const out: CreatorOffers = { offers: {}, limit: false, day: myt(Date.now()) };
     for (let i = 0; i < ids.length; i += 5) {
@@ -147,6 +148,8 @@ export async function checkCreatorSamples(userId: string): Promise<CreatorOffers
         out.offers[batch[k]] = v === "available" ? 2 : v === "requested" ? 1 : 0;
       });
     }
+    // TikTok's live check just says "can't apply" once a creator has asked; their own TikTok sample list says they asked.
+    for (const [id, st] of asked) if (id in out.offers && sampleStage(st) >= 1) out.offers[id] = 1;
     await saveCreatorOffers(userId, out);
     return out;
   } finally {
@@ -179,6 +182,9 @@ export async function sampleStatus(userId: string, productId: string): Promise<S
   if (!t || t.samples <= 0) return "none";
   const token = await approvedCreatorToken(userId);
   if (!token) return null;
+  // Already asked (in TikTok, from Rezekii or directly): TikTok's live check then only says "can't apply".
+  const asked = (await tiktokSampleStatus(userId).catch(() => new Map<string, string>())).get(productId);
+  if (asked && sampleStage(asked) >= 1) return "requested";
   const r = await getSampleLabel(token, productId);
   if (r.code !== 0) {
     console.error("[sample status]", r.code, r.message);
