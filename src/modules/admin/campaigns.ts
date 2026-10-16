@@ -72,14 +72,16 @@ export function campaignFields(f: CampaignForm, now = Date.now(), isNew = true):
   const phone = f.phone.trim() ? e164(f.phone) : "";
   if (phone === null) return { ok: false, error: "That phone number doesn't look right. Use a number like 012-345 6789 or +60 12-345 6789." };
   const email = f.email.trim();
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ok: false, error: "That email address doesn't look right." };
+  // TikTok requires a contact email too (16 Oct 2026: "Email of ContactInfo is a required field").
+  if (!email) return { ok: false, error: "TikTok needs a contact email for the campaign." };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ok: false, error: "That email address doesn't look right." };
   return {
     ok: true,
     fields: {
       name, description,
       registration_start_time: reg[0], registration_end_time: reg[1], campaign_start_time: run[0], campaign_end_time: run[1],
       commission_rate: rate,
-      contact_info: { whatsapp, ...(email ? { email } : {}), ...(phone ? { phone } : {}) },
+      contact_info: { whatsapp, email, ...(phone ? { phone } : {}) },
       ...(types.length ? { target_seller_types: types } : {}),
       ...(shopCodes.length ? { target_shop_codes: shopCodes } : {}),
     },

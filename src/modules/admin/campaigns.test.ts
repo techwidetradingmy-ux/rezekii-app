@@ -36,6 +36,8 @@ test("campaignFields refuses what TikTok would refuse", () => {
   assert.match(no({ local: false }), /which shops/);
   assert.match(no({ whatsapp: " " }), /WhatsApp/);
   assert.match(no({ whatsapp: "12ab" }), /WhatsApp number doesn't look right/);
+  assert.match(no({ email: " " }), /needs a contact email/);
+  assert.match(no({ email: "testtest" }), /email address doesn't look right/);
   assert.match(no({ description: "  " }), /needs a description/);
   assert.match(no({ description: "x".repeat(1001) }), /at most 1,000/);
   assert.ok(campaignFields(form({ description: "x".repeat(1000) }), NOW).ok);

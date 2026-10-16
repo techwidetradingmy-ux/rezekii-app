@@ -38,10 +38,19 @@ export function CampaignSheet({ id, initial, closing, onClose, onSaved }: {
 
   async function save(andPublish: boolean) {
     if (busy || !form.current?.reportValidity()) return;
+    // What each box really shows: Chrome can autofill a box (e.g. the email) without telling the page.
+    const fd = new FormData(form.current);
+    const box = (k: string, was: string) => { const v = fd.get(k); return typeof v === "string" ? v : was; };
+    const sent: CampaignForm = {
+      ...f, name: box("name", f.name), description: box("description", f.description), shopCodes: box("shopCodes", f.shopCodes.join("\n")).split(/[\s,]+/),
+      start: box("start", f.start), end: box("end", f.end), regEnd: box("regEnd", f.regEnd), commission: Number(box("commission", String(f.commission))),
+      whatsapp: box("whatsapp", f.whatsapp), email: box("email", f.email),
+    };
+    setF(sent);
     setBusy(andPublish ? "publish" : "save");
     setError("");
     try {
-      const r = await fetch(id ? `/api/admin/tap/campaigns/${id}` : "/api/admin/tap/campaigns", { method: id ? "PUT" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(f) });
+      const r = await fetch(id ? `/api/admin/tap/campaigns/${id}` : "/api/admin/tap/campaigns", { method: id ? "PUT" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(sent) });
       const d = (await r.json().catch(() => ({}))) as { id?: string; error?: string };
       if (!r.ok || !d.id) throw new Error(d.error || "TikTok didn't save the campaign.");
       if (andPublish) {
@@ -67,12 +76,12 @@ export function CampaignSheet({ id, initial, closing, onClose, onSaved }: {
           <span className="cp-help"><span className="cp-req">*</span> Required by TikTok</span>
           <div className="cp-field">
             <label htmlFor="cpname" className="nv-label">Campaign name<Req /></label>
-            <input id="cpname" className="nv-input" maxLength={49} value={f.name} onChange={(e) => set("name", e.target.value)} required />
+            <input id="cpname" name="name" className="nv-input" maxLength={49} value={f.name} onChange={(e) => set("name", e.target.value)} required />
             <span className="cp-help">{49 - f.name.length} characters left · shops see this name</span>
           </div>
           <div className="cp-field">
             <label htmlFor="cpdesc" className="nv-label">Description for shops<Req /></label>
-            <textarea id="cpdesc" className="nv-input" rows={3} maxLength={1000} value={f.description} onChange={(e) => set("description", e.target.value)} required />
+            <textarea id="cpdesc" name="description" className="nv-input" rows={3} maxLength={1000} value={f.description} onChange={(e) => set("description", e.target.value)} required />
             <span className="cp-help">What shops get by joining, e.g. &quot;Year-end wellness campaign for Malaysian shops&quot; · {1000 - f.description.length} characters left</span>
           </div>
           <fieldset className="cp-field" style={{ border: 0, padding: 0, margin: 0 }}>
@@ -83,12 +92,12 @@ export function CampaignSheet({ id, initial, closing, onClose, onSaved }: {
             </div>
             <span className="cp-help">Pick at least one, or invite specific shops by their shop code (Seller Center → profile), one per line.</span>
             <label htmlFor="cpcodes" style={label}>Shop codes</label>
-            <textarea id="cpcodes" className="nv-input" rows={2} placeholder="MYLCXXXXXX" value={f.shopCodes.join("\n")} onChange={(e) => set("shopCodes", e.target.value.split(/[\s,]+/))} />
+            <textarea id="cpcodes" name="shopCodes" className="nv-input" rows={2} placeholder="MYLCXXXXXX" value={f.shopCodes.join("\n")} onChange={(e) => set("shopCodes", e.target.value.split(/[\s,]+/))} />
           </fieldset>
           <div className="cp-grid">
-            <div className="cp-field"><label htmlFor="cpcs" className="nv-label">Campaign starts<Req /></label><input id="cpcs" type="date" className="nv-input" min={id ? undefined : today} value={f.start} onChange={(e) => set("start", e.target.value)} required /><span className="cp-help">Today or later; shops can register from this day. Today means about 10 minutes from now (TikTok needs a start time that hasn&apos;t passed).</span></div>
-            <div className="cp-field"><label htmlFor="cpce" className="nv-label">Campaign ends<Req /></label><input id="cpce" type="date" className="nv-input" min={start} max={latestEnd} value={f.end} onChange={(e) => set("end", e.target.value)} required /><span className="cp-help">At most 360 days, counting the start day: {longDay(latestEnd)} at the latest.</span></div>
-            <div className="cp-field"><label htmlFor="cpre" className="nv-label">Registration closes<Req /></label><input id="cpre" type="date" className="nv-input" min={start} max={f.end || latestEnd} value={f.regEnd} onChange={(e) => set("regEnd", e.target.value)} required /><span className="cp-help">Between the start and end days; usually the end day, so shops can join all along.</span></div>
+            <div className="cp-field"><label htmlFor="cpcs" className="nv-label">Campaign starts<Req /></label><input id="cpcs" name="start" type="date" className="nv-input" min={id ? undefined : today} value={f.start} onChange={(e) => set("start", e.target.value)} required /><span className="cp-help">Today or later; shops can register from this day. Today means about 10 minutes from now (TikTok needs a start time that hasn&apos;t passed).</span></div>
+            <div className="cp-field"><label htmlFor="cpce" className="nv-label">Campaign ends<Req /></label><input id="cpce" name="end" type="date" className="nv-input" min={start} max={latestEnd} value={f.end} onChange={(e) => set("end", e.target.value)} required /><span className="cp-help">At most 360 days, counting the start day: {longDay(latestEnd)} at the latest.</span></div>
+            <div className="cp-field"><label htmlFor="cpre" className="nv-label">Registration closes<Req /></label><input id="cpre" name="regEnd" type="date" className="nv-input" min={start} max={f.end || latestEnd} value={f.regEnd} onChange={(e) => set("regEnd", e.target.value)} required /><span className="cp-help">Between the start and end days; usually the end day, so shops can join all along.</span></div>
           </div>
           <div className="cp-latest">
             <button type="button" className="nv-btn2 nv-sm nv-press" onClick={useLatest}>Use the latest dates</button>
@@ -96,12 +105,12 @@ export function CampaignSheet({ id, initial, closing, onClose, onSaved }: {
           </div>
           <div className="cp-field">
             <label htmlFor="cpcom" className="nv-label">Total commission shown to shops<Req /></label>
-            <span style={{ display: "flex", alignItems: "center", gap: 10 }}><input id="cpcom" type="number" min={1.01} max={79.99} step={0.01} className="nv-input" value={f.commission} onChange={(e) => set("commission", Number(e.target.value))} style={{ width: 140 }} required /><strong>%</strong></span>
+            <span style={{ display: "flex", alignItems: "center", gap: 10 }}><input id="cpcom" name="commission" type="number" min={1.01} max={79.99} step={0.01} className="nv-input" value={f.commission} onChange={(e) => set("commission", Number(e.target.value))} style={{ width: 140 }} required /><strong>%</strong></span>
             <span className="cp-help">More than 1% and less than 80%. Creators get the Open Plan rate plus their level&apos;s extra; Techwide keeps the rest.</span>
           </div>
           <div className="cp-grid">
-            <div className="cp-field"><label htmlFor="cpwa" className="nv-label">WhatsApp<Req /></label><input id="cpwa" type="tel" className="nv-input" placeholder="012-345 6789" value={f.whatsapp} onChange={(e) => set("whatsapp", e.target.value)} required /><span className="cp-help">For shops to reach Techwide. Any usual format (012-345 6789 or +60 12-345 6789); sent to TikTok as +60…</span></div>
-            <div className="cp-field"><label htmlFor="cpem" className="nv-label">Email</label><input id="cpem" type="email" className="nv-input" placeholder="partners@techwide.my" value={f.email} onChange={(e) => set("email", e.target.value)} /><span className="cp-help">Optional.</span></div>
+            <div className="cp-field"><label htmlFor="cpwa" className="nv-label">WhatsApp<Req /></label><input id="cpwa" name="whatsapp" type="tel" className="nv-input" placeholder="012-345 6789" value={f.whatsapp} onChange={(e) => set("whatsapp", e.target.value)} required /><span className="cp-help">For shops to reach Techwide. Any usual format (012-345 6789 or +60 12-345 6789); sent to TikTok as +60…</span></div>
+            <div className="cp-field"><label htmlFor="cpem" className="nv-label">Email<Req /></label><input id="cpem" name="email" type="email" className="nv-input" placeholder="partners@techwide.my" value={f.email} onChange={(e) => set("email", e.target.value)} required /><span className="cp-help">For shops to reach Techwide, e.g. partners@techwide.my.</span></div>
           </div>
           {error && <p role="alert" className="cp-error">{error}</p>}
           <div className="cp-acts">
