@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CampaignOverview } from "@/modules/admin/campaigns.ts";
+import { dayEnd, dayStart } from "@/modules/admin/campaign-dates.ts";
 import { CampaignSheet } from "./campaign-sheet";
 import { Hud, useToast } from "../../marketplace/use-tap-actions";
 import type { AdminCampaign, AdminTapProduct } from "@/modules/admin/tap.ts";
+/** Drafts, then campaigns not started yet, then live, then ended (as the server sorts them). */
+const ORDER: Record<AdminCampaign["status"], number> = { draft: 0, upcoming: 1, live: 2, ended: 3 };
 import { n, pct, pulled, rm } from "../../marketplace/format";
 import "../../marketplace/marketplace.css";
 import "../../today.css";
@@ -22,11 +25,16 @@ const CAMP_STATUS: Record<string, string> = { READY: "Draft · not shown to shop
 const STATUS: Record<AdminCampaign["status"], [string, string]> = { draft: ["Draft · not shown to shops", "b-amber"], live: ["Live", "b-green"], upcoming: ["Upcoming", "b-blue"], ended: ["Ended", "b-gray"] };
 
 /** Techwide's TAP campaigns, as designed in the mockup (TAP): campaign cards and each campaign's products. */
-export function TapAdminView({ asOf, campaigns }: { asOf: string | null; campaigns: AdminCampaign[] }) {
-  const [sel, setSel] = useState(campaigns[0]?.id ?? "");
+export function TapAdminView({ asOf, campaigns: listed }: { asOf: string | null; campaigns: AdminCampaign[] }) {
+  // Campaigns saved or published here show at once, before TikTok's own list catches up (it can take a few seconds).
+  const [added, setAdded] = useState<AdminCampaign[]>([]);
+  const [changed, setChanged] = useState<Record<string, AdminCampaign["status"]>>({});
+  const campaigns = [...added.filter((a) => !listed.some((c) => c.id === a.id)), ...listed]
+    .map((c) => (changed[c.id] && ORDER[changed[c.id]] > ORDER[c.status] ? { ...c, status: changed[c.id] } : c))
+    .sort((a, b) => ORDER[a.status] - ORDER[b.status]);
+  const [sel, setSel] = useState(listed[0]?.id ?? "");
   // Products load after the page shows (owner, 16 Oct 2026: admin pages were slow; a big campaign has 700+ products).
   const [products, setProducts] = useState<Record<string, AdminTapProduct[]>>({});
-  const [loadingReview, setLoadingReview] = useState(false);
   const [showEnded, setShowEnded] = useState(false);
   const [cq, setCq] = useState("");
   const [allCards, setAllCards] = useState(false);
@@ -55,6 +63,22 @@ export function TapAdminView({ asOf, campaigns }: { asOf: string | null; campaig
   useEffect(() => {
     if (sel && !info[sel]) loadInfo(sel);
   }, [sel, info]);
+  const asked = useRef(new Set<string>());
+  const loadPending = (id: string) => {
+    if (asked.current.has(id)) return;
+    asked.current.add(id);
+    fetch(`/api/admin/tap/review?campaign=${encodeURIComponent(id)}`, { cache: "no-store" })
+      .then(async (r) => {
+        const d = (await r.json().catch(() => ({}))) as { products?: AdminTapProduct[]; total?: number; error?: string };
+        setPending((x) => ({ ...x, [id]: r.ok && d.products ? { products: d.products, total: d.total ?? d.products.length } : "error" }));
+      })
+      .catch(() => setPending((x) => ({ ...x, [id]: "error" })));
+  };
+  // The products waiting for review load as soon as a campaign is picked, so To review opens at once.
+  const selDraft = campaigns.find((c) => c.id === sel)?.status === "draft";
+  useEffect(() => {
+    if (sel && !selDraft && pending[sel] === undefined) loadPending(sel);
+  }, [sel, selDraft, pending]);
   useEffect(() => {
     if (!sel || products[sel]) return;
     fetch(`/api/admin/tap?campaign=${encodeURIComponent(sel)}`, { cache: "no-store" })
@@ -74,14 +98,17 @@ export function TapAdminView({ asOf, campaigns }: { asOf: string | null; campaig
     setPublishing(false);
     if (!r.ok) return flash(d.error || "TikTok didn't publish it.", false);
     flash(`${camp.name} published · shops can see it`);
+    setChanged((x) => ({ ...x, [sel]: "upcoming" }));
     loadInfo(sel);
+    router.refresh();
   }
   const ci = info[sel] && info[sel] !== "error" ? (info[sel] as CampaignOverview) : null;
   const all = products[sel] ?? [];
   const ended = campaigns.filter((c) => c.status === "ended").length;
   const qq = cq.trim().toLowerCase();
   const matching = campaigns.filter((c) => (showEnded || c.status !== "ended" || c.id === sel) && (!qq || c.name.toLowerCase().includes(qq)));
-  const cards = allCards || qq ? matching : matching.slice(0, 9);
+  // The first 9, and the picked campaign wherever it is (e.g. one just saved or published).
+  const cards = allCards || qq ? matching : [...matching.slice(0, 9), ...matching.slice(9).filter((c) => c.id === sel)];
 
   function pick(id: string) {
     setSel(id);
@@ -93,32 +120,27 @@ export function TapAdminView({ asOf, campaigns }: { asOf: string | null; campaig
   const waiting = pending[sel];
   const list = review ? (waiting && waiting !== "error" ? waiting.products : []) : all;
   const cols = review ? REVIEW_COLS : COLS;
-  const loading = review ? loadingReview : !!sel && !products[sel];
+  const loading = review ? !selDraft && pending[sel] === undefined : !!sel && !products[sel];
 
   function showReview() {
     setF(1);
     setOpenRows({});
-    if (pending[sel] && pending[sel] !== "error") return;
-    setLoadingReview(true);
-    fetch(`/api/admin/tap/review?campaign=${encodeURIComponent(sel)}`, { cache: "no-store" })
-      .then(async (r) => {
-        const d = (await r.json().catch(() => ({}))) as { products?: AdminTapProduct[]; total?: number; error?: string };
-        setPending((x) => ({ ...x, [sel]: r.ok && d.products ? { products: d.products, total: d.total ?? d.products.length } : "error" }));
-      })
-      .catch(() => setPending((x) => ({ ...x, [sel]: "error" })))
-      .finally(() => setLoadingReview(false));
+    if (pending[sel] === "error") { asked.current.delete(sel); setPending((x) => { const y = { ...x }; delete y[sel]; return y; }); loadPending(sel); }
   }
   async function decide(p: AdminTapProduct, approve: boolean) {
     if (!approve && !reason) return flash("Pick a reason the shop will see", false);
     setBusy(p.id);
-    const r = await fetch("/api/admin/tap/review", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ campaign: sel, product: p.id, name: p.name, decision: approve ? "approve" : "decline", reason: approve ? undefined : reason }) });
+    const r = await fetch("/api/admin/tap/review", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ campaign: sel, product: p.id, name: p.name, decision: approve ? "approve" : "decline", reason: approve ? undefined : reason, item: approve ? p : undefined }) });
     const d = (await r.json().catch(() => ({}))) as { error?: string };
     setBusy(null);
     if (!r.ok) return flash(d.error || "TikTok didn't take the decision.", false);
     setDeclining(null);
     setReason("");
     setPending((x) => { const w = x[sel]; return w && w !== "error" ? { ...x, [sel]: { products: w.products.filter((q) => q.id !== p.id), total: Math.max(0, w.total - 1) } } : x; });
-    flash(approve ? `${p.name.split(" ").slice(0, 3).join(" ")} is approved · it reaches creators with the next daily refresh` : "Declined · the shop sees the reason in TikTok Shop");
+    // An approved product joins All products at once (Rezekii keeps it there until the daily refresh brings it).
+    if (approve) setProducts((x) => (x[sel] ? { ...x, [sel]: [p, ...x[sel].filter((q) => q.id !== p.id)] } : x));
+    setInfo((x) => { const y = { ...x }; delete y[sel]; return y; });
+    flash(approve ? `${p.name.split(" ").slice(0, 3).join(" ")} is approved · it's in All products, and reaches creators in the Marketplace with the next daily refresh` : "Declined · the shop sees the reason in TikTok Shop");
   }
 
   return (
@@ -284,8 +306,9 @@ export function TapAdminView({ asOf, campaigns }: { asOf: string | null; campaig
           initial={sheet.id && info[sheet.id] && info[sheet.id] !== "error" ? (info[sheet.id] as CampaignOverview).form : null}
           closing={closingSheet}
           onClose={closeSheet}
-          onSaved={(id, published, name) => {
+          onSaved={(id, published, name, form) => {
             const editing = !!sheet.id;
+            if (!editing) setAdded((x) => [{ id, name, status: published ? "upcoming" : "draft", start: dayStart(form.start), end: dayEnd(form.end), products: 0, creators: 0, upto: 0, gmvPaid: 0, gmvSettled: 0, comEst: 0, comSettled: 0 }, ...x]);
             closeSheet();
             flash(editing ? `${name} saved in TikTok Shop` : published ? `${name} created and published` : `${name} saved as a draft · publish it when ready`);
             setInfo((x) => { const y = { ...x }; delete y[id]; return y; });

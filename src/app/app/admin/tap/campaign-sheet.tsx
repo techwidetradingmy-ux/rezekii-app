@@ -18,7 +18,7 @@ export function CampaignSheet({ id, initial, closing, onClose, onSaved }: {
   initial: CampaignForm | null;
   closing: boolean;
   onClose: () => void;
-  onSaved: (id: string, published: boolean, name: string) => void;
+  onSaved: (id: string, published: boolean, name: string, form: CampaignForm) => void;
 }) {
   const [f, setF] = useState<CampaignForm>(initial ?? EMPTY);
   const [busy, setBusy] = useState<"" | "save" | "publish">("");
@@ -56,7 +56,7 @@ export function CampaignSheet({ id, initial, closing, onClose, onSaved }: {
         const pd = (await p.json().catch(() => ({}))) as { error?: string };
         if (!p.ok) throw new Error(`Saved, but not published: ${pd.error || "TikTok didn't publish it."}`);
       }
-      onSaved(d.id, andPublish, f.name);
+      onSaved(d.id, andPublish, sent.name, sent);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {

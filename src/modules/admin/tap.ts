@@ -48,18 +48,39 @@ async function latest(dataset: string): Promise<{ asOf: string | null; rows: { s
 const statusOf = (c: Campaign): AdminCampaign["status"] => (c.status === "ONGOING" ? "live" : c.status === "CLOSED" ? "ended" : c.status === "READY" ? "draft" : "upcoming");
 
 /** Campaign product lists already read, kept 5 minutes (they change only with the daily refresh). */
-const productLists = new Map<string, { at: number; rows: AdminTapProduct[] }>();
+const productLists = new Map<string, { at: number; rows: AdminTapProduct[]; asOf: string }>();
 
 /** One campaign's products from the latest daily refresh (admin TAP page, loaded when the campaign is picked). */
 export async function campaignProducts(campaignId: string): Promise<AdminTapProduct[]> {
   const hit = productLists.get(campaignId);
-  if (hit && Date.now() - hit.at < 5 * 60_000) return hit.rows;
+  if (hit && Date.now() - hit.at < 5 * 60_000) return withApproved(campaignId, hit.asOf, hit.rows);
   const [d] = (await (await supabaseRest("market_snapshots?dataset=eq.tap_products&select=as_of&order=as_of.desc&limit=1")).json()) as { as_of: string }[];
   if (!d) return [];
   const [row] = (await (await supabaseRest(`market_snapshots?dataset=eq.tap_products&as_of=eq.${d.as_of}&slot=eq.${encodeURIComponent(campaignId)}&select=items&limit=1`)).json()) as { items: Raw[] }[];
   const rows = (row?.items ?? []).map(toAdminProduct).sort((a, b) => b.sold - a.sold);
-  productLists.set(campaignId, { at: Date.now(), rows });
-  return rows;
+  productLists.set(campaignId, { at: Date.now(), rows, asOf: d.as_of });
+  return withApproved(campaignId, d.as_of, rows);
+}
+
+/** Products approved on Rezekii since the refresh (they join the campaign's list with the next daily refresh), first. */
+async function withApproved(campaignId: string, asOf: string, rows: AdminTapProduct[]): Promise<AdminTapProduct[]> {
+  const [row] = (await (await supabaseRest(`market_snapshots?dataset=eq.tap_approved&slot=eq.${encodeURIComponent(campaignId)}&as_of=gte.${asOf}&select=items&order=as_of.desc&limit=1`)).json()) as { items: AdminTapProduct[] }[];
+  const have = new Set(rows.map((p) => p.id));
+  return [...(row?.items ?? []).filter((p) => !have.has(p.id)), ...rows];
+}
+
+const mytToday = () => new Date(Date.now() + 8 * 3_600_000).toISOString().slice(0, 10);
+
+/** Remembers a product approved on Rezekii, so the campaign's list shows it before the next daily refresh. */
+async function keepApproved(campaignId: string, item: AdminTapProduct): Promise<void> {
+  const today = mytToday();
+  const [row] = (await (await supabaseRest(`market_snapshots?dataset=eq.tap_approved&slot=eq.${encodeURIComponent(campaignId)}&as_of=eq.${today}&select=items&limit=1`)).json()) as { items: AdminTapProduct[] }[];
+  const items = [item, ...(row?.items ?? []).filter((p) => p.id !== item.id)];
+  await supabaseRest("market_snapshots?on_conflict=dataset,slot,as_of", {
+    method: "POST",
+    headers: { prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({ dataset: "tap_approved", slot: campaignId, as_of: today, items, fetched_at: new Date().toISOString() }),
+  });
 }
 
 const toAdminProduct = (p: Raw): AdminTapProduct => ({
@@ -125,7 +146,8 @@ export async function tapOverview(): Promise<{ asOf: string | null; campaigns: A
   return { asOf: saved.asOf, campaigns: [...added, ...updated].sort((a, b) => ORDER[a.status] - ORDER[b.status] || b.products - a.products) };
 }
 
-const ORDER: Record<AdminCampaign["status"], number> = { draft: 0, live: 1, upcoming: 2, ended: 3 };
+/** Drafts, then published campaigns not started yet (a campaign just published lands here), then live, then ended. */
+export const ORDER: Record<AdminCampaign["status"], number> = { draft: 0, upcoming: 1, live: 2, ended: 3 };
 
 /** TikTok's 20 newest campaigns (drafts first), read live; none when TikTok doesn't answer. */
 async function newestCampaigns(): Promise<Campaign[]> {
@@ -210,10 +232,11 @@ export const REJECT_REASONS: [RejectReason, string][] = [
 ];
 
 /** Approve a submitted product (it reaches creators with the next daily refresh) or decline it with TikTok's reason. */
-export async function reviewProduct(campaignId: string, productId: string, approve: boolean, reason: RejectReason | null, name: string, actor: string): Promise<{ ok: boolean; error?: string }> {
+export async function reviewProduct(campaignId: string, productId: string, approve: boolean, reason: RejectReason | null, name: string, actor: string, item?: AdminTapProduct | null): Promise<{ ok: boolean; error?: string }> {
   const s = await storedSessions().partner();
   const r = await reviewCampaignProduct(s.token, s.cipher, campaignId, productId, approve ? "APPROVE" : "REJECT", reason ? [reason] : []);
   if (r.code !== 0) return { ok: false, error: `TikTok didn't take the decision (${r.code}: ${r.message}).` };
+  if (approve && item?.id === productId) await keepApproved(campaignId, item).catch((err) => console.error("[tap approved]", err instanceof Error ? err.message : err));
   await logActivity(actor, "TAP", `${approve ? "approved" : "declined"} ${name.slice(0, 60)} for a TAP campaign${!approve && reason ? ` (${REJECT_REASONS.find(([k]) => k === reason)?.[1]})` : ""}`);
   return { ok: true };
 }
