@@ -3,6 +3,15 @@
 import { useEffect, useState } from "react";
 import type { AdminSample } from "@/modules/tap/samples.ts";
 import { sampleStage } from "@/modules/tap/stages.ts";
+import "../../marketplace/marketplace.css";
+import "../../today.css";
+
+/**
+ * Partner Center's Manage samples page, To review tab, Malaysia (owner, 16 Oct 2026). TAP agencies approve or reject samples there;
+ * TikTok gives apps no API for it (only the seller APIs can review samples), so Rezekii hands over: it copies the product ID
+ * for the page's "Search product ID" box (the page ignores IDs in its address).
+ */
+export const MANAGE_SAMPLES = "https://partner.tiktokshop.com/affiliate-campaign/sample-requests?tab=to_review&market=6";
 
 const when = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { timeZone: "Asia/Kuala_Lumpur", day: "numeric", month: "short", year: "numeric" });
 
@@ -33,9 +42,14 @@ const inTab = (r: AdminSample, t: Tab) => {
   return t === "open" ? stage >= 1 && stage <= 4 : t === "done" ? stage === 5 || stage === -1 : false;
 };
 
-/** Read-only: every sample creators asked for on Rezekii with TikTok's status. Approvals happen in TikTok Shop Partner Center. */
+/** Every sample creators asked for on Rezekii with TikTok's status. Approvals happen in TikTok Shop Partner Center (Manage samples). */
 export function QueueView() {
   const [tab, setTab] = useState<Tab>("all");
+  const [copied, setCopied] = useState<{ id: string; ok: boolean } | null>(null);
+  // The link opens Partner Center; the click also copies the product ID to paste into its search box.
+  const handOver = (productId: string) => {
+    navigator.clipboard.writeText(productId).then(() => setCopied({ id: productId, ok: true }), () => setCopied({ id: productId, ok: false }));
+  };
   const [rows, setRows] = useState<AdminSample[] | null>(null);
   const [error, setError] = useState("");
 
@@ -80,7 +94,17 @@ export function QueueView() {
                     <a href={`/app/marketplace/${r.productId}`} className="tap-rowname" target="_blank" rel="noopener">{r.name}</a>
                     <small><b>{r.creator}</b> · {[r.shop, `asked ${when(r.askedAt)}`, r.tiktok?.variant, `ID ${r.productId}`].filter(Boolean).join(" · ")}</small>
                   </div>
-                  <span className={`badge ${badge}`}>{label}</span>
+                  <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+                    <span className={`badge ${badge}`}>{label}</span>
+                    {(r.tiktok?.status === "PENDING" || (!r.tiktok && !r.checked)) && (
+                      <a href={MANAGE_SAMPLES} target="_blank" rel="noopener" className="nv-btn2 nv-sm nv-press" onClick={() => handOver(r.productId)}>
+                        {r.tiktok ? "Approve in Partner Center" : "Check in Partner Center"}
+                      </a>
+                    )}
+                    {copied?.id === r.productId && (
+                      <small style={{ color: "var(--muted)" }}>{copied.ok ? "Product ID copied · paste it in Search product ID" : `Search product ID ${r.productId}`}</small>
+                    )}
+                  </span>
                 </li>
               );
             })}
