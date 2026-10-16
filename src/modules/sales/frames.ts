@@ -177,7 +177,7 @@ export type FrameData = {
   stats: FrameStats;
   compare: { range: Range; gmv: number; buckets: number[] } | null;
   /** Titles and covers for the creator's own videos that made sales. */
-  videos: Record<string, { title: string; cover: string | null; url: string | null }>;
+  videos: Record<string, { title: string | null; cover: string | null; url: string | null }>;
   first: string | null;
   now: number;
 };
@@ -222,8 +222,10 @@ export async function salesFrame(userId: string, key: string, source: Source, ho
     const rows = (await (await supabaseRest(`tiktok_videos?video_id=in.(${ids.join(",")})&select=video_id,title,cover,share_url`)).json()) as { video_id: string; title: string | null; cover: string | null; share_url: string | null }[];
     const have = new Set(rows.map((r) => r.video_id));
     rows.push(...(await fetchOwnVideos(userId, ids.filter((id) => !have.has(id))).catch(() => [])));
-    // Covers through Rezekii: TikTok's cover addresses stop working within a day (owner, 16 Oct 2026).
-    for (const r of rows) videos[r.video_id] = { title: r.title || "Untitled video", cover: r.cover ? `/api/img/v/${r.video_id}` : null, url: r.share_url };
+    // Covers through Rezekii (TikTok's cover addresses stop working within a day); for every video, with or without a saved
+    // record, as the cover route falls back to the product's photo (owner, 16 Oct 2026).
+    const byId = new Map(rows.map((r) => [r.video_id, r]));
+    for (const id of ids) { const r = byId.get(id); videos[id] = { title: r ? r.title || "Untitled video" : null, cover: `/api/img/v/${id}`, url: r?.share_url ?? null }; }
   }
   return { range, stats, compare, videos, first: firstRow?.created_at ?? null, now };
 }
