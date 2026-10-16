@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { AdminSample } from "@/modules/tap/samples.ts";
 import { sampleStage } from "@/modules/tap/stages.ts";
 import "../../marketplace/marketplace.css";
@@ -52,25 +52,49 @@ export function QueueView() {
   };
   const [rows, setRows] = useState<AdminSample[] | null>(null);
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [readAt, setReadAt] = useState<number | null>(null);
+  const last = useRef(0);
 
+  // TikTok's statuses, read afresh: on opening, on Refresh, and whenever this tab is shown again (e.g. back from approving
+  // or rejecting in Partner Center), at most every 5 seconds.
   useEffect(() => {
     let live = true;
-    fetch("/api/admin/samples", { cache: "no-store" })
-      .then(async (r) => {
-        if (!live) return;
-        if (!r.ok) return setError("The sample requests could not load. Please refresh.");
-        const d = (await r.json()) as { samples: AdminSample[] };
-        if (live) setRows(d.samples);
-      })
-      .catch(() => live && setError("The sample requests could not load. Please refresh."));
+    const load = () => {
+      if (Date.now() - last.current < 5000) return;
+      last.current = Date.now();
+      setBusy(true);
+      fetch("/api/admin/samples", { cache: "no-store" })
+        .then(async (r) => {
+          if (!live) return;
+          if (!r.ok) return setError("The sample requests could not load. Please refresh.");
+          const d = (await r.json()) as { samples: AdminSample[] };
+          if (live) { setRows(d.samples); setError(""); setReadAt(Date.now()); }
+        })
+        .catch(() => live && setError("The sample requests could not load. Please refresh."))
+        .finally(() => live && setBusy(false));
+    };
+    const onShow = () => { if (document.visibilityState === "visible") load(); };
+    load();
+    window.addEventListener("focus", onShow);
+    document.addEventListener("visibilitychange", onShow);
+    window.addEventListener("rezekii:samples-refresh", load);
     return () => {
       live = false;
+      window.removeEventListener("focus", onShow);
+      document.removeEventListener("visibilitychange", onShow);
+      window.removeEventListener("rezekii:samples-refresh", load);
     };
   }, []);
+  const refresh = () => { last.current = 0; window.dispatchEvent(new Event("rezekii:samples-refresh")); };
 
   const shown = rows?.filter((r) => inTab(r, tab)) ?? null;
   return (
     <>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
+        <button type="button" className="nv-btn2 nv-sm nv-press" onClick={refresh} disabled={busy}>{busy ? "Reading TikTok…" : "Refresh statuses"}</button>
+        {readAt && <small style={{ color: "var(--muted)" }}>{`Read from TikTok at ${new Date(readAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Asia/Kuala_Lumpur" })} · updates when you come back to this tab`}</small>}
+      </div>
       <div className="np-seg" role="tablist" aria-label="Status">
         {TABS.map(([v, label]) => (
           <button key={v} type="button" role="tab" aria-selected={tab === v} className={tab === v ? "on" : ""} onClick={() => setTab(v)}>

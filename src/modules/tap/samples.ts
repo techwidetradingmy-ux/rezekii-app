@@ -268,11 +268,11 @@ async function logRequest(userId: string, productId: string, t: { name: string; 
 type Application = { id: string; productId: string; variant: string; status: string; dueAt: number | null };
 const appCache = new Map<string, { at: number; apps: Application[] }>();
 
-/** The creator's own sample requests from TikTok (every status, newest 200), kept 10 minutes. */
-async function applications(userId: string): Promise<Application[] | null> {
+/** The creator's own sample requests from TikTok (every status, newest 200), kept a minute (`fresh`: read TikTok now). */
+async function applications(userId: string, fresh = false): Promise<Application[] | null> {
   const hit = appCache.get(userId);
-  // Kept a minute: a sample the creator just submitted in TikTok shows on My TAP products straight after.
-  if (hit && Date.now() - hit.at < 60_000) return hit.apps;
+  // Kept a minute: a sample the creator just submitted in TikTok shows on My Samples straight after.
+  if (!fresh && hit && Date.now() - hit.at < 60_000) return hit.apps;
   const token = await approvedCreatorToken(userId);
   if (!token) return null;
   const apps: Application[] = [];
@@ -340,7 +340,8 @@ export async function adminSamples(): Promise<AdminSample[]> {
   type Row = SampleRequest & { app_users: { display_name: string | null; tiktok_username: string | null; email: string | null } | null };
   const rows = (await (await supabaseRest("sample_requests?status=neq.cancelled&select=*,app_users(display_name,tiktok_username,email)&order=created_at.desc&limit=300")).json()) as Row[];
   const byUser = new Map<string, Application[] | null>();
-  await Promise.all([...new Set(rows.map((r) => r.user_id))].map(async (u) => byUser.set(u, await applications(u).catch(() => null))));
+  // Read TikTok afresh: an approval or rejection made in Partner Center shows as soon as TikTok has it.
+  await Promise.all([...new Set(rows.map((r) => r.user_id))].map(async (u) => byUser.set(u, await applications(u, true).catch(() => null))));
   return rows.map(({ app_users: u, ...r }) => {
     const apps = byUser.get(r.user_id) ?? null;
     const a = apps?.find((x) => x.productId === r.product_id);
