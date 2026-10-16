@@ -2,15 +2,10 @@
 
 import { useRef, useState } from "react";
 import type { CampaignForm } from "@/modules/admin/campaigns.ts";
+import { firstEndDay, lastEndDay, longDay, startTime } from "@/modules/admin/campaign-dates.ts";
 
 const EMPTY: CampaignForm = { name: "", description: "", regEnd: "", start: "", end: "", commission: 18, local: true, crossBorder: false, shopCodes: [], whatsapp: "", email: "", phone: "" };
 const label = { position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" } as const;
-/** TikTok's longest campaign: 360 days counting the start day. */
-const MAX_DAYS = 360;
-const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-/** "2027-10-10" as "10 Oct 2027". */
-const longDay = (day: string) => { const [y, m, d] = day.split("-").map(Number); return `${d} ${MON[m - 1]} ${y}`; };
-const addDays = (day: string, n: number) => new Date(Date.parse(`${day}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
 /** Marks a field TikTok requires. */
 const Req = () => <span className="cp-req" aria-hidden="true"> *</span>;
 
@@ -28,12 +23,15 @@ export function CampaignSheet({ id, initial, closing, onClose, onSaved }: {
   const [f, setF] = useState<CampaignForm>(initial ?? EMPTY);
   const [busy, setBusy] = useState<"" | "save" | "publish">("");
   const [error, setError] = useState("");
-  const [today] = useState(() => new Date(Date.now() + 8 * 3_600_000).toISOString().slice(0, 10));
+  const [now] = useState(() => Date.now());
+  const today = new Date(now + 8 * 3_600_000).toISOString().slice(0, 10);
   const form = useRef<HTMLFormElement>(null);
   const set = <K extends keyof CampaignForm>(k: K, v: CampaignForm[K]) => setF((x) => ({ ...x, [k]: v }));
-  // The furthest dates TikTok allows (owner, 16 Oct 2026: agencies keep campaigns and registration open as long as they can).
+  // TikTok's limits (campaign-dates.ts), from the real start: an existing campaign's saved start, else the day (10 minutes from
+  // now when that's today). The latest dates fill in at once (owner, 16 Oct 2026: agencies keep both open as long as they can).
   const start = f.start || today;
-  const latestEnd = addDays(start, MAX_DAYS - 1);
+  const at = startTime(start, now, id ? f.startAt : null);
+  const firstEnd = firstEndDay(at), latestEnd = lastEndDay(at);
   const useLatest = () => setF((x) => ({ ...x, start, end: latestEnd, regEnd: latestEnd }));
 
   async function save(andPublish: boolean) {
@@ -96,12 +94,12 @@ export function CampaignSheet({ id, initial, closing, onClose, onSaved }: {
           </fieldset>
           <div className="cp-grid">
             <div className="cp-field"><label htmlFor="cpcs" className="nv-label">Campaign starts<Req /></label><input id="cpcs" name="start" type="date" className="nv-input" min={id ? undefined : today} value={f.start} onChange={(e) => set("start", e.target.value)} required /><span className="cp-help">Today or later; shops can register from this day. Today means about 10 minutes from now (TikTok needs a start time that hasn&apos;t passed).</span></div>
-            <div className="cp-field"><label htmlFor="cpce" className="nv-label">Campaign ends<Req /></label><input id="cpce" name="end" type="date" className="nv-input" min={start} max={latestEnd} value={f.end} onChange={(e) => set("end", e.target.value)} required /><span className="cp-help">At most 360 days, counting the start day: {longDay(latestEnd)} at the latest.</span></div>
-            <div className="cp-field"><label htmlFor="cpre" className="nv-label">Registration closes<Req /></label><input id="cpre" name="regEnd" type="date" className="nv-input" min={start} max={f.end || latestEnd} value={f.regEnd} onChange={(e) => set("regEnd", e.target.value)} required /><span className="cp-help">Between the start and end days; usually the end day, so shops can join all along.</span></div>
+            <div className="cp-field"><label htmlFor="cpce" className="nv-label">Campaign ends<Req /></label><input id="cpce" name="end" type="date" className="nv-input" min={firstEnd} max={latestEnd} value={f.end} onChange={(e) => set("end", e.target.value)} required /><span className="cp-help">At least 1 day and at most 360 days from the start (TikTok&apos;s limits): {longDay(latestEnd)} at the latest.</span></div>
+            <div className="cp-field"><label htmlFor="cpre" className="nv-label">Registration closes<Req /></label><input id="cpre" name="regEnd" type="date" className="nv-input" min={firstEnd} max={f.end || latestEnd} value={f.regEnd} onChange={(e) => set("regEnd", e.target.value)} required /><span className="cp-help">Open at least 1 day, closing by the end day; usually the end day, so shops can join all along.</span></div>
           </div>
           <div className="cp-latest">
             <button type="button" className="nv-btn2 nv-sm nv-press" onClick={useLatest}>Use the latest dates</button>
-            <span className="cp-help">Runs and takes registrations for the full 360 days TikTok allows{f.start ? "" : ", from today"}.</span>
+            <span className="cp-help">Runs and takes registrations for the full 360 days TikTok allows{f.start ? "" : ", from today"}: until {longDay(latestEnd)}.</span>
           </div>
           <div className="cp-field">
             <label htmlFor="cpcom" className="nv-label">Total commission shown to shops<Req /></label>

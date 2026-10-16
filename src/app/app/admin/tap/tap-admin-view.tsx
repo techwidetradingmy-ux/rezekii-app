@@ -19,7 +19,7 @@ const REASONS: [string, string][] = [["COMMISSION_TOO_LOW", "Commission too low"
 const day = (s: number | null, year = false) => (s ? new Date(s * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "short", ...(year ? { year: "numeric" } : {}), timeZone: "Asia/Kuala_Lumpur" }) : "");
 /** TikTok's campaign statuses, in words. READY = created but not published (hidden from shops). */
 const CAMP_STATUS: Record<string, string> = { READY: "Draft · not shown to shops", UPCOMING: "Published · starts soon", ONGOING: "Live", CLOSED: "Ended" };
-const STATUS: Record<AdminCampaign["status"], [string, string]> = { live: ["Live", "b-green"], upcoming: ["Upcoming", "b-blue"], ended: ["Ended", "b-gray"] };
+const STATUS: Record<AdminCampaign["status"], [string, string]> = { draft: ["Draft · not shown to shops", "b-amber"], live: ["Live", "b-green"], upcoming: ["Upcoming", "b-blue"], ended: ["Ended", "b-gray"] };
 
 /** Techwide's TAP campaigns, as designed in the mockup (TAP): campaign cards and each campaign's products. */
 export function TapAdminView({ asOf, campaigns }: { asOf: string | null; campaigns: AdminCampaign[] }) {
@@ -33,7 +33,7 @@ export function TapAdminView({ asOf, campaigns }: { asOf: string | null; campaig
   const [limit, setLimit] = useState(100);
   const [f, setF] = useState<0 | 1>(0);
   const { toast, flash } = useToast();
-  const [pending, setPending] = useState<Record<string, AdminTapProduct[] | "error">>({});
+  const [pending, setPending] = useState<Record<string, { products: AdminTapProduct[]; total: number } | "error">>({});
   const [declining, setDeclining] = useState<string | null>(null);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
@@ -91,7 +91,7 @@ export function TapAdminView({ asOf, campaigns }: { asOf: string | null; campaig
   }
   const review = f === 1;
   const waiting = pending[sel];
-  const list = review ? (Array.isArray(waiting) ? waiting : []) : all;
+  const list = review ? (waiting && waiting !== "error" ? waiting.products : []) : all;
   const cols = review ? REVIEW_COLS : COLS;
   const loading = review ? loadingReview : !!sel && !products[sel];
 
@@ -102,8 +102,8 @@ export function TapAdminView({ asOf, campaigns }: { asOf: string | null; campaig
     setLoadingReview(true);
     fetch(`/api/admin/tap/review?campaign=${encodeURIComponent(sel)}`, { cache: "no-store" })
       .then(async (r) => {
-        const d = (await r.json().catch(() => ({}))) as { products?: AdminTapProduct[]; error?: string };
-        setPending((x) => ({ ...x, [sel]: r.ok && d.products ? d.products : "error" }));
+        const d = (await r.json().catch(() => ({}))) as { products?: AdminTapProduct[]; total?: number; error?: string };
+        setPending((x) => ({ ...x, [sel]: r.ok && d.products ? { products: d.products, total: d.total ?? d.products.length } : "error" }));
       })
       .catch(() => setPending((x) => ({ ...x, [sel]: "error" })))
       .finally(() => setLoadingReview(false));
@@ -117,7 +117,7 @@ export function TapAdminView({ asOf, campaigns }: { asOf: string | null; campaig
     if (!r.ok) return flash(d.error || "TikTok didn't take the decision.", false);
     setDeclining(null);
     setReason("");
-    setPending((x) => ({ ...x, [sel]: (Array.isArray(x[sel]) ? (x[sel] as AdminTapProduct[]) : []).filter((q) => q.id !== p.id) }));
+    setPending((x) => { const w = x[sel]; return w && w !== "error" ? { ...x, [sel]: { products: w.products.filter((q) => q.id !== p.id), total: Math.max(0, w.total - 1) } } : x; });
     flash(approve ? `${p.name.split(" ").slice(0, 3).join(" ")} is approved · it reaches creators with the next daily refresh` : "Declined · the shop sees the reason in TikTok Shop");
   }
 
@@ -171,7 +171,7 @@ export function TapAdminView({ asOf, campaigns }: { asOf: string | null; campaig
             <div className="nv-seg" role="group" aria-label="Show" style={{ width: 300, maxWidth: "100%" }}>
               <span className="nv-segthumb" aria-hidden="true" style={{ width: "calc(50% - 2px)", transform: f === 0 ? "translateX(0)" : "translateX(100%)" }} />
               <button type="button" className={f === 0 ? "on" : ""} aria-pressed={f === 0} onClick={() => setF(0)}>All products</button>
-              <button type="button" className={f === 1 ? "on" : ""} aria-pressed={f === 1} onClick={showReview}>To review{Array.isArray(waiting) ? ` ${waiting.length}` : ""}</button>
+              <button type="button" className={f === 1 ? "on" : ""} aria-pressed={f === 1} onClick={showReview}>To review{waiting && waiting !== "error" ? ` ${n(waiting.total)}` : ci ? ` ${n(ci.counts.pending)}` : ""}</button>
             </div>
             <Link href="/app/admin/samples" className="nv-link" style={{ fontSize: 13 }}>Sample requests and their TikTok status</Link>
           </div>
@@ -182,7 +182,11 @@ export function TapAdminView({ asOf, campaigns }: { asOf: string | null; campaig
               <>
                 <span className={`nv-badge ${ci.status === "READY" ? "b-amber" : ci.status === "CLOSED" ? "b-gray" : "b-green"}`}>{CAMP_STATUS[ci.status] ?? ci.status}</span>
                 <span><b>{n(ci.counts.approved)}</b> approved</span>
-                <span><b>{n(ci.counts.pending)}</b> waiting for review</span>
+                {ci.counts.pending > 0 && !review ? (
+                  <button type="button" className="nv-link" onClick={showReview}><b>{n(ci.counts.pending)}</b> waiting for review · review them</button>
+                ) : (
+                  <span><b>{n(ci.counts.pending)}</b> waiting for review</span>
+                )}
                 <span><b>{n(ci.counts.declined)}</b> declined</span>
                 <span style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
                   {ci.status === "READY" && <button type="button" className="nv-btn nv-sm nv-press" disabled={publishing} onClick={publishSel}>{publishing ? "Publishing…" : "Publish"}</button>}
@@ -261,6 +265,9 @@ export function TapAdminView({ asOf, campaigns }: { asOf: string | null; campaig
               })}
             </div>
           </div>
+          {review && !loading && waiting && waiting !== "error" && waiting.total > waiting.products.length && (
+            <p style={{ margin: 0, padding: "12px 22px", fontSize: 13, color: "var(--muted)", borderTop: "1px solid var(--line)" }}>{`Showing the first ${waiting.products.length} of ${n(waiting.total)} waiting. Approve or decline these, then pick To review again for the next ones.`}</p>
+          )}
           {!loading && list.length > limit && (
             <div style={{ padding: 16, display: "flex", justifyContent: "center", borderTop: "1px solid var(--line)" }}>
               <button type="button" className="nv-btn2 nv-press" onClick={() => setLimit(limit + 100)}>Show more ({n(list.length - limit)} left)</button>
@@ -280,8 +287,10 @@ export function TapAdminView({ asOf, campaigns }: { asOf: string | null; campaig
           onSaved={(id, published, name) => {
             const editing = !!sheet.id;
             closeSheet();
-            flash(editing ? `${name} saved in TikTok Shop` : published ? `${name} created and published · it shows here after the next daily refresh` : `${name} saved as a draft · publish it when ready`);
+            flash(editing ? `${name} saved in TikTok Shop` : published ? `${name} created and published` : `${name} saved as a draft · publish it when ready`);
             setInfo((x) => { const y = { ...x }; delete y[id]; return y; });
+            // A new campaign shows at once (read live from TikTok): open it, so it can be published from here.
+            if (!editing) { setSel(id); setF(0); }
             router.refresh();
           }}
         />

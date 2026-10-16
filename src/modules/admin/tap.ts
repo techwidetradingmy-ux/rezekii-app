@@ -1,5 +1,5 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
-import { listCampaignProducts, reviewCampaignProduct, type Campaign, type CampaignProduct, type RejectReason } from "../../integrations/tiktok-shop/partner.ts";
+import { listCampaignProducts, listCampaigns, reviewCampaignProduct, type Campaign, type CampaignProduct, type RejectReason } from "../../integrations/tiktok-shop/partner.ts";
 import { storedSessions } from "../refresh/sessions.ts";
 import { logActivity } from "./admins.ts";
 import { smallImage } from "../tap/image.ts";
@@ -9,7 +9,8 @@ import type { StatRow } from "../tap/golden.ts";
 export type AdminCampaign = {
   id: string;
   name: string;
-  status: "live" | "upcoming" | "ended";
+  /** draft = created, not published (hidden from shops) */
+  status: "draft" | "live" | "upcoming" | "ended";
   start: number | null;
   end: number | null;
   products: number;
@@ -44,7 +45,7 @@ async function latest(dataset: string): Promise<{ asOf: string | null; rows: { s
   return { asOf: d.as_of, rows: await (await supabaseRest(`market_snapshots?dataset=eq.${dataset}&as_of=eq.${d.as_of}&select=slot,items`)).json() };
 }
 
-const statusOf = (c: Campaign): AdminCampaign["status"] => (c.status === "ONGOING" ? "live" : c.status === "CLOSED" ? "ended" : "upcoming");
+const statusOf = (c: Campaign): AdminCampaign["status"] => (c.status === "ONGOING" ? "live" : c.status === "CLOSED" ? "ended" : c.status === "READY" ? "draft" : "upcoming");
 
 /** Campaign product lists already read, kept 5 minutes (they change only with the daily refresh). */
 const productLists = new Map<string, { at: number; rows: AdminTapProduct[] }>();
@@ -101,11 +102,40 @@ async function creatorRows(): Promise<{ campaign_id: string; username: string }[
   return pages.flat();
 }
 
-/** The campaign list changes only with the daily refresh: kept 5 minutes. */
+/** The refreshed campaign figures change only with the daily refresh: kept 5 minutes. */
 let overview: { at: number; data: { asOf: string | null; campaigns: AdminCampaign[] } } | null = null;
 
-/** Techwide's TAP campaigns from the latest daily refresh, each with its product and creator counts and commission. Admin only. */
+/**
+ * Techwide's TAP campaigns, each with its product and creator counts and commission. Admin only. The figures come from the
+ * latest daily refresh; TikTok's newest campaigns are read live each time (one call, drafts first), so a campaign just created
+ * or published shows at once (owner, 16 Oct 2026: a new draft couldn't be seen to publish it).
+ */
 export async function tapOverview(): Promise<{ asOf: string | null; campaigns: AdminCampaign[] }> {
+  const [saved, live] = await Promise.all([refreshedCampaigns(), newestCampaigns()]);
+  const known = new Map(saved.campaigns.map((c) => [c.id, c]));
+  const fresh = new Map(live.map((c) => [c.id, c]));
+  const added = live.filter((c) => !known.has(c.id)).map((c): AdminCampaign => ({
+    id: c.id, name: c.name, status: statusOf(c), start: unixSeconds(c.campaign_start_time) || null, end: unixSeconds(c.campaign_end_time) || null,
+    products: 0, creators: 0, upto: 0, gmvPaid: 0, gmvSettled: 0, comEst: 0, comSettled: 0,
+  }));
+  const updated = saved.campaigns.map((c) => {
+    const l = fresh.get(c.id);
+    return l ? { ...c, name: l.name, status: statusOf(l), start: unixSeconds(l.campaign_start_time) || c.start, end: unixSeconds(l.campaign_end_time) || c.end } : c;
+  });
+  return { asOf: saved.asOf, campaigns: [...added, ...updated].sort((a, b) => ORDER[a.status] - ORDER[b.status] || b.products - a.products) };
+}
+
+const ORDER: Record<AdminCampaign["status"], number> = { draft: 0, live: 1, upcoming: 2, ended: 3 };
+
+/** TikTok's 20 newest campaigns (drafts first), read live; none when TikTok doesn't answer. */
+async function newestCampaigns(): Promise<Campaign[]> {
+  const s = await storedSessions().partner().catch(() => null);
+  if (!s) return [];
+  const r = await listCampaigns(s.token, s.cipher, { pageSize: 20 }).catch(() => null);
+  return r?.code === 0 ? (r.data?.campaigns ?? []).filter((c) => c?.id) : [];
+}
+
+async function refreshedCampaigns(): Promise<{ asOf: string | null; campaigns: AdminCampaign[] }> {
   if (overview && Date.now() - overview.at < 5 * 60_000) return overview.data;
   const [camps, sums, stats, creators] = await Promise.all([
     latest("tap_campaigns"),
@@ -127,8 +157,6 @@ export async function tapOverview(): Promise<{ asOf: string | null; campaigns: A
       gmvPaid: sum(st, 2), gmvSettled: sum(st, 3), comEst: sum(st, 4), comSettled: sum(st, 5),
     };
   });
-  const order = { live: 0, upcoming: 1, ended: 2 };
-  campaigns.sort((a, b) => order[a.status] - order[b.status] || b.products - a.products);
   overview = { at: Date.now(), data: { asOf: sums.asOf, campaigns } };
   return overview.data;
 }
@@ -162,19 +190,16 @@ export async function commission(): Promise<Commission> {
   return data;
 }
 
-/** Products shops submitted to a campaign that are waiting for Techwide's review (read live from TikTok). */
-export async function pendingProducts(campaignId: string): Promise<AdminTapProduct[]> {
+/**
+ * The first 50 products shops submitted to a campaign that are waiting for Techwide's review, read live from TikTok in one call
+ * (reading 250 took several seconds), and how many are waiting in all.
+ */
+export async function pendingProducts(campaignId: string): Promise<{ products: AdminTapProduct[]; total: number }> {
   const s = await storedSessions().partner();
-  const out: AdminTapProduct[] = [];
-  let pageToken: string | undefined;
-  for (let page = 0; page < 5; page++) {
-    const r = await listCampaignProducts(s.token, s.cipher, campaignId, { reviewStatus: "PENDING", pageSize: 50, pageToken });
-    if (r.code !== 0) throw new Error(`TikTok ${r.code}: ${r.message}`);
-    out.push(...(r.data?.products ?? []).map((p) => toAdminProduct(p as Raw)));
-    pageToken = r.data?.next_page_token || undefined;
-    if (!pageToken) break;
-  }
-  return out;
+  const r = await listCampaignProducts(s.token, s.cipher, campaignId, { reviewStatus: "PENDING", pageSize: 50 });
+  if (r.code !== 0) throw new Error(`TikTok ${r.code}: ${r.message}`);
+  const products = (r.data?.products ?? []).map((p) => toAdminProduct(p as Raw));
+  return { products, total: r.data?.total_count ?? products.length };
 }
 
 export const REJECT_REASONS: [RejectReason, string][] = [

@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   const id = req.nextUrl.searchParams.get("campaign");
   if (!campaignOk(id)) return NextResponse.json({ error: "Pick a campaign." }, { status: 400 });
   try {
-    return NextResponse.json({ products: await pendingProducts(id) }, { headers: { "cache-control": "private, no-store" } });
+    return NextResponse.json(await pendingProducts(id), { headers: { "cache-control": "private, no-store" } });
   } catch (err) {
     console.error("[tap review list]", err instanceof Error ? err.message : err);
     return NextResponse.json({ error: "TikTok Shop didn't answer. Please try again." }, { status: 502 });

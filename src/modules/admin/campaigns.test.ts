@@ -30,7 +30,7 @@ test("campaignFields refuses what TikTok would refuse", () => {
   assert.match(no({ name: "x".repeat(50) }), /under 50/);
   assert.match(no({ commission: 1 }), /more than 1%/);
   assert.match(no({ commission: 80 }), /less than 80%/);
-  assert.match(no({ start: "2026-12-31", end: "2026-11-01" }), /start before it ends/);
+  assert.match(no({ start: "2026-12-31", end: "2026-11-01" }), /at least 1 day/);
   assert.match(no({ start: "2026-11-01", end: "2027-10-27" }), /360 days/);
   assert.ok(campaignFields(form({ start: "2026-11-01", end: "2027-10-26", regEnd: "2027-10-26" }), NOW).ok, "360 days counting the start day");
   assert.match(no({ local: false }), /which shops/);
@@ -41,8 +41,8 @@ test("campaignFields refuses what TikTok would refuse", () => {
   assert.match(no({ description: "  " }), /needs a description/);
   assert.match(no({ description: "x".repeat(1001) }), /at most 1,000/);
   assert.ok(campaignFields(form({ description: "x".repeat(1000) }), NOW).ok);
-  assert.match(no({ regEnd: "2027-01-05" }), /close between/);
-  assert.match(no({ regEnd: "2026-10-30" }), /close between/);
+  assert.match(no({ regEnd: "2027-01-05" }), /close by the campaign's end day/);
+  assert.match(no({ regEnd: "2026-10-30" }), /stay open at least 1 day/);
   assert.ok(campaignFields(form({ local: false, shopCodes: [" mylcabc123 "] }), NOW).ok);
 });
 
@@ -70,4 +70,28 @@ test("changedFields: an edit sends only what changed, so a running campaign's st
   assert.ok(was.ok && next.ok);
   if (!was.ok || !next.ok) return;
   assert.deepEqual(changedFields(next.fields, was.fields), { description: "New words." });
+});
+
+test("TikTok's limits: at least 1 day, at most exactly 360 days from the start; registration open at least 1 day", () => {
+  const no = (o: Partial<CampaignForm>) => { const r = campaignFields(form(o), NOW); return r.ok ? "" : r.error; };
+  // Starting today (10 minutes from now, 18:40) may end on 11 Oct 2027, exactly 360 days later.
+  const today = campaignFields(form({ start: "2026-10-16", end: "2027-10-11", regEnd: "2027-10-11" }), NOW);
+  assert.ok(today.ok && today.fields.campaign_end_time - today.fields.campaign_start_time === 360 * 86400 && today.fields.registration_end_time === today.fields.campaign_end_time);
+  assert.match(no({ start: "2026-10-16", end: "2027-10-12", regEnd: "2027-10-12" }), /11 Oct 2027 at the latest/);
+  assert.match(no({ start: "2026-10-16", end: "2026-10-16", regEnd: "2026-10-16" }), /at least 1 day: end it on 17 Oct 2026/);
+  assert.match(no({ start: "2026-11-01", end: "2026-12-31", regEnd: "2026-11-01" }), /Registration has to stay open at least 1 day/);
+  assert.match(no({ start: "2026-11-01", end: "2026-12-31", regEnd: "2027-01-02" }), /close by the campaign's end day/);
+  // An existing campaign keeps its real start: 360 days from it, not from today.
+  const running = form({ start: "2026-08-28", end: "2027-08-22", regEnd: "2027-08-22", startAt: Date.parse("2026-08-27T16:00:00Z") / 1000 });
+  assert.ok(campaignFields(running, NOW, false).ok);
+  const r = campaignFields({ ...running, end: "2027-08-23", regEnd: "2027-08-23" }, NOW, false);
+  assert.ok(!r.ok && /22 Aug 2027 at the latest/.test(r.error));
+});
+
+test("changedFields: a new end date sends both end times, as TikTok checks them together", () => {
+  const running = form({ start: "2026-10-01", end: "2026-12-31", regEnd: "2026-12-31", startAt: Date.parse("2026-09-30T16:00:00Z") / 1000 });
+  const was = campaignFields(running, NOW, false), next = campaignFields({ ...running, end: "2027-01-31" }, NOW, false);
+  assert.ok(was.ok && next.ok);
+  if (!was.ok || !next.ok) return;
+  assert.deepEqual(Object.keys(changedFields(next.fields, was.fields)).sort(), ["campaign_end_time", "registration_end_time"]);
 });
