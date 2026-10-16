@@ -1,4 +1,5 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import type { ApiReply } from "../../integrations/tiktok-shop/api.ts";
 import { getSampleDeeplink, getSampleLabel, lookupProducts, searchSampleApplications, type SampleLabel } from "../../integrations/tiktok-shop/creator.ts";
 import { approvedCreatorToken } from "../creator-accounts/access.ts";
 import { linkedCreators } from "../sales/orders.ts";
@@ -194,6 +195,25 @@ export async function sampleStatus(userId: string, productId: string): Promise<S
   return sampleVerdict(r.data?.label);
 }
 
+/** TikTok's "your token has been deauthorized". */
+const DEAUTHORIZED = 36009005;
+
+/**
+ * Asks TikTok again for about 12 seconds while it refuses the creator's sign-in: TikTok can do so for some seconds just after
+ * a creator links TikTok Shop (16 Oct 2026: a sign-in from 17:28 was refused at 17:29:15–24 and accepted again by 17:31).
+ */
+async function patiently<T>(call: () => Promise<ApiReply<T>>): Promise<ApiReply<T>> {
+  let r = await call();
+  for (const ms of [2000, 4000, 6000]) {
+    if (r.code !== DEAUTHORIZED) return r;
+    await new Promise((done) => setTimeout(done, ms));
+    r = await call();
+  }
+  return r;
+}
+
+const RELINK = "TikTok has cancelled Rezekii's link to your TikTok Shop. In Account, unlink TikTok Shop and link it again.";
+
 /**
  * Request sample through Techwide's TAP campaign, opening TikTok's own sample request page (TikTok has no API to submit it:
  * the creator confirms it in the TikTok app). The owner's rule (14 Oct 2026): the product goes into the creator's showcase
@@ -210,9 +230,10 @@ export async function sampleLink(userId: string, productId: string): Promise<Sam
   if (t.samples <= 0) return { ok: false, error: "This product has no free samples through Rezekii.", status: 409 };
   // TikTok's live check and the TAP link together (making the link doesn't touch the showcase): the product goes into the
   // showcase only when TikTok really offers this creator the sample.
-  const [label, tap] = await Promise.all([getSampleLabel(token, productId), makeTapLink(userId, productId)]);
+  const [label, tap] = await Promise.all([patiently(() => getSampleLabel(token, productId)), makeTapLink(userId, productId)]);
   if (label.code !== 0) {
     console.error("[sample label]", label.code, label.message);
+    if (label.code === DEAUTHORIZED) return { ok: false, error: RELINK, status: 401 };
     return { ok: false, error: "TikTok couldn't check this product's samples right now. Please try again in a minute.", status: 502 };
   }
   const pick = sampleChoice(label.data?.label);
@@ -221,7 +242,7 @@ export async function sampleLink(userId: string, productId: string): Promise<Sam
   // Re-adding a product that is already in the showcase is accepted by TikTok and binds it to the TAP link.
   const added = await addByTapLink(userId, token, tap.link);
   if (!added.added) return { ok: false, error: added.error || "Your showcase couldn't take this product, so the sample can't be requested yet.", status: added.status || 502 };
-  const ask = (redirect?: string) => getSampleDeeplink(token, { productId, skuId: pick.skuId, campaignId: t.campaign_id, redirect });
+  const ask = (redirect?: string) => patiently(() => getSampleDeeplink(token, { productId, skuId: pick.skuId, campaignId: t.campaign_id, redirect }));
   let r = await ask(BACK_TO_REZEKII);
   if (r.code !== 0) r = await ask();
   if (r.code !== 0 || !r.data?.deeplink) {

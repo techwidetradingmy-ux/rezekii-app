@@ -109,6 +109,9 @@ export function useTap(requestedIds: string[]) {
       const r = await fetch("/api/tap/samples", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ productId: p.id }) });
       const d = (await r.json().catch(() => ({}))) as { error?: string; deeplink?: string; addedToShowcase?: boolean };
       if (!r.ok || !d.deeplink) throw new Error(d.error || "TikTok didn't open the sample request. Please try again.");
+      // The QR code now opens TikTok's own sample page, so the phone doesn't have to ask Rezekii again.
+      const deeplink = d.deeplink;
+      setQr((q) => (q ? { ...q, url: deeplink } : q));
       setSample((s) => ({ ...s, [p.id]: "done" }));
       if (d.addedToShowcase) setAdd((a) => ({ ...a, [p.id]: "done" }));
     } catch (err) {
