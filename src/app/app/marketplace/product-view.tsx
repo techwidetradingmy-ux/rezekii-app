@@ -66,7 +66,7 @@ export function ProductBlock({ p, tap, headingId }: { p: TapProduct; tap: Tap; h
   const smp = tap.sampleState(p);
   const { checkSample } = tap;
   useEffect(() => { checkSample(p.id); }, [checkSample, p.id]);
-  const smpNote = { idle: "Free sample through Techwide's TAP campaign", checking: "Checking free samples with TikTok…", none: "No free sample for this product right now", limit: "You've reached TikTok's limit on open sample requests", done: "You've requested this sample", loading: "Opening TikTok's sample request…" }[smp];
+  const smpNote = { idle: "Free sample through Techwide's campaign", checking: "Checking free samples with TikTok…", none: "No free sample for this product right now", limit: "You've reached TikTok's limit on open sample requests", done: "You've requested this sample", loading: "Opening TikTok's sample request…" }[smp];
   return (
     <div className="pb">
       <div className="pb-media" style={{ position: "relative", width: "100%", aspectRatio: "1 / 1", flexShrink: 0, borderRadius: 22, overflow: "hidden", background: "#f2f5f3" }}>
@@ -114,7 +114,7 @@ export function ProductBlock({ p, tap, headingId }: { p: TapProduct; tap: Tap; h
         {smp === "done" && <Check size={18} />}
         {{ none: "No free samples", checking: "Checking samples…", limit: "Sample limit reached", loading: "Requesting…", done: "Sample requested", idle: "Request free sample" }[smp]}
       </button>
-      {smp === "done" && <Link href="/app/my-tap" className="nv-link" style={{ alignSelf: "center", fontSize: 14, fontWeight: 700 }}>See it in My TAP products</Link>}
+      {smp === "done" && <Link href="/app/my-tap" className="nv-link" style={{ alignSelf: "center", fontSize: 14, fontWeight: 700 }}>See it in My Samples</Link>}
       <a href={tiktokProductUrl(p.id)} target="_blank" rel="noopener" className="nv-btn2 nv-press" style={{ height: 50 }}>Open on TikTok Shop</a>
       </div>
     </div>

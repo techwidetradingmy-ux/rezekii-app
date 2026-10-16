@@ -151,7 +151,7 @@ export function MarketplaceView({ initial, golden, requestedIds }: { initial: Br
       <section className="nv-card fb" aria-label="Find products" style={{ boxShadow: "var(--shadow)", borderRadius: 26, padding: 18, scrollMarginTop: 16 }}>
         <div className="fb-row">
           <div className="fb-search">
-            <label htmlFor="mksearch" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Search TAP products</label>
+            <label htmlFor="mksearch" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Search products</label>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true" style={{ position: "absolute", left: 14, top: 13, color: "var(--muted)" }}><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-4.35-4.35" /></svg>
             <input id="mksearch" type="text" className="nv-input" placeholder="Search product, shop or category" value={typed} onChange={(e) => setTyped(e.target.value)} style={{ paddingLeft: 42 }} />
           </div>
@@ -240,7 +240,7 @@ export function MarketplaceView({ initial, golden, requestedIds }: { initial: Br
       {data.total === 0 && (
         <div className="nv-card" style={{ padding: "48px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, textAlign: "center" }}>
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true" style={{ color: "var(--muted)" }}><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-4.35-4.35" /></svg>
-          <span style={{ fontSize: 18, fontWeight: 800 }}>No TAP products match</span>
+          <span style={{ fontSize: 18, fontWeight: 800 }}>No products match</span>
           <span style={{ fontSize: 14, color: "var(--muted)" }}>Try another search, category or shop.</span>
           <button type="button" className="nv-btn2 nv-press" onClick={clearAll}>Clear filters</button>
         </div>

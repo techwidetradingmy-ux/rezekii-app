@@ -99,3 +99,10 @@ test("a free sample needs campaign samples and TikTok's live check; not checked 
   const out = withSampleOffers([p("dessini", 1), p("elgini", 0), p("swiss", 18), p("new", 50)], { dessini: 0, elgini: 1, swiss: 1 });
   assert.deepEqual(out.map((x) => [x.id, x.samples]), [["dessini", 0], ["elgini", 0], ["swiss", 1], ["new", 50]]);
 });
+
+test("a creator's own sample check decides their free samples: only what they can request", async () => {
+  const { withCreatorOffers } = await import("./catalog.ts");
+  const p = (id: string, samples: number) => ({ id, samples }) as unknown as Parameters<typeof withCreatorOffers>[0][number];
+  const out = withCreatorOffers([p("kettle", 1), p("decor", 1), p("asked", 1), p("none", 0)], { kettle: 2, decor: 0, asked: 1 });
+  assert.deepEqual(out.map((x) => [x.id, x.samples]), [["kettle", 1], ["decor", 0], ["asked", 0], ["none", 0]]);
+});

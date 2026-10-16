@@ -25,8 +25,8 @@ const IC = {
 const QUICK: [string, string, string, keyof typeof IC, string, string][] = [
   ["Post a video", "Schedule to your TikTok", "/app/new", "video", "#fe2c55", "#ffffff"],
   ["Convert links", "Your affiliate links", "/app/links", "link", "#25c8f4", "#ffffff"],
-  ["TAP Marketplace", "Products with free samples", "/app/marketplace", "store", "#00c073", "#ffffff"],
-  ["My TAP products", "Samples, sales, posts", "/app/my-tap", "cart", "#ffc700", "#3b2a00"],
+  ["Marketplace", "Products with free samples", "/app/marketplace", "store", "#00c073", "#ffffff"],
+  ["My Samples", "Your free samples and their status", "/app/my-tap", "cart", "#ffc700", "#3b2a00"],
   ["Earnings & level", "Grow to Silver and Gold", "/app/levels", "coins", "#7c3aed", "#ffffff"],
   ["Top LIVEs", "See who sells live", "/app/rankings", "live", "#0d1117", "#25f4ee"],
 ];
@@ -35,7 +35,7 @@ const STAT_LOOK: Record<TodayStat["key"], [string, string, keyof typeof IC, stri
   links: ["Links made this week", "/app/links", "link", "#d9f6fd", "#0e7490"],
   showcase: ["Products in showcase", "/app/marketplace", "cart", "#fff4c2", "#8a6100"],
   samples: ["Samples in progress", "/app/my-tap", "box", "#ffe4ea", "#c21f45"],
-  open: ["TAP products open", "/app/marketplace", "store", "#e1f8eb", "#007a4b"],
+  open: ["Marketplace products", "/app/marketplace", "store", "#e1f8eb", "#007a4b"],
 };
 
 const TAGS = ["threads", "whatsapp", "facebook", "instagram", "telegram", "youtube"];
@@ -284,7 +284,7 @@ export function TodayView({ data }: { data: TodayData }) {
       <section className="nv-up" aria-labelledby="mtap" style={{ animationDelay: "300ms", display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <span style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-            <h2 id="mtap" className="nv-h2" style={{ fontSize: 22 }}>Best-selling TAP products</h2>
+            <h2 id="mtap" className="nv-h2" style={{ fontSize: 22 }}>Best-selling in the Marketplace</h2>
             <span style={{ fontSize: 14, color: "var(--muted)" }}>{sort === 0 ? "Most units sold since yesterday" : "Highest Silver commission first"}</span>
           </span>
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px 14px", minWidth: 0 }}>
@@ -294,7 +294,7 @@ export function TodayView({ data }: { data: TodayData }) {
                 <button key={label} type="button" className={sort === i ? "on" : ""} aria-pressed={sort === i} onClick={() => setSort(i as 0 | 1)}>{label}</button>
               ))}
             </div>
-            <Link href="/app/my-tap" className="nv-link">My TAP products</Link>
+            <Link href="/app/my-tap" className="nv-link">My Samples</Link>
             <Link href="/app/marketplace" className="nv-link nv-hidem">See all</Link>
           </div>
         </div>

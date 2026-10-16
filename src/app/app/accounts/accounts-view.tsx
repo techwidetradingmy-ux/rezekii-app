@@ -128,7 +128,7 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
         ["Top product", s.products[0]?.name ?? "No sales yet", s.products[0] ? `${rm0(s.products[0].gmv)} GMV · ${s.products[0].orders} ${s.products[0].orders === 1 ? "order" : "orders"}` : "Your best seller shows here", "var(--muted)"],
       ]
     : [];
-  const sampleCounts: [string, number, number][] = [["Pending", d.samples.requested, 1], ["Shipped", d.samples.shipping, 2], ["Content pending", d.samples.toPost, 3], ["Completed", d.samples.posted, 4]];
+  const sampleCounts: [string, number, number][] = [["Pending approval", d.samples.requested, 1], ["Approved", d.samples.approved, 2], ["Shipped", d.samples.shipping, 3], ["Delivered", d.samples.toPost, 4], ["Post criteria met", d.samples.posted, 5]];
 
   return (
     <>
@@ -267,7 +267,7 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
         <section className="nv-up nv-card" aria-labelledby="acsmp" style={{ padding: 22, display: "flex", flexDirection: "column", gap: 14, animationDelay: "160ms" }}>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "space-between", alignItems: "baseline" }}>
             <span style={{ display: "flex", flexDirection: "column", gap: 2 }}><h2 id="acsmp" className="nv-h2">Samples</h2><span style={{ fontSize: 13, color: "var(--muted)" }}>Free samples from Techwide&apos;s TAP campaigns, with TikTok&apos;s status</span></span>
-            <Link href="/app/my-tap" className="nv-link" style={{ fontSize: 14, fontWeight: 700 }}>All samples in My TAP products</Link>
+            <Link href="/app/my-tap" className="nv-link" style={{ fontSize: 14, fontWeight: 700 }}>All samples in My Samples</Link>
           </div>
           <div className="ac-smp" role="list">
             {sampleCounts.map(([label, n, stage]) => {

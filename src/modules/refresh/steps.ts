@@ -1,5 +1,5 @@
 import type { ApiReply } from "../../integrations/tiktok-shop/api.ts";
-import { campaignSampleProducts, offersSamples, sampleCheckToken, sampleOffers, saveSampleOffers } from "../tap/samples.ts";
+import { campaignSampleProducts, checkCreatorSamples, offersSamples, sampleCheckToken, sampleOffers, saveSampleOffers } from "../tap/samples.ts";
 import { getSampleLabel } from "../../integrations/tiktok-shop/creator.ts";
 import { listCampaignProductStats, listCampaignProducts, listCampaigns, listProductCreators, type Campaign, type CampaignProduct, type CampaignProductStats } from "../../integrations/tiktok-shop/partner.ts";
 import { amount, goldenSellers, type StatRow } from "../tap/golden.ts";
@@ -259,6 +259,20 @@ async function tapSamples(t: TaskRow, { deadline }: Ctx): Promise<StepResult> {
   return { count };
 }
 
+/**
+ * Each linked creator's own sample check (owner, 16 Oct 2026: the Samples available filter shows only samples they can request),
+ * once the products are checked. About 30 seconds a creator, so one is started only with 40 seconds of the run left.
+ */
+async function tapSamplesMine(t: TaskRow, { deadline }: Ctx): Promise<StepResult> {
+  if (await openTaskCount(t.run_date, "tap_samples")) return { count: 0, more: true, waitMs: 60_000 };
+  const ids = await linkedCreators();
+  for (let i = t.cursor ? Number(t.cursor) : 0; i < ids.length; i++) {
+    if (Date.now() > deadline - 40_000) return { count: i, more: true, cursor: String(i), waitMs: 0 };
+    await checkCreatorSamples(ids[i]).catch((err) => console.error("[creator samples]", ids[i], err instanceof Error ? err.message : err));
+  }
+  return { count: ids.length };
+}
+
 /** Full Creator Marketplace profiles for new creators, until the run's time is up or the daily cap is reached. */
 async function details(t: TaskRow, { sessions, deadline }: Ctx): Promise<StepResult> {
   if (t.result_count >= DETAILS_PER_DAY) return { count: 0 };
@@ -352,6 +366,7 @@ export const STEPS: Record<string, (t: TaskRow, ctx: Ctx) => Promise<StepResult>
   tap_products: tapProducts,
   tap_catalog: tapCatalog,
   tap_samples: tapSamples,
+  tap_samples_mine: tapSamplesMine,
   tap_creators: tapCreators,
   levels,
   rankings,

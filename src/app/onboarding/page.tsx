@@ -112,7 +112,7 @@ export default async function Onboarding({ searchParams }: { searchParams: Promi
             <>
               <ul style={{ margin: 0, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 6, fontSize: 15, color: "var(--body)", lineHeight: 1.45 }}>
                 <li>Turn any TikTok product link into your own affiliate link</li>
-                <li>Add TAP products to your showcase in one tap</li>
+                <li>Add Marketplace products to your showcase in one tap</li>
                 <li>Request free samples and track them</li>
               </ul>
               {invited && <p className="ob-note" style={{ margin: 0, background: "var(--gsoft)", color: "var(--gink)" }}>A place freed up and it&apos;s kept for you. Link your TikTok Shop to take it.</p>}

@@ -19,7 +19,7 @@ export const CREATOR_MENU: Section[] = [
   { href: "/app", label: "Today", short: "Today", icon: "home", pages: [] },
   {
     href: "/app/marketplace", label: "Marketplace", short: "Market", icon: "bag",
-    pages: [["/app/marketplace", "TAP products"], ["/app/my-tap", "My TAP products"], ["/app/links", "Convert links"], ["/app/lookup", "Product Lookup"]],
+    pages: [["/app/marketplace", "Marketplace"], ["/app/my-tap", "My Samples"], ["/app/links", "Convert links"], ["/app/lookup", "Product Lookup"]],
     also: ["/app/golden-sellers"],
   },
   { href: "/app/sales", label: "Sales", short: "Sales", icon: "chart", pages: [] },

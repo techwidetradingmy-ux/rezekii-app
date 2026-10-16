@@ -9,6 +9,7 @@ import { isAllowedSellerDuringProof, saveSellerConnection } from "@/modules/mark
 import { SESSION_COOKIE, userForSession } from "@/modules/accounts/session.ts";
 import { linkCreator } from "@/modules/creator-accounts/access.ts";
 import { syncCreatorOrders } from "@/modules/sales/orders.ts";
+import { checkCreatorSamples } from "@/modules/tap/samples.ts";
 import { tagTask } from "@/modules/accounts/tags.ts";
 import { mytDay } from "@/modules/refresh/plan.ts";
 import { addTasks } from "@/modules/refresh/store.ts";
@@ -61,8 +62,11 @@ export async function GET(req: NextRequest) {
     const user = await userForSession(req.cookies.get(SESSION_COOKIE)?.value).catch(() => null);
     if (!user) return finish("signin");
     const linked = await linkCreator(user, { openId, username: profile.username, avatarUrl: profile.avatar?.url }, tokens);
-    if (linked === "connected")
+    if (linked === "connected") {
       after(() => syncCreatorOrders(user.id, tokens.access_token, Date.now() + 50_000).catch((err) => console.error("[tiktokshop] first order read", err instanceof Error ? err.message : err)));
+      // Which free samples this creator can request, ready for the Marketplace within about 30 seconds of linking.
+      after(() => checkCreatorSamples(user.id).catch((err) => console.error("[tiktokshop] samples check", err instanceof Error ? err.message : err)));
+    }
     // Agency status and TikTok level, found by the refresh queue within minutes of linking (owner, 14 Oct 2026).
     if (linked === "connected" || linked === "waiting") after(() => addTasks(mytDay(Date.now()), [tagTask(user.id)]).catch((err) => console.error("[tiktokshop] labels", err instanceof Error ? err.message : err)));
     return finish(linked);

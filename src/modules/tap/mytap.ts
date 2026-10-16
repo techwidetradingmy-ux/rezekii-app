@@ -29,9 +29,15 @@ export async function myTapRows(userId: string, username: string | null): Promis
     key: `${r.campaign_id}:${r.product_id}`, campaignId: r.campaign_id, productId: r.product_id, name: (r.product_name ?? "").trim(), shop: r.shop ?? "", image: r.image,
     stage: sampleStage(normalizeStatus(r.sample_status)), status: r.sample_status, paid: Number(r.paid), videos: r.videos, lives: r.lives,
   }));
+  // TikTok's own list of the creator's sample requests is live; the TAP campaign data is read once a day. A sample submitted
+  // in TikTok today shows with its live status straight away (owner, 16 Oct 2026), on rows from either source.
+  const live = await tiktokSampleStatus(userId);
+  for (const r of rows) {
+    const st = live.get(r.productId);
+    if (st) Object.assign(r, { status: st, stage: sampleStage(normalizeStatus(st)) });
+  }
   const onTikTok = new Set(rows.map((r) => r.productId));
   const pending = requests.filter((x) => !onTikTok.has(x.product_id));
-  const live = pending.length ? await tiktokSampleStatus(userId) : new Map<string, string>();
   // A request TikTok has no record of: if TikTok offers no sample of that product (none allocated, or none left), say so.
   const token = pending.some((x) => !live.has(x.product_id)) ? await approvedCreatorToken(userId) : null;
   const offered = new Map(await Promise.all(pending.filter((x) => token && !live.has(x.product_id)).map(async (x) => [x.product_id, await sampleOffered(token!, x.product_id)] as const)));

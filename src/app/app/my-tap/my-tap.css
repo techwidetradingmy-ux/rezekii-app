@@ -7,7 +7,7 @@
 @keyframes rkRow { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 .mt-ph { width: 72px; height: 72px; border-radius: 16px; background-color: var(--surface2); background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 24px; color: #ffffff; }
 .mt-pill { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px; font-size: 12px; font-weight: 800; white-space: nowrap; }
-.mt-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
+.mt-steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
 .mt-step { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .mt-bar { height: 6px; border-radius: 999px; background: var(--seg); overflow: hidden; }
 .mt-bar span { display: block; height: 100%; border-radius: 999px; background: #00c073; transform-origin: left; animation: mtGrow 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both; }

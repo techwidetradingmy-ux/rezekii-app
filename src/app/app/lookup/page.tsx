@@ -23,7 +23,7 @@ export default async function LookupPage() {
         <main className="site-wrap app-main nv-main">
           <div>
             <h1 className="nv-title">Product Lookup</h1>
-            <p className="nv-sub">Any TikTok product link, facts straight from TikTok Shop · Techwide TAP products show their full listing</p>
+            <p className="nv-sub">Any TikTok product link, facts straight from TikTok Shop · Marketplace products show their full listing</p>
           </div>
           <LookupView linked={linked} samples={all.slice(0, 5).map((p) => tiktokProductUrl(p.id))} />
         </main>

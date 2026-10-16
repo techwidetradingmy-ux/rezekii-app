@@ -26,7 +26,7 @@ const STATS = [
 
 const VS: [string, string, string][] = [
   ["Commission", "TikTok's Open Plan rate", "Open Plan + 1% at Silver, special rates at Gold"],
-  ["Products to promote", "Search TikTok Shop on your own", `${N} approved TAP products, commission shown upfront`],
+  ["Products to promote", "Search TikTok Shop on your own", `${N} approved Marketplace products, commission shown upfront`],
   ["Free samples", "Ask each seller and hope for a reply", "Techwide gets them approved and you track them to your door"],
   ["Posting", "Post by hand, one video at a time", "Schedule to your own TikTok and it posts on time"],
   ["Knowing what sells", "Guess from the TikTok app", "Sales per video and LIVE, plus daily best-sellers and top creators"],

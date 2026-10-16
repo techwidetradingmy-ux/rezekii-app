@@ -8,12 +8,13 @@ const when = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { timeZo
 
 /** TikTok's sample statuses as TikTok names them (owner, 15 Oct 2026), with the badge colour. */
 const TIKTOK: Record<string, [string, string]> = {
-  PENDING: ["Pending", "badge-amber"],
-  AWAITING_SHIPMENT: ["Awaiting shipment", "badge"],
+  PENDING: ["Pending approval", "badge-amber"],
+  AWAITING_SHIPMENT: ["Approved", "badge"],
+  AWAITING_COLLECTION: ["Approved", "badge"],
   SHIPPED: ["Shipped", "badge"],
-  CONTENT_PENDING: ["Content pending", "badge-amber"],
-  COMPLETED: ["Completed", "badge"],
-  REJECT_CANCELLED: ["Cancelled · rejected", "badge-red"],
+  CONTENT_PENDING: ["Delivered", "badge-amber"],
+  COMPLETED: ["Post criteria met", "badge"],
+  REJECT_CANCELLED: ["Rejected", "badge-red"],
   OVERDUE_CANCELLED: ["Cancelled · overdue", "badge-gray"],
   WITHDRAW_CANCELLED: ["Cancelled · withdrawn", "badge-gray"],
   SELLER_NOT_SHIP_CANCELLED: ["Cancelled · seller didn't ship", "badge-gray"],
@@ -29,7 +30,7 @@ const inTab = (r: AdminSample, t: Tab) => {
   if (t === "all") return true;
   if (!r.tiktok) return t === "none";
   const stage = sampleStage(r.tiktok.status);
-  return t === "open" ? stage >= 1 && stage <= 3 : t === "done" ? stage === 4 || stage === -1 : false;
+  return t === "open" ? stage >= 1 && stage <= 4 : t === "done" ? stage === 5 || stage === -1 : false;
 };
 
 /** Read-only: every sample creators asked for on Rezekii with TikTok's status. Approvals happen in TikTok Shop Partner Center. */

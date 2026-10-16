@@ -139,7 +139,7 @@ export function LookupView({ linked, samples }: { linked: boolean; samples: stri
         </div>
         <span style={{ fontSize: 12, color: "var(--muted)", lineHeight: 1.5 }}>
           Upload a CSV, Excel, JSON or text file and every TikTok product link in it is picked up. Works for any product open to affiliates in Malaysia.
-          {!linked && " Until your TikTok Shop is linked, only Techwide TAP products are found."}
+          {!linked && " Until your TikTok Shop is linked, only Marketplace products are found."}
         </span>
       </section>
 

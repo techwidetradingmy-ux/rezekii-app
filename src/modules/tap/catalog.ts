@@ -56,6 +56,11 @@ export function withSampleOffers(rows: TapProduct[], offers: Record<string, numb
   return rows.map((p) => (p.samples <= 0 ? { ...p, samples: 0 } : p.id in offers ? { ...p, samples: offers[p.id] ? 1 : 0 } : p));
 }
 
+/** Free samples as one creator can request them, from their own TikTok check (2 = they can request it). */
+export function withCreatorOffers(rows: TapProduct[], offers: Record<string, number>): TapProduct[] {
+  return rows.map((p) => ({ ...p, samples: offers[p.id] === 2 ? 1 : 0 }));
+}
+
 /** Every Marketplace product, best-selling first. Kept in memory for 10 minutes; the catalog changes once a day. */
 let cached: { at: number; rows: TapProduct[] } | null = null;
 export async function allProducts(): Promise<TapProduct[]> {

@@ -98,7 +98,7 @@ export async function todayData(user: { id: string; tiktok_username: string | nu
   const selling: [string[], string[]] = [bestSelling(all, 0), bestSelling(all, 1)];
   const wanted = new Set([...picks, ...selling[0], ...selling[1]]);
   const onTikTok = tap.rows.filter((r) => r.campaignId);
-  const samples = tap.rows.filter((r) => r.stage >= 1 && r.stage <= 3);
+  const samples = tap.rows.filter((r) => r.stage >= 1 && r.stage <= 4);
   const others = niche.size - 1;
 
   return {
@@ -110,7 +110,7 @@ export async function todayData(user: { id: string; tiktok_username: string | nu
       showcase
         ? { key: "showcase", value: showcase.count, delta: "", note: `${showcase.tap} from TAP campaigns${showcase.more ? " · first 200" : ""}` }
         : { key: "showcase", value: onTikTok.length, delta: "", note: "from Techwide TAP campaigns" },
-      { key: "samples", value: samples.length, delta: "", note: `${samples.filter((r) => r.stage === 1).length} pending · ${samples.filter((r) => r.stage === 3).length} content pending` },
+      { key: "samples", value: samples.length, delta: "", note: `${samples.filter((r) => r.stage === 1).length} pending approval · ${samples.filter((r) => r.stage === 4).length} delivered` },
       { key: "open", value: all.length, delta: fresh ? `+${fresh}` : "", note: fresh === null ? "in Techwide's live campaigns" : "new this week" },
     ],
     picks,

@@ -25,7 +25,7 @@
 .ac-level { flex: 1 1 380px; padding: 22px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .ac-bar { display: block; height: 10px; border-radius: 999px; background: var(--seg); overflow: hidden; }
 .ac-bar span { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #00c073, #25f4ee); transform-origin: left; animation: acGrow 0.9s 0.2s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
-.ac-smp { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.ac-smp { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
 .ac-smp > div { border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; }
 .ac-smp b { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .ac-smp span { font-size: 13px; font-weight: 700; }

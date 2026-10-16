@@ -98,7 +98,7 @@ export function ProductCard({ row, productId, onClose, onCopied }: { row?: Looku
                 {r.description.length > 420 && <button type="button" className="nv-link" style={{ alignSelf: "flex-start" }} onClick={() => setMore(!more)}>{more ? "Show less" : "Read more"}</button>}
               </>
             )}
-            {!r.tap && <p style={{ margin: 0, padding: "12px 14px", borderRadius: 14, background: "var(--surface2)", fontSize: 13, lineHeight: 1.55, color: "var(--muted)" }}>TikTok doesn&apos;t share this product&apos;s description, variants, extra photos, videos or price after vouchers. Techwide TAP products show them.</p>}
+            {!r.tap && <p style={{ margin: 0, padding: "12px 14px", borderRadius: 14, background: "var(--surface2)", fontSize: 13, lineHeight: 1.55, color: "var(--muted)" }}>TikTok doesn&apos;t share this product&apos;s description, variants, extra photos, videos or price after vouchers. Marketplace products show them.</p>}
             <div className="lu-act">
               <button type="button" className="nv-btn2 nv-press" style={{ flex: 1 }} onClick={async () => onCopied?.(await copyText(`${r.name}\n${productFacts(r).map(([k, v]) => `${k}: ${v}`).join("\n")}`))}>Copy facts</button>
               {r.id && <Link href={`/app/links?add=${r.id}`} className="nv-btn nv-press" style={{ flex: 1, textDecoration: "none" }}>Make my affiliate link</Link>}

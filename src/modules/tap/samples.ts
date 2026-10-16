@@ -69,7 +69,7 @@ export const offersSamples = (label: SampleLabel | undefined): boolean =>
  */
 export function sampleChoice(label: SampleLabel | undefined): { ok: true; skuId: string } | { ok: false; error: string; status: number } {
   const verdict = sampleVerdict(label);
-  if (verdict === "requested") return { ok: false, error: "You already requested this sample in TikTok. Follow it in My TAP products.", status: 409 };
+  if (verdict === "requested") return { ok: false, error: "You already requested this sample in TikTok. Follow it in My Samples.", status: 409 };
   if (verdict === "limit") return { ok: false, error: "You've reached TikTok's limit on open sample requests. Post content for the samples you have, then try again.", status: 409 };
   if (label?.can_apply === false || !(label?.sample_product?.sample_sku_list ?? []).length) return { ok: false, error: "TikTok doesn't offer a free sample of this product to your account.", status: 409 };
   const sku = label?.sample_product?.sample_sku_list?.find((o) => o.is_available)?.id;
@@ -101,6 +101,63 @@ export async function campaignSampleProducts(): Promise<string[]> {
     out.push(...page.map((r) => r.product_id));
     if (page.length < 1000) return out;
   }
+}
+
+/** One creator's own TikTok check of the products with confirmed campaign samples: 2 = they can request it, 1 = already requested, 0 = not for them. */
+export type CreatorOffers = { offers: Record<string, number>; limit: boolean; day: string };
+const mineSlot = (userId: string) => encodeURIComponent(`user:${userId}`);
+
+export async function creatorOffers(userId: string): Promise<CreatorOffers | null> {
+  const [row] = (await (await supabaseRest(`market_snapshots?dataset=eq.tap_samples&slot=eq.${mineSlot(userId)}&select=as_of,items&order=as_of.desc&limit=1`)).json()) as { as_of: string; items: [Record<string, number>, { limit?: boolean }?] }[];
+  return row ? { offers: row.items?.[0] ?? {}, limit: !!row.items?.[1]?.limit, day: row.as_of } : null;
+}
+
+async function saveCreatorOffers(userId: string, o: CreatorOffers): Promise<void> {
+  await supabaseRest("market_snapshots?on_conflict=dataset,slot,as_of", {
+    method: "POST",
+    headers: { prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({ dataset: "tap_samples", slot: `user:${userId}`, as_of: o.day, items: [o.offers, { limit: o.limit }], fetched_at: new Date().toISOString() }),
+  });
+}
+
+const myt = (t: number) => new Date(t + 8 * 3600_000).toISOString().slice(0, 10);
+const checking = new Set<string>();
+
+/**
+ * Which free samples this creator can really request (owner, 16 Oct 2026): sellers may give samples only to some creators,
+ * so each product with confirmed campaign samples gets TikTok's live check as this creator, 5 at a time (about 30 seconds
+ * for 400 products). Saved for the Samples available filter and the badges. Null when their TikTok Shop isn't linked.
+ */
+export async function checkCreatorSamples(userId: string): Promise<CreatorOffers | null> {
+  if (checking.has(userId)) return null;
+  checking.add(userId);
+  try {
+    const token = await approvedCreatorToken(userId);
+    if (!token) return null;
+    const confirmed = await sampleOffers();
+    const ids = (await campaignSampleProducts()).filter((id) => !(id in confirmed) || confirmed[id] === 1);
+    const out: CreatorOffers = { offers: {}, limit: false, day: myt(Date.now()) };
+    for (let i = 0; i < ids.length; i += 5) {
+      const batch = ids.slice(i, i + 5);
+      const replies = await Promise.all(batch.map((id) => getSampleLabel(token, id).catch(() => null)));
+      replies.forEach((r, k) => {
+        if (r?.code !== 0) return;
+        const v = sampleVerdict(r.data?.label);
+        if (v === "limit") out.limit = true;
+        out.offers[batch[k]] = v === "available" ? 2 : v === "requested" ? 1 : 0;
+      });
+    }
+    await saveCreatorOffers(userId, out);
+    return out;
+  } finally {
+    checking.delete(userId);
+  }
+}
+
+/** After a sample request, that product counts as requested for the creator until their next check. */
+async function markRequested(userId: string, productId: string): Promise<void> {
+  const mine = await creatorOffers(userId);
+  if (mine && productId in mine.offers) await saveCreatorOffers(userId, { ...mine, offers: { ...mine.offers, [productId]: 1 } });
 }
 
 /** A linked, approved creator's TikTok Shop token, for checking which products offer samples (any linked creator will do). */
@@ -143,7 +200,7 @@ export async function sampleLink(userId: string, productId: string): Promise<Sam
   const t = await sampleTarget(productId);
   if (!t) return { ok: false, error: "This product is no longer in a Techwide TAP campaign.", status: 404 };
   // Samples go through Techwide's TAP campaign, so the seller must have registered samples there (owner, 16 Oct 2026).
-  if (t.samples <= 0) return { ok: false, error: "This product has no free samples in Techwide's TAP campaign.", status: 409 };
+  if (t.samples <= 0) return { ok: false, error: "This product has no free samples in Techwide's campaign.", status: 409 };
   // TikTok's live check comes first, before the showcase is touched: only a sample TikTok really offers this creator is asked for.
   const label = await getSampleLabel(token, productId);
   if (label.code !== 0) {
@@ -155,6 +212,9 @@ export async function sampleLink(userId: string, productId: string): Promise<Sam
   // Re-adding a product that is already in the showcase is accepted by TikTok and binds it to the TAP link.
   const added = await addToShowcase(userId, productId);
   if (!added.added) return { ok: false, error: added.error || "Your showcase couldn't take this product, so the sample can't be requested yet.", status: added.status || 502 };
+  // The creator submits it in TikTok next: read their TikTok sample list afresh the next time My TAP products opens.
+  appCache.delete(userId);
+  await markRequested(userId, productId).catch(() => undefined);
   const ask = (redirect?: string) => getSampleDeeplink(token, { productId, skuId: pick.skuId, campaignId: t.campaign_id, redirect });
   let r = await ask(BACK_TO_REZEKII);
   if (r.code !== 0) r = await ask();
@@ -179,7 +239,8 @@ const appCache = new Map<string, { at: number; apps: Application[] }>();
 /** The creator's own sample requests from TikTok (every status, newest 200), kept 10 minutes. */
 async function applications(userId: string): Promise<Application[] | null> {
   const hit = appCache.get(userId);
-  if (hit && Date.now() - hit.at < 10 * 60_000) return hit.apps;
+  // Kept a minute: a sample the creator just submitted in TikTok shows on My TAP products straight after.
+  if (hit && Date.now() - hit.at < 60_000) return hit.apps;
   const token = await approvedCreatorToken(userId);
   if (!token) return null;
   const apps: Application[] = [];
