@@ -27,12 +27,24 @@ const isDay = (d: string) => /^\d{4}-\d{2}-\d{2}$/.test(d) && !Number.isNaN(Date
 /** A Unix time as a Malaysia day, for filling the form from TikTok's campaign detail. */
 export const toDay = (unix: number | undefined) => (unix ? new Date((unix + MYT) * 1000).toISOString().slice(0, 10) : "");
 
+/**
+ * A phone number in TikTok's international format (E.164, e.g. +60123456789), or null. Malaysian numbers can be typed any usual
+ * way: "012-345 6789", "60123456789" and "+60 12-345 6789" all become +60123456789 (TikTok refuses them otherwise).
+ */
+export function e164(raw: string): string | null {
+  const d = raw.trim().replace(/[\s\-().]/g, "");
+  const n = d.startsWith("+") ? d : d.startsWith("00") ? `+${d.slice(2)}` : d.startsWith("60") ? `+${d}` : d.startsWith("0") ? `+60${d.slice(1)}` : `+60${d}`;
+  return /^\+[1-9]\d{7,14}$/.test(n) ? n : null;
+}
+
 /** Checks the form against TikTok's rules and turns it into TikTok's fields. */
 export function campaignFields(f: CampaignForm): { ok: true; fields: CampaignFields } | { ok: false; error: string } {
   const name = f.name.trim();
   if (!name) return { ok: false, error: "Give the campaign a name." };
   if (name.length >= 50) return { ok: false, error: "The name must be under 50 characters." };
-  if (f.description.length >= 1000) return { ok: false, error: "The description must be under 1,000 characters." };
+  const description = f.description.trim();
+  if (!description) return { ok: false, error: "TikTok needs a description for shops." };
+  if (description.length > 1000) return { ok: false, error: "The description can be at most 1,000 characters." };
   if (![f.start, f.end, f.regEnd].every(isDay)) return { ok: false, error: "Fill in all three dates." };
   const run = [dayStart(f.start), dayEnd(f.end)];
   // TikTok: registration_start_time must equal campaign_start_time.
@@ -45,17 +57,20 @@ export function campaignFields(f: CampaignForm): { ok: true; fields: CampaignFie
   const shopCodes = f.shopCodes.map((c) => c.trim().toUpperCase()).filter(Boolean);
   const types = [...(f.local ? ["LOCAL" as const] : []), ...(f.crossBorder ? ["CROSS_BORDER" as const] : [])];
   if (!types.length && !shopCodes.length) return { ok: false, error: "Choose which shops can register: local, cross-border, or specific shop codes." };
-  const whatsapp = f.whatsapp.trim();
-  if (!whatsapp) return { ok: false, error: "TikTok needs a WhatsApp number for campaigns in Malaysia." };
+  if (!f.whatsapp.trim()) return { ok: false, error: "TikTok needs a WhatsApp number for campaigns in Malaysia." };
+  const whatsapp = e164(f.whatsapp);
+  if (!whatsapp) return { ok: false, error: "That WhatsApp number doesn't look right. Use a number like 012-345 6789 or +60 12-345 6789." };
+  const phone = f.phone.trim() ? e164(f.phone) : "";
+  if (phone === null) return { ok: false, error: "That phone number doesn't look right. Use a number like 012-345 6789 or +60 12-345 6789." };
   const email = f.email.trim();
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ok: false, error: "That email address doesn't look right." };
   return {
     ok: true,
     fields: {
-      name, description: f.description.trim(),
+      name, description,
       registration_start_time: reg[0], registration_end_time: reg[1], campaign_start_time: run[0], campaign_end_time: run[1],
       commission_rate: rate,
-      contact_info: { whatsapp, ...(email ? { email } : {}), ...(f.phone.trim() ? { phone: f.phone.trim() } : {}) },
+      contact_info: { whatsapp, ...(email ? { email } : {}), ...(phone ? { phone } : {}) },
       ...(types.length ? { target_seller_types: types } : {}),
       ...(shopCodes.length ? { target_shop_codes: shopCodes } : {}),
     },

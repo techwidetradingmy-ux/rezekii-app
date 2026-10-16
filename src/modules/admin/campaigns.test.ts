@@ -31,7 +31,21 @@ test("campaignFields refuses what TikTok would refuse", () => {
   assert.match(no({ start: "2026-01-01", end: "2026-12-31" }), /360 days/);
   assert.match(no({ local: false }), /which shops/);
   assert.match(no({ whatsapp: " " }), /WhatsApp/);
+  assert.match(no({ whatsapp: "12ab" }), /WhatsApp number doesn't look right/);
+  assert.match(no({ description: "  " }), /needs a description/);
+  assert.match(no({ description: "x".repeat(1001) }), /at most 1,000/);
+  assert.ok(campaignFields(form({ description: "x".repeat(1000) })).ok);
   assert.match(no({ regEnd: "2027-01-05" }), /close between/);
   assert.match(no({ regEnd: "2026-10-30" }), /close between/);
   assert.ok(campaignFields(form({ local: false, shopCodes: [" mylcabc123 "] })).ok);
+});
+
+test("e164: Malaysian numbers typed any usual way go to TikTok as +60…", async () => {
+  const { e164 } = await import("./campaigns.ts");
+  assert.deepEqual(["60124979020", "0124979020", "012-497 9020", "+60 12-497 9020", "0060124979020", "124979020"].map(e164), Array(6).fill("+60124979020"));
+  assert.equal(e164("+65 9123 4567"), "+6591234567");
+  assert.equal(e164("12ab"), null);
+  assert.equal(e164("012"), null);
+  const r = campaignFields(form({ whatsapp: "012-497 9020", phone: "03-1234 5678" }));
+  assert.ok(r.ok && r.fields.contact_info.whatsapp === "+60124979020" && r.fields.contact_info.phone === "+60312345678");
 });

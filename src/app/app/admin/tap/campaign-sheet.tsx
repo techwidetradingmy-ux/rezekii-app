@@ -57,7 +57,8 @@ export function CampaignSheet({ id, initial, closing, onClose, onSaved }: {
           </div>
           <div className="cp-field">
             <label htmlFor="cpdesc" className="nv-label">Description for shops</label>
-            <textarea id="cpdesc" className="nv-input" rows={3} maxLength={999} value={f.description} onChange={(e) => set("description", e.target.value)} />
+            <textarea id="cpdesc" className="nv-input" rows={3} maxLength={1000} value={f.description} onChange={(e) => set("description", e.target.value)} required />
+            <span className="cp-help">Required by TikTok · {1000 - f.description.length} characters left</span>
           </div>
           <fieldset className="cp-field" style={{ border: 0, padding: 0, margin: 0 }}>
             <legend className="nv-label">Which shops can register products</legend>
@@ -80,7 +81,7 @@ export function CampaignSheet({ id, initial, closing, onClose, onSaved }: {
             <span className="cp-help">More than 1% and less than 80%. Creators get the Open Plan rate plus their level&apos;s extra; Techwide keeps the rest.</span>
           </div>
           <div className="cp-grid">
-            <div className="cp-field"><label htmlFor="cpwa" className="nv-label">WhatsApp (required in Malaysia)</label><input id="cpwa" type="tel" className="nv-input" value={f.whatsapp} onChange={(e) => set("whatsapp", e.target.value)} required /></div>
+            <div className="cp-field"><label htmlFor="cpwa" className="nv-label">WhatsApp (required in Malaysia)</label><input id="cpwa" type="tel" className="nv-input" placeholder="012-345 6789" value={f.whatsapp} onChange={(e) => set("whatsapp", e.target.value)} required /><span className="cp-help">Any usual format; sent to TikTok as +60…</span></div>
             <div className="cp-field"><label htmlFor="cpem" className="nv-label">Email</label><input id="cpem" type="email" className="nv-input" value={f.email} onChange={(e) => set("email", e.target.value)} /></div>
           </div>
           {error && <p role="alert" className="cp-error">{error}</p>}
