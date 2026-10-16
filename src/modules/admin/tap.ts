@@ -218,10 +218,32 @@ export async function commission(): Promise<Commission> {
  */
 export async function pendingProducts(campaignId: string): Promise<{ products: AdminTapProduct[]; total: number }> {
   const s = await storedSessions().partner();
-  const r = await listCampaignProducts(s.token, s.cipher, campaignId, { reviewStatus: "PENDING", pageSize: 50 });
+  const [r, decided] = await Promise.all([listCampaignProducts(s.token, s.cipher, campaignId, { reviewStatus: "PENDING", pageSize: 50 }), recentlyDecided(campaignId).catch(() => new Set<string>())]);
   if (r.code !== 0) throw new Error(`TikTok ${r.code}: ${r.message}`);
-  const products = (r.data?.products ?? []).map((p) => toAdminProduct(p as Raw));
-  return { products, total: r.data?.total_count ?? products.length };
+  const all = (r.data?.products ?? []).map((p) => toAdminProduct(p as Raw));
+  const products = all.filter((p) => !decided.has(p.id));
+  return { products, total: Math.max(products.length, (r.data?.total_count ?? all.length) - (all.length - products.length)) };
+}
+
+type Decision = { id: string; approve: boolean; at: number };
+/** How long a decision made here is trusted over TikTok's waiting list, which lags behind a decision (16 Oct 2026). */
+const DECISION_MS = 60 * 60_000;
+
+/** Products approved or declined here in the last hour: TikTok can still list them as waiting for a while. */
+async function recentlyDecided(campaignId: string): Promise<Set<string>> {
+  const [row] = (await (await supabaseRest(`market_snapshots?dataset=eq.tap_reviewed&slot=eq.${encodeURIComponent(campaignId)}&select=items&order=as_of.desc&limit=1`)).json()) as { items: Decision[] }[];
+  return new Set((row?.items ?? []).filter((d) => Date.now() - d.at < DECISION_MS).map((d) => d.id));
+}
+
+async function keepDecision(campaignId: string, productId: string, approve: boolean): Promise<void> {
+  const today = mytToday();
+  const [row] = (await (await supabaseRest(`market_snapshots?dataset=eq.tap_reviewed&slot=eq.${encodeURIComponent(campaignId)}&as_of=eq.${today}&select=items&limit=1`)).json()) as { items: Decision[] }[];
+  const items = [{ id: productId, approve, at: Date.now() }, ...(row?.items ?? []).filter((d) => d.id !== productId)].slice(0, 500);
+  await supabaseRest("market_snapshots?on_conflict=dataset,slot,as_of", {
+    method: "POST",
+    headers: { prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({ dataset: "tap_reviewed", slot: campaignId, as_of: today, items, fetched_at: new Date().toISOString() }),
+  });
 }
 
 export const REJECT_REASONS: [RejectReason, string][] = [
@@ -236,7 +258,11 @@ export async function reviewProduct(campaignId: string, productId: string, appro
   const s = await storedSessions().partner();
   const r = await reviewCampaignProduct(s.token, s.cipher, campaignId, productId, approve ? "APPROVE" : "REJECT", reason ? [reason] : []);
   if (r.code !== 0) return { ok: false, error: `TikTok didn't take the decision (${r.code}: ${r.message}).` };
-  if (approve && item?.id === productId) await keepApproved(campaignId, item).catch((err) => console.error("[tap approved]", err instanceof Error ? err.message : err));
+  // TikTok's waiting list lags behind the decision: kept here so the product doesn't show as waiting again meanwhile.
+  await Promise.all([
+    keepDecision(campaignId, productId, approve),
+    approve && item?.id === productId ? keepApproved(campaignId, item) : null,
+  ]).catch((err) => console.error("[tap reviewed]", err instanceof Error ? err.message : err));
   await logActivity(actor, "TAP", `${approve ? "approved" : "declined"} ${name.slice(0, 60)} for a TAP campaign${!approve && reason ? ` (${REJECT_REASONS.find(([k]) => k === reason)?.[1]})` : ""}`);
   return { ok: true };
 }
