@@ -17,7 +17,7 @@ export async function SiteNav({ variant, staticPage = false }: { variant: "hero"
   // The homepage stays static (served from the CDN); its account button is checked in the browser.
   const clientAccount = variant === "hero" || staticPage;
   const user = clientAccount ? null : await currentUser();
-  const photo = user ? await myPhoto(user) : null;
+  const photo = user ? myPhoto(user) : null;
   const nav = (
     <nav className={`site-nav site-wrap${variant === "app" ? " site-nav-app" : ""}`} aria-label="Main">
       <Link href="/" className="site-brand">

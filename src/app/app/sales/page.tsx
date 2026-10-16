@@ -13,7 +13,7 @@ export default async function SalesPage() {
   const user = await currentUser();
   if (!user) redirect("/signin");
   if (user.role === "admin") redirect("/app/admin/stats");
-  const [d, photo] = await Promise.all([salesFrame(user.id, "30d", "all", "none"), myPhoto(user)]);
+  const d = await salesFrame(user.id, "30d", "all", "none");
   // TikTok gives the creator's whole order history: show how far back it goes.
   const since = d?.first ? new Date(d.first).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kuala_Lumpur" }) : null;
   return (
@@ -23,7 +23,7 @@ export default async function SalesPage() {
           <h1 className="nv-title">Sales</h1>
           <p className="nv-sub">Your TikTok Shop affiliate sales, from your own orders{since ? ` · history from ${since}, your first order` : ""}</p>
         </div>
-        {d && <SalesView initial={d} handle={user.tiktok_username} photo={photo} />}
+        {d && <SalesView initial={d} handle={user.tiktok_username} photo={myPhoto(user)} />}
       </main>
     </div>
   );

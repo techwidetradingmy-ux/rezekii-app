@@ -27,9 +27,14 @@ export function photoFor(user: string, url: string | null | undefined, saved: Ma
   return day ? photoPath(user, day) : freshUrl(url, now);
 }
 
-/** A signed-in creator's own photo: the saved copy of their TikTok photo, else their photo address while it works. */
-export async function myPhoto(user: { tiktok_username?: string | null; avatar_url?: string | null }): Promise<string | null> {
-  return photoFor(user.tiktok_username ?? "", user.avatar_url, await savedPhotos().catch(() => new Map<string, string>()));
+/**
+ * A signed-in user's own photo, without asking storage while the page renders (it's on every page): a TikTok creator's goes
+ * through /api/img/c, which serves the saved copy or passes on to their TikTok photo; the address changes every two weeks, when
+ * saved photos are refreshed. Anyone else (e.g. a Google sign-in) keeps their photo address.
+ */
+export function myPhoto(user: { tiktok_username?: string | null; avatar_url?: string | null }): string | null {
+  if (!user.tiktok_username) return freshUrl(user.avatar_url);
+  return `/api/img/c/${encodeURIComponent(user.tiktok_username.toLowerCase())}?p=${Math.floor(Date.now() / (PHOTO_DAYS * 86_400_000))}`;
 }
 
 /** The saved creator photos: lower-case username to the day it was saved. Re-read every 10 minutes (`force` reads now). */

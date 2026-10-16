@@ -10,6 +10,7 @@ import { refreshVideos } from "../admin/videos.ts";
 import { approvedCreatorToken } from "../creator-accounts/access.ts";
 import { linkedCreators, syncCreatorOrders } from "../sales/orders.ts";
 import { buildRankings, rankings as builtRankings } from "../rankings/store.ts";
+import { productSums } from "../admin/tap.ts";
 import { PHOTO_DAYS, freshUrl, saveCreatorPhoto, savedPhotos } from "../photos/store.ts";
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { getBestselling, getMarketplaceCreator, searchMarketplaceCreators, type BestsellingKind } from "../../integrations/tiktok-shop/seller.ts";
@@ -115,6 +116,8 @@ async function tapProducts(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
     if (pageToken) await wait(300);
   } while (pageToken);
   await saveSnapshot("tap_products", c.id, t.run_date, rows);
+  // The admin TAP page's totals, so it doesn't read every campaign's whole product list (several MB).
+  await saveSnapshot("tap_product_sums", c.id, t.run_date, productSums(rows));
 
   const shopOf = new Map(rows.map((p) => [p.id, p.shop_name ?? ""]));
   const stats: StatRow[] = [];

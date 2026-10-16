@@ -22,10 +22,11 @@ const CAMP_STATUS: Record<string, string> = { READY: "Draft · not shown to shop
 const STATUS: Record<AdminCampaign["status"], [string, string]> = { live: ["Live", "b-green"], upcoming: ["Upcoming", "b-blue"], ended: ["Ended", "b-gray"] };
 
 /** Techwide's TAP campaigns, as designed in the mockup (TAP): campaign cards and each campaign's products. */
-export function TapAdminView({ asOf, campaigns, firstProducts }: { asOf: string | null; campaigns: AdminCampaign[]; firstProducts: AdminTapProduct[] }) {
+export function TapAdminView({ asOf, campaigns }: { asOf: string | null; campaigns: AdminCampaign[] }) {
   const [sel, setSel] = useState(campaigns[0]?.id ?? "");
-  const [products, setProducts] = useState<Record<string, AdminTapProduct[]>>(campaigns[0] ? { [campaigns[0].id]: firstProducts } : {});
-  const [loading, setLoading] = useState(false);
+  // Products load after the page shows (owner, 16 Oct 2026: admin pages were slow; a big campaign has 700+ products).
+  const [products, setProducts] = useState<Record<string, AdminTapProduct[]>>({});
+  const [loadingReview, setLoadingReview] = useState(false);
   const [showEnded, setShowEnded] = useState(false);
   const [cq, setCq] = useState("");
   const [allCards, setAllCards] = useState(false);
@@ -54,6 +55,13 @@ export function TapAdminView({ asOf, campaigns, firstProducts }: { asOf: string 
   useEffect(() => {
     if (sel && !info[sel]) loadInfo(sel);
   }, [sel, info]);
+  useEffect(() => {
+    if (!sel || products[sel]) return;
+    fetch(`/api/admin/tap?campaign=${encodeURIComponent(sel)}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d: { products?: AdminTapProduct[] }) => setProducts((p) => ({ ...p, [sel]: d.products ?? [] })))
+      .catch(() => setProducts((p) => ({ ...p, [sel]: [] })));
+  }, [sel, products]);
   const closeSheet = () => {
     setClosingSheet(true);
     setTimeout(() => { setSheet(null); setClosingSheet(false); }, 250);
@@ -80,31 +88,25 @@ export function TapAdminView({ asOf, campaigns, firstProducts }: { asOf: string 
     setF(0);
     setOpenRows({});
     setLimit(100);
-    if (products[id]) return;
-    setLoading(true);
-    fetch(`/api/admin/tap?campaign=${encodeURIComponent(id)}`, { cache: "no-store" })
-      .then((r) => r.json())
-      .then((d: { products?: AdminTapProduct[] }) => setProducts((p) => ({ ...p, [id]: d.products ?? [] })))
-      .catch(() => setProducts((p) => ({ ...p, [id]: [] })))
-      .finally(() => setLoading(false));
   }
   const review = f === 1;
   const waiting = pending[sel];
   const list = review ? (Array.isArray(waiting) ? waiting : []) : all;
   const cols = review ? REVIEW_COLS : COLS;
+  const loading = review ? loadingReview : !!sel && !products[sel];
 
   function showReview() {
     setF(1);
     setOpenRows({});
     if (pending[sel] && pending[sel] !== "error") return;
-    setLoading(true);
+    setLoadingReview(true);
     fetch(`/api/admin/tap/review?campaign=${encodeURIComponent(sel)}`, { cache: "no-store" })
       .then(async (r) => {
         const d = (await r.json().catch(() => ({}))) as { products?: AdminTapProduct[]; error?: string };
         setPending((x) => ({ ...x, [sel]: r.ok && d.products ? d.products : "error" }));
       })
       .catch(() => setPending((x) => ({ ...x, [sel]: "error" })))
-      .finally(() => setLoading(false));
+      .finally(() => setLoadingReview(false));
   }
   async function decide(p: AdminTapProduct, approve: boolean) {
     if (!approve && !reason) return flash("Pick a reason the shop will see", false);

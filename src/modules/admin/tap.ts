@@ -46,12 +46,19 @@ async function latest(dataset: string): Promise<{ asOf: string | null; rows: { s
 
 const statusOf = (c: Campaign): AdminCampaign["status"] => (c.status === "ONGOING" ? "live" : c.status === "CLOSED" ? "ended" : "upcoming");
 
+/** Campaign product lists already read, kept 5 minutes (they change only with the daily refresh). */
+const productLists = new Map<string, { at: number; rows: AdminTapProduct[] }>();
+
 /** One campaign's products from the latest daily refresh (admin TAP page, loaded when the campaign is picked). */
 export async function campaignProducts(campaignId: string): Promise<AdminTapProduct[]> {
+  const hit = productLists.get(campaignId);
+  if (hit && Date.now() - hit.at < 5 * 60_000) return hit.rows;
   const [d] = (await (await supabaseRest("market_snapshots?dataset=eq.tap_products&select=as_of&order=as_of.desc&limit=1")).json()) as { as_of: string }[];
   if (!d) return [];
   const [row] = (await (await supabaseRest(`market_snapshots?dataset=eq.tap_products&as_of=eq.${d.as_of}&slot=eq.${encodeURIComponent(campaignId)}&select=items&limit=1`)).json()) as { items: Raw[] }[];
-  return (row?.items ?? []).map(toAdminProduct).sort((a, b) => b.sold - a.sold);
+  const rows = (row?.items ?? []).map(toAdminProduct).sort((a, b) => b.sold - a.sold);
+  productLists.set(campaignId, { at: Date.now(), rows });
+  return rows;
 }
 
 const toAdminProduct = (p: Raw): AdminTapProduct => ({
@@ -65,39 +72,74 @@ const toAdminProduct = (p: Raw): AdminTapProduct => ({
   ]),
 });
 
+/** One campaign's product count and highest total commission rate, saved by the daily refresh for the admin TAP page. */
+export const productSums = (rows: { total_commission_rate?: number | null }[]): [number, number] => [rows.length, Math.max(0, ...rows.map((p) => Number(p.total_commission_rate ?? 0)))];
+
+/** Each campaign's product totals for the newest refresh; worked out from the full product lists (and saved) when missing. */
+async function campaignSums(): Promise<{ asOf: string | null; by: Map<string, [number, number]> }> {
+  const [sums, [d]] = await Promise.all([
+    latest("tap_product_sums"),
+    supabaseRest("market_snapshots?dataset=eq.tap_products&select=as_of&order=as_of.desc&limit=1").then((r) => r.json() as Promise<{ as_of: string }[]>),
+  ]);
+  if (!d || sums.asOf === d.as_of) return { asOf: sums.asOf, by: new Map(sums.rows.map((r) => [r.slot, r.items as [number, number]])) };
+  const prods = await latest("tap_products");
+  const by = new Map(prods.rows.map((r) => [r.slot, productSums(r.items as Raw[])]));
+  await supabaseRest("market_snapshots?on_conflict=dataset,slot,as_of", {
+    method: "POST",
+    headers: { prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify([...by].map(([slot, items]) => ({ dataset: "tap_product_sums", slot, as_of: prods.asOf, items, fetched_at: new Date().toISOString() }))),
+  }).catch(() => undefined);
+  return { asOf: prods.asOf, by };
+}
+
+/** Every campaign's creators, 1,000 rows a request (the database's most per request), all pages at once. */
+async function creatorRows(): Promise<{ campaign_id: string; username: string }[]> {
+  const base = "tap_creator_products?select=campaign_id,username&order=campaign_id,product_id,username";
+  const head = await supabaseRest(`${base}&limit=1`, { headers: { prefer: "count=exact" } });
+  const total = Number(head.headers.get("content-range")?.split("/")[1] ?? 0);
+  const pages = await Promise.all(Array.from({ length: Math.ceil(total / 1000) }, (_, i) => supabaseRest(`${base}&offset=${i * 1000}&limit=1000`).then((r) => r.json() as Promise<{ campaign_id: string; username: string }[]>)));
+  return pages.flat();
+}
+
+/** The campaign list changes only with the daily refresh: kept 5 minutes. */
+let overview: { at: number; data: { asOf: string | null; campaigns: AdminCampaign[] } } | null = null;
+
 /** Techwide's TAP campaigns from the latest daily refresh, each with its product and creator counts and commission. Admin only. */
 export async function tapOverview(): Promise<{ asOf: string | null; campaigns: AdminCampaign[] }> {
-  const [camps, prods, stats, creators] = await Promise.all([
+  if (overview && Date.now() - overview.at < 5 * 60_000) return overview.data;
+  const [camps, sums, stats, creators] = await Promise.all([
     latest("tap_campaigns"),
-    latest("tap_products"),
+    campaignSums(),
     latest("tap_stats"),
-    supabaseRest("tap_creator_products?select=campaign_id,username&limit=100000").then((r) => r.json() as Promise<{ campaign_id: string; username: string }[]>),
+    creatorRows(),
   ]);
   const list = (camps.rows.flatMap((r) => r.items) as Campaign[]).filter((c) => c?.id);
-  const productsBy: Record<string, AdminTapProduct[]> = {};
-  for (const r of prods.rows) productsBy[r.slot] = (r.items as Raw[]).map(toAdminProduct);
   const statsBy = new Map(stats.rows.map((r) => [r.slot, r.items as StatRow[]]));
   const people = new Map<string, Set<string>>();
   for (const c of creators) people.set(c.campaign_id, (people.get(c.campaign_id) ?? new Set()).add(c.username));
   const sum = (rows: StatRow[], i: 2 | 3 | 4 | 5) => Math.round(rows.reduce((s, r) => s + (Number(r[i]) || 0), 0) * 100) / 100;
   const campaigns = list.map((c) => {
-    const ps = productsBy[c.id] ?? [];
+    const [products, upto] = sums.by.get(c.id) ?? [0, 0];
     const st = statsBy.get(c.id) ?? [];
     return {
       id: c.id, name: c.name, status: statusOf(c), start: unixSeconds(c.campaign_start_time) || null, end: unixSeconds(c.campaign_end_time) || null,
-      products: ps.length, creators: people.get(c.id)?.size ?? 0, upto: Math.max(0, ...ps.map((p) => p.total ?? 0)),
+      products, creators: people.get(c.id)?.size ?? 0, upto,
       gmvPaid: sum(st, 2), gmvSettled: sum(st, 3), comEst: sum(st, 4), comSettled: sum(st, 5),
     };
   });
   const order = { live: 0, upcoming: 1, ended: 2 };
   campaigns.sort((a, b) => order[a.status] - order[b.status] || b.products - a.products);
-  return { asOf: prods.asOf, campaigns };
+  overview = { at: Date.now(), data: { asOf: sums.asOf, campaigns } };
+  return overview.data;
 }
 
 export type Commission = { asOf: string | null; est: number; settled: number; gmvPaid: number; gmvSettled: number; campaigns: number; top: { name: string; est: number }[]; hasSettled: boolean };
 
-/** Techwide's partner commission across all TAP campaigns (lifetime totals from TikTok), for the admin Today card. */
+let totals: { at: number; data: Commission } | null = null;
+
+/** Techwide's partner commission across all TAP campaigns (lifetime totals from TikTok), for the admin Today card. Kept 5 minutes (it changes with the daily refresh). */
 export async function commission(): Promise<Commission> {
+  if (totals && Date.now() - totals.at < 5 * 60_000) return totals.data;
   const [camps, stats] = await Promise.all([latest("tap_campaigns"), latest("tap_stats")]);
   const names = new Map((camps.rows.flatMap((r) => r.items) as Campaign[]).map((c) => [c.id, c.name]));
   const per = stats.rows.map((r) => {
@@ -106,7 +148,7 @@ export async function commission(): Promise<Commission> {
     return { name: names.get(r.slot) ?? r.slot, est: s(4), settled: s(5), paid: s(2), gmvSettled: s(3), full: rows.some((x) => x.length > 3) };
   });
   const round = (v: number) => Math.round(v * 100) / 100;
-  return {
+  const data: Commission = {
     asOf: stats.asOf,
     est: round(per.reduce((t, p) => t + p.est, 0)),
     settled: round(per.reduce((t, p) => t + p.settled, 0)),
@@ -116,6 +158,8 @@ export async function commission(): Promise<Commission> {
     top: per.filter((p) => p.est > 0).sort((a, b) => b.est - a.est).slice(0, 5).map((p) => ({ name: p.name, est: round(p.est) })),
     hasSettled: per.some((p) => p.full),
   };
+  totals = { at: Date.now(), data };
+  return data;
 }
 
 /** Products shops submitted to a campaign that are waiting for Techwide's review (read live from TikTok). */

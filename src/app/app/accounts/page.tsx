@@ -22,7 +22,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
           <p className="nv-sub">Your TikTok Shop profile, earnings and settings</p>
         </div>
         <AccountsView
-          me={{ name, avatar: await myPhoto(user), initial: name.replace("@", "").slice(0, 1).toUpperCase(), role: user.role, tiktokUsername: user.tiktok_username }}
+          me={{ name, avatar: myPhoto(user), initial: name.replace("@", "").slice(0, 1).toUpperCase(), role: user.role, tiktokUsername: user.tiktok_username }}
           d={d}
           now={d.now}
           justConnected={q.connected === "tiktok"}
