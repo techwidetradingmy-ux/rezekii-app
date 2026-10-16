@@ -11,6 +11,8 @@ export type AdminCampaign = {
   name: string;
   /** draft = created, not published (hidden from shops) */
   status: "draft" | "live" | "upcoming" | "ended";
+  /** A draft hidden from the TAP list in Rezekii (TikTok can't delete campaigns). */
+  hidden?: boolean;
   start: number | null;
   end: number | null;
   products: number;
@@ -132,7 +134,7 @@ let overview: { at: number; data: { asOf: string | null; campaigns: AdminCampaig
  * or published shows at once (owner, 16 Oct 2026: a new draft couldn't be seen to publish it).
  */
 export async function tapOverview(): Promise<{ asOf: string | null; campaigns: AdminCampaign[] }> {
-  const [saved, live] = await Promise.all([refreshedCampaigns(), newestCampaigns()]);
+  const [saved, live, hidden] = await Promise.all([refreshedCampaigns(), newestCampaigns(), hiddenDrafts().catch(() => new Set<string>())]);
   const known = new Map(saved.campaigns.map((c) => [c.id, c]));
   const fresh = new Map(live.map((c) => [c.id, c]));
   const added = live.filter((c) => !known.has(c.id)).map((c): AdminCampaign => ({
@@ -143,7 +145,30 @@ export async function tapOverview(): Promise<{ asOf: string | null; campaigns: A
     const l = fresh.get(c.id);
     return l ? { ...c, name: l.name, status: statusOf(l), start: unixSeconds(l.campaign_start_time) || c.start, end: unixSeconds(l.campaign_end_time) || c.end } : c;
   });
-  return { asOf: saved.asOf, campaigns: [...added, ...updated].sort((a, b) => ORDER[a.status] - ORDER[b.status] || b.products - a.products) };
+  const campaigns = [...added, ...updated].map((c) => (hidden.has(c.id) && c.status === "draft" ? { ...c, hidden: true } : c));
+  return { asOf: saved.asOf, campaigns: campaigns.sort((a, b) => ORDER[a.status] - ORDER[b.status] || b.products - a.products) };
+}
+
+/**
+ * Drafts an admin hid from the TAP list (owner, 16 Oct 2026): TikTok has no way to delete a campaign, so test drafts stay in
+ * TikTok; Rezekii only leaves them out of its list (one shared list, kept in market_snapshots).
+ */
+const HIDDEN = "market_snapshots?dataset=eq.tap_hidden&slot=eq.drafts&as_of=eq.2000-01-01";
+async function hiddenDrafts(): Promise<Set<string>> {
+  const [row] = (await (await supabaseRest(`${HIDDEN}&select=items&limit=1`)).json()) as { items: string[] }[];
+  return new Set(row?.items ?? []);
+}
+
+export async function setDraftHidden(campaignId: string, hide: boolean, actor: string): Promise<void> {
+  const ids = await hiddenDrafts();
+  if (hide) ids.add(campaignId);
+  else ids.delete(campaignId);
+  await supabaseRest("market_snapshots?on_conflict=dataset,slot,as_of", {
+    method: "POST",
+    headers: { prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({ dataset: "tap_hidden", slot: "drafts", as_of: "2000-01-01", items: [...ids], fetched_at: new Date().toISOString() }),
+  });
+  await logActivity(actor, "TAP", `${hide ? "hid" : "showed again"} a draft TAP campaign (${campaignId}) in Rezekii's list`);
 }
 
 /** Drafts, then published campaigns not started yet (a campaign just published lands here), then live, then ended. */

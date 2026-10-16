@@ -13,9 +13,11 @@ const Req = () => <span className="cp-req" aria-hidden="true"> *</span>;
  * Create or edit a TAP campaign, with the fields TikTok accepts (mockup: Admin · TAP campaigns, create and edit).
  * `id` null = a new campaign, which stays hidden from shops until it is published.
  */
-export function CampaignSheet({ id, initial, closing, onClose, onSaved }: {
+export function CampaignSheet({ id, initial, published = false, closing, onClose, onSaved }: {
   id: string | null;
   initial: CampaignForm | null;
+  /** Published already: TikTok won't move its end earlier. */
+  published?: boolean;
   closing: boolean;
   onClose: () => void;
   onSaved: (id: string, published: boolean, name: string, form: CampaignForm) => void;
@@ -31,7 +33,7 @@ export function CampaignSheet({ id, initial, closing, onClose, onSaved }: {
   // now when that's today). The latest dates fill in at once (owner, 16 Oct 2026: agencies keep both open as long as they can).
   const start = f.start || today;
   const at = startTime(start, now, id ? f.startAt : null);
-  const firstEnd = firstEndDay(at), latestEnd = lastEndDay(at);
+  const firstEnd = published && initial?.end && initial.end > firstEndDay(at) ? initial.end : firstEndDay(at), latestEnd = lastEndDay(at);
   const useLatest = () => setF((x) => ({ ...x, start, end: latestEnd, regEnd: latestEnd }));
 
   async function save(andPublish: boolean) {
@@ -94,8 +96,8 @@ export function CampaignSheet({ id, initial, closing, onClose, onSaved }: {
           </fieldset>
           <div className="cp-grid">
             <div className="cp-field"><label htmlFor="cpcs" className="nv-label">Campaign starts<Req /></label><input id="cpcs" name="start" type="date" className="nv-input" min={id ? undefined : today} value={f.start} onChange={(e) => set("start", e.target.value)} required /><span className="cp-help">Today or later; shops can register from this day. Today means about 10 minutes from now (TikTok needs a start time that hasn&apos;t passed).</span></div>
-            <div className="cp-field"><label htmlFor="cpce" className="nv-label">Campaign ends<Req /></label><input id="cpce" name="end" type="date" className="nv-input" min={firstEnd} max={latestEnd} value={f.end} onChange={(e) => set("end", e.target.value)} required /><span className="cp-help">At least 1 day and at most 360 days from the start (TikTok&apos;s limits): {longDay(latestEnd)} at the latest.</span></div>
-            <div className="cp-field"><label htmlFor="cpre" className="nv-label">Registration closes<Req /></label><input id="cpre" name="regEnd" type="date" className="nv-input" min={firstEnd} max={f.end || latestEnd} value={f.regEnd} onChange={(e) => set("regEnd", e.target.value)} required /><span className="cp-help">Open at least 1 day, closing by the end day; usually the end day, so shops can join all along.</span></div>
+            <div className="cp-field"><label htmlFor="cpce" className="nv-label">Campaign ends<Req /></label><input id="cpce" name="end" type="date" className="nv-input" min={firstEnd} max={latestEnd} value={f.end} onChange={(e) => set("end", e.target.value)} required /><span className="cp-help">{published ? `Published: it can end later, not earlier (TikTok's rule), up to ${longDay(latestEnd)}. To stop new shops, close registration sooner.` : <>At least 1 day and at most 360 days from the start (TikTok&apos;s limits): {longDay(latestEnd)} at the latest.</>}</span></div>
+            <div className="cp-field"><label htmlFor="cpre" className="nv-label">Registration closes<Req /></label><input id="cpre" name="regEnd" type="date" className="nv-input" min={firstEndDay(at)} max={f.end || latestEnd} value={f.regEnd} onChange={(e) => set("regEnd", e.target.value)} required /><span className="cp-help">Open at least 1 day, closing by the end day; usually the end day, so shops can join all along.</span></div>
           </div>
           <div className="cp-latest">
             <button type="button" className="nv-btn2 nv-sm nv-press" onClick={useLatest}>Use the latest dates</button>

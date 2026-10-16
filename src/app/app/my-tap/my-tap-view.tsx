@@ -108,7 +108,7 @@ export function MyTapView({ rows, hasTikTok }: { rows: MyTapRow[]; hasTikTok: bo
   const sums: [string, string, string][] = [
     ["Products promoting", n(rows.length), "Through Rezekii"],
     ["Sales", rmx(rows.reduce((a, r) => a + r.paid, 0)), "What buyers paid through your links"],
-    ["Samples", n(rows.filter((r) => r.stage > 0).length), ([[rows.filter(awaitingApproval).length, "pending approval"], [rows.filter(approvedToShip).length, "approved"], [rows.filter((r) => r.stage === 3).length, "shipped"], [due, "delivered"], [rows.filter((r) => r.stage === 5).length, "post criteria met"]] as [number, string][]).filter(([v]) => v > 0).map(([v, w]) => `${v} ${w}`).join(" · ") || "None requested yet"],
+    ["Samples", n(rows.filter((r) => r.stage > 0).length), ([[rows.filter(awaitingApproval).length, "pending approval"], [rows.filter(approvedToShip).length, "approved"], [rows.filter((r) => r.stage === 3).length, "shipped"], [due, "delivered"], [rows.filter((r) => r.stage === 5).length, "post criteria met"], [rows.filter(rejected).length, "rejected"], [rows.filter((r) => r.stage === -1 && !rejected(r)).length, "cancelled"]] as [number, string][]).filter(([v]) => v > 0).map(([v, w]) => `${v} ${w}`).join(" · ") || "None requested yet"],
     ["Content posted", n(videos + lives), `${videos.toLocaleString("en-US")} videos · ${lives.toLocaleString("en-US")} LIVEs`],
   ];
   const d = panel && detail?.key === panel.key ? detail : null;

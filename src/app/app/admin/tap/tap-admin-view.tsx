@@ -29,8 +29,11 @@ export function TapAdminView({ asOf, campaigns: listed }: { asOf: string | null;
   // Campaigns saved or published here show at once, before TikTok's own list catches up (it can take a few seconds).
   const [added, setAdded] = useState<AdminCampaign[]>([]);
   const [changed, setChanged] = useState<Record<string, AdminCampaign["status"]>>({});
+  const [hiddenNow, setHiddenNow] = useState<Record<string, boolean>>({});
+  const [showHidden, setShowHidden] = useState(false);
   const campaigns = [...added.filter((a) => !listed.some((c) => c.id === a.id)), ...listed]
     .map((c) => (changed[c.id] && ORDER[changed[c.id]] > ORDER[c.status] ? { ...c, status: changed[c.id] } : c))
+    .map((c) => (hiddenNow[c.id] !== undefined ? { ...c, hidden: hiddenNow[c.id] && c.status === "draft" } : c))
     .sort((a, b) => ORDER[a.status] - ORDER[b.status]);
   const [sel, setSel] = useState(listed[0]?.id ?? "");
   // Products load after the page shows (owner, 16 Oct 2026: admin pages were slow; a big campaign has 700+ products).
@@ -106,7 +109,16 @@ export function TapAdminView({ asOf, campaigns: listed }: { asOf: string | null;
   const all = products[sel] ?? [];
   const ended = campaigns.filter((c) => c.status === "ended").length;
   const qq = cq.trim().toLowerCase();
-  const matching = campaigns.filter((c) => (showEnded || c.status !== "ended" || c.id === sel) && (!qq || c.name.toLowerCase().includes(qq)));
+  const hiddenCount = campaigns.filter((c) => c.hidden).length;
+  const matching = campaigns.filter((c) => (showEnded || c.status !== "ended" || c.id === sel) && (showHidden || !c.hidden || c.id === sel) && (!qq || c.name.toLowerCase().includes(qq)));
+  // Hide a test draft from this list (TikTok can't delete campaigns), or show it again.
+  async function toggleHidden(c: AdminCampaign) {
+    const hide = !c.hidden;
+    setHiddenNow((x) => ({ ...x, [c.id]: hide }));
+    const r = await fetch(`/api/admin/tap/campaigns/${c.id}/hide`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ hide }) }).catch(() => null);
+    if (!r?.ok) { setHiddenNow((x) => ({ ...x, [c.id]: !hide })); return flash("Couldn't save that. Please try again.", false); }
+    flash(hide ? `${c.name} hidden from this list · it stays in TikTok as a draft` : `${c.name} shows in the list again`);
+  }
   // The first 9, and the picked campaign wherever it is (e.g. one just saved or published).
   const cards = allCards || qq ? matching : [...matching.slice(0, 9), ...matching.slice(9).filter((c) => c.id === sel)];
 
@@ -162,6 +174,9 @@ export function TapAdminView({ asOf, campaigns: listed }: { asOf: string | null;
         {ended > 0 && (
           <button type="button" className={`nv-chip nv-press${showEnded ? " on" : ""}`} aria-pressed={showEnded} onClick={() => setShowEnded(!showEnded)}>Include {ended} ended</button>
         )}
+        {hiddenCount > 0 && (
+          <button type="button" className={`nv-chip nv-press${showHidden ? " on" : ""}`} aria-pressed={showHidden} onClick={() => setShowHidden(!showHidden)}>Show {hiddenCount} hidden {hiddenCount === 1 ? "draft" : "drafts"}</button>
+        )}
       </div>
       <section className="nv-up" aria-label="Campaigns" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
         {cards.map((c) => (
@@ -211,6 +226,7 @@ export function TapAdminView({ asOf, campaigns: listed }: { asOf: string | null;
                 )}
                 <span><b>{n(ci.counts.declined)}</b> declined</span>
                 <span style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+                  {ci.status === "READY" && camp && <button type="button" className="nv-btn2 nv-sm nv-press" onClick={() => toggleHidden(camp)}>{camp.hidden ? "Show in list" : "Hide from list"}</button>}
                   {ci.status === "READY" && <button type="button" className="nv-btn nv-sm nv-press" disabled={publishing} onClick={publishSel}>{publishing ? "Publishing…" : "Publish"}</button>}
                   {ci.status !== "CLOSED" && <button type="button" className="nv-btn2 nv-sm nv-press" onClick={() => setSheet({ id: sel })}>Edit campaign</button>}
                 </span>
@@ -304,6 +320,7 @@ export function TapAdminView({ asOf, campaigns: listed }: { asOf: string | null;
           key={sheet.id ?? "new"}
           id={sheet.id}
           initial={sheet.id && info[sheet.id] && info[sheet.id] !== "error" ? (info[sheet.id] as CampaignOverview).form : null}
+          published={!!sheet.id && info[sheet.id] !== undefined && info[sheet.id] !== "error" && (info[sheet.id] as CampaignOverview).status !== "READY"}
           closing={closingSheet}
           onClose={closeSheet}
           onSaved={(id, published, name, form) => {

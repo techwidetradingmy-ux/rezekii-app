@@ -13,7 +13,8 @@ export type AccountPageData = {
   overview: AccountOverview;
   /** The linked TikTok Shop creator account, as TikTok Shop describes it. */
   /** `ttLevel`: TikTok Shop creator level 0-8; `agency`: how TikTok's Creator Marketplace lists them (null until checked). */
-  shop: { username: string; avatar: string | null; linkedAt: string | null; approvedAt: string | null; region: string | null; permissions: string[]; ttLevel: number | null; agency: "managed" | "independent" | null } | null;
+  /** `cancelled`: TikTok has cancelled Rezekii's access to it ("deauthorized"), so it has to be linked again. */
+  shop: { username: string; avatar: string | null; linkedAt: string | null; approvedAt: string | null; region: string | null; permissions: string[]; ttLevel: number | null; agency: "managed" | "independent" | null; cancelled: boolean } | null;
   sales: SalesSummary | null;
   level: { level: Level; monthSales: number; keep: number; lifetime: number };
   samples: { requested: number; approved: number; shipping: number; toPost: number; posted: number; recent: { name: string; image: string | null; stage: number; status: string | null }[] };
@@ -25,14 +26,16 @@ const REGION: Record<string, string> = { MY: "Malaysia", SG: "Singapore", ID: "I
 const PERMISSION: Record<string, string> = { ADD_AFFILIATE_PERMISSION: "Can add affiliate products", LIVE_STREAM_PERMISSION: "Can go LIVE" };
 const day = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kuala_Lumpur" }) : null);
 
-const profiles = new Map<string, { at: number; region: string | null; permissions: string[] }>();
-/** Region and permissions from TikTok Shop's creator profile, kept an hour. */
+/** TikTok's "your token has been deauthorized": TikTok cancelled the link (seen several times on 16 Oct 2026). */
+const DEAUTHORIZED = 36009005;
+const profiles = new Map<string, { at: number; region: string | null; permissions: string[]; cancelled: boolean }>();
+/** Region and permissions from TikTok Shop's creator profile, kept an hour; and whether TikTok has cancelled the link (not kept). */
 async function shopProfile(userId: string) {
   const hit = profiles.get(userId);
   if (hit && Date.now() - hit.at < 3600_000) return hit;
   const token = await approvedCreatorToken(userId);
   const r = token ? await getCreatorProfile(token).catch(() => null) : null;
-  const out = { at: Date.now(), region: r?.data?.register_region ? REGION[r.data.register_region] ?? r.data.register_region : null, permissions: (r?.data?.permissions ?? []).map((p) => PERMISSION[p]).filter(Boolean) };
+  const out = { at: Date.now(), region: r?.data?.register_region ? REGION[r.data.register_region] ?? r.data.register_region : null, permissions: (r?.data?.permissions ?? []).map((p) => PERMISSION[p]).filter(Boolean), cancelled: r?.code === DEAUTHORIZED };
   if (r?.code === 0) profiles.set(userId, out);
   return out;
 }
@@ -48,12 +51,12 @@ export async function accountPage(user: AppUser): Promise<AccountPageData> {
     levelPage(user.id, user.tiktok_username),
     tapRows,
     savedShowcase(user.id),
-    user.role === "creator" ? shopProfile(user.id) : Promise.resolve({ region: null, permissions: [] as string[] }),
+    user.role === "creator" ? shopProfile(user.id) : Promise.resolve({ region: null, permissions: [] as string[], cancelled: false }),
   ]);
   const withSample = tap.rows.filter((r) => r.stage > 0);
   return {
     overview,
-    shop: conn ? { username: conn.username, avatar: conn.avatar_url, linkedAt: day(conn.connected_at), approvedAt: access?.status === "approved" ? day(access.decided_at) : null, region: profile.region, permissions: profile.permissions, ttLevel: conn.tt_level, agency: conn.agency } : null,
+    shop: conn ? { username: conn.username, avatar: conn.avatar_url, linkedAt: day(conn.connected_at), approvedAt: access?.status === "approved" ? day(access.decided_at) : null, region: profile.region, permissions: profile.permissions, ttLevel: conn.tt_level, agency: conn.agency, cancelled: profile.cancelled } : null,
     sales,
     level: { level: level.level, monthSales: level.month?.sales ?? 0, keep: KEEP_MONTHLY, lifetime: level.lifetime },
     samples: {

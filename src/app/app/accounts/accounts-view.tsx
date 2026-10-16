@@ -210,8 +210,9 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
           <div className="ac-line" style={{ alignItems: "flex-start" }}>
             <TikTokShopLogo />
             <span style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-              <span style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}><strong>TikTok Shop</strong><span className={`nv-badge ${shop ? "b-green" : "b-amber"}`}>{shop ? "Linked" : "Not linked"}</span></span>
+              <span style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}><strong>TikTok Shop</strong><span className={`nv-badge ${shop?.cancelled ? "b-red" : shop ? "b-green" : "b-amber"}`}>{shop?.cancelled ? "Cancelled by TikTok" : shop ? "Linked" : "Not linked"}</span></span>
               <span style={{ fontSize: 13, color: "var(--muted)" }}>{shop ? `${handle}${shop.linkedAt ? ` · linked ${shop.linkedAt}` : ""}${shop.approvedAt ? ` · approved ${shop.approvedAt}` : ""}` : "Link it to use Rezekii"}</span>
+              {shop?.cancelled && <span style={{ fontSize: 13, color: "var(--red)", lineHeight: 1.45 }}>TikTok has cancelled Rezekii&apos;s link to this TikTok Shop, so your products, samples and sales can&apos;t update. Link it again to carry on.</span>}
               {shop && (
                 <span style={{ display: "flex", flexWrap: "wrap", gap: 14 }}>
                   {[...shop.permissions, ...(d.showcase !== null ? [`${d.showcase.toLocaleString("en-US")} products in showcase`] : [])].map((t) => (
@@ -220,7 +221,9 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
                 </span>
               )}
             </span>
-            {shop ? (
+            {shop?.cancelled ? (
+              <a href="/api/auth/tiktokshop/start" className="nv-btn nv-sm nv-press" style={{ flexShrink: 0 }}>Link again</a>
+            ) : shop ? (
               <button type="button" className="nv-link" onClick={() => setAlert("unlink")} style={{ color: "var(--red)", flexShrink: 0 }}>Unlink</button>
             ) : (
               <a href="/api/auth/tiktokshop/start" className="nv-btn3 nv-sm nv-press">Link TikTok Shop</a>

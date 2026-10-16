@@ -137,6 +137,9 @@ export async function saveCampaign(form: CampaignForm, campaignId: string | null
   const now = Date.now();
   // An edit measures TikTok's limits from the campaign's real start time, as TikTok has it.
   const cur = campaignId ? await campaignOverview(campaignId) : null;
+  // TikTok won't move a published campaign's end earlier (17 Oct 2026); registration can still close sooner.
+  if (cur?.ok && cur.data.status !== "READY" && form.end < cur.data.form.end)
+    return { ok: false, error: `A published campaign can't end earlier than ${longDay(cur.data.form.end)} (TikTok's rule). Close registration sooner instead.` };
   const v = campaignFields({ ...form, startAt: cur?.ok ? cur.data.form.startAt : null }, now, !campaignId);
   if (!v.ok) return v;
   const s = await storedSessions().partner();
