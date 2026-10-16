@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { accountPage } from "@/modules/accounts/account-page.ts";
 import { currentUser } from "../../current-user";
+import { myPhoto } from "@/modules/photos/store.ts";
 import { AccountsView } from "./accounts-view";
 
 export const metadata: Metadata = { title: "Account · Rezekii" };
@@ -21,7 +22,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
           <p className="nv-sub">Your TikTok Shop profile, earnings and settings</p>
         </div>
         <AccountsView
-          me={{ name, avatar: user.avatar_url, initial: name.replace("@", "").slice(0, 1).toUpperCase(), role: user.role, tiktokUsername: user.tiktok_username }}
+          me={{ name, avatar: await myPhoto(user), initial: name.replace("@", "").slice(0, 1).toUpperCase(), role: user.role, tiktokUsername: user.tiktok_username }}
           d={d}
           now={d.now}
           justConnected={q.connected === "tiktok"}

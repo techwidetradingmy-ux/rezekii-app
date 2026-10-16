@@ -9,12 +9,14 @@ import { pruneActivity } from "../admin/admins.ts";
 import { refreshVideos } from "../admin/videos.ts";
 import { approvedCreatorToken } from "../creator-accounts/access.ts";
 import { linkedCreators, syncCreatorOrders } from "../sales/orders.ts";
-import { buildRankings } from "../rankings/store.ts";
+import { buildRankings, rankings as builtRankings } from "../rankings/store.ts";
+import { PHOTO_DAYS, freshUrl, saveCreatorPhoto, savedPhotos } from "../photos/store.ts";
+import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { getBestselling, getMarketplaceCreator, searchMarketplaceCreators, type BestsellingKind } from "../../integrations/tiktok-shop/seller.ts";
 import { TT_LEVELS, bestSlot, mytDay, type PlannedTask } from "./plan.ts";
 import { TAG_START, tagFilters, tagNext, tagTask, type TagState } from "../accounts/tags.ts";
 import type { Sessions } from "./sessions.ts";
-import { catalogSales, creatorsNeedingDetail, linkedUsername, marketplaceOpen, openTaskCount, rebuildTapCatalog, saveDetail, saveSnapshot, saveTags, snapshotItems, tagsDue, type TaskRow, upsertCreatorProducts, upsertCreators } from "./store.ts";
+import { catalogSales, creatorsNeedingDetail, linkedUsername, marketplaceOpen, openTaskCount, photoSources, rebuildTapCatalog, saveDetail, saveSnapshot, saveTags, snapshotItems, tagsDue, type TaskRow, upsertCreatorProducts, upsertCreators } from "./store.ts";
 
 /** TikTok's "too many requests" code, shared by the app's whole API group. */
 export const RATE_LIMITED = 36009002;
@@ -294,6 +296,53 @@ async function details(t: TaskRow, { sessions, deadline }: Ctx): Promise<StepRes
   return { count, more: true, waitMs: 0 };
 }
 
+/**
+ * Saved copies of the photos of every creator the Rankings views show, and of Rezekii's own creators (owner, 16 Oct 2026: once
+ * every two weeks; TikTok's photo addresses stop working within a day or two). A photo comes from a saved profile or marketplace
+ * address that still works; otherwise the creator's profile is read again for a new address. Goes through the due creators in
+ * name order, carrying on after `cursor`; failures wait for the next day's task.
+ */
+async function photos(t: TaskRow, { sessions, deadline }: Ctx): Promise<StepResult> {
+  const b = await builtRankings();
+  const rezekii = (await (await supabaseRest("app_users?role=eq.creator&tiktok_username=not.is.null&select=tiktok_username,avatar_url&limit=5000")).json()) as { tiktok_username: string; avatar_url: string | null }[];
+  const own = new Map(rezekii.map((u) => [u.tiktok_username, u.avatar_url]));
+  const users = new Set([...Object.keys(b?.details ?? {}), ...own.keys()]);
+  for (const rows of Object.values(b?.creators ?? {})) for (const r of rows) users.add(r[1]);
+  for (const rows of Object.values(b?.lives ?? {})) for (const r of rows) if (r[1]) users.add(r[1]);
+  const saved = await savedPhotos(true);
+  const cutoff = mytDay(Date.now(), PHOTO_DAYS);
+  const due = [...users].filter((u) => (saved.get(u.toLowerCase()) ?? "") < cutoff && (!t.cursor || u > t.cursor)).sort();
+  const soon = (url: string | null | undefined) => freshUrl(url, Date.now(), 10 * 60_000);
+  let count = 0, seller: Awaited<ReturnType<Sessions["seller"]>> | null = null;
+  // 30 creators at a time; when time runs out mid-way the group starts again next tick (photos saved meanwhile aren't due any more).
+  for (let i = 0; i < due.length; i += 30) {
+    const group = due.slice(i, i + 30);
+    const back = (waitMs: number): StepResult => ({ count, more: true, cursor: i ? due[i - 1] : t.cursor, waitMs });
+    const src = new Map((await photoSources(group)).map((r) => [r.username, r]));
+    const url = (u: string) => soon(src.get(u)?.da) ?? soon(src.get(u)?.ma) ?? soon(own.get(u));
+    // Addresses that still work: six downloads at once.
+    const ready = group.filter(url);
+    for (let k = 0; k < ready.length; k += 6) {
+      if (Date.now() > deadline - 5000) return back(0);
+      count += (await Promise.all(ready.slice(k, k + 6).map((u) => saveCreatorPhoto(u, url(u)!).catch(() => false)))).filter(Boolean).length;
+    }
+    // The rest: read the profile again for a new address, a second apart (TikTok's shared rate limit).
+    for (const u of group.filter((x) => !url(x) && src.get(x)?.open_id)) {
+      if (Date.now() > deadline - 5000) return back(0);
+      const r = src.get(u)!;
+      seller ??= await sessions.seller();
+      const p = await getMarketplaceCreator(seller.token, seller.cipher, r.open_id!);
+      if (p.code === RATE_LIMITED || p.code === INTERNAL_ERROR) return back(60_000);
+      // Only a profile that came back replaces the saved one; a creator TikTok won't show is left to the profile task.
+      const fresh = p.code === 0 && p.data?.creator ? soon((p.data.creator.avatar as { url?: string } | undefined)?.url) : null;
+      if (p.code === 0 && p.data?.creator) await saveDetail(r.creator_key, p.data.creator, null);
+      if (fresh && (await saveCreatorPhoto(u, fresh).catch(() => false))) count++;
+      await wait(1000);
+    }
+  }
+  return { count };
+}
+
 /** TikTok's GMV and units-sold ranges, used to split a search that hits its ~1,000-result limit. */
 export const GMV_RANGES = ["GMV_RANGE_0_100", "GMV_RANGE_100_1000", "GMV_RANGE_1000_10000", "GMV_RANGE_10000_AND_ABOVE"];
 export const UNITS_RANGES = ["UNITS_SOLD_RANGE_0_10", "UNITS_SOLD_RANGE_10_100", "UNITS_SOLD_RANGE_100_1000", "UNITS_SOLD_RANGE_1000_AND_ABOVE"];
@@ -373,6 +422,7 @@ export const STEPS: Record<string, (t: TaskRow, ctx: Ctx) => Promise<StepResult>
   videos,
   orders,
   details,
+  photos,
   marketplace,
   agency,
 };

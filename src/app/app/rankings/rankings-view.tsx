@@ -48,15 +48,10 @@ const rmx = (v: number) => `RM${v >= 1e6 ? `${(v / 1e6).toFixed(2)}M` : v >= 1e3
 const usd = (v: number) => `US$${v >= 1e6 ? `${(v / 1e6).toFixed(2)}M` : v >= 1e3 ? `${(v / 1e3).toFixed(1)}k` : String(v)}`;
 const hours = (sec: number) => (sec >= 3600 ? `${Math.floor(sec / 3600)}h ${Math.round((sec % 3600) / 60)}m` : `${Math.round(sec / 60)}m`);
 const rmWhole = (v: number) => `RM${Math.round(v).toLocaleString("en-US")}`;
+/** TikTok Shop's product photo at 300px instead of the full-size original. */
+const small = (img: string) => img.replace(/~tplv-([a-z0-9]+)-origin-jpeg\.jpeg/, "~tplv-$1-resize-webp:300:300.webp");
 const fmtDay = (iso: string | null) => { if (!iso) return ""; const [, m, d] = iso.split("-").map(Number); return `${d} ${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m - 1]}`; };
 
-function Face({ src, name, i, size }: { src: string | null | undefined; name: string; i: number; size: number }) {
-  return src ? (
-    <span className="rk-face rk-photo" aria-hidden="true" style={{ width: size, height: size, backgroundImage: `url("${src}")` }} />
-  ) : (
-    <span className="rk-face" aria-hidden="true" style={{ width: size, height: size, background: COL[(i + 3) % COL.length] }}>{(name[0] || "?").toUpperCase()}</span>
-  );
-}
 const Chev = () => <svg className="fb-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>;
 const Tick16 = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}><path d="m5 12 5 5 9-10" /></svg>;
 const Close = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>;
@@ -326,7 +321,7 @@ export function RankingsView({ board, you, asOf }: { board: BoardMonth[]; you: s
                         <div key={id} className="rk-row rk-vrow" style={{ animationDelay: `${60 + Math.min(i, 12) * 40}ms` }}>
                           <span style={{ fontWeight: 800, fontSize: 17, color: "var(--muted)" }}>{i + 1}</span>
                           <a href={`https://shop.tiktok.com/view/product/${id}?region=MY`} target="_blank" rel="noopener" style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, color: "inherit", textDecoration: "none" }}>
-                            <span className="rk-thumb rk-photo" aria-hidden="true" style={img ? { backgroundImage: `url("${img.replace(/~tplv-([a-z0-9]+)-origin-jpeg\.jpeg/, "~tplv-$1-resize-webp:300:300.webp")}")` } : undefined} />
+                            <span className="rk-thumb rk-photo" aria-hidden="true" style={img ? { backgroundImage: `url("${small(img)}")` } : undefined} />
                             <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}><strong className="rk-ellip">{name}</strong><span className="rk-ellip" style={{ fontSize: 12, color: "var(--muted)" }}>{CAT[pcat] ?? ""}</span></span>
                           </a>
                           <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}><span style={{ fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{band(lo, hi, conv)}</span><span style={{ fontSize: 12, color: "var(--muted)" }}>{tier === 2 ? `Daily figures, ${nd} ${nd === 1 ? "day" : "days"}` : "TikTok's range"}</span></span>
@@ -346,11 +341,16 @@ export function RankingsView({ board, you, asOf }: { board: BoardMonth[]; you: s
                       <span className="rk-hide"><button type="button" className={`rk-hs ${x.cls}`} onClick={x.go} aria-label={x.aria}>Views · likes<span className="rk-hsa" aria-hidden="true">{x.arrow}</span></button></span>
                       <span className="rk-hide">Posted</span>
                     </div>
-                    {data.videos.map(([, id, nick, dur, views, likes, , , lo, hi, date, prods, conv], i) => (
+                    {data.videos.map(([, id, nick, dur, views, likes, , , lo, hi, date, prods, conv, thumb], i) => (
                       <div key={id} className="rk-row rk-vrow" style={{ animationDelay: `${60 + Math.min(i, 12) * 40}ms` }}>
                         <span style={{ fontWeight: 800, fontSize: 17, color: "var(--muted)" }}>{i + 1}</span>
                         <button type="button" className="rk-who2" onClick={() => openVp(id)} aria-label={`Play video by ${nick}`}>
-                          <span className="rk-thumb" aria-hidden="true" style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#0d1117", color: "#ffffff" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg></span>
+                          {/* TikTok's video lists have no cover: the photo of the product the video sells, with a play mark. */}
+                          {thumb ? (
+                            <span className="rk-thumb rk-vthumb rk-photo" aria-hidden="true" style={{ backgroundImage: `url("${small(thumb)}")` }}><span className="rk-play"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg></span></span>
+                          ) : (
+                            <span className="rk-thumb rk-vthumb" aria-hidden="true" style={{ background: "#0d1117", color: "#ffffff" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg></span>
+                          )}
                           <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}><strong className="rk-ellip">{`Video by ${nick} · ${dur}s`}</strong><span className="rk-ellip" style={{ fontSize: 12, color: "var(--muted)" }}>{prods.length ? `Sells: ${prods.join(" · ")}` : "No product tagged"}</span></span>
                         </button>
                         <span style={{ fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{band(lo, hi, conv)}</span>
@@ -373,7 +373,10 @@ export function RankingsView({ board, you, asOf }: { board: BoardMonth[]; you: s
                       <div key={`${user}-${i}`} className="rk-row rk-vrow" style={{ animationDelay: `${60 + Math.min(i, 12) * 40}ms` }}>
                         <span style={{ fontWeight: 800, fontSize: 17, color: "var(--muted)" }}>{i + 1}</span>
                         <a href={`https://www.tiktok.com/@${user}`} target="_blank" rel="noopener" style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, color: "inherit", textDecoration: "none" }}>
-                          <Face src={avatar} name={user} i={i} size={40} />
+                          <span className={`rk-thumb rk-vthumb${avatar ? " rk-photo" : ""}`} aria-hidden="true" style={avatar ? { backgroundImage: `url("${avatar}")` } : { background: COL[(i + 3) % COL.length], color: "#ffffff", fontWeight: 800, fontSize: 18 }}>
+                            {!avatar && (user[0] || "?").toUpperCase()}
+                            <span className="rk-live-tag">LIVE</span>
+                          </span>
                           <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}><strong className="rk-ellip">@{user}</strong><span className="rk-ellip" style={{ fontSize: 12, color: "var(--muted)" }}>{title || nick}</span></span>
                         </a>
                         <span style={{ fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{band(lo, hi, conv)}</span>

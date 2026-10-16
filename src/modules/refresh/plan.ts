@@ -1,6 +1,6 @@
 /** What the daily refresh fetches, as a list of tasks. Pure: no network, no database. */
 
-export type TaskKind = "tap_campaigns" | "tap_products" | "tap_catalog" | "tap_samples" | "tap_samples_mine" | "tap_creators" | "levels" | "rankings" | "videos" | "orders" | "best" | "details" | "marketplace" | "agency";
+export type TaskKind = "tap_campaigns" | "tap_products" | "tap_catalog" | "tap_samples" | "tap_samples_mine" | "tap_creators" | "levels" | "rankings" | "videos" | "orders" | "best" | "details" | "photos" | "marketplace" | "agency";
 export type PlannedTask = { key: string; kind: TaskKind; params: Record<string, unknown>; priority: number };
 
 const DAY = 86_400_000;
@@ -107,6 +107,8 @@ export function planDay(now: number, haveDays: Set<string>, newestBuilt = false,
   }
 
   tasks.push({ key: "details", kind: "details", params: {}, priority: 5 });
+  // saved copies of the Rankings creators' photos, each refreshed every two weeks (TikTok's photo addresses expire in a day or two)
+  tasks.push({ key: "photos", kind: "photos", params: {}, priority: 5 });
   // linked creators' agency status (every 2 weeks) and TikTok level (on the 1st): queues one task per creator who is due
   tasks.push({ key: "agency", kind: "agency", params: {}, priority: 6 });
   // On the 1st the marketplace search is also split by TikTok's creator level, so each creator's level comes with it (levels

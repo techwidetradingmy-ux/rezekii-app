@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { currentUser } from "./current-user";
+import { myPhoto } from "@/modules/photos/store.ts";
 import { BottomNav } from "./bottom-nav";
 import { MenuLinks } from "./menu-links";
 import { NavAccount } from "./nav-account";
@@ -16,6 +17,7 @@ export async function SiteNav({ variant, staticPage = false }: { variant: "hero"
   // The homepage stays static (served from the CDN); its account button is checked in the browser.
   const clientAccount = variant === "hero" || staticPage;
   const user = clientAccount ? null : await currentUser();
+  const photo = user ? await myPhoto(user) : null;
   const nav = (
     <nav className={`site-nav site-wrap${variant === "app" ? " site-nav-app" : ""}`} aria-label="Main">
       <Link href="/" className="site-brand">
@@ -44,10 +46,10 @@ export async function SiteNav({ variant, staticPage = false }: { variant: "hero"
         <NavAccount />
       ) : user ? (
         <Link href={variant !== "app" ? "/app" : user.role === "admin" ? "/app/admin/settings" : "/app/accounts"} className="site-signin site-account" aria-label={variant === "app" ? (user.role === "admin" ? "Settings" : "Account") : "Open Rezekii"}>
-          {user.avatar_url ? (
+          {photo ? (
             // Avatars come from many TikTok and Google CDN hosts, so a plain img (as on /app).
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={user.avatar_url} alt="" width={26} height={26} />
+            <img src={photo} alt="" width={26} height={26} />
           ) : null}
           {variant === "app" ? (user.role === "admin" ? "Settings" : "Account") : "My account"}
         </Link>

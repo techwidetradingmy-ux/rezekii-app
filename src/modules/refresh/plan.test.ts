@@ -72,6 +72,7 @@ test("refresh plan: on the 1st the marketplace search is split by creator level;
   assert.deepEqual(day1[0], { key: "marketplace|lv0|0-999", kind: "marketplace", params: { min: 0, max: 999, level: "Lv. 0" }, priority: 6 });
   assert.equal(planDay(now, new Set(), false, true).filter((t) => t.kind === "marketplace").length, 0);
   assert.equal(planDay(now, new Set()).filter((t) => t.kind === "agency").length, 1);
+  assert.equal(planDay(now, new Set()).filter((t) => t.kind === "photos").length, 1);
   const { marketSplits } = await import("./steps.ts");
   assert.equal(marketSplits({ min: 0, max: 999, level: "Lv. 3" })[0].key, "marketplace|lv3|0-999|GMV_RANGE_0_100");
 });

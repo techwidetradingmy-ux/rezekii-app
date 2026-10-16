@@ -66,3 +66,15 @@ test("frameRange: custom dates from the calendar", () => {
   assert.deepEqual([prev.from, prev.to], [myt("2026-10-03T00:00:00"), myt("2026-10-08T00:00:00")]);
   assert.equal(frameRange("c:2026-13-01:2026-10-01", now, null), null);
 });
+
+test("frameStats: the top videos and the top LIVEs listed apart, each with its first order's time", () => {
+  const line = (o: Partial<OrderLine>): OrderLine => ({ order_id: "o", product_id: "p", product_name: "P", shop_name: "S", price: 10, quantity: 1, refunded_quantity: 0, returned_quantity: 0, commission_estimated: 1, commission_actual: null, campaign_id: null, content_type: null, content_id: null, status: "SETTLED", created_at: "2026-10-13T02:00:00Z", synced_at: "", ...o });
+  const lives = Array.from({ length: 12 }, (_, i) => line({ order_id: `l${i}`, content_type: "LIVE", content_id: `room${i}`, price: 100 + i }));
+  const lines = [...lives, line({ order_id: "v1", content_type: "VIDEO", content_id: "7001", created_at: "2026-10-12T05:00:00Z" }), line({ order_id: "v2", content_type: "VIDEO", content_id: "7001" }), line({ order_id: "s", content_type: "SHOP", content_id: "shop1" })];
+  const s = frameStats(lines, frameRange("7d", now, null)!, new Set());
+  const videos = s.content.filter((c) => c.type === "VIDEO"), live = s.content.filter((c) => c.type === "LIVE");
+  assert.deepEqual(videos.map((c) => [c.id, c.orders, c.gmv, c.at]), [["7001", 2, 20, "2026-10-12T05:00:00Z"]], "a video still shows when LIVEs sold more");
+  assert.equal(live.length, 10);
+  assert.equal(live[0].id, "room11");
+  assert.equal(s.content.some((c) => c.type === "SHOP"), false);
+});

@@ -30,6 +30,9 @@
 .rk-face{border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#ffffff;font-weight:800;transition:transform .25s cubic-bezier(.3,1.4,.5,1)}
 .rk-thumb{width:46px;height:46px;border-radius:12px;flex-shrink:0;background-color:var(--surface2);transition:transform .25s cubic-bezier(.3,1.4,.5,1)}
 .rk-row:hover .rk-face,.rk-row:hover .rk-thumb{transform:scale(1.08)}
+.rk-vthumb{position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.rk-play{position:absolute;right:3px;bottom:3px;width:18px;height:18px;border-radius:50%;background:rgba(13,17,23,.72);color:#ffffff;display:flex;align-items:center;justify-content:center}
+.rk-live-tag{position:absolute;left:50%;bottom:3px;transform:translateX(-50%);background:#fe2c55;color:#ffffff;font-size:9px;font-weight:800;letter-spacing:.06em;line-height:1.35;padding:0 5px;border-radius:5px}
 .rk-hs{display:inline-flex;align-items:center;gap:4px;border:0;background:transparent;padding:4px 6px;margin:-4px -6px;border-radius:8px;font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit;cursor:pointer;transition:color .15s,background .15s}
 .rk-hs:hover{color:var(--text);background:var(--surface2)}
 .rk-hs.on{color:#00a862}

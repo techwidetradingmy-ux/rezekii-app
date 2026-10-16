@@ -73,7 +73,7 @@ function Tile({ label, value, format, note, noteColor, delay }: { label: string;
 }
 
 /** Sales, as chosen from the mockup (direction A, with the owner's changes). */
-export function SalesView({ initial, handle }: { initial: FrameData; handle: string | null }) {
+export function SalesView({ initial, handle, photo }: { initial: FrameData; handle: string | null; photo: string | null }) {
   const router = useRouter();
   const [frame, setFrame] = useState("30d");
   const [source, setSource] = useState<Source>("all");
@@ -121,7 +121,6 @@ export function SalesView({ initial, handle }: { initial: FrameData; handle: str
   const change = d.compare && d.compare.gmv > 0 ? Math.round(((s.gmv - d.compare.gmv) / d.compare.gmv) * 100) : null;
   const sIdx = SOURCES.findIndex(([v]) => v === source);
   const topProduct = s.products[0]?.gmv || 1;
-  const topContent = s.content[0]?.gmv || 1;
   const shared = s.partnerShare > 0;
   /** TikTok pays the whole commission to the creator's agency: show it in full, and say so. */
   const agency = shared && s.commission < 0.005;
@@ -311,31 +310,43 @@ export function SalesView({ initial, handle }: { initial: FrameData; handle: str
             );
           })}
         </section>
-        <section className="nv-card sl-card" aria-labelledby="slcont">
-          <div className="sl-head"><h2 id="slcont" className="nv-h2">Top videos and LIVEs</h2><span className="sl-muted">Sales each one made</span></div>
-          {s.content.length === 0 && <p className="sl-empty">No sales from videos or LIVEs in this period.</p>}
-          {s.content.slice(0, 6).map((c, i) => {
-            const v = d.videos[c.id];
-            const live = /LIVE/i.test(c.type);
-            const url = v?.url ?? (handle && !live ? `https://www.tiktok.com/@${handle}/video/${c.id}` : null);
-            const body = (
-              <>
-                {v?.cover ? <span className="sl-cover" style={{ backgroundImage: `url("${v.cover}")` }} aria-hidden="true" /> : <span className="sl-cover sl-kind" style={{ background: live ? "#fe2c55" : "#0d1117" }} aria-hidden="true">{live ? "LIVE" : "VIDEO"}</span>}
-                <span style={{ minWidth: 0 }}>
-                  <span className="sl-name">{v?.title ?? (live ? "LIVE" : /SHOWCASE|LINK|SHOP/i.test(c.type) ? "Showcase or shared link" : "Video")}</span>
-                  <span className="sl-muted">{c.orders} {c.orders === 1 ? "order" : "orders"}</span>
-                  <span className="sl-meter"><i style={{ width: `${(c.gmv / topContent) * 100}%`, animationDelay: `${120 + i * 50}ms` }} /></span>
-                </span>
-                <span className="sl-amt"><b>{money(c.gmv)}</b><span>{url ? "Watch on TikTok" : ""}</span></span>
-              </>
-            );
-            return url ? (
-              <a key={`${key}-${c.id}`} href={url} target="_blank" rel="noopener" className="sl-row sl-link" style={{ animationDelay: `${i * 50}ms` }}>{body}</a>
-            ) : (
-              <div key={`${key}-${c.id}`} className="sl-row" style={{ animationDelay: `${i * 50}ms` }}>{body}</div>
-            );
-          })}
-        </section>
+        {([["slvid", "Top videos", s.content.filter((c) => !/LIVE/i.test(c.type)), "No sales from videos in this period."], ["sllive", "Top LIVEs", s.content.filter((c) => /LIVE/i.test(c.type)), "No sales from LIVEs in this period."]] as const).map(([id, title, list, empty]) => {
+          const live = id === "sllive";
+          const top = list[0]?.gmv || 1;
+          return (
+            <section key={id} className="nv-card sl-card" aria-labelledby={id}>
+              <div className="sl-head"><h2 id={id} className="nv-h2">{title}</h2><span className="sl-muted">Sales each one made</span></div>
+              {list.length === 0 && <p className="sl-empty">{empty}</p>}
+              {list.slice(0, 6).map((c, i) => {
+                const v = d.videos[c.id];
+                const url = v?.url ?? (handle && !live ? `https://www.tiktok.com/@${handle}/video/${c.id}` : null);
+                const t = new Date(Date.parse(c.at) + MYT), day = `${t.getUTCDate()} ${MONTHS[t.getUTCMonth()]}`;
+                const body = (
+                  <>
+                    {live ? (
+                      <span className="sl-cover sl-kind sl-live" style={photo ? { backgroundImage: `url("${photo}")` } : { background: "#fe2c55" }} aria-hidden="true"><i>LIVE</i></span>
+                    ) : v?.cover ? (
+                      <span className="sl-cover" style={{ backgroundImage: `url("${v.cover}")` }} aria-hidden="true" />
+                    ) : (
+                      <span className="sl-cover sl-kind" style={{ background: "#0d1117" }} aria-hidden="true">VIDEO</span>
+                    )}
+                    <span style={{ minWidth: 0 }}>
+                      <span className="sl-name">{live ? `LIVE on ${day}` : (v?.title ?? `Video · first sale ${day}`)}</span>
+                      <span className="sl-muted">{c.orders} {c.orders === 1 ? "order" : "orders"}</span>
+                      <span className="sl-meter"><i style={{ width: `${(c.gmv / top) * 100}%`, animationDelay: `${120 + i * 50}ms` }} /></span>
+                    </span>
+                    <span className="sl-amt"><b>{money(c.gmv)}</b><span>{url ? "Watch on TikTok" : ""}</span></span>
+                  </>
+                );
+                return url ? (
+                  <a key={`${key}-${c.id}`} href={url} target="_blank" rel="noopener" className="sl-row sl-link" style={{ animationDelay: `${i * 50}ms` }}>{body}</a>
+                ) : (
+                  <div key={`${key}-${c.id}`} className="sl-row" style={{ animationDelay: `${i * 50}ms` }}>{body}</div>
+                );
+              })}
+            </section>
+          );
+        })}
       </div>
       {product && <ProductCard key={product} productId={product} onClose={() => setProduct(null)} />}
       <p className="sl-foot">

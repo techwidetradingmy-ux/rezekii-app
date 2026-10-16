@@ -119,6 +119,13 @@ export async function creatorsNeedingDetail(limit: number): Promise<{ creator_ke
   return (await supabaseRest(`market_creators?detail_at=lt.${old}&open_id=not.is.null&select=creator_key,open_id&order=detail_at.asc&limit=${limit}`)).json();
 }
 
+/** Where each creator's photo can come from: their saved profile and marketplace photo addresses (which expire), and open id. */
+export async function photoSources(users: string[]): Promise<{ username: string; creator_key: string; open_id: string | null; da: string | null; ma: string | null }[]> {
+  if (!users.length) return [];
+  const list = users.map((u) => `"${u.replace(/"/g, "")}"`).join(",");
+  return (await supabaseRest(`market_creators?username=in.(${encodeURIComponent(list)})&select=username,creator_key,open_id,da:detail->avatar->>url,ma:market->avatar->>url`)).json();
+}
+
 export async function saveDetail(key: string, detail: unknown, error: string | null): Promise<void> {
   await supabaseRest(`market_creators?creator_key=eq.${encodeURIComponent(key)}`, {
     method: "PATCH",

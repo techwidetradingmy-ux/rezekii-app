@@ -90,3 +90,11 @@ test("rankings: best-selling video per creator, matched by an unambiguous displa
   assert.equal(r.VID.v2[5], 25); // days from posting to the end of 11 Oct, the newest list day
   assert.equal(dayLabel(1789570420), "16 Sep");
 });
+
+test("rankings: a video's thumbnail is the photo of the first product it sells that has one", async () => {
+  const { buildVideos } = await import("./build.ts");
+  const v = { id: "71", rank: 1, nick_name: "Aina", duration: 30, views: 10, likes: 1, gmv_range: { amount_lower_bound: "10", amount_upper_bound: "20" }, publish_time: 1760000000, product_infos: [{ product_id: "p1", product_name: "No photo" }, { product_id: "p2", product_name: "Serum" }] };
+  const { rows } = buildVideos([v], [v], (id) => (id === "p2" ? "https://img/p2.jpeg" : null));
+  assert.equal(rows[0][13], "https://img/p2.jpeg");
+  assert.equal(buildVideos([v], [v]).rows[0][13], null);
+});

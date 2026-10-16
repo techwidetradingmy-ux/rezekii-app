@@ -1,4 +1,5 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import { freshUrl, photoFor, savedPhotos } from "../photos/store.ts";
 import {
   SLOTS, TYPES, bestVideos, buildCreators, buildLives, buildProducts, buildVideos, detailOf, findRow,
   type BestVideo, type CreatorRow, type DailySum, type Detail, type FindRow, type LiveRow, type ProductMeta, type ProductRow, type Raw, type Slot, type VideoDay, type VideoRow,
@@ -124,10 +125,18 @@ export async function buildRankings(day: string): Promise<Built> {
   for (const r of detailRows) if (r.username && r.detail && typeof r.detail === "object" && !("error" in r.detail)) details[r.username] = detailOf(r.detail, rate30);
   const find = (await rpc<Raw[]>("rank_find_json", {})).map((m) => findRow(m)).sort((a, b) => b[8] - a[8] || b[2] - a[2]);
   const avatarOf = new Map(find.map((f) => [f[0].slice(1), f[7]]));
-  const avatar = (user: string) => details[user]?.a ?? avatarOf.get(user) ?? null;
+  // A profile's photo address may have expired while the marketplace list's is newer: use whichever still works.
+  for (const [u, d] of Object.entries(details)) if (!freshUrl(d.a) && freshUrl(avatarOf.get(u))) d.a = avatarOf.get(u) ?? null;
+  const avatar = (user: string) => freshUrl(details[user]?.a) ?? freshUrl(avatarOf.get(user)) ?? details[user]?.a ?? avatarOf.get(user) ?? null;
+  // Video thumbnails: TikTok's video lists have no cover, so each video shows the photo of the product it sells.
+  const productImg = new Map(pm.filter((m) => m[5]).map((m) => [m[0], m[5]!]));
+  const missing = [...new Set(SLOTS.flatMap((s) => (vLists.get(`${s}|USD`) ?? []).flatMap((v) => ((v.product_infos as Raw[] | undefined) ?? []).map((x) => String(x.product_id ?? "")))))].filter((id) => /^\d{10,25}$/.test(id) && !productImg.has(id));
+  for (let i = 0; i < missing.length; i += 150)
+    for (const r of (await (await supabaseRest(`tap_catalog?product_id=in.(${missing.slice(i, i + 150).join(",")})&image=not.is.null&select=product_id,image`)).json()) as { product_id: string; image: string }[])
+      productImg.set(r.product_id, r.image);
 
   for (const s of SLOTS) {
-    const v = buildVideos(vLists.get(`${s}|LOCAL`) ?? [], vLists.get(`${s}|USD`) ?? []);
+    const v = buildVideos(vLists.get(`${s}|LOCAL`) ?? [], vLists.get(`${s}|USD`) ?? [], (id) => productImg.get(id) ?? null);
     videos[s] = v.rows;
     rates.videos[s] = Math.round(v.rate * 1e4) / 1e4;
     dropped.videos[s] = v.dropped;
@@ -165,7 +174,7 @@ export async function buildRankings(day: string): Promise<Built> {
   await save("built-pm", { pm });
   await save("built-find", { find });
   await save("built", { ...built, pm: [], find: [] });
-  cache = { at: Date.now(), data: { ...built, pm: [], find: [] } };
+  cache = { at: Date.now(), data: withPhotos({ ...built, pm: [], find: [] }, await savedPhotos().catch(() => new Map<string, string>())) };
   parts.clear();
   return built;
 }
@@ -181,7 +190,9 @@ async function listedCreators(day: string): Promise<Set<string>> {
 /** One creator's profile read on its own, for a creator outside the Rankings lists (no profile in the built rankings). */
 export async function creatorDetail(user: string, rate30: number): Promise<Detail | null> {
   const [r] = (await (await supabaseRest(`market_creators?username=eq.${encodeURIComponent(user)}&detail=not.is.null&select=detail&limit=1`)).json()) as { detail: Raw }[];
-  return r?.detail && typeof r.detail === "object" && !("error" in r.detail) ? detailOf(r.detail, rate30) : null;
+  if (!r?.detail || typeof r.detail !== "object" || "error" in r.detail) return null;
+  const d = detailOf(r.detail, rate30);
+  return { ...d, a: photoFor(user, d.a, await savedPhotos().catch(() => new Map<string, string>())) };
 }
 
 /** Every TikTok Shop creator level the level pass has found, by lower-case username (read once per build: a full table scan). */
@@ -194,6 +205,18 @@ export async function savedLevels(): Promise<Record<string, number>> {
 
 const emptyDetail = (): Detail => ({ a: null, x: 0, xu: 0, band: "", vg: 0, lg: 0, u: 0, c: [], bio: "", wa: "", em: "", ig: "", com: 0, ev: 0, el: 0, f: 0, m: 0, age: "", loc: "", br: 0, pr: 0, vs: -1, nick: "" });
 
+/**
+ * Rezekii's saved creator photos in place of TikTok's photo addresses, which stop working within a day or two (owner, 16 Oct
+ * 2026); an address that has stopped working becomes null, so the initials show.
+ */
+function withPhotos(b: Built, saved: Map<string, string>): Built {
+  const details = Object.fromEntries(Object.entries(b.details).map(([u, d]) => [u, { ...d, a: photoFor(u, d.a, saved) }]));
+  const lives = Object.fromEntries(Object.entries(b.lives).map(([s, rows]) => [s, rows.map((r) => { const x = [...r] as LiveRow; x[8] = photoFor(r[1], r[8], saved); return x; })])) as Built["lives"];
+  return { ...b, details, lives };
+}
+const findWithPhotos = (find: FindRow[], saved: Map<string, string>): FindRow[] =>
+  find.map((f) => { const a = photoFor(f[0].slice(1), f[7], saved); if (a === f[7]) return f; const x = [...f] as FindRow; x[7] = a; return x; });
+
 let cache: { at: number; data: Built | null } | null = null;
 type Part = "pm" | "find";
 const parts = new Map<string, { at: number; data: unknown }>();
@@ -205,7 +228,8 @@ const parts = new Map<string, { at: number; data: unknown }>();
 export async function rankings(...want: Part[]): Promise<Built | null> {
   if (!cache || Date.now() - cache.at > 10 * 60_000) {
     const [row] = (await (await supabaseRest("market_snapshots?dataset=eq.rankings&slot=eq.built&select=items&order=as_of.desc&limit=1")).json()) as { items: Built[] }[];
-    cache = { at: Date.now(), data: row?.items?.[0] ?? null };
+    const b = row?.items?.[0] ?? null;
+    cache = { at: Date.now(), data: b ? withPhotos(b, await savedPhotos().catch(() => new Map<string, string>())) : null };
   }
   const base = cache.data;
   if (!base) return null;
@@ -217,7 +241,8 @@ export async function rankings(...want: Part[]): Promise<Built | null> {
     let hit = parts.get(key);
     if (!hit || Date.now() - hit.at > 10 * 60_000) {
       const [row] = (await (await supabaseRest(`market_snapshots?dataset=eq.rankings&slot=eq.built-${p}&as_of=eq.${base.asOf}&select=items&limit=1`)).json()) as { items: Record<Part, unknown>[] }[];
-      hit = { at: Date.now(), data: row?.items?.[0]?.[p] ?? [] };
+      const data = row?.items?.[0]?.[p] ?? [];
+      hit = { at: Date.now(), data: p === "find" ? findWithPhotos(data as FindRow[], await savedPhotos().catch(() => new Map<string, string>())) : data };
       parts.set(key, hit);
     }
     (out as Record<Part, unknown>)[p] = hit.data;

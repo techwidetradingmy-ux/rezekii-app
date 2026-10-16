@@ -1,6 +1,7 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { lookupProducts } from "../../integrations/tiktok-shop/creator.ts";
 import { approvedCreatorToken } from "../creator-accounts/access.ts";
+import { fetchOwnVideos } from "../admin/videos.ts";
 import { lineCommission, lineEarned, lineGmv, linePartner, techwideCampaigns, type OrderLine, type Source } from "./summary.ts";
 
 /** Sales time frames (owner's list), plus any calendar month as "m:YYYY-MM". */
@@ -86,7 +87,8 @@ export type FrameStats = {
   status: StatusRow[];
   /** `earned`: the full commission (what TikTok shows when it pays the creator's agency); `image` added by salesFrame. */
   products: { productId: string; name: string; shop: string; gmv: number; orders: number; commission: number; earned: number; image?: string | null }[];
-  content: { id: string; type: string; gmv: number; orders: number }[];
+  /** Sales per video and per LIVE (content id): the top 10 of each, best first. `at`: the first order's time. */
+  content: { id: string; type: string; gmv: number; orders: number; at: string }[];
   techwideGmv: number; otherGmv: number;
 };
 
@@ -124,13 +126,16 @@ export function frameStats(lines: OrderLine[], r: Range, techwide: Set<string>, 
     p.earned += lineEarned(l);
     products.set(key, p);
     if (l.content_id) {
-      const c = content.get(l.content_id) ?? { id: l.content_id, type: l.content_type ?? "VIDEO", gmv: 0, orders: 0 };
+      const c = content.get(l.content_id) ?? { id: l.content_id, type: l.content_type ?? "VIDEO", gmv: 0, orders: 0, at: l.created_at };
       c.gmv += g;
       c.orders += 1;
+      if (l.created_at < c.at) c.at = l.created_at;
       content.set(l.content_id, c);
     }
   }
   const gmv = inRange.reduce((a, l) => a + lineGmv(l), 0);
+  const ranked = [...content.values()].sort((a, b) => b.gmv - a.gmv);
+  const isLive = (c: { type: string }) => /LIVE/i.test(c.type);
   return {
     gmv: round(gmv),
     orders: new Set(inRange.map((l) => l.order_id)).size,
@@ -142,7 +147,7 @@ export function frameStats(lines: OrderLine[], r: Range, techwide: Set<string>, 
     buckets: buckets.map(round),
     status: keys.map((k) => { const s = status.get(k)!; return { key: k, orders: s.orders.size, gmv: round(s.gmv), commission: round(s.commission), earned: round(s.earned) }; }),
     products: [...products.values()].sort((a, b) => b.gmv - a.gmv).slice(0, 10).map((p) => ({ ...p, gmv: round(p.gmv), commission: round(p.commission), earned: round(p.earned) })),
-    content: [...content.values()].sort((a, b) => b.gmv - a.gmv).slice(0, 10).map((c) => ({ ...c, gmv: round(c.gmv) })),
+    content: [...ranked.filter((c) => /VIDEO/i.test(c.type)).slice(0, 10), ...ranked.filter(isLive).slice(0, 10)].map((c) => ({ ...c, gmv: round(c.gmv) })),
     techwideGmv: round(techwideGmv),
     otherGmv: round(gmv - techwideGmv),
   };
@@ -180,19 +185,21 @@ export type FrameData = {
 /** Product photos already looked up, so switching time frames doesn't ask TikTok again. */
 const photos = new Map<string, string | null>();
 
-/** A photo for each product: Techwide's TAP catalog first, then TikTok Shop's Product Lookup with the creator's sign-in. */
-async function productImages(userId: string, ids: string[]): Promise<Map<string, string | null>> {
+/** A photo for each product (up to 100 looked up at a time): the Marketplace catalog first, then TikTok Shop's Product Lookup with the creator's sign-in. */
+export async function productImages(userId: string, ids: string[]): Promise<Map<string, string | null>> {
   const want = [...new Set(ids.filter((id) => /^\d{15,21}$/.test(id) && !photos.has(id)))];
   if (want.length) {
     const rows = (await (await supabaseRest(`tap_catalog?product_id=in.(${want.join(",")})&select=product_id,image`)).json()) as { product_id: string; image: string | null }[];
     for (const r of rows) if (r.image) photos.set(r.product_id, r.image);
-    const rest = want.filter((id) => !photos.has(id));
+    const rest = want.filter((id) => !photos.has(id)).slice(0, 100);
     const token = rest.length ? await approvedCreatorToken(userId) : null;
-    if (token) {
-      const r = await lookupProducts(token, rest.slice(0, 20)).catch(() => null);
-      for (const x of r?.data?.products ?? []) photos.set(x.id, x.main_image_url ?? null);
-      for (const id of rest.slice(0, 20)) if (!photos.has(id)) photos.set(id, null);
-    }
+    if (token)
+      await Promise.all(Array.from({ length: Math.ceil(rest.length / 20) }, async (_, i) => {
+        const part = rest.slice(i * 20, i * 20 + 20);
+        const r = await lookupProducts(token, part).catch(() => null);
+        for (const x of r?.data?.products ?? []) photos.set(x.id, x.main_image_url ?? null);
+        if (r?.code === 0) for (const id of part) if (!photos.has(id)) photos.set(id, null);
+      }));
   }
   return photos;
 }
@@ -207,13 +214,16 @@ export async function salesFrame(userId: string, key: string, source: Source, ho
   const [lines, techwide] = await Promise.all([linesBetween(userId, Math.min(range.from, cmp?.from ?? range.from), range.to), techwideCampaigns()]);
   const stats = frameStats(lines, range, techwide, source);
   const compare = cmp ? (() => { const c = frameStats(lines, cmp, techwide, source); return { range: cmp, gmv: c.gmv, buckets: c.buckets }; })() : null;
-  const ids = stats.content.map((c) => c.id).filter((id) => /^\d{5,25}$/.test(id));
+  const ids = stats.content.filter((c) => !/LIVE/i.test(c.type)).map((c) => c.id).filter((id) => /^\d{5,25}$/.test(id));
   const videos: FrameData["videos"] = {};
   const pics = await productImages(userId, stats.products.slice(0, 6).map((p) => p.productId)).catch(() => photos);
   for (const p of stats.products) p.image = pics.get(p.productId) ?? null;
   if (ids.length) {
     const rows = (await (await supabaseRest(`tiktok_videos?video_id=in.(${ids.join(",")})&select=video_id,title,cover,share_url`)).json()) as { video_id: string; title: string | null; cover: string | null; share_url: string | null }[];
-    for (const r of rows) videos[r.video_id] = { title: r.title || "Untitled video", cover: r.cover, url: r.share_url };
+    const have = new Set(rows.map((r) => r.video_id));
+    rows.push(...(await fetchOwnVideos(userId, ids.filter((id) => !have.has(id))).catch(() => [])));
+    // Covers through Rezekii: TikTok's cover addresses stop working within a day (owner, 16 Oct 2026).
+    for (const r of rows) videos[r.video_id] = { title: r.title || "Untitled video", cover: r.cover ? `/api/img/v/${r.video_id}` : null, url: r.share_url };
   }
   return { range, stats, compare, videos, first: firstRow?.created_at ?? null, now };
 }

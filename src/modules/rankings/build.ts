@@ -143,13 +143,15 @@ const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct
 export const dayLabel = (unix: number) => { const d = new Date(unix * 1000 + MYT); return `${d.getUTCDate()} ${MON[d.getUTCMonth()]}`; };
 
 /** [rank, id, nickname, seconds, views, likes, comments, shares, lo, hi, posted, products, converted] */
-export type VideoRow = [number, string, string, number, number, number, number, number, number, number, string, string[], 0 | 1];
-export function buildVideos(L: Raw[], U: Raw[]) {
+/** [rank, id, nickname, seconds, views, likes, comments, shares, lo, hi, posted, products, converted, thumbnail (the first product's photo)] */
+export type VideoRow = [number, string, string, number, number, number, number, number, number, number, string, string[], 0 | 1, (string | null)?];
+export function buildVideos(L: Raw[], U: Raw[], productImg: (id: string) => string | null = () => null) {
   const p = pairRm(L, U, "id");
   const rows: VideoRow[] = U.map((v) => {
     const [lo, hi, cv] = p.rm.get(String(v.id))!;
     const prods = ((v.product_infos as Raw[] | undefined) ?? []).map((x) => String(x.product_name ?? "").replace(/\s+/g, " ").trim().slice(0, 70)).slice(0, 2);
-    return [Number(v.rank) || 0, String(v.id), String(v.nick_name ?? ""), Number(v.duration) || 0, Number(v.views) || 0, Number(v.likes) || 0, Number(v.comments) || 0, Number(v.shares) || 0, Math.round(lo), Math.round(hi), dayLabel(Number(v.publish_time) || 0), prods, cv];
+    const thumb = ((v.product_infos as Raw[] | undefined) ?? []).map((x) => productImg(String(x.product_id ?? ""))).find(Boolean) ?? null;
+    return [Number(v.rank) || 0, String(v.id), String(v.nick_name ?? ""), Number(v.duration) || 0, Number(v.views) || 0, Number(v.likes) || 0, Number(v.comments) || 0, Number(v.shares) || 0, Math.round(lo), Math.round(hi), dayLabel(Number(v.publish_time) || 0), prods, cv, thumb];
   });
   return { rows, rate: p.rate, dropped: p.dropped };
 }

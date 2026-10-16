@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { ConvertRow } from "@/modules/tap/convert.ts";
 import { CalendarPicker } from "../calendar-picker";
+import { ProductCard } from "../product-card";
 import { n } from "../marketplace/format";
 import { Hud, useToast } from "../marketplace/use-tap-actions";
 import { copyText, downloadCsv } from "./file-tools";
@@ -107,6 +108,19 @@ function Thumb({ src, size }: { src: string | null; size: number }) {
   );
 }
 
+/** A product's photo and name; tapping it opens the product card (as on Sales and Product Lookup). */
+function ProductButton({ id, name, image, size, sub, open }: { id: string; name: string; image: string | null; size: number; sub?: React.ReactNode; open: (id: string) => void }) {
+  return (
+    <button type="button" className="lk-prod" onClick={() => open(id)} aria-label={`${name}: open product details`}>
+      <Thumb src={image} size={size} />
+      <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+        <span className="lk-pname">{name}</span>
+        {sub}
+      </span>
+    </button>
+  );
+}
+
 /**
  * The Link converter and, on the same page, the link-share sales of every link made here (owner, 15 Oct 2026: layout A with
  * C's chart of sales by tag; link-share is its own channel, kept apart from the Sales page).
@@ -125,6 +139,7 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
   const [history, setHistory] = useState<HistoryRow[] | null>(null);
   const [perf, setPerf] = useState<Record<string, Perf>>({});
   const [outside, setOutside] = useState<Outside[]>([]);
+  const [product, setProduct] = useState<string | null>(null);
   const [counts, setCounts] = useState<Counts | null>(null);
   const [frame, setFrame] = useState("all");
   const [range, setRange] = useState<RangeInfo | null>(null);
@@ -230,12 +245,9 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
   ]);
   const copy = async (link: string) => flash((await copyText(link)) ? "Link copied" : "Copy did not work. Select the link and copy it.", true);
   const linkCell = (h: HistoryRow) => (
-    <span role="cell" style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-      <Thumb src={h.image} size={36} />
-      <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <span style={{ fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{h.product_name ?? `Product ${h.product_id}`}</span>
-        <span title={h.link} style={{ fontFamily: "ui-monospace, monospace", fontSize: 12, color: "var(--muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{h.link}</span>
-      </span>
+    <span role="cell" style={{ minWidth: 0 }}>
+      <ProductButton id={h.product_id} name={h.product_name ?? `Product ${h.product_id}`} image={h.image} size={36} open={setProduct}
+        sub={<span title={h.link} style={{ fontFamily: "ui-monospace, monospace", fontSize: 12, color: "var(--muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{h.link}</span>} />
     </span>
   );
 
@@ -348,8 +360,14 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
                   {rows.map((r, i) => (
                     <div key={i} role="row" className="nv-tr nv-trow nv-up" style={{ gridTemplateColumns: "minmax(240px, 2fr) 130px minmax(260px, 3fr) 90px", animationDelay: `${Math.min(i, 20) * 50}ms` }}>
                       <span role="cell" style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                        <Thumb src={r.image} size={40} />
-                        <span style={{ fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", opacity: r.name ? 1 : 0.6 }}>{rowName(r, i)}</span>
+                        {r.productId ? (
+                          <ProductButton id={r.productId} name={rowName(r, i)} image={r.image} size={40} open={setProduct} />
+                        ) : (
+                          <>
+                            <Thumb src={r.image} size={40} />
+                            <span style={{ fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", opacity: 0.6 }}>{rowName(r, i)}</span>
+                          </>
+                        )}
                       </span>
                       <span role="cell">
                         <span className={`nv-badge ${r.link ? "b-green" : r.kind === "shop" ? "b-amber" : "b-red"}`}>{r.kind === "tap" ? "Rezekii link" : r.link ? (r.tag ?? "no tag") : r.kind === "shop" ? "waiting" : "failed"}</span>
@@ -506,12 +524,9 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
                 </div>
                 {outF.map((o) => (
                   <div key={`${o.product_id}|${o.tag ?? ""}`} role="row" className="nv-tr nv-trow lk-cols2">
-                    <span role="cell" style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                      <Thumb src={o.image} size={36} />
-                      <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-                        <span style={{ fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{o.product_name ?? `Product ${o.product_id}`}</span>
-                        <span style={{ fontFamily: "ui-monospace, monospace", fontSize: 12, color: "var(--muted)" }}>Product ID {o.product_id}</span>
-                      </span>
+                    <span role="cell" style={{ minWidth: 0 }}>
+                      <ProductButton id={o.product_id} name={o.product_name ?? `Product ${o.product_id}`} image={o.image} size={36} open={setProduct}
+                        sub={<span style={{ fontFamily: "ui-monospace, monospace", fontSize: 12, color: "var(--muted)" }}>Product ID {o.product_id}</span>} />
                     </span>
                     <span role="cell"><span className={`nv-badge ${o.tag ? "b-green" : "b-gray"}`} style={{ maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>{outTag(o)}</span></span>
                     <span role="cell" className={`lk-num ${o.orders ? "" : "lk-zero"}`}>{n(o.orders)}</span>
@@ -526,6 +541,7 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
           </>
         )}
       </section>
+      {product && <ProductCard key={product} productId={product} onClose={() => setProduct(null)} />}
       <Hud toast={toast} />
     </>
   );

@@ -49,3 +49,7 @@
 @keyframes lkGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @media (max-width: 760px) { .lk-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } .lk-bar { grid-template-columns: 110px minmax(0, 1fr) 90px; } }
 @media (prefers-reduced-motion: reduce) { .lk-track i { animation: none; } }
+
+.lk-prod { display: flex; align-items: center; gap: 10px; min-width: 0; max-width: 100%; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.lk-pname { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lk-prod:hover .lk-pname, .lk-prod:focus-visible .lk-pname { text-decoration: underline; text-underline-offset: 3px; }

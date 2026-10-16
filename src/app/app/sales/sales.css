@@ -22,6 +22,8 @@
 .sl-rank { width: 44px; height: 44px; border-radius: 12px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-weight: 800; color: var(--muted); }
 .sl-cover { width: 44px; height: 58px; border-radius: 10px; background: var(--surface2) center / cover no-repeat; }
 .sl-kind { display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 10px; font-weight: 800; }
+.sl-live { position: relative; background-size: cover; background-position: center; }
+.sl-live i { position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%); background: #fe2c55; color: #ffffff; font-style: normal; font-size: 9px; letter-spacing: 0.06em; line-height: 1.35; padding: 0 5px; border-radius: 5px; }
 .sl-name { display: block; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sl-muted { font-size: 13px; color: var(--muted); }
 .sl-meter { display: block; height: 6px; margin-top: 6px; border-radius: 999px; background: var(--seg); overflow: hidden; }

@@ -3,6 +3,7 @@ import { monthSales, previousMonth, type Level } from "../levels/rules.ts";
 import { monthlyTapSales } from "../levels/store.ts";
 import { linkedCreators } from "../sales/orders.ts";
 import { mytDay } from "../refresh/plan.ts";
+import { photoFor, savedPhotos } from "../photos/store.ts";
 
 /** `lv`: TikTok Shop creator level from their linked TikTok Shop account (null until checked). */
 export type BoardRow = { handle: string; name: string; avatar: string | null; level: Level; gmv: number; videos: number; lv: number | null };
@@ -32,6 +33,7 @@ export async function leaderboard(): Promise<BoardMonth[]> {
   for (const d of daily) byUser.set(d.username, [...(byUser.get(d.username) ?? []), { ...d, paid: Number(d.paid) }]);
   const linked = new Set(await linkedCreators());
   const fromOrders = new Map(await Promise.all(users.map(async (u) => [u.id, await monthlyTapSales(u.id, keys, linked).catch(() => null)] as const)));
+  const saved = await savedPhotos().catch(() => new Map<string, string>());
 
   return keys.map((key) => {
     const rows = users.map((u) => {
@@ -39,7 +41,7 @@ export async function leaderboard(): Promise<BoardMonth[]> {
       const inMonth = days.filter((d) => d.day.startsWith(key));
       const before = days.filter((d) => d.day < `${key}-01`).at(-1) ?? inMonth[0];
       return {
-        handle: `@${u.tiktok_username}`, name: u.display_name ?? u.tiktok_username, avatar: u.avatar_url, level: levels.get(u.id) ?? "bronze", lv: ttLevels.get(u.id) ?? null,
+        handle: `@${u.tiktok_username}`, name: u.display_name ?? u.tiktok_username, avatar: photoFor(u.tiktok_username, u.avatar_url, saved), level: levels.get(u.id) ?? "bronze", lv: ttLevels.get(u.id) ?? null,
         gmv: fromOrders.get(u.id)?.[key] ?? monthSales(days, key) ?? 0, videos: inMonth.length && before ? Math.max(0, inMonth.at(-1)!.videos - before.videos) : 0,
       };
     });

@@ -1,5 +1,5 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
-import { frameRange, type Range } from "../sales/frames.ts";
+import { frameRange, productImages, type Range } from "../sales/frames.ts";
 import { lineGmv, type OrderLine } from "../sales/summary.ts";
 
 /** What one converted link sold through TikTok's link-share channel. */
@@ -75,16 +75,6 @@ async function linkShareLines(userId: string): Promise<Line[]> {
   }
 }
 
-/** Product pictures from the TAP catalogue, where it has them. */
-async function productImages(ids: string[]): Promise<Map<string, string>> {
-  const out = new Map<string, string>();
-  for (let i = 0; i < ids.length; i += 100) {
-    const rows = (await (await supabaseRest(`tap_catalog?product_id=in.(${ids.slice(i, i + 100).join(",")})&select=product_id,image`)).json()) as { product_id: string; image: string | null }[];
-    for (const r of rows) if (r.image) out.set(r.product_id, r.image);
-  }
-  return out;
-}
-
 /** A Techwide TAP link adds the product to the creator's showcase; it isn't a share link, so it has no link-share sales. */
 export const isTapLink = (link: string) => link.startsWith("https://affiliate.tiktok.com/");
 
@@ -101,7 +91,8 @@ export async function linkShareReport(userId: string, links: LinkRef[], frame = 
   if (!lines.length) return { perf: {}, outside: [], counts, range };
   const names = new Map(lines.filter((l) => l.product_name).map((l) => [l.product_id, l.product_name ?? null]));
   const ids = [...new Set(outside.map((o) => o.product_id))].filter((id) => /^\d{5,25}$/.test(id));
-  const images = await productImages(ids).catch(() => new Map<string, string>());
+  // Every product's photo, as on the Sales page (owner, 16 Oct 2026: products from any shop, not only Marketplace ones).
+  const images = await productImages(userId, ids).catch(() => new Map<string, string | null>());
   return {
     perf: byLink,
     counts,

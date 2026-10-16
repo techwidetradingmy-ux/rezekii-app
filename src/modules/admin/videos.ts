@@ -1,9 +1,37 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
-import { listVideosPage } from "../../integrations/tiktok/stats.ts";
+import { listVideosPage, queryVideos, type TikTokVideo } from "../../integrations/tiktok/stats.ts";
 import { freshTikTokToken } from "../posting/store.ts";
 
 const KEEP_DAYS = 90;
 const MAX_PAGES = 8;
+
+/** A video as saved in tiktok_videos. */
+const videoRow = (v: TikTokVideo, c: { open_id: string; username: string | null }, now: string) => ({
+  video_id: v.id, open_id: c.open_id, username: c.username, title: (v.title || v.video_description || "").slice(0, 300), cover: v.cover_image_url ?? null, share_url: v.share_url ?? null,
+  duration: v.duration ?? null, created_at: v.create_time ? new Date(v.create_time * 1000).toISOString() : null,
+  views: v.view_count ?? 0, likes: v.like_count ?? 0, comments: v.comment_count ?? 0, shares: v.share_count ?? 0, updated_at: now,
+});
+const saveVideoRows = (rows: ReturnType<typeof videoRow>[]) =>
+  supabaseRest("tiktok_videos?on_conflict=video_id", { method: "POST", headers: { prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify(rows) });
+
+/** Video ids already asked of TikTok on demand, so a deleted or private video isn't asked for again. */
+const asked = new Set<string>();
+
+/**
+ * A creator's own videos that aren't saved (older than the daily list's 90 days, e.g. on Sales), asked of TikTok with their
+ * sign-in (up to 20) and saved, so their titles and covers show.
+ */
+export async function fetchOwnVideos(userId: string, ids: string[]): Promise<ReturnType<typeof videoRow>[]> {
+  const want = ids.filter((id) => !asked.has(id)).slice(0, 20);
+  if (!want.length) return [];
+  const [c] = (await (await supabaseRest(`tiktok_connections?user_id=eq.${userId}&select=open_id,username&limit=1`)).json()) as { open_id: string; username: string | null }[];
+  if (!c) return [];
+  want.forEach((id) => asked.add(id));
+  const r = await queryVideos(await freshTikTokToken(c.open_id), want);
+  const rows = (r.data ?? []).map((v) => videoRow(v, c, new Date().toISOString()));
+  if (rows.length) await saveVideoRows(rows);
+  return rows;
+}
 
 /**
  * Daily: every connected account's public videos from the last 90 days with their numbers, saved to tiktok_videos.
@@ -34,15 +62,7 @@ export async function refreshVideos(start: number, stopAt: number): Promise<{ co
       const recent = r.data.videos.filter((v) => (v.create_time ?? 0) >= oldest);
       if (recent.length) {
         const now = new Date().toISOString();
-        await supabaseRest("tiktok_videos?on_conflict=video_id", {
-          method: "POST",
-          headers: { prefer: "resolution=merge-duplicates,return=minimal" },
-          body: JSON.stringify(recent.map((v) => ({
-            video_id: v.id, open_id: c.open_id, username: c.username, title: (v.title || v.video_description || "").slice(0, 300), cover: v.cover_image_url ?? null, share_url: v.share_url ?? null,
-            duration: v.duration ?? null, created_at: v.create_time ? new Date(v.create_time * 1000).toISOString() : null,
-            views: v.view_count ?? 0, likes: v.like_count ?? 0, comments: v.comment_count ?? 0, shares: v.share_count ?? 0, updated_at: now,
-          }))),
-        });
+        await saveVideoRows(recent.map((v) => videoRow(v, c, now)));
         count += recent.length;
       }
       if (!r.data.has_more || !r.data.cursor || recent.length < r.data.videos.length) break;
