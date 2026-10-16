@@ -195,7 +195,7 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
           <GmvChart values={s.daily} labels={s.daily.map((_, i) => (i === s.daily.length - 1 ? "Today" : new Date(now - (s.daily.length - 1 - i) * 86400_000).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" })))} height={160} />
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--muted)" }}>
             <span>{new Date(now - 29 * 86400_000).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" })}</span>
-            <span>Through Techwide TAP {rm0(s.techwideGmv)} · other shops {rm0(s.otherGmv)}</span>
+            <span>Through Rezekii {rm0(s.techwideGmv)} · other shops {rm0(s.otherGmv)}</span>
             <span>Today</span>
           </div>
         </section>
@@ -252,11 +252,11 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
             {d.level.level !== "bronze" ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <span style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 700 }}><span>Keep {LEVEL_NAME[d.level.level]} next month</span><span style={{ fontVariantNumeric: "tabular-nums" }}>{rm0(d.level.monthSales)} / {rm0(d.level.keep)}</span></span>
-                <span className="ac-bar" role="progressbar" aria-label={`TAP sales towards keeping ${LEVEL_NAME[d.level.level]}`} aria-valuemin={0} aria-valuemax={d.level.keep} aria-valuenow={Math.round(d.level.monthSales)}><span style={{ width: `${keepPct}%` }} /></span>
-                <span style={{ fontSize: 13, color: "var(--muted)" }}>{keepPct >= 100 ? `You keep ${LEVEL_NAME[d.level.level]} next month.` : `${rm0(d.level.keep - d.level.monthSales)} more in TAP sales this month keeps your rate next month.`}</span>
+                <span className="ac-bar" role="progressbar" aria-label={`Sales through Rezekii towards keeping ${LEVEL_NAME[d.level.level]}`} aria-valuemin={0} aria-valuemax={d.level.keep} aria-valuenow={Math.round(d.level.monthSales)}><span style={{ width: `${keepPct}%` }} /></span>
+                <span style={{ fontSize: 13, color: "var(--muted)" }}>{keepPct >= 100 ? `You keep ${LEVEL_NAME[d.level.level]} next month.` : `${rm0(d.level.keep - d.level.monthSales)} more in sales through Rezekii this month keeps your rate next month.`}</span>
               </div>
             ) : (
-              <span style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>TAP sales this month {rm0(d.level.monthSales)}. Reach Silver next month with 10 sample videos and RM1,000 in TAP sales this month.</span>
+              <span style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>Sales through Rezekii this month {rm0(d.level.monthSales)}. Reach Silver next month with 10 sample videos and RM1,000 in sales through Rezekii this month.</span>
             )}
             <Link href="/app/levels" className="nv-btn2 nv-sm nv-press" style={{ alignSelf: "flex-start", textDecoration: "none" }}>Levels and benefits</Link>
           </section>
@@ -266,7 +266,7 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
       {me.role === "creator" && (
         <section className="nv-up nv-card" aria-labelledby="acsmp" style={{ padding: 22, display: "flex", flexDirection: "column", gap: 14, animationDelay: "160ms" }}>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "space-between", alignItems: "baseline" }}>
-            <span style={{ display: "flex", flexDirection: "column", gap: 2 }}><h2 id="acsmp" className="nv-h2">Samples</h2><span style={{ fontSize: 13, color: "var(--muted)" }}>Free samples from Techwide&apos;s TAP campaigns, with TikTok&apos;s status</span></span>
+            <span style={{ display: "flex", flexDirection: "column", gap: 2 }}><h2 id="acsmp" className="nv-h2">Samples</h2><span style={{ fontSize: 13, color: "var(--muted)" }}>Free samples through Rezekii, with TikTok&apos;s status</span></span>
             <Link href="/app/my-tap" className="nv-link" style={{ fontSize: 14, fontWeight: 700 }}>All samples in My Samples</Link>
           </div>
           <div className="ac-smp" role="list">

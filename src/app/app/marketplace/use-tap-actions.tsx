@@ -169,7 +169,7 @@ export function SampleSheet({ qr, onClose }: { qr: { url: string; name: string }
           TikTok&apos;s sample request opens in the TikTok app. Scan this with your phone&apos;s camera, then tap Submit in TikTok for <strong>{qr.name}</strong>.
         </p>
         <div className="nv-qr-code" aria-label="QR code that opens the sample request on your phone" role="img" dangerouslySetInnerHTML={{ __html: svg }} />
-        <p style={{ margin: 0, fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>The request uses Techwide&apos;s campaign sample budget. Its status shows in My Samples.</p>
+        <p style={{ margin: 0, fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>The sample comes through Rezekii. Its status shows in My Samples.</p>
         <button type="button" className="nv-btn2 nv-press" onClick={onClose}>Done</button>
       </div>
     </>

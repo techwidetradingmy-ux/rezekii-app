@@ -108,8 +108,8 @@ export async function todayData(user: { id: string; tiktok_username: string | nu
     stats: [
       { key: "links", value: links[0], delta: weekDelta(links[0], links[1]), note: links[1] ? "vs last week" : "made in the last 7 days" },
       showcase
-        ? { key: "showcase", value: showcase.count, delta: "", note: `${showcase.tap} from TAP campaigns${showcase.more ? " · first 200" : ""}` }
-        : { key: "showcase", value: onTikTok.length, delta: "", note: "from Techwide TAP campaigns" },
+        ? { key: "showcase", value: showcase.count, delta: "", note: `${showcase.tap} through Rezekii${showcase.more ? " · first 200" : ""}` }
+        : { key: "showcase", value: onTikTok.length, delta: "", note: "through Rezekii" },
       { key: "samples", value: samples.length, delta: "", note: `${samples.filter((r) => r.stage === 1).length} pending approval · ${samples.filter((r) => r.stage === 4).length} delivered` },
       { key: "open", value: all.length, delta: fresh ? `+${fresh}` : "", note: fresh === null ? "in Techwide's live campaigns" : "new this week" },
     ],

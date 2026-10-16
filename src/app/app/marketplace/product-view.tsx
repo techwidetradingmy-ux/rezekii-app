@@ -66,7 +66,7 @@ export function ProductBlock({ p, tap, headingId }: { p: TapProduct; tap: Tap; h
   const smp = tap.sampleState(p);
   const { checkSample } = tap;
   useEffect(() => { checkSample(p.id); }, [checkSample, p.id]);
-  const smpNote = { idle: "Free sample through Techwide's campaign", checking: "Checking free samples with TikTok…", none: "No free sample for this product right now", limit: "You've reached TikTok's limit on open sample requests", done: "You've requested this sample", loading: "Opening TikTok's sample request…" }[smp];
+  const smpNote = { idle: "Free sample through Rezekii", checking: "Checking free samples with TikTok…", none: "No free sample for this product right now", limit: "You've reached TikTok's limit on open sample requests", done: "You've requested this sample", loading: "Opening TikTok's sample request…" }[smp];
   return (
     <div className="pb">
       <div className="pb-media" style={{ position: "relative", width: "100%", aspectRatio: "1 / 1", flexShrink: 0, borderRadius: 22, overflow: "hidden", background: "#f2f5f3" }}>

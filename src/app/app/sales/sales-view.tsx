@@ -12,8 +12,8 @@ import "./sales.css";
 
 const SOURCES: [Source, string, string][] = [
   ["all", "All your sales", "Everything your TikTok Shop account earned as an affiliate, from any shop or campaign."],
-  ["techwide", "Through Techwide TAP", "Sales of products in Techwide's TAP campaigns. These count for your Rezekii level and Rankings."],
-  ["other", "Other shops", "Sales from shops and campaigns outside Techwide's TAP campaigns."],
+  ["techwide", "Through Rezekii", "Sales through Rezekii. These count for your level and Rankings."],
+  ["other", "Other shops", "Sales from shops and campaigns outside Rezekii."],
 ];
 /** The owner's quick choices, listed beside the calendar. */
 const PRESETS: [string, string][] = [["yesterday", "Yesterday"], ["7d", "7 days"], ["14d", "14 days"], ["30d", "30 days"], ["60d", "60 days"], ["90d", "90 days"], ["month", "This month"], ["lastmonth", "Last month"], ["1y", "1 year"], ["all", "All time"]];
@@ -266,10 +266,10 @@ export function SalesView({ initial, handle }: { initial: FrameData; handle: str
         {source === "all" && s.gmv > 0 && (
           <div className="sl-share">
             <div className="sl-sharehead">
-              <span><i style={{ background: "#00c073" }} />Through Techwide TAP <b>{rm0(s.techwideGmv)}</b> · {Math.round((s.techwideGmv / s.gmv) * 100)}%</span>
+              <span><i style={{ background: "#00c073" }} />Through Rezekii <b>{rm0(s.techwideGmv)}</b> · {Math.round((s.techwideGmv / s.gmv) * 100)}%</span>
               <span><i style={{ background: "var(--muted)", opacity: 0.5 }} />Other shops <b>{rm0(s.otherGmv)}</b> · {Math.round((s.otherGmv / s.gmv) * 100)}%</span>
             </div>
-            <div className="sl-stack" role="img" aria-label={`${Math.round((s.techwideGmv / s.gmv) * 100)}% of GMV through Techwide TAP, the rest from other shops`}>
+            <div className="sl-stack" role="img" aria-label={`${Math.round((s.techwideGmv / s.gmv) * 100)}% of GMV through Rezekii, the rest from other shops`}>
               <span style={{ width: `${(s.techwideGmv / s.gmv) * 100}%`, background: "#00c073" }} />
               <span style={{ width: `${(s.otherGmv / s.gmv) * 100}%`, background: "var(--muted)", opacity: 0.5 }} />
             </div>

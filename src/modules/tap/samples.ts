@@ -200,13 +200,13 @@ export async function sampleStatus(userId: string, productId: string): Promise<S
  * creator may ask and which options allow a sample. The click is logged; only TikTok's own status counts as requested.
  */
 export async function sampleLink(userId: string, productId: string): Promise<SampleLinkResult> {
-  if (!/^\d{6,25}$/.test(productId)) return { ok: false, error: "This product is no longer in a Techwide TAP campaign.", status: 404 };
+  if (!/^\d{6,25}$/.test(productId)) return { ok: false, error: "This product is no longer in the Marketplace.", status: 404 };
   const token = await approvedCreatorToken(userId);
   if (!token) return { ok: false, error: "Link your TikTok Shop first, then request the sample.", status: 403 };
   const t = await sampleTarget(productId);
-  if (!t) return { ok: false, error: "This product is no longer in a Techwide TAP campaign.", status: 404 };
+  if (!t) return { ok: false, error: "This product is no longer in the Marketplace.", status: 404 };
   // Samples go through Techwide's TAP campaign, so the seller must have registered samples there (owner, 16 Oct 2026).
-  if (t.samples <= 0) return { ok: false, error: "This product has no free samples in Techwide's campaign.", status: 409 };
+  if (t.samples <= 0) return { ok: false, error: "This product has no free samples through Rezekii.", status: 409 };
   // TikTok's live check comes first, before the showcase is touched: only a sample TikTok really offers this creator is asked for.
   const label = await getSampleLabel(token, productId);
   if (label.code !== 0) {

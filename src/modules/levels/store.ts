@@ -130,8 +130,8 @@ export const DEFAULT_BENEFITS: Benefit[] = [
   { label: "Commission on Techwide campaign links", v: ["Open Plan rate", "Open Plan + 1%", "Special rate for you"], key: true },
   { label: "Free product samples", v: ["yes", "yes", "yes"] },
   { label: "Level emblem on your profile and in Rankings", v: ["yes", "yes", "yes"] },
-  { label: "How you get it", v: ["When you join", "10 sample videos + RM1,000 TAP sales last month", "By invitation"] },
-  { label: "How you keep it", v: ["Always", "RM1,000 TAP sales every month", "Set by Techwide"] },
+  { label: "How you get it", v: ["When you join", "10 sample videos + RM1,000 sales through Rezekii last month", "By invitation"] },
+  { label: "How you keep it", v: ["Always", "RM1,000 sales through Rezekii every month", "Set by Techwide"] },
 ];
 
 /** The level benefits list, edited by Techwide on the Benefits screen. */

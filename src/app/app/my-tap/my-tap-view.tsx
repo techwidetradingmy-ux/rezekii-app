@@ -22,7 +22,7 @@ const TABS: [string, (r: MyTapRow) => boolean][] = [
 /** TikTok's tracking events, in words (as in the mockup). */
 const EVN: Record<string, string> = {
   REZEKII_REQUEST: "Asked on Rezekii before samples moved to TikTok · tap Request free sample to send it to TikTok",
-  TIKTOK_REQUEST: "TikTok's sample page opened with Techwide's TAP campaign · TikTok's status shows here once you submit it",
+  TIKTOK_REQUEST: "TikTok's sample page opened through Rezekii · TikTok's status shows here once you submit it",
   TECHWIDE_APPLIED: "Techwide applied for it in TikTok Shop",
   ORDER_PLACED: "Sample ordered",
   ORDER_PACKED_AND_READY_FOR_DROP_OFF_AT_CARRIERS_FACILITY: "Packed and handed to the courier",
@@ -106,7 +106,7 @@ export function MyTapView({ rows, hasTikTok }: { rows: MyTapRow[]; hasTikTok: bo
   const lives = rows.reduce((a, r) => a + r.lives, 0);
   const due = rows.filter((r) => r.stage === 4).length;
   const sums: [string, string, string][] = [
-    ["Products promoting", n(rows.length), "From Rezekii TAP campaigns"],
+    ["Products promoting", n(rows.length), "Through Rezekii"],
     ["Sales", rmx(rows.reduce((a, r) => a + r.paid, 0)), "What buyers paid through your links"],
     ["Samples", n(rows.filter((r) => r.stage > 0).length), ([[rows.filter(awaitingApproval).length, "pending approval"], [rows.filter(approvedToShip).length, "approved"], [rows.filter((r) => r.stage === 3).length, "shipped"], [due, "delivered"], [rows.filter((r) => r.stage === 5).length, "post criteria met"]] as [number, string][]).filter(([v]) => v > 0).map(([v, w]) => `${v} ${w}`).join(" · ") || "None requested yet"],
     ["Content posted", n(videos + lives), `${videos.toLocaleString("en-US")} videos · ${lives.toLocaleString("en-US")} LIVEs`],
@@ -191,7 +191,7 @@ export function MyTapView({ rows, hasTikTok }: { rows: MyTapRow[]; hasTikTok: bo
         )}
         <p style={{ margin: 0, fontSize: 12, color: "var(--muted)", lineHeight: 1.5 }}>
           {hasTikTok
-            ? "Every status comes straight from TikTok: a sample shows as completed once you post a video or LIVE for it, and TikTok tracks late samples itself. Sales are what buyers paid through your links in Techwide's TAP campaigns, from TikTok's campaign data."
+            ? "Every status comes straight from TikTok: a sample shows as completed once you post a video or LIVE for it, and TikTok tracks late samples itself. Sales are what buyers paid through your Rezekii links, from TikTok's campaign data."
             : "Sign in with TikTok to see the products you promote, with your sales, samples and posts from TikTok. Samples you request on Rezekii show here either way."}
         </p>
       </section>
@@ -200,7 +200,7 @@ export function MyTapView({ rows, hasTikTok }: { rows: MyTapRow[]; hasTikTok: bo
         <section className="nv-card" aria-labelledby="mtseller" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <h2 id="mtseller" style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>Samples from sellers</h2>
-            <span style={{ fontSize: 13, color: "var(--muted)" }}>Asked for directly in TikTok Shop, not through Techwide&apos;s TAP campaigns. Shown here so you can track every sample in one place.</span>
+            <span style={{ fontSize: 13, color: "var(--muted)" }}>Asked for directly in TikTok Shop, not through Rezekii. Shown here so you can track every sample in one place.</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {seller.map((x) => {

@@ -123,7 +123,7 @@ export function MarketplaceView({ initial, golden, requestedIds }: { initial: Br
             <svg className="gs-crown" width="30" height="23" viewBox="0 0 34 26" aria-hidden="true"><path d="M3 22 1 6l9 7 7-12 7 12 9-7-2 16z" fill="#f2c230" stroke="#a86e00" strokeWidth="1.5" strokeLinejoin="round" /></svg>
             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
               <h2 id="gshead" className="gs-title">Golden Sellers</h2>
-              <span className="gs-sub">Our top 3 partner brands, ranked by sales through our TAP campaigns</span>
+              <span className="gs-sub">Our top 3 partner brands, ranked by sales through Rezekii</span>
             </div>
           </div>
           <div className="gs-row">
@@ -231,7 +231,7 @@ export function MarketplaceView({ initial, golden, requestedIds }: { initial: Br
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <span style={{ fontSize: 15, fontWeight: 700 }}>{n(data.total)}{data.total === 1 ? " product" : " products"} · {data.sortLabel}</span>
         <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--muted)" }}>
-          <span className="nv-dot" aria-hidden="true" />{`${n(data.all)} products from ${data.shops.length} shops in Techwide's live TAP campaigns`}
+          <span className="nv-dot" aria-hidden="true" />{`${n(data.all)} products from ${data.shops.length} shops on Rezekii`}
         </span>
       </div>
 

@@ -104,7 +104,7 @@ export function LookupView({ linked, samples }: { linked: boolean; samples: stri
         else flash(d.error || "Affiliate links couldn't be made; the file has the product links.", false);
       }
       saveRows(format, "rezekii-products", [
-        ["Product", "Product ID", "Your affiliate link", "Product link", "Brand", "Shop", "Shop rating", "Category", "Price from (RM)", "Price to (RM)", "Commission %", "You earn per sale (RM)", "Sold, all time", "Stock", "Rating", "Reviews", "In Techwide TAP", "Variants", "Description", "Image", "Note"],
+        ["Product", "Product ID", "Your affiliate link", "Product link", "Brand", "Shop", "Shop rating", "Category", "Price from (RM)", "Price to (RM)", "Commission %", "You earn per sale (RM)", "Sold, all time", "Stock", "Rating", "Reviews", "In the Marketplace", "Variants", "Description", "Image", "Note"],
         ...rows.map((r) => [
           r.ok ? r.name : r.input, r.id, (r.id && links[r.id]) || "", r.id ? tiktokProductUrl(r.id) : r.input, r.brand, r.shop, r.shopRating, r.category, r.priceLo, r.priceHi,
           r.rate === null ? null : r.rate / 100, r.priceLo !== null && r.rate !== null ? Math.round(r.priceLo * r.rate) / 10000 : null, r.sold, r.stock, r.rating, r.reviews,
@@ -185,7 +185,7 @@ export function LookupView({ linked, samples }: { linked: boolean; samples: stri
                     <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
                       <span style={{ fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.ok ? r.name : `Line ${i + 1} · no product found`}</span>
                       <span style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 12, color: r.ok ? "var(--muted)" : "var(--red)", minWidth: 0 }}>
-                        {r.ok ? <><b style={{ color: "var(--text)" }}>{r.brand ?? r.shop}</b>{r.brand && r.shop ? <span className="lu-ellip">· {r.shop}</span> : null}{r.tap && <span className="lu-tap">TAP</span>}</> : r.note}
+                        {r.ok ? <><b style={{ color: "var(--text)" }}>{r.brand ?? r.shop}</b>{r.brand && r.shop ? <span className="lu-ellip">· {r.shop}</span> : null}{r.tap && <span className="lu-tap">Marketplace</span>}</> : r.note}
                       </span>
                     </span>
                   </span>
@@ -207,7 +207,7 @@ export function LookupView({ linked, samples }: { linked: boolean; samples: stri
                 <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
                   <b className="lu-clamp">{r.ok ? r.name : `Line ${i + 1} · no product found`}</b>
                   <span style={{ fontSize: 12, color: r.ok ? "var(--muted)" : "var(--red)" }}>{r.ok ? [r.brand ?? r.shop, r.rating !== null ? ratingText(r) : null, r.sold !== null ? `${shortN(r.sold)} sold` : null].filter(Boolean).join(" · ") : r.note}</span>
-                  {r.ok && <span style={{ display: "flex", gap: 8, alignItems: "center" }}><b style={{ color: "var(--gink)" }}>{pct(r.rate)} · {perSale(r.priceLo, r.rate)}</b>{r.tap && <span className="lu-tap">TAP</span>}</span>}
+                  {r.ok && <span style={{ display: "flex", gap: 8, alignItems: "center" }}><b style={{ color: "var(--gink)" }}>{pct(r.rate)} · {perSale(r.priceLo, r.rate)}</b>{r.tap && <span className="lu-tap">Marketplace</span>}</span>}
                 </span>
                 {r.ok && <span aria-hidden="true" style={{ color: "var(--muted)", fontSize: 20 }}>›</span>}
               </button>

@@ -27,7 +27,7 @@ export default async function CreatorCard({ params }: { params: Promise<{ userna
         <span style={{ position: "relative", display: "inline-flex" }}><Emblem level={c.level} size={110} animate /></span>
         <strong className="st-name">{c.handle}</strong>
         <span className="st-lvl">{NAMES[c.level]} creator</span>
-        <span className="st-quote">Shares TikTok Shop finds through Techwide&apos;s TAP campaigns.</span>
+        <span className="st-quote">Shares TikTok Shop finds through Rezekii.</span>
         <span className="st-cobrand">
           <span className="st-cb-side">
             {/* eslint-disable-next-line @next/next/no-img-element */}

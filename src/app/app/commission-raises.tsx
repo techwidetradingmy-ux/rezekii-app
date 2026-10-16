@@ -47,7 +47,7 @@ export function CommissionRaises({ flash }: { flash: (text: string, ok?: boolean
       const added = d.added?.length ?? 0;
       const nope = d.failed ?? [];
       setFailed(Object.fromEntries(nope.map((f) => [f.productId, f.error])));
-      flash(nope.length ? `${added} added through Techwide's TAP link · TikTok didn't accept ${nope.length}` : `${added} added through Techwide's TAP link · you earn the higher rate now`, !nope.length || added > 0);
+      flash(nope.length ? `${added} added through Rezekii · TikTok didn't accept ${nope.length}` : `${added} added through Rezekii · you earn the higher rate now`, !nope.length || added > 0);
       const next = d.raises ?? [];
       if (!next.length) {
         setLeaving(true);
@@ -70,7 +70,7 @@ export function CommissionRaises({ flash }: { flash: (text: string, ok?: boolean
         <span style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
           <h2 id="crt" style={{ margin: 0, fontSize: 21, fontWeight: 900 }}>Earn more on products already in your showcase</h2>
           <span style={{ fontSize: 14, opacity: 0.9 }}>
-            {raises.length} {raises.length === 1 ? "product pays" : "products pay"} you more through Techwide&apos;s TAP campaign. Add them to your showcase through Techwide&apos;s TAP link to get the higher rate.
+            {raises.length} {raises.length === 1 ? "product pays" : "products pay"} you more through Rezekii. Add them to your showcase through Rezekii to get the higher rate.
           </span>
         </span>
       </div>
@@ -96,7 +96,7 @@ export function CommissionRaises({ flash }: { flash: (text: string, ok?: boolean
         <button type="button" className="nv-link" onClick={() => setPicked(allOn ? new Set() : new Set(raises.map((r) => r.productId)))} style={{ color: "inherit" }}>{allOn ? "Clear all" : "Choose all"}</button>
         <button type="button" className="cr-btn nv-press" onClick={take} disabled={busy || !picked.size}>
           {busy && <span className="nv-sping" aria-hidden="true" />}
-          {busy ? "Adding through Techwide's TAP link…" : `Bulk Add to Showcase · ${picked.size}`}
+          {busy ? "Adding through Rezekii…" : `Bulk Add to Showcase · ${picked.size}`}
         </button>
       </div>
     </section>

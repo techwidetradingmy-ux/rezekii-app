@@ -148,7 +148,7 @@ export function TodayView({ data }: { data: TodayData }) {
 
       <section className="nv-up nv-card" aria-label="This week" style={{ boxShadow: "var(--shadow)", borderRadius: 26, padding: "24px 12px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 8 }}>
         {data.stats.map((raw) => {
-          const st = raw.key === "showcase" && showcase ? { ...raw, value: showcase.count, note: `${showcase.tap} from TAP campaigns${showcase.more ? " · first 200" : ""}` } : raw;
+          const st = raw.key === "showcase" && showcase ? { ...raw, value: showcase.count, note: `${showcase.tap} through Rezekii${showcase.more ? " · first 200" : ""}` } : raw;
           const [label, href, icon, bg, fg] = STAT_LOOK[st.key];
           return (
             <Link key={st.key} href={href} className="nv-row" style={{ display: "flex", flexDirection: "column", gap: 6, padding: "8px 16px", borderRadius: 16, textDecoration: "none", color: "var(--text)" }}>
@@ -232,7 +232,7 @@ export function TodayView({ data }: { data: TodayData }) {
               ))}
               {hasWaiting && (
                 <p style={{ margin: 0, padding: "12px 14px", borderTop: "1px solid var(--border)", fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>
-                  Tagged affiliate links for any product turn on once TikTok approves Rezekii&apos;s TikTok Shop connection. Products in Techwide&apos;s TAP campaigns work now.
+                  Tagged affiliate links for any product turn on once TikTok approves Rezekii&apos;s TikTok Shop connection. Marketplace products work now.
                 </p>
               )}
             </div>
@@ -267,7 +267,7 @@ export function TodayView({ data }: { data: TodayData }) {
       {camp && (
         <Link href="/app/marketplace" className="nv-up nv-press td-camp" style={{ animationDelay: "240ms" }}>
           <span className="td-camp-copy">
-            <span className="td-camp-tag">TAP CAMPAIGNS · CLOSING SOON</span>
+            <span className="td-camp-tag">CLOSING SOON</span>
             <span className="td-camp-title">{camp.products} {camp.products === 1 ? "product" : "products"} closing soon, up to {camp.upto}% commission</span>
             <span className="td-camp-sub">
               {camp.campaigns} {camp.campaigns === 1 ? "campaign closes" : "campaigns close"} in the next 30 days. First: {camp.first} on {campDay}. Add them to your showcase before they go.

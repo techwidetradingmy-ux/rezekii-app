@@ -44,7 +44,7 @@ const getHistory = (frame: string) => fetch(`/api/tap/history?frame=${encodeURIC
 const rm = (v: number) => `RM${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 /** A Techwide TAP link adds the product to the showcase; it isn't a share link. */
 const isTap = (link: string) => link.startsWith("https://affiliate.tiktok.com/");
-const tagOf = (h: HistoryRow) => (isTap(h.link) ? "TAP" : h.tag ?? "no tag");
+const tagOf = (h: HistoryRow) => (isTap(h.link) ? "Rezekii link" : h.tag ?? "no tag");
 const outTag = (o: Outside) => o.tag ?? "no tag";
 type SortKey = "made" | "orders" | "gmv";
 
@@ -192,10 +192,10 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
 
   const rowName = (r: ConvertRow, i: number) => r.name ?? (r.productId ? `Product ${r.productId}` : `Unknown product (line ${i + 1})`);
   async function copyAll() {
-    const text = ok.map((r) => `${r.name ?? r.productId ?? ""}${r.tag ? ` (${r.tag})` : r.kind === "tap" ? " (TAP)" : ""}: ${r.link}`).join("\n");
+    const text = ok.map((r) => `${r.name ?? r.productId ?? ""}${r.tag ? ` (${r.tag})` : r.kind === "tap" ? " (Rezekii link)" : ""}: ${r.link}`).join("\n");
     flash((await copyText(text)) ? `${ok.length} ${ok.length === 1 ? "link" : "links"} copied` : "Copy did not work. Export CSV instead.", true);
   }
-  const exportRows = () => downloadCsv("rezekii-links.csv", [["Product", "Product ID", "Tag", "Link", "Note"], ...rows.map((r, i) => [rowName(r, i), r.productId, r.kind === "tap" ? "TAP" : r.tag, r.link, r.link ? "" : r.note])]);
+  const exportRows = () => downloadCsv("rezekii-links.csv", [["Product", "Product ID", "Tag", "Link", "Note"], ...rows.map((r, i) => [rowName(r, i), r.productId, r.kind === "tap" ? "Rezekii link" : r.tag, r.link, r.link ? "" : r.note])]);
   const q = hq.trim().toLowerCase();
   const none: Perf = { orders: 0, items: 0, gmv: 0, commission: 0, last: null };
   const pf = (h: HistoryRow) => perf[h.link] ?? none;
@@ -264,7 +264,7 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
                   <span className="nv-label">Linked through</span>
                   <span style={{ height: 44, display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 700, color: linked ? "var(--gink)" : "var(--amber)" }}>
                     <span className={linked ? "nv-dot" : "lk-dot-off"} aria-hidden="true" />
-                    {linked ? "TikTok Shop · Affiliate Connection" : "Techwide TAP · TikTok Shop link coming soon"}
+                    {linked ? "TikTok Shop · Affiliate Connection" : "Rezekii · TikTok Shop link coming soon"}
                   </span>
                 </div>
               </div>
@@ -294,7 +294,7 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
                     <button type="button" className="nv-chip nv-press" onClick={() => { setAdding(true); setNewTag(""); }} style={{ borderStyle: "dashed" }}>+ Custom tag</button>
                   )}
                 </div>
-                {!linked && <span style={{ fontSize: 12, color: "var(--muted)" }}>Tags apply to TikTok Shop affiliate links. TAP links are one per product.</span>}
+                {!linked && <span style={{ fontSize: 12, color: "var(--muted)" }}>Tags apply to TikTok Shop affiliate links. Rezekii links are one per product.</span>}
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 14 }}>
                 <button type="button" className="nv-btn nv-press nv-cta" onClick={convert} style={{ height: 52, padding: "0 26px", fontSize: 16 }}>
@@ -315,8 +315,8 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
                 `Paste any TikTok product link, or many at once (up to ${MAX}).`,
                 linked
                   ? "Rezekii asks TikTok Shop for your affiliate link through your linked account."
-                  : "Products in Techwide's TAP campaigns get a TAP link now. Other products need your TikTok Shop link, which opens once TikTok approves Rezekii.",
-                linked ? "Copy your link and share it. Sales are credited to your TikTok account and show in Link-share sales below." : "Open a TAP link to add the product to your showcase, then share it as usual.",
+                  : "Marketplace products get a Rezekii link now. Other products need your TikTok Shop link, which opens once TikTok approves Rezekii.",
+                linked ? "Copy your link and share it. Sales are credited to your TikTok account and show in Link-share sales below." : "Open a Rezekii link to add the product to your showcase, then share it as usual.",
               ].map((t, i) => (
                 <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                   <span style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--gsoft)", color: "var(--gink)", fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{i + 1}</span>
@@ -352,7 +352,7 @@ export function LinksView({ handle, linked, weekCount, allCount, start }: { hand
                         <span style={{ fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", opacity: r.name ? 1 : 0.6 }}>{rowName(r, i)}</span>
                       </span>
                       <span role="cell">
-                        <span className={`nv-badge ${r.link ? "b-green" : r.kind === "shop" ? "b-amber" : "b-red"}`}>{r.kind === "tap" ? "TAP" : r.link ? (r.tag ?? "no tag") : r.kind === "shop" ? "waiting" : "failed"}</span>
+                        <span className={`nv-badge ${r.link ? "b-green" : r.kind === "shop" ? "b-amber" : "b-red"}`}>{r.kind === "tap" ? "Rezekii link" : r.link ? (r.tag ?? "no tag") : r.kind === "shop" ? "waiting" : "failed"}</span>
                       </span>
                       <span role="cell" title={r.link ?? r.note} style={{ fontFamily: r.link ? "ui-monospace, monospace" : undefined, fontSize: 13, color: r.link ? "var(--text)" : r.kind === "shop" ? "var(--amber)" : "var(--red)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>
                         {r.link ?? r.note}

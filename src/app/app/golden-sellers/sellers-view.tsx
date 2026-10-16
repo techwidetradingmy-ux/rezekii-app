@@ -70,7 +70,7 @@ export function SellersView({ golden, products, initialShop, requestedIds }: { g
         <div style={{ display: "flex", flexDirection: "column", gap: 6, position: "relative", minWidth: 0 }}>
           <span className="gs-rank">#{rank} Golden Seller</span>
           <h2 id="gsname" style={{ margin: 0, fontSize: 28, fontWeight: 900 }}>{cur.shop}</h2>
-          <span style={{ fontSize: 13, fontWeight: 700, opacity: 0.8 }}>Every live product from this shop in our TAP campaigns</span>
+          <span style={{ fontSize: 13, fontWeight: 700, opacity: 0.8 }}>Every live product from this shop on Rezekii</span>
         </div>
         <div className="gs-stats">
           {stats.map(([k, v]) => <div key={k} className="gs-stat"><span className="gs-k">{k}</span><span className="gs-v">{v}</span></div>)}

@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   const user = await currentUser();
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   const { productId } = (await req.json().catch(() => ({}))) as { productId?: string };
-  if (!productId || !/^\d{6,25}$/.test(productId)) return NextResponse.json({ error: "This product is no longer in a Techwide TAP campaign." }, { status: 404 });
+  if (!productId || !/^\d{6,25}$/.test(productId)) return NextResponse.json({ error: "This product is no longer in the Marketplace." }, { status: 404 });
   const r = await addToShowcase(user.id, productId);
   return r.added ? NextResponse.json({ added: true }) : NextResponse.json({ added: false, link: r.link, error: r.error }, { status: r.link ? 200 : r.status });
 }

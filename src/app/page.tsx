@@ -12,10 +12,10 @@ const BENEFITS: { label: string; v: [string, string, string] }[] = [
   { label: "Commission on Techwide campaign links", v: ["Open Plan rate", "Open Plan + 1%", "Special rate for you"] },
   { label: "Free product samples", v: ["Included", "Included", "Included"] },
   { label: "Level emblem on your profile and in Rankings", v: ["Included", "Included", "Included"] },
-  { label: "How you get it", v: ["When you join", "10 sample videos + RM1,000 TAP sales last month", "By invitation"] },
-  { label: "How you keep it", v: ["Always", "RM1,000 TAP sales every month", "Set by Techwide"] },
+  { label: "How you get it", v: ["When you join", "10 sample videos + RM1,000 sales through Rezekii last month", "By invitation"] },
+  { label: "How you keep it", v: ["Always", "RM1,000 sales through Rezekii every month", "Set by Techwide"] },
 ];
-const SILVER_HOW = "10 sample videos and RM1,000 in TAP sales last month";
+const SILVER_HOW = "10 sample videos and RM1,000 in sales through Rezekii last month";
 
 const STATS = [
   ["RM2.85M", "Sales in August 2026", "By creators Techwide works with"],
@@ -179,7 +179,7 @@ export default function Home() {
         <section className="section" aria-labelledby="h-prod">
           <div className="hm-prod-head">
             <div><span className="eyebrow">PRODUCTS YOU CAN PROMOTE</span><h2 id="h-prod">{N} approved products. Free samples.</h2></div>
-            <span className="hm-prod-note">Best sellers from Techwide&apos;s live TAP campaigns</span>
+            <span className="hm-prod-note">Best sellers on Rezekii</span>
           </div>
           <div className="hm-marq" role="region" aria-label="Best-selling products you can promote" tabIndex={0}>
             <ul className="hm-track">

@@ -22,7 +22,7 @@ export default async function MarketplacePage() {
         <main className="site-wrap app-main nv-main">
           <div>
             <h1 className="nv-title">Marketplace</h1>
-            <p className="nv-sub">Every product in Techwide&apos;s live TikTok Shop TAP campaigns · real data, pulled {pulled(initial.asOf)}</p>
+            <p className="nv-sub">Every product on Rezekii, from TikTok Shop · real data, pulled {pulled(initial.asOf)}</p>
           </div>
           <MarketplaceView initial={initial} golden={golden} requestedIds={requested} />
         </main>

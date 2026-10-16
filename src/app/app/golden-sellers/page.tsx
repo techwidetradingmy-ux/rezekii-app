@@ -25,7 +25,7 @@ export default async function GoldenSellersPage({ searchParams }: { searchParams
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
             <div>
               <h1 className="nv-title">Golden Sellers</h1>
-              <p className="nv-sub">Our top 3 partner brands, ranked by sales through our TAP campaigns · real data, pulled {pulled(all[0]?.asOf ?? null)}</p>
+              <p className="nv-sub">Our top 3 partner brands, ranked by sales through Rezekii · real data, pulled {pulled(all[0]?.asOf ?? null)}</p>
             </div>
             <Link href="/app/marketplace" className="nv-btn2 nv-press" style={{ height: 40, borderRadius: 999, fontSize: 14 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>

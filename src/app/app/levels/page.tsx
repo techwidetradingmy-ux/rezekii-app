@@ -20,7 +20,7 @@ export default async function LevelsPage() {
         <main className="site-wrap app-main nv-main">
           <div>
             <h1 className="nv-title">Your level</h1>
-            <p className="nv-sub">Sales through Techwide&apos;s TAP campaigns · verified by your TikTok sign-in</p>
+            <p className="nv-sub">Sales through Rezekii · verified by your TikTok sign-in</p>
           </div>
           <LevelsView data={data} benefits={b.list} firstName={firstName} handle={handle} username={user.tiktok_username} />
         </main>
