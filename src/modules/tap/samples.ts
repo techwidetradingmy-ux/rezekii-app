@@ -2,7 +2,8 @@ import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { getSampleDeeplink, getSampleLabel, lookupProducts, searchSampleApplications, type SampleLabel } from "../../integrations/tiktok-shop/creator.ts";
 import { approvedCreatorToken } from "../creator-accounts/access.ts";
 import { linkedCreators } from "../sales/orders.ts";
-import { addToShowcase } from "./showcase.ts";
+import { makeTapLink } from "./links.ts";
+import { addByTapLink } from "./showcase.ts";
 import { sampleStage } from "./stages.ts";
 
 /** A free sample a creator asked for on Rezekii. Since 14 Oct 2026 they submit it in TikTok themselves (status "applied"); older rows were Rezekii's own queue. */
@@ -201,26 +202,25 @@ export async function sampleStatus(userId: string, productId: string): Promise<S
  */
 export async function sampleLink(userId: string, productId: string): Promise<SampleLinkResult> {
   if (!/^\d{6,25}$/.test(productId)) return { ok: false, error: "This product is no longer in the Marketplace.", status: 404 };
-  const token = await approvedCreatorToken(userId);
+  // Fast (owner, 16 Oct 2026: no waiting): steps that don't depend on each other run at the same time.
+  const [token, t] = await Promise.all([approvedCreatorToken(userId), sampleTarget(productId)]);
   if (!token) return { ok: false, error: "Link your TikTok Shop first, then request the sample.", status: 403 };
-  const t = await sampleTarget(productId);
   if (!t) return { ok: false, error: "This product is no longer in the Marketplace.", status: 404 };
   // Samples go through Techwide's TAP campaign, so the seller must have registered samples there (owner, 16 Oct 2026).
   if (t.samples <= 0) return { ok: false, error: "This product has no free samples through Rezekii.", status: 409 };
-  // TikTok's live check comes first, before the showcase is touched: only a sample TikTok really offers this creator is asked for.
-  const label = await getSampleLabel(token, productId);
+  // TikTok's live check and the TAP link together (making the link doesn't touch the showcase): the product goes into the
+  // showcase only when TikTok really offers this creator the sample.
+  const [label, tap] = await Promise.all([getSampleLabel(token, productId), makeTapLink(userId, productId)]);
   if (label.code !== 0) {
     console.error("[sample label]", label.code, label.message);
     return { ok: false, error: "TikTok couldn't check this product's samples right now. Please try again in a minute.", status: 502 };
   }
   const pick = sampleChoice(label.data?.label);
   if (!pick.ok) return pick;
+  if (!tap.ok) return { ok: false, error: tap.error, status: tap.status };
   // Re-adding a product that is already in the showcase is accepted by TikTok and binds it to the TAP link.
-  const added = await addToShowcase(userId, productId);
+  const added = await addByTapLink(userId, token, tap.link);
   if (!added.added) return { ok: false, error: added.error || "Your showcase couldn't take this product, so the sample can't be requested yet.", status: added.status || 502 };
-  // The creator submits it in TikTok next: read their TikTok sample list afresh the next time My TAP products opens.
-  appCache.delete(userId);
-  await markRequested(userId, productId).catch(() => undefined);
   const ask = (redirect?: string) => getSampleDeeplink(token, { productId, skuId: pick.skuId, campaignId: t.campaign_id, redirect });
   let r = await ask(BACK_TO_REZEKII);
   if (r.code !== 0) r = await ask();
@@ -228,15 +228,20 @@ export async function sampleLink(userId: string, productId: string): Promise<Sam
     console.error("[sample link]", r.code, r.message, r.request_id);
     return { ok: false, error: "TikTok couldn't open the sample request for this product right now. Please try again later.", status: 502 };
   }
-  const open = await supabaseRest(`sample_requests?user_id=eq.${userId}&product_id=eq.${productId}&status=in.(requested,applied)&select=id&limit=1`);
-  if (!((await open.json()) as unknown[]).length)
-    await supabaseRest("sample_requests", {
-      method: "POST",
-      headers: { prefer: "return=minimal" },
-      body: JSON.stringify({ user_id: userId, product_id: productId, product_name: t.name, shop: t.shop, image: t.image, status: "applied", note: "Requested in TikTok through Techwide's TAP campaign" }),
-    });
+  // The creator submits it in TikTok next: My Samples reads their TikTok sample list afresh, and the click is logged.
   appCache.delete(userId);
+  await Promise.all([markRequested(userId, productId).catch(() => undefined), logRequest(userId, productId, t).catch(() => undefined)]);
   return { ok: true, deeplink: r.data.deeplink, addedToShowcase: true };
+}
+
+async function logRequest(userId: string, productId: string, t: { name: string; shop: string | null; image: string | null }): Promise<void> {
+  const open = await supabaseRest(`sample_requests?user_id=eq.${userId}&product_id=eq.${productId}&status=in.(requested,applied)&select=id&limit=1`);
+  if (((await open.json()) as unknown[]).length) return;
+  await supabaseRest("sample_requests", {
+    method: "POST",
+    headers: { prefer: "return=minimal" },
+    body: JSON.stringify({ user_id: userId, product_id: productId, product_name: t.name, shop: t.shop, image: t.image, status: "applied", note: "Requested in TikTok through Techwide's TAP campaign" }),
+  });
 }
 
 type Application = { id: string; productId: string; variant: string; status: string; dueAt: number | null };

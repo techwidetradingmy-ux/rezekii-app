@@ -16,13 +16,18 @@ export async function addToShowcase(userId: string, productId: string, ctx?: { t
   const tap = await makeTapLink(userId, productId, ctx?.level);
   if (!tap.ok) return { added: false, error: tap.error, status: tap.status };
   if (!token) return { added: false, link: tap.link, status: 200 };
-  const r = await addShowcaseByLink(token, tap.link);
+  return addByTapLink(userId, token, tap.link, !ctx);
+}
+
+/** Adds a product to the creator's showcase through a TAP link already made; `count` adds it to Today's showcase number. */
+export async function addByTapLink(userId: string, token: string, link: string, count = true): Promise<AddResult> {
+  const r = await addShowcaseByLink(token, link);
   const failed = r.data?.errors?.[0];
   if (r.code !== 0 || failed) {
     console.error("[showcase add]", r.code, r.message, failed?.code, failed?.message);
-    return { added: false, link: tap.link, error: failed?.message || r.message || "TikTok Shop didn't add it. Open the link to add it in TikTok Shop.", status: 502 };
+    return { added: false, link, error: failed?.message || r.message || "TikTok Shop didn't add it. Open the link to add it in TikTok Shop.", status: 502 };
   }
-  if (!ctx) await countAdded(userId, 1);
+  if (count) await countAdded(userId, 1);
   return { added: true };
 }
 

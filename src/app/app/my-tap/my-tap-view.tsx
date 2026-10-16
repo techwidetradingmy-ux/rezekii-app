@@ -136,7 +136,8 @@ export function MyTapView({ rows, hasTikTok }: { rows: MyTapRow[]; hasTikTok: bo
       <section className="nv-card" aria-label="Your samples" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
         <div className="fb-row">
           <div className="nv-noscroll" role="group" aria-label="Status" style={{ display: "flex", gap: 8, overflowX: "auto" }}>
-            {TABS.map(([label, fn], i) => (i > 0 && tab !== i && !samples.some(fn) ? null :
+            {/* Every one of TikTok's steps shows, even with nothing in it (owner, 16 Oct 2026). */}
+            {TABS.map(([label, fn], i) => (
               <button key={label} type="button" className={`nv-chip nv-press ${tab === i ? "on" : ""}`} aria-pressed={tab === i} onClick={() => { setTab(i); setPg(1); }}>
                 {label} <span style={{ opacity: 0.7 }}>{samples.filter(fn).length}</span>
               </button>

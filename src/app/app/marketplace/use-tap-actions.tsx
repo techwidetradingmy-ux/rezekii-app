@@ -97,17 +97,22 @@ export function useTap(requestedIds: string[]) {
 
   async function requestSample(p: TapProduct) {
     if (sampleState(p) !== "idle") return;
+    // Instant (owner, 16 Oct 2026): a phone goes straight to Rezekii's opening page, which takes it into TikTok's sample page; a
+    // computer shows the QR code at once while the request is prepared in the background.
+    if (window.matchMedia("(pointer: coarse)").matches) {
+      window.location.href = `/sample/${encodeURIComponent(p.id)}`;
+      return;
+    }
+    setQr({ url: `${window.location.origin}/sample/${encodeURIComponent(p.id)}`, name: p.name });
     setSample((s) => ({ ...s, [p.id]: "loading" }));
     try {
       const r = await fetch("/api/tap/samples", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ productId: p.id }) });
-      const d = (await r.json().catch(() => ({}))) as { error?: string; deeplink?: string; phoneUrl?: string; addedToShowcase?: boolean };
-      if (!r.ok || !d.deeplink || !d.phoneUrl) throw new Error(d.error || "TikTok didn't open the sample request. Please try again.");
+      const d = (await r.json().catch(() => ({}))) as { error?: string; deeplink?: string; addedToShowcase?: boolean };
+      if (!r.ok || !d.deeplink) throw new Error(d.error || "TikTok didn't open the sample request. Please try again.");
       setSample((s) => ({ ...s, [p.id]: "done" }));
       if (d.addedToShowcase) setAdd((a) => ({ ...a, [p.id]: "done" }));
-      // A phone has the TikTok app: go straight to TikTok's sample request page. A computer gets a QR code for the phone.
-      if (window.matchMedia("(pointer: coarse)").matches) window.location.href = d.deeplink;
-      else setQr({ url: d.phoneUrl, name: p.name });
     } catch (err) {
+      setQr(null);
       const text = err instanceof Error ? err.message : String(err);
       setSample((s) => ({ ...s, [p.id]: "idle" }));
       // TikTok said no while asking: show that on the button too.
