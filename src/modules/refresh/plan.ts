@@ -1,6 +1,6 @@
 /** What the daily refresh fetches, as a list of tasks. Pure: no network, no database. */
 
-export type TaskKind = "tap_campaigns" | "tap_products" | "tap_catalog" | "tap_creators" | "levels" | "rankings" | "videos" | "orders" | "best" | "details" | "marketplace" | "agency";
+export type TaskKind = "tap_campaigns" | "tap_products" | "tap_catalog" | "tap_samples" | "tap_creators" | "levels" | "rankings" | "videos" | "orders" | "best" | "details" | "marketplace" | "agency";
 export type PlannedTask = { key: string; kind: TaskKind; params: Record<string, unknown>; priority: number };
 
 const DAY = 86_400_000;
@@ -82,6 +82,8 @@ export function planDay(now: number, haveDays: Set<string>, newestBuilt = false,
     { key: "tap_campaigns", kind: "tap_campaigns", params: {}, priority: 1 },
     // the TAP Marketplace table, rebuilt once every campaign's products are in
     { key: "tap_catalog", kind: "tap_catalog", params: {}, priority: 3 },
+    // which TAP products TikTok really offers free samples of, once the catalog is rebuilt
+    { key: "tap_samples", kind: "tap_samples", params: {}, priority: 3 },
     // creator levels, once every campaign's creators are read (tap_creators)
     { key: "levels", kind: "levels", params: {}, priority: 5 },
     // video numbers for every connected TikTok account (admin Video stats)

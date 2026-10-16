@@ -1,4 +1,5 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import { sampleOffers } from "./samples.ts";
 import type { GoldenSeller } from "./golden.ts";
 import { MK_SORTS } from "./sorts.ts";
 
@@ -17,6 +18,10 @@ export type TapProduct = {
   silverRate: number | null;
   sold: number;
   soldToday: number;
+  /**
+   * 1 when the product really has a free sample through Techwide's TAP campaign: the seller registered samples in the
+   * campaign and TikTok's live check confirms one can be requested; 0 when not. TikTok's campaign number until the first check.
+   */
   samples: number;
   stock: number | null;
   campaigns: number;
@@ -42,6 +47,15 @@ const toProduct = (r: Row): TapProduct => ({
   variants: r.variants ?? [], asOf: r.as_of,
 });
 
+/**
+ * Free samples as creators can really get them through Techwide's TAP campaign (owner, 16 Oct 2026): the seller registered
+ * samples in the campaign (TikTok's campaign sample number above 0) and TikTok's live check confirms one can be requested.
+ * A product with campaign samples that hasn't been checked yet keeps TikTok's campaign number.
+ */
+export function withSampleOffers(rows: TapProduct[], offers: Record<string, number>): TapProduct[] {
+  return rows.map((p) => (p.samples <= 0 ? { ...p, samples: 0 } : p.id in offers ? { ...p, samples: offers[p.id] ? 1 : 0 } : p));
+}
+
 /** Every Marketplace product, best-selling first. Kept in memory for 10 minutes; the catalog changes once a day. */
 let cached: { at: number; rows: TapProduct[] } | null = null;
 export async function allProducts(): Promise<TapProduct[]> {
@@ -53,8 +67,10 @@ export async function allProducts(): Promise<TapProduct[]> {
     rows.push(...page.map(toProduct));
     if (page.length < 1000) break;
   }
-  cached = { at: Date.now(), rows };
-  return rows;
+  // Free samples only where the campaign has them and TikTok's nightly live check confirms them (owner, 16 Oct 2026).
+  const checked = withSampleOffers(rows, await sampleOffers().catch(() => ({})));
+  cached = { at: Date.now(), rows: checked };
+  return checked;
 }
 
 export type BrowseQuery = { q?: string; cat?: string; shop?: string; only?: boolean; sort?: string; page?: number };

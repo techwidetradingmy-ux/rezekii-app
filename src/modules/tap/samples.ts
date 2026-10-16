@@ -1,6 +1,7 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { getSampleDeeplink, getSampleLabel, lookupProducts, searchSampleApplications, type SampleLabel } from "../../integrations/tiktok-shop/creator.ts";
 import { approvedCreatorToken } from "../creator-accounts/access.ts";
+import { linkedCreators } from "../sales/orders.ts";
 import { addToShowcase } from "./showcase.ts";
 
 /** A free sample a creator asked for on Rezekii. Since 14 Oct 2026 they submit it in TikTok themselves (status "applied"); older rows were Rezekii's own queue. */
@@ -34,31 +35,99 @@ export async function cancelSample(userId: string, id: string): Promise<boolean>
 
 export type SampleLinkResult = { ok: true; deeplink: string; addedToShowcase: boolean } | { ok: false; error: string; status: number };
 
-/** The TAP campaign and the SKU with the most stock, for TikTok's sample request link. */
+/** The product's TAP campaign and the samples its seller registered there (TikTok's campaign sample number), for the sample request. */
 async function sampleTarget(productId: string) {
   const [row] = (await (await supabaseRest(`tap_catalog?product_id=eq.${productId}&select=campaign_id,name,shop,image,samples&limit=1`)).json()) as { campaign_id: string; name: string; shop: string | null; image: string | null; samples: number }[];
-  if (!row) return null;
-  const [snap] = (await (await supabaseRest(`market_snapshots?dataset=eq.tap_products&slot=eq.${encodeURIComponent(row.campaign_id)}&select=items&order=as_of.desc&limit=1`)).json()) as { items: { id: string; sku_information_list?: { sku_id?: string; inventory?: { available_quantity?: number | string } }[] }[] }[];
-  const skus = snap?.items?.find((i) => i.id === productId)?.sku_information_list ?? [];
-  const sku = [...skus].sort((x, y) => Number(y.inventory?.available_quantity ?? 0) - Number(x.inventory?.available_quantity ?? 0))[0]?.sku_id;
-  return { ...row, skuId: sku ?? null };
+  return row ?? null;
 }
 
 /** Where TikTok sends the creator after they submit the sample request in the TikTok app. */
 const BACK_TO_REZEKII = "https://rezekii.com/app/my-tap?sample=sent";
 
+/** What TikTok's live sample check ("Applicable Sample Label") says for one creator and product. */
+export type SampleVerdict = "available" | "none" | "requested" | "limit";
+
 /**
- * TikTok's answer on whether the creator may ask for this sample, turned into the option to ask for or a reason they can't.
- * `fallbackSku` (the option with the most stock) is used only when TikTok lists no options.
+ * The verdict from TikTok's live check (owner, 16 Oct 2026: only a sample TikTok really offers can be requested). TikTok's
+ * campaign sample number was wrong for many products, both ways, so it isn't used for this.
  */
-export function sampleChoice(label: SampleLabel | undefined, fallbackSku: string | null): { ok: true; skuId: string } | { ok: false; error: string; status: number } {
-  if (label?.application_id || label?.status === "ONGOING") return { ok: false, error: "You already requested this sample in TikTok. Follow it in My TAP products.", status: 409 };
-  if (label?.reach_limit) return { ok: false, error: "You've reached TikTok's limit on open sample requests. Post content for the samples you have, then try again.", status: 409 };
-  if (label && label.can_apply === false) return { ok: false, error: "TikTok doesn't offer this sample to your account right now.", status: 409 };
-  const options = label?.sample_product?.sample_sku_list ?? [];
-  const sku = options.find((o) => o.is_available)?.id ?? (options.length ? null : fallbackSku);
+export function sampleVerdict(label: SampleLabel | undefined): SampleVerdict {
+  if (!label) return "none";
+  if (label.application_id || label.status === "ONGOING") return "requested";
+  if (label.reach_limit) return "limit";
+  if (label.can_apply === false) return "none";
+  return (label.sample_product?.sample_sku_list ?? []).some((o) => o.is_available) ? "available" : "none";
+}
+
+/** Whether a product offers free samples at all, whoever asks: an option has samples left, or this creator already asked. */
+export const offersSamples = (label: SampleLabel | undefined): boolean =>
+  !!label && (!!label.application_id || label.status === "ONGOING" || (label.sample_product?.sample_sku_list ?? []).some((o) => o.is_available));
+
+/**
+ * TikTok's live answer turned into the option to ask for, or the reason the creator can't. Only an option TikTok lists as
+ * available is asked for, so the sample request page TikTok opens really has a sample.
+ */
+export function sampleChoice(label: SampleLabel | undefined): { ok: true; skuId: string } | { ok: false; error: string; status: number } {
+  const verdict = sampleVerdict(label);
+  if (verdict === "requested") return { ok: false, error: "You already requested this sample in TikTok. Follow it in My TAP products.", status: 409 };
+  if (verdict === "limit") return { ok: false, error: "You've reached TikTok's limit on open sample requests. Post content for the samples you have, then try again.", status: 409 };
+  if (label?.can_apply === false || !(label?.sample_product?.sample_sku_list ?? []).length) return { ok: false, error: "TikTok doesn't offer a free sample of this product to your account.", status: 409 };
+  const sku = label?.sample_product?.sample_sku_list?.find((o) => o.is_available)?.id;
   if (!sku) return { ok: false, error: "Every option of this product is out of stock for samples right now.", status: 409 };
   return { ok: true, skuId: sku };
+}
+
+const OFFERS = "market_snapshots?dataset=eq.tap_samples&slot=eq.offers";
+
+/** Which TAP products TikTok's live check found offering free samples (1) or not (0), by product ID: the newest check, or `day`'s. */
+export async function sampleOffers(day?: string): Promise<Record<string, number>> {
+  const [row] = (await (await supabaseRest(`${OFFERS}${day ? `&as_of=eq.${day}` : ""}&select=items&order=as_of.desc&limit=1`)).json()) as { items: Record<string, number>[] }[];
+  return row?.items?.[0] ?? {};
+}
+
+export async function saveSampleOffers(day: string, offers: Record<string, number>): Promise<void> {
+  await supabaseRest("market_snapshots?on_conflict=dataset,slot,as_of", {
+    method: "POST",
+    headers: { prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({ dataset: "tap_samples", slot: "offers", as_of: day, items: [offers], fetched_at: new Date().toISOString() }),
+  });
+}
+
+/** TAP products whose sellers registered samples in Techwide's campaign (TikTok's campaign sample number above 0), best-selling first. */
+export async function campaignSampleProducts(): Promise<string[]> {
+  const out: string[] = [];
+  for (let offset = 0; ; offset += 1000) {
+    const page = (await (await supabaseRest(`tap_catalog?samples=gt.0&select=product_id&order=sold.desc,product_id.asc&offset=${offset}&limit=1000`)).json()) as { product_id: string }[];
+    out.push(...page.map((r) => r.product_id));
+    if (page.length < 1000) return out;
+  }
+}
+
+/** A linked, approved creator's TikTok Shop token, for checking which products offer samples (any linked creator will do). */
+export async function sampleCheckToken(): Promise<string | null> {
+  for (const id of await linkedCreators()) {
+    const token = await approvedCreatorToken(id).catch(() => null);
+    if (token) return token;
+  }
+  return null;
+}
+
+/**
+ * Whether this creator can get a free sample of the product through Techwide's TAP campaign: none unless the seller registered
+ * samples in the campaign, then TikTok's live check. Null when it can't be asked (TikTok Shop not linked, or TikTok didn't answer).
+ */
+export async function sampleStatus(userId: string, productId: string): Promise<SampleVerdict | null> {
+  if (!/^\d{6,25}$/.test(productId)) return null;
+  const t = await sampleTarget(productId);
+  if (!t || t.samples <= 0) return "none";
+  const token = await approvedCreatorToken(userId);
+  if (!token) return null;
+  const r = await getSampleLabel(token, productId);
+  if (r.code !== 0) {
+    console.error("[sample status]", r.code, r.message);
+    return null;
+  }
+  return sampleVerdict(r.data?.label);
 }
 
 /**
@@ -73,19 +142,19 @@ export async function sampleLink(userId: string, productId: string): Promise<Sam
   if (!token) return { ok: false, error: "Link your TikTok Shop first, then request the sample.", status: 403 };
   const t = await sampleTarget(productId);
   if (!t) return { ok: false, error: "This product is no longer in a Techwide TAP campaign.", status: 404 };
-  if (t.samples <= 0) return { ok: false, error: "This product has no free samples right now.", status: 409 };
+  // Samples go through Techwide's TAP campaign, so the seller must have registered samples there (owner, 16 Oct 2026).
+  if (t.samples <= 0) return { ok: false, error: "This product has no free samples in Techwide's TAP campaign.", status: 409 };
+  // TikTok's live check comes first, before the showcase is touched: only a sample TikTok really offers this creator is asked for.
+  const label = await getSampleLabel(token, productId);
+  if (label.code !== 0) {
+    console.error("[sample label]", label.code, label.message);
+    return { ok: false, error: "TikTok couldn't check this product's samples right now. Please try again in a minute.", status: 502 };
+  }
+  const pick = sampleChoice(label.data?.label);
+  if (!pick.ok) return pick;
   // Re-adding a product that is already in the showcase is accepted by TikTok and binds it to the TAP link.
   const added = await addToShowcase(userId, productId);
   if (!added.added) return { ok: false, error: added.error || "Your showcase couldn't take this product, so the sample can't be requested yet.", status: added.status || 502 };
-  const label = await getSampleLabel(token, productId);
-  if (label.code !== 0) console.error("[sample label]", label.code, label.message);
-  const pick = sampleChoice(label.code === 0 ? label.data?.label : undefined, t.skuId);
-  if (!pick.ok) {
-    // No option has samples left: the seller set the samples when registering for the campaign and can't add more, so the
-    // product shows "No samples" until the next daily refresh reads TikTok's campaign data again.
-    if (pick.error.includes("out of stock")) await supabaseRest(`tap_catalog?product_id=eq.${productId}`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ samples: 0 }) }).catch(() => undefined);
-    return pick;
-  }
   const ask = (redirect?: string) => getSampleDeeplink(token, { productId, skuId: pick.skuId, campaignId: t.campaign_id, redirect });
   let r = await ask(BACK_TO_REZEKII);
   if (r.code !== 0) r = await ask();

@@ -1,15 +1,21 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { myTapRows } from "@/modules/tap/mytap.ts";
-import { mySamples, sampleLink, sellerSamples } from "@/modules/tap/samples.ts";
+import { mySamples, sampleLink, sampleStatus, sellerSamples } from "@/modules/tap/samples.ts";
 
 export const dynamic = "force-dynamic";
 
-/** The creator's Rezekii sample requests; with ?from=seller, the samples they asked sellers for directly in TikTok Shop. */
+/**
+ * The creator's Rezekii sample requests; with ?from=seller, the samples they asked sellers for directly in TikTok Shop; with
+ * ?product=ID, TikTok's live check of whether they can get a free sample of that product.
+ */
 export async function GET(req: NextRequest) {
   const user = await currentUser();
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   const headers = { "cache-control": "private, no-store" };
+  // ?product=ID: TikTok's live answer on whether this creator can get a free sample (available, none, requested, limit).
+  const product = req.nextUrl.searchParams.get("product");
+  if (product) return NextResponse.json({ state: await sampleStatus(user.id, product) }, { headers });
   if (req.nextUrl.searchParams.get("from") === "seller") {
     // Samples through Techwide's TAP campaigns already show in My TAP products; the rest came from sellers.
     const { rows } = await myTapRows(user.id, user.tiktok_username);

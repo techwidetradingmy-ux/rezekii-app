@@ -1,4 +1,6 @@
 import type { ApiReply } from "../../integrations/tiktok-shop/api.ts";
+import { campaignSampleProducts, offersSamples, sampleCheckToken, sampleOffers, saveSampleOffers } from "../tap/samples.ts";
+import { getSampleLabel } from "../../integrations/tiktok-shop/creator.ts";
 import { listCampaignProductStats, listCampaignProducts, listCampaigns, listProductCreators, type Campaign, type CampaignProduct, type CampaignProductStats } from "../../integrations/tiktok-shop/partner.ts";
 import { amount, goldenSellers, type StatRow } from "../tap/golden.ts";
 import { smallImage } from "../tap/image.ts";
@@ -226,6 +228,37 @@ async function tapCatalog(t: TaskRow): Promise<StepResult> {
   return { count };
 }
 
+/**
+ * Which TAP products really have free samples (owner, 16 Oct 2026): a product counts only when its seller registered samples
+ * in Techwide's TAP campaign and TikTok's live check confirms one can be requested (the campaign number alone was wrong for
+ * many). After the catalog is rebuilt, each product with campaign samples gets the live check, as a linked creator, 5 at a time.
+ */
+async function tapSamples(t: TaskRow, { deadline }: Ctx): Promise<StepResult> {
+  if (await openTaskCount(t.run_date, "tap_catalog")) return { count: 0, more: true, waitMs: 60_000 };
+  const token = await sampleCheckToken();
+  if (!token) return { count: 0 };
+  const ids = await campaignSampleProducts();
+  const offers = await sampleOffers(t.run_date);
+  let count = 0, failed = 0;
+  for (let i = t.cursor ? Number(t.cursor) : 0; i < ids.length; i += 5) {
+    if (Date.now() > deadline - 6000 || failed > 20) {
+      await saveSampleOffers(t.run_date, offers);
+      // Many failures in a row usually mean TikTok's rate limit: wait a minute.
+      return { count, more: true, cursor: String(i), waitMs: failed > 20 ? 60_000 : 0 };
+    }
+    const batch = ids.slice(i, i + 5);
+    const replies = await Promise.all(batch.map((id) => getSampleLabel(token, id).catch(() => null)));
+    replies.forEach((r, k) => {
+      if (r?.code === 0) {
+        offers[batch[k]] = offersSamples(r.data?.label) ? 1 : 0;
+        count++;
+      } else failed++;
+    });
+  }
+  await saveSampleOffers(t.run_date, offers);
+  return { count };
+}
+
 /** Full Creator Marketplace profiles for new creators, until the run's time is up or the daily cap is reached. */
 async function details(t: TaskRow, { sessions, deadline }: Ctx): Promise<StepResult> {
   if (t.result_count >= DETAILS_PER_DAY) return { count: 0 };
@@ -318,6 +351,7 @@ export const STEPS: Record<string, (t: TaskRow, ctx: Ctx) => Promise<StepResult>
   tap_campaigns: tapCampaigns,
   tap_products: tapProducts,
   tap_catalog: tapCatalog,
+  tap_samples: tapSamples,
   tap_creators: tapCreators,
   levels,
   rankings,

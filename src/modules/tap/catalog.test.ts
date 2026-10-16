@@ -91,3 +91,11 @@ test("tap images: full-size TikTok photos become 300px WebP", () => {
   assert.equal(smallImage("https://p16.example/already-small.webp"), "https://p16.example/already-small.webp");
   assert.equal(smallImage(undefined), null);
 });
+
+test("a free sample needs campaign samples and TikTok's live check; not checked yet keeps the campaign number", async () => {
+  const { withSampleOffers } = await import("./catalog.ts");
+  const p = (id: string, samples: number) => ({ id, samples }) as unknown as Parameters<typeof withSampleOffers>[0][number];
+  // DESSINI casserole: 1 campaign sample but TikTok offers none. ELGINI: TikTok offers its own samples, none in the campaign.
+  const out = withSampleOffers([p("dessini", 1), p("elgini", 0), p("swiss", 18), p("new", 50)], { dessini: 0, elgini: 1, swiss: 1 });
+  assert.deepEqual(out.map((x) => [x.id, x.samples]), [["dessini", 0], ["elgini", 0], ["swiss", 1], ["new", 50]]);
+});

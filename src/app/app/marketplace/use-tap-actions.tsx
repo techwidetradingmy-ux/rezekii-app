@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import type { TapProduct } from "@/modules/tap/catalog.ts";
 
 export type Flow = "idle" | "loading" | "done";
+/** TikTok's live sample answer for the signed-in creator, once a product is opened (owner, 16 Oct 2026). */
+type Live = "checking" | "available" | "none" | "requested" | "limit";
+/** What the sample button shows: the request flow, or TikTok's live answer. */
+export type SampleUi = Flow | "none" | "checking" | "limit";
 type Toast = { text: string; ok: boolean; n: number };
 
 /** The mockup's short message at the bottom of the screen: `flash(text)` shows it for 1.8 seconds. */
@@ -33,6 +37,8 @@ export function useTap(requestedIds: string[]) {
   const [qr, setQr] = useState<{ url: string; name: string } | null>(null);
   // Approved creators with TikTok Shop linked get products added straight to their showcase.
   const [linked, setLinked] = useState(false);
+  const [live, setLive] = useState<Record<string, Live>>({});
+  const asked = useRef(new Set<string>());
   useEffect(() => {
     fetch("/api/tap/showcase", { cache: "no-store" })
       .then((r) => r.json())
@@ -65,8 +71,32 @@ export function useTap(requestedIds: string[]) {
     }
   }
 
+  /**
+   * Opening a product asks TikTok whether this creator can really get a free sample of it through Techwide's campaign, so the
+   * button never offers one TikTok won't give (the catalogue flag is from last night's check). Once per product per visit.
+   */
+  const checkSample = useCallback((id: string) => {
+    if (!linked || asked.current.has(id)) return;
+    asked.current.add(id);
+    setLive((l) => ({ ...l, [id]: "checking" }));
+    fetch(`/api/tap/samples?product=${encodeURIComponent(id)}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d: { state?: Live | null }) => setLive((l) => { const n = { ...l }; if (d.state) n[id] = d.state; else delete n[id]; return n; }))
+      .catch(() => setLive((l) => { const n = { ...l }; delete n[id]; return n; }));
+  }, [linked]);
+
+  function sampleState(p: TapProduct): SampleUi {
+    const s = sample[p.id];
+    if (s && s !== "idle") return s;
+    const l = live[p.id];
+    if (l === "requested") return "done";
+    if (l === "available") return "idle";
+    if (l === "none" || l === "limit" || l === "checking") return l;
+    return p.samples ? "idle" : "none";
+  }
+
   async function requestSample(p: TapProduct) {
-    if (!p.samples || (sample[p.id] ?? "idle") !== "idle") return;
+    if (sampleState(p) !== "idle") return;
     setSample((s) => ({ ...s, [p.id]: "loading" }));
     try {
       const r = await fetch("/api/tap/samples", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ productId: p.id }) });
@@ -78,14 +108,20 @@ export function useTap(requestedIds: string[]) {
       if (window.matchMedia("(pointer: coarse)").matches) window.location.href = d.deeplink;
       else setQr({ url: d.phoneUrl, name: p.name });
     } catch (err) {
+      const text = err instanceof Error ? err.message : String(err);
       setSample((s) => ({ ...s, [p.id]: "idle" }));
-      flash(err instanceof Error ? err.message : String(err), false);
+      // TikTok said no while asking: show that on the button too.
+      if (/doesn't offer|out of stock|no free samples/i.test(text)) setLive((l) => ({ ...l, [p.id]: "none" }));
+      else if (/already requested/i.test(text)) setLive((l) => ({ ...l, [p.id]: "requested" }));
+      else if (/limit/i.test(text)) setLive((l) => ({ ...l, [p.id]: "limit" }));
+      flash(text, false);
     }
   }
 
   return {
     addState: (id: string): Flow => add[id] ?? "idle",
-    sampleState: (p: TapProduct): Flow | "none" => (!p.samples ? "none" : (sample[p.id] ?? "idle")),
+    sampleState,
+    checkSample,
     addToShowcase,
     requestSample,
     toast,

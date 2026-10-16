@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import type { TapProduct } from "@/modules/tap/catalog.ts";
 import { perSale, pct, placeholder, priceText, pulled, rm, short, tiktokProductUrl } from "./format";
 import type { useTap } from "./use-tap-actions";
@@ -30,7 +31,7 @@ export function ProductCard({ p, tap, onOpen }: { p: TapProduct; tap: Tap; onOpe
       <button type="button" className="mk-img" onClick={() => onOpen(p)} aria-label={`Open ${p.name}`}>
         <Photo p={p} className="mk-fill" />
         <span className="nv-badge" style={{ position: "absolute", top: 10, right: 10, background: "rgba(255,255,255,0.94)", color: p.samples ? "#00704a" : "#5f6b7a" }}>
-          {p.samples ? `${short(p.samples)}${p.samples === 1 ? " sample" : " samples"}` : "No samples"}
+          {p.samples ? "Free sample" : "No samples"}
         </span>
       </button>
       <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
@@ -63,6 +64,9 @@ export function ProductCard({ p, tap, onOpen }: { p: TapProduct; tap: Tap; onOpe
 export function ProductBlock({ p, tap, headingId }: { p: TapProduct; tap: Tap; headingId: string }) {
   const add = tap.addState(p.id);
   const smp = tap.sampleState(p);
+  const { checkSample } = tap;
+  useEffect(() => { checkSample(p.id); }, [checkSample, p.id]);
+  const smpNote = { idle: "Free sample through Techwide's TAP campaign", checking: "Checking free samples with TikTok…", none: "No free sample for this product right now", limit: "You've reached TikTok's limit on open sample requests", done: "You've requested this sample", loading: "Opening TikTok's sample request…" }[smp];
   return (
     <div className="pb">
       <div className="pb-media" style={{ position: "relative", width: "100%", aspectRatio: "1 / 1", flexShrink: 0, borderRadius: 22, overflow: "hidden", background: "#f2f5f3" }}>
@@ -84,7 +88,7 @@ export function ProductBlock({ p, tap, headingId }: { p: TapProduct; tap: Tap; h
           <div style={{ fontSize: 12, color: "var(--gink)", fontWeight: 700 }}>{perSale(p.priceLo, p.silverRate)} per sale</div>
         </div>
       </div>
-      <span style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>{p.samples ? `${short(p.samples)}${p.samples === 1 ? " sample available" : " samples available"}` : "No samples"}</span>
+      <span style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>{smpNote}</span>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <span className="nv-cap">Variants · list price before shop discounts</span>
         {p.variants.map(([name, price, stock], i) => (
@@ -102,13 +106,13 @@ export function ProductBlock({ p, tap, headingId }: { p: TapProduct; tap: Tap; h
       </button>
       <button
         type="button"
-        className={`nv-press mk-sample mk-sample-lg ${smp === "none" ? "mk-sample-none" : smp === "done" ? "mk-sample-done" : ""}`}
+        className={`nv-press mk-sample mk-sample-lg ${smp === "none" || smp === "limit" || smp === "checking" ? "mk-sample-none" : smp === "done" ? "mk-sample-done" : ""}`}
         onClick={() => tap.requestSample(p)}
         aria-disabled={smp !== "idle" ? "true" : "false"}
       >
-        {smp === "loading" && <span className="nv-spin" aria-hidden="true" style={{ width: 16, height: 16 }} />}
+        {(smp === "loading" || smp === "checking") && <span className="nv-spin" aria-hidden="true" style={{ width: 16, height: 16 }} />}
         {smp === "done" && <Check size={18} />}
-        {smp === "none" ? "No free samples" : smp === "loading" ? "Requesting…" : smp === "done" ? "Sample requested" : "Request free sample"}
+        {{ none: "No free samples", checking: "Checking samples…", limit: "Sample limit reached", loading: "Requesting…", done: "Sample requested", idle: "Request free sample" }[smp]}
       </button>
       {smp === "done" && <Link href="/app/my-tap" className="nv-link" style={{ alignSelf: "center", fontSize: 14, fontWeight: 700 }}>See it in My TAP products</Link>}
       <a href={tiktokProductUrl(p.id)} target="_blank" rel="noopener" className="nv-btn2 nv-press" style={{ height: 50 }}>Open on TikTok Shop</a>
