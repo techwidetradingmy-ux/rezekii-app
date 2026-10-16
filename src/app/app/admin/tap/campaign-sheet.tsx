@@ -1,10 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { CampaignForm } from "@/modules/admin/campaigns.ts";
 
 const EMPTY: CampaignForm = { name: "", description: "", regEnd: "", start: "", end: "", commission: 18, local: true, crossBorder: false, shopCodes: [], whatsapp: "", email: "", phone: "" };
 const label = { position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" } as const;
+/** TikTok's longest campaign: 360 days counting the start day. */
+const MAX_DAYS = 360;
+const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+/** "2027-10-10" as "10 Oct 2027". */
+const longDay = (day: string) => { const [y, m, d] = day.split("-").map(Number); return `${d} ${MON[m - 1]} ${y}`; };
+const addDays = (day: string, n: number) => new Date(Date.parse(`${day}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
+/** Marks a field TikTok requires. */
+const Req = () => <span className="cp-req" aria-hidden="true"> *</span>;
 
 /**
  * Create or edit a TAP campaign, with the fields TikTok accepts (mockup: Admin · TAP campaigns, create and edit).
@@ -20,10 +28,16 @@ export function CampaignSheet({ id, initial, closing, onClose, onSaved }: {
   const [f, setF] = useState<CampaignForm>(initial ?? EMPTY);
   const [busy, setBusy] = useState<"" | "save" | "publish">("");
   const [error, setError] = useState("");
+  const [today] = useState(() => new Date(Date.now() + 8 * 3_600_000).toISOString().slice(0, 10));
+  const form = useRef<HTMLFormElement>(null);
   const set = <K extends keyof CampaignForm>(k: K, v: CampaignForm[K]) => setF((x) => ({ ...x, [k]: v }));
+  // The furthest dates TikTok allows (owner, 16 Oct 2026: agencies keep campaigns and registration open as long as they can).
+  const start = f.start || today;
+  const latestEnd = addDays(start, MAX_DAYS - 1);
+  const useLatest = () => setF((x) => ({ ...x, start, end: latestEnd, regEnd: latestEnd }));
 
   async function save(andPublish: boolean) {
-    if (busy) return;
+    if (busy || !form.current?.reportValidity()) return;
     setBusy(andPublish ? "publish" : "save");
     setError("");
     try {
@@ -49,40 +63,45 @@ export function CampaignSheet({ id, initial, closing, onClose, onSaved }: {
       <div role="dialog" aria-modal="true" aria-labelledby="cpst" className={`nv-sheet cp-sheet ${closing ? "out" : ""}`}>
         <span className="nv-grab" aria-hidden="true" />
         <h3 id="cpst" style={{ margin: 0, fontSize: 21, fontWeight: 800 }}>{id ? `Edit ${initial?.name || "campaign"}` : "New TAP campaign"}</h3>
-        <form className="cp-form" onSubmit={(e) => { e.preventDefault(); save(false); }}>
+        <form ref={form} className="cp-form" onSubmit={(e) => { e.preventDefault(); save(false); }}>
+          <span className="cp-help"><span className="cp-req">*</span> Required by TikTok</span>
           <div className="cp-field">
-            <label htmlFor="cpname" className="nv-label">Campaign name</label>
+            <label htmlFor="cpname" className="nv-label">Campaign name<Req /></label>
             <input id="cpname" className="nv-input" maxLength={49} value={f.name} onChange={(e) => set("name", e.target.value)} required />
             <span className="cp-help">{49 - f.name.length} characters left · shops see this name</span>
           </div>
           <div className="cp-field">
-            <label htmlFor="cpdesc" className="nv-label">Description for shops</label>
+            <label htmlFor="cpdesc" className="nv-label">Description for shops<Req /></label>
             <textarea id="cpdesc" className="nv-input" rows={3} maxLength={1000} value={f.description} onChange={(e) => set("description", e.target.value)} required />
-            <span className="cp-help">Required by TikTok · {1000 - f.description.length} characters left</span>
+            <span className="cp-help">What shops get by joining, e.g. &quot;Year-end wellness campaign for Malaysian shops&quot; · {1000 - f.description.length} characters left</span>
           </div>
           <fieldset className="cp-field" style={{ border: 0, padding: 0, margin: 0 }}>
-            <legend className="nv-label">Which shops can register products</legend>
+            <legend className="nv-label">Which shops can register products<Req /></legend>
             <div className="cp-grid">
               <label className="cp-check"><input type="checkbox" checked={f.local} onChange={(e) => set("local", e.target.checked)} />Local Malaysian shops</label>
               <label className="cp-check"><input type="checkbox" checked={f.crossBorder} onChange={(e) => set("crossBorder", e.target.checked)} />Cross-border shops</label>
             </div>
-            <span className="cp-help">Or invite specific shops by their shop code (Seller Center → profile), one per line.</span>
+            <span className="cp-help">Pick at least one, or invite specific shops by their shop code (Seller Center → profile), one per line.</span>
             <label htmlFor="cpcodes" style={label}>Shop codes</label>
             <textarea id="cpcodes" className="nv-input" rows={2} placeholder="MYLCXXXXXX" value={f.shopCodes.join("\n")} onChange={(e) => set("shopCodes", e.target.value.split(/[\s,]+/))} />
           </fieldset>
           <div className="cp-grid">
-            <div className="cp-field"><label htmlFor="cpcs" className="nv-label">Campaign starts</label><input id="cpcs" type="date" className="nv-input" value={f.start} onChange={(e) => set("start", e.target.value)} required /><span className="cp-help">Shops can register from this day too.</span></div>
-            <div className="cp-field"><label htmlFor="cpce" className="nv-label">Campaign ends</label><input id="cpce" type="date" className="nv-input" value={f.end} onChange={(e) => set("end", e.target.value)} required /><span className="cp-help">Up to 360 days after it starts. Set an earlier date to end it sooner.</span></div>
-            <div className="cp-field"><label htmlFor="cpre" className="nv-label">Registration closes</label><input id="cpre" type="date" className="nv-input" value={f.regEnd} onChange={(e) => set("regEnd", e.target.value)} required /><span className="cp-help">Between the start and end days.</span></div>
+            <div className="cp-field"><label htmlFor="cpcs" className="nv-label">Campaign starts<Req /></label><input id="cpcs" type="date" className="nv-input" min={id ? undefined : today} value={f.start} onChange={(e) => set("start", e.target.value)} required /><span className="cp-help">Today or later; shops can register from this day. Today means about 10 minutes from now (TikTok needs a start time that hasn&apos;t passed).</span></div>
+            <div className="cp-field"><label htmlFor="cpce" className="nv-label">Campaign ends<Req /></label><input id="cpce" type="date" className="nv-input" min={start} max={latestEnd} value={f.end} onChange={(e) => set("end", e.target.value)} required /><span className="cp-help">At most 360 days, counting the start day: {longDay(latestEnd)} at the latest.</span></div>
+            <div className="cp-field"><label htmlFor="cpre" className="nv-label">Registration closes<Req /></label><input id="cpre" type="date" className="nv-input" min={start} max={f.end || latestEnd} value={f.regEnd} onChange={(e) => set("regEnd", e.target.value)} required /><span className="cp-help">Between the start and end days; usually the end day, so shops can join all along.</span></div>
+          </div>
+          <div className="cp-latest">
+            <button type="button" className="nv-btn2 nv-sm nv-press" onClick={useLatest}>Use the latest dates</button>
+            <span className="cp-help">Runs and takes registrations for the full 360 days TikTok allows{f.start ? "" : ", from today"}.</span>
           </div>
           <div className="cp-field">
-            <label htmlFor="cpcom" className="nv-label">Total commission shown to shops</label>
+            <label htmlFor="cpcom" className="nv-label">Total commission shown to shops<Req /></label>
             <span style={{ display: "flex", alignItems: "center", gap: 10 }}><input id="cpcom" type="number" min={1.01} max={79.99} step={0.01} className="nv-input" value={f.commission} onChange={(e) => set("commission", Number(e.target.value))} style={{ width: 140 }} required /><strong>%</strong></span>
             <span className="cp-help">More than 1% and less than 80%. Creators get the Open Plan rate plus their level&apos;s extra; Techwide keeps the rest.</span>
           </div>
           <div className="cp-grid">
-            <div className="cp-field"><label htmlFor="cpwa" className="nv-label">WhatsApp (required in Malaysia)</label><input id="cpwa" type="tel" className="nv-input" placeholder="012-345 6789" value={f.whatsapp} onChange={(e) => set("whatsapp", e.target.value)} required /><span className="cp-help">Any usual format; sent to TikTok as +60…</span></div>
-            <div className="cp-field"><label htmlFor="cpem" className="nv-label">Email</label><input id="cpem" type="email" className="nv-input" value={f.email} onChange={(e) => set("email", e.target.value)} /></div>
+            <div className="cp-field"><label htmlFor="cpwa" className="nv-label">WhatsApp<Req /></label><input id="cpwa" type="tel" className="nv-input" placeholder="012-345 6789" value={f.whatsapp} onChange={(e) => set("whatsapp", e.target.value)} required /><span className="cp-help">For shops to reach Techwide. Any usual format (012-345 6789 or +60 12-345 6789); sent to TikTok as +60…</span></div>
+            <div className="cp-field"><label htmlFor="cpem" className="nv-label">Email</label><input id="cpem" type="email" className="nv-input" placeholder="partners@techwide.my" value={f.email} onChange={(e) => set("email", e.target.value)} /><span className="cp-help">Optional.</span></div>
           </div>
           {error && <p role="alert" className="cp-error">{error}</p>}
           <div className="cp-acts">

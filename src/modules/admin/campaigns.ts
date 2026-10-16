@@ -37,8 +37,16 @@ export function e164(raw: string): string | null {
   return /^\+[1-9]\d{7,14}$/.test(n) ? n : null;
 }
 
-/** Checks the form against TikTok's rules and turns it into TikTok's fields. */
-export function campaignFields(f: CampaignForm): { ok: true; fields: CampaignFields } | { ok: false; error: string } {
+/** The longest campaign TikTok allows: 360 days counting the start day (Partner Center's own campaigns, e.g. 24 Aug 2026 – 18 Aug 2027). */
+export const MAX_DAYS = 360;
+/** TikTok refuses a start time that has passed, so a campaign starting today starts this many seconds from now. */
+const START_LEAD = 600;
+
+/**
+ * Checks the form against TikTok's rules and turns it into TikTok's fields. `isNew`: a new campaign can't start before today
+ * (an existing one keeps its start). A start time that has already passed becomes 10 minutes from `now`.
+ */
+export function campaignFields(f: CampaignForm, now = Date.now(), isNew = true): { ok: true; fields: CampaignFields } | { ok: false; error: string } {
   const name = f.name.trim();
   if (!name) return { ok: false, error: "Give the campaign a name." };
   if (name.length >= 50) return { ok: false, error: "The name must be under 50 characters." };
@@ -46,11 +54,12 @@ export function campaignFields(f: CampaignForm): { ok: true; fields: CampaignFie
   if (!description) return { ok: false, error: "TikTok needs a description for shops." };
   if (description.length > 1000) return { ok: false, error: "The description can be at most 1,000 characters." };
   if (![f.start, f.end, f.regEnd].every(isDay)) return { ok: false, error: "Fill in all three dates." };
-  const run = [dayStart(f.start), dayEnd(f.end)];
+  if (isNew && f.start < toDay(Math.floor(now / 1000))) return { ok: false, error: "A new campaign can't start before today." };
+  const run = [Math.max(dayStart(f.start), Math.floor(now / 1000) + START_LEAD), dayEnd(f.end)];
   // TikTok: registration_start_time must equal campaign_start_time.
   const reg = [run[0], dayEnd(f.regEnd)];
   if (run[0] >= run[1]) return { ok: false, error: "The campaign has to start before it ends." };
-  if (run[1] - run[0] >= 360 * DAY) return { ok: false, error: "A campaign can run for at most 360 days." };
+  if (dayEnd(f.end) - dayStart(f.start) >= MAX_DAYS * DAY) return { ok: false, error: "A campaign can run for at most 360 days, counting the start day." };
   if (reg[1] < run[0] || reg[1] > run[1]) return { ok: false, error: "Registration has to close between the campaign's start and end days." };
   const rate = Math.round(Number(f.commission) * 100);
   if (!(rate > 100 && rate < 8000)) return { ok: false, error: "Commission must be more than 1% and less than 80%." };
@@ -113,13 +122,24 @@ const failure = (what: string, r: { code: number; message: string }) =>
     ? `TikTok refused to ${what}: Rezekii's "Manage Affiliate Partner Campaigns" permission is off, or Techwide's partner account needs to sign in to Rezekii again.`
     : `TikTok didn't ${what} (${r.code}: ${r.message}).`;
 
+/** The fields that differ from the campaign as TikTok has it (TikTok's edit takes only the fields sent). */
+export function changedFields(next: CampaignFields, was: CampaignFields): Partial<CampaignFields> {
+  return Object.fromEntries(Object.entries(next).filter(([k, v]) => JSON.stringify(v) !== JSON.stringify(was[k as keyof CampaignFields]))) as Partial<CampaignFields>;
+}
+
 /** Creates (no `campaignId`) or edits a campaign. A new campaign stays hidden from shops until it is published. */
 export async function saveCampaign(form: CampaignForm, campaignId: string | null, actor: string): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
-  const v = campaignFields(form);
+  const now = Date.now();
+  const v = campaignFields(form, now, !campaignId);
   if (!v.ok) return v;
   const s = await storedSessions().partner();
   if (campaignId) {
-    const r = await editCampaign(s.token, s.cipher, campaignId, v.fields);
+    // Only what changed: e.g. a running campaign's start (already passed) isn't sent again, which TikTok would refuse.
+    const cur = await campaignOverview(campaignId);
+    const was = cur.ok ? campaignFields(cur.data.form, now, false) : null;
+    const fields = was?.ok ? changedFields(v.fields, was.fields) : v.fields;
+    if (!Object.keys(fields).length) return { ok: true, id: campaignId };
+    const r = await editCampaign(s.token, s.cipher, campaignId, fields);
     if (r.code !== 0) return { ok: false, error: failure("save the changes", r) };
     await logActivity(actor, "TAP", `edited the TAP campaign ${v.fields.name}`);
     return { ok: true, id: campaignId };
