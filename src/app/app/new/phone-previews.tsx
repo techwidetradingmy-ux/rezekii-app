@@ -43,6 +43,7 @@ const P: Record<string, ReactNode> = {
   menu2: <path fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" d="M4 9h16M4 15h10" />,
   messenger: <path fill="currentColor" d="M12 2.5C6.5 2.5 2.5 6.5 2.5 11.6c0 2.7 1.1 5 3 6.6v3.3l3-1.7c1.1.3 2.2.5 3.5.5 5.5 0 9.5-4 9.5-9.1S17.5 2.5 12 2.5zm1 12.1-2.4-2.6-4.7 2.6 5.2-5.5 2.5 2.6 4.6-2.6z" />,
   mute: <><path fill="currentColor" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" /><path fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" d="M16 9.5l5 5M21 9.5l-5 5" /></>,
+  sound: <><path fill="currentColor" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" /><path fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" d="M15.5 9a4.2 4.2 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11" /></>,
   x: <path fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" d="M6 6l12 12M18 6 6 18" />,
   threads: <text x="12" y="18.5" textAnchor="middle" fontSize="21" fontWeight="700" fill="currentColor" fontFamily="-apple-system,Arial,sans-serif">@</text>,
 };
@@ -111,8 +112,16 @@ function Rich({ text, links, tags, at, names = [], handles = true }: { text: str
 export type Who = { name: string; username: string; avatar: string | null };
 export type PreviewProps = { channel: Channel; caption: string; comment: string; video: string | null; who: Who; fbView: "reels" | "feed"; theme: "light" | "dark"; topic?: string; collaborators?: string[]; names?: string[] };
 
-function Video({ src }: { src: string | null }) {
-  return src ? <video src={src} muted loop autoPlay playsInline /> : <span className="ph">Your video shows here</span>;
+/** Starts muted (browsers only autoplay muted video); the speaker button turns the sound on and off. */
+function Video({ src, s = 16 }: { src: string | null; s?: number }) {
+  const [muted, setMuted] = useState(true);
+  if (!src) return <span className="ph">Your video shows here</span>;
+  return (
+    <>
+      <video src={src} muted={muted} loop autoPlay playsInline />
+      <button type="button" className="pv-mute" onClick={() => setMuted((m) => !m)} aria-pressed={!muted} aria-label={muted ? "Turn sound on" : "Turn sound off"}><Ic n={muted ? "mute" : "sound"} s={s} /></button>
+    </>
+  );
 }
 const Pic = ({ src, className, style }: { src: string | null; className?: string; style?: CSSProperties }) => (
   // eslint-disable-next-line @next/next/no-img-element
@@ -246,7 +255,7 @@ function Facebook({ caption, comment, video, who, fbView, theme, names }: Previe
       <div className="pv-fb-card">
         <div className="pv-fb-ph"><Av who={who} size={40} /><span className="n"><b>{who.name}</b><small>Just now · <Ic n="globe" s={12} /></small></span><span className="x"><Ic n="dots" s={20} /><Ic n="x" s={20} /></span></div>
         <div className="pv-fb-tx">{open ? <Rich text={caption} links tags="link" at="link" names={names} handles={false} /> : <><Rich text={c.text} links tags="link" at="link" names={names} handles={false} />{c.cut && <More label={<span className="sm">… See more</span>} onClick={() => setOpen(true)} />}</>}</div>
-        <div className="pv-fb-vid"><Video src={video} /><span className="pv-mute"><Ic n="mute" s={16} /></span></div>
+        <div className="pv-fb-vid"><Video src={video} /></div>
         <div className="pv-fb-act"><span><Ic n="thumb" s={19} /></span><span><Ic n="cmtO" s={18} /></span><span><Ic n="shareO" s={18} /></span></div>
         {comment && <div className="pv-fb-cm"><Av who={who} size={32} /><div><span className="bub"><b>{who.name}</b><span><Rich text={comment} links at="link" /></span></span><small>Just now · Like · Reply</small></div></div>}
       </div>
@@ -277,7 +286,7 @@ function Threads({ caption, comment, video, who, theme, topic: topicIn }: Previe
         <div>
           <div className="pv-th-h"><b>{who.username}</b>{topic && <span className="topic">› {topic}</span>}<small>1m</small><span className="dots"><Ic n="dots" s={18} /></span></div>
           <div className="pv-th-tx"><Rich text={head} links at="link" />{tail && <span className="cut">{tail}</span>}</div>
-          <div className="pv-th-media"><Video src={video} /><span className="pv-mute"><Ic n="mute" s={14} /></span></div>
+          <div className="pv-th-media"><Video src={video} s={14} /></div>
           <div className="pv-th-act"><span><Ic n="heartO" s={20} /></span><span><Ic n="cmtO" s={19} /></span><span><Ic n="repost" s={19} /></span><span><Ic n="plane" s={19} /></span></div>
         </div>
         {comment && (

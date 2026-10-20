@@ -210,7 +210,9 @@
 .pv-fb-vid { position: relative; width: 100%; aspect-ratio: 4 / 5; background: #1a1a1a; overflow: hidden; }
 .pv-fb-vid video { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pv-fb-vid .ph, .pv-th-media .ph { position: absolute; inset: 0; display: grid; place-items: center; color: rgba(255, 255, 255, 0.5); font-size: calc(12 * var(--p)); text-align: center; padding: 12px; }
-.pv-mute { position: absolute; right: calc(10 * var(--p)); bottom: calc(10 * var(--p)); width: calc(28 * var(--p)); height: calc(28 * var(--p)); border-radius: 50%; background: rgba(0, 0, 0, 0.55); display: grid; place-items: center; color: #ffffff; }
+.pv-mute { position: absolute; right: calc(10 * var(--p)); bottom: calc(10 * var(--p)); width: calc(28 * var(--p)); height: calc(28 * var(--p)); padding: 0; border: 0; border-radius: 50%; background: rgba(0, 0, 0, 0.55); display: grid; place-items: center; color: #ffffff; cursor: pointer; }
+.pv-mute:focus-visible { outline: 2px solid #ffffff; outline-offset: 2px; }
+.pv-vid .pv-mute { top: calc(106 * var(--p)); bottom: auto; right: calc(12 * var(--p)); width: calc(32 * var(--p)); height: calc(32 * var(--p)); z-index: 5; }
 .pv-fb-act { display: flex; align-items: center; gap: calc(18 * var(--p)); padding: calc(10 * var(--p)) calc(14 * var(--p)); font-size: calc(13.5 * var(--p)); color: #65676b; font-weight: 600; }
 .pv-fb.dark .pv-fb-act { color: #b0b3b8; }
 .pv-fb-act span { display: flex; align-items: center; gap: calc(5 * var(--p)); }
