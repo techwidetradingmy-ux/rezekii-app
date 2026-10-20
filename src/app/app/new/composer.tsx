@@ -71,7 +71,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
   const [tagsText, setTagsText] = useState("");
   const [ownComment, setOwnComment] = useState("");
   const [link, setLink] = useState("");
-  const [cta, setCta] = useState("Dapatkan di sini 👉");
+  const [cta, setCta] = useState("");
   const [remind, setRemind] = useState(true);
   const [capOver, setCapOver] = useState<Partial<Record<Channel, string>>>({});
   const [comOver, setComOver] = useState<Partial<Record<Channel, string>>>({});
@@ -422,9 +422,9 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
           </section>
 
           <section className="card">
-            <h2>Product link</h2>
-            <input className="np-input" type="url" inputMode="url" value={link} onChange={(e) => setLink(e.target.value.trim())} placeholder="https://… (Shopee or TikTok Shop)" aria-label="Product link" />
-            <label className="cx-field"><b>Call to action before the link</b><input className="np-input" type="text" value={cta} maxLength={80} onChange={(e) => setCta(e.target.value)} placeholder="e.g. Dapatkan di sini 👉" aria-label="Call to action before the link" /><small className="np-muted">Used wherever Rezekii adds the link (Facebook caption, first comments). Leave empty for the link alone.</small></label>
+            <h2>Call to action &amp; product link</h2>
+            <label className="cx-field"><b>Call to action before the link</b><input className="np-input" type="text" value={cta} maxLength={80} onChange={(e) => setCta(e.target.value)} placeholder="e.g. Dapatkan di sini 👉" aria-label="Call to action before the link" /><small className="np-muted">Optional. Goes in front of the link wherever Rezekii adds it (Facebook caption, first comments).</small></label>
+            <label className="cx-field"><b>Product link</b><input className="np-input" type="url" inputMode="url" value={link} onChange={(e) => setLink(e.target.value.trim())} placeholder="https://… (Shopee or TikTok Shop)" aria-label="Product link" /></label>
             {apps.length > 0 && <ul className="cx-how">{apps.map((p) => <li key={p}><BrandIcon ch={p} size={18} /><span><b>{appLabel(p)}:</b> {linkWhere(p)}</span></li>)}</ul>}
             {apps.length > 0 && <p className="np-muted">Change where it goes in each app&apos;s caption tab.</p>}
             {apps.includes("facebook") && link.trim() && (
