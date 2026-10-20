@@ -12,9 +12,9 @@ import "./board.css";
 const TZ = "Asia/Kuala_Lumpur";
 const dayKey = (iso: string) => new Date(iso).toLocaleDateString("en-CA", { timeZone: TZ });
 const time = (iso: string) => new Date(iso).toLocaleTimeString("en-GB", { timeZone: TZ, hour: "numeric", minute: "2-digit", hour12: true });
-const LOOK: Record<BoardState, [string, string]> = { draft: ["Draft", "badge-gray"], scheduled: ["Scheduled", "badge-blue"], posting: ["Posting", "badge-blue"], posted: ["Posted", ""], failed: ["Failed", "badge-red"], link: ["Add product link", "badge-amber"] };
+const LOOK: Record<BoardState, [string, string]> = { fbdraft: ["Draft in Facebook", "badge-gray"], draft: ["Draft", "badge-gray"], scheduled: ["Scheduled", "badge-blue"], posting: ["Posting", "badge-blue"], posted: ["Posted", ""], failed: ["Failed", "badge-red"], link: ["Add product link", "badge-amber"] };
 // Worst first: an app's icon shows the state of its least-finished channel.
-const RANK: BoardState[] = ["failed", "link", "posting", "scheduled", "draft", "posted"];
+const RANK: BoardState[] = ["failed", "link", "posting", "scheduled", "draft", "fbdraft", "posted"];
 const needs = (p: BoardPost) => p.channels.some((c) => c.state === "failed" || c.state === "link" || c.commentFailed);
 type Filter = "all" | "upcoming" | "posted" | "attention";
 

@@ -26,8 +26,11 @@ export type ThreadsProfile = { id: string; username: string; name?: string; thre
 export const threadsProfile = (token: string) => metaFetch<ThreadsProfile>(TH(`me?${qs({ fields: "id,username,name,threads_profile_picture_url", access_token: token })}`));
 
 /** A video post container; Threads processes the video before it can be published. */
-export async function createThreadsVideo(userId: string, token: string, videoUrl: string, text: string): Promise<string> {
-  return (await metaFetch<{ id: string }>(TH(`${userId}/threads`), { media_type: "VIDEO", video_url: videoUrl, text, access_token: token })).id;
+export async function createThreadsVideo(userId: string, token: string, videoUrl: string, text: string, o: { replies?: string; topic?: string } = {}): Promise<string> {
+  const form: Record<string, string> = { media_type: "VIDEO", video_url: videoUrl, text, access_token: token };
+  if (o.replies && o.replies !== "everyone") form.reply_control = o.replies;
+  if (o.topic) form.topic_tag = o.topic;
+  return (await metaFetch<{ id: string }>(TH(`${userId}/threads`), form)).id;
 }
 /** The first comment: the account's own reply under its post. */
 export async function createThreadsReply(userId: string, token: string, text: string, replyToId: string): Promise<string> {

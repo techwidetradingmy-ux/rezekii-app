@@ -10,7 +10,8 @@ export const NAMES: Record<Channel, string> = { tiktok: "TikTok", facebook: "Fac
 /** Caption and first-comment limits, and the hashtag caps each app applies (TikTok's 2,200 is its API limit). */
 export const CAPTION_MAX: Record<Channel, number> = { tiktok: 2200, facebook: 63206, instagram: 2200, threads: 500 };
 export const COMMENT_MAX: Record<Platform, number> = { facebook: 8000, instagram: 2200, threads: 500 };
-export const HASHTAG_MAX: Record<Channel, number> = { tiktok: 5, instagram: 5, threads: 1, facebook: Infinity };
+/** Threads gets no hashtags in its text: its one topic goes in the Topic box (settings.ts). */
+export const HASHTAG_MAX: Record<Channel, number> = { tiktok: 5, instagram: 5, threads: 0, facebook: Infinity };
 export const THREADS_LINK_MAX = 5;
 /** Facebook vertical videos of 3–90 s go out as a Reel (Facebook's Reels API); others as a Page video. */
 export const REEL_SECONDS = { min: 3, max: 90 };
@@ -44,7 +45,8 @@ export const lengthFor = (ch: Channel, t: string) => (ch === "threads" ? threads
 
 /**
  * Rezekii's version of the main caption for one channel: links taken out, the sentence about the link rewritten for where
- * the link really is, hashtags cut to the channel's cap. TikTok gets a short caption pointing to the yellow basket.
+ * the link really is, hashtags cut to the channel's cap (none on Threads, which takes a topic instead). TikTok gets a
+ * short caption pointing to the yellow basket.
  */
 export function autoCaption(ch: Channel, main: string, place: Placement = DEFAULT_PLACEMENT[ch]): string {
   const clean = main.replace(URL_RE, "").replace(/[ \t]+\n/g, "\n").trim();
@@ -86,7 +88,7 @@ export function channelProblems(ch: Platform, caption: string, comment: string, 
 export function channelWarnings(ch: Channel, caption: string): string[] {
   const n = hashtags(caption).length;
   if ((ch === "instagram" || ch === "tiktok") && n > HASHTAG_MAX[ch]) return [`${NAMES[ch]} allows ${HASHTAG_MAX[ch]} hashtags. This caption has ${n}.`];
-  if (ch === "threads" && n > 1) return ["Threads uses only the first hashtag, as the post's topic."];
+  if (ch === "threads" && n > 0) return ["On Threads, hashtags in the text show as plain words. A post gets one topic: set it in the Topic box."];
   return [];
 }
 

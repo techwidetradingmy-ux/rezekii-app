@@ -28,8 +28,12 @@ export type InstagramProfile = { user_id: string; username: string; name?: strin
 export const instagramProfile = (token: string) => metaFetch<InstagramProfile>(IG(`me?${qs({ fields: "user_id,username,name,account_type,profile_picture_url", access_token: token })}`));
 
 /** A Reel container from our signed video link; Instagram then processes it before it can be published. */
-export async function createInstagramReel(igId: string, token: string, videoUrl: string, caption: string): Promise<string> {
-  return (await metaFetch<{ id: string }>(IG(`${igId}/media`), { media_type: "REELS", video_url: videoUrl, caption, access_token: token })).id;
+export async function createInstagramReel(igId: string, token: string, videoUrl: string, caption: string, o: { feed?: boolean; collaborators?: string[]; trial?: "off" | "manual" | "auto" } = {}): Promise<string> {
+  const form: Record<string, string> = { media_type: "REELS", video_url: videoUrl, caption, share_to_feed: String(o.feed !== false), access_token: token };
+  if (o.collaborators?.length) form.collaborators = JSON.stringify(o.collaborators);
+  // Trial reels go to non-followers first; MANUAL waits for the owner to share it with followers in the app.
+  if (o.trial && o.trial !== "off") form.trial_params = JSON.stringify({ graduation_strategy: o.trial === "manual" ? "MANUAL" : "SS_PERFORMANCE" });
+  return (await metaFetch<{ id: string }>(IG(`${igId}/media`), form)).id;
 }
 export type ContainerStatus = "IN_PROGRESS" | "FINISHED" | "ERROR" | "EXPIRED" | "PUBLISHED";
 export const instagramContainer = (id: string, token: string) => metaFetch<{ status_code?: ContainerStatus; status?: string }>(IG(`${id}?${qs({ fields: "status_code,status", access_token: token })}`));

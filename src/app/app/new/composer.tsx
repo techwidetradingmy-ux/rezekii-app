@@ -7,6 +7,7 @@ import type { PublicAccount } from "@/modules/social/accounts.ts";
 import type { Brand } from "@/modules/social/brands.ts";
 import { consentLine, postProblems, type PostChoice } from "@/modules/posting/rules.ts";
 import { brandChannels, brandPicked, cleanPick, isTikTokKey, openIdOf, tiktokKey, toggleBrand, toggleChannel } from "@/modules/social/picker.ts";
+import { COLLABORATORS_MAX, REPLY_CONTROLS, cleanTopic, parseCollaborators, settingsProblems, threadsTopic, type ReplyControl, type TrialMode } from "@/modules/social/settings.ts";
 import { CAPTION_MAX, COMMENT_MAX, DEFAULT_PLACEMENT, NAMES, autoCaption, autoComment, channelProblems, channelWarnings, lengthFor, links, postedCaption, type Channel, type Placement, type Platform } from "@/modules/social/rules.ts";
 import { BrandIcon } from "../brand-icons";
 import { PhonePreview, type Who } from "./phone-previews";
@@ -85,6 +86,12 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
   const [isAigc, setIsAigc] = useState(false);
   const [when, setWhen] = useState<When>("recommended");
   const [pickAt, setPickAt] = useState("");
+  const [fbDraft, setFbDraft] = useState(false);
+  const [igFeed, setIgFeed] = useState(true);
+  const [igTrial, setIgTrial] = useState<TrialMode>("off");
+  const [collabText, setCollabText] = useState("");
+  const [replies, setReplies] = useState<ReplyControl>("everyone");
+  const [topicOver, setTopicOver] = useState<string | null>(null);
   const [previewApp, setPreviewApp] = useState<Channel>(TT);
   const [previewAcct, setPreviewAcct] = useState("");
   const [fbView, setFbView] = useState<"reels" | "feed">("reels");
@@ -142,6 +149,9 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
     const a = social.find((x) => x.id === key);
     return { name: a?.name ?? "", username: a?.username ?? a?.name ?? "", avatar: a?.avatar_url ?? null };
   };
+  const topic = cleanTopic(topicOver ?? threadsTopic(main));
+  const collaborators = parseCollaborators(collabText).list.slice(0, COLLABORATORS_MAX);
+  const settingsFor = (p: Platform) => (p === "facebook" ? { draft: fbDraft } : p === "instagram" ? { feed: igFeed, collaborators, trial: igTrial } : { replies, topic });
   const pApp = apps.includes(previewApp) ? previewApp : apps[0];
   const pKey = pApp ? (inApp(pApp).includes(previewAcct) ? previewAcct : inApp(pApp)[0]) : undefined;
   const activeTab = tab !== "main" && apps.includes(tab) ? tab : "main";
@@ -152,7 +162,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
     if (!keys.length) out.push("Pick at least one channel.");
     if (source === "upload" ? !file : !/^https:\/\/\S+$/.test(linkUrl)) out.push("Add a video: upload one or paste an https link.");
     if (ttKey && info && when !== "draft") out.push(...postProblems(choice, info));
-    for (const p of apps) if (p !== "tiktok") out.push(...channelProblems(p, captionOf(p), commentOf(p), durationSec));
+    for (const p of apps) if (p !== "tiktok") out.push(...channelProblems(p, captionOf(p), commentOf(p), durationSec), ...settingsProblems(p, settingsFor(p), durationSec, p === "instagram" ? collabText : undefined));
     if (when === "pick" && !pickAt) out.push("Pick a date and time.");
     return out;
   })();
@@ -201,7 +211,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
         const r = await fetch("/api/social/posts", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ ...video, durationSec, when: at, tiktokPostId: tiktokPost?.id, channels: metaPicked.map((a) => ({ accountId: a.id, caption: captionOf(a.platform), firstComment: commentOf(a.platform), linkReminder: a.platform === "facebook" && remind && !!link.trim() })) }),
+          body: JSON.stringify({ ...video, durationSec, when: at, tiktokPostId: tiktokPost?.id, channels: metaPicked.map((a) => ({ accountId: a.id, caption: captionOf(a.platform), firstComment: a.platform === "facebook" && fbDraft ? "" : commentOf(a.platform), linkReminder: a.platform === "facebook" && remind && !!link.trim(), settings: settingsFor(a.platform) })) }),
         });
         const d = (await r.json()) as { posts?: { scheduled_at: string | null }[]; error?: string | string[] };
         if (!r.ok || !d.posts) throw new Error(`${tiktokPost ? "The TikTok post was saved, but " : ""}${Array.isArray(d.error) ? d.error.join(" ") : d.error || "the other channels couldn't be saved."}`);
@@ -228,7 +238,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
 
   const counts = apps.map((p) => { const n = lengthFor(p, captionOf(p)); const max = CAPTION_MAX[p]; return <span key={p} className={n > max ? "over" : ""}><BrandIcon ch={p} size={14} />{n.toLocaleString("en-US")} / {max.toLocaleString("en-US")}</span>; });
   const linkWhere = (p: Channel) => { const pl = placeOf(p); return p === "tiktok" ? "not added (the product goes in the yellow basket)" : pl.caption && pl.comment ? "caption and first comment" : pl.caption ? "caption" : pl.comment ? "first comment" : "not added"; };
-  const notes = pApp ? previewNotes(pApp, captionOf(pApp), commentOf(pApp), !!link.trim(), remind, fbView) : [];
+  const notes = pApp ? previewNotes(pApp, captionOf(pApp), commentOf(pApp), !!link.trim(), remind, fbView, { fbDraft, igFeed, igTrial, replies }) : [];
   const q = query.trim().toLowerCase();
   const results = channels.filter((c) => c.status === "active" && (!q || `${c.name} ${c.sub} ${NAMES[c.app]}`.toLowerCase().includes(q)));
   const missing = APPS.filter((p) => !channels.some((c) => c.app === p));
@@ -342,6 +352,12 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
                 onPlace={(pl) => setPlace((o) => ({ ...o, [activeTab]: pl }))}
                 onComment={(v) => setComOver((o) => ({ ...o, [activeTab]: v }))}
                 onResetComment={() => setComOver((o) => { const n = { ...o }; delete n[activeTab]; return n; })}
+                extra={activeTab === "threads" ? (
+                  <label className="cx-field"><span className="cx-row"><b>Topic</b>{topicOver !== null ? <button type="button" className="cx-link" onClick={() => setTopicOver(null)}>Use the first hashtag</button> : <small className="np-muted">From your first hashtag · edit to change</small>}</span>
+                    <input className="np-input" type="text" value={topicOver ?? threadsTopic(main)} maxLength={60} onChange={(e) => setTopicOver(e.target.value)} placeholder="e.g. Kesihatan sendi" aria-label="Threads topic" />
+                    <small className="np-muted">Threads gives each post one topic, shown next to your name (like Add topic in the app). No periods or &amp;.</small>
+                  </label>
+                ) : undefined}
               />
             )}
             {warnings.length > 0 && <p className="cx-warn">{[...new Set(warnings)].join(" ")}</p>}
@@ -392,6 +408,43 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
             </section>
           )}
 
+          {apps.some((p) => p !== "tiktok") && (
+            <section className="card np-sec">
+              <h2>Post settings</h2>
+              {apps.includes("facebook") && (
+                <div className="cx-set">
+                  <span className="cx-gh"><BrandIcon ch="facebook" size={16} />Facebook</span>
+                  <div className="np-seg" role="radiogroup" aria-label="Facebook">
+                    <button type="button" role="radio" aria-checked={!fbDraft} className={!fbDraft ? "on" : ""} onClick={() => setFbDraft(false)}>Publish</button>
+                    <button type="button" role="radio" aria-checked={fbDraft} className={fbDraft ? "on" : ""} onClick={() => setFbDraft(true)}>Save as draft in Facebook</button>
+                  </div>
+                  {fbDraft && <p className="np-muted">The Reel is saved in the Page&apos;s drafts. Nobody sees it until you publish it from Facebook or Meta Business Suite. Drafts get no first comment, and work for Reels (3–90 seconds) only.</p>}
+                </div>
+              )}
+              {apps.includes("instagram") && (
+                <div className="cx-set">
+                  <span className="cx-gh"><BrandIcon ch="instagram" size={16} />Instagram</span>
+                  <div className="np-switchrow"><span><b>Also show in the main feed</b><small>Off: the Reel shows in the Reels tab only.</small></span><button type="button" role="switch" aria-checked={igFeed} className={igFeed ? "np-switch on" : "np-switch"} onClick={() => setIgFeed(!igFeed)} aria-label="Also show in the main feed"><span /></button></div>
+                  <label className="cx-field"><b>Collaborators</b><input className="np-input" type="text" value={collabText} onChange={(e) => setCollabText(e.target.value)} placeholder="Up to 3 Instagram usernames, e.g. @brand" aria-label="Instagram collaborators" /><small className="np-muted">They get an invite in Instagram; once they accept, the Reel shows on their profile too.</small></label>
+                  <b className="cx-sub">Trial reel</b>
+                  <div className="np-seg" role="radiogroup" aria-label="Trial reel">
+                    {([["off", "Off"], ["manual", "I'll share with followers"], ["auto", "Instagram decides"]] as [TrialMode, string][]).map(([v, l]) => <button key={v} type="button" role="radio" aria-checked={igTrial === v} className={igTrial === v ? "on" : ""} onClick={() => setIgTrial(v)}>{l}</button>)}
+                  </div>
+                  {igTrial !== "off" && <p className="np-muted">A trial reel is shown to people who don&apos;t follow you first. {igTrial === "manual" ? "You share it with your followers yourself in Instagram." : "Instagram shares it with your followers if it does well."}</p>}
+                </div>
+              )}
+              {apps.includes("threads") && (
+                <div className="cx-set">
+                  <span className="cx-gh"><BrandIcon ch="threads" size={16} />Threads</span>
+                  <label className="cx-field"><b>Who can reply</b>
+                    <select className="np-input" value={replies} onChange={(e) => setReplies(e.target.value as ReplyControl)}>{REPLY_CONTROLS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
+                  </label>
+                </div>
+              )}
+              <p className="np-muted">Facebook, Instagram and Threads don&apos;t offer &quot;Only me&quot; posts to apps. Use a Facebook draft to keep a post private until you publish it.</p>
+            </section>
+          )}
+
           <section className="card">
             <h2>When</h2>
             <div className="np-when" role="radiogroup" aria-label="When to post">
@@ -421,7 +474,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
               <select className="np-input" value={pKey} onChange={(e) => setPreviewAcct(e.target.value)}>{inApp(pApp).map((k) => <option key={k} value={k}>{byKey.get(k)?.name}</option>)}</select>
             </label>
           )}
-          {mounted && pApp && pKey ? <PhonePreview channel={pApp} caption={captionOf(pApp)} comment={commentOf(pApp)} video={videoUrl} who={who(pKey)} fbView={fbView} theme={theme} /> : <div className="pv-phone"><div className="pv-scr" /></div>}
+          {mounted && pApp && pKey ? <PhonePreview channel={pApp} caption={captionOf(pApp)} comment={pApp === "facebook" && fbDraft ? "" : commentOf(pApp)} video={videoUrl} who={who(pKey)} fbView={fbView} theme={theme} topic={topic} collaborators={collaborators} /> : <div className="pv-phone"><div className="pv-scr" /></div>}
           {pApp === "facebook" && <Seg value={fbView} set={setFbView} items={[["reels", "Reels"], ["feed", "Feed"]]} label="Facebook view" />}
           {(pApp === "threads" || (pApp === "facebook" && fbView === "feed")) && <Seg value={theme} set={setTheme} items={[["light", "Light"], ["dark", "Dark"]]} label="App theme" />}
           <p className="cx-note">{pApp ? PREVIEW_NOTE[pApp] : "Pick a channel to see its preview."}</p>
@@ -443,26 +496,31 @@ const PREVIEW_NOTE: Record<Channel, string> = {
 };
 
 /** Notes under the phone where an app treats the post differently. [text, informational] */
-function previewNotes(ch: Channel, caption: string, comment: string, hasLink: boolean, remind: boolean, fbView: "reels" | "feed"): [string, boolean][] {
+function previewNotes(ch: Channel, caption: string, comment: string, hasLink: boolean, remind: boolean, fbView: "reels" | "feed", s: { fbDraft: boolean; igFeed: boolean; igTrial: TrialMode; replies: ReplyControl }): [string, boolean][] {
   const out: [string, boolean][] = [];
+  if (ch === "facebook" && s.fbDraft) out.push(["Saved as a draft on the Page: nobody sees it until you publish it in Facebook. It shows like this once published.", true]);
+  if (ch === "instagram" && !s.igFeed) out.push(["Shows in the Reels tab only, not in the main feed.", true]);
+  if (ch === "instagram" && s.igTrial !== "off") out.push([`Trial reel: shown to people who don't follow you first${s.igTrial === "manual" ? "; you share it with followers yourself" : "; Instagram shares it with followers if it does well"}.`, true]);
+  if (ch === "threads" && s.replies !== "everyone") out.push([`Who can reply: ${REPLY_CONTROLS.find(([v]) => v === s.replies)?.[1]}.`, true]);
   if (ch === "tiktok" && hasLink) out.push(["The product link isn't added on TikTok: links in TikTok captions can't be tapped. The product goes in the yellow basket (beg kuning).", false]);
   if (ch === "instagram" && links(caption).length) out.push(["Instagram shows the link as plain text. It can't be tapped.", false]);
   if (ch === "instagram" && comment) out.push([`The first comment goes out right after the Reel is published.${links(comment).length ? " Links in Instagram comments can't be tapped either." : ""}`, true]);
   if (ch === "facebook" && fbView === "reels" && links(caption).length) out.push(["Links in Facebook Reels captions can't be tapped. The link in the first comment can.", false]);
   if (ch === "facebook" && (links(caption).length || links(comment).length)) out.push(["Facebook is testing a limit of 2 posts or comments with links a month for Pages without Meta One. Over the limit, links may not be tappable.", false]);
   if (ch === "facebook" && hasLink && remind) out.push(["After posting, add the Shopee product link in Facebook (Monetization). Rezekii keeps a reminder until you tick Done.", true]);
-  if (ch === "facebook" && comment) out.push(["The first comment goes out from the Page right after posting.", true]);
+  if (ch === "facebook" && comment && !s.fbDraft) out.push(["The first comment goes out from the Page right after posting.", true]);
   if (ch === "threads" && comment) out.push(["The first comment goes out as your own reply under the post, right after it's published.", true]);
   return out;
 }
 
-function ChannelPane(p: { ch: Channel; name: string; text: string; edited: boolean; captionLength: number; linkAdded: boolean; place: Placement; comment: string; commentEdited: boolean; onText: (v: string) => void; onResetText: () => void; onPlace: (p: Placement) => void; onComment: (v: string) => void; onResetComment: () => void }) {
+function ChannelPane(p: { ch: Channel; name: string; text: string; edited: boolean; captionLength: number; linkAdded: boolean; place: Placement; comment: string; commentEdited: boolean; onText: (v: string) => void; onResetText: () => void; onPlace: (p: Placement) => void; onComment: (v: string) => void; onResetComment: () => void; extra?: ReactNode }) {
   const tt = p.ch === "tiktok";
   return (
     <>
       <div className="cx-row"><b>{p.name} caption</b>{p.edited ? <button type="button" className="cx-link" onClick={p.onResetText}>Use Rezekii&apos;s version</button> : <small className="np-muted">Rezekii&apos;s version · edit to change</small>}</div>
       <textarea className="np-input" rows={5} value={p.text} onChange={(e) => p.onText(e.target.value)} aria-label={`${p.name} caption`} />
       <span className={`np-count${p.captionLength > CAPTION_MAX[p.ch] ? " over" : ""}`}>{p.captionLength.toLocaleString("en-US")} / {CAPTION_MAX[p.ch].toLocaleString("en-US")}{p.linkAdded ? " · the link is added at the end" : ""}</span>
+      {p.extra}
       <div className="cx-row" style={{ justifyContent: "flex-start" }}>
         <small className="np-muted">Product link</small>
         <button type="button" className="cx-chip" disabled={tt} aria-pressed={p.place.caption} onClick={() => p.onPlace({ ...p.place, caption: !p.place.caption })}>{p.place.caption ? "✓ " : ""}In the caption</button>

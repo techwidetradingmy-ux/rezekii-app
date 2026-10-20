@@ -47,8 +47,9 @@ export async function uploadFacebookReel(videoId: string, token: string, fileUrl
   const body = (await res.json().catch(() => ({}))) as { success?: boolean; debug_info?: { message?: string } };
   if (!res.ok || body.success === false) throw new Error(`Facebook couldn't fetch the video (${body.debug_info?.message ?? `HTTP ${res.status}`}).`);
 }
-export async function finishFacebookReel(pageId: string, token: string, videoId: string, description: string): Promise<void> {
-  await metaFetch(G(`${pageId}/video_reels`), { upload_phase: "finish", video_id: videoId, video_state: "PUBLISHED", description, access_token: token });
+export async function finishFacebookReel(pageId: string, token: string, videoId: string, description: string, draft = false): Promise<void> {
+  // DRAFT keeps the Reel in the Page's drafts (Facebook / Meta Business Suite) until someone publishes it there.
+  await metaFetch(G(`${pageId}/video_reels`), { upload_phase: "finish", video_id: videoId, video_state: draft ? "DRAFT" : "PUBLISHED", description, access_token: token });
 }
 
 /** Longer or non-vertical videos: a Page video post, fetched by Facebook from our signed link. */

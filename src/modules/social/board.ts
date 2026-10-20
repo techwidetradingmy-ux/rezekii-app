@@ -4,7 +4,7 @@ import { NAMES, type Channel } from "./rules.ts";
 import { listSocialPosts, type SocialPostRow } from "./store.ts";
 
 /** One channel of a post on the All channels board. `state` drives the colour dot; `note` explains it in words. */
-export type BoardState = "draft" | "scheduled" | "posting" | "posted" | "failed" | "link";
+export type BoardState = "draft" | "scheduled" | "posting" | "posted" | "failed" | "link" | "fbdraft";
 export type BoardChannel = {
   id: string;
   kind: Channel;
@@ -29,8 +29,10 @@ function tiktokChannel(p: PostRow): BoardChannel {
 function socialChannel(s: SocialPostRow): BoardChannel {
   const posted = s.status === "posted";
   const linkDue = posted && s.link_reminder && !s.link_done;
-  const state: BoardState = s.status === "draft" ? "draft" : s.status === "scheduled" ? "scheduled" : s.status === "publishing" || s.status === "processing" ? "posting" : s.status === "failed" ? "failed" : linkDue ? "link" : "posted";
+  const fbDraft = posted && s.platform === "facebook" && s.settings?.draft === true;
+  const state: BoardState = s.status === "draft" ? "draft" : s.status === "scheduled" ? "scheduled" : s.status === "publishing" || s.status === "processing" ? "posting" : s.status === "failed" ? "failed" : fbDraft ? "fbdraft" : linkDue ? "link" : "posted";
   const note = s.status === "failed" ? (s.last_error ?? "The channel didn't take it.")
+    : fbDraft ? `Saved as a draft on the Page: publish it from Facebook or Meta Business Suite${s.link_reminder && !s.link_done ? ", then add the Shopee product link (Monetization)" : ""}`
     : linkDue ? "Add the Shopee product link in Facebook (Monetization), then tick Done"
     : posted && s.comment_status === "failed" ? `First comment failed: ${s.comment_error ?? "try again"}`
     : posted && s.comment_status === "pending" ? "Posting the first comment"

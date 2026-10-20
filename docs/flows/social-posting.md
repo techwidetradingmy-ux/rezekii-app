@@ -31,16 +31,27 @@ Scope: Facebook Pages, Instagram (Business or Creator), Threads. Not Facebook Gr
 - **C3b — A version per app** → you write one main caption; each app gets its own tab with Rezekii's version of it, written for how that app is used (every Page or account of that app gets the same version):
   - TikTok: short and clear, no link: the opening sentence, "Produk dekat beg kuning." (the product sits in the yellow basket), and at most 5 hashtags.
   - Instagram: no link (the link sentence becomes "Link dekat bio."), at most 5 hashtags.
-  - Threads: the link goes in the first comment (the sentence becomes "Link produk ada dalam komen."), one hashtag as the topic.
+  - Threads: the link goes in the first comment (the sentence becomes "Link produk ada dalam komen."), no hashtags in the text: the first hashtag becomes the post's topic (C3d).
   - Facebook: the link in the caption and in the first comment.
 - **C3c — Edit a channel's version** → typing in a channel's tab keeps that version; "Use Rezekii's version" brings back the automatic one; later edits to the main caption don't overwrite an edited version.
+- **C3d — Threads topic** → the Threads tab has a Topic box, filled from the first hashtag and editable; it goes out as Threads' own topic (like Add topic in the app: one per post, 1–50 characters, no periods or &) and shows next to the name in the preview.
 - **C4 — Product link** → one link for the post; each channel's tab sets where it goes (caption, first comment, both or neither), starting from the defaults above. TikTok can't take it (links in captions can't be tapped and apps can't comment), so its switches are off.
 - **C4b — First comment** → optional, per channel, for Facebook, Instagram and Threads, prefilled with the link where that channel's default puts it ("Dapatkan di sini: …" on Facebook, "Link produk 👇 …" on Threads). Limits: Threads 500, Instagram 2,200, Facebook 8,000 characters (re-checked during the build). The preview shows it (Threads as your own reply under the post, Facebook Feed under the post) and notes that links in Instagram comments can't be tapped.
-- **C5 — Live preview** → a phone preview per selected app, switchable by tabs (when several Pages or accounts of one app are picked, a "Showing" picker chooses which one the preview uses), updating as you type, laid out like the October 2026 apps (TikTok For You, Instagram Reels, Facebook Reels and Feed, Threads feed in light and dark), with each app's caption cut-off; notes under the phone where a channel differs (Instagram and Facebook Reels: link can't be tapped; Threads: over 500 characters).
+- **C5 — Live preview** → a phone preview per selected app, switchable by tabs (when several Pages or accounts of one app are picked, a "Showing" picker chooses which one the preview uses), updating as you type, laid out like the October 2026 apps (TikTok For You, Instagram Reels, Facebook Reels and Feed, Threads feed in light and dark), with each app's caption cut-off; tapping "more" / "See more" expands the caption, and the comment button on Instagram and Facebook Reels opens the comments with the first comment; notes under the phone where a channel differs (Instagram and Facebook Reels: link can't be tapped; Threads: over 500 characters).
 - **C6 — Facebook product-link reminder** (on by default when Facebook is picked) → the Facebook post gets "Add product link" in My posts until you tick Done.
 - **C7 — Video** → same upload (≤ 50 MB) or link as today. Checked per channel at scheduling: Threads ≤ 5 min; Instagram Reels within Meta's current limits; Facebook vertical videos of 3–90 s go out as a Reel (Facebook's Reels API), others as a Page video (all limits re-checked against Meta's current docs during the build); a channel that can't take it is blocked with the reason.
 - **C8 — When** → Post now / recommended time / pick a time / save as draft, as today; one time for all chosen channels.
 - **C9 — Schedule** → TikTok gets its normal post (unchanged); each Meta channel gets its own scheduled post; the done screen lists every channel and its time.
+
+## Post settings (owner approved, 20 Oct 2026)
+
+Meta doesn't offer private ("Only me") posts to apps for Facebook, Instagram or Threads; New post says so.
+
+- **S1 — Facebook: Publish or Save as draft in Facebook** → a draft Reel goes to the Page's drafts (Facebook / Meta Business Suite) and nobody sees it until it's published there; drafts get no first comment and work for Reels (3–90 s) only; All channels shows "Draft in Facebook".
+- **S2 — Instagram: Also show in the main feed** (on by default) → off: the Reel shows in the Reels tab only.
+- **S3 — Instagram: Collaborators** → up to 3 usernames; anything that isn't a username is refused with the reason. They get an invite in Instagram.
+- **S4 — Instagram: Trial reel** → off, "I'll share with followers" (manual) or "Instagram decides" (shared with followers if it does well); shown to non-followers first.
+- **S5 — Threads: Who can reply** → everyone (default), accounts you follow, your followers, or only accounts you mention.
 
 ## Picking channels by brand (owner approved option C, 20 Oct 2026)
 

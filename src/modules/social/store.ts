@@ -31,6 +31,8 @@ export type SocialPostRow = {
   comment_error: string | null;
   last_error: string | null;
   posted_at: string | null;
+  /** Post settings for this channel (settings.ts): Facebook draft, Instagram feed/collaborators/trial, Threads replies/topic. */
+  settings: Record<string, unknown>;
   created_at: string;
 };
 export type NewSocialPost = Omit<SocialPostRow, "id" | "created_at" | "attempts" | "container_id" | "external_post_id" | "permalink" | "comment_status" | "comment_id" | "comment_error" | "last_error" | "posted_at" | "link_done">;

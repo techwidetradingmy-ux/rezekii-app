@@ -6,9 +6,12 @@ import { directLink } from "../posting/media.ts";
 import { nextRetry } from "../posting/rules.ts";
 import { freshToken, getAccount, markReconnect, type SocialAccount } from "./accounts.ts";
 import { facebookAsReel } from "./rules.ts";
+import { cleanSettings, type InstagramSettings, type ThreadsSettings } from "./settings.ts";
 import { cleanUpGroup, signedVideoUrl, updateSocialPost, type SocialPostRow } from "./store.ts";
 
 const STUCK_MS = 30 * 60e3;
+/** A Facebook Reel saved as a draft on the Page (S1): nothing is public, so there's no link or first comment. */
+const draftOf = (p: SocialPostRow) => p.platform === "facebook" && p.settings?.draft === true;
 const msg = (err: unknown) => (err instanceof Error ? (err.name === "TimeoutError" ? `A call took too long and was stopped (${err.message}).` : err.message) : String(err));
 
 /** A try failed: schedule the next try (5 and 25 minutes later), or mark it Failed after the 3rd. Keeps the channel's reason. */
@@ -58,10 +61,15 @@ export async function publishSocialPost(p: SocialPostRow): Promise<string> {
         container = await startFacebookReel(acc.external_id, token);
         await updateSocialPost(p.id, { container_id: container });
         await uploadFacebookReel(container, token, video);
-        await finishFacebookReel(acc.external_id, token, container, p.caption);
+        await finishFacebookReel(acc.external_id, token, container, p.caption, draftOf(p));
       } else container = await postFacebookVideo(acc.external_id, token, video, p.caption);
-    } else if (p.platform === "instagram") container = await createInstagramReel(acc.external_id, token, video, p.caption);
-    else container = await createThreadsVideo(acc.external_id, token, video, p.caption);
+    } else if (p.platform === "instagram") {
+      const s = cleanSettings("instagram", p.settings) as InstagramSettings;
+      container = await createInstagramReel(acc.external_id, token, video, p.caption, s);
+    } else {
+      const s = cleanSettings("threads", p.settings) as ThreadsSettings;
+      container = await createThreadsVideo(acc.external_id, token, video, p.caption, s);
+    }
     await updateSocialPost(p.id, { status: "processing", container_id: container, last_error: null });
     return "sent";
   } catch (err) {
@@ -85,7 +93,7 @@ export async function checkSocialProcessing(p: SocialPostRow): Promise<string> {
       const v = await facebookVideo(p.container_id, token);
       const st = v.status;
       if (st?.video_status === "error") return recordFailure(p, st.publishing_phase?.errors?.[0]?.message ?? "Facebook couldn't process the video.", { clearContainer: true });
-      if (st?.publishing_phase?.status === "complete" || st?.video_status === "ready") return markPosted(p, v.post_id ?? p.container_id, facebookPermalink(v.permalink_url));
+      if (st?.publishing_phase?.status === "complete" || st?.video_status === "ready") return markPosted(p, v.post_id ?? p.container_id, draftOf(p) ? null : facebookPermalink(v.permalink_url));
     } else if (p.platform === "instagram") {
       const c = await instagramContainer(p.container_id, token);
       if (c.status_code === "FINISHED") {

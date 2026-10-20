@@ -17,10 +17,10 @@ test("C3b: Instagram has no link, points to the bio, at most 5 hashtags", () => 
   assert.equal(t.match(/#/g)?.length, 5);
 });
 
-test("C3b: Threads moves the link to the first comment and keeps one hashtag as the topic", () => {
+test("C3b: Threads moves the link to the first comment; no hashtags in the text (the topic goes separately)", () => {
   const t = autoCaption("threads", MAIN);
   assert.match(t, /Link produk ada dalam komen\./);
-  assert.equal(t.match(/#/g)?.length, 1);
+  assert.equal(t.match(/#/g), null);
   assert.equal(autoComment("threads", LINK), `Link produk 👇\n${LINK}`);
 });
 
@@ -62,6 +62,6 @@ test("an empty main caption gives empty channel versions", () => {
 
 test("C2b: hashtag warnings don't block", () => {
   assert.match(channelWarnings("instagram", "#a #b #c #d #e #f")[0], /5 hashtags/);
-  assert.match(channelWarnings("threads", "#a #b")[0], /first hashtag/);
+  assert.match(channelWarnings("threads", "#a")[0], /Topic box/);
   assert.deepEqual(channelWarnings("facebook", "#a #b #c #d #e #f #g"), []);
 });

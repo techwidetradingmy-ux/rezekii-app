@@ -7,6 +7,7 @@ import { postingHours } from "@/modules/posting/times.ts";
 import { getAccount } from "@/modules/social/accounts.ts";
 import { canUseSocial } from "@/modules/social/access.ts";
 import { NAMES, channelProblems, facebookAsReel } from "@/modules/social/rules.ts";
+import { cleanSettings, settingsProblems } from "@/modules/social/settings.ts";
 import { copyUpload, insertSocialPosts, listSocialPosts, postsInDay, type NewSocialPost } from "@/modules/social/store.ts";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +22,7 @@ export async function GET() {
   return NextResponse.json({ posts: await listSocialPosts(user.id) });
 }
 
-type ChannelIn = { accountId?: string; caption?: string; firstComment?: string; linkReminder?: boolean };
+type ChannelIn = { accountId?: string; caption?: string; firstComment?: string; linkReminder?: boolean; settings?: unknown };
 type Body = { source?: "upload" | "link"; storagePath?: string; linkUrl?: string; durationSec?: number; when?: string; tiktokPostId?: string; channels?: ChannelIn[] };
 const bad = (error: string | string[], status = 400) => NextResponse.json({ error }, { status });
 
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
   accounts.forEach((a, i) => {
     if (!a) problems.push("One of the channels isn't connected any more. Reload and pick again.");
     else if (a.status === "reconnect") problems.push(`${a.name ?? NAMES[a.platform]} needs reconnecting first (Posts → Channels).`);
-    else problems.push(...channelProblems(a.platform, String(channels[i].caption ?? ""), String(channels[i].firstComment ?? ""), durationSec));
+    else problems.push(...channelProblems(a.platform, String(channels[i].caption ?? ""), String(channels[i].firstComment ?? ""), durationSec), ...settingsProblems(a.platform, cleanSettings(a.platform, channels[i].settings), durationSec));
   });
   if (problems.length) return bad(problems);
 
@@ -81,6 +82,9 @@ export async function POST(req: NextRequest) {
   const groupId = randomUUID();
   const rows: NewSocialPost[] = channels.map((c, i) => {
     const a = accounts[i]!;
+    const settings = cleanSettings(a.platform, c.settings);
+    // A Facebook draft isn't public, so it gets no first comment (S1).
+    const draft = a.platform === "facebook" && (settings as { draft?: boolean }).draft === true;
     return {
       group_id: groupId,
       tiktok_post_id: tiktok?.id ?? null,
@@ -93,11 +97,12 @@ export async function POST(req: NextRequest) {
       link_url: b.source === "link" ? (b.linkUrl as string) : null,
       duration_sec: durationSec,
       caption: String(c.caption ?? ""),
-      first_comment: String(c.firstComment ?? ""),
+      first_comment: draft ? "" : String(c.firstComment ?? ""),
       link_reminder: a.platform === "facebook" && !!c.linkReminder,
       status: scheduledAt ? "scheduled" : "draft",
       scheduled_at: scheduledAt?.toISOString() ?? null,
       next_attempt_at: scheduledAt?.toISOString() ?? null,
+      settings,
     };
   });
   return NextResponse.json({ posts: await insertSocialPosts(rows) }, { status: 201 });
