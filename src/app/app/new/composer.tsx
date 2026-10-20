@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import type { CreatorInfo, PrivacyLevel } from "@/integrations/tiktok/posting.ts";
 import type { PublicAccount } from "@/modules/social/accounts.ts";
+import type { Brand } from "@/modules/social/brands.ts";
 import { consentLine, postProblems, type PostChoice } from "@/modules/posting/rules.ts";
+import { brandChannels, brandPicked, cleanPick, isTikTokKey, openIdOf, tiktokKey, toggleBrand, toggleChannel } from "@/modules/social/picker.ts";
 import { CAPTION_MAX, COMMENT_MAX, DEFAULT_PLACEMENT, NAMES, autoCaption, autoComment, channelProblems, channelWarnings, lengthFor, links, postedCaption, type Channel, type Placement, type Platform } from "@/modules/social/rules.ts";
 import { BrandIcon } from "../brand-icons";
 import { PhonePreview, type Who } from "./phone-previews";
@@ -12,8 +14,10 @@ import "./composer.css";
 
 type Info = CreatorInfo & { nextRecommended: string };
 type When = "now" | "recommended" | "pick" | "draft";
-export type TikTokAccount = { open_id: string; username: string | null };
+export type TikTokAccount = { open_id: string; username: string | null; avatar_url: string | null };
 const TT = "tiktok";
+const APPS: Channel[] = ["tiktok", "facebook", "instagram", "threads"];
+const UNIT: Record<Channel, [string, string]> = { tiktok: ["account", "accounts"], facebook: ["Page", "Pages"], instagram: ["account", "accounts"], threads: ["profile", "profiles"] };
 const PRIVACY: Record<PrivacyLevel, string> = { PUBLIC_TO_EVERYONE: "Everyone", MUTUAL_FOLLOW_FRIENDS: "Friends (followers you follow back)", FOLLOWER_OF_CREATOR: "Followers", SELF_ONLY: "Only me" };
 const myt = (iso: string) => new Date(iso).toLocaleString("en-GB", { timeZone: "Asia/Kuala_Lumpur", weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true });
 const CONNECT_MSG: Record<string, (p: string) => string> = {
@@ -25,34 +29,46 @@ const CONNECT_MSG: Record<string, (p: string) => string> = {
   config: (p) => `${p} isn't set up on Rezekii yet (its app settings are missing).`,
   failed: (p) => `${p} didn't connect. Try again.`,
 };
+const SEARCH_ICON = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>;
 
-const Pic = ({ src }: { src: string }) => (
-  // eslint-disable-next-line @next/next/no-img-element
-  <img src={src} alt="" />
-);
+/** One channel as New post shows it: a TikTok account or a connected Page/account/profile. */
+type Ch = { key: string; app: Channel; name: string; sub: string; avatar: string | null; status: "active" | "reconnect"; account?: PublicAccount };
+
+/** A profile picture; falls back to the app's icon when there's none or the link has expired. */
+function Face({ ch, badge = true }: { ch: Pick<Ch, "app" | "avatar">; badge?: boolean }) {
+  const [broken, setBroken] = useState(false);
+  return (
+    <span className="cx-face">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      {ch.avatar && !broken ? <img src={ch.avatar} alt="" onError={() => setBroken(true)} /> : <BrandIcon ch={ch.app} size={26} />}
+      {badge && ch.avatar && !broken && <span className="badge-pi"><BrandIcon ch={ch.app} size={12} /></span>}
+    </span>
+  );
+}
 
 /**
- * New post for Admins with Facebook, Instagram and Threads next to TikTok (design C). One main caption; Rezekii writes each
- * channel's version (editable), places the product link where each channel works best, adds first comments, and shows
- * a phone preview per channel. TikTok keeps every setting its Content Sharing Guidelines require.
+ * New post for Admins (design C with brands, docs/flows/social-posting.md). Pick channels by brand, by Same as last post or
+ * one by one; nothing is picked by default. One main caption; Rezekii writes each app's version (editable), places the
+ * product link where each app works best, adds first comments, and shows a phone preview per app. TikTok keeps every
+ * setting its Content Sharing Guidelines require.
  */
-export function Composer({ tiktok, social: initialSocial, connect }: { tiktok: TikTokAccount[]; social: PublicAccount[]; connect: { channel: string; result: string } | null }) {
+export function Composer({ tiktok, social: initialSocial, brands: initialBrands, last, connect }: { tiktok: TikTokAccount[]; social: PublicAccount[]; brands: Brand[]; last: string[]; connect: { channel: string; result: string } | null }) {
   const [social, setSocial] = useState(initialSocial);
-  const [ttAccount, setTtAccount] = useState(tiktok[tiktok.length - 1]?.open_id ?? "");
-  const [picked, setPicked] = useState<Set<string>>(() => new Set([...(tiktok.length ? [TT] : []), ...initialSocial.filter((a) => a.status === "active").map((a) => a.id)]));
+  const [brands, setBrands] = useState(initialBrands);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [query, setQuery] = useState("");
   const [main, setMain] = useState("");
   const [link, setLink] = useState("");
   const [remind, setRemind] = useState(true);
-  const [capOver, setCapOver] = useState<Record<string, string>>({});
-  const [comOver, setComOver] = useState<Record<string, string>>({});
-  const [place, setPlace] = useState<Record<string, Placement>>({});
-  const [tab, setTab] = useState("main");
+  const [capOver, setCapOver] = useState<Partial<Record<Channel, string>>>({});
+  const [comOver, setComOver] = useState<Partial<Record<Channel, string>>>({});
+  const [place, setPlace] = useState<Partial<Record<Channel, Placement>>>({});
+  const [tab, setTab] = useState<"main" | Channel>("main");
   const [source, setSource] = useState<"upload" | "link">("upload");
   const [file, setFile] = useState<File | null>(null);
   const [linkUrl, setLinkUrl] = useState("");
   const [durationSec, setDurationSec] = useState<number | null>(null);
-  const [info, setInfo] = useState<Info | null>(null);
-  const [infoError, setInfoError] = useState("");
+  const [infoFor, setInfoFor] = useState<{ acct: string; info?: Info; error?: string } | null>(null);
   const [mode, setMode] = useState<"direct" | "inbox">("direct");
   const [privacy, setPrivacy] = useState<PrivacyLevel | "">("");
   const [allow, setAllow] = useState({ comments: false, duet: false, stitch: false });
@@ -60,64 +76,91 @@ export function Composer({ tiktok, social: initialSocial, connect }: { tiktok: T
   const [isAigc, setIsAigc] = useState(false);
   const [when, setWhen] = useState<When>("recommended");
   const [pickAt, setPickAt] = useState("");
-  const [preview, setPreview] = useState(TT);
+  const [previewApp, setPreviewApp] = useState<Channel>(TT);
+  const [previewAcct, setPreviewAcct] = useState("");
   const [fbView, setFbView] = useState<"reels" | "feed">("reels");
   const [theme, setTheme] = useState<"light" | "dark">("light");
-  const [sheet, setSheet] = useState(false);
+  const [sheet, setSheet] = useState<"" | "channels" | "brands">("");
   // The preview measures text, so it renders in the browser only.
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
   const [busy, setBusy] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
-  const [done, setDone] = useState<{ channels: string[]; at: string | null; draft: boolean } | null>(null);
+  const [done, setDone] = useState<{ summary: string; at: string | null; draft: boolean } | null>(null);
   const [toast, setToast] = useState(() => (connect && CONNECT_MSG[connect.result] ? CONNECT_MSG[connect.result](NAMES[connect.channel as Platform] ?? "The channel") : ""));
 
-  // TikTok requires fresh creator info every time the posting screen opens.
+  // Every channel, TikTok accounts first; only active ones can be picked.
+  const channels: Ch[] = useMemo(() => [
+    ...tiktok.map((a): Ch => ({ key: tiktokKey(a.open_id), app: "tiktok", name: a.username ? `@${a.username}` : "TikTok", sub: "TikTok", avatar: a.avatar_url, status: "active" })),
+    ...social.map((a): Ch => ({ key: a.id, app: a.platform, name: a.name ?? NAMES[a.platform], sub: a.platform === "facebook" ? "Facebook Page" : a.username ? `@${a.username}` : NAMES[a.platform], avatar: a.avatar_url, status: a.status, account: a })),
+  ], [tiktok, social]);
+  const byKey = useMemo(() => new Map(channels.map((c) => [c.key, c])), [channels]);
+  const connected = useMemo(() => new Set(channels.filter((c) => c.status === "active").map((c) => c.key)), [channels]);
+  const pick = (next: Set<string>) => setPicked(next);
+
+  const ttKey = [...picked].find((k) => isTikTokKey(k) && connected.has(k));
+  const ttAccount = ttKey ? openIdOf(ttKey) : "";
+  // TikTok requires fresh creator info every time the posting screen opens for an account.
   useEffect(() => {
     if (!ttAccount) return;
+    let live = true;
     fetch(`/api/posts/creator-info?account=${encodeURIComponent(ttAccount)}`, { cache: "no-store" })
       .then(async (r) => (await r.json()) as Info & { error?: string })
-      .then((d) => (d.error ? setInfoError(d.error) : (setInfo(d), setInfoError(""))))
-      .catch(() => setInfoError("Couldn't reach TikTok. Check your connection and try again."));
+      .then((d) => live && setInfoFor(d.error ? { acct: ttAccount, error: d.error } : { acct: ttAccount, info: d }))
+      .catch(() => live && setInfoFor({ acct: ttAccount, error: "Couldn't reach TikTok. Check your connection and try again." }));
+    return () => { live = false; };
   }, [ttAccount]);
+  const info = infoFor?.acct === ttAccount ? (infoFor.info ?? null) : null;
+  const infoError = infoFor?.acct === ttAccount ? (infoFor.error ?? "") : "";
+  const priv: PrivacyLevel | "" = privacy && info?.privacy_level_options.includes(privacy) ? privacy : "";
+
   const videoUrl = useMemo(() => (source === "upload" ? (file ? URL.createObjectURL(file) : null) : /^https:\/\//.test(linkUrl) ? linkUrl : null), [source, file, linkUrl]);
   useEffect(() => () => { if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl); }, [videoUrl]);
 
-  const accountOf = (key: string) => social.find((a) => a.id === key);
-  const chOf = (key: string): Channel => (key === TT ? "tiktok" : (accountOf(key)?.platform ?? "facebook"));
-  const keys = [...(tiktok.length && picked.has(TT) ? [TT] : []), ...social.filter((a) => picked.has(a.id) && a.status === "active").map((a) => a.id)];
-  const placeOf = (key: string) => place[key] ?? DEFAULT_PLACEMENT[chOf(key)];
-  const textOf = (key: string) => capOver[key] ?? autoCaption(chOf(key), main, placeOf(key));
-  const captionOf = (key: string) => postedCaption(chOf(key), textOf(key), link.trim(), placeOf(key));
-  const commentOf = (key: string) => (key === TT ? "" : (comOver[key] ?? autoComment(chOf(key) as Platform, link.trim(), placeOf(key))));
-  const nameOf = (key: string) => (key === TT ? `TikTok${info?.creator_username ? ` @${info.creator_username}` : ""}` : (accountOf(key)?.name ?? NAMES[chOf(key)]));
+  // Posting keys: "tiktok" for the picked TikTok account, then the picked Meta channels.
+  const metaPicked = social.filter((a) => picked.has(a.id) && a.status === "active");
+  const keys = [...(ttKey ? [TT] : []), ...metaPicked.map((a) => a.id)];
+  const chOf = (key: string): Channel => (key === TT ? "tiktok" : (social.find((a) => a.id === key)?.platform ?? "facebook"));
+  const apps = APPS.filter((p) => keys.some((k) => chOf(k) === p));
+  const inApp = (p: Channel) => keys.filter((k) => chOf(k) === p);
+  const placeOf = (p: Channel) => place[p] ?? DEFAULT_PLACEMENT[p];
+  const textOf = (p: Channel) => capOver[p] ?? autoCaption(p, main, placeOf(p));
+  const captionOf = (p: Channel) => postedCaption(p, textOf(p), link.trim(), placeOf(p));
+  const commentOf = (p: Channel) => (p === "tiktok" ? "" : (comOver[p] ?? autoComment(p, link.trim(), placeOf(p))));
+  const appLabel = (p: Channel) => { const n = inApp(p).length; return n > 1 ? `${NAMES[p]} · ${n} ${UNIT[p][1]}` : NAMES[p]; };
+  const summary = () => apps.map((p) => { const n = inApp(p).length; return n > 1 ? `${n} ${NAMES[p]} ${UNIT[p][1]}` : p === "tiktok" ? `TikTok ${byKey.get(ttKey ?? "")?.name ?? ""}`.trim() : `${NAMES[p]} ${byKey.get(inApp(p)[0])?.name ?? ""}`.trim(); }).join(", ");
   const who = (key: string): Who => {
     if (key === TT) return { name: info?.creator_nickname || info?.creator_username || "TikTok", username: info?.creator_username || "", avatar: info?.creator_avatar_url ?? null };
-    const a = accountOf(key);
+    const a = social.find((x) => x.id === key);
     return { name: a?.name ?? "", username: a?.username ?? a?.name ?? "", avatar: a?.avatar_url ?? null };
   };
-  const previewKey = keys.includes(preview) ? preview : keys[0];
-  const activeTab = tab === "main" || keys.includes(tab) ? tab : "main";
+  const pApp = apps.includes(previewApp) ? previewApp : apps[0];
+  const pKey = pApp ? (inApp(pApp).includes(previewAcct) ? previewAcct : inApp(pApp)[0]) : undefined;
+  const activeTab = tab !== "main" && apps.includes(tab) ? tab : "main";
 
-  const choice: PostChoice = { mode, caption: captionOf(TT), privacyLevel: privacy || null, allowComments: allow.comments, allowDuet: allow.duet, allowStitch: allow.stitch, promo: promo.on, brandOrganic: promo.own, brandedContent: promo.branded, isAigc, durationSec };
+  const choice: PostChoice = { mode, caption: captionOf("tiktok"), privacyLevel: priv || null, allowComments: allow.comments, allowDuet: allow.duet, allowStitch: allow.stitch, promo: promo.on, brandOrganic: promo.own, brandedContent: promo.branded, isAigc, durationSec };
   const problems = (() => {
     const out: string[] = [];
     if (!keys.length) out.push("Pick at least one channel.");
     if (source === "upload" ? !file : !/^https:\/\/\S+$/.test(linkUrl)) out.push("Add a video: upload one or paste an https link.");
-    if (keys.includes(TT) && info && when !== "draft") out.push(...postProblems(choice, info));
-    for (const k of keys) if (k !== TT) out.push(...channelProblems(chOf(k) as Platform, captionOf(k), commentOf(k), durationSec).map((p) => (social.filter((a) => a.platform === chOf(k)).length > 1 ? `${nameOf(k)}: ${p}` : p)));
+    if (ttKey && info && when !== "draft") out.push(...postProblems(choice, info));
+    for (const p of apps) if (p !== "tiktok") out.push(...channelProblems(p, captionOf(p), commentOf(p), durationSec));
     if (when === "pick" && !pickAt) out.push("Pick a date and time.");
     return out;
   })();
-  const warnings = keys.flatMap((k) => channelWarnings(chOf(k), captionOf(k)));
+  const warnings = apps.flatMap((p) => channelWarnings(p, captionOf(p)));
 
-  function toggle(key: string) {
-    setPicked((s) => { const n = new Set(s); if (n.has(key)) n.delete(key); else n.add(key); return n; });
-  }
   async function disconnect(a: PublicAccount) {
     const r = await fetch(`/api/social/accounts/${a.id}`, { method: "DELETE" }).catch(() => null);
     if (!r?.ok) return setToast("Couldn't disconnect. Try again.");
     setSocial((s) => s.filter((x) => x.id !== a.id));
+    setPicked((s) => new Set([...s].filter((k) => k !== a.id)));
     setToast(`${a.name ?? NAMES[a.platform]} disconnected. Its scheduled posts were cancelled.`);
+  }
+  function sameAsLast() {
+    const next = cleanPick(last, connected);
+    if (!next.size) return setToast("The channels of your last post aren't connected any more.");
+    pick(next);
+    setToast(`Same channels as your last post: ${[...next].map((k) => byKey.get(k)?.name).filter(Boolean).slice(0, 4).join(", ")}${next.size > 4 ? ` and ${next.size - 4} more` : ""}.`);
   }
 
   async function submit() {
@@ -138,25 +181,24 @@ export function Composer({ tiktok, social: initialSocial, connect }: { tiktok: T
       const at = when === "pick" ? new Date(pickAt).toISOString() : when;
       const video = { source, storagePath, linkUrl: source === "link" ? linkUrl : undefined };
       let tiktokPost: { id: string; scheduled_at: string | null; status: string } | null = null;
-      if (keys.includes(TT)) {
-        const r = await fetch("/api/posts", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...choice, ...video, when: at, consent: true, account: ttAccount || undefined }) });
+      if (ttKey) {
+        const r = await fetch("/api/posts", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...choice, ...video, when: at, consent: true, account: ttAccount }) });
         const d = (await r.json()) as { post?: { id: string; scheduled_at: string | null; status: string }; error?: string | string[] };
         if (!r.ok || !d.post) throw new Error(Array.isArray(d.error) ? d.error.join(" ") : d.error || "TikTok post couldn't be saved.");
         tiktokPost = d.post;
       }
-      const metaKeys = keys.filter((k) => k !== TT);
       let at2: string | null = tiktokPost?.scheduled_at ?? null;
-      if (metaKeys.length) {
+      if (metaPicked.length) {
         const r = await fetch("/api/social/posts", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ ...video, durationSec, when: at, tiktokPostId: tiktokPost?.id, channels: metaKeys.map((k) => ({ accountId: k, caption: captionOf(k), firstComment: commentOf(k), linkReminder: chOf(k) === "facebook" && remind && !!link.trim() })) }),
+          body: JSON.stringify({ ...video, durationSec, when: at, tiktokPostId: tiktokPost?.id, channels: metaPicked.map((a) => ({ accountId: a.id, caption: captionOf(a.platform), firstComment: commentOf(a.platform), linkReminder: a.platform === "facebook" && remind && !!link.trim() })) }),
         });
         const d = (await r.json()) as { posts?: { scheduled_at: string | null }[]; error?: string | string[] };
         if (!r.ok || !d.posts) throw new Error(`${tiktokPost ? "The TikTok post was saved, but " : ""}${Array.isArray(d.error) ? d.error.join(" ") : d.error || "the other channels couldn't be saved."}`);
         at2 ??= d.posts[0]?.scheduled_at ?? null;
       }
-      setDone({ channels: keys.map(nameOf), at: at2, draft: when === "draft" });
+      setDone({ summary: summary(), at: at2, draft: when === "draft" });
     } catch (e) {
       setErrors([e instanceof Error ? e.message : "Something went wrong."]);
     } finally {
@@ -169,15 +211,19 @@ export function Composer({ tiktok, social: initialSocial, connect }: { tiktok: T
       <section className="card np-done" role="status">
         <span className="np-done-ico" aria-hidden="true">✓</span>
         <h2>{done.draft ? "Saved as a draft" : when === "now" ? "On its way" : "Scheduled"}</h2>
-        <p>{done.draft ? `Saved in Rezekii for ${done.channels.join(", ")}.` : `${done.channels.join(", ")}${done.at && when !== "now" ? `: ${myt(done.at)} (Malaysia time)` : ": posting now"}.`} You&apos;ll see each channel&apos;s status in All channels.</p>
+        <p>{done.draft ? `Saved in Rezekii for ${done.summary}.` : `${done.summary}${done.at && when !== "now" ? `: ${myt(done.at)} (Malaysia time)` : ": posting now"}.`} You&apos;ll see each channel&apos;s status in All channels.</p>
         <div className="np-row"><Link href="/app/posts" className="np-btn">See it in All channels</Link><button type="button" className="btn-outline" onClick={() => window.location.reload()}>New post</button></div>
       </section>
     );
   }
 
-  const counts = keys.map((k) => { const n = lengthFor(chOf(k), captionOf(k)); const max = CAPTION_MAX[chOf(k)]; return <span key={k} className={n > max ? "over" : ""}><BrandIcon ch={chOf(k)} size={14} />{n.toLocaleString("en-US")} / {max.toLocaleString("en-US")}</span>; });
-  const linkWhere = (k: string) => { const p = placeOf(k); return k === TT ? "not added (the product goes in the yellow basket)" : p.caption && p.comment ? "caption and first comment" : p.caption ? "caption" : p.comment ? "first comment" : "not added"; };
-  const notes = previewKey ? previewNotes(chOf(previewKey), captionOf(previewKey), commentOf(previewKey), !!link.trim(), remind, fbView) : [];
+  const counts = apps.map((p) => { const n = lengthFor(p, captionOf(p)); const max = CAPTION_MAX[p]; return <span key={p} className={n > max ? "over" : ""}><BrandIcon ch={p} size={14} />{n.toLocaleString("en-US")} / {max.toLocaleString("en-US")}</span>; });
+  const linkWhere = (p: Channel) => { const pl = placeOf(p); return p === "tiktok" ? "not added (the product goes in the yellow basket)" : pl.caption && pl.comment ? "caption and first comment" : pl.caption ? "caption" : pl.comment ? "first comment" : "not added"; };
+  const notes = pApp ? previewNotes(pApp, captionOf(pApp), commentOf(pApp), !!link.trim(), remind, fbView) : [];
+  const q = query.trim().toLowerCase();
+  const results = q ? channels.filter((c) => c.status === "active" && !picked.has(c.key) && `${c.name} ${c.sub} ${NAMES[c.app]}`.toLowerCase().includes(q)).slice(0, 8) : [];
+  const missing = APPS.filter((p) => !channels.some((c) => c.app === p));
+  const pickedChs = channels.filter((c) => picked.has(c.key) && connected.has(c.key));
 
   return (
     <>
@@ -185,23 +231,49 @@ export function Composer({ tiktok, social: initialSocial, connect }: { tiktok: T
       <form className="cx" onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate>
         <div className="cx-col">
           <section className="card">
-            <div className="cx-bar"><h2>Post to</h2><button type="button" className="cx-link" onClick={() => setSheet(true)}>Channels · {social.length + (tiktok.length ? 1 : 0)} connected</button></div>
-            <div className="cx-chips">
-              {tiktok.length > 0 && <button type="button" className="cx-chip" aria-pressed={picked.has(TT)} onClick={() => toggle(TT)}><BrandIcon ch="tiktok" size={26} />TikTok</button>}
-              {social.map((a) => (
-                <button key={a.id} type="button" className={`cx-chip${a.status === "reconnect" ? " warn" : ""}`} aria-pressed={picked.has(a.id) && a.status === "active"} onClick={() => (a.status === "reconnect" ? setSheet(true) : toggle(a.id))} title={a.status === "reconnect" ? "Needs reconnecting" : undefined}>
-                  <span className="cx-pi">{a.avatar_url ? <Pic src={a.avatar_url} /> : <BrandIcon ch={a.platform} size={26} />}{a.avatar_url && <span className="badge-pi"><BrandIcon ch={a.platform} size={12} /></span>}</span>
-                  {a.name ?? NAMES[a.platform]}{a.status === "reconnect" ? " · Reconnect" : ""}
-                </button>
-              ))}
-              {(["facebook", "instagram", "threads"] as Platform[]).filter((p) => !social.some((a) => a.platform === p)).map((p) => <button key={p} type="button" className="cx-chip add" onClick={() => setSheet(true)}>+ {NAMES[p]}</button>)}
+            <div className="cx-bar">
+              <h2>Post to</h2>
+              <span className="cx-links">
+                {last.length > 0 && <button type="button" className="cx-link" onClick={sameAsLast}>Same as last post</button>}
+                <button type="button" className="cx-link" onClick={() => setSheet("brands")}>Manage brands</button>
+                <button type="button" className="cx-link" onClick={() => setSheet("channels")}>Channels · {channels.length}</button>
+              </span>
             </div>
-            {tiktok.length > 1 && picked.has(TT) && (
-              <label className="cx-row" style={{ justifyContent: "flex-start" }}><small className="np-muted">TikTok account</small>
-                <select className="np-input" style={{ width: "auto", minHeight: 38 }} value={ttAccount} onChange={(e) => { setTtAccount(e.target.value); setInfo(null); setPrivacy(""); }}>{tiktok.map((a) => <option key={a.open_id} value={a.open_id}>{a.username ? `@${a.username}` : "TikTok account"}</option>)}</select>
-              </label>
+            <div className="cx-group">
+              <span className="cx-gh">Brands</span>
+              <div className="cx-chips">
+                {brands.map((b) => {
+                  const live = brandChannels(b.channels, connected);
+                  const bApps = APPS.filter((p) => live.some((k) => byKey.get(k)?.app === p));
+                  return (
+                    <button key={b.id} type="button" className="cx-chip cx-brand" aria-pressed={brandPicked(b.channels, picked, connected)} disabled={!live.length} onClick={() => pick(toggleBrand(picked, b.channels, connected))} title={live.length ? undefined : "None of this brand's channels are connected"}>
+                      <span className="cx-faces">{live.slice(0, 3).map((k) => { const c = byKey.get(k); return c ? <Face key={k} ch={c} badge={false} /> : null; })}</span>
+                      <span className="cx-blabel"><span>{b.name}</span><small>{live.length} · {bApps.map((p) => NAMES[p]).join(", ") || "not connected"}</small></span>
+                    </button>
+                  );
+                })}
+                {missing.map((p) => <a key={p} className="cx-chip add" href={p === "tiktok" ? "/api/auth/tiktok/start" : `/api/auth/meta/${p}/start`}>+ {NAMES[p]}</a>)}
+              </div>
+              {!brands.length && <p className="np-muted">Group the channels you post to together, like a brand&apos;s Facebook Page, Instagram and TikTok. Then one tap picks them all. <button type="button" className="cx-link" onClick={() => setSheet("brands")}>Create a brand</button></p>}
+            </div>
+            <label className="cx-search">{SEARCH_ICON}<input className="np-input" type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={`Add a channel: search ${connected.size}`} aria-label="Add a channel" /></label>
+            {q && (
+              <div className="cx-results" role="listbox" aria-label="Channels found">
+                {results.map((c) => <button key={c.key} type="button" role="option" aria-selected={false} className="cx-res" onClick={() => { pick(toggleChannel(picked, c.key, connected)); setQuery(""); }}><Face ch={c} /><span>{c.name}</span><small>{NAMES[c.app]}</small></button>)}
+                {!results.length && <p className="np-muted" style={{ padding: 6 }}>No channel matches &quot;{query}&quot;.</p>}
+              </div>
             )}
-            {picked.has(TT) && infoError && <p className="np-error" role="alert">{infoError}</p>}
+            {pickedChs.length > 0 ? (
+              <div className="cx-picked">
+                {APPS.filter((p) => pickedChs.some((c) => c.app === p)).map((p) => (
+                  <div key={p} className="cx-group">
+                    <span className="cx-gh"><BrandIcon ch={p} size={16} />{NAMES[p]}</span>
+                    <div className="cx-tags">{pickedChs.filter((c) => c.app === p).map((c) => <span key={c.key} className="cx-tag"><Face ch={c} badge={false} /><span>{c.name}</span><button type="button" aria-label={`Remove ${c.name}`} onClick={() => pick(toggleChannel(picked, c.key, connected))}>×</button></span>)}</div>
+                  </div>
+                ))}
+              </div>
+            ) : <p className="np-muted">Nothing picked yet: pick a brand, use Same as last post, or search for a channel.</p>}
+            {ttKey && infoError && <p className="np-error" role="alert">{infoError}</p>}
           </section>
 
           <section className="card">
@@ -216,38 +288,38 @@ export function Composer({ tiktok, social: initialSocial, connect }: { tiktok: T
               <input className="np-input" type="url" inputMode="url" placeholder="https://… (Google Drive, Dropbox or a direct file link)" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value.trim())} aria-label="Video link" />
             )}
             {videoUrl && <video src={videoUrl} muted playsInline preload="metadata" hidden onLoadedMetadata={(e) => setDurationSec(Math.round(e.currentTarget.duration))} />}
-            {durationSec !== null && <p className="np-muted">Length {Math.floor(durationSec / 60)}:{String(durationSec % 60).padStart(2, "0")}{keys.some((k) => chOf(k) === "facebook") ? ` · Facebook: ${durationSec >= 3 && durationSec <= 90 ? "goes out as a Reel" : "goes out as a Page video (Reels are 3–90 s)"}` : ""}</p>}
+            {durationSec !== null && <p className="np-muted">Length {Math.floor(durationSec / 60)}:{String(durationSec % 60).padStart(2, "0")}{apps.includes("facebook") ? ` · Facebook: ${durationSec >= 3 && durationSec <= 90 ? "goes out as a Reel" : "goes out as a Page video (Reels are 3–90 s)"}` : ""}</p>}
           </section>
 
           <section className="card">
             <h2>Caption</h2>
-            {keys.length > 0 && (
+            {apps.length > 0 && (
               <div className="cx-tabs" role="tablist" aria-label="Caption for">
-                {[["main", "Main"], ...keys.map((k) => [k, nameOf(k)])].map(([k, l]) => (
-                  <button key={k} type="button" role="tab" aria-selected={activeTab === k} onClick={() => setTab(k)}>{k !== "main" && <BrandIcon ch={chOf(k)} size={16} />}{l}{k !== "main" && (capOver[k] !== undefined || comOver[k] !== undefined) && <i className="dot" title="Edited" />}</button>
+                {([["main", "Main"], ...apps.map((p) => [p, appLabel(p)])] as ["main" | Channel, string][]).map(([k, l]) => (
+                  <button key={k} type="button" role="tab" aria-selected={activeTab === k} onClick={() => setTab(k)}>{k !== "main" && <BrandIcon ch={k} size={16} />}{l}{k !== "main" && (capOver[k] !== undefined || comOver[k] !== undefined) && <i className="dot" title="Edited" />}</button>
                 ))}
               </div>
             )}
             {activeTab === "main" ? (
               <>
-                <textarea className="np-input" rows={5} value={main} onChange={(e) => setMain(e.target.value)} placeholder="Write your caption and hashtags. Rezekii writes each channel's version from it." aria-label="Main caption" />
-                <p className="np-muted">Rezekii writes each channel&apos;s version from this: a short TikTok caption pointing to the yellow basket, Instagram pointing to the link in bio, at most 5 hashtags on both, one topic on Threads, and the link where each channel works best. Open a channel&apos;s tab to check or change its version.</p>
-                {counts.length > 0 && <div className="cx-counts" aria-label="Characters per channel">{counts}</div>}
+                <textarea className="np-input" rows={5} value={main} onChange={(e) => setMain(e.target.value)} placeholder="Write your caption and hashtags. Rezekii writes each app's version from it." aria-label="Main caption" />
+                <p className="np-muted">Rezekii writes each app&apos;s version from this: a short TikTok caption pointing to the yellow basket, Instagram pointing to the link in bio, at most 5 hashtags on both, one topic on Threads, and the link where each app works best. Open an app&apos;s tab to check or change its version; every Page or account of that app gets it.</p>
+                {counts.length > 0 && <div className="cx-counts" aria-label="Characters per app">{counts}</div>}
               </>
             ) : (
               <ChannelPane
-                ch={chOf(activeTab)}
-                name={nameOf(activeTab)}
+                ch={activeTab}
+                name={appLabel(activeTab)}
                 text={textOf(activeTab)}
                 edited={capOver[activeTab] !== undefined}
-                captionLength={lengthFor(chOf(activeTab), captionOf(activeTab))}
-                linkAdded={!!link.trim() && placeOf(activeTab).caption && activeTab !== TT}
+                captionLength={lengthFor(activeTab, captionOf(activeTab))}
+                linkAdded={!!link.trim() && placeOf(activeTab).caption && activeTab !== "tiktok"}
                 place={placeOf(activeTab)}
                 comment={commentOf(activeTab)}
                 commentEdited={comOver[activeTab] !== undefined}
                 onText={(v) => setCapOver((o) => ({ ...o, [activeTab]: v }))}
                 onResetText={() => setCapOver((o) => { const n = { ...o }; delete n[activeTab]; return n; })}
-                onPlace={(p) => setPlace((o) => ({ ...o, [activeTab]: p }))}
+                onPlace={(pl) => setPlace((o) => ({ ...o, [activeTab]: pl }))}
                 onComment={(v) => setComOver((o) => ({ ...o, [activeTab]: v }))}
                 onResetComment={() => setComOver((o) => { const n = { ...o }; delete n[activeTab]; return n; })}
               />
@@ -258,17 +330,17 @@ export function Composer({ tiktok, social: initialSocial, connect }: { tiktok: T
           <section className="card">
             <h2>Product link</h2>
             <input className="np-input" type="url" inputMode="url" value={link} onChange={(e) => setLink(e.target.value.trim())} placeholder="https://… (Shopee or TikTok Shop)" aria-label="Product link" />
-            {keys.length > 0 && <ul className="cx-how">{keys.map((k) => <li key={k}><BrandIcon ch={chOf(k)} size={18} /><span><b>{nameOf(k)}:</b> {linkWhere(k)}</span></li>)}</ul>}
-            {keys.length > 0 && <p className="np-muted">Change where it goes in each channel&apos;s caption tab.</p>}
-            {keys.some((k) => chOf(k) === "facebook") && link.trim() && (
+            {apps.length > 0 && <ul className="cx-how">{apps.map((p) => <li key={p}><BrandIcon ch={p} size={18} /><span><b>{appLabel(p)}:</b> {linkWhere(p)}</span></li>)}</ul>}
+            {apps.length > 0 && <p className="np-muted">Change where it goes in each app&apos;s caption tab.</p>}
+            {apps.includes("facebook") && link.trim() && (
               <div className="np-switchrow">
-                <span><b>Remind me to add the Shopee product link on Facebook</b><small>Facebook&apos;s &quot;Add a product link&quot; (Monetization) can only be added in Facebook. Rezekii keeps a reminder on the post until you tick Done.</small></span>
+                <span><b>Remind me to add the Shopee product link on Facebook</b><small>Facebook&apos;s &quot;Add a product link&quot; (Monetization) can only be added in Facebook. Rezekii keeps a reminder on each Facebook post until you tick Done.</small></span>
                 <button type="button" role="switch" aria-checked={remind} className={remind ? "np-switch on" : "np-switch"} onClick={() => setRemind(!remind)} aria-label="Remind me to add the product link"><span /></button>
               </div>
             )}
           </section>
 
-          {keys.includes(TT) && (
+          {ttKey && (
             <section className="card np-sec">
               <h2>TikTok settings</h2>
               <div className="np-seg" role="radiogroup" aria-label="Where to send it">
@@ -278,7 +350,7 @@ export function Composer({ tiktok, social: initialSocial, connect }: { tiktok: T
               {mode === "direct" && (
                 <>
                   <label htmlFor="cx-privacy"><b>Who can view this post</b></label>
-                  <select id="cx-privacy" className="np-input" value={privacy} onChange={(e) => setPrivacy(e.target.value as PrivacyLevel)} required>
+                  <select id="cx-privacy" className="np-input" value={priv} onChange={(e) => setPrivacy(e.target.value as PrivacyLevel)} required>
                     <option value="" disabled>Choose who can view</option>
                     {(info?.privacy_level_options ?? []).map((p) => <option key={p} value={p} disabled={p === "SELF_ONLY" && promo.on && promo.branded}>{PRIVACY[p]}{p === "SELF_ONLY" && promo.on && promo.branded ? " (not allowed for branded content)" : ""}</option>)}
                   </select>
@@ -291,7 +363,7 @@ export function Composer({ tiktok, social: initialSocial, connect }: { tiktok: T
                   {promo.on && (
                     <div className="np-checks">
                       <label className="np-check"><input type="checkbox" checked={promo.own} onChange={(e) => setPromo((p) => ({ ...p, own: e.target.checked }))} />Your brand<small>You are promoting yourself or your own business.</small></label>
-                      <label className="np-check"><input type="checkbox" checked={promo.branded} onChange={(e) => { setPromo((p) => ({ ...p, branded: e.target.checked })); if (e.target.checked && privacy === "SELF_ONLY") setPrivacy(""); }} />Branded content<small>You are promoting another brand or a third party.</small></label>
+                      <label className="np-check"><input type="checkbox" checked={promo.branded} onChange={(e) => { setPromo((p) => ({ ...p, branded: e.target.checked })); if (e.target.checked && priv === "SELF_ONLY") setPrivacy(""); }} />Branded content<small>You are promoting another brand or a third party.</small></label>
                     </div>
                   )}
                   <div className="np-switchrow"><span><b>AI-generated content</b><small>Turn on if the video was made or heavily edited with AI.</small></span><button type="button" role="switch" aria-checked={isAigc} className={isAigc ? "np-switch on" : "np-switch"} onClick={() => setIsAigc(!isAigc)} aria-label="AI-generated content"><span /></button></div>
@@ -312,40 +384,33 @@ export function Composer({ tiktok, social: initialSocial, connect }: { tiktok: T
           </section>
 
           {errors.length > 0 && <ul className="np-errors" role="alert">{errors.map((e) => <li key={e}>{e}</li>)}</ul>}
-          {keys.includes(TT) && mode === "direct" && when !== "draft" && <p className="np-consent">{consentLine(choice)}</p>}
-          <button type="submit" className="np-btn np-submit" disabled={!!busy || (keys.includes(TT) && !info && when !== "draft")}>
+          {ttKey && mode === "direct" && when !== "draft" && <p className="np-consent">{consentLine(choice)}</p>}
+          <button type="submit" className="np-btn np-submit" disabled={!!busy || (!!ttKey && !info && when !== "draft")}>
             {busy || `${when === "draft" ? "Save draft" : when === "now" ? "Post now" : "Schedule"} · ${keys.length} channel${keys.length === 1 ? "" : "s"}`}
           </button>
         </div>
 
         <aside className="cx-side" aria-label="Preview">
-          {keys.length > 0 && (
-            <div className="cx-tabs" role="tablist" aria-label="Preview channel">
-              {keys.map((k) => <button key={k} type="button" role="tab" aria-selected={previewKey === k} onClick={() => setPreview(k)}><BrandIcon ch={chOf(k)} size={16} />{social.filter((a) => a.platform === chOf(k)).length > 1 ? nameOf(k) : NAMES[chOf(k)]}</button>)}
+          {apps.length > 0 && (
+            <div className="cx-tabs" role="tablist" aria-label="Preview app">
+              {apps.map((p) => <button key={p} type="button" role="tab" aria-selected={pApp === p} onClick={() => setPreviewApp(p)}><BrandIcon ch={p} size={16} />{NAMES[p]}</button>)}
             </div>
           )}
-          {mounted && previewKey ? <PhonePreview channel={chOf(previewKey)} caption={captionOf(previewKey)} comment={commentOf(previewKey)} video={videoUrl} who={who(previewKey)} fbView={fbView} theme={theme} /> : <div className="pv-phone"><div className="pv-scr" /></div>}
-          {previewKey && chOf(previewKey) === "facebook" && <Seg value={fbView} set={setFbView} items={[["reels", "Reels"], ["feed", "Feed"]]} label="Facebook view" />}
-          {previewKey && (chOf(previewKey) === "threads" || (chOf(previewKey) === "facebook" && fbView === "feed")) && <Seg value={theme} set={setTheme} items={[["light", "Light"], ["dark", "Dark"]]} label="App theme" />}
-          <p className="cx-note">{previewKey ? PREVIEW_NOTE[chOf(previewKey)] : "Pick a channel to see its preview."}</p>
+          {pApp && inApp(pApp).length > 1 && (
+            <label className="cx-showing">Showing
+              <select className="np-input" value={pKey} onChange={(e) => setPreviewAcct(e.target.value)}>{inApp(pApp).map((k) => <option key={k} value={k}>{byKey.get(k)?.name}</option>)}</select>
+            </label>
+          )}
+          {mounted && pApp && pKey ? <PhonePreview channel={pApp} caption={captionOf(pApp)} comment={commentOf(pApp)} video={videoUrl} who={who(pKey)} fbView={fbView} theme={theme} /> : <div className="pv-phone"><div className="pv-scr" /></div>}
+          {pApp === "facebook" && <Seg value={fbView} set={setFbView} items={[["reels", "Reels"], ["feed", "Feed"]]} label="Facebook view" />}
+          {(pApp === "threads" || (pApp === "facebook" && fbView === "feed")) && <Seg value={theme} set={setTheme} items={[["light", "Light"], ["dark", "Dark"]]} label="App theme" />}
+          <p className="cx-note">{pApp ? PREVIEW_NOTE[pApp] : "Pick a channel to see its preview."}</p>
           {notes.map(([t, good]) => <p key={t} className={good ? "cx-good" : "cx-warn"}>{t}</p>)}
         </aside>
       </form>
 
-      {sheet && (
-        <div className="cx-sheet-wrap" onClick={(e) => e.target === e.currentTarget && setSheet(false)}>
-          <div className="cx-sheet" role="dialog" aria-modal="true" aria-labelledby="cx-sheet-h">
-            <span className="cx-grab" aria-hidden="true" />
-            <h2 id="cx-sheet-h">Channels</h2>
-            <p className="np-muted">Connect once, then pick the channel whenever you post. You sign in on each app&apos;s own page; Rezekii never sees your password.</p>
-            {tiktok.map((a) => <Row key={a.open_id} icon={<BrandIcon ch="tiktok" size={34} />} title="TikTok" sub={a.username ? `@${a.username}` : "Connected"} action={<span className="badge">Connected</span>} />)}
-            {social.map((a) => <Row key={a.id} icon={<BrandIcon ch={a.platform} size={34} />} title={a.name ?? NAMES[a.platform]} sub={`${NAMES[a.platform]}${a.username ? ` · @${a.username}` : ""}${a.status === "reconnect" ? " · needs reconnecting" : ""}`} action={a.status === "reconnect" ? <a className="np-btn" href={`/api/auth/meta/${a.platform}/start`}>Reconnect</a> : <button type="button" className="btn-outline" onClick={() => disconnect(a)}>Disconnect</button>} />)}
-            {(["facebook", "instagram", "threads"] as Platform[]).map((p) => <Row key={p} icon={<BrandIcon ch={p} size={34} />} title={`Connect ${NAMES[p]}`} sub={p === "facebook" ? "Pick which Pages after signing in" : p === "instagram" ? "Business or Creator account" : "Your Threads profile"} action={<a className="np-btn" href={`/api/auth/meta/${p}/start`}>Connect</a>} />)}
-            <p className="np-muted">Facebook Groups can&apos;t be added: Meta closed posting to Groups for all apps in 2024.</p>
-            <button type="button" className="np-btn" onClick={() => setSheet(false)}>Done</button>
-          </div>
-        </div>
-      )}
+      {sheet === "channels" && <ChannelsSheet channels={channels} onDisconnect={disconnect} onClose={() => setSheet("")} />}
+      {sheet === "brands" && <BrandsSheet brands={brands} channels={channels} byKey={byKey} connected={connected} onSaved={(b) => setBrands((list) => [...list.filter((x) => x.id !== b.id), b].sort((x, y) => x.name.localeCompare(y.name)))} onDeleted={(id) => setBrands((list) => list.filter((x) => x.id !== id))} onClose={() => setSheet("")} />}
     </>
   );
 }
@@ -357,7 +422,7 @@ const PREVIEW_NOTE: Record<Channel, string> = {
   threads: "As it appears in the Threads feed. The video lines up with the text.",
 };
 
-/** Notes under the phone where a channel treats the post differently. [text, informational] */
+/** Notes under the phone where an app treats the post differently. [text, informational] */
 function previewNotes(ch: Channel, caption: string, comment: string, hasLink: boolean, remind: boolean, fbView: "reels" | "feed"): [string, boolean][] {
   const out: [string, boolean][] = [];
   if (ch === "tiktok" && hasLink) out.push(["The product link isn't added on TikTok: links in TikTok captions can't be tapped. The product goes in the yellow basket (beg kuning).", false]);
@@ -401,6 +466,126 @@ function Seg<T extends string>({ value, set, items, label }: { value: T; set: (v
   return <div className="cx-tabs" role="tablist" aria-label={label}>{items.map(([v, l]) => <button key={v} type="button" role="tab" aria-selected={value === v} onClick={() => set(v)}>{l}</button>)}</div>;
 }
 
-function Row({ icon, title, sub, action }: { icon: ReactNode; title: string; sub: string; action: ReactNode }) {
-  return <div className="cx-ch">{icon}<span><b>{title}</b><small>{sub}</small></span>{action}</div>;
+function Sheet({ title, extra, onClose, children }: { title: string; extra?: ReactNode; onClose: () => void; children: ReactNode }) {
+  useEffect(() => {
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
+  }, [onClose]);
+  return (
+    <div className="cx-sheet-wrap" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="cx-sheet" role="dialog" aria-modal="true" aria-label={title}>
+        <span className="cx-grab" aria-hidden="true" />
+        <div className="cx-bar"><h2>{title}</h2>{extra}</div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/** Channels: everything connected, grouped by app, with a search for long lists of Pages. */
+function ChannelsSheet({ channels, onDisconnect, onClose }: { channels: Ch[]; onDisconnect: (a: PublicAccount) => void; onClose: () => void }) {
+  const [q, setQ] = useState("");
+  const s = q.trim().toLowerCase();
+  return (
+    <Sheet title="Channels" onClose={onClose}>
+      <p className="np-muted">Connect once, then pick the channel whenever you post. You sign in on each app&apos;s own page; Rezekii never sees your password.</p>
+      {channels.length > 8 && <label className="cx-search">{SEARCH_ICON}<input className="np-input" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search ${channels.length} channels`} aria-label="Search channels" /></label>}
+      {APPS.map((p) => {
+        const list = channels.filter((c) => c.app === p && (!s || `${c.name} ${c.sub}`.toLowerCase().includes(s)));
+        if (s && !list.length) return null;
+        return (
+          <div key={p} className="cx-group">
+            <span className="cx-gh"><BrandIcon ch={p} size={16} />{NAMES[p]}{list.length ? ` · ${list.length}` : ""}</span>
+            {list.map((c) => (
+              <div key={c.key} className="cx-ch">
+                <Face ch={c} />
+                <span><b>{c.name}</b><small>{c.sub}{c.status === "reconnect" ? " · needs reconnecting" : ""}</small></span>
+                {c.app === "tiktok" ? <span className="badge">Connected</span> : c.status === "reconnect" ? <a className="np-btn" href={`/api/auth/meta/${c.app}/start`}>Reconnect</a> : <button type="button" className="btn-outline" onClick={() => c.account && onDisconnect(c.account)}>Disconnect</button>}
+              </div>
+            ))}
+            {!s && <div className="cx-ch"><BrandIcon ch={p} size={34} /><span><b>{list.length ? `Add ${UNIT[p][1]}` : `Connect ${NAMES[p]}`}</b><small>{p === "facebook" ? "Pick which Pages after signing in" : p === "instagram" ? "Business or Creator account" : p === "threads" ? "Your Threads profile" : "Your TikTok account"}</small></span><a className="np-btn" href={p === "tiktok" ? "/api/auth/tiktok/start" : `/api/auth/meta/${p}/start`}>Connect</a></div>}
+          </div>
+        );
+      })}
+      <p className="np-muted">Facebook Groups can&apos;t be added: Meta closed posting to Groups for all apps in 2024.</p>
+      <button type="button" className="np-btn" onClick={onClose}>Done</button>
+    </Sheet>
+  );
+}
+
+/** Brands: create, rename, change channels, delete. A channel can be in more than one brand. */
+function BrandsSheet({ brands, channels, byKey, connected, onSaved, onDeleted, onClose }: { brands: Brand[]; channels: Ch[]; byKey: Map<string, Ch>; connected: Set<string>; onSaved: (b: Brand) => void; onDeleted: (id: string) => void; onClose: () => void }) {
+  const [edit, setEdit] = useState<{ id?: string; name: string; channels: string[] } | null>(null);
+  const [q, setQ] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const open = (b: { id?: string; name: string; channels: string[] }) => { setEdit({ ...b, channels: [...b.channels] }); setQ(""); setError(""); setConfirmDelete(false); };
+
+  async function save() {
+    if (!edit) return;
+    setBusy(true);
+    setError("");
+    const r = await fetch(edit.id ? `/api/social/brands/${edit.id}` : "/api/social/brands", { method: edit.id ? "PATCH" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: edit.name, channels: edit.channels }) }).catch(() => null);
+    const d = (await r?.json().catch(() => ({}))) as { brand?: Brand; error?: string };
+    setBusy(false);
+    if (!r?.ok || !d.brand) return setError(d.error ?? "Couldn't save the brand. Try again.");
+    onSaved(d.brand);
+    setEdit(null);
+  }
+  async function remove() {
+    if (!edit?.id) return;
+    setBusy(true);
+    const r = await fetch(`/api/social/brands/${edit.id}`, { method: "DELETE" }).catch(() => null);
+    setBusy(false);
+    if (!r?.ok) return setError("Couldn't delete the brand. Try again.");
+    onDeleted(edit.id);
+    setEdit(null);
+  }
+
+  if (edit) {
+    const s = q.trim().toLowerCase();
+    const toggle = (k: string) => setEdit((e) => (e ? { ...e, channels: e.channels.includes(k) ? e.channels.filter((x) => x !== k) : [...e.channels, k] } : e));
+    return (
+      <Sheet title={edit.id ? "Edit brand" : "New brand"} extra={<button type="button" className="cx-link" onClick={() => setEdit(null)}>Back</button>} onClose={onClose}>
+        <label className="cx-field"><b>Brand name</b><input className="np-input" type="text" value={edit.name} maxLength={60} onChange={(e) => setEdit({ ...edit, name: e.target.value })} placeholder="e.g. Spinelief+" autoFocus /></label>
+        <p className="np-muted">{edit.channels.length} channel{edit.channels.length === 1 ? "" : "s"} in this brand. A channel can be in more than one brand.</p>
+        {channels.length > 8 && <label className="cx-search">{SEARCH_ICON}<input className="np-input" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search ${channels.length} channels`} aria-label="Search channels" /></label>}
+        {APPS.map((p) => {
+          const list = channels.filter((c) => c.app === p && (!s || `${c.name} ${c.sub}`.toLowerCase().includes(s)));
+          return list.length ? (
+            <div key={p} className="cx-group">
+              <span className="cx-gh"><BrandIcon ch={p} size={16} />{NAMES[p]}</span>
+              {list.map((c) => <label key={c.key} className="cx-check"><Face ch={c} /><span><b>{c.name}</b><small>{c.sub}{c.status === "reconnect" ? " · needs reconnecting" : ""}</small></span><input type="checkbox" checked={edit.channels.includes(c.key)} onChange={() => toggle(c.key)} /></label>)}
+            </div>
+          ) : null;
+        })}
+        {error && <p className="np-error" role="alert">{error}</p>}
+        <button type="button" className="np-btn" disabled={busy || !edit.name.trim() || !edit.channels.length} onClick={save}>{busy ? "Saving…" : "Save brand"}</button>
+        {edit.id && (confirmDelete
+          ? <div className="cx-row"><span className="np-muted">Delete &quot;{edit.name}&quot;? Its channels stay connected.</span><span className="cx-links"><button type="button" className="cx-link cx-danger" disabled={busy} onClick={remove}>Delete</button><button type="button" className="cx-link" onClick={() => setConfirmDelete(false)}>Keep</button></span></div>
+          : <button type="button" className="cx-link cx-danger" onClick={() => setConfirmDelete(true)}>Delete brand</button>)}
+      </Sheet>
+    );
+  }
+
+  return (
+    <Sheet title="Brands" extra={<button type="button" className="cx-link" onClick={() => open({ name: "", channels: [] })}>+ New brand</button>} onClose={onClose}>
+      <p className="np-muted">Group the channels you post to together. Picking a brand in New post switches all of them on.</p>
+      {brands.map((b) => {
+        const live = brandChannels(b.channels, connected);
+        const bApps = APPS.filter((p) => live.some((k) => byKey.get(k)?.app === p));
+        return (
+          <div key={b.id} className="cx-ch">
+            <span className="cx-faces">{live.slice(0, 3).map((k) => { const c = byKey.get(k); return c ? <Face key={k} ch={c} badge={false} /> : null; })}</span>
+            <span><b>{b.name}</b><small>{live.length} channel{live.length === 1 ? "" : "s"} · {bApps.map((p) => NAMES[p]).join(", ") || "none connected"}</small></span>
+            <button type="button" className="btn-outline" onClick={() => open(b)}>Edit</button>
+          </div>
+        );
+      })}
+      {!brands.length && <p className="np-muted">No brands yet. Tap &quot;+ New brand&quot; to make your first one.</p>}
+      <button type="button" className="np-btn" onClick={onClose}>Done</button>
+    </Sheet>
+  );
 }

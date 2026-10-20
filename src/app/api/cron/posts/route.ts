@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { checkProcessing, publishPost } from "@/modules/posting/publisher.ts";
 import { claimDuePosts, isTimerToken, processingPosts } from "@/modules/posting/store.ts";
-import { accountsToRenew, freshToken } from "@/modules/social/accounts.ts";
+import { accountsForPictures, accountsToRenew, freshToken, refreshPicture } from "@/modules/social/accounts.ts";
 import { checkSocialProcessing, postFirstComment, publishSocialPost } from "@/modules/social/publisher.ts";
 import { claimDueSocialPosts, pendingComments, processingSocialPosts } from "@/modules/social/store.ts";
 
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ published, checked, social });
 }
 
-/** Facebook, Instagram and Threads posts on the same timer: due posts, posts being processed, first comments, token renewals. */
+/** Facebook, Instagram and Threads posts on the same timer: due posts, posts being processed, first comments, token renewals, profile pictures. */
 async function socialWork(): Promise<Record<string, string>> {
   const out: Record<string, string> = {};
   const run = async (key: string, fn: () => Promise<string>) => {
@@ -45,5 +45,6 @@ async function socialWork(): Promise<Record<string, string>> {
   for (const p of await processingSocialPosts(20)) await run(`check ${p.id}`, () => checkSocialProcessing(p));
   for (const p of await pendingComments(10)) await run(`comment ${p.id}`, () => postFirstComment(p));
   for (const a of await accountsToRenew(5)) await run(`renew ${a.id}`, async () => (await freshToken(a), "renewed"));
+  for (const a of await accountsForPictures(5)) await run(`picture ${a.id}`, () => refreshPicture(a));
   return out;
 }

@@ -27,6 +27,12 @@ export async function facebookPages(userToken: string): Promise<FacebookPage[]> 
   return r.data ?? [];
 }
 
+/** A Page's current profile picture link (Facebook's links expire after a few days). */
+export async function facebookPicture(pageId: string, pageToken: string): Promise<string | null> {
+  const r = await metaFetch<{ picture?: { data?: { url?: string } } }>(G(`${pageId}?${qs({ fields: "picture{url}", access_token: pageToken })}`));
+  return r.picture?.data?.url ?? null;
+}
+
 /** Reels (vertical, 3–90 s): start, let Facebook fetch the video from our signed link, then publish with the caption. */
 export async function startFacebookReel(pageId: string, token: string): Promise<string> {
   return (await metaFetch<{ video_id: string }>(G(`${pageId}/video_reels`), { upload_phase: "start", access_token: token })).video_id;

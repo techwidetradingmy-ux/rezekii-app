@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { BoardChannel, BoardPost, BoardState } from "@/modules/social/board.ts";
+import type { Brand } from "@/modules/social/brands.ts";
 import type { Channel } from "@/modules/social/rules.ts";
 import { BrandIcon } from "../brand-icons";
 import "./board.css";
@@ -12,18 +13,21 @@ const TZ = "Asia/Kuala_Lumpur";
 const dayKey = (iso: string) => new Date(iso).toLocaleDateString("en-CA", { timeZone: TZ });
 const time = (iso: string) => new Date(iso).toLocaleTimeString("en-GB", { timeZone: TZ, hour: "numeric", minute: "2-digit", hour12: true });
 const LOOK: Record<BoardState, [string, string]> = { draft: ["Draft", "badge-gray"], scheduled: ["Scheduled", "badge-blue"], posting: ["Posting", "badge-blue"], posted: ["Posted", ""], failed: ["Failed", "badge-red"], link: ["Add product link", "badge-amber"] };
+// Worst first: an app's icon shows the state of its least-finished channel.
+const RANK: BoardState[] = ["failed", "link", "posting", "scheduled", "draft", "posted"];
 const needs = (p: BoardPost) => p.channels.some((c) => c.state === "failed" || c.state === "link" || c.commentFailed);
 type Filter = "all" | "upcoming" | "posted" | "attention";
 
 /**
  * All channels (Admins): every post with a chip per channel. Built for a busy week: a summary first, filters, one row per
- * post grouped by day, the per-channel detail only when a row is opened, and a Week view.
+ * post grouped by day, the per-channel detail only when a row is opened, and a Week view. Filters by brand (B8).
  */
-export function Board({ posts, now }: { posts: BoardPost[]; now: number }) {
+export function Board({ posts, now, brands }: { posts: BoardPost[]; now: number; brands: Brand[] }) {
   const router = useRouter();
   const [view, setView] = useState<"list" | "week">("list");
   const [filter, setFilter] = useState<Filter>("all");
   const [hidden, setHidden] = useState<Set<Channel>>(new Set());
+  const [brand, setBrand] = useState("all");
   const [open, setOpen] = useState<Set<string>>(new Set());
   const [earlier, setEarlier] = useState(false);
   const [busy, setBusy] = useState("");
@@ -37,8 +41,9 @@ export function Board({ posts, now }: { posts: BoardPost[]; now: number }) {
     return diff === 0 ? ["Today", date] : diff === 1 ? ["Tomorrow", date] : diff === -1 ? ["Yesterday", date] : [d.toLocaleDateString("en-GB", { weekday: "long", timeZone: "UTC" }), date];
   };
   const kinds = [...new Set(posts.flatMap((p) => p.channels.map((c) => c.kind)))];
+  const inBrand = brands.find((b) => b.id === brand)?.channels;
   const visible = (p: BoardPost) => {
-    const chans = p.channels.filter((c) => !hidden.has(c.kind));
+    const chans = p.channels.filter((c) => !hidden.has(c.kind) && (!inBrand || inBrand.includes(c.account)));
     if (!chans.length) return false;
     if (filter === "attention") return needs(p);
     if (filter === "upcoming") return chans.some((c) => c.state === "scheduled" || c.state === "posting");
@@ -61,8 +66,13 @@ export function Board({ posts, now }: { posts: BoardPost[]; now: number }) {
     router.refresh();
   }
 
+  // One icon per app (with a count when several Pages or accounts), so a post to 10 Pages stays one tidy row.
   const icons = (p: BoardPost) => (
-    <span className="bd-ics">{p.channels.map((c) => <span key={c.id} className="bd-chi" title={`${c.name}: ${LOOK[c.state][0]}`}><BrandIcon ch={c.kind} size={22} /><i className={`bd-d-${c.state}`} /></span>)}</span>
+    <span className="bd-ics">{[...new Set(p.channels.map((c) => c.kind))].map((k) => {
+      const cs = p.channels.filter((c) => c.kind === k);
+      const worst = RANK.find((s) => cs.some((c) => c.state === s)) ?? "posted";
+      return <span key={k} className="bd-chi" title={cs.map((c) => `${c.name}: ${LOOK[c.state][0]}`).join(" · ")}><BrandIcon ch={k} size={22} /><i className={`bd-d-${worst}`} />{cs.length > 1 && <em className="bd-n">{cs.length}</em>}</span>;
+    })}</span>
   );
   const sub = (p: BoardPost) => {
     const bad = p.channels.filter((c) => c.state === "failed" || c.state === "link" || c.commentFailed).length;
@@ -125,7 +135,11 @@ export function Board({ posts, now }: { posts: BoardPost[]; now: number }) {
         <div className="np-seg" role="tablist" aria-label="Status">
           {([["all", "All"], ["upcoming", "Coming up"], ["posted", "Posted"], ["attention", `Needs attention${attention ? ` · ${attention}` : ""}`]] as [Filter, string][]).map(([v, l]) => <button key={v} type="button" role="tab" aria-selected={filter === v} className={filter === v ? "on" : ""} onClick={() => setFilter(v)}>{l}</button>)}
         </div>
-        {kinds.length > 1 && <div className="bd-chf" role="group" aria-label="Channels">{kinds.map((k) => <button key={k} type="button" aria-pressed={!hidden.has(k)} onClick={() => setHidden((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; })} title={k}><BrandIcon ch={k} size={22} /></button>)}</div>}
+        {brands.length > 0 ? (
+          <div className="bd-brands" role="group" aria-label="Brand">
+            {[{ id: "all", name: "All brands" }, ...brands].map((b) => <button key={b.id} type="button" aria-pressed={brand === b.id} onClick={() => setBrand(b.id)}>{b.name}</button>)}
+          </div>
+        ) : kinds.length > 1 && <div className="bd-chf" role="group" aria-label="Channels">{kinds.map((k) => <button key={k} type="button" aria-pressed={!hidden.has(k)} onClick={() => setHidden((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; })} title={k}><BrandIcon ch={k} size={22} /></button>)}</div>}
       </div>
       {note && <p className="np-note" role="status">{note}</p>}
       {posts.length === 0 ? (

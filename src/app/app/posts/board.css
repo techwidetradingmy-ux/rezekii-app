@@ -14,6 +14,9 @@
 .bd-chf button { border: 1.5px solid var(--border); background: var(--surface); border-radius: 999px; padding: 4px; display: grid; place-items: center; cursor: pointer; transition: opacity 0.2s, border-color 0.2s; }
 .bd-chf button[aria-pressed="false"] { opacity: 0.35; }
 .bd-chf button[aria-pressed="true"] { border-color: var(--green); }
+.bd-brands { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.bd-brands button { border: 1.5px solid var(--border); background: var(--surface); color: var(--text); border-radius: 999px; padding: 5px 12px; font: inherit; font-weight: 700; font-size: 13px; cursor: pointer; transition: border-color 0.2s, background 0.2s; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bd-brands button[aria-pressed="true"] { border-color: var(--green); background: var(--gsoft); }
 .bd-list { padding: 8px 18px 14px; gap: 0; }
 .bd-day { display: grid; }
 .bd-dh { display: flex; align-items: baseline; gap: 8px; padding: 12px 2px 6px; border-bottom: 1px solid var(--line); }
@@ -31,6 +34,7 @@
 .bd-ics { display: flex; gap: 6px; }
 .bd-chi { position: relative; display: inline-grid; }
 .bd-chi i { position: absolute; right: -3px; bottom: -3px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--surface); }
+.bd-n { position: absolute; top: -6px; right: -8px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 9px; background: var(--text); color: var(--bg); font-style: normal; font-size: 10px; font-weight: 800; line-height: 16px; text-align: center; }
 .bd-d-posted { background: var(--green); }
 .bd-d-scheduled, .bd-d-posting { background: var(--blue); }
 .bd-d-failed { background: var(--red); }

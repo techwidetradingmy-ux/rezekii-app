@@ -1,4 +1,5 @@
 import { listPosts, type PostRow } from "../posting/store.ts";
+import { tiktokKey } from "./picker.ts";
 import { NAMES, type Channel } from "./rules.ts";
 import { listSocialPosts, type SocialPostRow } from "./store.ts";
 
@@ -7,6 +8,8 @@ export type BoardState = "draft" | "scheduled" | "posting" | "posted" | "failed"
 export type BoardChannel = {
   id: string;
   kind: Channel;
+  /** The channel it went to (a social account id or "tiktok:<open_id>"), for the brand filter. */
+  account: string;
   name: string;
   state: BoardState;
   note: string;
@@ -20,7 +23,7 @@ export type BoardPost = { key: string; at: string | null; caption: string; chann
 function tiktokChannel(p: PostRow): BoardChannel {
   const state: BoardState = p.status === "draft" ? "draft" : p.status === "scheduled" ? "scheduled" : p.status === "publishing" || p.status === "processing" ? "posting" : p.status === "failed" ? "failed" : "posted";
   const note = p.status === "sent_to_inbox" ? "In your TikTok drafts" : p.status === "failed" ? (p.last_error ?? "TikTok didn't take it.") : p.status === "processing" ? "TikTok is processing" : p.last_error && p.status === "scheduled" ? `Trying again soon: ${p.last_error}` : "";
-  return { id: p.id, kind: "tiktok", name: NAMES.tiktok, state, note, permalink: null, canCancel: p.status === "scheduled" || p.status === "failed", commentFailed: false, linkReminder: false };
+  return { id: p.id, kind: "tiktok", account: tiktokKey(p.tiktok_open_id), name: NAMES.tiktok, state, note, permalink: null, canCancel: p.status === "scheduled" || p.status === "failed", commentFailed: false, linkReminder: false };
 }
 
 function socialChannel(s: SocialPostRow): BoardChannel {
@@ -33,7 +36,7 @@ function socialChannel(s: SocialPostRow): BoardChannel {
     : posted && s.comment_status === "pending" ? "Posting the first comment"
     : s.status === "processing" ? `${NAMES[s.platform]} is processing the video`
     : s.status === "scheduled" && s.last_error ? `Trying again soon: ${s.last_error}` : "";
-  return { id: s.id, kind: s.platform, name: s.account_name ?? NAMES[s.platform], state, note, permalink: s.permalink, canCancel: s.status === "scheduled" || s.status === "draft" || s.status === "failed", commentFailed: posted && s.comment_status === "failed", linkReminder: linkDue };
+  return { id: s.id, kind: s.platform, account: s.account_id ?? "", name: s.account_name ?? NAMES[s.platform], state, note, permalink: s.permalink, canCancel: s.status === "scheduled" || s.status === "draft" || s.status === "failed", commentFailed: posted && s.comment_status === "failed", linkReminder: linkDue };
 }
 
 const ORDER: Channel[] = ["tiktok", "facebook", "instagram", "threads"];

@@ -1,6 +1,7 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
-import { refreshInstagramToken } from "../../integrations/meta/instagram.ts";
-import { refreshThreadsToken } from "../../integrations/meta/threads.ts";
+import { facebookPicture } from "../../integrations/meta/facebook.ts";
+import { instagramProfile, refreshInstagramToken } from "../../integrations/meta/instagram.ts";
+import { refreshThreadsToken, threadsProfile } from "../../integrations/meta/threads.ts";
 import { decryptToken, encryptToken } from "../creator-accounts/token-crypto.ts";
 import type { Platform } from "./rules.ts";
 
@@ -39,6 +40,7 @@ export async function saveAccount(userId: string, a: { platform: Platform; exter
       token_enc: encryptToken(a.token),
       token_expires_at: a.expiresIn ? new Date(Date.now() + a.expiresIn * 1000).toISOString() : null,
       status: "active",
+      avatar_checked_at: iso(),
       updated_at: iso(),
     }),
   });
@@ -86,6 +88,27 @@ export async function freshToken(acc: SocialAccount): Promise<string> {
     body: JSON.stringify({ token_enc: encryptToken(t.token), token_expires_at: new Date(Date.now() + t.expiresIn * 1000).toISOString(), updated_at: iso() }),
   });
   return t.token;
+}
+
+const PICTURE_EVERY_MS = 2 * 86400e3;
+
+/** Accounts whose profile picture link wasn't refreshed for 2 days (Facebook's and Instagram's links expire after a few). */
+export async function accountsForPictures(limit: number): Promise<SocialAccount[]> {
+  const before = new Date(Date.now() - PICTURE_EVERY_MS).toISOString();
+  return (await supabaseRest(`social_accounts?status=eq.active&avatar_checked_at=lt.${encodeURIComponent(before)}&order=avatar_checked_at&limit=${limit}`)).json();
+}
+
+/** Fetches the account's current picture link and saves it; the check time moves on even if the app didn't answer. */
+export async function refreshPicture(acc: SocialAccount): Promise<string> {
+  let url: string | null | undefined;
+  try {
+    if (acc.platform === "facebook") url = await facebookPicture(acc.external_id, decryptToken(acc.token_enc));
+    else if (acc.platform === "instagram") url = (await instagramProfile(await freshToken(acc))).profile_picture_url;
+    else url = (await threadsProfile(await freshToken(acc))).threads_profile_picture_url;
+  } finally {
+    await supabaseRest(`social_accounts?id=eq.${acc.id}`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ avatar_checked_at: iso(), ...(url ? { avatar_url: url } : {}) }) });
+  }
+  return url ? "picture refreshed" : "no picture";
 }
 
 /** Accounts whose 60-day token runs out within a week, renewed by the timer even when nothing is posted. */

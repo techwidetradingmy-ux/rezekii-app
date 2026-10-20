@@ -44,7 +44,49 @@
 .cx-ch > span { flex: 1; min-width: 0; display: grid; line-height: 1.3; }
 .cx-ch small { color: var(--muted); font-size: 12.5px; }
 .cx-ch .np-btn, .cx-ch .btn-outline { flex-shrink: 0; }
-@media (prefers-reduced-motion: reduce) { .cx-sheet { animation: none; } .cx-chip { transition: none; } }
+.cx-ch > .cx-face { width: 34px; height: 34px; }
+/* Post to by brand (B1–B8): brand chips with pictures, a channel search, picked channels grouped by app. */
+.cx-links { display: flex; flex-wrap: wrap; gap: 14px; }
+.cx-group { display: grid; gap: 7px; grid-template-columns: minmax(0, 1fr); }
+.cx-group > *, .cx-chips > * { min-width: 0; }
+.cx-gh { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+.cx-face { position: relative; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; }
+.cx-face img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+.cx-face svg { width: 100%; height: 100%; display: block; }
+.cx-face .badge-pi { position: absolute; right: -4px; bottom: -4px; width: 14px; height: 14px; border-radius: 50%; background: var(--surface); padding: 1px; }
+.cx-faces { display: inline-flex; flex-shrink: 0; }
+.cx-faces .cx-face { margin-left: -9px; box-shadow: 0 0 0 2px var(--surface); }
+.cx-faces .cx-face:first-child { margin-left: 0; }
+.cx-brand { padding: 5px 13px 5px 6px; max-width: 100%; }
+.cx-blabel { display: grid; min-width: 0; text-align: left; line-height: 1.2; }
+.cx-blabel > span, .cx-blabel small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cx-blabel small { color: var(--muted); font-size: 12px; font-weight: 600; }
+.cx-search { position: relative; display: block; }
+.cx-search input { padding-left: 38px; }
+.cx-search svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--muted); pointer-events: none; }
+.cx-results { display: grid; gap: 2px; border: 1px solid var(--border); border-radius: 14px; padding: 6px; background: var(--surface); max-height: 300px; overflow: auto; }
+.cx-res { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; border-radius: 10px; padding: 7px 8px; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.cx-res:hover, .cx-res:focus-visible { background: var(--surface2); }
+.cx-res > span:not(.cx-face) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; font-size: 14px; }
+.cx-res small { color: var(--muted); font-size: 12px; }
+.cx-picked { display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 10px; }
+.cx-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.cx-tag { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; border: 1px solid var(--border); border-radius: 999px; padding: 3px 4px 3px 4px; background: var(--surface); font-size: 12.5px; font-weight: 700; animation: cx-pop 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.25); }
+.cx-tag .cx-face { width: 22px; height: 22px; }
+.cx-tag > span:not(.cx-face) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cx-tag button { border: 0; background: none; padding: 0 6px; color: var(--muted); font: inherit; font-size: 17px; line-height: 1; cursor: pointer; }
+@keyframes cx-pop { from { transform: scale(0.9); opacity: 0.4; } }
+.cx-check { display: flex; align-items: center; gap: 11px; padding: 7px 4px; border-radius: 12px; cursor: pointer; }
+.cx-check:hover { background: var(--surface2); }
+.cx-check > span:not(.cx-face) { flex: 1; min-width: 0; display: grid; line-height: 1.3; }
+.cx-check b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.cx-check small { color: var(--muted); font-size: 12px; }
+.cx-check input { width: 20px; height: 20px; margin: 0; flex-shrink: 0; accent-color: var(--green); }
+.cx-field { display: grid; gap: 6px; font-size: 13.5px; }
+.cx-danger { color: var(--red); }
+.cx-showing { display: flex; align-items: center; gap: 8px; width: 100%; max-width: 296px; color: var(--muted); font-size: 13px; }
+.cx-showing select { flex: 1; min-width: 0; min-height: 38px; }
+@media (prefers-reduced-motion: reduce) { .cx-sheet { animation: none; } .cx-chip { transition: none; } .cx-tag { animation: none; } }
 
 /* Phone previews: a 19.5:9 iPhone screen (393×852 pt) at 280 px wide; --p is one point (layouts from the Oct 2026 research). */
 .pv-phone { width: 296px; border-radius: 48px; background: #0b0f0d; padding: 8px; box-shadow: 0 30px 60px -28px rgba(0, 0, 0, 0.55), 0 0 0 1px var(--border); }

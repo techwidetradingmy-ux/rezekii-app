@@ -24,11 +24,11 @@ Scope: Facebook Pages, Instagram (Business or Creator), Threads. Not Facebook Gr
 
 ## Composing (design C)
 
-- **C1 — Channel chips** → every connected channel (TikTok + Meta) is a chip to switch on or off; channels not connected show "+ Name" and open the Channels sheet.
+- **C1 — Picking channels** → by brand, by Same as last post or one by one: see "Picking channels by brand" (B1–B9). The Channels sheet lists every channel grouped by app, with a search when there are many Pages.
 - **C2 — One caption, a count per channel** → live counts: TikTok 2,200 · Facebook 63,206 · Instagram 2,200 · Threads 500, where an emoji counts as 2–4 (the product link counts where it's added).
 - **C2b — Hashtags** → a warning above 5 hashtags for Instagram and TikTok (their in-app caps since 2025); for Threads, a note that only the first hashtag becomes the post's topic.
 - **C3 — Caption over a channel's limit** → that channel's count turns red and Schedule is blocked with "Threads allows 500 characters" (etc.) until it fits or the channel is switched off.
-- **C3b — A version per channel** → you write one main caption; each channel gets its own tab with Rezekii's version of it, written for how that channel is used:
+- **C3b — A version per app** → you write one main caption; each app gets its own tab with Rezekii's version of it, written for how that app is used (every Page or account of that app gets the same version):
   - TikTok: short and clear, no link: the opening sentence, "Produk dekat beg kuning." (the product sits in the yellow basket), and at most 5 hashtags.
   - Instagram: no link (the link sentence becomes "Link dekat bio."), at most 5 hashtags.
   - Threads: the link goes in the first comment (the sentence becomes "Link produk ada dalam komen."), one hashtag as the topic.
@@ -36,11 +36,23 @@ Scope: Facebook Pages, Instagram (Business or Creator), Threads. Not Facebook Gr
 - **C3c — Edit a channel's version** → typing in a channel's tab keeps that version; "Use Rezekii's version" brings back the automatic one; later edits to the main caption don't overwrite an edited version.
 - **C4 — Product link** → one link for the post; each channel's tab sets where it goes (caption, first comment, both or neither), starting from the defaults above. TikTok can't take it (links in captions can't be tapped and apps can't comment), so its switches are off.
 - **C4b — First comment** → optional, per channel, for Facebook, Instagram and Threads, prefilled with the link where that channel's default puts it ("Dapatkan di sini: …" on Facebook, "Link produk 👇 …" on Threads). Limits: Threads 500, Instagram 2,200, Facebook 8,000 characters (re-checked during the build). The preview shows it (Threads as your own reply under the post, Facebook Feed under the post) and notes that links in Instagram comments can't be tapped.
-- **C5 — Live preview** → a phone preview per selected channel, switchable by tabs, updating as you type, laid out like the October 2026 apps (TikTok For You, Instagram Reels, Facebook Reels and Feed, Threads feed in light and dark), with each app's caption cut-off; notes under the phone where a channel differs (Instagram and Facebook Reels: link can't be tapped; Threads: over 500 characters).
+- **C5 — Live preview** → a phone preview per selected app, switchable by tabs (when several Pages or accounts of one app are picked, a "Showing" picker chooses which one the preview uses), updating as you type, laid out like the October 2026 apps (TikTok For You, Instagram Reels, Facebook Reels and Feed, Threads feed in light and dark), with each app's caption cut-off; notes under the phone where a channel differs (Instagram and Facebook Reels: link can't be tapped; Threads: over 500 characters).
 - **C6 — Facebook product-link reminder** (on by default when Facebook is picked) → the Facebook post gets "Add product link" in My posts until you tick Done.
 - **C7 — Video** → same upload (≤ 50 MB) or link as today. Checked per channel at scheduling: Threads ≤ 5 min; Instagram Reels within Meta's current limits; Facebook vertical videos of 3–90 s go out as a Reel (Facebook's Reels API), others as a Page video (all limits re-checked against Meta's current docs during the build); a channel that can't take it is blocked with the reason.
 - **C8 — When** → Post now / recommended time / pick a time / save as draft, as today; one time for all chosen channels.
 - **C9 — Schedule** → TikTok gets its normal post (unchanged); each Meta channel gets its own scheduled post; the done screen lists every channel and its time.
+
+## Picking channels by brand (owner approved option C, 20 Oct 2026)
+
+- **B1 — Nothing picked by default** → New post opens with no channel switched on; Schedule says "Pick at least one channel".
+- **B2 — Create a brand** (Post to → Manage brands → + New brand) → a name and any channels from any app, ticked from a searchable list grouped by app; it shows as a chip with its pictures, channel count and apps. No name, no channel or a name already used → refused with the reason. Up to 50 brands.
+- **B3 — Pick a brand** → all its connected channels switch on and show under Post to, grouped by app; tap it again → they switch off.
+- **B4 — Combine and adjust** → several brands at once; the search adds any single channel; × takes one off; a brand with one of its channels taken off no longer shows as picked.
+- **B5 — Edit or delete a brand** → rename it or change its channels; delete asks first and leaves the channels connected. A channel can be in more than one brand; a disconnected channel drops out of its brands.
+- **B6 — One TikTok account per post** → picking a second TikTok account (by brand or search) replaces the first.
+- **B7 — Same as last post** → picks the channels of the most recent post (its Meta channels and its TikTok account), leaving out any no longer connected.
+- **B8 — All channels board** → filter by brand; each post shows one icon per app, with a count when it went to several Pages.
+- **B9 — An app isn't connected** → "+ TikTok" (or Facebook, Instagram, Threads) in Post to goes straight to that app's sign-in.
 
 ## Publishing (background)
 
@@ -53,6 +65,7 @@ Scope: Facebook Pages, Instagram (Business or Creator), Threads. Not Facebook Gr
 - **P7 — Video file** → kept until every channel of that post has finished, then deleted from storage.
 - **P8 — Facebook link limit** → Facebook is testing a cap of 2 posts with links a month for Pages without Meta One; the composer says so when a Facebook post has a link, and the first real test post confirms what happens to Techwide's Page.
 - **P9 — First comment** → once a channel's post is published, its first comment goes out within about a minute (Facebook as the Page, Instagram from the account, Threads as a reply to the post). If the comment fails, the post stays Posted and the comment shows Failed with the reason and a Retry; a comment is never posted twice.
+- **P10 — Profile pictures** → refreshed by the timer every 2 days (Facebook's and Instagram's picture links expire after a few days); a missing picture shows the app's icon.
 
 ## My posts
 
