@@ -19,8 +19,9 @@ const needs = (p: BoardPost) => p.channels.some((c) => c.state === "failed" || c
 type Filter = "all" | "upcoming" | "posted" | "attention";
 
 /**
- * All channels (Admins): every post with a chip per channel. Built for a busy week: a summary first, filters, one row per
- * post grouped by day, the per-channel detail only when a row is opened, and a Week view. Filters by brand (B8).
+ * All channels (Admins): every post with a chip per channel. Built for a busy week: a summary first, filters, then the
+ * latest posts first (M6), what's coming up and drafts, one row per post grouped by day, the per-channel detail only when
+ * a row is opened, and a Week view. Filters by brand (B8). Every post has Reuse (M7).
  */
 export function Board({ posts, now, brands }: { posts: BoardPost[]; now: number; brands: Brand[] }) {
   const router = useRouter();
@@ -29,7 +30,7 @@ export function Board({ posts, now, brands }: { posts: BoardPost[]; now: number;
   const [hidden, setHidden] = useState<Set<Channel>>(new Set());
   const [brand, setBrand] = useState("all");
   const [open, setOpen] = useState<Set<string>>(new Set());
-  const [earlier, setEarlier] = useState(false);
+  const [shown, setShown] = useState(20);
   const [busy, setBusy] = useState("");
   const [note, setNote] = useState("");
   // Live (M5): while anything is posting or due soon, fresh statuses every 8 seconds; also when you come back to the tab.
@@ -103,6 +104,7 @@ export function Board({ posts, now, brands }: { posts: BoardPost[]; now: number;
           {icons(p)}
           <span className="bd-chev" aria-hidden="true">›</span>
         </button>
+        <Link className="bd-reuse" href={`/app/new?reuse=${p.key}`} title="New post filled in like this one">Reuse</Link>
         {isOpen && (
           <div className="bd-det">
             {p.channels.map((c) => (
@@ -126,9 +128,21 @@ export function Board({ posts, now, brands }: { posts: BoardPost[]; now: number;
     );
   };
 
+  // Order A (owner, 21 Oct 2026): the latest posts first, newest at the top; then what's coming up, soonest first; drafts last.
+  const nowIso = new Date(now).toISOString();
+  const latest = list.filter((p) => p.at && p.at <= nowIso).sort((a, b) => (b.at as string).localeCompare(a.at as string));
+  const coming = list.filter((p) => p.at && p.at > nowIso).sort((a, b) => (a.at as string).localeCompare(b.at as string));
   const drafts = list.filter((p) => !p.at);
-  const days = [...new Set(list.filter((p) => p.at).map((p) => dayKey(p.at as string)))].sort((a, b) => (a < today && b < today ? b.localeCompare(a) : a.localeCompare(b)));
-  const shownDays = days.filter((k) => k >= today || earlier || filter !== "all");
+  const byDay = (ps: BoardPost[]) => ps.reduce<[string, BoardPost[]][]>((out, p) => {
+    const k = dayKey(p.at as string), last = out[out.length - 1];
+    if (last?.[0] === k) last[1].push(p);
+    else out.push([k, [p]]);
+    return out;
+  }, []);
+  const day = ([k, ps]: [string, BoardPost[]]) => {
+    const [a, b] = dayLabel(k);
+    return <div key={k} className="bd-day"><div className="bd-dh"><b>{a}</b><small>{b}</small><em>{ps.length} post{ps.length > 1 ? "s" : ""} · {ps.reduce((n, p) => n + p.channels.length, 0)} channels</em></div>{ps.map(row)}</div>;
+  };
 
   return (
     <div className="bd">
@@ -160,14 +174,13 @@ export function Board({ posts, now, brands }: { posts: BoardPost[]; now: number;
         <section className="card"><h2>No posts yet</h2><p>Schedule your first post and every channel will show here, from scheduled to posted.</p><Link href="/app/new" className="np-btn">New post</Link></section>
       ) : view === "list" ? (
         <section className="card bd-list">
-          {drafts.length > 0 && <div className="bd-day"><div className="bd-dh"><b>Drafts</b><em>{drafts.length}</em></div>{drafts.map(row)}</div>}
-          {shownDays.map((k) => {
-            const ps = list.filter((p) => p.at && dayKey(p.at) === k).sort((a, b) => (a.at as string).localeCompare(b.at as string));
-            const [a, b] = dayLabel(k);
-            return <div key={k} className="bd-day"><div className="bd-dh"><b>{a}</b><small>{b}</small><em>{ps.length} post{ps.length > 1 ? "s" : ""} · {ps.reduce((n, p) => n + p.channels.length, 0)} channels</em></div>{ps.map(row)}</div>;
-          })}
-          {!drafts.length && !shownDays.length && <p className="np-muted">Nothing matches these filters.</p>}
-          {filter === "all" && days.some((k) => k < today) && <button type="button" className="btn-outline bd-more" onClick={() => setEarlier(!earlier)}>{earlier ? "Hide earlier days" : "Show earlier days"}</button>}
+          {latest.length > 0 && <h2 className="bd-sec">Latest</h2>}
+          {byDay(latest.slice(0, shown)).map(day)}
+          {latest.length > shown && <button type="button" className="btn-outline bd-more" onClick={() => setShown(shown + 20)}>Show older posts</button>}
+          {coming.length > 0 && <h2 className="bd-sec">Coming up</h2>}
+          {byDay(coming).map(day)}
+          {drafts.length > 0 && <><h2 className="bd-sec">Drafts</h2><div className="bd-day">{drafts.map(row)}</div></>}
+          {!list.length && <p className="np-muted">Nothing matches these filters.</p>}
         </section>
       ) : (
         <section className="card bd-weekcard"><div className="bd-week">

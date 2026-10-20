@@ -9,6 +9,7 @@ import { consentLine, postProblems, type PostChoice } from "@/modules/posting/ru
 import { brandChannels, brandPicked, cleanPick, isTikTokKey, openIdOf, tiktokKey, toggleBrand, toggleChannel } from "@/modules/social/picker.ts";
 import { COLLABORATORS_MAX, TAGS_MAX, REPLY_CONTROLS, cleanTopic, parseCollaborators, settingsProblems, threadsTopic, type ReplyControl, type TrialMode } from "@/modules/social/settings.ts";
 import { KEYFRAME_GAP_MAX, readKeyframes, type KeyframeInfo } from "@/modules/posting/keyframes.ts";
+import type { Recipe } from "@/modules/social/recipe.ts";
 import { CAPTION_MAX, COMMENT_MAX, DEFAULT_PLACEMENT, NAMES, parseHashtags, withHashtags, autoCaption, autoComment, channelProblems, channelWarnings, lengthFor, links, postedCaption, type Channel, type Placement, type Platform } from "@/modules/social/rules.ts";
 import { BrandIcon } from "../brand-icons";
 import { PhonePreview, type Who } from "./phone-previews";
@@ -54,10 +55,12 @@ function Face({ ch, badge = true }: { ch: Pick<Ch, "app" | "avatar">; badge?: bo
  * product link where each app works best, adds first comments, and shows a phone preview per app. TikTok keeps every
  * setting its Content Sharing Guidelines require.
  */
-export function Composer({ tiktok, social: initialSocial, brands: initialBrands, last, connect }: { tiktok: TikTokAccount[]; social: PublicAccount[]; brands: Brand[]; last: string[]; connect: { channel: string; result: string } | null }) {
+export function Composer({ tiktok, social: initialSocial, brands: initialBrands, last, reuse, connect }: { tiktok: TikTokAccount[]; social: PublicAccount[]; brands: Brand[]; last: string[]; reuse: { recipe: Recipe; at: string | null } | null; connect: { channel: string; result: string } | null }) {
   const [social, setSocial] = useState(initialSocial);
   const [brands, setBrands] = useState(initialBrands);
-  const [picked, setPicked] = useState<Set<string>>(new Set());
+  // Reuse (M7): New post starts from an earlier post's channels, text and settings; only the video is picked again.
+  const r0 = reuse?.recipe;
+  const [picked, setPicked] = useState<Set<string>>(() => (r0 ? cleanPick(r0.channels, new Set([...tiktok.map((a) => tiktokKey(a.open_id)), ...initialSocial.filter((a) => a.status === "active").map((a) => a.id)])) : new Set()));
   const [query, setQuery] = useState("");
   const [listOpen, setListOpen] = useState(false);
   const finder = useRef<HTMLDivElement>(null);
@@ -68,15 +71,15 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
     document.addEventListener("pointerdown", away);
     return () => document.removeEventListener("pointerdown", away);
   }, [listOpen]);
-  const [main, setMain] = useState("");
-  const [tagsText, setTagsText] = useState("");
-  const [ownComment, setOwnComment] = useState("");
-  const [link, setLink] = useState("");
-  const [cta, setCta] = useState("");
-  const [remind, setRemind] = useState(true);
-  const [capOver, setCapOver] = useState<Partial<Record<Channel, string>>>({});
-  const [comOver, setComOver] = useState<Partial<Record<Channel, string>>>({});
-  const [place, setPlace] = useState<Partial<Record<Channel, Placement>>>({});
+  const [main, setMain] = useState(r0?.main ?? "");
+  const [tagsText, setTagsText] = useState(r0?.tags ?? "");
+  const [ownComment, setOwnComment] = useState(r0?.comment ?? "");
+  const [link, setLink] = useState(r0?.link ?? "");
+  const [cta, setCta] = useState(r0?.cta ?? "");
+  const [remind, setRemind] = useState(r0?.remind ?? true);
+  const [capOver, setCapOver] = useState<Partial<Record<Channel, string>>>(r0?.captions ?? {});
+  const [comOver, setComOver] = useState<Partial<Record<Channel, string>>>(r0?.comments ?? {});
+  const [place, setPlace] = useState<Partial<Record<Channel, Placement>>>(r0?.place ?? {});
   const [tab, setTab] = useState<"main" | Channel>("main");
   const [source, setSource] = useState<"upload" | "link">("upload");
   const [file, setFile] = useState<File | null>(null);
@@ -100,13 +103,13 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
   const [isAigc, setIsAigc] = useState(false);
   const [when, setWhen] = useState<When>("recommended");
   const [pickAt, setPickAt] = useState("");
-  const [fbDraft, setFbDraft] = useState(false);
-  const [igFeed, setIgFeed] = useState(true);
-  const [igTrial, setIgTrial] = useState<TrialMode>("off");
-  const [collabText, setCollabText] = useState("");
-  const [tagText, setTagText] = useState("");
-  const [replies, setReplies] = useState<ReplyControl>("everyone");
-  const [topicOver, setTopicOver] = useState<string | null>(null);
+  const [fbDraft, setFbDraft] = useState(r0?.fbDraft ?? false);
+  const [igFeed, setIgFeed] = useState(r0?.igFeed ?? true);
+  const [igTrial, setIgTrial] = useState<TrialMode>(r0?.igTrial ?? "off");
+  const [collabText, setCollabText] = useState(r0?.collaborators ?? "");
+  const [tagText, setTagText] = useState(r0?.tagged ?? "");
+  const [replies, setReplies] = useState<ReplyControl>(r0?.replies ?? "everyone");
+  const [topicOver, setTopicOver] = useState<string | null>(r0?.topic ?? null);
   const [previewApp, setPreviewApp] = useState<Channel>(TT);
   const [previewAcct, setPreviewAcct] = useState("");
   const [fbView, setFbView] = useState<"reels" | "feed">("reels");
@@ -117,7 +120,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
   const [busy, setBusy] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
   const [done, setDone] = useState<{ summary: string; at: string | null; draft: boolean } | null>(null);
-  const [toast, setToast] = useState(() => (connect && CONNECT_MSG[connect.result] ? CONNECT_MSG[connect.result](NAMES[connect.channel as Platform] ?? "The channel") : ""));
+  const [toast, setToast] = useState(() => (connect && CONNECT_MSG[connect.result] ? CONNECT_MSG[connect.result](NAMES[connect.channel as Platform] ?? "The channel") : reuse ? `Filled in from your post${reuse.at ? ` of ${new Date(reuse.at).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" })}` : ""}. Pick a video, then post.` : ""));
 
   // Every channel, TikTok accounts first; only active ones can be picked.
   const channels: Ch[] = useMemo(() => [
@@ -246,16 +249,22 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
         tiktokPost = d.post;
       }
       let at2: string | null = tiktokPost?.scheduled_at ?? null;
+      let groupId: string | null = null;
       if (metaPicked.length) {
         const r = await fetch("/api/social/posts", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ ...video, durationSec, when: at, tiktokPostId: tiktokPost?.id, commentImagePath, channels: metaPicked.map((a) => ({ accountId: a.id, caption: captionOf(a.platform), firstComment: a.platform === "facebook" && fbDraft ? "" : commentOf(a.platform), linkReminder: a.platform === "facebook" && remind && !!link.trim(), settings: settingsFor(a.platform) })) }),
         });
-        const d = (await r.json()) as { posts?: { scheduled_at: string | null }[]; error?: string | string[] };
+        const d = (await r.json()) as { posts?: { scheduled_at: string | null; group_id: string }[]; error?: string | string[] };
         if (!r.ok || !d.posts) throw new Error(`${tiktokPost ? "The TikTok post was saved, but " : ""}${Array.isArray(d.error) ? d.error.join(" ") : d.error || "the other channels couldn't be saved."}`);
         at2 ??= d.posts[0]?.scheduled_at ?? null;
+        groupId = d.posts[0]?.group_id ?? null;
       }
+      // Kept with the post for Reuse (M7); a failure here doesn't affect the post.
+      const key = groupId ?? tiktokPost?.id;
+      const recipe: Recipe = { channels: [...picked], main, tags: tagsText, comment: ownComment, link, cta, remind, captions: capOver, comments: comOver, place, topic: topicOver, fbDraft, igFeed, igTrial, collaborators: collabText, tagged: tagText, replies };
+      if (key) void fetch("/api/social/recipes", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ key, recipe }), keepalive: true }).catch(() => {});
       setDone({ summary: summary(), at: at2, draft: when === "draft" });
     } catch (e) {
       setErrors([e instanceof Error ? e.message : "Something went wrong."]);

@@ -5,6 +5,7 @@ import { userTikTokAccounts } from "@/modules/posting/store.ts";
 import { listAccounts } from "@/modules/social/accounts.ts";
 import { canUseSocial } from "@/modules/social/access.ts";
 import { lastPostChannels, listBrands } from "@/modules/social/brands.ts";
+import { loadRecipe } from "@/modules/social/recipes.ts";
 import { currentUser } from "../../current-user";
 import { Composer } from "./composer";
 import { NewPostForm } from "./new-post-form";
@@ -13,7 +14,7 @@ export const metadata: Metadata = { title: "New post · Rezekii" };
 export const dynamic = "force-dynamic";
 
 /** New post. Admins get Facebook, Instagram and Threads next to TikTok, picked by brand (?channel=&connect= reports a connection result). */
-export default async function NewPostPage({ searchParams }: { searchParams: Promise<{ channel?: string; connect?: string }> }) {
+export default async function NewPostPage({ searchParams }: { searchParams: Promise<{ channel?: string; connect?: string; reuse?: string }> }) {
   const user = await currentUser();
   if (!user) redirect("/signin");
   const tiktok = await userTikTokAccounts(user.id);
@@ -21,13 +22,15 @@ export default async function NewPostPage({ searchParams }: { searchParams: Prom
   const social = canUseSocial(user);
   const q = await searchParams;
   const [channels, brands, last] = social ? await Promise.all([listAccounts(user.id).catch(() => []), listBrands(user.id).catch(() => []), lastPostChannels(user.id).catch(() => [])]) : [[], [], []];
+  // ?reuse=<post>: New post starts filled in from that post (M7).
+  const reuse = social && q.reuse ? await loadRecipe(user.id, q.reuse).catch(() => null) : null;
   return (
     <>
       <main className={`site-wrap app-main ${social ? "" : "app-narrow"}`}>
         <nav className="app-crumbs" aria-label="Breadcrumb"><Link href={user.role === "admin" ? "/app/admin" : "/app"}>Today</Link><span aria-hidden="true">›</span><span>New post</span></nav>
         <h1>New post</h1>
         {social ? (
-          <Composer tiktok={tiktok} social={channels} brands={brands} last={last} connect={q.channel && q.connect ? { channel: q.channel, result: q.connect } : null} />
+          <Composer tiktok={tiktok} social={channels} brands={brands} last={last} reuse={reuse} connect={q.channel && q.connect ? { channel: q.channel, result: q.connect } : null} />
         ) : accounts.length ? (
           <NewPostForm accounts={accounts} />
         ) : (
