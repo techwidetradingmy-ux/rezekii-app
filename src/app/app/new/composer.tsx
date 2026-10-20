@@ -111,7 +111,9 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
   ], [tiktok, social]);
   const byKey = useMemo(() => new Map(channels.map((c) => [c.key, c])), [channels]);
   const connected = useMemo(() => new Set(channels.filter((c) => c.status === "active").map((c) => c.key)), [channels]);
+  // Updates from the current pick, so quick taps in a row all count.
   const pick = (next: Set<string>) => setPicked(next);
+  const update = (fn: (s: Set<string>) => Set<string>) => setPicked(fn);
 
   const ttKey = [...picked].find((k) => isTikTokKey(k) && connected.has(k));
   const ttAccount = ttKey ? openIdOf(ttKey) : "";
@@ -265,7 +267,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
                   const live = brandChannels(b.channels, connected);
                   const bApps = APPS.filter((p) => live.some((k) => byKey.get(k)?.app === p));
                   return (
-                    <button key={b.id} type="button" className="cx-chip cx-brand" aria-pressed={brandPicked(b.channels, picked, connected)} disabled={!live.length} onClick={() => pick(toggleBrand(picked, b.channels, connected))} title={live.length ? undefined : "None of this brand's channels are connected"}>
+                    <button key={b.id} type="button" className="cx-chip cx-brand" aria-pressed={brandPicked(b.channels, picked, connected)} disabled={!live.length} onClick={() => update((s) => toggleBrand(s, b.channels, connected))} title={live.length ? undefined : "None of this brand's channels are connected"}>
                       <span className="cx-faces">{live.slice(0, 3).map((k) => { const c = byKey.get(k); return c ? <Face key={k} ch={c} badge={false} /> : null; })}</span>
                       <span className="cx-blabel"><span>{b.name}</span><small>{live.length} · {bApps.map((p) => NAMES[p]).join(", ") || "not connected"}</small></span>
                     </button>
@@ -276,7 +278,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
               {!brands.length && <p className="np-muted">Group the channels you post to together, like a brand&apos;s Facebook Page, Instagram and TikTok. Then one tap picks them all. <button type="button" className="cx-link" onClick={() => setSheet("brands")}>Create a brand</button></p>}
             </div>
             <div className="cx-finder" ref={finder}>
-              <label className="cx-search">{SEARCH_ICON}<input className="np-input" type="search" value={query} onChange={(e) => { setQuery(e.target.value); setListOpen(true); }} onFocus={() => setListOpen(true)} onKeyDown={(e) => e.key === "Escape" && setListOpen(false)} placeholder={`Pick or search channels (${connected.size})`} aria-label="Pick or search channels" role="combobox" aria-expanded={listOpen} aria-controls="cx-channel-list" /></label>
+              <label className="cx-search">{SEARCH_ICON}<input className="np-input" type="search" value={query} onChange={(e) => { setQuery(e.target.value); setListOpen(true); }} onFocus={() => setListOpen(true)} onClick={() => setListOpen(true)} onKeyDown={(e) => e.key === "Escape" && setListOpen(false)} placeholder={`Pick or search channels (${connected.size})`} aria-label="Pick or search channels" role="combobox" aria-expanded={listOpen} aria-controls="cx-channel-list" /></label>
               {listOpen && (
                 <div id="cx-channel-list" className="cx-results" role="listbox" aria-label="Connected channels" aria-multiselectable="true">
                   {APPS.map((p) => {
@@ -284,7 +286,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
                     return list.length ? (
                       <div key={p} className="cx-group">
                         <span className="cx-gh"><BrandIcon ch={p} size={16} />{NAMES[p]} · {list.length}</span>
-                        {list.map((c) => <button key={c.key} type="button" role="option" aria-selected={picked.has(c.key)} className="cx-res" onClick={() => pick(toggleChannel(picked, c.key, connected))}><Face ch={c} /><span>{c.name}</span><small>{c.app === "facebook" ? "" : c.sub}</small><i className="cx-tick" aria-hidden="true">{picked.has(c.key) ? "✓" : ""}</i></button>)}
+                        {list.map((c) => <button key={c.key} type="button" role="option" aria-selected={picked.has(c.key)} className="cx-res" onClick={() => update((s) => toggleChannel(s, c.key, connected))}><Face ch={c} /><span>{c.name}</span><small>{c.app === "facebook" ? "" : c.sub}</small><i className="cx-tick" aria-hidden="true">{picked.has(c.key) ? "✓" : ""}</i></button>)}
                       </div>
                     ) : null;
                   })}
@@ -298,7 +300,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
                 {APPS.filter((p) => pickedChs.some((c) => c.app === p)).map((p) => (
                   <div key={p} className="cx-group">
                     <span className="cx-gh"><BrandIcon ch={p} size={16} />{NAMES[p]}</span>
-                    <div className="cx-tags">{pickedChs.filter((c) => c.app === p).map((c) => <span key={c.key} className="cx-tag"><Face ch={c} badge={false} /><span>{c.name}</span><button type="button" aria-label={`Remove ${c.name}`} onClick={() => pick(toggleChannel(picked, c.key, connected))}>×</button></span>)}</div>
+                    <div className="cx-tags">{pickedChs.filter((c) => c.app === p).map((c) => <span key={c.key} className="cx-tag"><Face ch={c} badge={false} /><span>{c.name}</span><button type="button" aria-label={`Remove ${c.name}`} onClick={() => update((s) => toggleChannel(s, c.key, connected))}>×</button></span>)}</div>
                   </div>
                 ))}
               </div>
@@ -505,7 +507,7 @@ function previewNotes(ch: Channel, caption: string, comment: string, hasLink: bo
   if (ch === "tiktok" && hasLink) out.push(["The product link isn't added on TikTok: links in TikTok captions can't be tapped. The product goes in the yellow basket (beg kuning).", false]);
   if (ch === "instagram" && links(caption).length) out.push(["Instagram shows the link as plain text. It can't be tapped.", false]);
   if (ch === "instagram" && comment) out.push([`The first comment goes out right after the Reel is published.${links(comment).length ? " Links in Instagram comments can't be tapped either." : ""}`, true]);
-  if (ch === "facebook" && fbView === "reels" && links(caption).length) out.push(["Links in Facebook Reels captions can't be tapped. The link in the first comment can.", false]);
+  if (ch === "facebook" && fbView === "reels" && links(caption).length) out.push([`Links in Facebook Reels captions can't be tapped.${s.fbDraft ? "" : " The link in the first comment can."}`, false]);
   if (ch === "facebook" && (links(caption).length || links(comment).length)) out.push(["Facebook is testing a limit of 2 posts or comments with links a month for Pages without Meta One. Over the limit, links may not be tappable.", false]);
   if (ch === "facebook" && hasLink && remind) out.push(["After posting, add the Shopee product link in Facebook (Monetization). Rezekii keeps a reminder until you tick Done.", true]);
   if (ch === "facebook" && comment && !s.fbDraft) out.push(["The first comment goes out from the Page right after posting.", true]);
