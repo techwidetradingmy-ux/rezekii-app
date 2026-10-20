@@ -1,6 +1,7 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { BUCKET, storage } from "../posting/media.ts";
 import type { Platform } from "./rules.ts";
+import { cleanSettings, type FacebookSettings, type PageMention } from "./settings.ts";
 
 /** "removed": it was posted, then deleted in the app (found by the timer, P11). */
 export type SocialStatus = "draft" | "scheduled" | "publishing" | "processing" | "posted" | "failed" | "cancelled" | "removed";
@@ -53,6 +54,14 @@ export async function updateSocialPost(id: string, patch: Partial<SocialPostRow>
 /** The signed-in account's channel posts for My posts (cancelled ones left out), newest scheduled first. */
 export async function listSocialPosts(userId: string, limit = 150): Promise<SocialPostRow[]> {
   return (await supabaseRest(`social_posts?user_id=eq.${userId}&status=neq.cancelled&order=scheduled_at.desc.nullsfirst,created_at.desc&limit=${limit}`)).json();
+}
+
+/** Facebook Pages this user mentioned in recent posts, newest first (quick picks under Mention Pages). */
+export async function recentMentions(userId: string, limit = 10): Promise<PageMention[]> {
+  const rows = (await (await supabaseRest(`social_posts?user_id=eq.${userId}&platform=eq.facebook&select=settings&order=created_at.desc&limit=50`)).json()) as { settings: unknown }[];
+  const out: PageMention[] = [];
+  for (const r of rows) for (const m of (cleanSettings("facebook", r.settings) as FacebookSettings).mentions) if (!out.some((o) => o.id === m.id)) out.push(m);
+  return out.slice(0, limit);
 }
 
 export async function getUserSocialPost(userId: string, id: string): Promise<SocialPostRow | null> {

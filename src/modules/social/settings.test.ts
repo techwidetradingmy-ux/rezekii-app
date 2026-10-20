@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { cleanSettings, cleanTopic, pageRef, parseCollaborators, settingsProblems, threadsTopic, unreachableUsers, withPageMentions } from "./settings.ts";
+import { COMMON_PAGES, cleanSettings, cleanTopic, mentionPicks, pageRef, parseCollaborators, settingsProblems, threadsTopic, unreachableUsers, withPageMentions } from "./settings.ts";
 
 test("S1: Facebook can save a Reel as a draft on the Page; drafts work for Reels (3–90 s) only", () => {
   assert.deepEqual(cleanSettings("facebook", { draft: true }), { draft: true, mentions: [] });
@@ -58,4 +58,13 @@ test("S6: accounts Instagram can't reach are read from its error, so the Reel go
   assert.deepEqual(unreachableUsers("The following user(s) cannot be accessed: shopeemy"), ["shopeemy"]);
   assert.deepEqual(unreachableUsers("The following user(s) cannot be accessed: a.b, @C_d."), ["a.b", "c_d"]);
   assert.deepEqual(unreachableUsers("Media upload has failed"), []);
+});
+
+test("S7: Shopee, Lazada and Pages mentioned before are quick picks; added ones drop out and a typed name narrows them", () => {
+  const brand = { id: "61551234567890", name: "Mentega Terbang" };
+  assert.deepEqual(mentionPicks([brand], [], ""), [brand, ...COMMON_PAGES]);
+  assert.deepEqual(mentionPicks([COMMON_PAGES[0]], [], "").map((m) => m.name), ["Shopee", "Lazada"]);
+  assert.deepEqual(mentionPicks([brand], [COMMON_PAGES[0]], "").map((m) => m.name), ["Mentega Terbang", "Lazada"]);
+  assert.deepEqual(mentionPicks([brand], [], "sho").map((m) => m.name), ["Shopee"]);
+  assert.deepEqual(mentionPicks([], [], "nothing"), []);
 });

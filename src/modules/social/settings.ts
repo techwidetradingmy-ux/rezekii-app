@@ -81,6 +81,22 @@ function cleanMentions(raw: unknown): PageMention[] {
   return out.slice(0, MENTIONS_MAX);
 }
 
+/** Pages affiliates mention most, so nobody has to look up their ID (from each Page's transparency section, 20 Oct 2026). */
+export const COMMON_PAGES: PageMention[] = [{ id: "1544653935786928", name: "Shopee" }, { id: "296717127062813", name: "Lazada" }];
+
+/** Quick picks under Mention Pages: Pages mentioned before, then the common ones; not already added, matching a typed name. */
+export function mentionPicks(recent: PageMention[], added: PageMention[], typed: string, max = 8): PageMention[] {
+  const q = typed.trim().toLowerCase();
+  const seen = new Set(added.map((m) => m.id));
+  const out: PageMention[] = [];
+  for (const m of [...recent, ...COMMON_PAGES]) {
+    if (seen.has(m.id)) continue;
+    seen.add(m.id);
+    if (!q || m.name.toLowerCase().includes(q)) out.push(m);
+  }
+  return out.slice(0, max);
+}
+
 /** A Facebook Page as pasted: its ID when the link carries one (or it's typed alone), otherwise its username. */
 export function pageRef(input: string): { id: string } | { username: string } | null {
   const s = input.trim();

@@ -7,7 +7,7 @@ import type { PublicAccount } from "@/modules/social/accounts.ts";
 import type { Brand } from "@/modules/social/brands.ts";
 import { consentLine, postProblems, type PostChoice } from "@/modules/posting/rules.ts";
 import { brandChannels, brandPicked, cleanPick, isTikTokKey, openIdOf, tiktokKey, toggleBrand, toggleChannel } from "@/modules/social/picker.ts";
-import { COLLABORATORS_MAX, MENTIONS_MAX, TAGS_MAX, REPLY_CONTROLS, pageRef, withPageMentions, type PageMention, cleanTopic, parseCollaborators, settingsProblems, threadsTopic, type ReplyControl, type TrialMode } from "@/modules/social/settings.ts";
+import { COLLABORATORS_MAX, MENTIONS_MAX, TAGS_MAX, REPLY_CONTROLS, mentionPicks, pageRef, withPageMentions, type PageMention, cleanTopic, parseCollaborators, settingsProblems, threadsTopic, type ReplyControl, type TrialMode } from "@/modules/social/settings.ts";
 import { CAPTION_MAX, COMMENT_MAX, DEFAULT_PLACEMENT, NAMES, parseHashtags, withHashtags, autoCaption, autoComment, channelProblems, channelWarnings, lengthFor, links, postedCaption, type Channel, type Placement, type Platform } from "@/modules/social/rules.ts";
 import { BrandIcon } from "../brand-icons";
 import { PhonePreview, type Who } from "./phone-previews";
@@ -53,7 +53,7 @@ function Face({ ch, badge = true }: { ch: Pick<Ch, "app" | "avatar">; badge?: bo
  * product link where each app works best, adds first comments, and shows a phone preview per app. TikTok keeps every
  * setting its Content Sharing Guidelines require.
  */
-export function Composer({ tiktok, social: initialSocial, brands: initialBrands, last, connect }: { tiktok: TikTokAccount[]; social: PublicAccount[]; brands: Brand[]; last: string[]; connect: { channel: string; result: string } | null }) {
+export function Composer({ tiktok, social: initialSocial, brands: initialBrands, last, mentioned, connect }: { tiktok: TikTokAccount[]; social: PublicAccount[]; brands: Brand[]; last: string[]; mentioned: PageMention[]; connect: { channel: string; result: string } | null }) {
   const [social, setSocial] = useState(initialSocial);
   const [brands, setBrands] = useState(initialBrands);
   const [picked, setPicked] = useState<Set<string>>(new Set());
@@ -185,9 +185,20 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
   })();
   const warnings = apps.flatMap((p) => channelWarnings(p, captionOf(p)));
 
+  // Shopee, Lazada and Pages mentioned before: one tap, no ID to look up (S7). A typed name narrows them.
+  const isRef = /facebook\.com|^\s*\d+\s*$/i.test(mentionText);
+  const picks = mentionPicks(mentioned, fbMentions, isRef ? "" : mentionText);
+  const addPage = (page: PageMention) => {
+    setFbMentions((list) => (list.some((m) => m.id === page.id) ? list : [...list, page].slice(0, MENTIONS_MAX)));
+    setMentionText("");
+    setMentionError("");
+    setManualPage(null);
+  };
+
   async function addMention() {
     const fb = metaPicked.find((a) => a.platform === "facebook");
     if (!fb || !mentionText.trim()) return;
+    if (!isRef && picks.length) return addPage(picks[0]);
     setMentionBusy(true);
     setMentionError("");
     const r = await fetch("/api/social/pages/resolve", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ accountId: fb.id, page: mentionText }) }).catch(() => null);
@@ -478,7 +489,8 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
                     <button type="button" role="radio" aria-checked={fbDraft} className={fbDraft ? "on" : ""} onClick={() => setFbDraft(true)}>Save as draft in Facebook</button>
                   </div>
                   <div className="cx-field"><b>Mention Pages</b>
-                    <span className="cx-inline"><input className="np-input" type="text" value={mentionText} onChange={(e) => setMentionText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addMention(); } }} placeholder="Paste a Facebook Page link or Page ID" aria-label="Facebook Page to mention" /><button type="button" className="btn-outline" disabled={mentionBusy || !mentionText.trim()} onClick={addMention}>{mentionBusy ? "Finding…" : "Add"}</button></span>
+                    <span className="cx-inline"><input className="np-input" type="text" value={mentionText} onChange={(e) => setMentionText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addMention(); } }} placeholder="Type a name, or paste a Page link or Page ID" aria-label="Facebook Page to mention" /><button type="button" className="btn-outline" disabled={mentionBusy || !mentionText.trim()} onClick={addMention}>{mentionBusy ? "Finding…" : "Add"}</button></span>
+                    {picks.length > 0 && fbMentions.length < MENTIONS_MAX && <div className="cx-tags" aria-label="Quick add">{picks.map((m) => <button key={m.id} type="button" className="cx-pick" onClick={() => addPage(m)}>+ {m.name}</button>)}</div>}
                     {fbMentions.length > 0 && <div className="cx-tags">{fbMentions.map((m) => <span key={m.id} className="cx-tag"><span>{m.name}</span><button type="button" aria-label={`Remove ${m.name}`} onClick={() => setFbMentions((list) => list.filter((x) => x.id !== m.id))}>×</button></span>)}</div>}
                     {mentionError && <p className="np-error" role="alert">{mentionError}</p>}
                     {manualPage && (
@@ -487,7 +499,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
                         <span className="cx-inline"><input className="np-input" type="text" value={manualPage.name} maxLength={100} onChange={(e) => setManualPage({ ...manualPage, name: e.target.value })} placeholder="e.g. Shopee Malaysia" aria-label="Page name" autoFocus /><button type="button" className="btn-outline" disabled={!manualPage.name.trim()} onClick={() => { const page = { id: manualPage.id, name: manualPage.name.trim() }; setFbMentions((list) => (list.some((m) => m.id === page.id) ? list : [...list, page].slice(0, MENTIONS_MAX))); setManualPage(null); setMentionText(""); }}>Add</button></span>
                       </div>
                     )}
-                    <small className="np-muted">Facebook Pages only: Facebook doesn&apos;t let apps mention people. For a Page you don&apos;t manage, paste its Page ID (on the Page: About → Page transparency). Type @ and the Page&apos;s name in the Facebook caption to place it; otherwise it goes at the end.</small>
+                    <small className="np-muted">Facebook Pages only: Facebook doesn&apos;t let apps mention people. Shopee, Lazada and Pages you mentioned before are one tap away. For another Page you don&apos;t manage, paste its Page ID (on the Page: About → Page transparency). Type @ and the Page&apos;s name in the Facebook caption to place it; otherwise it goes at the end.</small>
                   </div>
                   {fbDraft && <p className="np-muted">The Reel is saved in the Page&apos;s drafts. Nobody sees it until you publish it from Facebook or Meta Business Suite. Drafts get no first comment, and work for Reels (3–90 seconds) only.</p>}
                 </div>

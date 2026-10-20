@@ -5,6 +5,7 @@ import { userTikTokAccounts } from "@/modules/posting/store.ts";
 import { listAccounts } from "@/modules/social/accounts.ts";
 import { canUseSocial } from "@/modules/social/access.ts";
 import { lastPostChannels, listBrands } from "@/modules/social/brands.ts";
+import { recentMentions } from "@/modules/social/store.ts";
 import { currentUser } from "../../current-user";
 import { Composer } from "./composer";
 import { NewPostForm } from "./new-post-form";
@@ -20,14 +21,14 @@ export default async function NewPostPage({ searchParams }: { searchParams: Prom
   const accounts = tiktok.map((a) => ({ open_id: a.open_id, username: a.username }));
   const social = canUseSocial(user);
   const q = await searchParams;
-  const [channels, brands, last] = social ? await Promise.all([listAccounts(user.id).catch(() => []), listBrands(user.id).catch(() => []), lastPostChannels(user.id).catch(() => [])]) : [[], [], []];
+  const [channels, brands, last, mentioned] = social ? await Promise.all([listAccounts(user.id).catch(() => []), listBrands(user.id).catch(() => []), lastPostChannels(user.id).catch(() => []), recentMentions(user.id).catch(() => [])]) : [[], [], [], []];
   return (
     <>
       <main className={`site-wrap app-main ${social ? "" : "app-narrow"}`}>
         <nav className="app-crumbs" aria-label="Breadcrumb"><Link href={user.role === "admin" ? "/app/admin" : "/app"}>Today</Link><span aria-hidden="true">›</span><span>New post</span></nav>
         <h1>New post</h1>
         {social ? (
-          <Composer tiktok={tiktok} social={channels} brands={brands} last={last} connect={q.channel && q.connect ? { channel: q.channel, result: q.connect } : null} />
+          <Composer tiktok={tiktok} social={channels} brands={brands} last={last} mentioned={mentioned} connect={q.channel && q.connect ? { channel: q.channel, result: q.connect } : null} />
         ) : accounts.length ? (
           <NewPostForm accounts={accounts} />
         ) : (
