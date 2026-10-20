@@ -217,12 +217,21 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
     try {
       let storagePath: string | undefined;
       if (source === "upload" && file) {
-        setBusy("Uploading your video…");
+        setBusy("Uploading your video… 0%");
         const r = await fetch("/api/posts/upload", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ type: file.type, size: file.size }) });
         const u = (await r.json()) as { path?: string; uploadUrl?: string; error?: string };
         if (!r.ok || !u.uploadUrl || !u.path) throw new Error(u.error || "Upload couldn't start.");
-        const put = await fetch(u.uploadUrl, { method: "PUT", headers: { "content-type": file.type }, body: file });
-        if (!put.ok) throw new Error("The upload didn't finish. Try again.");
+        // XHR, so the button can show how far the upload is (the slow part on a slow connection).
+        const uploaded = await new Promise<boolean>((resolve) => {
+          const x = new XMLHttpRequest();
+          x.open("PUT", u.uploadUrl as string);
+          x.setRequestHeader("content-type", file.type);
+          x.upload.onprogress = (e) => { if (e.lengthComputable) setBusy(`Uploading your video… ${Math.round((e.loaded / e.total) * 100)}%`); };
+          x.onload = () => resolve(x.status >= 200 && x.status < 300);
+          x.onerror = () => resolve(false);
+          x.send(file);
+        });
+        if (!uploaded) throw new Error("The upload didn't finish. Try again.");
         storagePath = u.path;
       }
       setBusy(when === "draft" ? "Saving…" : "Scheduling…");

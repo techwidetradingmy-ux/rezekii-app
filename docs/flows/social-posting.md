@@ -43,6 +43,7 @@ Scope: Facebook Pages, Instagram (Business or Creator), Threads. Not Facebook Gr
 - **C4b — First comment** → Main has a First comment box for Facebook, Instagram and Threads; each app's comment is that text with the product link after it where that app puts the link in the comment (without your own text, Rezekii's line with the link); still editable per app. Defaults ("Dapatkan di sini: …" on Facebook, "Link produk 👇 …" on Threads). Limits: Threads 500, Instagram 2,200, Facebook 8,000 characters (re-checked during the build). The preview shows it (Threads as your own reply under the post, Facebook Feed under the post) and notes that links in Instagram comments can't be tapped.
 - **C5 — Live preview** → a phone preview per selected app, switchable by tabs (when several Pages or accounts of one app are picked, a "Showing" picker chooses which one the preview uses), updating as you type, laid out like the October 2026 apps (TikTok For You, Instagram Reels, Facebook Reels and Feed, Threads feed in light and dark), with each app's caption cut-off; @mentions are highlighted the way each app shows them; tapping "more" / "See more" expands the caption, and the comment button on Instagram and Facebook Reels opens the comments with the first comment; notes under the phone where a channel differs (Instagram and Facebook Reels: link can't be tapped; Threads: over 500 characters).
 - **C6 — Facebook product-link reminder** (on by default when Facebook is picked) → the Facebook post gets "Add product link" in My posts until you tick Done.
+- **C7b — Upload progress** → while the video uploads, the button shows how far it is ("Uploading your video… 45%").
 - **C7 — Video** → same upload (≤ 50 MB) or link as today. Checked per channel at scheduling: Threads ≤ 5 min; Instagram Reels within Meta's current limits; Facebook vertical videos of 3–90 s go out as a Reel (Facebook's Reels API), others as a Page video (all limits re-checked against Meta's current docs during the build); a channel that can't take it is blocked with the reason.
 - **C8 — When** → Post now / recommended time / pick a time / save as draft, as today; one time for all chosen channels.
 - **C9 — Schedule** → TikTok gets its normal post (unchanged); each Meta channel gets its own scheduled post; the done screen lists every channel and its time.
@@ -55,7 +56,7 @@ Meta doesn't offer private ("Only me") posts to apps for Facebook, Instagram or 
 - **S2 — Instagram: Also show in the main feed** (on by default) → off: the Reel shows in the Reels tab only.
 - **S3 — Instagram: Collaborators** → up to 3 usernames; anything that isn't a username is refused with the reason. They get an invite in Instagram.
 - **S4 — Instagram: Trial reel** → off, "I'll share with followers" (manual) or "Instagram decides" (shared with followers if it does well); shown to non-followers first.
-- **S6 — Instagram: Tag people** → up to 20 usernames; they get a notification and the Reel shows in their Tagged tab. Facebook and Threads don't let apps tag people in videos (Facebook's "is with Shopee" comes from its own Add product link).
+- **S6 — Instagram: Tag people** → up to 20 usernames; they get a notification and the Reel shows in their Tagged tab. An account Instagram can't reach (private or a wrong name) is left out and the Reel still goes out; All channels says so. Facebook and Threads don't let apps tag people in videos (Facebook's "is with Shopee" comes from its own Add product link).
 - **S7 — Facebook: Mention Pages** → paste a Page link or Page ID; Rezekii shows its name. The mention goes where "@Page Name" was typed in the Facebook caption, otherwise at the end (above the hashtags). Pages only: Facebook doesn't let apps mention people. Needs Meta's Page Mentions feature (on for testing; part of Meta's review).
 - **S5 — Threads: Who can reply** → everyone (default), accounts you follow, your followers, or only accounts you mention.
 
@@ -90,6 +91,7 @@ Meta doesn't offer private ("Only me") posts to apps for Facebook, Instagram or 
 - **M1 — List** → one row per post with a chip per channel showing its own status (Scheduled / Posting / Posted / Failed / Cancelled); Posted chips open the live post.
 - **M2 — Cancel** → cancel one channel or all, until that channel starts posting.
 - **M4 — Try again** → a failed channel has Try again: it goes back on the timer straight away with fresh tries. Its video is kept while a channel has failed, and let go once it's retried successfully or cancelled.
+- **M5 — Live** → while a post is posting or due within 30 minutes, All channels updates itself every 8 seconds ("Updating live"), and again when you come back to the tab; no refresh needed.
 - **M3 — Week view** → the post shows once with its channel icons.
 
 ## Quality bars

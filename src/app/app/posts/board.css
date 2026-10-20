@@ -64,3 +64,7 @@
   .bd-ln { grid-template-columns: 20px auto auto minmax(0, 1fr); }
   .bd-acts { grid-column: 2 / -1; }
 }
+.bd-live { display: inline-flex; align-items: center; gap: 6px; color: var(--gink); font-size: 12.5px; font-weight: 700; }
+.bd-live i { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: bd-pulse 1.2s ease-in-out infinite; }
+@keyframes bd-pulse { 50% { opacity: 0.3; } }
+@media (prefers-reduced-motion: reduce) { .bd-live i { animation: none; } }

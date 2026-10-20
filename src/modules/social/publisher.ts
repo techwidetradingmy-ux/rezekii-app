@@ -6,7 +6,7 @@ import { directLink } from "../posting/media.ts";
 import { nextRetry } from "../posting/rules.ts";
 import { freshToken, getAccount, markReconnect, type SocialAccount } from "./accounts.ts";
 import { NAMES, facebookAsReel } from "./rules.ts";
-import { cleanSettings, withPageMentions, type FacebookSettings, type InstagramSettings, type ThreadsSettings } from "./settings.ts";
+import { cleanSettings, unreachableUsers, withPageMentions, type FacebookSettings, type InstagramSettings, type ThreadsSettings } from "./settings.ts";
 import { cleanUpGroup, signedVideoUrl, updateSocialPost, type SocialPostRow } from "./store.ts";
 
 const STUCK_MS = 30 * 60e3;
@@ -65,8 +65,17 @@ export async function publishSocialPost(p: SocialPostRow): Promise<string> {
         await finishFacebookReel(acc.external_id, token, container, caption, draftOf(p));
       } else container = await postFacebookVideo(acc.external_id, token, video, caption);
     } else if (p.platform === "instagram") {
-      const s = cleanSettings("instagram", p.settings) as InstagramSettings;
-      container = await createInstagramReel(acc.external_id, token, video, p.caption, s);
+      let s = cleanSettings("instagram", p.settings) as InstagramSettings;
+      try {
+        container = await createInstagramReel(acc.external_id, token, video, p.caption, s);
+      } catch (err) {
+        // A tagged or collaborator account Instagram can't reach (private, renamed): post without it, and say so (S6).
+        const gone = err instanceof MetaError ? unreachableUsers(err.message) : [];
+        if (!gone.length) throw err;
+        s = { ...s, tags: s.tags.filter((u) => !gone.includes(u)), collaborators: s.collaborators.filter((u) => !gone.includes(u)) };
+        await updateSocialPost(p.id, { settings: { ...p.settings, tags: s.tags, collaborators: s.collaborators, dropped: gone } });
+        container = await createInstagramReel(acc.external_id, token, video, p.caption, s);
+      }
     } else {
       const s = cleanSettings("threads", p.settings) as ThreadsSettings;
       container = await createThreadsVideo(acc.external_id, token, video, p.caption, s);

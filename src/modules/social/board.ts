@@ -19,18 +19,22 @@ export type BoardChannel = {
   canRetry: boolean;
   commentFailed: boolean;
   linkReminder: boolean;
+  /** Something is happening now or within 30 minutes: All channels keeps itself up to date (M5). */
+  active: boolean;
 };
+const soon = (iso: string | null) => !!iso && Date.parse(iso) - Date.now() < 30 * 60e3;
 export type BoardPost = { key: string; at: string | null; caption: string; channels: BoardChannel[] };
 
 function tiktokChannel(p: PostRow): BoardChannel {
   const state: BoardState = p.status === "draft" ? "draft" : p.status === "scheduled" ? "scheduled" : p.status === "publishing" || p.status === "processing" ? "posting" : p.status === "failed" ? "failed" : "posted";
   const note = p.status === "sent_to_inbox" ? "In your TikTok drafts" : p.status === "failed" ? (p.last_error ?? "TikTok didn't take it.") : p.status === "processing" ? "TikTok is processing" : p.last_error && p.status === "scheduled" ? `Trying again soon: ${p.last_error}` : "";
-  return { id: p.id, kind: "tiktok", account: tiktokKey(p.tiktok_open_id), name: NAMES.tiktok, state, note, permalink: null, canCancel: p.status === "scheduled" || p.status === "failed", canRetry: p.status === "failed", commentFailed: false, linkReminder: false };
+  return { id: p.id, kind: "tiktok", account: tiktokKey(p.tiktok_open_id), name: NAMES.tiktok, state, note, permalink: null, canCancel: p.status === "scheduled" || p.status === "failed", canRetry: p.status === "failed", commentFailed: false, linkReminder: false, active: p.status === "publishing" || p.status === "processing" || (p.status === "scheduled" && soon(p.next_attempt_at)) };
 }
 
 function socialChannel(s: SocialPostRow): BoardChannel {
   const posted = s.status === "posted";
   const removed = s.status === "removed";
+  const dropped = Array.isArray(s.settings?.dropped) ? (s.settings.dropped as string[]) : [];
   const linkDue = posted && s.link_reminder && !s.link_done;
   const fbDraft = posted && s.platform === "facebook" && s.settings?.draft === true;
   const state: BoardState = s.status === "draft" ? "draft" : s.status === "scheduled" ? "scheduled" : s.status === "publishing" || s.status === "processing" ? "posting" : s.status === "failed" ? "failed" : removed ? "removed" : fbDraft ? "fbdraft" : linkDue ? "link" : "posted";
@@ -40,9 +44,10 @@ function socialChannel(s: SocialPostRow): BoardChannel {
     : linkDue ? "Add the Shopee product link in Facebook (Monetization), then tick Done"
     : posted && s.comment_status === "failed" ? `First comment failed: ${s.comment_error ?? "try again"}`
     : posted && s.comment_status === "pending" ? "Posting the first comment"
+    : posted && dropped.length ? `Posted without ${dropped.map((u) => `@${u}`).join(", ")}: Instagram couldn't reach ${dropped.length > 1 ? "those accounts" : "that account"} (it must exist and be public)`
     : s.status === "processing" ? `${NAMES[s.platform]} is processing the video`
     : s.status === "scheduled" && s.last_error ? `Trying again soon: ${s.last_error}` : "";
-  return { id: s.id, kind: s.platform, account: s.account_id ?? "", name: s.account_name ?? NAMES[s.platform], state, note, permalink: removed ? null : s.permalink, canCancel: s.status === "scheduled" || s.status === "draft" || s.status === "failed", canRetry: s.status === "failed", commentFailed: posted && s.comment_status === "failed", linkReminder: linkDue };
+  return { id: s.id, kind: s.platform, account: s.account_id ?? "", name: s.account_name ?? NAMES[s.platform], state, note, permalink: removed ? null : s.permalink, canCancel: s.status === "scheduled" || s.status === "draft" || s.status === "failed", canRetry: s.status === "failed", commentFailed: posted && s.comment_status === "failed", linkReminder: linkDue, active: s.status === "publishing" || s.status === "processing" || (posted && s.comment_status === "pending") || (s.status === "scheduled" && soon(s.next_attempt_at)) };
 }
 
 const ORDER: Channel[] = ["tiktok", "facebook", "instagram", "threads"];

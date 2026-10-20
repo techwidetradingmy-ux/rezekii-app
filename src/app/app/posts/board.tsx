@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { BoardChannel, BoardPost, BoardState } from "@/modules/social/board.ts";
 import type { Brand } from "@/modules/social/brands.ts";
 import type { Channel } from "@/modules/social/rules.ts";
@@ -32,6 +32,18 @@ export function Board({ posts, now, brands }: { posts: BoardPost[]; now: number;
   const [earlier, setEarlier] = useState(false);
   const [busy, setBusy] = useState("");
   const [note, setNote] = useState("");
+  // Live (M5): while anything is posting or due soon, fresh statuses every 8 seconds; also when you come back to the tab.
+  const live = posts.some((p) => p.channels.some((c) => c.active));
+  useEffect(() => {
+    if (!live) return;
+    const id = setInterval(() => { if (document.visibilityState === "visible") router.refresh(); }, 8000);
+    return () => clearInterval(id);
+  }, [live, router]);
+  useEffect(() => {
+    const back = () => { if (document.visibilityState === "visible") router.refresh(); };
+    document.addEventListener("visibilitychange", back);
+    return () => document.removeEventListener("visibilitychange", back);
+  }, [router]);
 
   const today = dayKey(new Date(now).toISOString());
   const dayLabel = (k: string) => {
@@ -128,6 +140,7 @@ export function Board({ posts, now, brands }: { posts: BoardPost[]; now: number;
           <span className={attention ? "att" : ""}><b>{attention}</b><small>need attention</small></span>
         </div>
         <div className="bd-right">
+          {live && <span className="bd-live" role="status"><i aria-hidden="true" />Updating live</span>}
           <div className="np-seg" role="tablist" aria-label="View"><button type="button" role="tab" aria-selected={view === "list"} className={view === "list" ? "on" : ""} onClick={() => setView("list")}>List</button><button type="button" role="tab" aria-selected={view === "week"} className={view === "week" ? "on" : ""} onClick={() => setView("week")}>Week</button></div>
           <Link href="/app/new" className="np-btn">New post</Link>
         </div>

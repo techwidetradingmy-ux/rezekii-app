@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { cleanSettings, cleanTopic, pageRef, parseCollaborators, settingsProblems, threadsTopic, withPageMentions } from "./settings.ts";
+import { cleanSettings, cleanTopic, pageRef, parseCollaborators, settingsProblems, threadsTopic, unreachableUsers, withPageMentions } from "./settings.ts";
 
 test("S1: Facebook can save a Reel as a draft on the Page; drafts work for Reels (3–90 s) only", () => {
   assert.deepEqual(cleanSettings("facebook", { draft: true }), { draft: true, mentions: [] });
@@ -52,4 +52,10 @@ test("S7: a mentioned Facebook Page comes from its link or ID; Facebook gets @[i
   assert.equal(withPageMentions("Jom beli.\n\n#a #b", [shopee]), "Jom beli.\n@[100064791234567]\n\n#a #b");
   assert.equal(withPageMentions("Jom beli.", [shopee], (m) => m.name), "Jom beli.\nShopee Malaysia");
   assert.deepEqual((cleanSettings("facebook", { mentions: [shopee, { id: "x", name: "bad" }, shopee] }) as { mentions: unknown[] }).mentions, [shopee]);
+});
+
+test("S6: accounts Instagram can't reach are read from its error, so the Reel goes out without them", () => {
+  assert.deepEqual(unreachableUsers("The following user(s) cannot be accessed: shopeemy"), ["shopeemy"]);
+  assert.deepEqual(unreachableUsers("The following user(s) cannot be accessed: a.b, @C_d."), ["a.b", "c_d"]);
+  assert.deepEqual(unreachableUsers("Media upload has failed"), []);
 });

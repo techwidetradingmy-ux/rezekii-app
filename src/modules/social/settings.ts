@@ -105,3 +105,9 @@ export function withPageMentions(caption: string, mentions: PageMention[], as: (
   }
   return missing.length ? aboveTags(text, missing.map(as).join(" ")) : text;
 }
+
+/** The usernames in Instagram's "The following user(s) cannot be accessed: a, b" (a tag or collaborator it can't reach). */
+export function unreachableUsers(message: string): string[] {
+  const m = message.match(/cannot be accessed:\s*(.+)$/i);
+  return m ? m[1].split(/[\s,]+/).map((u) => u.replace(/^@/, "").replace(/[.]$/, "").toLowerCase()).filter(Boolean) : [];
+}
