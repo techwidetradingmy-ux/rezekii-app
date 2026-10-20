@@ -10,13 +10,19 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 /**
- * Called every minute by the Supabase timer (pg_cron + pg_net) with the token kept in Supabase Vault.
- * Publishes up to 2 due posts, then checks posts TikTok is still processing.
+ * Called every minute by the Supabase timer (pg_cron + pg_net) with the token kept in Supabase Vault. TikTok (up to 2 due
+ * posts, then the ones it's processing) and Facebook, Instagram and Threads run side by side, so a slow TikTok upload
+ * doesn't hold the others up.
  */
 export async function POST(req: NextRequest) {
   const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
   if (!(await isTimerToken(token))) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
+  const [{ published, checked }, social] = await Promise.all([tiktokWork(), socialWork().catch((err) => ({ error: err instanceof Error ? err.message : String(err) }))]);
+  return NextResponse.json({ published, checked, social });
+}
+
+async function tiktokWork(): Promise<{ published: Record<string, string>; checked: Record<string, string> }> {
   const published: Record<string, string> = {};
   for (const post of await claimDuePosts(2)) published[post.id] = await publishPost(post);
   const checked: Record<string, string> = {};
@@ -27,8 +33,7 @@ export async function POST(req: NextRequest) {
       checked[post.id] = "error: " + (err instanceof Error ? err.message : String(err));
     }
   }
-  const social = await socialWork().catch((err) => ({ error: err instanceof Error ? err.message : String(err) }));
-  return NextResponse.json({ published, checked, social });
+  return { published, checked };
 }
 
 /** Facebook, Instagram and Threads posts on the same timer: due posts, posts being processed, first comments, token renewals, profile pictures, and whether posted posts still exist. */
@@ -41,7 +46,8 @@ async function socialWork(): Promise<Record<string, string>> {
       out[key] = "error: " + (err instanceof Error ? err.message : String(err));
     }
   };
-  for (const p of await claimDueSocialPosts(2)) await run(`publish ${p.id}`, () => publishSocialPost(p));
+  // Up to 10 due channels a minute, started together: a post to several Pages doesn't queue minute by minute (M8).
+  await Promise.all((await claimDueSocialPosts(10)).map((p) => run(`publish ${p.id}`, () => publishSocialPost(p))));
   for (const p of await processingSocialPosts(20)) await run(`check ${p.id}`, () => checkSocialProcessing(p));
   for (const p of await pendingComments(10)) await run(`comment ${p.id}`, () => postFirstComment(p));
   for (const a of await accountsToRenew(5)) await run(`renew ${a.id}`, async () => (await freshToken(a), "renewed"));

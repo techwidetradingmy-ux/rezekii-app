@@ -99,6 +99,7 @@ Meta doesn't offer private ("Only me") posts to apps for Facebook, Instagram or 
 - **M5 — Live** → while a post is posting or due within 30 minutes, All channels updates itself every 8 seconds ("Updating live"), and again when you come back to the tab; no refresh needed.
 - **M6 — Latest first (owner, 21 Oct 2026)** → the list opens with the latest posts, newest at the very top (20 at a time, "Show older posts" for more), then Coming up (soonest first), then Drafts.
 - **M7 — Reuse** → every post has Reuse: New post opens filled in like that post (channels, Main caption, hashtags, first comment, call to action and product link, per-app captions and comments, post settings). Only the video (and comment image) is picked again. TikTok's privacy, interaction and disclosure choices start empty, as TikTok asks. Posts made before Reuse existed bring back each app's caption and comment as they went out.
+- **M8 — Post now shows Posting** → a channel whose time has come shows Posting ("Starting within a minute") until the timer starts it, never Scheduled. The timer starts up to 10 Facebook, Instagram and Threads channels a minute, together, and TikTok runs alongside so it doesn't hold them up.
 - **M3 — Week view** → the post shows once with its channel icons.
 
 ## Quality bars
