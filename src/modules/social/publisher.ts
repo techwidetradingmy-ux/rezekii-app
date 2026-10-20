@@ -7,7 +7,7 @@ import { nextRetry } from "../posting/rules.ts";
 import { freshToken, getAccount, markReconnect, type SocialAccount } from "./accounts.ts";
 import { NAMES, facebookAsReel } from "./rules.ts";
 import { cleanSettings, unreachableUsers, withPageMentions, type FacebookSettings, type InstagramSettings, type ThreadsSettings } from "./settings.ts";
-import { cleanUpGroup, signedVideoUrl, updateSocialPost, type SocialPostRow } from "./store.ts";
+import { cleanUpGroup, signedMediaUrl, updateSocialPost, type SocialPostRow } from "./store.ts";
 
 const STUCK_MS = 30 * 60e3;
 /** A Facebook Reel saved as a draft on the Page (S1): nothing is public, so there's no link or first comment. */
@@ -54,7 +54,7 @@ export async function publishSocialPost(p: SocialPostRow): Promise<string> {
   }
   try {
     const token = await freshToken(acc);
-    const video = p.storage_path ? await signedVideoUrl(p.storage_path) : directLink(p.link_url ?? "");
+    const video = p.storage_path ? await signedMediaUrl(p.storage_path) : directLink(p.link_url ?? "");
     let container: string;
     if (p.platform === "facebook") {
       const caption = withPageMentions(p.caption, (cleanSettings("facebook", p.settings) as FacebookSettings).mentions);
@@ -88,8 +88,8 @@ export async function publishSocialPost(p: SocialPostRow): Promise<string> {
 }
 
 async function markPosted(p: SocialPostRow, externalId: string, permalink: string | null): Promise<string> {
-  await updateSocialPost(p.id, { status: "posted", external_post_id: externalId, permalink, posted_at: new Date().toISOString(), next_attempt_at: null, last_error: null, comment_status: p.first_comment.trim() ? "pending" : "none" });
-  if (!p.first_comment.trim()) await cleanUpGroup(p.group_id);
+  await updateSocialPost(p.id, { status: "posted", external_post_id: externalId, permalink, posted_at: new Date().toISOString(), next_attempt_at: null, last_error: null, comment_status: hasComment(p) ? "pending" : "none" });
+  if (!hasComment(p)) await cleanUpGroup(p.group_id);
   return "posted";
 }
 
@@ -128,6 +128,9 @@ export async function checkSocialProcessing(p: SocialPostRow): Promise<string> {
   }
 }
 
+/** A first comment goes out when there's text, or an image (Facebook and Threads take one; Instagram comments are text only). */
+const hasComment = (p: SocialPostRow) => !!p.first_comment.trim() || (!!p.comment_image_path && p.platform !== "instagram");
+
 /** The first comment, once the post is live: by the Page, by the Instagram account, or as the account's own Threads reply. */
 export async function postFirstComment(p: SocialPostRow): Promise<string> {
   const acc = await accountFor(p);
@@ -140,11 +143,12 @@ export async function postFirstComment(p: SocialPostRow): Promise<string> {
   try {
     const token = await freshToken(acc);
     const text = p.first_comment.trim();
+    const image = p.comment_image_path && p.platform !== "instagram" ? await signedMediaUrl(p.comment_image_path) : null;
     let id: string;
-    if (p.platform === "facebook") id = await commentOnFacebook(p.container_id ?? p.external_post_id, token, text);
+    if (p.platform === "facebook") id = await commentOnFacebook(p.container_id ?? p.external_post_id, token, text, image);
     else if (p.platform === "instagram") id = await commentOnInstagram(p.external_post_id, token, text);
     else {
-      const reply = await createThreadsReply(acc.external_id, token, text, p.external_post_id);
+      const reply = await createThreadsReply(acc.external_id, token, text, p.external_post_id, image);
       for (let i = 0; i < 5; i++) {
         const c = await threadsContainer(reply, token);
         if (c.status === "FINISHED") break;

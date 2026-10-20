@@ -23,7 +23,7 @@ export async function GET() {
 }
 
 type ChannelIn = { accountId?: string; caption?: string; firstComment?: string; linkReminder?: boolean; settings?: unknown };
-type Body = { source?: "upload" | "link"; storagePath?: string; linkUrl?: string; durationSec?: number; when?: string; tiktokPostId?: string; channels?: ChannelIn[] };
+type Body = { source?: "upload" | "link"; storagePath?: string; linkUrl?: string; durationSec?: number; when?: string; tiktokPostId?: string; commentImagePath?: string; channels?: ChannelIn[] };
 const bad = (error: string | string[], status = 400) => NextResponse.json({ error }, { status });
 
 /**
@@ -37,6 +37,8 @@ export async function POST(req: NextRequest) {
   const b = (await req.json().catch(() => ({}))) as Body;
   if (b.source === "upload" ? !b.storagePath?.startsWith(`${user.id}/`) : b.source === "link" ? !/^https:\/\/\S+$/.test(b.linkUrl ?? "") : true)
     return bad("Add a video: upload one or paste an https link.");
+  const commentImage = b.commentImagePath ?? null;
+  if (commentImage && !new RegExp(`^${user.id}/comment/[0-9a-f-]{36}\\.(jpg|png)$`).test(commentImage)) return bad("The comment image upload wasn't found. Add it again.");
   const channels = (b.channels ?? []).filter((c) => c.accountId);
   if (!channels.length) return bad("Pick at least one Facebook, Instagram or Threads channel.");
   const durationSec = typeof b.durationSec === "number" ? b.durationSec : null;
@@ -98,6 +100,7 @@ export async function POST(req: NextRequest) {
       duration_sec: durationSec,
       caption: String(c.caption ?? ""),
       first_comment: draft ? "" : String(c.firstComment ?? ""),
+      comment_image_path: (a.platform === "facebook" && !draft) || a.platform === "threads" ? commentImage : null,
       link_reminder: a.platform === "facebook" && !!c.linkReminder,
       status: scheduledAt ? "scheduled" : "draft",
       scheduled_at: scheduledAt?.toISOString() ?? null,

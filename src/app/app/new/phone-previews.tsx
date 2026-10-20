@@ -110,7 +110,7 @@ function Rich({ text, links, tags, at, names = [], handles = true }: { text: str
 }
 
 export type Who = { name: string; username: string; avatar: string | null };
-export type PreviewProps = { channel: Channel; caption: string; comment: string; video: string | null; who: Who; fbView: "reels" | "feed"; theme: "light" | "dark"; topic?: string; collaborators?: string[]; names?: string[] };
+export type PreviewProps = { channel: Channel; caption: string; comment: string; commentImage?: string | null; video: string | null; who: Who; fbView: "reels" | "feed"; theme: "light" | "dark"; topic?: string; collaborators?: string[]; names?: string[] };
 
 /** Starts muted (browsers only autoplay muted video); the speaker button turns the sound on and off. */
 function Video({ src, s = 16 }: { src: string | null; s?: number }) {
@@ -141,7 +141,7 @@ const NavAv = ({ who, label }: { who: Who; label?: string }) => (
 const More = ({ label, onClick }: { label: ReactNode; onClick: () => void }) => <button type="button" className="pv-more" onClick={(e) => { e.stopPropagation(); onClick(); }}>{label}</button>;
 
 /** The comments panel Instagram and Facebook Reels open from the comment button, with the first comment when there is one. */
-function CommentSheet({ app, comment, who, onClose }: { app: "instagram" | "facebook"; comment: string; who: Who; onClose: () => void }) {
+function CommentSheet({ app, comment, image, who, onClose }: { app: "instagram" | "facebook"; comment: string; image?: string | null; who: Who; onClose: () => void }) {
   const ig = app === "instagram";
   return (
     <>
@@ -150,8 +150,8 @@ function CommentSheet({ app, comment, who, onClose }: { app: "instagram" | "face
         <span className="grab" />
         <div className="hd"><b>Comments</b><button type="button" className="x" onClick={onClose} aria-label="Close comments"><Ic n="x" s={18} /></button></div>
         <div className="list">
-          {comment ? (
-            <div className="row"><Av who={who} size={32} /><div className="tx"><span className="nm">{ig ? who.username : who.name}<small>{ig ? "1m" : "Just now"}</small></span><span className="body"><Rich text={comment} links at="link" /></span><small className="act">{ig ? "Reply" : "Like · Reply"}</small></div>{ig && <Ic n="heartO" s={14} />}</div>
+          {comment || image ? (
+            <div className="row"><Av who={who} size={32} /><div className="tx"><span className="nm">{ig ? who.username : who.name}<small>{ig ? "1m" : "Just now"}</small></span>{comment && <span className="body"><Rich text={comment} links at="link" /></span>}{image && <Pic className="pv-cm-img" src={image} />}<small className="act">{ig ? "Reply" : "Like · Reply"}</small></div>{ig && <Ic n="heartO" s={14} />}</div>
           ) : <p className="empty"><b>No comments yet</b><span>{ig ? "Start the conversation." : "Be the first to comment."}</span></p>}
         </div>
         <div className="add"><Av who={who} size={28} /><span>Add a comment…</span></div>
@@ -219,7 +219,7 @@ function Instagram({ caption, comment, video, who, collaborators }: PreviewProps
   );
 }
 
-function Facebook({ caption, comment, video, who, fbView, theme, names }: PreviewProps) {
+function Facebook({ caption, comment, commentImage, video, who, fbView, theme, names }: PreviewProps) {
   const [open, setOpen] = useState(false);
   const [sheet, setSheet] = useState(false);
   if (fbView === "reels") {
@@ -231,7 +231,7 @@ function Facebook({ caption, comment, video, who, fbView, theme, names }: Previe
         <div className="pv-fbr-top pv-sh"><Ic n="menu" /><span>Reels</span><Ic n="plus" /><Ic n="search" s={23} /></div>
         <div className="pv-rail pv-sh" style={{ "--rr": 21 } as CSSProperties}>
           <span className="it" style={{ top: "64.6%" }}><Ic n="thumb" s={28} /><span>0</span></span>
-          <button type="button" className="it pv-btn" style={{ top: "72.6%" }} onClick={() => setSheet(true)} aria-label="Comments"><Ic n="cmtO" s={27} /><span>{comment ? 1 : 0}</span></button>
+          <button type="button" className="it pv-btn" style={{ top: "72.6%" }} onClick={() => setSheet(true)} aria-label="Comments"><Ic n="cmtO" s={27} /><span>{comment || commentImage ? 1 : 0}</span></button>
           <span className="it" style={{ top: "80.6%" }}><Ic n="shareO" s={27} /><span>0</span></span>
           <span className="it" style={{ top: "87.7%" }}><Ic n="dots" s={24} /></span>
         </div>
@@ -241,7 +241,7 @@ function Facebook({ caption, comment, video, who, fbView, theme, names }: Previe
           {open ? <div className="cp" onClick={() => setOpen(false)}><Rich text={caption} at="bold" names={names} handles={false} /></div> : <div className="cp"><Rich text={c.text} at="bold" names={names} handles={false} />{c.cut && <More label={<em>… See more</em>} onClick={() => setOpen(true)} />}</div>}
         </div>
         <div className="pv-bar pv-fbr-bar"><Nav n="homeO" label="Home" /><Nav n="friends" label="Friends" /><Nav n="reels" label="Reels" on /><Nav n="store" label="Marketplace" /><Nav n="bell" label="Notifications" /><NavAv who={who} label="Profile" /></div>
-        {sheet && <CommentSheet app="facebook" comment={comment} who={who} onClose={() => setSheet(false)} />}
+        {sheet && <CommentSheet app="facebook" comment={comment} image={commentImage} who={who} onClose={() => setSheet(false)} />}
         <span className="pv-hi" style={{ color: "#fff" }} />
       </div>
     );
@@ -257,7 +257,7 @@ function Facebook({ caption, comment, video, who, fbView, theme, names }: Previe
         <div className="pv-fb-tx">{open ? <Rich text={caption} links tags="link" at="link" names={names} handles={false} /> : <><Rich text={c.text} links tags="link" at="link" names={names} handles={false} />{c.cut && <More label={<span className="sm">… See more</span>} onClick={() => setOpen(true)} />}</>}</div>
         <div className="pv-fb-vid"><Video src={video} /></div>
         <div className="pv-fb-act"><span><Ic n="thumb" s={19} /></span><span><Ic n="cmtO" s={18} /></span><span><Ic n="shareO" s={18} /></span></div>
-        {comment && <div className="pv-fb-cm"><Av who={who} size={32} /><div><span className="bub"><b>{who.name}</b><span><Rich text={comment} links at="link" /></span></span><small>Just now · Like · Reply</small></div></div>}
+        {(comment || commentImage) && <div className="pv-fb-cm"><Av who={who} size={32} /><div><span className="bub"><b>{who.name}</b>{comment && <span><Rich text={comment} links at="link" /></span>}</span>{commentImage && <Pic className="pv-cm-img" src={commentImage} />}<small>Just now · Like · Reply</small></div></div>}
       </div>
       <div className="pv-bar pv-fb-bar"><Nav n="homeF" label="Home" on /><Nav n="friends" label="Friends" /><Nav n="reels" label="Reels" /><Nav n="store" label="Marketplace" /><Nav n="bell" label="Notifications" /><NavAv who={who} label="Profile" /></div>
       <span className="pv-hi" style={{ color: dark ? "#E4E6EB" : "#050505" }} />
@@ -265,7 +265,8 @@ function Facebook({ caption, comment, video, who, fbView, theme, names }: Previe
   );
 }
 
-function Threads({ caption, comment, video, who, theme, topic: topicIn }: PreviewProps) {
+function Threads({ caption, comment, commentImage, video, who, theme, topic: topicIn }: PreviewProps) {
+  const reply = !!comment || !!commentImage;
   const dark = theme === "dark";
   const topic = topicIn ?? hashtags(caption)[0]?.slice(1);
   let head = caption, tail = "";
@@ -282,17 +283,17 @@ function Threads({ caption, comment, video, who, theme, topic: topicIn }: Previe
       <div className="pv-th-top"><Ic n="menu2" /><Ic n="threads" s={30} /><Ic n="search" s={23} /></div>
       <div className="pv-th-cmp"><Av who={who} size={36} />What&apos;s new?</div>
       <div className="pv-th-post">
-        <div className="pv-th-av"><Av who={who} size={36} />{comment && <span className="pv-th-line" />}</div>
+        <div className="pv-th-av"><Av who={who} size={36} />{reply && <span className="pv-th-line" />}</div>
         <div>
           <div className="pv-th-h"><b>{who.username}</b>{topic && <span className="topic">› {topic}</span>}<small>1m</small><span className="dots"><Ic n="dots" s={18} /></span></div>
           <div className="pv-th-tx"><Rich text={head} links at="link" />{tail && <span className="cut">{tail}</span>}</div>
           <div className="pv-th-media"><Video src={video} s={14} /></div>
           <div className="pv-th-act"><span><Ic n="heartO" s={20} /></span><span><Ic n="cmtO" s={19} /></span><span><Ic n="repost" s={19} /></span><span><Ic n="plane" s={19} /></span></div>
         </div>
-        {comment && (
+        {reply && (
           <>
             <div className="pv-th-av"><Av who={who} size={36} /></div>
-            <div><div className="pv-th-h"><b>{who.username}</b><small>1m</small><span className="dots"><Ic n="dots" s={18} /></span></div><div className="pv-th-tx"><Rich text={comment} links at="link" /></div></div>
+            <div><div className="pv-th-h"><b>{who.username}</b><small>1m</small><span className="dots"><Ic n="dots" s={18} /></span></div>{comment && <div className="pv-th-tx"><Rich text={comment} links at="link" /></div>}{commentImage && <Pic className="pv-cm-img" src={commentImage} />}</div>
           </>
         )}
       </div>

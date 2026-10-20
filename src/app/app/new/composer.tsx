@@ -79,6 +79,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
   const [tab, setTab] = useState<"main" | Channel>("main");
   const [source, setSource] = useState<"upload" | "link">("upload");
   const [file, setFile] = useState<File | null>(null);
+  const [commentImage, setCommentImage] = useState<File | null>(null);
   const [linkUrl, setLinkUrl] = useState("");
   const [durationSec, setDurationSec] = useState<number | null>(null);
   const [infoFor, setInfoFor] = useState<{ acct: string; info?: Info; error?: string } | null>(null);
@@ -143,6 +144,8 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
 
   const videoUrl = useMemo(() => (source === "upload" ? (file ? URL.createObjectURL(file) : null) : /^https:\/\//.test(linkUrl) ? linkUrl : null), [source, file, linkUrl]);
   useEffect(() => () => { if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl); }, [videoUrl]);
+  const commentImageUrl = useMemo(() => (commentImage ? URL.createObjectURL(commentImage) : null), [commentImage]);
+  useEffect(() => () => { if (commentImageUrl) URL.revokeObjectURL(commentImageUrl); }, [commentImageUrl]);
 
   // Posting keys: "tiktok" for the picked TikTok account, then the picked Meta channels.
   const metaPicked = social.filter((a) => picked.has(a.id) && a.status === "active");
@@ -180,6 +183,8 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
     if (source === "upload" ? !file : !/^https:\/\/\S+$/.test(linkUrl)) out.push("Add a video: upload one or paste an https link.");
     if (ttKey && info && when !== "draft") out.push(...postProblems(choice, info));
     for (const p of apps) if (p !== "tiktok") out.push(...channelProblems(p, captionOf(p), commentOf(p), durationSec), ...settingsProblems(p, settingsFor(p), durationSec, p === "instagram" ? collabText : undefined, p === "instagram" ? tagText : undefined));
+    if (commentImage && !["image/jpeg", "image/png"].includes(commentImage.type)) out.push("The comment image must be a JPG or PNG.");
+    else if (commentImage && commentImage.size > 8 * 1024 * 1024) out.push("The comment image is over 8 MB.");
     if (when === "pick" && !pickAt) out.push("Pick a date and time.");
     return out;
   })();
@@ -229,29 +234,34 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
     setToast(`Same channels as your last post: ${[...next].map((k) => byKey.get(k)?.name).filter(Boolean).slice(0, 4).join(", ")}${next.size > 4 ? ` and ${next.size - 4} more` : ""}.`);
   }
 
+  // Straight to storage. XHR, so the button can show how far the upload is (the slow part on a slow connection).
+  async function upload(f: File, what: string, kind?: "comment-image"): Promise<string> {
+    setBusy(`Uploading ${what}… 0%`);
+    const r = await fetch("/api/posts/upload", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ type: f.type, size: f.size, kind }) });
+    const u = (await r.json()) as { path?: string; uploadUrl?: string; error?: string };
+    if (!r.ok || !u.uploadUrl || !u.path) throw new Error(u.error || "Upload couldn't start.");
+    const uploaded = await new Promise<boolean>((resolve) => {
+      const x = new XMLHttpRequest();
+      x.open("PUT", u.uploadUrl as string);
+      x.setRequestHeader("content-type", f.type);
+      x.upload.onprogress = (e) => { if (e.lengthComputable) setBusy(`Uploading ${what}… ${Math.round((e.loaded / e.total) * 100)}%`); };
+      x.onload = () => resolve(x.status >= 200 && x.status < 300);
+      x.onerror = () => resolve(false);
+      x.send(f);
+    });
+    if (!uploaded) throw new Error("The upload didn't finish. Try again.");
+    return u.path;
+  }
+
   async function submit() {
     setErrors([]);
     if (problems.length) return setErrors(problems);
     try {
       let storagePath: string | undefined;
-      if (source === "upload" && file) {
-        setBusy("Uploading your video… 0%");
-        const r = await fetch("/api/posts/upload", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ type: file.type, size: file.size }) });
-        const u = (await r.json()) as { path?: string; uploadUrl?: string; error?: string };
-        if (!r.ok || !u.uploadUrl || !u.path) throw new Error(u.error || "Upload couldn't start.");
-        // XHR, so the button can show how far the upload is (the slow part on a slow connection).
-        const uploaded = await new Promise<boolean>((resolve) => {
-          const x = new XMLHttpRequest();
-          x.open("PUT", u.uploadUrl as string);
-          x.setRequestHeader("content-type", file.type);
-          x.upload.onprogress = (e) => { if (e.lengthComputable) setBusy(`Uploading your video… ${Math.round((e.loaded / e.total) * 100)}%`); };
-          x.onload = () => resolve(x.status >= 200 && x.status < 300);
-          x.onerror = () => resolve(false);
-          x.send(file);
-        });
-        if (!uploaded) throw new Error("The upload didn't finish. Try again.");
-        storagePath = u.path;
-      }
+      if (source === "upload" && file) storagePath = await upload(file, "your video");
+      // The comment image goes to Facebook (not as a draft) and Threads; Instagram comments are text only (C4d).
+      const imageApps = metaPicked.some((a) => (a.platform === "facebook" && !fbDraft) || a.platform === "threads");
+      const commentImagePath = commentImage && imageApps ? await upload(commentImage, "the comment image", "comment-image") : undefined;
       setBusy(when === "draft" ? "Saving…" : "Scheduling…");
       const at = when === "pick" ? new Date(pickAt).toISOString() : when;
       const video = { source, storagePath, linkUrl: source === "link" ? linkUrl : undefined };
@@ -267,7 +277,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
         const r = await fetch("/api/social/posts", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ ...video, durationSec, when: at, tiktokPostId: tiktokPost?.id, channels: metaPicked.map((a) => ({ accountId: a.id, caption: captionOf(a.platform), firstComment: a.platform === "facebook" && fbDraft ? "" : commentOf(a.platform), linkReminder: a.platform === "facebook" && remind && !!link.trim(), settings: settingsFor(a.platform) })) }),
+          body: JSON.stringify({ ...video, durationSec, when: at, tiktokPostId: tiktokPost?.id, commentImagePath, channels: metaPicked.map((a) => ({ accountId: a.id, caption: captionOf(a.platform), firstComment: a.platform === "facebook" && fbDraft ? "" : commentOf(a.platform), linkReminder: a.platform === "facebook" && remind && !!link.trim(), settings: settingsFor(a.platform) })) }),
         });
         const d = (await r.json()) as { posts?: { scheduled_at: string | null }[]; error?: string | string[] };
         if (!r.ok || !d.posts) throw new Error(`${tiktokPost ? "The TikTok post was saved, but " : ""}${Array.isArray(d.error) ? d.error.join(" ") : d.error || "the other channels couldn't be saved."}`);
@@ -395,13 +405,24 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
                     <li><b>Call to action with the link</b> (e.g. &quot;Dapatkan di sini 👉 link&quot;): Facebook keeps it where you typed it. TikTok, Instagram and Threads drop it together with its emoji, since links can&apos;t be tapped there.</li>
                     <li><b>Hashtags:</b> type them anywhere in the caption to keep them there, or put them in the Hashtags box to add them at the very bottom. Up to 5 on TikTok and Instagram, all on Facebook. Threads leaves them out (they can&apos;t be tapped) and uses one Topic.</li>
                     <li><b>Product link:</b> paste it in Product link; Rezekii puts it where each app works best (Facebook post and comment, Threads comment, Instagram &quot;Link dekat bio&quot;, TikTok yellow basket).</li>
-                    <li><b>First comment:</b> optional; it goes out on Facebook, Instagram and Threads right after the post (TikTok doesn&apos;t let apps comment).</li>
+                    <li><b>First comment:</b> optional; it goes out on Facebook, Instagram and Threads right after the post (TikTok doesn&apos;t let apps comment). You can add one image to it on Facebook and Threads.</li>
                     <li><b>Check each app&apos;s tab and the preview:</b> the preview shows exactly what will be posted.</li>
                   </ol>
                 </details>
                 <label className="cx-field"><b>Caption</b><textarea className="np-input" rows={5} value={main} onChange={(e) => setMain(e.target.value)} placeholder="Hook on the first line, then a few short lines." aria-label="Main caption" /></label>
                 <label className="cx-field"><b>Hashtags</b><input className="np-input" type="text" value={tagsText} onChange={(e) => setTagsText(e.target.value)} placeholder="#krilloil #sendi #wellnessmalaysia" aria-label="Hashtags" /><small className="np-muted">Added at the very bottom: up to 5 on TikTok and Instagram, all on Facebook, none on Threads.</small></label>
                 <label className="cx-field"><b>First comment</b><textarea className="np-input" rows={2} value={ownComment} onChange={(e) => setOwnComment(e.target.value)} placeholder="Optional, e.g. Ada soalan? Tanya di komen 👇" aria-label="First comment" /><small className="np-muted">Facebook, Instagram and Threads. The product link is added after it where that app puts the link in the comment.</small></label>
+                {(apps.includes("facebook") || apps.includes("threads")) && (
+                  <div className="cx-field"><b>Image in first comment</b>
+                    {commentImage && commentImageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <span className="cx-cimg"><img src={commentImageUrl} alt="" /><span>{commentImage.name} · {(commentImage.size / 1048576).toFixed(1)} MB</span><button type="button" className="cx-link" onClick={() => setCommentImage(null)}>Remove</button></span>
+                    ) : (
+                      <label className="np-drop"><input type="file" accept="image/jpeg,image/png" onChange={(e) => setCommentImage(e.target.files?.[0] ?? null)} /><span>Optional: one JPG or PNG (up to 8 MB)</span></label>
+                    )}
+                    <small className="np-muted">Goes under the first comment on Facebook and Threads. Instagram comments can only be text.</small>
+                  </div>
+                )}
                 {apps.includes("threads") && (
                   <label className="cx-field"><span className="cx-row"><b>Threads topic</b>{topicOver !== null ? <button type="button" className="cx-link" onClick={() => setTopicOver(null)}>Use the first hashtag</button> : <small className="np-muted">From your first hashtag · edit to change</small>}</span>
                     <input className="np-input" type="text" value={topicOver ?? threadsTopic(mainFull)} maxLength={60} onChange={(e) => setTopicOver(e.target.value)} placeholder="e.g. Kesihatan sendi" aria-label="Threads topic" />
@@ -558,7 +579,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
               <select className="np-input" value={pKey} onChange={(e) => setPreviewAcct(e.target.value)}>{inApp(pApp).map((k) => <option key={k} value={k}>{byKey.get(k)?.name}</option>)}</select>
             </label>
           )}
-          {mounted && pApp && pKey ? <PhonePreview channel={pApp} caption={shownOf(pApp)} names={pApp === "facebook" ? fbMentions.map((m) => m.name) : undefined} comment={pApp === "facebook" && fbDraft ? "" : commentOf(pApp)} video={videoUrl} who={who(pKey)} fbView={fbView} theme={theme} topic={topic} collaborators={collaborators} /> : <div className="pv-phone"><div className="pv-scr" /></div>}
+          {mounted && pApp && pKey ? <PhonePreview channel={pApp} caption={shownOf(pApp)} commentImage={(pApp === "facebook" && !fbDraft) || pApp === "threads" ? commentImageUrl : null} names={pApp === "facebook" ? fbMentions.map((m) => m.name) : undefined} comment={pApp === "facebook" && fbDraft ? "" : commentOf(pApp)} video={videoUrl} who={who(pKey)} fbView={fbView} theme={theme} topic={topic} collaborators={collaborators} /> : <div className="pv-phone"><div className="pv-scr" /></div>}
           {pApp === "facebook" && <Seg value={fbView} set={setFbView} items={[["reels", "Reels"], ["feed", "Feed"]]} label="Facebook view" />}
           {(pApp === "threads" || (pApp === "facebook" && fbView === "feed")) && <Seg value={theme} set={setTheme} items={[["light", "Light"], ["dark", "Dark"]]} label="App theme" />}
           <p className="cx-note">{pApp ? PREVIEW_NOTE[pApp] : "Pick a channel to see its preview."}</p>

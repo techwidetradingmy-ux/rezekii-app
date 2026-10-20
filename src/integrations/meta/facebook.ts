@@ -61,8 +61,11 @@ export type FacebookVideo = { status?: { video_status?: string; processing_phase
 export const facebookVideo = (videoId: string, token: string) => metaFetch<FacebookVideo>(G(`${videoId}?${qs({ fields: "status,permalink_url,post_id", access_token: token })}`));
 
 /** A comment by the Page on its own post or video. */
-export async function commentOnFacebook(objectId: string, token: string, message: string): Promise<string> {
-  return (await metaFetch<{ id: string }>(G(`${objectId}/comments`), { message, access_token: token })).id;
+export async function commentOnFacebook(objectId: string, token: string, message: string, imageUrl?: string | null): Promise<string> {
+  const form: Record<string, string> = { access_token: token };
+  if (message) form.message = message;
+  if (imageUrl) form.attachment_url = imageUrl;
+  return (await metaFetch<{ id: string }>(G(`${objectId}/comments`), form)).id;
 }
 
 export const facebookPermalink = (p?: string) => (!p ? null : p.startsWith("http") ? p : `https://www.facebook.com${p}`);

@@ -19,6 +19,8 @@ export type SocialPostRow = {
   duration_sec: number | null;
   caption: string;
   first_comment: string;
+  /** One image under the first comment (Facebook and Threads only). */
+  comment_image_path: string | null;
   link_reminder: boolean;
   link_done: boolean;
   status: SocialStatus;
@@ -100,8 +102,8 @@ export async function copyUpload(from: string, to: string): Promise<void> {
   if (!res.ok) throw new Error(`storage copy failed: ${res.status} ${(await res.text()).slice(0, 200)}`);
 }
 
-/** A link Meta can fetch the video from (Instagram, Facebook and Threads download it themselves). */
-export async function signedVideoUrl(path: string, seconds = 6 * 3600): Promise<string> {
+/** A link Meta can fetch the video or comment image from (Instagram, Facebook and Threads download it themselves). */
+export async function signedMediaUrl(path: string, seconds = 6 * 3600): Promise<string> {
   const { base, headers } = storage();
   const res = await fetch(`${base}/object/sign/${BUCKET}/${path}`, {
     method: "POST",
@@ -126,18 +128,18 @@ export async function postedToCheck(limit: number): Promise<SocialPostRow[]> {
 
 /** Whether the stored video is still there (a retry needs it). */
 export async function videoStillStored(path: string): Promise<boolean> {
-  return signedVideoUrl(path, 60).then(() => true, () => false);
+  return signedMediaUrl(path, 60).then(() => true, () => false);
 }
 
 /**
- * Once every channel post in the group has finished (and its first comment too), the shared video copy is deleted. While a
+ * Once every channel post in the group has finished (and its first comment too), the shared video copy and the comment image
+ * are deleted. While a
  * channel has failed it's kept, so Try again works; cancelling or a successful retry lets it go.
  */
 export async function cleanUpGroup(groupId: string): Promise<void> {
-  const rows = (await (await supabaseRest(`social_posts?group_id=eq.${groupId}&select=status,comment_status,storage_path`)).json()) as Pick<SocialPostRow, "status" | "comment_status" | "storage_path">[];
+  const rows = (await (await supabaseRest(`social_posts?group_id=eq.${groupId}&select=status,comment_status,storage_path,comment_image_path`)).json()) as Pick<SocialPostRow, "status" | "comment_status" | "storage_path" | "comment_image_path">[];
   if (!rows.length || rows.some((r) => !FINAL.has(r.status) || r.status === "failed" || r.comment_status === "pending")) return;
-  const path = rows.find((r) => r.storage_path)?.storage_path;
-  if (!path) return;
+  const paths = [rows.find((r) => r.storage_path)?.storage_path, rows.find((r) => r.comment_image_path)?.comment_image_path].filter((p): p is string => !!p);
   const { base, headers } = storage();
-  await fetch(`${base}/object/${BUCKET}/${path}`, { method: "DELETE", headers, cache: "no-store", signal: AbortSignal.timeout(20_000) }).catch(() => {});
+  for (const path of paths) await fetch(`${base}/object/${BUCKET}/${path}`, { method: "DELETE", headers, cache: "no-store", signal: AbortSignal.timeout(20_000) }).catch(() => {});
 }

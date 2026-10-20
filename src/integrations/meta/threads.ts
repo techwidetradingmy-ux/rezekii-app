@@ -32,9 +32,11 @@ export async function createThreadsVideo(userId: string, token: string, videoUrl
   if (o.topic) form.topic_tag = o.topic;
   return (await metaFetch<{ id: string }>(TH(`${userId}/threads`), form)).id;
 }
-/** The first comment: the account's own reply under its post. */
-export async function createThreadsReply(userId: string, token: string, text: string, replyToId: string): Promise<string> {
-  return (await metaFetch<{ id: string }>(TH(`${userId}/threads`), { media_type: "TEXT", text, reply_to_id: replyToId, access_token: token })).id;
+/** The first comment: the account's own reply under its post, with an image when there is one. */
+export async function createThreadsReply(userId: string, token: string, text: string, replyToId: string, imageUrl?: string | null): Promise<string> {
+  const form: Record<string, string> = imageUrl ? { media_type: "IMAGE", image_url: imageUrl } : { media_type: "TEXT" };
+  if (text) form.text = text;
+  return (await metaFetch<{ id: string }>(TH(`${userId}/threads`), { ...form, reply_to_id: replyToId, access_token: token })).id;
 }
 export const threadsContainer = (id: string, token: string) => metaFetch<{ status?: ContainerStatus; error_message?: string }>(TH(`${id}?${qs({ fields: "status,error_message", access_token: token })}`));
 export async function publishThreads(userId: string, token: string, containerId: string): Promise<string> {
