@@ -47,7 +47,7 @@ Scope: Facebook Pages, Instagram (Business or Creator), Threads. Not Facebook Gr
 - **B1 — Nothing picked by default** → New post opens with no channel switched on; Schedule says "Pick at least one channel".
 - **B2 — Create a brand** (Post to → Manage brands → + New brand) → a name and any channels from any app, ticked from a searchable list grouped by app; it shows as a chip with its pictures, channel count and apps. No name, no channel or a name already used → refused with the reason. Up to 50 brands.
 - **B3 — Pick a brand** → all its connected channels switch on and show under Post to, grouped by app; tap it again → they switch off.
-- **B4 — Combine and adjust** → several brands at once; the search adds any single channel; × takes one off; a brand with one of its channels taken off no longer shows as picked.
+- **B4 — Combine and adjust** → several brands at once; tapping the search box lists every connected channel by app (typing narrows it) to tick or untick several; × takes one off; a brand with one of its channels taken off no longer shows as picked.
 - **B5 — Edit or delete a brand** → rename it or change its channels; delete asks first and leaves the channels connected. A channel can be in more than one brand; a disconnected channel drops out of its brands.
 - **B6 — One TikTok account per post** → picking a second TikTok account (by brand or search) replaces the first.
 - **B7 — Same as last post** → picks the channels of the most recent post (its Meta channels and its TikTok account), leaving out any no longer connected.

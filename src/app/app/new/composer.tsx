@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import type { CreatorInfo, PrivacyLevel } from "@/integrations/tiktok/posting.ts";
 import type { PublicAccount } from "@/modules/social/accounts.ts";
 import type { Brand } from "@/modules/social/brands.ts";
@@ -57,6 +57,15 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
   const [brands, setBrands] = useState(initialBrands);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState("");
+  const [listOpen, setListOpen] = useState(false);
+  const finder = useRef<HTMLDivElement>(null);
+  // The channel list stays open while picking several; a tap anywhere else closes it.
+  useEffect(() => {
+    if (!listOpen) return;
+    const away = (e: PointerEvent) => { if (!finder.current?.contains(e.target as Node)) setListOpen(false); };
+    document.addEventListener("pointerdown", away);
+    return () => document.removeEventListener("pointerdown", away);
+  }, [listOpen]);
   const [main, setMain] = useState("");
   const [link, setLink] = useState("");
   const [remind, setRemind] = useState(true);
@@ -221,7 +230,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
   const linkWhere = (p: Channel) => { const pl = placeOf(p); return p === "tiktok" ? "not added (the product goes in the yellow basket)" : pl.caption && pl.comment ? "caption and first comment" : pl.caption ? "caption" : pl.comment ? "first comment" : "not added"; };
   const notes = pApp ? previewNotes(pApp, captionOf(pApp), commentOf(pApp), !!link.trim(), remind, fbView) : [];
   const q = query.trim().toLowerCase();
-  const results = q ? channels.filter((c) => c.status === "active" && !picked.has(c.key) && `${c.name} ${c.sub} ${NAMES[c.app]}`.toLowerCase().includes(q)).slice(0, 8) : [];
+  const results = channels.filter((c) => c.status === "active" && (!q || `${c.name} ${c.sub} ${NAMES[c.app]}`.toLowerCase().includes(q)));
   const missing = APPS.filter((p) => !channels.some((c) => c.app === p));
   const pickedChs = channels.filter((c) => picked.has(c.key) && connected.has(c.key));
 
@@ -256,13 +265,24 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
               </div>
               {!brands.length && <p className="np-muted">Group the channels you post to together, like a brand&apos;s Facebook Page, Instagram and TikTok. Then one tap picks them all. <button type="button" className="cx-link" onClick={() => setSheet("brands")}>Create a brand</button></p>}
             </div>
-            <label className="cx-search">{SEARCH_ICON}<input className="np-input" type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={`Add a channel: search ${connected.size}`} aria-label="Add a channel" /></label>
-            {q && (
-              <div className="cx-results" role="listbox" aria-label="Channels found">
-                {results.map((c) => <button key={c.key} type="button" role="option" aria-selected={false} className="cx-res" onClick={() => { pick(toggleChannel(picked, c.key, connected)); setQuery(""); }}><Face ch={c} /><span>{c.name}</span><small>{NAMES[c.app]}</small></button>)}
-                {!results.length && <p className="np-muted" style={{ padding: 6 }}>No channel matches &quot;{query}&quot;.</p>}
-              </div>
-            )}
+            <div className="cx-finder" ref={finder}>
+              <label className="cx-search">{SEARCH_ICON}<input className="np-input" type="search" value={query} onChange={(e) => { setQuery(e.target.value); setListOpen(true); }} onFocus={() => setListOpen(true)} onKeyDown={(e) => e.key === "Escape" && setListOpen(false)} placeholder={`Pick or search channels (${connected.size})`} aria-label="Pick or search channels" role="combobox" aria-expanded={listOpen} aria-controls="cx-channel-list" /></label>
+              {listOpen && (
+                <div id="cx-channel-list" className="cx-results" role="listbox" aria-label="Connected channels" aria-multiselectable="true">
+                  {APPS.map((p) => {
+                    const list = results.filter((c) => c.app === p);
+                    return list.length ? (
+                      <div key={p} className="cx-group">
+                        <span className="cx-gh"><BrandIcon ch={p} size={16} />{NAMES[p]} · {list.length}</span>
+                        {list.map((c) => <button key={c.key} type="button" role="option" aria-selected={picked.has(c.key)} className="cx-res" onClick={() => pick(toggleChannel(picked, c.key, connected))}><Face ch={c} /><span>{c.name}</span><small>{c.app === "facebook" ? "" : c.sub}</small><i className="cx-tick" aria-hidden="true">{picked.has(c.key) ? "✓" : ""}</i></button>)}
+                      </div>
+                    ) : null;
+                  })}
+                  {!results.length && <p className="np-muted" style={{ padding: 6 }}>{q ? <>No channel matches &quot;{query}&quot;.</> : "No channels connected yet."}</p>}
+                  <button type="button" className="cx-link cx-done" onClick={() => setListOpen(false)}>Done</button>
+                </div>
+              )}
+            </div>
             {pickedChs.length > 0 ? (
               <div className="cx-picked">
                 {APPS.filter((p) => pickedChs.some((c) => c.app === p)).map((p) => (

@@ -70,6 +70,14 @@
 .cx-res:hover, .cx-res:focus-visible { background: var(--surface2); }
 .cx-res > span:not(.cx-face) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; font-size: 14px; }
 .cx-res small { color: var(--muted); font-size: 12px; }
+.cx-finder { display: grid; gap: 6px; min-width: 0; }
+.cx-finder .cx-results { max-height: 340px; gap: 8px; padding: 6px 6px 8px; animation: cx-pop 0.25s cubic-bezier(0.22, 0.8, 0.3, 1); }
+.cx-results .cx-group { gap: 2px; }
+.cx-results .cx-gh { position: sticky; top: -6px; z-index: 1; background: var(--surface); padding: 6px 4px 4px; }
+.cx-res[aria-selected="true"] { background: var(--gsoft); }
+.cx-tick { width: 22px; height: 22px; flex-shrink: 0; display: grid; place-items: center; border-radius: 50%; border: 1.5px solid var(--border); color: #ffffff; font-style: normal; font-size: 13px; font-weight: 800; }
+.cx-res[aria-selected="true"] .cx-tick { background: var(--green); border-color: var(--green); }
+.cx-done { justify-self: end; padding: 4px 6px; }
 .cx-picked { display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 10px; }
 .cx-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .cx-tag { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; border: 1px solid var(--border); border-radius: 999px; padding: 3px 4px 3px 4px; background: var(--surface); font-size: 12.5px; font-weight: 700; animation: cx-pop 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.25); }
