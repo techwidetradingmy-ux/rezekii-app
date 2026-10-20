@@ -8,6 +8,7 @@ import type { Brand } from "@/modules/social/brands.ts";
 import { consentLine, postProblems, type PostChoice } from "@/modules/posting/rules.ts";
 import { brandChannels, brandPicked, cleanPick, isTikTokKey, openIdOf, tiktokKey, toggleBrand, toggleChannel } from "@/modules/social/picker.ts";
 import { COLLABORATORS_MAX, COMMON_PAGES, MENTIONS_MAX, TAGS_MAX, REPLY_CONTROLS, mentionPicks, mentionsInText, pageRef, withPageMentions, type PageMention, cleanTopic, parseCollaborators, settingsProblems, threadsTopic, type ReplyControl, type TrialMode } from "@/modules/social/settings.ts";
+import { KEYFRAME_GAP_MAX, readKeyframes, type KeyframeInfo } from "@/modules/posting/keyframes.ts";
 import { CAPTION_MAX, COMMENT_MAX, DEFAULT_PLACEMENT, NAMES, parseHashtags, withHashtags, autoCaption, autoComment, channelProblems, channelWarnings, lengthFor, links, postedCaption, type Channel, type Placement, type Platform } from "@/modules/social/rules.ts";
 import { BrandIcon } from "../brand-icons";
 import { PhonePreview, type Who } from "./phone-previews";
@@ -80,6 +81,15 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
   const [source, setSource] = useState<"upload" | "link">("upload");
   const [file, setFile] = useState<File | null>(null);
   const [commentImage, setCommentImage] = useState<File | null>(null);
+  // How far apart the uploaded video's full frames are (C7c): one in the whole clip breaks on Facebook and Threads.
+  const [checked, setChecked] = useState<{ file: File; frames: KeyframeInfo | null } | null>(null);
+  useEffect(() => {
+    if (source !== "upload" || !file) return;
+    let live = true;
+    readKeyframes(file).then((frames) => { if (live) setChecked({ file, frames }); }, () => {});
+    return () => { live = false; };
+  }, [source, file]);
+  const frames = source === "upload" && checked?.file === file ? checked.frames : null;
   const [linkUrl, setLinkUrl] = useState("");
   const [durationSec, setDurationSec] = useState<number | null>(null);
   const [infoFor, setInfoFor] = useState<{ acct: string; info?: Info; error?: string } | null>(null);
@@ -388,6 +398,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
               <input className="np-input" type="url" inputMode="url" placeholder="https://… (Google Drive, Dropbox or a direct file link)" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value.trim())} aria-label="Video link" />
             )}
             {videoUrl && <video src={videoUrl} muted playsInline preload="metadata" hidden onLoadedMetadata={(e) => setDurationSec(Math.round(e.currentTarget.duration))} />}
+            {frames && frames.maxGapSec > KEYFRAME_GAP_MAX && <p className="cx-warn" role="status">Facebook and Threads may show this video broken, mixed with other footage: it has {frames.keyframes === 1 ? "only one full frame in the whole clip" : `a ${Math.round(frames.maxGapSec)}-second stretch without a full frame`}. This is common with videos straight from AI generators like Google Flow. Export it again (for example through CapCut) and upload that file.</p>}
             {durationSec !== null && <p className="np-muted">Length {Math.floor(durationSec / 60)}:{String(durationSec % 60).padStart(2, "0")}{apps.includes("facebook") ? ` · Facebook: ${durationSec >= 3 && durationSec <= 90 ? "goes out as a Reel" : "goes out as a Page video (Reels are 3–90 s)"}` : ""}</p>}
           </section>
 
