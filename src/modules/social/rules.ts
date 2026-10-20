@@ -105,11 +105,16 @@ export function withHashtags(main: string, tags: string[]): string {
  */
 export function postedCaption(ch: Channel, text: string, link: string, place: Placement): string {
   if (ch === "tiktok" || !link || !place.caption || text.includes(link)) return text;
+  return aboveTags(text, link);
+}
+
+/** Adds a line at the end of a caption, above a closing line of hashtags so they stay at the very bottom. */
+export function aboveTags(text: string, line: string): string {
   const lines = text.split("\n");
   const last = lines[lines.length - 1].trim();
-  if (!TAG_LINE.test(last)) return text ? `${text}\n${link}` : link;
+  if (!TAG_LINE.test(last)) return text ? `${text}\n${line}` : line;
   const body = lines.slice(0, -1).join("\n").trim();
-  return body ? `${body}\n${link}\n\n${last}` : `${link}\n\n${last}`;
+  return body ? `${body}\n${line}\n\n${last}` : `${line}\n\n${last}`;
 }
 
 /** Plain-language problems that block scheduling this channel (empty = OK). */

@@ -2,19 +2,22 @@
  * Post settings per app (docs/flows/social-posting.md S1–S5), kept free of I/O so New post and the server check them the
  * same way. Only what each app's API offers: Meta has no private ("Only me") posts for Facebook, Instagram or Threads.
  */
-import { REEL_SECONDS, hashtags, type Platform } from "./rules.ts";
+import { REEL_SECONDS, aboveTags, hashtags, type Platform } from "./rules.ts";
 
 export type ReplyControl = "everyone" | "accounts_you_follow" | "followers_only" | "mentioned_only";
 export const REPLY_CONTROLS: [ReplyControl, string][] = [["everyone", "Everyone"], ["accounts_you_follow", "Accounts you follow"], ["followers_only", "Your followers"], ["mentioned_only", "Only accounts you mention"]];
 export type TrialMode = "off" | "manual" | "auto";
 
-export type FacebookSettings = { draft: boolean };
+/** A Facebook Page mentioned in a Facebook caption (S7): Facebook needs its ID; the name is what people see. */
+export type PageMention = { id: string; name: string };
+export type FacebookSettings = { draft: boolean; mentions: PageMention[] };
 export type InstagramSettings = { feed: boolean; collaborators: string[]; tags: string[]; trial: TrialMode };
 export type ThreadsSettings = { replies: ReplyControl; topic: string };
 export type Settings = { facebook: FacebookSettings; instagram: InstagramSettings; threads: ThreadsSettings };
-export const DEFAULT_SETTINGS: Settings = { facebook: { draft: false }, instagram: { feed: true, collaborators: [], tags: [], trial: "off" }, threads: { replies: "everyone", topic: "" } };
+export const DEFAULT_SETTINGS: Settings = { facebook: { draft: false, mentions: [] }, instagram: { feed: true, collaborators: [], tags: [], trial: "off" }, threads: { replies: "everyone", topic: "" } };
 
 export const COLLABORATORS_MAX = 3;
+export const MENTIONS_MAX = 10;
 /** People tagged in a Reel (Instagram's own limit in the app). */
 export const TAGS_MAX = 20;
 export const TOPIC_MAX = 50;
@@ -40,7 +43,7 @@ export const threadsTopic = (main: string) => cleanTopic(hashtags(main)[0] ?? ""
 /** What the server keeps for one channel post, from what the browser sent (anything unknown falls back to the default). */
 export function cleanSettings(platform: Platform, raw: unknown): FacebookSettings | InstagramSettings | ThreadsSettings {
   const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
-  if (platform === "facebook") return { draft: r.draft === true };
+  if (platform === "facebook") return { draft: r.draft === true, mentions: cleanMentions(r.mentions) };
   if (platform === "instagram") {
     const trial = r.trial === "manual" || r.trial === "auto" ? r.trial : "off";
     const names = (k: string) => parseCollaborators(Array.isArray(r[k]) ? (r[k] as string[]) : []).list;
@@ -66,4 +69,39 @@ export function settingsProblems(platform: Platform, s: Partial<Settings[Platfor
     if (list.length > TAGS_MAX) out.push(`Instagram allows up to ${TAGS_MAX} tagged people.`);
   }
   return out;
+}
+
+function cleanMentions(raw: unknown): PageMention[] {
+  if (!Array.isArray(raw)) return [];
+  const out: PageMention[] = [];
+  for (const m of raw as { id?: unknown; name?: unknown }[]) {
+    const id = String(m?.id ?? ""), name = typeof m?.name === "string" ? m.name.trim().slice(0, 100) : "";
+    if (/^\d{5,20}$/.test(id) && name && !out.some((o) => o.id === id)) out.push({ id, name });
+  }
+  return out.slice(0, MENTIONS_MAX);
+}
+
+/** A Facebook Page as pasted: its ID when the link carries one (or it's typed alone), otherwise its username. */
+export function pageRef(input: string): { id: string } | { username: string } | null {
+  const s = input.trim();
+  if (/^\d{5,20}$/.test(s)) return { id: s };
+  const id = s.match(/[?&]id=(\d{5,20})/) ?? s.match(/\/people\/[^/]+\/(\d{5,20})/) ?? s.match(/facebook\.com\/(\d{5,20})(?:[/?#]|$)/i);
+  if (id) return { id: id[1] };
+  const user = s.match(/(?:facebook|fb)\.com\/(?!profile\.php|people\/|pages\/|groups\/|share\/)([A-Za-z0-9.]{3,50})/i) ?? s.match(/^@?([A-Za-z0-9.]{3,50})$/);
+  return user ? { username: user[1] } : null;
+}
+
+/**
+ * A Facebook caption with its Page mentions: each where "@Page Name" was typed, otherwise at the end above the hashtags.
+ * `as` writes each mention: Facebook's @[page-id] when posting, the Page's name in the preview.
+ */
+export function withPageMentions(caption: string, mentions: PageMention[], as: (m: PageMention) => string = (m) => `@[${m.id}]`): string {
+  let text = caption;
+  const missing: PageMention[] = [];
+  for (const m of [...mentions].sort((a, b) => b.name.length - a.name.length)) {
+    const at = `@${m.name}`;
+    if (text.includes(at)) text = text.split(at).join(as(m));
+    else missing.push(m);
+  }
+  return missing.length ? aboveTags(text, missing.map(as).join(" ")) : text;
 }

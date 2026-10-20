@@ -77,3 +77,8 @@ export async function facebookPostExists(id: string, token: string): Promise<boo
     throw err;
   }
 }
+
+/** A Page's ID and name from its ID or username (for mentioning it); Facebook may refuse Pages the app doesn't manage. */
+export async function facebookPageInfo(idOrUsername: string, token: string): Promise<{ id: string; name: string }> {
+  return metaFetch<{ id: string; name: string }>(G(`${encodeURIComponent(idOrUsername)}?${qs({ fields: "id,name", access_token: token })}`));
+}

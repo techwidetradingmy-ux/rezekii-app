@@ -1,10 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { cleanSettings, cleanTopic, parseCollaborators, settingsProblems, threadsTopic } from "./settings.ts";
+import { cleanSettings, cleanTopic, pageRef, parseCollaborators, settingsProblems, threadsTopic, withPageMentions } from "./settings.ts";
 
 test("S1: Facebook can save a Reel as a draft on the Page; drafts work for Reels (3–90 s) only", () => {
-  assert.deepEqual(cleanSettings("facebook", { draft: true }), { draft: true });
-  assert.deepEqual(cleanSettings("facebook", { draft: "yes" }), { draft: false });
+  assert.deepEqual(cleanSettings("facebook", { draft: true }), { draft: true, mentions: [] });
+  assert.deepEqual(cleanSettings("facebook", { draft: "yes" }), { draft: false, mentions: [] });
   assert.deepEqual(settingsProblems("facebook", { draft: true }, 30), []);
   assert.match(settingsProblems("facebook", { draft: true }, 120)[0], /Reels only/);
   assert.deepEqual(settingsProblems("facebook", { draft: false }, 120), []);
@@ -39,4 +39,17 @@ test("S6: Instagram tagged people are up to 20 valid usernames; anything else is
   assert.deepEqual((cleanSettings("instagram", { tags: ["@Shopee_MY", "x y", "shopee_my"] }) as { tags: string[] }).tags, ["shopee_my"]);
   assert.equal((cleanSettings("instagram", { tags: Array.from({ length: 25 }, (_, i) => `u${i}`) }) as { tags: string[] }).tags.length, 20);
   assert.match(settingsProblems("instagram", {}, null, "", "@ok bad!")[0], /tagged people/);
+});
+
+test("S7: a mentioned Facebook Page comes from its link or ID; Facebook gets @[id] where @Name was typed, else at the end above the hashtags", () => {
+  assert.deepEqual(pageRef("https://www.facebook.com/ShopeeMY"), { username: "ShopeeMY" });
+  assert.deepEqual(pageRef("https://www.facebook.com/profile.php?id=100064791234567"), { id: "100064791234567" });
+  assert.deepEqual(pageRef("https://www.facebook.com/people/Mentega-Terbang/61551234567890/"), { id: "61551234567890" });
+  assert.deepEqual(pageRef("112233445566"), { id: "112233445566" });
+  assert.equal(pageRef("not a page!"), null);
+  const shopee = { id: "100064791234567", name: "Shopee Malaysia" };
+  assert.equal(withPageMentions("Dah ada di @Shopee Malaysia!\n\n#a", [shopee]), "Dah ada di @[100064791234567]!\n\n#a");
+  assert.equal(withPageMentions("Jom beli.\n\n#a #b", [shopee]), "Jom beli.\n@[100064791234567]\n\n#a #b");
+  assert.equal(withPageMentions("Jom beli.", [shopee], (m) => m.name), "Jom beli.\nShopee Malaysia");
+  assert.deepEqual((cleanSettings("facebook", { mentions: [shopee, { id: "x", name: "bad" }, shopee] }) as { mentions: unknown[] }).mentions, [shopee]);
 });

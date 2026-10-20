@@ -6,7 +6,7 @@ import { directLink } from "../posting/media.ts";
 import { nextRetry } from "../posting/rules.ts";
 import { freshToken, getAccount, markReconnect, type SocialAccount } from "./accounts.ts";
 import { NAMES, facebookAsReel } from "./rules.ts";
-import { cleanSettings, type InstagramSettings, type ThreadsSettings } from "./settings.ts";
+import { cleanSettings, withPageMentions, type FacebookSettings, type InstagramSettings, type ThreadsSettings } from "./settings.ts";
 import { cleanUpGroup, signedVideoUrl, updateSocialPost, type SocialPostRow } from "./store.ts";
 
 const STUCK_MS = 30 * 60e3;
@@ -57,12 +57,13 @@ export async function publishSocialPost(p: SocialPostRow): Promise<string> {
     const video = p.storage_path ? await signedVideoUrl(p.storage_path) : directLink(p.link_url ?? "");
     let container: string;
     if (p.platform === "facebook") {
+      const caption = withPageMentions(p.caption, (cleanSettings("facebook", p.settings) as FacebookSettings).mentions);
       if (facebookAsReel(p.duration_sec)) {
         container = await startFacebookReel(acc.external_id, token);
         await updateSocialPost(p.id, { container_id: container });
         await uploadFacebookReel(container, token, video);
-        await finishFacebookReel(acc.external_id, token, container, p.caption, draftOf(p));
-      } else container = await postFacebookVideo(acc.external_id, token, video, p.caption);
+        await finishFacebookReel(acc.external_id, token, container, caption, draftOf(p));
+      } else container = await postFacebookVideo(acc.external_id, token, video, caption);
     } else if (p.platform === "instagram") {
       const s = cleanSettings("instagram", p.settings) as InstagramSettings;
       container = await createInstagramReel(acc.external_id, token, video, p.caption, s);
