@@ -176,6 +176,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
   const topic = cleanTopic(topicOver ?? threadsTopic(mainFull));
   const collaborators = parseCollaborators(collabText).list.slice(0, COLLABORATORS_MAX);
   const tagged = parseCollaborators(tagText).list.slice(0, TAGS_MAX);
+  const igAdvanced = (collabText.trim() ? 1 : 0) + (tagText.trim() ? 1 : 0) + (igTrial !== "off" ? 1 : 0);
   const settingsFor = (p: Platform) => (p === "facebook" ? { draft: fbDraft, mentions: allMentions } : p === "instagram" ? { feed: igFeed, collaborators, tags: tagged, trial: igTrial } : { replies, topic });
   const pApp = apps.includes(previewApp) ? previewApp : apps[0];
   const pKey = pApp ? (inApp(pApp).includes(previewAcct) ? previewAcct : inApp(pApp)[0]) : undefined;
@@ -532,13 +533,19 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
                 <div className="cx-set">
                   <span className="cx-gh"><BrandIcon ch="instagram" size={16} />Instagram</span>
                   <div className="np-switchrow"><span><b>Also show in the main feed</b><small>Off: the Reel shows in the Reels tab only.</small></span><button type="button" role="switch" aria-checked={igFeed} className={igFeed ? "np-switch on" : "np-switch"} onClick={() => setIgFeed(!igFeed)} aria-label="Also show in the main feed"><span /></button></div>
-                  <label className="cx-field"><b>Collaborators</b><input className="np-input" type="text" value={collabText} onChange={(e) => setCollabText(e.target.value)} placeholder="Up to 3 Instagram usernames, e.g. @brand" aria-label="Instagram collaborators" /><small className="np-muted">They get an invite in Instagram; once they accept, the Reel shows on their profile too.</small></label>
-                  <label className="cx-field"><b>Tag people</b><input className="np-input" type="text" value={tagText} onChange={(e) => setTagText(e.target.value)} placeholder="Instagram usernames, e.g. @shopee_my" aria-label="Instagram tagged people" /><small className="np-muted">Up to {TAGS_MAX}. They get a notification and the Reel shows in their Tagged tab. Facebook and Threads don&apos;t let apps tag people in videos.</small></label>
-                  <b className="cx-sub">Trial reel</b>
-                  <div className="np-seg" role="radiogroup" aria-label="Trial reel">
-                    {([["off", "Off"], ["manual", "I'll share with followers"], ["auto", "Instagram decides"]] as [TrialMode, string][]).map(([v, l]) => <button key={v} type="button" role="radio" aria-checked={igTrial === v} className={igTrial === v ? "on" : ""} onClick={() => setIgTrial(v)}>{l}</button>)}
-                  </div>
-                  {igTrial !== "off" && <p className="np-muted">A trial reel is shown to people who don&apos;t follow you first. {igTrial === "manual" ? "You share it with your followers yourself in Instagram." : "Instagram shares it with your followers if it does well."}</p>}
+                  {/* Rarely needed, so folded away (S2, S3, S6); the summary says how many are in use. */}
+                  <details className="cx-guide cx-adv">
+                    <summary>Advanced: collaborators, tag people, trial reel{igAdvanced ? ` · ${igAdvanced} in use` : ""}</summary>
+                    <div className="cx-adv-in">
+                      <label className="cx-field"><b>Collaborators</b><input className="np-input" type="text" value={collabText} onChange={(e) => setCollabText(e.target.value)} placeholder="Up to 3 Instagram usernames, e.g. @brand" aria-label="Instagram collaborators" /><small className="np-muted">They get an invite in Instagram; once they accept, the Reel shows on their profile too.</small></label>
+                      <label className="cx-field"><b>Tag people</b><input className="np-input" type="text" value={tagText} onChange={(e) => setTagText(e.target.value)} placeholder="Instagram usernames, e.g. @shopee_my" aria-label="Instagram tagged people" /><small className="np-muted">Up to {TAGS_MAX}. They get a notification and the Reel shows in their Tagged tab. Facebook and Threads don&apos;t let apps tag people in videos.</small></label>
+                      <b className="cx-sub">Trial reel</b>
+                      <div className="np-seg" role="radiogroup" aria-label="Trial reel">
+                        {([["off", "Off"], ["manual", "I'll share with followers"], ["auto", "Instagram decides"]] as [TrialMode, string][]).map(([v, l]) => <button key={v} type="button" role="radio" aria-checked={igTrial === v} className={igTrial === v ? "on" : ""} onClick={() => setIgTrial(v)}>{l}</button>)}
+                      </div>
+                      {igTrial !== "off" && <p className="np-muted">A trial reel is shown to people who don&apos;t follow you first. {igTrial === "manual" ? "You share it with your followers yourself in Instagram." : "Instagram shares it with your followers if it does well."}</p>}
+                    </div>
+                  </details>
                 </div>
               )}
               {apps.includes("threads") && (

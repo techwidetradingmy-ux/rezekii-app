@@ -52,6 +52,8 @@ Scope: Facebook Pages, Instagram (Business or Creator), Threads. Not Facebook Gr
 
 ## Post settings (owner approved, 20 Oct 2026)
 
+Instagram's collaborators, tag people and trial reel sit under a folded "Advanced" section (owner, 21 Oct 2026); its title says how many are in use.
+
 Meta doesn't offer private ("Only me") posts to apps for Facebook, Instagram or Threads; New post says so.
 
 - **S1 — Facebook: Publish or Save as draft in Facebook** → a draft Reel goes to the Page's drafts (Facebook / Meta Business Suite) and nobody sees it until it's published there; drafts get no first comment and work for Reels (3–90 s) only; All channels shows "Draft in Facebook".
