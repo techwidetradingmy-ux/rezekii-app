@@ -39,7 +39,7 @@
 .bd-d-scheduled, .bd-d-posting { background: var(--blue); }
 .bd-d-failed { background: var(--red); }
 .bd-d-link { background: #e8a33a; }
-.bd-d-draft, .bd-d-fbdraft { background: var(--muted); }
+.bd-d-draft, .bd-d-fbdraft, .bd-d-removed { background: var(--muted); }
 .bd-chev { color: var(--muted); transition: transform 0.25s cubic-bezier(0.22, 0.8, 0.3, 1); }
 .bd-row.open .bd-chev { transform: rotate(90deg); }
 .bd-det { display: grid; gap: 8px; padding: 0 2px 12px 82px; }

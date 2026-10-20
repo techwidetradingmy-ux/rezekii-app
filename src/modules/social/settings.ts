@@ -9,12 +9,14 @@ export const REPLY_CONTROLS: [ReplyControl, string][] = [["everyone", "Everyone"
 export type TrialMode = "off" | "manual" | "auto";
 
 export type FacebookSettings = { draft: boolean };
-export type InstagramSettings = { feed: boolean; collaborators: string[]; trial: TrialMode };
+export type InstagramSettings = { feed: boolean; collaborators: string[]; tags: string[]; trial: TrialMode };
 export type ThreadsSettings = { replies: ReplyControl; topic: string };
 export type Settings = { facebook: FacebookSettings; instagram: InstagramSettings; threads: ThreadsSettings };
-export const DEFAULT_SETTINGS: Settings = { facebook: { draft: false }, instagram: { feed: true, collaborators: [], trial: "off" }, threads: { replies: "everyone", topic: "" } };
+export const DEFAULT_SETTINGS: Settings = { facebook: { draft: false }, instagram: { feed: true, collaborators: [], tags: [], trial: "off" }, threads: { replies: "everyone", topic: "" } };
 
 export const COLLABORATORS_MAX = 3;
+/** People tagged in a Reel (Instagram's own limit in the app). */
+export const TAGS_MAX = 20;
 export const TOPIC_MAX = 50;
 const USERNAME = /^[a-z0-9._]{1,30}$/;
 
@@ -41,14 +43,15 @@ export function cleanSettings(platform: Platform, raw: unknown): FacebookSetting
   if (platform === "facebook") return { draft: r.draft === true };
   if (platform === "instagram") {
     const trial = r.trial === "manual" || r.trial === "auto" ? r.trial : "off";
-    return { feed: r.feed !== false, collaborators: parseCollaborators(Array.isArray(r.collaborators) ? (r.collaborators as string[]) : []).list.slice(0, COLLABORATORS_MAX), trial };
+    const names = (k: string) => parseCollaborators(Array.isArray(r[k]) ? (r[k] as string[]) : []).list;
+    return { feed: r.feed !== false, collaborators: names("collaborators").slice(0, COLLABORATORS_MAX), tags: names("tags").slice(0, TAGS_MAX), trial };
   }
   const replies = REPLY_CONTROLS.some(([v]) => v === r.replies) ? (r.replies as ReplyControl) : "everyone";
   return { replies, topic: cleanTopic(typeof r.topic === "string" ? r.topic : "") };
 }
 
 /** Plain-language problems with a channel's settings that block scheduling (empty = OK). */
-export function settingsProblems(platform: Platform, s: Partial<Settings[Platform]>, durationSec?: number | null, collaboratorsTyped?: string): string[] {
+export function settingsProblems(platform: Platform, s: Partial<Settings[Platform]>, durationSec?: number | null, collaboratorsTyped?: string, tagsTyped?: string): string[] {
   const out: string[] = [];
   if (platform === "facebook" && (s as FacebookSettings).draft && durationSec != null && (durationSec < REEL_SECONDS.min || durationSec > REEL_SECONDS.max))
     out.push("Facebook drafts work for Reels only (videos of 3–90 seconds). Choose Publish, or use a shorter video.");
@@ -56,6 +59,11 @@ export function settingsProblems(platform: Platform, s: Partial<Settings[Platfor
     const { list, bad } = parseCollaborators(collaboratorsTyped);
     if (bad.length) out.push(`Instagram collaborators: "${bad[0]}" isn't an Instagram username.`);
     if (list.length > COLLABORATORS_MAX) out.push(`Instagram allows up to ${COLLABORATORS_MAX} collaborators.`);
+  }
+  if (platform === "instagram" && tagsTyped !== undefined) {
+    const { list, bad } = parseCollaborators(tagsTyped);
+    if (bad.length) out.push(`Instagram tagged people: "${bad[0]}" isn't an Instagram username.`);
+    if (list.length > TAGS_MAX) out.push(`Instagram allows up to ${TAGS_MAX} tagged people.`);
   }
   return out;
 }

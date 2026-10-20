@@ -1,13 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { canUseSocial } from "@/modules/social/access.ts";
-import { cleanUpGroup, getUserSocialPost, updateSocialPost } from "@/modules/social/store.ts";
+import { cleanUpGroup, getUserSocialPost, updateSocialPost, videoStillStored } from "@/modules/social/store.ts";
 
 export const dynamic = "force-dynamic";
 
 /**
  * Actions on one channel post: { action: "cancel" } until it starts posting, "link-done" once the Shopee product link was
- * added in Facebook, "retry-comment" when the first comment failed.
+ * added in Facebook, "retry-comment" when the first comment failed, "retry" to try a failed post again (M4).
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const origin = req.headers.get("origin");
@@ -27,6 +27,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
   if (action === "link-done") {
     await updateSocialPost(id, { link_done: true });
+    return NextResponse.json({ ok: true });
+  }
+  if (action === "retry") {
+    if (post.status !== "failed") return NextResponse.json({ error: "Only a failed post can be tried again." }, { status: 409 });
+    if (post.storage_path && !(await videoStillStored(post.storage_path))) return NextResponse.json({ error: "The video for this post isn't stored any more. Make a new post with it." }, { status: 409 });
+    await updateSocialPost(id, { status: "scheduled", next_attempt_at: new Date().toISOString(), attempts: 0, last_error: null, container_id: null });
     return NextResponse.json({ ok: true });
   }
   if (action === "retry-comment") {

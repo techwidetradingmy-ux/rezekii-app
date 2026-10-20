@@ -12,9 +12,9 @@ import "./board.css";
 const TZ = "Asia/Kuala_Lumpur";
 const dayKey = (iso: string) => new Date(iso).toLocaleDateString("en-CA", { timeZone: TZ });
 const time = (iso: string) => new Date(iso).toLocaleTimeString("en-GB", { timeZone: TZ, hour: "numeric", minute: "2-digit", hour12: true });
-const LOOK: Record<BoardState, [string, string]> = { fbdraft: ["Draft in Facebook", "badge-gray"], draft: ["Draft", "badge-gray"], scheduled: ["Scheduled", "badge-blue"], posting: ["Posting", "badge-blue"], posted: ["Posted", ""], failed: ["Failed", "badge-red"], link: ["Add product link", "badge-amber"] };
+const LOOK: Record<BoardState, [string, string]> = { removed: ["Removed", "badge-gray"], fbdraft: ["Draft in Facebook", "badge-gray"], draft: ["Draft", "badge-gray"], scheduled: ["Scheduled", "badge-blue"], posting: ["Posting", "badge-blue"], posted: ["Posted", ""], failed: ["Failed", "badge-red"], link: ["Add product link", "badge-amber"] };
 // Worst first: an app's icon shows the state of its least-finished channel.
-const RANK: BoardState[] = ["failed", "link", "posting", "scheduled", "draft", "fbdraft", "posted"];
+const RANK: BoardState[] = ["failed", "link", "posting", "scheduled", "draft", "fbdraft", "removed", "posted"];
 const needs = (p: BoardPost) => p.channels.some((c) => c.state === "failed" || c.state === "link" || c.commentFailed);
 type Filter = "all" | "upcoming" | "posted" | "attention";
 
@@ -55,14 +55,14 @@ export function Board({ posts, now, brands }: { posts: BoardPost[]; now: number;
   const inWeek = posts.filter((p) => p.at && dayKey(p.at) >= today && dayKey(p.at) < weekEnd);
   const attention = posts.filter(needs).length;
 
-  async function act(c: BoardChannel, action: "cancel" | "link-done" | "retry-comment") {
+  async function act(c: BoardChannel, action: "cancel" | "link-done" | "retry-comment" | "retry") {
     setBusy(c.id + action);
     const r = c.kind === "tiktok"
-      ? await fetch(`/api/posts/${c.id}/cancel`, { method: "POST" }).catch(() => null)
+      ? await fetch(`/api/posts/${c.id}/${action === "retry" ? "retry" : "cancel"}`, { method: "POST" }).catch(() => null)
       : await fetch(`/api/social/posts/${c.id}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action }) }).catch(() => null);
     const d = (await r?.json().catch(() => ({}))) as { error?: string };
     setBusy("");
-    setNote(r?.ok ? (action === "cancel" ? `${c.name}: cancelled.` : action === "link-done" ? "Marked done." : "The first comment will be tried again within a minute.") : (d?.error ?? "That didn't work. Try again."));
+    setNote(r?.ok ? (action === "cancel" ? `${c.name}: cancelled.` : action === "link-done" ? "Marked done." : action === "retry" ? `${c.name}: trying again within a minute.` : "The first comment will be tried again within a minute.") : (d?.error ?? "That didn't work. Try again."));
     router.refresh();
   }
 
@@ -102,6 +102,7 @@ export function Board({ posts, now, brands }: { posts: BoardPost[]; now: number;
                 <span className="bd-acts">
                   {c.linkReminder && <button type="button" className="btn-outline" disabled={!!busy} onClick={() => act(c, "link-done")}>Done</button>}
                   {c.commentFailed && <button type="button" className="btn-outline" disabled={!!busy} onClick={() => act(c, "retry-comment")}>Retry comment</button>}
+                  {c.canRetry && <button type="button" className="btn-outline" disabled={!!busy} onClick={() => act(c, "retry")}>{busy === c.id + "retry" ? "Trying…" : "Try again"}</button>}
                   {c.canCancel && <button type="button" className="btn-outline" disabled={!!busy} onClick={() => act(c, "cancel")}>{busy === c.id + "cancel" ? "Cancelling…" : "Cancel"}</button>}
                   {c.permalink && <a className="btn-outline" href={c.permalink} target="_blank" rel="noreferrer">Open</a>}
                 </span>

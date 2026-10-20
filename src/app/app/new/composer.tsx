@@ -7,8 +7,8 @@ import type { PublicAccount } from "@/modules/social/accounts.ts";
 import type { Brand } from "@/modules/social/brands.ts";
 import { consentLine, postProblems, type PostChoice } from "@/modules/posting/rules.ts";
 import { brandChannels, brandPicked, cleanPick, isTikTokKey, openIdOf, tiktokKey, toggleBrand, toggleChannel } from "@/modules/social/picker.ts";
-import { COLLABORATORS_MAX, REPLY_CONTROLS, cleanTopic, parseCollaborators, settingsProblems, threadsTopic, type ReplyControl, type TrialMode } from "@/modules/social/settings.ts";
-import { CAPTION_MAX, COMMENT_MAX, DEFAULT_PLACEMENT, NAMES, autoCaption, autoComment, channelProblems, channelWarnings, lengthFor, links, postedCaption, type Channel, type Placement, type Platform } from "@/modules/social/rules.ts";
+import { COLLABORATORS_MAX, TAGS_MAX, REPLY_CONTROLS, cleanTopic, parseCollaborators, settingsProblems, threadsTopic, type ReplyControl, type TrialMode } from "@/modules/social/settings.ts";
+import { CAPTION_MAX, COMMENT_MAX, DEFAULT_PLACEMENT, NAMES, parseHashtags, withHashtags, autoCaption, autoComment, channelProblems, channelWarnings, lengthFor, links, postedCaption, type Channel, type Placement, type Platform } from "@/modules/social/rules.ts";
 import { BrandIcon } from "../brand-icons";
 import { PhonePreview, type Who } from "./phone-previews";
 import "./composer.css";
@@ -68,6 +68,8 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
     return () => document.removeEventListener("pointerdown", away);
   }, [listOpen]);
   const [main, setMain] = useState("");
+  const [tagsText, setTagsText] = useState("");
+  const [ownComment, setOwnComment] = useState("");
   const [link, setLink] = useState("");
   const [remind, setRemind] = useState(true);
   const [capOver, setCapOver] = useState<Partial<Record<Channel, string>>>({});
@@ -90,6 +92,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
   const [igFeed, setIgFeed] = useState(true);
   const [igTrial, setIgTrial] = useState<TrialMode>("off");
   const [collabText, setCollabText] = useState("");
+  const [tagText, setTagText] = useState("");
   const [replies, setReplies] = useState<ReplyControl>("everyone");
   const [topicOver, setTopicOver] = useState<string | null>(null);
   const [previewApp, setPreviewApp] = useState<Channel>(TT);
@@ -141,9 +144,11 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
   const apps = APPS.filter((p) => keys.some((k) => chOf(k) === p));
   const inApp = (p: Channel) => keys.filter((k) => chOf(k) === p);
   const placeOf = (p: Channel) => place[p] ?? DEFAULT_PLACEMENT[p];
-  const textOf = (p: Channel) => capOver[p] ?? autoCaption(p, main, placeOf(p));
+  // The main caption with the Hashtags box at the very bottom: what every app's version is written from.
+  const mainFull = withHashtags(main, parseHashtags(tagsText));
+  const textOf = (p: Channel) => capOver[p] ?? autoCaption(p, mainFull, placeOf(p));
   const captionOf = (p: Channel) => postedCaption(p, textOf(p), link.trim(), placeOf(p));
-  const commentOf = (p: Channel) => (p === "tiktok" ? "" : (comOver[p] ?? autoComment(p, link.trim(), placeOf(p))));
+  const commentOf = (p: Channel) => (p === "tiktok" ? "" : (comOver[p] ?? autoComment(p, link.trim(), placeOf(p), ownComment)));
   const appLabel = (p: Channel) => { const n = inApp(p).length; return n > 1 ? `${NAMES[p]} · ${n} ${UNIT[p][1]}` : NAMES[p]; };
   const summary = () => apps.map((p) => { const n = inApp(p).length; return n > 1 ? `${n} ${NAMES[p]} ${UNIT[p][1]}` : p === "tiktok" ? `TikTok ${byKey.get(ttKey ?? "")?.name ?? ""}`.trim() : `${NAMES[p]} ${byKey.get(inApp(p)[0])?.name ?? ""}`.trim(); }).join(", ");
   const who = (key: string): Who => {
@@ -151,9 +156,10 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
     const a = social.find((x) => x.id === key);
     return { name: a?.name ?? "", username: a?.username ?? a?.name ?? "", avatar: a?.avatar_url ?? null };
   };
-  const topic = cleanTopic(topicOver ?? threadsTopic(main));
+  const topic = cleanTopic(topicOver ?? threadsTopic(mainFull));
   const collaborators = parseCollaborators(collabText).list.slice(0, COLLABORATORS_MAX);
-  const settingsFor = (p: Platform) => (p === "facebook" ? { draft: fbDraft } : p === "instagram" ? { feed: igFeed, collaborators, trial: igTrial } : { replies, topic });
+  const tagged = parseCollaborators(tagText).list.slice(0, TAGS_MAX);
+  const settingsFor = (p: Platform) => (p === "facebook" ? { draft: fbDraft } : p === "instagram" ? { feed: igFeed, collaborators, tags: tagged, trial: igTrial } : { replies, topic });
   const pApp = apps.includes(previewApp) ? previewApp : apps[0];
   const pKey = pApp ? (inApp(pApp).includes(previewAcct) ? previewAcct : inApp(pApp)[0]) : undefined;
   const activeTab = tab !== "main" && apps.includes(tab) ? tab : "main";
@@ -164,7 +170,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
     if (!keys.length) out.push("Pick at least one channel.");
     if (source === "upload" ? !file : !/^https:\/\/\S+$/.test(linkUrl)) out.push("Add a video: upload one or paste an https link.");
     if (ttKey && info && when !== "draft") out.push(...postProblems(choice, info));
-    for (const p of apps) if (p !== "tiktok") out.push(...channelProblems(p, captionOf(p), commentOf(p), durationSec), ...settingsProblems(p, settingsFor(p), durationSec, p === "instagram" ? collabText : undefined));
+    for (const p of apps) if (p !== "tiktok") out.push(...channelProblems(p, captionOf(p), commentOf(p), durationSec), ...settingsProblems(p, settingsFor(p), durationSec, p === "instagram" ? collabText : undefined, p === "instagram" ? tagText : undefined));
     if (when === "pick" && !pickAt) out.push("Pick a date and time.");
     return out;
   })();
@@ -240,7 +246,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
 
   const counts = apps.map((p) => { const n = lengthFor(p, captionOf(p)); const max = CAPTION_MAX[p]; return <span key={p} className={n > max ? "over" : ""}><BrandIcon ch={p} size={14} />{n.toLocaleString("en-US")} / {max.toLocaleString("en-US")}</span>; });
   const linkWhere = (p: Channel) => { const pl = placeOf(p); return p === "tiktok" ? "not added (the product goes in the yellow basket)" : pl.caption && pl.comment ? "caption and first comment" : pl.caption ? "caption" : pl.comment ? "first comment" : "not added"; };
-  const notes = pApp ? previewNotes(pApp, captionOf(pApp), commentOf(pApp), !!link.trim(), remind, fbView, { fbDraft, igFeed, igTrial, replies }) : [];
+  const notes = pApp ? previewNotes(pApp, captionOf(pApp), commentOf(pApp), !!link.trim(), remind, fbView, { fbDraft, igFeed, igTrial, replies, tagged }) : [];
   const q = query.trim().toLowerCase();
   const results = channels.filter((c) => c.status === "active" && (!q || `${c.name} ${c.sub} ${NAMES[c.app]}`.toLowerCase().includes(q)));
   const missing = APPS.filter((p) => !channels.some((c) => c.app === p));
@@ -334,8 +340,26 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
             )}
             {activeTab === "main" ? (
               <>
-                <textarea className="np-input" rows={5} value={main} onChange={(e) => setMain(e.target.value)} placeholder="Write your caption and hashtags. Rezekii writes each app's version from it." aria-label="Main caption" />
-                <p className="np-muted">Rezekii writes each app&apos;s version from this: a short TikTok caption pointing to the yellow basket, Instagram pointing to the link in bio, at most 5 hashtags on both, one topic on Threads, and the link where each app works best. Open an app&apos;s tab to check or change its version; every Page or account of that app gets it.</p>
+                <details className="cx-guide">
+                  <summary>How to write a post that works on every app</summary>
+                  <ol>
+                    <li><b>Caption:</b> start with a hook; the first line is what people see before &quot;more&quot;. Keep the rest short, on separate lines.</li>
+                    <li><b>Call to action with the link</b> (e.g. &quot;Dapatkan di sini 👉 link&quot;): Facebook keeps it where you typed it. TikTok, Instagram and Threads drop it together with its emoji, since links can&apos;t be tapped there.</li>
+                    <li><b>Hashtags:</b> type them anywhere in the caption to keep them there, or put them in the Hashtags box to add them at the very bottom. Up to 5 on TikTok and Instagram, all on Facebook. Threads leaves them out (they can&apos;t be tapped) and uses one Topic.</li>
+                    <li><b>Product link:</b> paste it in Product link; Rezekii puts it where each app works best (Facebook post and comment, Threads comment, Instagram &quot;Link dekat bio&quot;, TikTok yellow basket).</li>
+                    <li><b>First comment:</b> optional; it goes out on Facebook, Instagram and Threads right after the post (TikTok doesn&apos;t let apps comment).</li>
+                    <li><b>Check each app&apos;s tab and the preview:</b> the preview shows exactly what will be posted.</li>
+                  </ol>
+                </details>
+                <label className="cx-field"><b>Caption</b><textarea className="np-input" rows={5} value={main} onChange={(e) => setMain(e.target.value)} placeholder="Hook on the first line, then a few short lines." aria-label="Main caption" /></label>
+                <label className="cx-field"><b>Hashtags</b><input className="np-input" type="text" value={tagsText} onChange={(e) => setTagsText(e.target.value)} placeholder="#krilloil #sendi #wellnessmalaysia" aria-label="Hashtags" /><small className="np-muted">Added at the very bottom: up to 5 on TikTok and Instagram, all on Facebook, none on Threads.</small></label>
+                <label className="cx-field"><b>First comment</b><textarea className="np-input" rows={2} value={ownComment} onChange={(e) => setOwnComment(e.target.value)} placeholder="Optional, e.g. Ada soalan? Tanya di komen 👇" aria-label="First comment" /><small className="np-muted">Facebook, Instagram and Threads. The product link is added after it where that app puts the link in the comment.</small></label>
+                {apps.includes("threads") && (
+                  <label className="cx-field"><span className="cx-row"><b>Threads topic</b>{topicOver !== null ? <button type="button" className="cx-link" onClick={() => setTopicOver(null)}>Use the first hashtag</button> : <small className="np-muted">From your first hashtag · edit to change</small>}</span>
+                    <input className="np-input" type="text" value={topicOver ?? threadsTopic(mainFull)} maxLength={60} onChange={(e) => setTopicOver(e.target.value)} placeholder="e.g. Kesihatan sendi" aria-label="Threads topic" />
+                    <small className="np-muted">Recommended: Threads shows one topic next to your name (like Add topic in the app), and people find posts by it. No periods or &amp;.</small>
+                  </label>
+                )}
                 {counts.length > 0 && <div className="cx-counts" aria-label="Characters per app">{counts}</div>}
               </>
             ) : (
@@ -354,12 +378,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
                 onPlace={(pl) => setPlace((o) => ({ ...o, [activeTab]: pl }))}
                 onComment={(v) => setComOver((o) => ({ ...o, [activeTab]: v }))}
                 onResetComment={() => setComOver((o) => { const n = { ...o }; delete n[activeTab]; return n; })}
-                extra={activeTab === "threads" ? (
-                  <label className="cx-field"><span className="cx-row"><b>Topic</b>{topicOver !== null ? <button type="button" className="cx-link" onClick={() => setTopicOver(null)}>Use the first hashtag</button> : <small className="np-muted">From your first hashtag · edit to change</small>}</span>
-                    <input className="np-input" type="text" value={topicOver ?? threadsTopic(main)} maxLength={60} onChange={(e) => setTopicOver(e.target.value)} placeholder="e.g. Kesihatan sendi" aria-label="Threads topic" />
-                    <small className="np-muted">Threads gives each post one topic, shown next to your name (like Add topic in the app). No periods or &amp;.</small>
-                  </label>
-                ) : undefined}
+                extra={activeTab === "threads" ? <p className="np-muted">Topic: <b>{topic || "none"}</b> · set it in Main.</p> : undefined}
               />
             )}
             {warnings.length > 0 && <p className="cx-warn">{[...new Set(warnings)].join(" ")}</p>}
@@ -428,6 +447,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
                   <span className="cx-gh"><BrandIcon ch="instagram" size={16} />Instagram</span>
                   <div className="np-switchrow"><span><b>Also show in the main feed</b><small>Off: the Reel shows in the Reels tab only.</small></span><button type="button" role="switch" aria-checked={igFeed} className={igFeed ? "np-switch on" : "np-switch"} onClick={() => setIgFeed(!igFeed)} aria-label="Also show in the main feed"><span /></button></div>
                   <label className="cx-field"><b>Collaborators</b><input className="np-input" type="text" value={collabText} onChange={(e) => setCollabText(e.target.value)} placeholder="Up to 3 Instagram usernames, e.g. @brand" aria-label="Instagram collaborators" /><small className="np-muted">They get an invite in Instagram; once they accept, the Reel shows on their profile too.</small></label>
+                  <label className="cx-field"><b>Tag people</b><input className="np-input" type="text" value={tagText} onChange={(e) => setTagText(e.target.value)} placeholder="Instagram usernames, e.g. @shopee_my" aria-label="Instagram tagged people" /><small className="np-muted">Up to {TAGS_MAX}. They get a notification and the Reel shows in their Tagged tab. Facebook and Threads don&apos;t let apps tag people in videos.</small></label>
                   <b className="cx-sub">Trial reel</b>
                   <div className="np-seg" role="radiogroup" aria-label="Trial reel">
                     {([["off", "Off"], ["manual", "I'll share with followers"], ["auto", "Instagram decides"]] as [TrialMode, string][]).map(([v, l]) => <button key={v} type="button" role="radio" aria-checked={igTrial === v} className={igTrial === v ? "on" : ""} onClick={() => setIgTrial(v)}>{l}</button>)}
@@ -498,10 +518,11 @@ const PREVIEW_NOTE: Record<Channel, string> = {
 };
 
 /** Notes under the phone where an app treats the post differently. [text, informational] */
-function previewNotes(ch: Channel, caption: string, comment: string, hasLink: boolean, remind: boolean, fbView: "reels" | "feed", s: { fbDraft: boolean; igFeed: boolean; igTrial: TrialMode; replies: ReplyControl }): [string, boolean][] {
+function previewNotes(ch: Channel, caption: string, comment: string, hasLink: boolean, remind: boolean, fbView: "reels" | "feed", s: { fbDraft: boolean; igFeed: boolean; igTrial: TrialMode; replies: ReplyControl; tagged: string[] }): [string, boolean][] {
   const out: [string, boolean][] = [];
   if (ch === "facebook" && s.fbDraft) out.push(["Saved as a draft on the Page: nobody sees it until you publish it in Facebook. It shows like this once published.", true]);
   if (ch === "instagram" && !s.igFeed) out.push(["Shows in the Reels tab only, not in the main feed.", true]);
+  if (ch === "instagram" && s.tagged.length) out.push([`Tagged: ${s.tagged.map((u) => `@${u}`).join(", ")}.`, true]);
   if (ch === "instagram" && s.igTrial !== "off") out.push([`Trial reel: shown to people who don't follow you first${s.igTrial === "manual" ? "; you share it with followers yourself" : "; Instagram shares it with followers if it does well"}.`, true]);
   if (ch === "threads" && s.replies !== "everyone") out.push([`Who can reply: ${REPLY_CONTROLS.find(([v]) => v === s.replies)?.[1]}.`, true]);
   if (ch === "tiktok" && hasLink) out.push(["The product link isn't added on TikTok: links in TikTok captions can't be tapped. The product goes in the yellow basket (beg kuning).", false]);

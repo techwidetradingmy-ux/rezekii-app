@@ -1,4 +1,4 @@
-import { GRAPH_VERSION, metaApp, metaFetch, qs } from "./graph.ts";
+import { MetaError, GRAPH_VERSION, metaApp, metaFetch, qs } from "./graph.ts";
 
 /** Instagram API with Instagram Login (Business and Creator accounts; no Facebook Page needed). Tokens last 60 days. */
 const IG = (path: string) => `https://graph.instagram.com/${GRAPH_VERSION}/${path}`;
@@ -28,9 +28,11 @@ export type InstagramProfile = { user_id: string; username: string; name?: strin
 export const instagramProfile = (token: string) => metaFetch<InstagramProfile>(IG(`me?${qs({ fields: "user_id,username,name,account_type,profile_picture_url", access_token: token })}`));
 
 /** A Reel container from our signed video link; Instagram then processes it before it can be published. */
-export async function createInstagramReel(igId: string, token: string, videoUrl: string, caption: string, o: { feed?: boolean; collaborators?: string[]; trial?: "off" | "manual" | "auto" } = {}): Promise<string> {
+export async function createInstagramReel(igId: string, token: string, videoUrl: string, caption: string, o: { feed?: boolean; collaborators?: string[]; tags?: string[]; trial?: "off" | "manual" | "auto" } = {}): Promise<string> {
   const form: Record<string, string> = { media_type: "REELS", video_url: videoUrl, caption, share_to_feed: String(o.feed !== false), access_token: token };
   if (o.collaborators?.length) form.collaborators = JSON.stringify(o.collaborators);
+  // Tagged people (Reels take usernames only, no position); they get a notification and see it in their Tagged tab.
+  if (o.tags?.length) form.user_tags = JSON.stringify(o.tags.map((username) => ({ username })));
   // Trial reels go to non-followers first; MANUAL waits for the owner to share it with followers in the app.
   if (o.trial && o.trial !== "off") form.trial_params = JSON.stringify({ graduation_strategy: o.trial === "manual" ? "MANUAL" : "SS_PERFORMANCE" });
   return (await metaFetch<{ id: string }>(IG(`${igId}/media`), form)).id;
@@ -45,4 +47,15 @@ export const instagramPermalink = async (mediaId: string, token: string) => (awa
 /** A comment from the account on its own Reel (instagram_business_manage_comments). */
 export async function commentOnInstagram(mediaId: string, token: string, message: string): Promise<string> {
   return (await metaFetch<{ id: string }>(IG(`${mediaId}/comments`), { message, access_token: token })).id;
+}
+
+/** Whether a post still exists (false once it was deleted in the app); other errors are thrown. */
+export async function instagramPostExists(id: string, token: string): Promise<boolean> {
+  try {
+    await metaFetch(IG(`${id}?${qs({ fields: "id", access_token: token })}`));
+    return true;
+  } catch (err) {
+    if (err instanceof MetaError && err.gone) return false;
+    throw err;
+  }
 }

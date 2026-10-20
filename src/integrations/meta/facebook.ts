@@ -1,4 +1,4 @@
-import { GRAPH_VERSION, metaApp, metaFetch, qs } from "./graph.ts";
+import { MetaError, GRAPH_VERSION, metaApp, metaFetch, qs } from "./graph.ts";
 
 /** Facebook Pages (Facebook Login for Business). Page tokens made from a long-lived user token don't expire. */
 const G = (path: string) => `https://graph.facebook.com/${GRAPH_VERSION}/${path}`;
@@ -66,3 +66,14 @@ export async function commentOnFacebook(objectId: string, token: string, message
 }
 
 export const facebookPermalink = (p?: string) => (!p ? null : p.startsWith("http") ? p : `https://www.facebook.com${p}`);
+
+/** Whether a post still exists (false once it was deleted in the app); other errors are thrown. */
+export async function facebookPostExists(id: string, token: string): Promise<boolean> {
+  try {
+    await metaFetch(G(`${id}?${qs({ fields: "id", access_token: token })}`));
+    return true;
+  } catch (err) {
+    if (err instanceof MetaError && err.gone) return false;
+    throw err;
+  }
+}

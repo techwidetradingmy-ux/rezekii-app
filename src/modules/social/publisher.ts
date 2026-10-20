@@ -1,11 +1,11 @@
 import { MetaError } from "../../integrations/meta/graph.ts";
-import { commentOnFacebook, facebookPermalink, facebookVideo, finishFacebookReel, postFacebookVideo, startFacebookReel, uploadFacebookReel } from "../../integrations/meta/facebook.ts";
-import { commentOnInstagram, createInstagramReel, instagramContainer, instagramPermalink, publishInstagram } from "../../integrations/meta/instagram.ts";
-import { createThreadsReply, createThreadsVideo, publishThreads, threadsContainer, threadsPermalink } from "../../integrations/meta/threads.ts";
+import { commentOnFacebook, facebookPermalink, facebookPostExists, facebookVideo, finishFacebookReel, postFacebookVideo, startFacebookReel, uploadFacebookReel } from "../../integrations/meta/facebook.ts";
+import { commentOnInstagram, createInstagramReel, instagramContainer, instagramPermalink, instagramPostExists, publishInstagram } from "../../integrations/meta/instagram.ts";
+import { createThreadsReply, createThreadsVideo, publishThreads, threadsContainer, threadsPermalink, threadsPostExists } from "../../integrations/meta/threads.ts";
 import { directLink } from "../posting/media.ts";
 import { nextRetry } from "../posting/rules.ts";
 import { freshToken, getAccount, markReconnect, type SocialAccount } from "./accounts.ts";
-import { facebookAsReel } from "./rules.ts";
+import { NAMES, facebookAsReel } from "./rules.ts";
 import { cleanSettings, type InstagramSettings, type ThreadsSettings } from "./settings.ts";
 import { cleanUpGroup, signedVideoUrl, updateSocialPost, type SocialPostRow } from "./store.ts";
 
@@ -149,5 +149,32 @@ export async function postFirstComment(p: SocialPostRow): Promise<string> {
   } catch (err) {
     if (err instanceof MetaError && err.needsReconnect) await markReconnect(acc.id);
     return fail(msg(err));
+  }
+}
+
+/**
+ * Asks the app whether a posted channel post still exists (P11). Deleted in the app → "removed", so All channels never shows
+ * Posted for something that's gone. Any other answer (e.g. Meta busy) just waits for the next check.
+ */
+export async function checkStillLive(p: SocialPostRow): Promise<string> {
+  const acc = await accountFor(p);
+  const id = p.platform === "facebook" ? (p.container_id ?? p.external_post_id) : p.external_post_id;
+  const now = new Date().toISOString();
+  if (!acc || acc.status !== "active" || !id) {
+    await updateSocialPost(p.id, { live_checked_at: now });
+    return "skipped";
+  }
+  try {
+    const token = await freshToken(acc);
+    const live = p.platform === "facebook" ? await facebookPostExists(id, token) : p.platform === "instagram" ? await instagramPostExists(id, token) : await threadsPostExists(id, token);
+    if (live) {
+      await updateSocialPost(p.id, { live_checked_at: now });
+      return "live";
+    }
+    await updateSocialPost(p.id, { status: "removed", live_checked_at: now, last_error: `Deleted in ${NAMES[p.platform]} after it was posted.` });
+    return "removed";
+  } catch (err) {
+    await updateSocialPost(p.id, { live_checked_at: now });
+    return `not checked: ${msg(err)}`;
   }
 }

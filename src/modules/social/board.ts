@@ -4,7 +4,7 @@ import { NAMES, type Channel } from "./rules.ts";
 import { listSocialPosts, type SocialPostRow } from "./store.ts";
 
 /** One channel of a post on the All channels board. `state` drives the colour dot; `note` explains it in words. */
-export type BoardState = "draft" | "scheduled" | "posting" | "posted" | "failed" | "link" | "fbdraft";
+export type BoardState = "draft" | "scheduled" | "posting" | "posted" | "failed" | "link" | "fbdraft" | "removed";
 export type BoardChannel = {
   id: string;
   kind: Channel;
@@ -15,6 +15,8 @@ export type BoardChannel = {
   note: string;
   permalink: string | null;
   canCancel: boolean;
+  /** Failed: Try again sends it once more (M4). */
+  canRetry: boolean;
   commentFailed: boolean;
   linkReminder: boolean;
 };
@@ -23,22 +25,24 @@ export type BoardPost = { key: string; at: string | null; caption: string; chann
 function tiktokChannel(p: PostRow): BoardChannel {
   const state: BoardState = p.status === "draft" ? "draft" : p.status === "scheduled" ? "scheduled" : p.status === "publishing" || p.status === "processing" ? "posting" : p.status === "failed" ? "failed" : "posted";
   const note = p.status === "sent_to_inbox" ? "In your TikTok drafts" : p.status === "failed" ? (p.last_error ?? "TikTok didn't take it.") : p.status === "processing" ? "TikTok is processing" : p.last_error && p.status === "scheduled" ? `Trying again soon: ${p.last_error}` : "";
-  return { id: p.id, kind: "tiktok", account: tiktokKey(p.tiktok_open_id), name: NAMES.tiktok, state, note, permalink: null, canCancel: p.status === "scheduled" || p.status === "failed", commentFailed: false, linkReminder: false };
+  return { id: p.id, kind: "tiktok", account: tiktokKey(p.tiktok_open_id), name: NAMES.tiktok, state, note, permalink: null, canCancel: p.status === "scheduled" || p.status === "failed", canRetry: p.status === "failed", commentFailed: false, linkReminder: false };
 }
 
 function socialChannel(s: SocialPostRow): BoardChannel {
   const posted = s.status === "posted";
+  const removed = s.status === "removed";
   const linkDue = posted && s.link_reminder && !s.link_done;
   const fbDraft = posted && s.platform === "facebook" && s.settings?.draft === true;
-  const state: BoardState = s.status === "draft" ? "draft" : s.status === "scheduled" ? "scheduled" : s.status === "publishing" || s.status === "processing" ? "posting" : s.status === "failed" ? "failed" : fbDraft ? "fbdraft" : linkDue ? "link" : "posted";
+  const state: BoardState = s.status === "draft" ? "draft" : s.status === "scheduled" ? "scheduled" : s.status === "publishing" || s.status === "processing" ? "posting" : s.status === "failed" ? "failed" : removed ? "removed" : fbDraft ? "fbdraft" : linkDue ? "link" : "posted";
   const note = s.status === "failed" ? (s.last_error ?? "The channel didn't take it.")
+    : removed ? `Deleted in ${NAMES[s.platform]} after it was posted`
     : fbDraft ? `Saved as a draft on the Page: publish it from Facebook or Meta Business Suite${s.link_reminder && !s.link_done ? ", then add the Shopee product link (Monetization)" : ""}`
     : linkDue ? "Add the Shopee product link in Facebook (Monetization), then tick Done"
     : posted && s.comment_status === "failed" ? `First comment failed: ${s.comment_error ?? "try again"}`
     : posted && s.comment_status === "pending" ? "Posting the first comment"
     : s.status === "processing" ? `${NAMES[s.platform]} is processing the video`
     : s.status === "scheduled" && s.last_error ? `Trying again soon: ${s.last_error}` : "";
-  return { id: s.id, kind: s.platform, account: s.account_id ?? "", name: s.account_name ?? NAMES[s.platform], state, note, permalink: s.permalink, canCancel: s.status === "scheduled" || s.status === "draft" || s.status === "failed", commentFailed: posted && s.comment_status === "failed", linkReminder: linkDue };
+  return { id: s.id, kind: s.platform, account: s.account_id ?? "", name: s.account_name ?? NAMES[s.platform], state, note, permalink: removed ? null : s.permalink, canCancel: s.status === "scheduled" || s.status === "draft" || s.status === "failed", canRetry: s.status === "failed", commentFailed: posted && s.comment_status === "failed", linkReminder: linkDue };
 }
 
 const ORDER: Channel[] = ["tiktok", "facebook", "instagram", "threads"];

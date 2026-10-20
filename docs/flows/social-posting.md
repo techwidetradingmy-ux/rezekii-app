@@ -34,9 +34,12 @@ Scope: Facebook Pages, Instagram (Business or Creator), Threads. Not Facebook Gr
   - Threads: the link goes in the first comment (the sentence becomes "Link produk ada dalam komen."), no hashtags in the text: the first hashtag becomes the post's topic (C3d).
   - Facebook: the link in the caption and in the first comment.
 - **C3c — Edit a channel's version** → typing in a channel's tab keeps that version; "Use Rezekii's version" brings back the automatic one; later edits to the main caption don't overwrite an edited version.
-- **C3d — Threads topic** → the Threads tab has a Topic box, filled from the first hashtag and editable; it goes out as Threads' own topic (like Add topic in the app: one per post, 1–50 characters, no periods or &) and shows next to the name in the preview.
+- **C3e — Links and calls to action** → Facebook keeps a link where it was typed (and doesn't add it twice); on TikTok, Instagram and Threads a link goes together with its call to action and emoji (no dangling 👉🏻).
+- **C3f — Hashtags** → hashtags typed in the caption stay where they were typed; the Hashtags box adds its tags at the very bottom (Facebook's link goes above them). Up to 5 on TikTok and Instagram, all on Facebook, none on Threads (they can't be tapped there).
+- **C3g — Writing guide** → a short guide in Main explains how each part is used on each app.
+- **C3d — Threads topic** → Main has a Threads topic box (recommended), filled from the first hashtag and editable; it goes out as Threads' own topic (like Add topic in the app: one per post, 1–50 characters, no periods or &) and shows next to the name in the preview.
 - **C4 — Product link** → one link for the post; each channel's tab sets where it goes (caption, first comment, both or neither), starting from the defaults above. TikTok can't take it (links in captions can't be tapped and apps can't comment), so its switches are off.
-- **C4b — First comment** → optional, per channel, for Facebook, Instagram and Threads, prefilled with the link where that channel's default puts it ("Dapatkan di sini: …" on Facebook, "Link produk 👇 …" on Threads). Limits: Threads 500, Instagram 2,200, Facebook 8,000 characters (re-checked during the build). The preview shows it (Threads as your own reply under the post, Facebook Feed under the post) and notes that links in Instagram comments can't be tapped.
+- **C4b — First comment** → Main has a First comment box for Facebook, Instagram and Threads; each app's comment is that text with the product link after it where that app puts the link in the comment (without your own text, Rezekii's line with the link); still editable per app. Defaults ("Dapatkan di sini: …" on Facebook, "Link produk 👇 …" on Threads). Limits: Threads 500, Instagram 2,200, Facebook 8,000 characters (re-checked during the build). The preview shows it (Threads as your own reply under the post, Facebook Feed under the post) and notes that links in Instagram comments can't be tapped.
 - **C5 — Live preview** → a phone preview per selected app, switchable by tabs (when several Pages or accounts of one app are picked, a "Showing" picker chooses which one the preview uses), updating as you type, laid out like the October 2026 apps (TikTok For You, Instagram Reels, Facebook Reels and Feed, Threads feed in light and dark), with each app's caption cut-off; tapping "more" / "See more" expands the caption, and the comment button on Instagram and Facebook Reels opens the comments with the first comment; notes under the phone where a channel differs (Instagram and Facebook Reels: link can't be tapped; Threads: over 500 characters).
 - **C6 — Facebook product-link reminder** (on by default when Facebook is picked) → the Facebook post gets "Add product link" in My posts until you tick Done.
 - **C7 — Video** → same upload (≤ 50 MB) or link as today. Checked per channel at scheduling: Threads ≤ 5 min; Instagram Reels within Meta's current limits; Facebook vertical videos of 3–90 s go out as a Reel (Facebook's Reels API), others as a Page video (all limits re-checked against Meta's current docs during the build); a channel that can't take it is blocked with the reason.
@@ -51,6 +54,7 @@ Meta doesn't offer private ("Only me") posts to apps for Facebook, Instagram or 
 - **S2 — Instagram: Also show in the main feed** (on by default) → off: the Reel shows in the Reels tab only.
 - **S3 — Instagram: Collaborators** → up to 3 usernames; anything that isn't a username is refused with the reason. They get an invite in Instagram.
 - **S4 — Instagram: Trial reel** → off, "I'll share with followers" (manual) or "Instagram decides" (shared with followers if it does well); shown to non-followers first.
+- **S6 — Instagram: Tag people** → up to 20 usernames; they get a notification and the Reel shows in their Tagged tab. Facebook and Threads don't let apps tag people in videos (Facebook's "is with Shopee" comes from its own Add product link).
 - **S5 — Threads: Who can reply** → everyone (default), accounts you follow, your followers, or only accounts you mention.
 
 ## Picking channels by brand (owner approved option C, 20 Oct 2026)
@@ -73,15 +77,17 @@ Meta doesn't offer private ("Only me") posts to apps for Facebook, Instagram or 
 - **P4 — A channel returns an error** → up to 3 tries over ~30 minutes (5 and 25 min, same as TikTok), then Failed with that channel's reason; other channels unaffected.
 - **P5 — Never posts twice** → before a retry Rezekii checks whether the earlier try already went out.
 - **P6 — Daily caps** → Instagram 100, Threads 250 and Facebook Reels 30 posts per 24 hours: refused at scheduling when a day is full.
-- **P7 — Video file** → kept until every channel of that post has finished, then deleted from storage.
+- **P7 — Video file** → kept until every channel of that post has finished (and none is waiting to be tried again after failing), then deleted from storage.
 - **P8 — Facebook link limit** → Facebook is testing a cap of 2 posts with links a month for Pages without Meta One; the composer says so when a Facebook post has a link, and the first real test post confirms what happens to Techwide's Page.
 - **P9 — First comment** → once a channel's post is published, its first comment goes out within about a minute (Facebook as the Page, Instagram from the account, Threads as a reply to the post). If the comment fails, the post stays Posted and the comment shows Failed with the reason and a Retry; a comment is never posted twice.
+- **P11 — Accurate status** → the timer asks each app whether posts from the last 7 days still exist (every 10 minutes); a post deleted in the app shows "Removed" with "Deleted in Instagram after it was posted" (TikTok can't be checked this way).
 - **P10 — Profile pictures** → refreshed by the timer every 2 days (Facebook's and Instagram's picture links expire after a few days); a missing picture shows the app's icon.
 
 ## My posts
 
 - **M1 — List** → one row per post with a chip per channel showing its own status (Scheduled / Posting / Posted / Failed / Cancelled); Posted chips open the live post.
 - **M2 — Cancel** → cancel one channel or all, until that channel starts posting.
+- **M4 — Try again** → a failed channel has Try again: it goes back on the timer straight away with fresh tries. Its video is kept while a channel has failed, and let go once it's retried successfully or cancelled.
 - **M3 — Week view** → the post shows once with its channel icons.
 
 ## Quality bars

@@ -21,11 +21,19 @@ export function metaApp(kind: MetaKind): { id: string; secret: string } {
 
 /** An error from Meta, keeping its code (190 = the sign-in is no longer valid; the account must reconnect). */
 export class MetaError extends Error {
-  constructor(message: string, readonly code?: number, readonly subcode?: number) {
+  readonly code?: number;
+  readonly subcode?: number;
+  constructor(message: string, code?: number, subcode?: number) {
     super(message);
+    this.code = code;
+    this.subcode = subcode;
   }
   get needsReconnect(): boolean {
     return this.code === 190 || this.code === 102;
+  }
+  /** The post (or other object) no longer exists, e.g. it was deleted in the app. */
+  get gone(): boolean {
+    return this.code === 100 && (this.subcode === 33 || /does not exist/i.test(this.message));
   }
 }
 

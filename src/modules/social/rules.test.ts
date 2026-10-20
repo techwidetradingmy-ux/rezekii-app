@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { DEFAULT_PLACEMENT, autoCaption, autoComment, channelProblems, channelWarnings, facebookAsReel, postedCaption, threadsLength } from "./rules.ts";
+import { DEFAULT_PLACEMENT, autoCaption, autoComment, channelProblems, channelWarnings, facebookAsReel, parseHashtags, postedCaption, threadsLength, withHashtags } from "./rules.ts";
 
 const MAIN = "Umur 40 ke atas, lutut selalu rasa berat bila naik tangga? Ramai sangka itu biasa. Link produk ada di bawah.\n#krilloil #sendi #wellnessmalaysia #a #b #c #d";
 const LINK = "https://s.shopee.com.my/3g1kTMj9Ah";
@@ -24,10 +24,10 @@ test("C3b: Threads moves the link to the first comment; no hashtags in the text 
   assert.equal(autoComment("threads", LINK), `Link produk 👇\n${LINK}`);
 });
 
-test("C3b/C4: Facebook keeps the link sentence, puts the link in the caption and the first comment", () => {
+test("C3b/C4: Facebook keeps the link sentence, puts the link above the hashtags (at the very bottom) and in the first comment", () => {
   const t = autoCaption("facebook", MAIN);
-  assert.match(t, /Link produk ada di bawah\./);
-  assert.equal(postedCaption("facebook", t, LINK, DEFAULT_PLACEMENT.facebook), `${t}\n${LINK}`);
+  assert.match(t, /Link produk ada di bawah\.\n#krilloil #sendi #wellnessmalaysia #a #b #c #d$/);
+  assert.equal(postedCaption("facebook", t, LINK, DEFAULT_PLACEMENT.facebook), t.replace("\n#krilloil", `\n${LINK}\n\n#krilloil`));
   assert.equal(autoComment("facebook", LINK), `Dapatkan di sini: ${LINK}`);
 });
 
@@ -64,4 +64,38 @@ test("C2b: hashtag warnings don't block", () => {
   assert.match(channelWarnings("instagram", "#a #b #c #d #e #f")[0], /5 hashtags/);
   assert.match(channelWarnings("threads", "#a")[0], /Topic box/);
   assert.deepEqual(channelWarnings("facebook", "#a #b #c #d #e #f #g"), []);
+});
+
+const TYPED = "Jaring teduh siap lubang cincin 🌿\n\n👉🏻 https://shop.tiktok.com/my/pdp/1729\n\n#jaringteduh #shadenet";
+
+test("C3e: Facebook keeps a link where it was typed and doesn't add it twice; hashtags stay where they were typed", () => {
+  const t = autoCaption("facebook", TYPED);
+  assert.equal(t, TYPED);
+  assert.equal(postedCaption("facebook", t, "https://shop.tiktok.com/my/pdp/1729", DEFAULT_PLACEMENT.facebook), TYPED);
+  assert.equal(autoCaption("facebook", "Hook #krilloil best.\nMore here."), "Hook #krilloil best.\nMore here.");
+});
+
+test("C3e: on Instagram, Threads and TikTok a link goes together with its call to action and emoji", () => {
+  assert.equal(autoCaption("instagram", TYPED), "Jaring teduh siap lubang cincin 🌿\n\n#jaringteduh #shadenet");
+  assert.equal(autoCaption("threads", TYPED), "Jaring teduh siap lubang cincin 🌿");
+  assert.equal(autoCaption("instagram", "Best buy. Dapatkan di sini 👉 https://s.shopee.com.my/x 🛒\n#a"), "Best buy.\n#a");
+  assert.equal(autoCaption("tiktok", TYPED), "Jaring teduh siap lubang cincin 🌿 Produk dekat beg kuning. #jaringteduh #shadenet");
+});
+
+test("C4b: your own first comment goes to each channel, with the link after it where that channel puts the link in the comment", () => {
+  assert.equal(autoComment("instagram", LINK, DEFAULT_PLACEMENT.instagram, "Tanya saya di komen 👇"), "Tanya saya di komen 👇");
+  assert.equal(autoComment("threads", LINK, DEFAULT_PLACEMENT.threads, "Nak tahu lagi?"), `Nak tahu lagi?\n${LINK}`);
+  assert.equal(autoComment("facebook", LINK, DEFAULT_PLACEMENT.facebook, `Beli sini ${LINK}`), `Beli sini ${LINK}`);
+  assert.equal(autoComment("threads", LINK, DEFAULT_PLACEMENT.threads, ""), `Link produk 👇\n${LINK}`);
+});
+
+test("C3f: the Hashtags box adds each tag once, at the very bottom", () => {
+  assert.deepEqual(parseHashtags("#krilloil, sendi  #Sendi ##wellness"), ["#krilloil", "#sendi", "#wellness"]);
+  assert.equal(withHashtags("Lutut berat? #krilloil", ["#KrillOil", "#sendi"]), "Lutut berat? #krilloil\n\n#sendi");
+  assert.equal(withHashtags("", ["#a"]), "#a");
+});
+
+test("C3f: Threads leaves hashtags out wherever they were typed; Instagram keeps the first 5 where they were typed", () => {
+  assert.equal(autoCaption("threads", "Lutut #krilloil berat?\nMore #sendi"), "Lutut berat?\nMore");
+  assert.equal(autoCaption("instagram", "A #1a #2b\nB #3c #4d #5e #6f"), "A #1a #2b\nB #3c #4d #5e");
 });

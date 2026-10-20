@@ -180,7 +180,7 @@ function TikTok({ caption, video, who }: PreviewProps) {
 function Instagram({ caption, comment, video, who, collaborators }: PreviewProps) {
   const [open, setOpen] = useState(false);
   const [sheet, setSheet] = useState(false);
-  const c = clamp(caption.replace(/\n/g, " "), `400 ${14 * PT}px ${SYS}`, 280 - 78 * PT, 1, "… more");
+  const c = clamp(caption, `400 ${14 * PT}px ${SYS}`, 280 - 78 * PT, 1, "… more");
   return (
     <div className="pv-scr">
       <StatusBar color="#fff" />
@@ -211,7 +211,7 @@ function Facebook({ caption, comment, video, who, fbView, theme }: PreviewProps)
   const [open, setOpen] = useState(false);
   const [sheet, setSheet] = useState(false);
   if (fbView === "reels") {
-    const c = clamp(caption.replace(/\n/g, " "), `400 ${14 * PT}px ${SYS}`, 280 - 74 * PT, 1, "… See more");
+    const c = clamp(caption, `400 ${14 * PT}px ${SYS}`, 280 - 74 * PT, 1, "… See more");
     return (
       <div className="pv-scr">
         <StatusBar color="#fff" />

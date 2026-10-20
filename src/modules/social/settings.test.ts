@@ -11,8 +11,8 @@ test("S1: Facebook can save a Reel as a draft on the Page; drafts work for Reels
 });
 
 test("S2: Instagram shows in the feed by default; collaborators are up to 3 valid usernames", () => {
-  assert.deepEqual(cleanSettings("instagram", {}), { feed: true, collaborators: [], trial: "off" });
-  assert.deepEqual(cleanSettings("instagram", { feed: false, collaborators: ["@Brand.One", "brand_two", "brand.one", "x y", "c", "d"], trial: "auto" }), { feed: false, collaborators: ["brand.one", "brand_two", "c"], trial: "auto" });
+  assert.deepEqual(cleanSettings("instagram", {}), { feed: true, collaborators: [], tags: [], trial: "off" });
+  assert.deepEqual(cleanSettings("instagram", { feed: false, collaborators: ["@Brand.One", "brand_two", "brand.one", "x y", "c", "d"], trial: "auto" }), { feed: false, collaborators: ["brand.one", "brand_two", "c"], tags: [], trial: "auto" });
   assert.deepEqual(parseCollaborators("@a.b, c_d  e"), { list: ["a.b", "c_d", "e"], bad: [] });
   assert.match(settingsProblems("instagram", {}, null, "@ok, not-valid!")[0], /isn't an Instagram username/);
   assert.match(settingsProblems("instagram", {}, null, "a b c d")[0], /up to 3/);
@@ -33,4 +33,10 @@ test("C3d: the Threads topic comes from the first hashtag; no #, periods or ampe
   assert.equal(threadsTopic("No tags here"), "");
   assert.equal(cleanTopic("##Mom & Kids. Club"), "Mom Kids Club");
   assert.equal(cleanTopic("x".repeat(60)).length, 50);
+});
+
+test("S6: Instagram tagged people are up to 20 valid usernames; anything else is refused with the reason", () => {
+  assert.deepEqual((cleanSettings("instagram", { tags: ["@Shopee_MY", "x y", "shopee_my"] }) as { tags: string[] }).tags, ["shopee_my"]);
+  assert.equal((cleanSettings("instagram", { tags: Array.from({ length: 25 }, (_, i) => `u${i}`) }) as { tags: string[] }).tags.length, 20);
+  assert.match(settingsProblems("instagram", {}, null, "", "@ok bad!")[0], /tagged people/);
 });

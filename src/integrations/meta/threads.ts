@@ -1,4 +1,4 @@
-import { THREADS_VERSION, metaApp, metaFetch, qs } from "./graph.ts";
+import { MetaError, THREADS_VERSION, metaApp, metaFetch, qs } from "./graph.ts";
 import type { ContainerStatus } from "./instagram.ts";
 
 /** Threads API (its own app id and secret inside the Meta app). Tokens last 60 days. */
@@ -41,3 +41,14 @@ export async function publishThreads(userId: string, token: string, containerId:
   return (await metaFetch<{ id: string }>(TH(`${userId}/threads_publish`), { creation_id: containerId, access_token: token })).id;
 }
 export const threadsPermalink = async (mediaId: string, token: string) => (await metaFetch<{ permalink?: string }>(TH(`${mediaId}?${qs({ fields: "permalink", access_token: token })}`))).permalink ?? null;
+
+/** Whether a post still exists (false once it was deleted in the app); other errors are thrown. */
+export async function threadsPostExists(id: string, token: string): Promise<boolean> {
+  try {
+    await metaFetch(TH(`${id}?${qs({ fields: "id", access_token: token })}`));
+    return true;
+  } catch (err) {
+    if (err instanceof MetaError && err.gone) return false;
+    throw err;
+  }
+}

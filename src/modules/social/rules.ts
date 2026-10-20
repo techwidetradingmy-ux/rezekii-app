@@ -43,34 +43,74 @@ export function threadsLength(t: string): number {
 }
 export const lengthFor = (ch: Channel, t: string) => (ch === "threads" ? threadsLength(t) : t.length);
 
+/** A sentence that carries a link, with its call to action and emoji around it ("Dapatkan di sini 👉🏻 https://… 🛒"). */
+const CTA_WITH_LINK = /[^.!?\n]*https?:\/\/\S+[^\p{L}\p{N}\n]*/gu;
+const TAG_LINE = /^(?:#[\p{L}\p{N}_]+\s*)+$/u;
+const tidy = (s: string) => s.split("\n").map((l) => l.replace(/[ \t]{2,}/g, " ").trim()).join("\n").replace(/\n{3,}/g, "\n\n").trim();
+
 /**
- * Rezekii's version of the main caption for one channel: links taken out, the sentence about the link rewritten for where
- * the link really is, hashtags cut to the channel's cap (none on Threads, which takes a topic instead). TikTok gets a
- * short caption pointing to the yellow basket.
+ * Rezekii's version of the main caption for one channel (C3b): Facebook keeps links where they were typed; elsewhere a
+ * link goes together with its whole call to action and emoji. A sentence about the link is rewritten for where the link
+ * really is. Hashtags stay where they were typed (the Hashtags box adds its tags at the very bottom), cut to the channel's
+ * cap; Threads gets none, since they can't be tapped there (it takes a topic instead). TikTok gets a short caption
+ * pointing to the yellow basket.
  */
 export function autoCaption(ch: Channel, main: string, place: Placement = DEFAULT_PLACEMENT[ch]): string {
-  const clean = main.replace(URL_RE, "").replace(/[ \t]+\n/g, "\n").trim();
-  if (!clean) return "";
+  const keep = ch !== "tiktok" && place.caption;
+  const text = keep ? main : main.replace(CTA_WITH_LINK, "");
+  if (!tidy(text)) return "";
   if (ch === "tiktok") {
-    const hook = (clean.match(/^[^.!?\n]*[.!?]?/) ?? [""])[0].trim();
+    const hook = (tidy(text.replace(TAG, "$1")).match(/^[^.!?\n]*[.!?]?/) ?? [""])[0].trim();
     return [hook, "Produk dekat beg kuning.", hashtags(main).slice(0, HASHTAG_MAX.tiktok).join(" ")].filter(Boolean).join(" ");
   }
-  const line = place.caption ? null : place.comment ? "Link produk ada dalam komen." : ch === "instagram" ? "Link dekat bio." : "";
-  let t = line === null ? clean : clean.replace(/[^.!?\n]*\blink\b[^.!?\n]*[.!?]?/gi, (m) => (m.match(/^\s*/)?.[0] ?? "") + line);
   let n = 0;
-  t = t.replace(/\s?#[\p{L}\p{N}_]+/gu, (m) => (++n <= HASHTAG_MAX[ch] ? m : ""));
-  return t.replace(/[ \t]{2,}/g, " ").trim();
+  const capped = tidy(text.replace(TAG, (m, before: string) => (++n <= HASHTAG_MAX[ch] ? m : before)));
+  const line = keep ? null : place.comment ? "Link produk ada dalam komen." : ch === "instagram" ? "Link dekat bio." : "";
+  // Leading emoji (👉🏻) of a sentence about the link stay with the rewritten sentence.
+  return line === null ? capped : tidy(capped.replace(/[^.!?\n]*\blink\b[^.!?\n]*[.!?]?/gi, (m) => (m.match(/^[^\p{L}\p{N}]*/u)?.[0] ?? "") + line));
 }
+const TAG = /(^|[^\S\n]|\n)#[\p{L}\p{N}_]+/gu;
 
-/** Rezekii's first comment for a channel: the product link, when that channel's link goes in the comment. */
-export function autoComment(ch: Platform, link: string, place: Placement = DEFAULT_PLACEMENT[ch]): string {
-  if (!link || !place.comment) return "";
+/**
+ * A channel's first comment: the owner's own first comment (from Main) with the product link after it when that channel's
+ * link goes in the comment; without one, Rezekii's line with the link (C4b).
+ */
+export function autoComment(ch: Platform, link: string, place: Placement = DEFAULT_PLACEMENT[ch], own = ""): string {
+  const text = own.trim(), withLink = !!link && place.comment;
+  if (text) return withLink && !text.includes(link) ? `${text}\n${link}` : text;
+  if (!withLink) return "";
   return ch === "threads" ? `Link produk 👇\n${link}` : ch === "facebook" ? `Dapatkan di sini: ${link}` : link;
 }
 
-/** The caption that is actually posted: the channel's text plus the link at the end when it goes in the caption. */
-export const postedCaption = (ch: Channel, text: string, link: string, place: Placement) =>
-  ch !== "tiktok" && link && place.caption ? `${text}\n${link}` : text;
+/** Hashtags typed in their own box ("#a, b c"): each once, with a #. */
+export function parseHashtags(input: string): string[] {
+  const out: string[] = [];
+  for (const w of input.split(/[\s,]+/)) {
+    const tag = w.replace(/^#+/, "").match(/^[\p{L}\p{N}_]+/u)?.[0];
+    if (tag && !out.some((t) => t.toLowerCase() === `#${tag}`.toLowerCase())) out.push(`#${tag}`);
+  }
+  return out;
+}
+
+/** The main caption with the Hashtags box added at the very bottom (tags already in the caption aren't repeated). */
+export function withHashtags(main: string, tags: string[]): string {
+  const have = new Set(hashtags(main).map((t) => t.toLowerCase()));
+  const add = tags.filter((t) => !have.has(t.toLowerCase()));
+  return [main.trim(), add.join(" ")].filter(Boolean).join("\n\n");
+}
+
+/**
+ * The caption that is actually posted: the channel's text plus the link when it goes in the caption and isn't typed in it
+ * already, placed above the hashtags so they stay at the very bottom.
+ */
+export function postedCaption(ch: Channel, text: string, link: string, place: Placement): string {
+  if (ch === "tiktok" || !link || !place.caption || text.includes(link)) return text;
+  const lines = text.split("\n");
+  const last = lines[lines.length - 1].trim();
+  if (!TAG_LINE.test(last)) return text ? `${text}\n${link}` : link;
+  const body = lines.slice(0, -1).join("\n").trim();
+  return body ? `${body}\n${link}\n\n${last}` : `${link}\n\n${last}`;
+}
 
 /** Plain-language problems that block scheduling this channel (empty = OK). */
 export function channelProblems(ch: Platform, caption: string, comment: string, durationSec?: number | null): string[] {
