@@ -7,7 +7,7 @@ import type { PublicAccount } from "@/modules/social/accounts.ts";
 import type { Brand } from "@/modules/social/brands.ts";
 import { consentLine, postProblems, type PostChoice } from "@/modules/posting/rules.ts";
 import { brandChannels, brandPicked, cleanPick, isTikTokKey, openIdOf, tiktokKey, toggleBrand, toggleChannel } from "@/modules/social/picker.ts";
-import { COLLABORATORS_MAX, MENTIONS_MAX, TAGS_MAX, REPLY_CONTROLS, withPageMentions, type PageMention, cleanTopic, parseCollaborators, settingsProblems, threadsTopic, type ReplyControl, type TrialMode } from "@/modules/social/settings.ts";
+import { COLLABORATORS_MAX, MENTIONS_MAX, TAGS_MAX, REPLY_CONTROLS, pageRef, withPageMentions, type PageMention, cleanTopic, parseCollaborators, settingsProblems, threadsTopic, type ReplyControl, type TrialMode } from "@/modules/social/settings.ts";
 import { CAPTION_MAX, COMMENT_MAX, DEFAULT_PLACEMENT, NAMES, parseHashtags, withHashtags, autoCaption, autoComment, channelProblems, channelWarnings, lengthFor, links, postedCaption, type Channel, type Placement, type Platform } from "@/modules/social/rules.ts";
 import { BrandIcon } from "../brand-icons";
 import { PhonePreview, type Who } from "./phone-previews";
@@ -94,6 +94,8 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
   const [mentionText, setMentionText] = useState("");
   const [mentionBusy, setMentionBusy] = useState(false);
   const [mentionError, setMentionError] = useState("");
+  // A Page ID Facebook won't look up (a Page you don't manage): you type its name, Rezekii sends the mention by ID.
+  const [manualPage, setManualPage] = useState<{ id: string; name: string } | null>(null);
   const [igFeed, setIgFeed] = useState(true);
   const [igTrial, setIgTrial] = useState<TrialMode>("off");
   const [collabText, setCollabText] = useState("");
@@ -191,7 +193,12 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
     const r = await fetch("/api/social/pages/resolve", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ accountId: fb.id, page: mentionText }) }).catch(() => null);
     const d = (await r?.json().catch(() => ({}))) as { page?: PageMention; error?: string };
     setMentionBusy(false);
-    if (!r?.ok || !d.page) return setMentionError(d.error ?? "Couldn't reach Facebook. Try again.");
+    if (!r?.ok || !d.page) {
+      const ref = pageRef(mentionText);
+      if (r && ref && "id" in ref) return setManualPage({ id: ref.id, name: "" });
+      return setMentionError(d.error ?? "Couldn't reach Facebook. Try again.");
+    }
+    setManualPage(null);
     const page = d.page;
     setFbMentions((list) => (list.some((m) => m.id === page.id) ? list : [...list, page].slice(0, MENTIONS_MAX)));
     setMentionText("");
@@ -474,7 +481,13 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
                     <span className="cx-inline"><input className="np-input" type="text" value={mentionText} onChange={(e) => setMentionText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addMention(); } }} placeholder="Paste a Facebook Page link or Page ID" aria-label="Facebook Page to mention" /><button type="button" className="btn-outline" disabled={mentionBusy || !mentionText.trim()} onClick={addMention}>{mentionBusy ? "Finding…" : "Add"}</button></span>
                     {fbMentions.length > 0 && <div className="cx-tags">{fbMentions.map((m) => <span key={m.id} className="cx-tag"><span>{m.name}</span><button type="button" aria-label={`Remove ${m.name}`} onClick={() => setFbMentions((list) => list.filter((x) => x.id !== m.id))}>×</button></span>)}</div>}
                     {mentionError && <p className="np-error" role="alert">{mentionError}</p>}
-                    <small className="np-muted">Facebook Pages only: Facebook doesn&apos;t let apps mention people. Type @ and the Page&apos;s name in the Facebook caption to place it; otherwise it goes at the end.</small>
+                    {manualPage && (
+                      <div className="cx-manual">
+                        <small>Facebook won&apos;t share the name of Page {manualPage.id} with Rezekii (it&apos;s not one of your Pages). Type its name as it shows on Facebook; Facebook shows its real name in the post.</small>
+                        <span className="cx-inline"><input className="np-input" type="text" value={manualPage.name} maxLength={100} onChange={(e) => setManualPage({ ...manualPage, name: e.target.value })} placeholder="e.g. Shopee Malaysia" aria-label="Page name" autoFocus /><button type="button" className="btn-outline" disabled={!manualPage.name.trim()} onClick={() => { const page = { id: manualPage.id, name: manualPage.name.trim() }; setFbMentions((list) => (list.some((m) => m.id === page.id) ? list : [...list, page].slice(0, MENTIONS_MAX))); setManualPage(null); setMentionText(""); }}>Add</button></span>
+                      </div>
+                    )}
+                    <small className="np-muted">Facebook Pages only: Facebook doesn&apos;t let apps mention people. For a Page you don&apos;t manage, paste its Page ID (on the Page: About → Page transparency). Type @ and the Page&apos;s name in the Facebook caption to place it; otherwise it goes at the end.</small>
                   </div>
                   {fbDraft && <p className="np-muted">The Reel is saved in the Page&apos;s drafts. Nobody sees it until you publish it from Facebook or Meta Business Suite. Drafts get no first comment, and work for Reels (3–90 seconds) only.</p>}
                 </div>
