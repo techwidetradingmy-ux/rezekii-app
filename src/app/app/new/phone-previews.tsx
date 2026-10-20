@@ -101,16 +101,15 @@ function clamp(text: string, font: string, width: number, lines: number, suffix:
 const SYS = '-apple-system, "SF Pro Text", Roboto, Arial, sans-serif';
 
 /** Links and hashtags styled the way each app shows them. */
-function Rich({ text, links, tags, at, names = [], handles = true }: { text: string; links?: boolean; tags?: "bold" | "link"; at?: "bold" | "link"; names?: string[]; handles?: boolean }) {
-  // @mentions (and mentioned Facebook Pages, shown by name) are highlighted the way each app shows them; Facebook only links mentioned Pages.
-  const named = [...names].sort((a, b) => b.length - a.length).map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-  const parts = text.split(new RegExp(`(https?:\\/\\/\\S+|#[\\p{L}\\p{N}_]+|@[\\p{L}\\p{N}._]+${named.length ? `|${named.join("|")}` : ""})`, "u"));
+function Rich({ text, links, tags, at, handles = true }: { text: string; links?: boolean; tags?: "bold" | "link"; at?: "bold" | "link"; handles?: boolean }) {
+  // @usernames are highlighted where the app links them (Instagram, Threads, TikTok); on Facebook they stay plain text.
+  const parts = text.split(/(https?:\/\/\S+|#[\p{L}\p{N}_]+|@[\p{L}\p{N}._]+)/u);
   const style = (kind: "bold" | "link" | undefined, s: string, i: number) => (kind === "bold" ? <b key={i}>{s}</b> : kind === "link" ? <a key={i} href="#" onClick={(e) => e.preventDefault()}>{s}</a> : s);
-  return <>{parts.map((s, i) => (/^https?:\/\//.test(s) ? (links ? style("link", s, i) : s) : /^#/.test(s) ? style(tags, s, i) : (handles && /^@./.test(s)) || names.includes(s) ? style(at, s, i) : s))}</>;
+  return <>{parts.map((s, i) => (/^https?:\/\//.test(s) ? (links ? style("link", s, i) : s) : /^#/.test(s) ? style(tags, s, i) : handles && /^@./.test(s) ? style(at, s, i) : s))}</>;
 }
 
 export type Who = { name: string; username: string; avatar: string | null };
-export type PreviewProps = { channel: Channel; caption: string; comment: string; commentImage?: string | null; video: string | null; who: Who; fbView: "reels" | "feed"; theme: "light" | "dark"; topic?: string; collaborators?: string[]; names?: string[] };
+export type PreviewProps = { channel: Channel; caption: string; comment: string; commentImage?: string | null; video: string | null; who: Who; fbView: "reels" | "feed"; theme: "light" | "dark"; topic?: string; collaborators?: string[] };
 
 /** Starts muted (browsers only autoplay muted video); the speaker button turns the sound on and off. */
 function Video({ src, s = 16 }: { src: string | null; s?: number }) {
@@ -219,7 +218,7 @@ function Instagram({ caption, comment, video, who, collaborators }: PreviewProps
   );
 }
 
-function Facebook({ caption, comment, commentImage, video, who, fbView, theme, names }: PreviewProps) {
+function Facebook({ caption, comment, commentImage, video, who, fbView, theme }: PreviewProps) {
   const [open, setOpen] = useState(false);
   const [sheet, setSheet] = useState(false);
   if (fbView === "reels") {
@@ -238,7 +237,7 @@ function Facebook({ caption, comment, commentImage, video, who, fbView, theme, n
         {open && <div className="pv-dim" onClick={() => setOpen(false)} />}
         <div className={`pv-fbr-txt pv-sh${open ? " open" : ""}`}>
           <div className="u"><Av who={who} size={32} />{who.name} <Ic n="globe" s={12} /><span className="pv-follow">Follow</span></div>
-          {open ? <div className="cp" onClick={() => setOpen(false)}><Rich text={caption} at="bold" names={names} handles={false} /></div> : <div className="cp"><Rich text={c.text} at="bold" names={names} handles={false} />{c.cut && <More label={<em>… See more</em>} onClick={() => setOpen(true)} />}</div>}
+          {open ? <div className="cp" onClick={() => setOpen(false)}><Rich text={caption} at="bold" handles={false} /></div> : <div className="cp"><Rich text={c.text} at="bold" handles={false} />{c.cut && <More label={<em>… See more</em>} onClick={() => setOpen(true)} />}</div>}
         </div>
         <div className="pv-bar pv-fbr-bar"><Nav n="homeO" label="Home" /><Nav n="friends" label="Friends" /><Nav n="reels" label="Reels" on /><Nav n="store" label="Marketplace" /><Nav n="bell" label="Notifications" /><NavAv who={who} label="Profile" /></div>
         {sheet && <CommentSheet app="facebook" comment={comment} image={commentImage} who={who} onClose={() => setSheet(false)} />}
@@ -254,7 +253,7 @@ function Facebook({ caption, comment, commentImage, video, who, fbView, theme, n
       <div className="pv-fb-hd"><Ic n="menu" s={22} /><span className="wm">facebook</span><span className="rc"><Ic n="plus" s={20} /></span><span className="rc"><Ic n="search" s={19} /></span><span className="rc"><Ic n="messenger" s={20} /></span></div>
       <div className="pv-fb-card">
         <div className="pv-fb-ph"><Av who={who} size={40} /><span className="n"><b>{who.name}</b><small>Just now · <Ic n="globe" s={12} /></small></span><span className="x"><Ic n="dots" s={20} /><Ic n="x" s={20} /></span></div>
-        <div className="pv-fb-tx">{open ? <Rich text={caption} links tags="link" at="link" names={names} handles={false} /> : <><Rich text={c.text} links tags="link" at="link" names={names} handles={false} />{c.cut && <More label={<span className="sm">… See more</span>} onClick={() => setOpen(true)} />}</>}</div>
+        <div className="pv-fb-tx">{open ? <Rich text={caption} links tags="link" at="link" handles={false} /> : <><Rich text={c.text} links tags="link" at="link" handles={false} />{c.cut && <More label={<span className="sm">… See more</span>} onClick={() => setOpen(true)} />}</>}</div>
         <div className="pv-fb-vid"><Video src={video} /></div>
         <div className="pv-fb-act"><span><Ic n="thumb" s={19} /></span><span><Ic n="cmtO" s={18} /></span><span><Ic n="shareO" s={18} /></span></div>
         {(comment || commentImage) && <div className="pv-fb-cm"><Av who={who} size={32} /><div><span className="bub"><b>{who.name}</b>{comment && <span><Rich text={comment} links at="link" /></span>}</span>{commentImage && <Pic className="pv-cm-img" src={commentImage} />}<small>Just now · Like · Reply</small></div></div>}

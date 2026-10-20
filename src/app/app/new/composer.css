@@ -83,8 +83,6 @@
 .cx-cimg { display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 13px; }
 .cx-cimg img { width: 52px; height: 52px; border-radius: 10px; object-fit: cover; flex: 0 0 auto; border: 1px solid var(--border); }
 .cx-cimg > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cx-pick { border: 1px dashed var(--border); border-radius: 999px; padding: 4px 11px; background: none; color: inherit; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
-.cx-pick:hover { border-style: solid; background: var(--surface); }
 .cx-tag { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; border: 1px solid var(--border); border-radius: 999px; padding: 3px 4px 3px 4px; background: var(--surface); font-size: 12.5px; font-weight: 700; animation: cx-pop 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.25); }
 .cx-tag .cx-face { width: 22px; height: 22px; }
 .cx-tag > span:not(.cx-face) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -103,8 +101,6 @@
 .cx-inline { display: flex; gap: 8px; min-width: 0; }
 .cx-inline .np-input { flex: 1; min-width: 0; }
 .cx-inline .btn-outline { flex-shrink: 0; }
-.cx-manual { display: grid; gap: 6px; padding: 10px 12px; border-radius: 12px; background: var(--asoft); color: var(--amber); }
-.cx-manual small { font-size: 12.5px; line-height: 1.4; }
 .cx-guide { border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; background: var(--surface2); font-size: 13.5px; }
 .cx-guide summary { cursor: pointer; font-weight: 700; color: var(--gink); }
 .cx-guide ol { margin: 8px 0 2px; padding-left: 18px; display: grid; gap: 6px; color: var(--body); line-height: 1.45; }
