@@ -75,10 +75,11 @@ const TAG = /(^|[^\S\n]|\n)#[\p{L}\p{N}_]+/gu;
  * A channel's first comment: the owner's own first comment (from Main) with the product link after it when that channel's
  * link goes in the comment; without one, Rezekii's line with the link (C4b).
  */
-export function autoComment(ch: Platform, link: string, place: Placement = DEFAULT_PLACEMENT[ch], own = ""): string {
+export function autoComment(ch: Platform, link: string, place: Placement = DEFAULT_PLACEMENT[ch], own = "", cta = ""): string {
   const text = own.trim(), withLink = !!link && place.comment;
-  if (text) return withLink && !text.includes(link) ? `${text}\n${link}` : text;
+  if (text) return withLink && !text.includes(link) ? `${text}\n${linkLine(link, cta)}` : text;
   if (!withLink) return "";
+  if (cta.trim()) return linkLine(link, cta);
   return ch === "threads" ? `Link produk 👇\n${link}` : ch === "facebook" ? `Dapatkan di sini: ${link}` : link;
 }
 
@@ -103,10 +104,13 @@ export function withHashtags(main: string, tags: string[]): string {
  * The caption that is actually posted: the channel's text plus the link when it goes in the caption and isn't typed in it
  * already, placed above the hashtags so they stay at the very bottom.
  */
-export function postedCaption(ch: Channel, text: string, link: string, place: Placement): string {
+export function postedCaption(ch: Channel, text: string, link: string, place: Placement, cta = ""): string {
   if (ch === "tiktok" || !link || !place.caption || text.includes(link)) return text;
-  return aboveTags(text, link);
+  return aboveTags(text, linkLine(link, cta));
 }
+
+/** The product link as Rezekii adds it: after the call to action when there is one ("Dapatkan di sini 👉 https://…"). */
+export const linkLine = (link: string, cta = "") => (cta.trim() ? `${cta.trim()} ${link}` : link);
 
 /** Adds a line at the end of a caption, above a closing line of hashtags so they stay at the very bottom. */
 export function aboveTags(text: string, line: string): string {

@@ -71,6 +71,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
   const [tagsText, setTagsText] = useState("");
   const [ownComment, setOwnComment] = useState("");
   const [link, setLink] = useState("");
+  const [cta, setCta] = useState("Dapatkan di sini 👉");
   const [remind, setRemind] = useState(true);
   const [capOver, setCapOver] = useState<Partial<Record<Channel, string>>>({});
   const [comOver, setComOver] = useState<Partial<Record<Channel, string>>>({});
@@ -151,10 +152,10 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
   // The main caption with the Hashtags box at the very bottom: what every app's version is written from.
   const mainFull = withHashtags(main, parseHashtags(tagsText));
   const textOf = (p: Channel) => capOver[p] ?? autoCaption(p, mainFull, placeOf(p));
-  const captionOf = (p: Channel) => postedCaption(p, textOf(p), link.trim(), placeOf(p));
+  const captionOf = (p: Channel) => postedCaption(p, textOf(p), link.trim(), placeOf(p), cta);
   // What people will see: on Facebook, mentioned Pages show by name where they go.
   const shownOf = (p: Channel) => (p === "facebook" && fbMentions.length ? withPageMentions(captionOf(p), fbMentions, (m) => m.name) : captionOf(p));
-  const commentOf = (p: Channel) => (p === "tiktok" ? "" : (comOver[p] ?? autoComment(p, link.trim(), placeOf(p), ownComment)));
+  const commentOf = (p: Channel) => (p === "tiktok" ? "" : (comOver[p] ?? autoComment(p, link.trim(), placeOf(p), ownComment, cta)));
   const appLabel = (p: Channel) => { const n = inApp(p).length; return n > 1 ? `${NAMES[p]} · ${n} ${UNIT[p][1]}` : NAMES[p]; };
   const summary = () => apps.map((p) => { const n = inApp(p).length; return n > 1 ? `${n} ${NAMES[p]} ${UNIT[p][1]}` : p === "tiktok" ? `TikTok ${byKey.get(ttKey ?? "")?.name ?? ""}`.trim() : `${NAMES[p]} ${byKey.get(inApp(p)[0])?.name ?? ""}`.trim(); }).join(", ");
   const who = (key: string): Who => {
@@ -407,6 +408,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
           <section className="card">
             <h2>Product link</h2>
             <input className="np-input" type="url" inputMode="url" value={link} onChange={(e) => setLink(e.target.value.trim())} placeholder="https://… (Shopee or TikTok Shop)" aria-label="Product link" />
+            <label className="cx-field"><b>Call to action before the link</b><input className="np-input" type="text" value={cta} maxLength={80} onChange={(e) => setCta(e.target.value)} placeholder="e.g. Dapatkan di sini 👉" aria-label="Call to action before the link" /><small className="np-muted">Used wherever Rezekii adds the link (Facebook caption, first comments). Leave empty for the link alone.</small></label>
             {apps.length > 0 && <ul className="cx-how">{apps.map((p) => <li key={p}><BrandIcon ch={p} size={18} /><span><b>{appLabel(p)}:</b> {linkWhere(p)}</span></li>)}</ul>}
             {apps.length > 0 && <p className="np-muted">Change where it goes in each app&apos;s caption tab.</p>}
             {apps.includes("facebook") && link.trim() && (

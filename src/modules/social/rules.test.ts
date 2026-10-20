@@ -99,3 +99,12 @@ test("C3f: Threads leaves hashtags out wherever they were typed; Instagram keeps
   assert.equal(autoCaption("threads", "Lutut #krilloil berat?\nMore #sendi"), "Lutut berat?\nMore");
   assert.equal(autoCaption("instagram", "A #1a #2b\nB #3c #4d #5e #6f"), "A #1a #2b\nB #3c #4d #5e");
 });
+
+test("C4c: wherever Rezekii adds the product link, the call to action goes in front of it", () => {
+  const cta = "Dapatkan di sini 👉";
+  assert.equal(postedCaption("facebook", "Jom.\n\n#a", LINK, DEFAULT_PLACEMENT.facebook, cta), `Jom.\n${cta} ${LINK}\n\n#a`);
+  assert.equal(autoComment("facebook", LINK, DEFAULT_PLACEMENT.facebook, "", cta), `${cta} ${LINK}`);
+  assert.equal(autoComment("threads", LINK, DEFAULT_PLACEMENT.threads, "Ada soalan?", cta), `Ada soalan?\n${cta} ${LINK}`);
+  assert.equal(autoComment("instagram", LINK, DEFAULT_PLACEMENT.instagram, "Ada soalan?", cta), "Ada soalan?");
+  assert.equal(postedCaption("facebook", `Beli ${LINK}`, LINK, DEFAULT_PLACEMENT.facebook, cta), `Beli ${LINK}`);
+});
