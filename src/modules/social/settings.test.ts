@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { COMMON_PAGES, cleanSettings, cleanTopic, mentionPicks, pageRef, parseCollaborators, settingsProblems, threadsTopic, unreachableUsers, withPageMentions } from "./settings.ts";
+import { COMMON_PAGES, cleanSettings, cleanTopic, mentionPicks, mentionsInText, pageRef, parseCollaborators, settingsProblems, threadsTopic, unreachableUsers, withPageMentions } from "./settings.ts";
 
 test("S1: Facebook can save a Reel as a draft on the Page; drafts work for Reels (3–90 s) only", () => {
   assert.deepEqual(cleanSettings("facebook", { draft: true }), { draft: true, mentions: [] });
@@ -67,4 +67,16 @@ test("S7: Shopee, Lazada and Pages mentioned before are quick picks; added ones 
   assert.deepEqual(mentionPicks([brand], [COMMON_PAGES[0]], "").map((m) => m.name), ["Mentega Terbang", "Lazada"]);
   assert.deepEqual(mentionPicks([brand], [], "sho").map((m) => m.name), ["Shopee"]);
   assert.deepEqual(mentionPicks([], [], "nothing"), []);
+});
+
+test("S7: @Name or @username typed in the caption (any case, whole word) mentions a known Page right there", () => {
+  const [shopee, lazada] = COMMON_PAGES;
+  assert.deepEqual(mentionsInText("Beli di @shopeemy sekarang", COMMON_PAGES), [shopee]);
+  assert.deepEqual(mentionsInText("Ada di @Shopee. Dan @LAZADA!", COMMON_PAGES), [shopee, lazada]);
+  assert.deepEqual(mentionsInText("@Shopeemall @lazada.my shopee", COMMON_PAGES), []);
+  assert.equal(withPageMentions("Ada di @shopeemy dan @LAZADA!\n\n#a", COMMON_PAGES), "Ada di @[1544653935786928] dan @[296717127062813]!\n\n#a");
+  assert.equal(withPageMentions("Ada di @Shopeemy.", [shopee], (m) => m.name), "Ada di Shopee.");
+  assert.equal(withPageMentions("Ada di @Shopeemall.", [shopee], (m) => m.name), "Ada di @Shopeemall.\nShopee");
+  assert.deepEqual((cleanSettings("facebook", { mentions: [shopee, { id: "61551234567890", name: "X", username: "bad name!" }] }) as { mentions: unknown[] }).mentions, [shopee, { id: "61551234567890", name: "X" }]);
+  assert.deepEqual(mentionPicks([], [], "lazadamal"), [lazada]);
 });

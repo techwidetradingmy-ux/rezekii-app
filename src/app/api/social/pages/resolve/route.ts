@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   if (!ref) return NextResponse.json({ error: "Paste a Facebook Page link or Page ID." }, { status: 400 });
   try {
     const page = await facebookPageInfo("id" in ref ? ref.id : ref.username, await freshToken(acc));
-    return NextResponse.json({ page: { id: page.id, name: page.name } });
+    return NextResponse.json({ page: { id: page.id, name: page.name, ...(page.username ? { username: page.username } : {}) } });
   } catch (err) {
     console.error("[meta] page lookup failed", err instanceof Error ? err.message : err);
     return NextResponse.json({ error: "id" in ref ? "Facebook couldn't find a Page with that ID." : "Facebook didn't give Rezekii that Page's ID. Paste the Page ID instead (on the Page: About → Page transparency)." }, { status: 404 });
