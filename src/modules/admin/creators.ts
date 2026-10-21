@@ -7,6 +7,7 @@ import { mytDay } from "../refresh/plan.ts";
 import { autoApprove, type AccessStatus } from "../creator-accounts/access.ts";
 import { shopPlacesUsed } from "./accounts.ts";
 import { logActivity } from "./admins.ts";
+import { photoFor, savedPhotos } from "../photos/store.ts";
 
 export type CreatorRow = {
   id: string;
@@ -32,7 +33,7 @@ const tally = <T,>(rows: T[], key: (r: T) => string) => rows.reduce((m, r) => m.
 
 /** Every creator account with how they sign in, their connections, level, links and samples. */
 export async function creatorList(): Promise<CreatorRow[]> {
-  const [users, levels, conns, shops, links, samples, access] = await Promise.all([
+  const [users, levels, conns, shops, links, samples, access, saved] = await Promise.all([
     supabaseRest(`app_users?role=eq.creator&select=${USER_COLUMNS},google_sub,created_at&order=created_at.desc&limit=5000`).then((r) => r.json() as Promise<U[]>),
     supabaseRest("creator_levels?select=user_id,level,gold_invited&limit=5000").then((r) => r.json() as Promise<{ user_id: string; level: Level; gold_invited: boolean }[]>),
     supabaseRest("tiktok_connections?select=user_id&limit=5000").then((r) => r.json() as Promise<{ user_id: string }[]>),
@@ -40,6 +41,7 @@ export async function creatorList(): Promise<CreatorRow[]> {
     supabaseRest("tap_links?select=user_id&limit=100000").then((r) => r.json() as Promise<{ user_id: string }[]>),
     supabaseRest("sample_requests?status=neq.cancelled&select=user_id&limit=100000").then((r) => r.json() as Promise<{ user_id: string }[]>),
     supabaseRest("creator_access?select=user_id,status,reason,requested_at&limit=5000").then((r) => r.json() as Promise<{ user_id: string; status: AccessStatus; reason: string | null; requested_at: string }[]>),
+    savedPhotos().catch(() => new Map<string, string>()),
   ]);
   const acc = new Map(access.map((a) => [a.user_id, a]));
   const linkedUsers = new Set(shops.map((x) => x.user_id).filter(Boolean));
@@ -52,7 +54,8 @@ export async function creatorList(): Promise<CreatorRow[]> {
     id: u.id,
     handle: u.tiktok_username ? `@${u.tiktok_username}` : (u.email ?? u.display_name ?? "Creator"),
     name: u.display_name ?? u.tiktok_username ?? u.email ?? "Creator",
-    avatar: u.avatar_url,
+    // TikTok's photo addresses stop working within ~2 days: Rezekii's saved copy, else the address while it works.
+    avatar: photoFor(u.tiktok_username ?? "", u.avatar_url, saved),
     signIn: u.tiktok_open_id ? "Signed in with TikTok" : u.google_sub ? `Signed in with Google${u.email ? ` · ${u.email}` : ""}` : `Signed in with email${u.email ? ` · ${u.email}` : ""}`,
     joined: u.created_at,
     tiktok: connected.has(u.id),

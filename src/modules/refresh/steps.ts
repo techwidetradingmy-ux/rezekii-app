@@ -13,6 +13,8 @@ import { buildRankings, rankings as builtRankings } from "../rankings/store.ts";
 import { productSums } from "../admin/tap.ts";
 import { PHOTO_DAYS, freshUrl, saveCreatorPhoto, savedPhotos } from "../photos/store.ts";
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import { getTikTokUser } from "../../integrations/tiktok/login.ts";
+import { freshTikTokToken } from "../posting/store.ts";
 import { getBestselling, getMarketplaceCreator, searchMarketplaceCreators, type BestsellingKind } from "../../integrations/tiktok-shop/seller.ts";
 import { TT_LEVELS, bestSlot, mytDay, type PlannedTask } from "./plan.ts";
 import { TAG_START, tagFilters, tagNext, tagTask, type TagState } from "../accounts/tags.ts";
@@ -300,16 +302,19 @@ async function details(t: TaskRow, { sessions, deadline }: Ctx): Promise<StepRes
 }
 
 /**
- * Saved copies of the photos of every creator the Rankings views show, and of Rezekii's own creators (owner, 16 Oct 2026: once
- * every two weeks; TikTok's photo addresses stop working within a day or two). A photo comes from a saved profile or marketplace
- * address that still works; otherwise the creator's profile is read again for a new address. Goes through the due creators in
+ * Saved copies of the photos of every creator the Rankings views show, of Rezekii's own creators and of every TikTok account
+ * connected to Rezekii, Techwide's included (owner, 16 and 21 Oct 2026: once every two weeks; TikTok's photo addresses stop
+ * working within a day or two). A photo comes from a saved profile or marketplace address that still works; otherwise a
+ * connected account's own sign-in gives a new address, or the creator's profile is read again. Goes through the due creators in
  * name order, carrying on after `cursor`; failures wait for the next day's task.
  */
 async function photos(t: TaskRow, { sessions, deadline }: Ctx): Promise<StepResult> {
   const b = await builtRankings();
   const rezekii = (await (await supabaseRest("app_users?role=eq.creator&tiktok_username=not.is.null&select=tiktok_username,avatar_url&limit=5000")).json()) as { tiktok_username: string; avatar_url: string | null }[];
   const own = new Map(rezekii.map((u) => [u.tiktok_username, u.avatar_url]));
-  const users = new Set([...Object.keys(b?.details ?? {}), ...own.keys()]);
+  const conns = (await (await supabaseRest("tiktok_connections?username=not.is.null&select=open_id,username,avatar_url&limit=5000")).json()) as { open_id: string; username: string; avatar_url: string | null }[];
+  const team = new Map(conns.map((c) => [c.username, c]));
+  const users = new Set([...Object.keys(b?.details ?? {}), ...own.keys(), ...team.keys()]);
   for (const rows of Object.values(b?.creators ?? {})) for (const r of rows) users.add(r[1]);
   for (const rows of Object.values(b?.lives ?? {})) for (const r of rows) if (r[1]) users.add(r[1]);
   const saved = await savedPhotos(true);
@@ -322,15 +327,24 @@ async function photos(t: TaskRow, { sessions, deadline }: Ctx): Promise<StepResu
     const group = due.slice(i, i + 30);
     const back = (waitMs: number): StepResult => ({ count, more: true, cursor: i ? due[i - 1] : t.cursor, waitMs });
     const src = new Map((await photoSources(group)).map((r) => [r.username, r]));
-    const url = (u: string) => soon(src.get(u)?.da) ?? soon(src.get(u)?.ma) ?? soon(own.get(u));
+    const url = (u: string) => soon(src.get(u)?.da) ?? soon(src.get(u)?.ma) ?? soon(own.get(u)) ?? soon(team.get(u)?.avatar_url);
     // Addresses that still work: six downloads at once.
     const ready = group.filter(url);
     for (let k = 0; k < ready.length; k += 6) {
       if (Date.now() > deadline - 5000) return back(0);
       count += (await Promise.all(ready.slice(k, k + 6).map((u) => saveCreatorPhoto(u, url(u)!).catch(() => false)))).filter(Boolean).length;
     }
+    // A connected account: its own TikTok sign-in gives a new address (kept for the pages too).
+    for (const u of group.filter((x) => !url(x) && team.has(x))) {
+      if (Date.now() > deadline - 5000) return back(0);
+      const c = team.get(u)!;
+      const fresh = await freshTikTokToken(c.open_id).then(getTikTokUser).then((r) => soon(r.user?.avatar_url)).catch(() => null);
+      if (!fresh) continue;
+      await supabaseRest(`tiktok_connections?open_id=eq.${encodeURIComponent(c.open_id)}`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ avatar_url: fresh }) });
+      if (await saveCreatorPhoto(u, fresh).catch(() => false)) count++;
+    }
     // The rest: read the profile again for a new address, a second apart (TikTok's shared rate limit).
-    for (const u of group.filter((x) => !url(x) && src.get(x)?.open_id)) {
+    for (const u of group.filter((x) => !url(x) && !team.has(x) && src.get(x)?.open_id)) {
       if (Date.now() > deadline - 5000) return back(0);
       const r = src.get(u)!;
       seller ??= await sessions.seller();

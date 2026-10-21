@@ -1,6 +1,7 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { revokeTikTokToken } from "../../integrations/tiktok/login.ts";
 import { decryptToken } from "../creator-accounts/token-crypto.ts";
+import { photoFor, savedPhotos } from "../photos/store.ts";
 import { logActivity } from "./admins.ts";
 
 export type AdminAccount = {
@@ -24,12 +25,13 @@ type User = { id: string; role: "admin" | "creator"; display_name: string | null
 /** Every TikTok account connected to Rezekii: Techwide's own (held by admins) and creators'. */
 export async function allAccounts(): Promise<AdminAccount[]> {
   const since = new Date(Date.now() - 30 * 86400_000).toISOString();
-  const [conns, users, shops, queued, links] = await Promise.all([
+  const [conns, users, shops, queued, links, saved] = await Promise.all([
     supabaseRest("tiktok_connections?select=open_id,user_id,username,display_name,avatar_url,refresh_token_expires_at,connected_at&order=connected_at&limit=2000").then((r) => r.json() as Promise<Conn[]>),
     supabaseRest("app_users?select=id,role,display_name,email&limit=5000").then((r) => r.json() as Promise<User[]>),
     supabaseRest("affiliate_connections?select=username&limit=2000").then((r) => r.json() as Promise<{ username: string }[]>),
     supabaseRest("posts?status=in.(scheduled,publishing,processing)&select=tiktok_open_id&limit=10000").then((r) => r.json() as Promise<{ tiktok_open_id: string }[]>),
     supabaseRest(`tap_links?made_at=gte.${since}&select=user_id&limit=100000`).then((r) => r.json() as Promise<{ user_id: string }[]>),
+    savedPhotos().catch(() => new Map<string, string>()),
   ]);
   const byUser = new Map(users.map((u) => [u.id, u]));
   const shopSet = new Set(shops.map((s) => s.username.toLowerCase()));
@@ -43,7 +45,8 @@ export async function allAccounts(): Promise<AdminAccount[]> {
     return {
       openId: c.open_id,
       handle,
-      avatar: c.avatar_url,
+      // TikTok's photo addresses stop working within ~2 days: Rezekii's saved copy, else the address while it works.
+      avatar: photoFor(c.username ?? "", c.avatar_url, saved),
       ownerId: c.user_id,
       owner: techwide ? "Techwide" : `Creator · ${u?.display_name || u?.email || handle}`,
       techwide,
