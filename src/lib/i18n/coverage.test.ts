@@ -1,25 +1,24 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { CREATOR_ACCOUNT, CREATOR_MENU } from "../../app/menus.ts";
 import { MK_SORTS } from "../../modules/tap/sorts.ts";
 import { rowLook, SAMPLE_LOOK, SAMPLE_STEPS, statusLook } from "../../modules/tap/stages.ts";
 import { translate } from "./translate.ts";
 import { ZH, ZH_PARTS } from "./zh.ts";
 
-/** The pages and parts that switch to Chinese (Part 1, approved 22 Oct 2026). */
-const FILES = [
-  "app/site.tsx", "app/menu-links.tsx", "app/bottom-nav.tsx",
-  "app/app/marketplace/page.tsx", "app/app/marketplace/marketplace-view.tsx", "app/app/marketplace/product-view.tsx", "app/app/marketplace/use-tap-actions.tsx", "app/app/marketplace/[id]/page.tsx",
-  "app/app/my-tap/page.tsx", "app/app/my-tap/my-tap-view.tsx",
-  "app/app/links/page.tsx", "app/app/links/links-view.tsx",
-  "app/app/lookup/page.tsx", "app/app/lookup/lookup-view.tsx",
-  "app/app/sales/page.tsx", "app/app/sales/sales-view.tsx",
-  "app/app/accounts/page.tsx", "app/app/accounts/accounts-view.tsx", "app/app/accounts/sign-in-security.tsx",
-  "app/app/calendar-picker.tsx", "app/app/product-card.tsx", "app/app/gmv-chart.tsx",
-  "modules/sales/frames.ts", "modules/accounts/manage.ts",
-];
 const src = new URL("../../", import.meta.url);
+
+/**
+ * Every page and module creators see switches to Chinese (Part 1 approved 22 Oct 2026, Part 2 on 23 Oct): all of src/app and
+ * src/modules except admin pages, API routes and the legal pages (Privacy, Terms), which stay in English.
+ */
+const SKIP = /(^|\/)(app\/app\/admin|app\/api|app\/privacy|app\/terms)(\/|$)|\.test\.ts$/;
+const FILES = ["app", "modules"].flatMap((dir) =>
+  (readdirSync(new URL(`${dir}/`, src), { recursive: true }) as string[])
+    .map((f) => `${dir}/${f.replaceAll("\\", "/")}`)
+    .filter((f) => /\.tsx?$/.test(f) && !SKIP.test(f)),
+);
 
 /** Every English text written as t("…"), tx("…") or translate(lang, "…") in a file. */
 function keysIn(file: string): string[] {
