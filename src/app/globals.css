@@ -92,7 +92,14 @@ a { color: var(--gink); }
 .lang-switch button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
 .lang-switch button:not([aria-pressed="true"]):hover { color: var(--text); }
 .lang-switch.busy { opacity: 0.6; }
-@media (max-width: 480px) { .lang-switch button { min-width: 34px; padding: 0 8px; } }
+/* Phones: only the other language shows ("中文" or "EN", tap to switch), so logo, switch and Account fit on one row down to
+   360px wide (both together needed 370px of a 375px phone's 343px). */
+@media (max-width: 480px) {
+  .lang-switch { padding: 2px; gap: 0; }
+  .lang-switch button { min-width: 0; padding: 0 8px; color: var(--text); }
+  .lang-switch button[aria-pressed="true"] { display: none; }
+  .site-nav-app:has(.lang-switch) { column-gap: 8px; }
+}
 
 .hero-grid { position: relative; display: flex; flex-wrap: wrap; gap: 40px; align-items: center; padding-block: 28px 72px; }
 .hero-copy { flex: 1 1 460px; min-width: 0; display: flex; flex-direction: column; gap: 20px; }

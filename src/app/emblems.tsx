@@ -1,3 +1,5 @@
+import type { Lang } from "@/lib/i18n/lang.ts";
+
 /** Rezekii creator level emblems: a rosette with a face and ribbon. Bronze = sprout, Silver = star, Gold = crown. */
 export type Level = "bronze" | "silver" | "gold";
 
@@ -12,8 +14,11 @@ const SVG: Record<Level, string> = {
 export const emblemSvg = (level: Level, size: number, id = `rzsvg-${level}`) =>
   SVG[level].replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" ').replaceAll("__S__", String(size)).replaceAll("__ID__", id);
 
-/** `animate` adds the float, shine, blink and twinkle (they stop for people who prefer reduced motion). */
-export function Emblem({ level, size = 74, animate = false }: { level: Level; size?: number; animate?: boolean }) {
-  const html = SVG[level].replaceAll("__S__", String(size)).replaceAll("__ID__", `rzem-${level}-${size}`);
+const RIBBON_ZH: Record<Level, string> = { bronze: "铜牌", silver: "银牌", gold: "金牌" };
+
+/** `animate` adds the float, shine, blink and twinkle (they stop for people who prefer reduced motion). `lang` words the ribbon. */
+export function Emblem({ level, size = 74, animate = false, lang = "en" }: { level: Level; size?: number; animate?: boolean; lang?: Lang }) {
+  const svg = SVG[level].replaceAll("__S__", String(size)).replaceAll("__ID__", `rzem-${level}-${size}`);
+  const html = lang === "zh" ? svg.replace(/>(BRONZE|SILVER|GOLD)</, `>${RIBBON_ZH[level]}<`) : svg;
   return <span className={animate ? "rz-emblem rz-emblem-anim" : "rz-emblem"} style={{ width: size, height: size }} dangerouslySetInnerHTML={{ __html: html }} />;
 }

@@ -174,7 +174,7 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
               {shop?.approvedAt && <span className="nv-badge b-green">{t("Approved by Techwide")}</span>}
               {typeof shop?.ttLevel === "number" && <span className="nv-badge ac-tts"><LevelIcon lv={shop.ttLevel} size={15} />TikTok Shop Lv{shop.ttLevel}</span>}
               {shop?.agency === "managed" && <span className="nv-badge b-gray" title={t("TikTok's Creator Marketplace lists you as managed by an agency")}>{t("Agency managed")}</span>}
-              {me.role === "admin" ? <span className="nv-badge b-blue">{t("Techwide admin")}</span> : <span className={`ac-lvl ac-lvl-${d.level.level}`}><Emblem level={d.level.level} size={18} />{t("{level} level", { level: levelName })}</span>}
+              {me.role === "admin" ? <span className="nv-badge b-blue">{t("Techwide admin")}</span> : <span className={`ac-lvl ac-lvl-${d.level.level}`}><Emblem level={d.level.level} size={18} lang={lang} />{t("{level} level", { level: levelName })}</span>}
             </span>
           </span>
         </div>
@@ -254,7 +254,7 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
         {me.role === "creator" && (
           <section className="nv-up nv-card ac-level" aria-labelledby="aclvl" style={{ animationDelay: "140ms" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              <Emblem level={d.level.level} size={56} animate />
+              <Emblem level={d.level.level} size={56} animate lang={lang} />
               <span style={{ display: "flex", flexDirection: "column", gap: 2 }}><h2 id="aclvl" className="nv-h2">{t("{level} level", { level: levelName })}</h2><span style={{ fontSize: 13, color: "var(--muted)" }}>{t(LEVEL_RATE[d.level.level])}</span></span>
             </div>
             {d.level.level !== "bronze" ? (
