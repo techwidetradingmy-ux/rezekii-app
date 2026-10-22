@@ -1,6 +1,6 @@
 "use client";
 
-import { tx } from "@/lib/i18n/lang.ts";
+import { tx, type Lang } from "@/lib/i18n/lang.ts";
 import { emblemSvg, type Level } from "../../emblems";
 
 /**
@@ -38,8 +38,8 @@ export const loadImage = (src: string) =>
   });
 
 /** Loads the pictures the card needs: the level emblem, the Rezekii logo and the TikTok Shop Partner logo. */
-export async function cardImages(level: Level) {
-  const svg = emblemSvg(level, 378, `card-${level}`);
+export async function cardImages(level: Level, lang: Lang = "en") {
+  const svg = emblemSvg(level, 378, `card-${level}`, lang);
   const [emblem, logo, partner] = await Promise.all([
     loadImage(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`),
     loadImage("/master-logo-transparent.png"),

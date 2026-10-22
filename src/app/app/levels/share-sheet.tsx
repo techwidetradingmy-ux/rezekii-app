@@ -36,7 +36,7 @@ export function ShareSheet({ level, handle, username, bless, onBless, onClose }:
 
   /** Makes the image or video from the card drawing. */
   async function makeFile(): Promise<File> {
-    const imgs = await cardImages(level);
+    const imgs = await cardImages(level, lang);
     const font = getComputedStyle(document.body).fontFamily;
     const input = { design, level, handle, blessing, words: { chip, hi, now }, font, ...imgs };
     return vid ? cardVideo(input) : cardImage(input);
@@ -122,7 +122,7 @@ export function ShareSheet({ level, handle, username, bless, onBless, onClose }:
               <span className="st-bub" aria-hidden="true" style={{ width: 120, height: 120, right: -40, top: 180, background: "radial-gradient(circle, rgba(125,132,184,.35), transparent 70%)", animationDelay: "1.2s" }} />
               <span className="st-bub" aria-hidden="true" style={{ width: 70, height: 70, left: 30, bottom: 60, background: "radial-gradient(circle, rgba(255,122,168,.3), transparent 70%)", animationDelay: "2.1s" }} />
               <span className="st-chip st-t">{chip}</span>
-              <span className="em-wrap" style={{ position: "relative", display: "inline-flex" }}><Emblem level={level} size={84} animate /></span>
+              <span className="em-wrap" style={{ position: "relative", display: "inline-flex" }}><Emblem level={level} size={84} animate lang={lang} /></span>
               <span className="st-hi st-t">{hi}</span>
               <strong className="st-name st-t">{handle}</strong>
               <span className="st-lvl st-t">{now}</span>

@@ -89,7 +89,7 @@ export function LevelsView({ data, benefits, firstName, handle, username }: { da
             <span className="lv-rays" aria-hidden="true" />
             <span className="lv-glow" aria-hidden="true" />
             <button type="button" onClick={() => { setSpin(true); setTimeout(() => setSpin(false), 950); }} aria-label={t("Spin the {level} emblem", { level: t(NAMES[level]) })} style={{ border: 0, background: "transparent", padding: 0, cursor: "pointer", perspective: 600 }}>
-              <span className={`em-float ${spin ? "lv-spin" : ""}`} style={{ display: "inline-flex" }}><Emblem level={level} size={180} animate /></span>
+              <span className={`em-float ${spin ? "lv-spin" : ""}`} style={{ display: "inline-flex" }}><Emblem level={level} size={180} animate lang={lang} /></span>
             </button>
           </div>
           <div style={{ flex: "1 1 340px", minWidth: 0, display: "flex", flexDirection: "column", gap: 12, position: "relative" }}>
@@ -147,7 +147,7 @@ export function LevelsView({ data, benefits, firstName, handle, username }: { da
               return (
                 <div key={l} className="lv-step" style={{ animationDelay: `${i * 90}ms`, padding: 18, borderRadius: 22, border: `2px solid ${cur ? "#00c073" : "var(--border)"}`, background: cur ? "var(--gsoft)" : "var(--surface)", display: "flex", flexDirection: "column", gap: 10, position: "relative", opacity: i === 2 && !cur ? 0.85 : 1 }}>
                   <span className={`nv-badge ${badge}`} style={{ position: "absolute", top: 14, right: 14 }}>{state}</span>
-                  <span className="em-float" style={{ display: "inline-flex", alignSelf: "flex-start" }}><Emblem level={l} size={78} animate /></span>
+                  <span className="em-float" style={{ display: "inline-flex", alignSelf: "flex-start" }}><Emblem level={l} size={78} animate lang={lang} /></span>
                   <strong style={{ fontSize: 19 }}>{t(NAMES[l])}</strong>
                   <span style={{ fontSize: 14, color: "var(--body)", lineHeight: 1.5 }}>{t(getRow.v[i])}</span>
                   <span style={{ fontSize: 14, fontWeight: 800, color: "var(--gink)" }}>{t(keyRow.v[i])}</span>
@@ -187,7 +187,7 @@ export function LevelsView({ data, benefits, firstName, handle, username }: { da
             <div style={{ position: "relative", width: 230, height: 230, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <span className="lv-rays" aria-hidden="true" style={{ inset: -40 }} />
               <span className="lv-pring" aria-hidden="true" />
-              <span className="em-pop" style={{ display: "inline-flex" }}><Emblem level={level} size={200} animate /></span>
+              <span className="em-pop" style={{ display: "inline-flex" }}><Emblem level={level} size={200} animate lang={lang} /></span>
               {Array.from({ length: 14 }, (_, i) => {
                 const a = (i / 14) * Math.PI * 2;
                 return <span key={i} className="em-heart" aria-hidden="true" style={{ ["--hx" as string]: `${Math.round(Math.cos(a) * 150)}px`, ["--hy" as string]: `${Math.round(Math.sin(a) * 120 - 40)}px`, ["--hr" as string]: `${(i * 40) % 360}deg`, ["--hd" as string]: `${(0.5 + (i % 5) * 0.08).toFixed(2)}s` }}>{["💖", "✨", "⭐", "💜"][i % 4]}</span>;
