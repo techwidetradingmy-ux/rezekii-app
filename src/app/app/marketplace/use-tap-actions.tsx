@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
+import { useT } from "@/lib/i18n/client.tsx";
+import { tx } from "@/lib/i18n/lang.ts";
 import type { TapProduct } from "@/modules/tap/catalog.ts";
 
 export type Flow = "idle" | "loading" | "done";
@@ -31,6 +33,7 @@ export function useToast() {
  * opens straight away; on a computer a QR code opens it on the creator's phone. It then shows in My TAP products.
  */
 export function useTap(requestedIds: string[]) {
+  const t = useT();
   const [add, setAdd] = useState<Record<string, Flow>>({});
   const [sample, setSample] = useState<Record<string, Flow>>(() => Object.fromEntries(requestedIds.map((id) => [id, "done" as Flow])));
   const { toast, flash } = useToast();
@@ -56,18 +59,18 @@ export function useTap(requestedIds: string[]) {
       const d = (await r.json().catch(() => ({}))) as { added?: boolean; link?: string; error?: string };
       if (d.added) {
         setAdd((a) => ({ ...a, [id]: "done" }));
-        flash("Added to your TikTok Shop showcase");
+        flash(t("Added to your TikTok Shop showcase"));
         return;
       }
-      if (!d.link) throw new Error(d.error || "TikTok could not make the link. Please try again.");
+      if (!d.link) throw new Error(d.error || tx("TikTok could not make the link. Please try again."));
       if (tab) tab.location.href = d.link;
       else if (!window.open(d.link, "_blank")) window.location.href = d.link;
       setAdd((a) => ({ ...a, [id]: "done" }));
-      flash(d.error ? `${d.error} TikTok Shop opened instead.` : "TikTok Shop opened. Tap Add to showcase there.");
+      flash(d.error ? t("{error} TikTok Shop opened instead.", { error: t(d.error) }) : t("TikTok Shop opened. Tap Add to showcase there."));
     } catch (err) {
       tab?.close();
       setAdd((a) => ({ ...a, [id]: "idle" }));
-      flash(err instanceof Error ? err.message : String(err), false);
+      flash(t(err instanceof Error ? err.message : String(err)), false);
     }
   }
 
@@ -108,7 +111,7 @@ export function useTap(requestedIds: string[]) {
     try {
       const r = await fetch("/api/tap/samples", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ productId: p.id }) });
       const d = (await r.json().catch(() => ({}))) as { error?: string; deeplink?: string; addedToShowcase?: boolean };
-      if (!r.ok || !d.deeplink) throw new Error(d.error || "TikTok didn't open the sample request. Please try again.");
+      if (!r.ok || !d.deeplink) throw new Error(d.error || tx("TikTok didn't open the sample request. Please try again."));
       // The QR code now opens TikTok's own sample page, so the phone doesn't have to ask Rezekii again.
       const deeplink = d.deeplink;
       setQr((q) => (q ? { ...q, url: deeplink } : q));
@@ -122,7 +125,7 @@ export function useTap(requestedIds: string[]) {
       if (/doesn't offer|out of stock|no free samples/i.test(text)) setLive((l) => ({ ...l, [p.id]: "none" }));
       else if (/already requested/i.test(text)) setLive((l) => ({ ...l, [p.id]: "requested" }));
       else if (/limit/i.test(text)) setLive((l) => ({ ...l, [p.id]: "limit" }));
-      flash(text, false);
+      flash(t(text), false);
     }
   }
 
@@ -156,6 +159,7 @@ export function Hud({ toast }: { toast: Toast | null }) {
 
 /** Request sample on a computer: scan with the phone to finish in the TikTok app (TikTok's sample page is app-only). */
 export function SampleSheet({ qr, onClose }: { qr: { url: string; name: string } | null; onClose: () => void }) {
+  const t = useT();
   const [svg, setSvg] = useState("");
   useEffect(() => {
     if (!qr) return;
@@ -168,17 +172,19 @@ export function SampleSheet({ qr, onClose }: { qr: { url: string; name: string }
     };
   }, [qr]);
   if (!qr) return null;
+  // The product name sits inside the sentence, in bold, wherever each language puts it.
+  const [before, after] = t("TikTok's sample request opens in the TikTok app. Scan this with your phone's camera, then tap Submit in TikTok for {name}.").split("{name}");
   return (
     <>
-      <button type="button" aria-label="Close" className="nv-dim" onClick={onClose} />
+      <button type="button" aria-label={t("Close")} className="nv-dim" onClick={onClose} />
       <div role="dialog" aria-modal="true" aria-labelledby="mkqrt" className="nv-qr">
-        <h3 id="mkqrt" style={{ margin: 0, fontSize: 21, fontWeight: 800 }}>Finish on your phone</h3>
+        <h3 id="mkqrt" style={{ margin: 0, fontSize: 21, fontWeight: 800 }}>{t("Finish on your phone")}</h3>
         <p style={{ margin: 0, fontSize: 15, color: "var(--body)", lineHeight: 1.5 }}>
-          TikTok&apos;s sample request opens in the TikTok app. Scan this with your phone&apos;s camera, then tap Submit in TikTok for <strong>{qr.name}</strong>.
+          {before}<strong>{qr.name}</strong>{after}
         </p>
-        <div className="nv-qr-code" aria-label="QR code that opens the sample request on your phone" role="img" dangerouslySetInnerHTML={{ __html: svg }} />
-        <p style={{ margin: 0, fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>The sample comes through Rezekii. Its status shows in My Samples.</p>
-        <button type="button" className="nv-btn2 nv-press" onClick={onClose}>Done</button>
+        <div className="nv-qr-code" aria-label={t("QR code that opens the sample request on your phone")} role="img" dangerouslySetInnerHTML={{ __html: svg }} />
+        <p style={{ margin: 0, fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>{t("The sample comes through Rezekii. Its status shows in My Samples.")}</p>
+        <button type="button" className="nv-btn2 nv-press" onClick={onClose}>{t("Done")}</button>
       </div>
     </>
   );

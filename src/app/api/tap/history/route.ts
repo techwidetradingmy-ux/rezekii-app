@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
+import { getLang } from "@/lib/i18n/server.ts";
 import { supabaseRest } from "@/integrations/supabase/rest.ts";
 import { linkShareReport, type LinkRef } from "@/modules/tap/link-share.ts";
 
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
   const res = await supabaseRest(`tap_links?user_id=eq.${user.id}&select=product_id,product_name,image,tag,link,made_at&order=made_at.desc&limit=1000`);
   const links = (await res.json()) as (LinkRef & { product_name: string | null; image: string | null })[];
   const now = Date.now();
-  const report = await linkShareReport(user.id, links, req.nextUrl.searchParams.get("frame") ?? "all", now).catch(() => ({ perf: {}, outside: [], counts: null, range: null }));
+  const report = await linkShareReport(user.id, links, req.nextUrl.searchParams.get("frame") ?? "all", now, await getLang()).catch(() => ({ perf: {}, outside: [], counts: null, range: null }));
   if (!report) return NextResponse.json({ error: "That time frame isn't available." }, { status: 400 });
   return NextResponse.json({ links, ...report, now });
 }

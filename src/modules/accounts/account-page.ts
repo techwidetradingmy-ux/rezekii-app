@@ -1,4 +1,5 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import { dateLocale, type Lang } from "../../lib/i18n/lang.ts";
 import { getCreatorProfile } from "../../integrations/tiktok-shop/creator.ts";
 import { approvedCreatorToken } from "../creator-accounts/access.ts";
 import { KEEP_MONTHLY, type Level } from "../levels/rules.ts";
@@ -24,7 +25,7 @@ export type AccountPageData = {
 
 const REGION: Record<string, string> = { MY: "Malaysia", SG: "Singapore", ID: "Indonesia", TH: "Thailand", PH: "Philippines", VN: "Vietnam" };
 const PERMISSION: Record<string, string> = { ADD_AFFILIATE_PERMISSION: "Can add affiliate products", LIVE_STREAM_PERMISSION: "Can go LIVE" };
-const day = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kuala_Lumpur" }) : null);
+const day = (iso: string | null | undefined, lang: Lang) => (iso ? new Date(iso).toLocaleDateString(dateLocale(lang), { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kuala_Lumpur" }) : null);
 
 /** TikTok's "your token has been deauthorized": TikTok cancelled the link (seen several times on 16 Oct 2026). */
 const DEAUTHORIZED = 36009005;
@@ -40,11 +41,11 @@ async function shopProfile(userId: string) {
   return out;
 }
 
-/** Everything the Account page shows: profile and TikTok Shop link, 30-day sales, level, samples and settings. */
-export async function accountPage(user: AppUser): Promise<AccountPageData> {
+/** Everything the Account page shows: profile and TikTok Shop link, 30-day sales, level, samples and settings (dates in `lang`). */
+export async function accountPage(user: AppUser, lang: Lang = "en"): Promise<AccountPageData> {
   const tapRows = myTapRows(user.id, user.tiktok_username);
   const [overview, [conn], [access], sales, level, tap, showcase, profile] = await Promise.all([
-    accountOverview(user, tapRows),
+    accountOverview(user, tapRows, lang),
     supabaseRest(`affiliate_connections?user_id=eq.${user.id}&select=username,avatar_url,connected_at,tt_level,agency&limit=1`).then((r) => r.json() as Promise<{ username: string; avatar_url: string | null; connected_at: string; tt_level: number | null; agency: "managed" | "independent" | null }[]>),
     supabaseRest(`creator_access?user_id=eq.${user.id}&select=decided_at,status&limit=1`).then((r) => r.json() as Promise<{ decided_at: string | null; status: string }[]>),
     user.role === "creator" ? salesSummary(user.id, 30) : Promise.resolve(null),
@@ -56,7 +57,7 @@ export async function accountPage(user: AppUser): Promise<AccountPageData> {
   const withSample = tap.rows.filter((r) => r.stage > 0);
   return {
     overview,
-    shop: conn ? { username: conn.username, avatar: conn.avatar_url, linkedAt: day(conn.connected_at), approvedAt: access?.status === "approved" ? day(access.decided_at) : null, region: profile.region, permissions: profile.permissions, ttLevel: conn.tt_level, agency: conn.agency, cancelled: profile.cancelled } : null,
+    shop: conn ? { username: conn.username, avatar: conn.avatar_url, linkedAt: day(conn.connected_at, lang), approvedAt: access?.status === "approved" ? day(access.decided_at, lang) : null, region: profile.region, permissions: profile.permissions, ttLevel: conn.tt_level, agency: conn.agency, cancelled: profile.cancelled } : null,
     sales,
     level: { level: level.level, monthSales: level.month?.sales ?? 0, keep: KEEP_MONTHLY, lifetime: level.lifetime },
     samples: {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import { useT } from "@/lib/i18n/client.tsx";
 
 const rm = (v: number) => `RM ${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -10,7 +11,8 @@ const rm = (v: number) => `RM ${v.toLocaleString("en-US", { minimumFractionDigit
  * comparison as a dashed line. Hovering, tapping or dragging shows a guide, a dot on each line and a card with that point's GMV.
  * `values` and `labels` run oldest first.
  */
-export function GmvChart({ values, labels, compare, compareName = "before", height = 200, ariaLabel }: { values: number[]; labels: string[]; compare?: number[]; compareName?: string; height?: number; ariaLabel?: string }) {
+export function GmvChart({ values, labels, compare, compareName, height = 200, ariaLabel }: { values: number[]; labels: string[]; compare?: number[]; compareName?: string; height?: number; ariaLabel?: string }) {
+  const t = useT();
   const id = useId();
   const [at, setAt] = useState<number | null>(null);
   const W = 600;
@@ -28,7 +30,7 @@ export function GmvChart({ values, labels, compare, compareName = "before", heig
   const cur = at !== null ? values[at] ?? 0 : 0;
   const was = at !== null && compare ? compare[at] ?? 0 : null;
   const delta = was !== null && was > 0 ? Math.round(((cur - was) / was) * 100) : null;
-  const label = ariaLabel ?? `GMV over ${len} points. Highest ${rm(values[best] ?? 0)} on ${labels[best] ?? ""}.`;
+  const label = ariaLabel ?? t("GMV over {n} points. Highest {x} on {day}.", { n: len, x: rm(values[best] ?? 0), day: labels[best] ?? "" });
   return (
     <div className="gc" style={{ position: "relative" }}>
       <svg
@@ -65,7 +67,7 @@ export function GmvChart({ values, labels, compare, compareName = "before", heig
           <span className={`gc-card ${x(at) > W * 0.7 ? "r" : x(at) < W * 0.3 ? "l" : ""}`} style={{ left: `${(x(at) / W) * 100}%` }}>
             <small>{labels[at]}</small>
             <b>{rm(cur)}</b>
-            {was !== null && <span>{compareName} {rm(was)}{delta !== null && <em className={delta < 0 ? "dn" : "up"}>{delta >= 0 ? "▲" : "▼"} {Math.abs(delta)}%</em>}</span>}
+            {was !== null && <span>{compareName ?? t("before")} {rm(was)}{delta !== null && <em className={delta < 0 ? "dn" : "up"}>{delta >= 0 ? "▲" : "▼"} {Math.abs(delta)}%</em>}</span>}
           </span>
         </>
       )}

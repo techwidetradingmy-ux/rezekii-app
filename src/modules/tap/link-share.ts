@@ -1,4 +1,5 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import type { Lang } from "../../lib/i18n/lang.ts";
 import { frameRange, productImages, type Range } from "../sales/frames.ts";
 import { lineGmv, type OrderLine } from "../sales/summary.ts";
 
@@ -82,9 +83,9 @@ export const isTapLink = (link: string) => link.startsWith("https://affiliate.ti
  * The creator's link-share sales in a time frame (the Sales page's frames and words, Malaysia time; owner, 15 Oct 2026): by
  * Rezekii share link (TAP links left out), and from links made outside Rezekii, newest first. Null for an unknown frame.
  */
-export async function linkShareReport(userId: string, links: LinkRef[], frame = "all", now = Date.now()): Promise<{ perf: Record<string, LinkPerf>; outside: OutsideSales[]; counts: LinkShareCounts; range: Range } | null> {
+export async function linkShareReport(userId: string, links: LinkRef[], frame = "all", now = Date.now(), lang: Lang = "en"): Promise<{ perf: Record<string, LinkPerf>; outside: OutsideSales[]; counts: LinkShareCounts; range: Range } | null> {
   const all = await linkShareLines(userId);
-  const range = frameRange(frame, now, all.length ? Date.parse(all[0].created_at) : null);
+  const range = frameRange(frame, now, all.length ? Date.parse(all[0].created_at) : null, lang);
   if (!range) return null;
   const lines = all.filter((l) => { const t = Date.parse(l.created_at); return t >= range.from && t < range.to; });
   const { byLink, outside, counts } = attributeLinkSales(links.filter((l) => !isTapLink(l.link)), lines);

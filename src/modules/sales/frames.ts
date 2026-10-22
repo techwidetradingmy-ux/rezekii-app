@@ -1,4 +1,6 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import type { Lang } from "../../lib/i18n/lang.ts";
+import { translate } from "../../lib/i18n/translate.ts";
 import { lookupProducts } from "../../integrations/tiktok-shop/creator.ts";
 import { approvedCreatorToken } from "../creator-accounts/access.ts";
 import { fetchOwnVideos } from "../admin/videos.ts";
@@ -18,25 +20,32 @@ const dayStart = (t: number) => Math.floor((t + MYT) / DAY) * DAY - MYT;
 /** Midnight in Malaysia of the first day of the month `add` months after the month containing `t`. */
 const monthStart = (t: number, add = 0) => { const d = new Date(t + MYT); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + add, 1) - MYT; };
 const ymd = (t: number) => { const d = new Date(t + MYT); return { y: d.getUTCFullYear(), m: d.getUTCMonth(), d: d.getUTCDate() }; };
-const dayLabel = (t: number) => { const x = ymd(t); return `${x.d} ${MONTHS[x.m]}`; };
-const monthLabel = (t: number) => { const x = ymd(t); return `${MONTHS[x.m]} ${x.y}`; };
+// Dates in the reader's language: "7 Oct", "Oct 2026", "October", "7 Oct 2026" or "10月7日", "2026年10月", "10月", "2026年10月7日".
+const dayLabel = (t: number, lang: Lang = "en") => { const x = ymd(t); return lang === "zh" ? `${x.m + 1}月${x.d}日` : `${x.d} ${MONTHS[x.m]}`; };
+const monthLabel = (t: number, lang: Lang = "en") => { const x = ymd(t); return lang === "zh" ? `${x.y}年${x.m + 1}月` : `${MONTHS[x.m]} ${x.y}`; };
+const monthName = (m: number, lang: Lang) => (lang === "zh" ? `${m + 1}月` : FULL[m]);
+const fullDay = (t: number, lang: Lang) => { const x = ymd(t); return lang === "zh" ? `${x.y}年${x.m + 1}月${x.d}日` : `${x.d} ${MONTHS[x.m]} ${x.y}`; };
 const monthsBetween = (a: number, b: number) => { const x = ymd(a), y = ymd(b); return (y.y - x.y) * 12 + (y.m - x.m); };
 
-/** The date range, chart unit and words for a time frame, in Malaysia time. `first`: the creator's first order (for all time). */
-export function frameRange(key: string, now: number, first: number | null): Range | null {
+/**
+ * The date range, chart unit and words for a time frame, in Malaysia time. `first`: the creator's first order (for all time).
+ * `lang`: the language of the words and dates.
+ */
+export function frameRange(key: string, now: number, first: number | null, lang: Lang = "en"): Range | null {
   const today = dayStart(now), end = today + DAY;
-  const days = (n: number, label: string): Range => ({ key, from: today - (n - 1) * DAY, to: end, unit: "day", buckets: n, label, dates: `${dayLabel(today - (n - 1) * DAY)} – ${dayLabel(today)}` });
+  const w = (en: string) => translate(lang, en);
+  const days = (n: number, label: string): Range => ({ key, from: today - (n - 1) * DAY, to: end, unit: "day", buckets: n, label, dates: `${dayLabel(today - (n - 1) * DAY, lang)} – ${dayLabel(today, lang)}` });
   switch (key) {
-    case "yesterday": return { key, from: today - DAY, to: today, unit: "hour", buckets: 24, label: "Yesterday", dates: dayLabel(today - DAY) };
-    case "7d": return days(7, "7 days");
-    case "14d": return days(14, "14 days");
-    case "30d": return days(30, "30 days");
-    case "60d": return days(60, "60 days");
-    case "90d": return days(90, "90 days");
-    case "month": { const from = monthStart(now); return { key, from, to: end, unit: "day", buckets: Math.round((end - from) / DAY), label: "This month", dates: `${dayLabel(from)} – ${dayLabel(today)}` }; }
-    case "lastmonth": { const from = monthStart(now, -1), to = monthStart(now); return { key, from, to, unit: "day", buckets: Math.round((to - from) / DAY), label: "Last month", dates: FULL[ymd(from).m] }; }
-    case "1y": { const from = monthStart(now, -11); return { key, from, to: end, unit: "month", buckets: 12, label: "1 year", dates: `${monthLabel(from)} – ${monthLabel(today)}` }; }
-    case "all": { const from = monthStart(first ?? now, 0); return { key, from, to: end, unit: "month", buckets: monthsBetween(from, today) + 1, label: "All time", dates: first ? `Since ${dayLabel(first)} ${ymd(first).y}` : "No orders yet" }; }
+    case "yesterday": return { key, from: today - DAY, to: today, unit: "hour", buckets: 24, label: translate(lang, "Yesterday"), dates: dayLabel(today - DAY, lang) };
+    case "7d": return days(7, translate(lang, "7 days"));
+    case "14d": return days(14, translate(lang, "14 days"));
+    case "30d": return days(30, translate(lang, "30 days"));
+    case "60d": return days(60, translate(lang, "60 days"));
+    case "90d": return days(90, translate(lang, "90 days"));
+    case "month": { const from = monthStart(now); return { key, from, to: end, unit: "day", buckets: Math.round((end - from) / DAY), label: translate(lang, "This month"), dates: `${dayLabel(from, lang)} – ${dayLabel(today, lang)}` }; }
+    case "lastmonth": { const from = monthStart(now, -1), to = monthStart(now); return { key, from, to, unit: "day", buckets: Math.round((to - from) / DAY), label: translate(lang, "Last month"), dates: monthName(ymd(from).m, lang) }; }
+    case "1y": { const from = monthStart(now, -11); return { key, from, to: end, unit: "month", buckets: 12, label: translate(lang, "1 year"), dates: `${monthLabel(from, lang)} – ${monthLabel(today, lang)}` }; }
+    case "all": { const from = monthStart(first ?? now, 0); return { key, from, to: end, unit: "month", buckets: monthsBetween(from, today) + 1, label: translate(lang, "All time"), dates: first ? translate(lang, "Since {date}", { date: fullDay(first, lang) }) : translate(lang, "No orders yet") }; }
   }
   // A custom range from the calendar: c:YYYY-MM-DD:YYYY-MM-DD (both days included).
   const c = /^c:(\d{4}-\d{2}-\d{2}):(\d{4}-\d{2}-\d{2})$/.exec(key);
@@ -47,31 +56,31 @@ export function frameRange(key: string, now: number, first: number | null): Rang
     if (from >= to) return null;
     const n = Math.round((to - from) / DAY);
     // Long ranges are charted per month, like 1 year.
-    if (n > 120) return { key, from: monthStart(from), to, unit: "month", buckets: monthsBetween(from, to - DAY) + 1, label: "Custom dates", dates: `${dayLabel(from)} ${ymd(from).y} – ${dayLabel(to - DAY)} ${ymd(to - DAY).y}` };
-    return { key, from, to, unit: "day", buckets: n, label: "Custom dates", dates: n === 1 ? dayLabel(from) : `${dayLabel(from)} – ${dayLabel(to - DAY)}` };
+    if (n > 120) return { key, from: monthStart(from), to, unit: "month", buckets: monthsBetween(from, to - DAY) + 1, label: translate(lang, "Custom dates"), dates: `${fullDay(from, lang)} – ${fullDay(to - DAY, lang)}` };
+    return { key, from, to, unit: "day", buckets: n, label: translate(lang, "Custom dates"), dates: n === 1 ? dayLabel(from, lang) : `${dayLabel(from, lang)} – ${dayLabel(to - DAY, lang)}` };
   }
   const m = /^m:(\d{4})-(\d{2})$/.exec(key);
   if (!m) return null;
   const from = Date.UTC(Number(m[1]), Number(m[2]) - 1, 1) - MYT;
   if (from > now) return null;
   const to = Math.min(monthStart(from, 1), end);
-  return { key, from, to, unit: "day", buckets: Math.round((to - from) / DAY), label: `${FULL[Number(m[2]) - 1]} ${m[1]}`, dates: "Whole month" };
+  return { key, from, to, unit: "day", buckets: Math.round((to - from) / DAY), label: lang === "zh" ? `${m[1]}年${Number(m[2])}月` : `${FULL[Number(m[2]) - 1]} ${m[1]}`, dates: w("Whole month") };
 }
 
 /** The range a time frame is compared with: the same length just before, or the same dates a year earlier. */
-export function compareRange(r: Range, how: Compare): Range | null {
+export function compareRange(r: Range, how: Compare, lang: Lang = "en"): Range | null {
   if (how === "none" || (how === "prev" && r.key === "all")) return null;
   if (how === "year") {
     const back = (t: number) => { const d = new Date(t + MYT); return Date.UTC(d.getUTCFullYear() - 1, d.getUTCMonth(), d.getUTCDate(), d.getUTCHours()) - MYT; };
-    return { ...r, from: back(r.from), to: back(r.to), label: "Same time last year", dates: r.unit === "month" ? `${monthLabel(back(r.from))} – ${monthLabel(back(r.to - DAY))}` : `${dayLabel(back(r.from))} – ${dayLabel(back(r.to - 1))}` };
+    return { ...r, from: back(r.from), to: back(r.to), label: translate(lang, "Same time last year"), dates: r.unit === "month" ? `${monthLabel(back(r.from), lang)} – ${monthLabel(back(r.to - DAY), lang)}` : `${dayLabel(back(r.from), lang)} – ${dayLabel(back(r.to - 1), lang)}` };
   }
   if ((r.unit === "month" && !r.key.startsWith("c:")) || r.key === "lastmonth" || r.key.startsWith("m:")) {
     const months = r.unit === "month" ? r.buckets : 1;
     const from = monthStart(r.from, -months), to = r.from;
-    return { ...r, from, to, buckets: r.unit === "month" ? months : Math.round((to - from) / DAY), label: "The period before", dates: r.unit === "month" ? `${monthLabel(from)} – ${monthLabel(to - DAY)}` : FULL[ymd(from).m] };
+    return { ...r, from, to, buckets: r.unit === "month" ? months : Math.round((to - from) / DAY), label: translate(lang, "The period before"), dates: r.unit === "month" ? `${monthLabel(from, lang)} – ${monthLabel(to - DAY, lang)}` : monthName(ymd(from).m, lang) };
   }
   const len = r.to - r.from;
-  return { ...r, from: r.from - len, to: r.from, label: "The period before", dates: r.unit === "hour" ? dayLabel(r.from - len) : `${dayLabel(r.from - len)} – ${dayLabel(r.from - 1)}` };
+  return { ...r, from: r.from - len, to: r.from, label: translate(lang, "The period before"), dates: r.unit === "hour" ? dayLabel(r.from - len, lang) : `${dayLabel(r.from - len, lang)} – ${dayLabel(r.from - 1, lang)}` };
 }
 
 export type StatusKey = "settled" | "toSettle" | "awaiting" | "refunded" | "ineligible";
@@ -205,12 +214,12 @@ export async function productImages(userId: string, ids: string[]): Promise<Map<
 }
 
 /** Everything the Sales page shows for one time frame, source and comparison. */
-export async function salesFrame(userId: string, key: string, source: Source, how: Compare, now = Date.now()): Promise<FrameData | null> {
+export async function salesFrame(userId: string, key: string, source: Source, how: Compare, now = Date.now(), lang: Lang = "en"): Promise<FrameData | null> {
   const [firstRow] = (await (await supabaseRest(`creator_orders?user_id=eq.${userId}&select=created_at&order=created_at.asc&limit=1`)).json()) as { created_at: string }[];
   const first = firstRow ? Date.parse(firstRow.created_at) : null;
-  const range = frameRange(key, now, first);
+  const range = frameRange(key, now, first, lang);
   if (!range) return null;
-  const cmp = compareRange(range, how);
+  const cmp = compareRange(range, how, lang);
   const [lines, techwide] = await Promise.all([linesBetween(userId, Math.min(range.from, cmp?.from ?? range.from), range.to), techwideCampaigns()]);
   const stats = frameStats(lines, range, techwide, source);
   const compare = cmp ? (() => { const c = frameStats(lines, cmp, techwide, source); return { range: cmp, gmv: c.gmv, buckets: c.buckets }; })() : null;
@@ -225,7 +234,7 @@ export async function salesFrame(userId: string, key: string, source: Source, ho
     // Covers through Rezekii (TikTok's cover addresses stop working within a day); for every video, with or without a saved
     // record, as the cover route falls back to the product's photo (owner, 16 Oct 2026).
     const byId = new Map(rows.map((r) => [r.video_id, r]));
-    for (const id of ids) { const r = byId.get(id); videos[id] = { title: r ? r.title || "Untitled video" : null, cover: `/api/img/v/${id}`, url: r?.share_url ?? null }; }
+    for (const id of ids) { const r = byId.get(id); videos[id] = { title: r ? r.title || translate(lang, "Untitled video") : null, cover: `/api/img/v/${id}`, url: r?.share_url ?? null }; }
   }
   return { range, stats, compare, videos, first: firstRow?.created_at ?? null, now };
 }

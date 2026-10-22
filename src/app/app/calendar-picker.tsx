@@ -2,14 +2,17 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useLang, useT } from "@/lib/i18n/client.tsx";
+import type { Lang } from "@/lib/i18n/lang.ts";
 import "./calendar-picker.css";
 
 const WEEK = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+const WEEK_ZH = ["一", "二", "三", "四", "五", "六", "日"];
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 /** "2026-10-07" for year, month (0-11) and day. */
 const iso = (y: number, m: number, d: number) => `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-const dayName = (s: string) => { const [, m, d] = s.split("-").map(Number); return `${d} ${SHORT[m - 1]}`; };
+const dayName = (s: string, lang: Lang) => { const [, m, d] = s.split("-").map(Number); return lang === "zh" ? `${m}月${d}日` : `${d} ${SHORT[m - 1]}`; };
 const between = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86400_000) + 1;
 
 type Common = { label: string; sub?: string; loading?: boolean; ariaLabel?: string };
@@ -27,6 +30,8 @@ type DayProps = Common & { mode: "day"; days: string[]; value: string; onDay: (d
  * (rendered at the end of the page so cards can't cover it), as a bottom sheet on a phone.
  */
 export function CalendarPicker(p: RangeProps | DayProps) {
+  const t = useT();
+  const lang = useLang();
   const btn = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
@@ -76,25 +81,25 @@ export function CalendarPicker(p: RangeProps | DayProps) {
 
   const panel = open && pos && (
     <>
-      <button type="button" aria-label="Close" className="cp-dim" onClick={close} />
-      <div role="dialog" aria-label={p.ariaLabel ?? "Choose dates"} className={`cp-pop ${p.mode === "day" ? "cp-one" : ""}`} style={{ top: pos.top, right: pos.right }}>
+      <button type="button" aria-label={t("Close")} className="cp-dim" onClick={close} />
+      <div role="dialog" aria-label={p.ariaLabel ?? t("Choose dates")} className={`cp-pop ${p.mode === "day" ? "cp-one" : ""}`} style={{ top: pos.top, right: pos.right }}>
         <span className="cp-grab" aria-hidden="true" />
         {p.mode === "range" && (
-          <div className="cp-presets" role="group" aria-label="Quick choices">
-            {p.presets.map(([k, label]) => <button key={k} type="button" className={`cp-pre ${p.preset === k ? "on" : ""}`} onClick={() => { p.onPreset(k); close(); }}>{label}</button>)}
+          <div className="cp-presets" role="group" aria-label={t("Quick choices")}>
+            {p.presets.map(([k, label]) => <button key={k} type="button" className={`cp-pre ${p.preset === k ? "on" : ""}`} onClick={() => { p.onPreset(k); close(); }}>{t(label)}</button>)}
           </div>
         )}
         <div className="cp-cal">
           <div className="cp-head">
-            <button type="button" className="cp-nav" aria-label="Previous month" disabled={atFirst} onClick={() => move(-1)}>
+            <button type="button" className="cp-nav" aria-label={t("Previous month")} disabled={atFirst} onClick={() => move(-1)}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg>
             </button>
-            <strong>{MONTHS[cal.m]} {cal.y}</strong>
-            <button type="button" className="cp-nav" aria-label="Next month" disabled={atLast} onClick={() => move(1)}>
+            <strong>{lang === "zh" ? `${cal.y}年${cal.m + 1}月` : `${MONTHS[cal.m]} ${cal.y}`}</strong>
+            <button type="button" className="cp-nav" aria-label={t("Next month")} disabled={atLast} onClick={() => move(1)}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
             </button>
           </div>
-          <div className="cp-week" aria-hidden="true">{WEEK.map((w) => <span key={w}>{w}</span>)}</div>
+          <div className="cp-week" aria-hidden="true">{(lang === "zh" ? WEEK_ZH : WEEK).map((w) => <span key={w}>{w}</span>)}</div>
           <div className="cp-days" onMouseLeave={() => setHover(null)}>
             {Array.from({ length: lead }, (_, i) => <span key={`b${i}`} />)}
             {Array.from({ length: daysIn }, (_, i) => {
@@ -105,19 +110,19 @@ export function CalendarPicker(p: RangeProps | DayProps) {
               const col = (lead + i) % 7;
               return (
                 <span key={s} className={`cp-cell ${inBand && lo !== hi ? "band" : ""} ${s === lo ? "lo" : ""} ${s === hi ? "hi" : ""} ${col === 0 ? "c0" : ""} ${col === 6 ? "c6" : ""}`}>
-                  <button type="button" className={`cp-day ${inBand && edge ? "edge" : ""} ${s === last ? "today" : ""}`} disabled={off} onClick={() => tap(s)} onMouseEnter={() => pick && setHover(s)} aria-label={`${i + 1} ${MONTHS[cal.m]} ${cal.y}`} aria-pressed={inBand}>{i + 1}</button>
+                  <button type="button" className={`cp-day ${inBand && edge ? "edge" : ""} ${s === last ? "today" : ""}`} disabled={off} onClick={() => tap(s)} onMouseEnter={() => pick && setHover(s)} aria-label={lang === "zh" ? `${cal.y}年${cal.m + 1}月${i + 1}日` : `${i + 1} ${MONTHS[cal.m]} ${cal.y}`} aria-pressed={inBand}>{i + 1}</button>
                 </span>
               );
             })}
           </div>
           <span className="cp-hint">
-            {p.mode === "day" ? "Days with TikTok data can be picked." : pick ? `From ${dayName(pick)} · now tap the last day` : `${dayName(p.from)} – ${dayName(p.to)} · ${between(p.from, p.to)} ${between(p.from, p.to) === 1 ? "day" : "days"} · tap a start day to pick your own`}
+            {p.mode === "day" ? t("Days with TikTok data can be picked.") : pick ? t("From {day} · now tap the last day", { day: dayName(pick, lang) }) : between(p.from, p.to) === 1 ? t("{a} – {b} · {n} day · tap a start day to pick your own", { a: dayName(p.from, lang), b: dayName(p.to, lang), n: 1 }) : t("{a} – {b} · {n} days · tap a start day to pick your own", { a: dayName(p.from, lang), b: dayName(p.to, lang), n: between(p.from, p.to) })}
           </span>
           {p.mode === "range" && p.compare && (
             <div className="cp-cmpw">
-              <span className="cp-gt">Compare with</span>
-              <div className="cp-cmp" role="group" aria-label="Compare with">
-                {p.compare.options.map(([v, label]) => <button key={v} type="button" className={p.compare!.value === v ? "on" : ""} disabled={p.compare!.disabled?.(v)} onClick={() => { p.compare!.onChange(v); close(); }}>{label}</button>)}
+              <span className="cp-gt">{t("Compare with")}</span>
+              <div className="cp-cmp" role="group" aria-label={t("Compare with")}>
+                {p.compare.options.map(([v, label]) => <button key={v} type="button" className={p.compare!.value === v ? "on" : ""} disabled={p.compare!.disabled?.(v)} onClick={() => { p.compare!.onChange(v); close(); }}>{t(label)}</button>)}
               </div>
             </div>
           )}

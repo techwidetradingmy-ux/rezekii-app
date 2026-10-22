@@ -86,6 +86,13 @@ a { color: var(--gink); }
 .site-plainnav { background: var(--surface); border-bottom: 1px solid var(--border); color: var(--text); }
 .site-account { gap: 8px; padding-left: 8px; }
 .site-account img { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; }
+/* EN | 中文 in the signed-in top bar (creators), styled like the sub-menu's chosen chip. */
+.lang-switch { display: inline-flex; align-items: center; gap: 2px; padding: 3px; border-radius: 999px; background: var(--surface2); border: 1px solid var(--border); }
+.lang-switch button { height: 30px; min-width: 40px; padding: 0 10px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; transition: background-color 0.2s, color 0.2s; }
+.lang-switch button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+.lang-switch button:not([aria-pressed="true"]):hover { color: var(--text); }
+.lang-switch.busy { opacity: 0.6; }
+@media (max-width: 480px) { .lang-switch button { min-width: 34px; padding: 0 8px; } }
 
 .hero-grid { position: relative; display: flex; flex-wrap: wrap; gap: 40px; align-items: center; padding-block: 28px 72px; }
 .hero-copy { flex: 1 1 460px; min-width: 0; display: flex; flex-direction: column; gap: 20px; }

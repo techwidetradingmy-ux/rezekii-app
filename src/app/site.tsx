@@ -2,6 +2,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { currentUser } from "./current-user";
 import { myPhoto } from "@/modules/photos/store.ts";
+import { LangSwitch } from "@/lib/i18n/client.tsx";
+import type { Lang } from "@/lib/i18n/lang.ts";
+import { translate } from "@/lib/i18n/translate.ts";
+import { getLang, tFor } from "@/lib/i18n/server.ts";
 import { BottomNav } from "./bottom-nav";
 import { MenuLinks } from "./menu-links";
 import { NavAccount } from "./nav-account";
@@ -18,6 +22,9 @@ export async function SiteNav({ variant, staticPage = false }: { variant: "hero"
   const clientAccount = variant === "hero" || staticPage;
   const user = clientAccount ? null : await currentUser();
   const photo = user ? myPhoto(user) : null;
+  // The signed-in app is in English or Chinese for creators; everything else here stays English.
+  const creatorApp = variant === "app" && !!user && user.role !== "admin";
+  const t = tFor(creatorApp ? await getLang() : "en");
   const nav = (
     <nav className={`site-nav site-wrap${variant === "app" ? " site-nav-app" : ""}`} aria-label="Main">
       <Link href="/" className="site-brand">
@@ -42,16 +49,17 @@ export async function SiteNav({ variant, staticPage = false }: { variant: "hero"
           <Link href="/terms">Terms of Service</Link>
         </>
       )}
+      {creatorApp && <LangSwitch />}
       {clientAccount ? (
         <NavAccount />
       ) : user ? (
-        <Link href={variant !== "app" ? "/app" : user.role === "admin" ? "/app/admin/settings" : "/app/accounts"} className="site-signin site-account" aria-label={variant === "app" ? (user.role === "admin" ? "Settings" : "Account") : "Open Rezekii"}>
+        <Link href={variant !== "app" ? "/app" : user.role === "admin" ? "/app/admin/settings" : "/app/accounts"} className="site-signin site-account" aria-label={variant === "app" ? (user.role === "admin" ? "Settings" : t("Account")) : "Open Rezekii"}>
           {photo ? (
             // Avatars come from many TikTok and Google CDN hosts, so a plain img (as on /app).
             // eslint-disable-next-line @next/next/no-img-element
             <img src={photo} alt="" width={26} height={26} />
           ) : null}
-          {variant === "app" ? (user.role === "admin" ? "Settings" : "Account") : "My account"}
+          {variant === "app" ? (user.role === "admin" ? "Settings" : t("Account")) : "My account"}
         </Link>
       ) : (
         <Link href="/signin" className="site-signin">
@@ -69,8 +77,8 @@ export async function SiteNav({ variant, staticPage = false }: { variant: "hero"
   );
 }
 
-/** Footer with the legal links TikTok's review requires to be visible on every page. */
-export function SiteFooter() {
+/** Footer with the legal links TikTok's review requires to be visible on every page (link names in `lang`). */
+export function SiteFooter({ lang = "en" }: { lang?: Lang }) {
   return (
     <footer className="site-foot">
       <div className="site-wrap">
@@ -78,8 +86,8 @@ export function SiteFooter() {
           © 2026 {COMPANY} ({COMPANY_NO})
         </span>
         <span className="site-spacer" />
-        <Link href="/privacy">Privacy Policy</Link>
-        <Link href="/terms">Terms of Service</Link>
+        <Link href="/privacy">{translate(lang, "Privacy Policy")}</Link>
+        <Link href="/terms">{translate(lang, "Terms of Service")}</Link>
         <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
       </div>
     </footer>

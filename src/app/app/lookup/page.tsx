@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { allProducts } from "@/modules/tap/catalog.ts";
 import { accessFor } from "@/modules/creator-accounts/access.ts";
+import { getLang, tFor } from "@/lib/i18n/server.ts";
 import { currentUser } from "../../current-user";
 import { tiktokProductUrl } from "../marketplace/format";
 import { LookupView } from "./lookup-view";
@@ -13,17 +14,19 @@ export const dynamic = "force-dynamic";
 export default async function LookupPage() {
   const user = await currentUser();
   if (!user) redirect("/signin");
-  const [linked, all] = await Promise.all([
+  const [linked, all, lang] = await Promise.all([
     accessFor(user.id).then((a) => a?.status === "approved"),
     allProducts(),
+    getLang(),
   ]);
+  const t = tFor(lang);
   return (
     <>
       <div className="nv nv-page">
         <main className="site-wrap app-main nv-main">
           <div>
-            <h1 className="nv-title">Product Lookup</h1>
-            <p className="nv-sub">Any TikTok product link, facts straight from TikTok Shop · Marketplace products show their full listing</p>
+            <h1 className="nv-title">{t("Product Lookup")}</h1>
+            <p className="nv-sub">{t("Any TikTok product link, facts straight from TikTok Shop · Marketplace products show their full listing")}</p>
           </div>
           <LookupView linked={linked} samples={all.slice(0, 5).map((p) => tiktokProductUrl(p.id))} />
         </main>

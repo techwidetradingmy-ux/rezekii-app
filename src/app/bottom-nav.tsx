@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useT } from "@/lib/i18n/client.tsx";
 import { ADMIN_MENU, CREATOR_MENU, sectionFor } from "./menus";
 
 const ICON = {
@@ -25,16 +26,17 @@ const MORE = ["/app/admin/stats", "/app/rankings", "/app/admin/settings"];
 
 /** The phone menu from the mockup: five tabs fixed to the bottom of the screen (phones only). */
 export function BottomNav({ admin }: { admin: boolean }) {
+  const t = useT();
   const path = usePathname();
   const tabs = admin ? ADMIN : CREATOR;
   const current = sectionFor(path, admin);
   const on = (t: Tab) => (t[0] === "/app/admin/settings" ? MORE.some((p) => path.startsWith(p)) : current?.href === t[0]);
   return (
-    <nav className="nv-bottom" aria-label="Main menu (phone)">
-      {tabs.map((t) => (
-        <Link key={t[0]} href={t[0]} aria-current={on(t) ? "page" : undefined} className={on(t) ? "on" : ""}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={ICON[t[2]]} /></svg>
-          {t[1]}
+    <nav className="nv-bottom" aria-label={t("Main menu (phone)")}>
+      {tabs.map((tab) => (
+        <Link key={tab[0]} href={tab[0]} aria-current={on(tab) ? "page" : undefined} className={on(tab) ? "on" : ""}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={ICON[tab[2]]} /></svg>
+          {t(tab[1])}
         </Link>
       ))}
     </nav>

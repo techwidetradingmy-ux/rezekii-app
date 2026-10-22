@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getProduct } from "@/modules/tap/catalog.ts";
 import { mySamples } from "@/modules/tap/samples.ts";
+import { getLang, tFor } from "@/lib/i18n/server.ts";
 import { currentUser } from "../../../current-user";
 import { ProductPageView } from "../product-page-view";
 
@@ -14,7 +15,8 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   const user = await currentUser();
   if (!user) redirect("/signin");
   const { id } = await params;
-  const [product, samples] = await Promise.all([getProduct(id), mySamples(user.id)]);
+  const [product, samples, lang] = await Promise.all([getProduct(id), mySamples(user.id), getLang()]);
+  const t = tFor(lang);
   if (!product) notFound();
   const requested = samples.some((r) => r.product_id === id && (r.status === "requested" || r.status === "applied"));
   return (
@@ -23,12 +25,12 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
         <main className="site-wrap app-main nv-main">
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
             <div>
-              <h1 className="nv-title">Product</h1>
-              <p className="nv-sub">On Rezekii · details from TikTok Shop · the same product view as the Marketplace</p>
+              <h1 className="nv-title">{t("Product")}</h1>
+              <p className="nv-sub">{t("On Rezekii · details from TikTok Shop · the same product view as the Marketplace")}</p>
             </div>
             <Link href="/app/marketplace" className="nv-btn2 nv-press" style={{ height: 40, borderRadius: 999, fontSize: 14 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
-              Marketplace
+              {t("Marketplace")}
             </Link>
           </div>
           <ProductPageView p={product} requested={requested} />

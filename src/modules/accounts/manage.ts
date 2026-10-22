@@ -1,4 +1,6 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import { dateLocale, type Lang } from "../../lib/i18n/lang.ts";
+import { translate } from "../../lib/i18n/translate.ts";
 import { revokeTikTokToken } from "../../integrations/tiktok/login.ts";
 import { decryptToken } from "../creator-accounts/token-crypto.ts";
 import { deleteUpload } from "../posting/media.ts";
@@ -23,13 +25,13 @@ const count = async (path: string) => {
   const res = await supabaseRest(path, { headers: { prefer: "count=exact", range: "0-0" } });
   return Number((res.headers.get("content-range") ?? "*/0").split("/")[1]) || 0;
 };
-const day = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kuala_Lumpur" });
+const day = (iso: string, lang: Lang = "en") => new Date(iso).toLocaleDateString(dateLocale(lang), { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kuala_Lumpur" });
 
 /**
  * What Account shows: sign-in methods, the TikTok posting connection, the TikTok Shop link and this week's numbers.
  * `tapRows`: the creator's My TAP rows when the caller already reads them (the Account page).
  */
-export async function accountOverview(user: AppUser, tapRows?: ReturnType<typeof myTapRows>): Promise<AccountOverview> {
+export async function accountOverview(user: AppUser, tapRows?: ReturnType<typeof myTapRows>, lang: Lang = "en"): Promise<AccountOverview> {
   const weekAgo = new Date(Date.now() - 7 * 86400_000).toISOString();
   const [[row], hasPassword, [conn], shop, links, tap] = await Promise.all([
     supabaseRest(`app_users?id=eq.${user.id}&select=google_sub,created_at`).then((r) => r.json() as Promise<{ google_sub: string | null; created_at: string }[]>),
@@ -45,12 +47,12 @@ export async function accountOverview(user: AppUser, tapRows?: ReturnType<typeof
   const signIn = [
     ...(user.tiktok_open_id ? [`TikTok${user.tiktok_username ? ` · @${user.tiktok_username}` : ""}`] : []),
     ...(row?.google_sub ? [`Google${user.email ? ` · ${user.email}` : ""}`] : []),
-    ...(hasPassword && user.email ? [`email · ${user.email}`] : []),
+    ...(hasPassword && user.email ? [`${translate(lang, "email")} · ${user.email}`] : []),
   ];
   return {
-    joined: row ? day(row.created_at) : "",
+    joined: row ? day(row.created_at, lang) : "",
     signIn,
-    tiktok: conn ? { username: conn.username, connectedAt: day(conn.connected_at) } : null,
+    tiktok: conn ? { username: conn.username, connectedAt: day(conn.connected_at, lang) } : null,
     shop: { status: shop[0]?.status ?? "none", reason: shop[0]?.reason ?? null, position: shop[0]?.position ?? null, linked: !!shop[1][0], handle: shop[1][0]?.username ?? null },
     linksThisWeek: links,
     showcase: tap.rows.filter((r) => r.campaignId).length,
