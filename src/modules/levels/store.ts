@@ -1,4 +1,5 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import { tx } from "../../lib/i18n/lang.ts";
 import { mytDay } from "../refresh/plan.ts";
 import { historyDone, linkedCreators } from "../sales/orders.ts";
 import { monthSales, nextLevel, previousMonth, type Level, type LevelState } from "./rules.ts";
@@ -127,11 +128,11 @@ export async function markCelebrated(userId: string, level: Level): Promise<void
 /** One row of the benefits list: a label and the value for Bronze, Silver and Gold ("yes", "no" or short text). */
 export type Benefit = { label: string; v: [string, string, string]; key?: boolean };
 export const DEFAULT_BENEFITS: Benefit[] = [
-  { label: "Commission on Techwide campaign links", v: ["Open Plan rate", "Open Plan + 1%", "Special rate for you"], key: true },
-  { label: "Free product samples", v: ["yes", "yes", "yes"] },
-  { label: "Level emblem on your profile and in Rankings", v: ["yes", "yes", "yes"] },
-  { label: "How you get it", v: ["When you join", "10 sample videos + RM1,000 sales through Rezekii last month", "By invitation"] },
-  { label: "How you keep it", v: ["Always", "RM1,000 sales through Rezekii every month", "Set by Techwide"] },
+  { label: tx("Commission on Techwide campaign links"), v: [tx("Open Plan rate"), tx("Open Plan + 1%"), tx("Special rate for you")], key: true },
+  { label: tx("Free product samples"), v: ["yes", "yes", "yes"] },
+  { label: tx("Level emblem on your profile and in Rankings"), v: ["yes", "yes", "yes"] },
+  { label: tx("How you get it"), v: [tx("When you join"), tx("10 sample videos + RM1,000 sales through Rezekii last month"), tx("By invitation")] },
+  { label: tx("How you keep it"), v: [tx("Always"), tx("RM1,000 sales through Rezekii every month"), tx("Set by Techwide")] },
 ];
 
 /** The level benefits list, edited by Techwide on the Benefits screen. */

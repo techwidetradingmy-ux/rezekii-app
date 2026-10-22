@@ -33,4 +33,6 @@ export const ERRORS: Record<string, string> = {
   "Wrong email or password.": "邮箱或密码错误。",
   "An account with this email already exists. Sign in instead.": "此邮箱已有账户，请直接登录。",
   "Another Rezekii account already signs in with this email.": "已有其他 Rezekii 账户使用此邮箱登录。",
+  "TikTok Shop didn't add it.": "TikTok Shop 没有添加该商品。",
+  "TikTok Shop didn't add it. Open the link to add it in TikTok Shop.": "TikTok Shop 没有添加该商品。请打开链接，在 TikTok Shop 中添加。",
 };

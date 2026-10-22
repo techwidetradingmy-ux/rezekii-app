@@ -2,6 +2,7 @@
 
 import { TikTok_Sans } from "next/font/google";
 import { useState, type CSSProperties, type ReactNode } from "react";
+import { useT } from "@/lib/i18n/client.tsx";
 import { hashtags, threadsLength, type Channel } from "@/modules/social/rules.ts";
 
 /**
@@ -113,12 +114,13 @@ export type PreviewProps = { channel: Channel; caption: string; comment: string;
 
 /** Starts muted (browsers only autoplay muted video); the speaker button turns the sound on and off. */
 function Video({ src, s = 16 }: { src: string | null; s?: number }) {
+  const t = useT();
   const [muted, setMuted] = useState(true);
-  if (!src) return <span className="ph">Your video shows here</span>;
+  if (!src) return <span className="ph">{t("Your video shows here")}</span>;
   return (
     <>
       <video src={src} muted={muted} loop autoPlay playsInline />
-      <button type="button" className="pv-mute" onClick={() => setMuted((m) => !m)} aria-pressed={!muted} aria-label={muted ? "Turn sound on" : "Turn sound off"}><Ic n={muted ? "mute" : "sound"} s={s} /></button>
+      <button type="button" className="pv-mute" onClick={() => setMuted((m) => !m)} aria-pressed={!muted} aria-label={muted ? t("Turn sound on") : t("Turn sound off")}><Ic n={muted ? "mute" : "sound"} s={s} /></button>
     </>
   );
 }

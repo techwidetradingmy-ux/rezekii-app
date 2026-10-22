@@ -1,4 +1,8 @@
 import type { CreatorInfo, PostInfo, PrivacyLevel, PublishStatus } from "../../integrations/tiktok/posting.ts";
+import { makeT, type T } from "../../lib/i18n/lang.ts";
+
+/** English, as written (the server's checks); New post passes its own translator. */
+const EN: T = makeT(null);
 
 /** What a creator chose on the New post screen. */
 export type PostChoice = {
@@ -22,16 +26,16 @@ export const CAPTION_MAX = 2200;
  * Checks a post against TikTok's Content Sharing Guidelines and the account's creator info.
  * Returns plain-language problems (empty = OK). Drafts sent to TikTok's inbox only need a video.
  */
-export function postProblems(p: PostChoice, info: CreatorInfo): string[] {
+export function postProblems(p: PostChoice, info: CreatorInfo, t: T = EN): string[] {
   const out: string[] = [];
-  if (p.caption.length > CAPTION_MAX) out.push(`The caption is longer than ${CAPTION_MAX} characters.`);
+  if (p.caption.length > CAPTION_MAX) out.push(t("The caption is longer than {max} characters.", { max: CAPTION_MAX }));
   if (p.durationSec && p.durationSec > info.max_video_post_duration_sec)
-    out.push(`This video is longer than TikTok allows for this account (${Math.floor(info.max_video_post_duration_sec / 60)} min max).`);
+    out.push(t("This video is longer than TikTok allows for this account ({min} min max).", { min: Math.floor(info.max_video_post_duration_sec / 60) }));
   if (p.mode === "inbox") return out;
-  if (!p.privacyLevel) out.push("Choose who can view this post.");
-  else if (!info.privacy_level_options.includes(p.privacyLevel)) out.push("TikTok doesn't allow that privacy choice for this account right now. Choose again.");
-  if (p.promo && !p.brandOrganic && !p.brandedContent) out.push("You need to indicate if your content promotes yourself, a third party, or both.");
-  if (p.promo && p.brandedContent && p.privacyLevel === "SELF_ONLY") out.push("Branded content visibility cannot be set to private.");
+  if (!p.privacyLevel) out.push(t("Choose who can view this post."));
+  else if (!info.privacy_level_options.includes(p.privacyLevel)) out.push(t("TikTok doesn't allow that privacy choice for this account right now. Choose again."));
+  if (p.promo && !p.brandOrganic && !p.brandedContent) out.push(t("You need to indicate if your content promotes yourself, a third party, or both."));
+  if (p.promo && p.brandedContent && p.privacyLevel === "SELF_ONLY") out.push(t("Branded content visibility cannot be set to private."));
   return out;
 }
 
@@ -51,8 +55,8 @@ export function toPostInfo(p: PostChoice, info: CreatorInfo): PostInfo {
 }
 
 /** The consent line shown above the post button (TikTok requires it). */
-export const consentLine = (p: Pick<PostChoice, "promo" | "brandedContent">) =>
-  p.promo && p.brandedContent ? "By posting, you agree to TikTok's Branded Content Policy and Music Usage Confirmation." : "By posting, you agree to TikTok's Music Usage Confirmation.";
+export const consentLine = (p: Pick<PostChoice, "promo" | "brandedContent">, t: T = EN) =>
+  p.promo && p.brandedContent ? t("By posting, you agree to TikTok's Branded Content Policy and Music Usage Confirmation.") : t("By posting, you agree to TikTok's Music Usage Confirmation.");
 
 const MYT = 8 * 3600e3;
 export const RECOMMENDED_HOURS = [6, 12, 20];

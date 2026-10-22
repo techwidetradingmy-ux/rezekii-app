@@ -3,14 +3,14 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useT } from "@/lib/i18n/client.tsx";
-import type { T } from "@/lib/i18n/lang.ts";
+import { makeT, type T } from "@/lib/i18n/lang.ts";
 import type { LookupRow } from "@/modules/tap/convert.ts";
 import { n, pct, perSale, priceText } from "./marketplace/format";
 import { copyText } from "./links/file-tools";
 import "./lookup/lookup.css";
 
 const stockText = (r: LookupRow, t: T) => (r.stock !== null ? n(r.stock) : r.note === "Out of stock" ? t("Out of stock") : r.source === "tiktok" ? t("In stock") : "—");
-const same: T = (en) => en;
+const same: T = makeT(null);
 
 /** Every fact Product Lookup shows for a product, as label and value (`t` gives them in the reader's language). */
 export const productFacts = (r: LookupRow, t: T = same): [string, string][] => [

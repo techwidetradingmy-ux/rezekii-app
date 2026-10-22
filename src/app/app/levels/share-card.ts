@@ -1,5 +1,6 @@
 "use client";
 
+import { tx } from "@/lib/i18n/lang.ts";
 import { emblemSvg, type Level } from "../../emblems";
 
 /**
@@ -9,17 +10,18 @@ import { emblemSvg, type Level } from "../../emblems";
 export const CARD_W = 1080;
 export const CARD_H = 1920;
 const S = CARD_W / 240;
-export const DESIGNS = ["Pastel", "Certificate", "Night"] as const;
+export const DESIGNS = [tx("Pastel"), tx("Certificate"), tx("Night")] as const;
 /** The blessing line on the card and the level-up screen (from the mockup). */
 export const BLESS = [
-  "Rezeki tak pernah salah alamat. Today it found you.",
-  "May every post bring more rezeki, and every sale bring more joy.",
-  "Semoga rezeki terus melimpah dan usaha dipermudahkan.",
-  "Small steps, big blessings. Keep shining, keep sharing.",
-  "Your hard work became someone else's good find. Thank you for sharing it.",
+  tx("Rezeki tak pernah salah alamat. Today it found you."),
+  tx("May every post bring more rezeki, and every sale bring more joy."),
+  tx("Semoga rezeki terus melimpah dan usaha dipermudahkan."),
+  tx("Small steps, big blessings. Keep shining, keep sharing."),
+  tx("Your hard work became someone else's good find. Thank you for sharing it."),
 ];
 
-export type CardInput = { design: number; level: Level; handle: string; blessing: string; month: string; font: string; emblem: HTMLImageElement; logo: HTMLImageElement; partner: HTMLImageElement };
+/** `words` are the card's three lines in the reader's language: the chip, "Congratulations," and "You're now Silver". */
+export type CardInput = { design: number; level: Level; handle: string; blessing: string; words: { chip: string; hi: string; now: string }; font: string; emblem: HTMLImageElement; logo: HTMLImageElement; partner: HTMLImageElement };
 
 const LOOK = [
   { text: "#3b2f5c", chipBg: "#ffffff", chipFg: "#7d84b8", lvl: ["#7d84b8", "#b36bd6"], quoteBg: "rgba(255,255,255,0.7)", bar: "rgba(255,255,255,0.9)", barFg: "#0d1117", ring: null as string | null },
@@ -57,10 +59,12 @@ function fade(p: number, a: number, b: number): [number, number] {
 }
 
 function wrap(ctx: CanvasRenderingContext2D, text: string, max: number): string[] {
+  // Chinese has no spaces between words, so it breaks between characters.
+  const cjk = /[\u3000-\u9fff\uff00-\uffef]/.test(text);
   const lines: string[] = [];
   let line = "";
-  for (const word of text.split(" ")) {
-    const next = line ? `${line} ${word}` : word;
+  for (const word of cjk ? [...text] : text.split(" ")) {
+    const next = line ? (cjk ? line + word : `${line} ${word}`) : word;
     if (ctx.measureText(next).width > max && line) {
       lines.push(line);
       line = word;
@@ -176,7 +180,7 @@ export function drawCard(ctx: CanvasRenderingContext2D, c: CardInput, t: number)
   const [tA, tY] = fade(p, 0.24, 0.34);
   ctx.globalAlpha = tA;
   ctx.font = `900 ${9.5 * S}px ${c.font}`;
-  const chip = `✦ LEVEL UP · ${c.month.toUpperCase()}`;
+  const chip = c.words.chip;
   const chipW = ctx.measureText(chip).width + 20 * S;
   ctx.fillStyle = L.chipBg;
   ctx.beginPath();
@@ -202,14 +206,14 @@ export function drawCard(ctx: CanvasRenderingContext2D, c: CardInput, t: number)
   ctx.fillStyle = L.text;
   ctx.globalAlpha = tA * 0.8;
   ctx.font = `700 ${13 * S}px ${c.font}`;
-  ctx.fillText("Congratulations,", cx, y + 8.5 * S + tY * S);
+  ctx.fillText(c.words.hi, cx, y + 8.5 * S + tY * S);
   y += 21 * S;
   ctx.globalAlpha = tA;
   ctx.font = `900 ${19 * S}px ${c.font}`;
   ctx.fillText(c.handle, cx, y + 11.5 * S + tY * S);
   y += 27 * S;
   ctx.font = `900 ${24 * S}px ${c.font}`;
-  const lvlText = `You're now ${c.level[0].toUpperCase()}${c.level.slice(1)}`;
+  const lvlText = c.words.now;
   const lw = ctx.measureText(lvlText).width;
   const g = ctx.createLinearGradient(cx - lw / 2, 0, cx + lw / 2, 0);
   g.addColorStop(0, L.lvl[0]);
@@ -245,7 +249,7 @@ export async function cardImage(c: CardInput): Promise<File> {
   canvas.width = CARD_W;
   canvas.height = CARD_H;
   drawCard(canvas.getContext("2d")!, c, 5);
-  const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Could not make the image."))), "image/png"));
+  const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error(tx("Could not make the image.")))), "image/png"));
   return new File([blob], `rezekii-${c.level}.png`, { type: "image/png" });
 }
 
@@ -256,7 +260,7 @@ export async function cardVideo(c: CardInput): Promise<File> {
   canvas.height = CARD_H;
   const ctx = canvas.getContext("2d")!;
   const type = ["video/mp4;codecs=avc1", "video/mp4", "video/webm;codecs=vp9", "video/webm"].find((m) => typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(m));
-  if (!type) throw new Error("This browser cannot make videos. Choose Image instead.");
+  if (!type) throw new Error(tx("This browser cannot make videos. Choose Image instead."));
   drawCard(ctx, c, 0);
   const rec = new MediaRecorder(canvas.captureStream(30), { mimeType: type, videoBitsPerSecond: 6_000_000 });
   const chunks: Blob[] = [];

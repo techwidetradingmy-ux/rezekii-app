@@ -4,6 +4,7 @@ import { monthlyTapSales } from "../levels/store.ts";
 import { linkedCreators } from "../sales/orders.ts";
 import { mytDay } from "../refresh/plan.ts";
 import { photoFor, savedPhotos } from "../photos/store.ts";
+import type { Lang } from "../../lib/i18n/lang.ts";
 
 /** `lv`: TikTok Shop creator level from their linked TikTok Shop account (null until checked). */
 export type BoardRow = { handle: string; name: string; avatar: string | null; level: Level; gmv: number; videos: number; lv: number | null };
@@ -11,20 +12,26 @@ export type BoardMonth = { key: string; label: string; final: string; rows: Boar
 type Daily = { username: string; day: string; paid: number; videos: number };
 
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const label = (key: string) => `${MON[Number(key.slice(5)) - 1]} ${key.slice(0, 4)}`;
-const nextFirst = (key: string) => { const [y, m] = key.split("-").map(Number); return m === 12 ? `1 Jan ${y + 1}` : `1 ${MON[m]} ${y}`; };
+/** "Oct 2026", or "2026年10月" in Chinese. */
+const label = (key: string, lang: Lang) => (lang === "zh" ? `${key.slice(0, 4)}年${Number(key.slice(5))}月` : `${MON[Number(key.slice(5)) - 1]} ${key.slice(0, 4)}`);
+/** The 1st of the next month: "1 Nov 2026", or "2026年11月1日" in Chinese. */
+const nextFirst = (key: string, lang: Lang) => {
+  const [y, m] = key.split("-").map(Number);
+  if (lang === "zh") return m === 12 ? `${y + 1}年1月1日` : `${y}年${m + 1}月1日`;
+  return m === 12 ? `1 Jan ${y + 1}` : `1 ${MON[m]} ${y}`;
+};
 
 /**
  * Monthly GMV leaderboard of Rezekii creators for this month and the 5 before: sales through Techwide's TAP campaigns, from
  * each creator's own orders when Rezekii reads them (as Levels counts them), otherwise from TikTok's TAP data.
  */
-export async function leaderboard(): Promise<BoardMonth[]> {
+export async function leaderboard(lang: Lang = "en"): Promise<BoardMonth[]> {
   const today = mytDay(Date.now());
   const keys = [today.slice(0, 7)];
   while (keys.length < 6) keys.push(previousMonth(`${keys.at(-1)}-01`));
   type U = { id: string; tiktok_username: string; display_name: string | null; avatar_url: string | null };
   const users = (await (await supabaseRest("app_users?role=eq.creator&tiktok_username=not.is.null&select=id,tiktok_username,display_name,avatar_url&limit=5000")).json()) as U[];
-  if (!users.length) return keys.map((key) => ({ key, label: label(key), final: nextFirst(key), rows: [] }));
+  if (!users.length) return keys.map((key) => ({ key, label: label(key, lang), final: nextFirst(key, lang), rows: [] }));
   const levels = new Map(((await (await supabaseRest("creator_levels?select=user_id,level&limit=5000")).json()) as { user_id: string; level: Level }[]).map((l) => [l.user_id, l.level]));
   const ttLevels = new Map(((await (await supabaseRest("affiliate_connections?tt_level=not.is.null&select=user_id,tt_level&limit=5000")).json()) as { user_id: string; tt_level: number }[]).map((l) => [l.user_id, l.tt_level]));
   const from = `${previousMonth(`${keys.at(-1)}-01`)}-25`;
@@ -46,6 +53,6 @@ export async function leaderboard(): Promise<BoardMonth[]> {
       };
     });
     rows.sort((a, b) => b.gmv - a.gmv || a.handle.localeCompare(b.handle));
-    return { key, label: label(key), final: nextFirst(key), rows };
+    return { key, label: label(key, lang), final: nextFirst(key, lang), rows };
   });
 }

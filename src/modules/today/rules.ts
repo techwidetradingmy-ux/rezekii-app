@@ -1,3 +1,5 @@
+import { tx, type Lang } from "../../lib/i18n/lang.ts";
+import { translate } from "../../lib/i18n/translate.ts";
 import type { TapProduct } from "../tap/catalog.ts";
 import { unixSeconds } from "../tap/stages.ts";
 
@@ -7,14 +9,14 @@ import { unixSeconds } from "../tap/stages.ts";
  */
 export type Season = { name: string; days: string[]; after: number; words: RegExp };
 export const SEASONS: Season[] = [
-  { name: "Ramadan", days: ["2027-02-08", "2028-01-28"], after: 28, words: /\b(ramadan|ramadhan|puasa|iftar|sahur|kurma|tamar|telekung|sejadah|al-?quran|tasbih)\b/i },
-  { name: "Raya", days: ["2027-03-10", "2028-02-27"], after: 14, words: /\b(raya|lebaran|aidilfitri|kurung|kebaya|baju melayu|songkok|sampin|samping|telekung|sejadah|kurma|kuih|ketupat|langsir|duit raya|sampul|pelita|jubah|abaya|kopiah|pelikat)\b/i },
-  { name: "Chinese New Year", days: ["2027-02-06", "2028-01-26"], after: 7, words: /\b(chinese new year|cny|lunar new year|ang ?pao|ang ?pow|red packet|mandarin orange|lantern|tanglung|cheongsam|bak ?kwa)\b/i },
-  { name: "Deepavali", days: ["2026-11-08", "2027-10-29", "2028-10-17"], after: 3, words: /\b(deepavali|diwali|saree|sari|kurta|lehenga|kolam|diya|murukku)\b/i },
-  { name: "Christmas", days: ["2026-12-25", "2027-12-25", "2028-12-25"], after: 1, words: /\b(christmas|xmas|santa|reindeer|snowman|advent|ornament|hamper)\b/i },
-  { name: "Back to school", days: ["2027-01-11", "2028-01-10"], after: 14, words: /\b(school|sekolah|stationery|alat tulis|pencil case|kotak pensel|backpack|uniform|lunch ?box|bekas makanan|water bottle|botol air)\b/i },
-  { name: "Hari Raya Haji", days: ["2027-05-17", "2028-05-05"], after: 3, words: /\b(aidiladha|raya haji|korban|qurban)\b/i },
-  { name: "Merdeka", days: ["2027-08-31", "2028-08-31"], after: 16, words: /\b(merdeka|jalur gemilang|bendera)\b/i },
+  { name: tx("Ramadan"), days: ["2027-02-08", "2028-01-28"], after: 28, words: /\b(ramadan|ramadhan|puasa|iftar|sahur|kurma|tamar|telekung|sejadah|al-?quran|tasbih)\b/i },
+  { name: tx("Raya"), days: ["2027-03-10", "2028-02-27"], after: 14, words: /\b(raya|lebaran|aidilfitri|kurung|kebaya|baju melayu|songkok|sampin|samping|telekung|sejadah|kurma|kuih|ketupat|langsir|duit raya|sampul|pelita|jubah|abaya|kopiah|pelikat)\b/i },
+  { name: tx("Chinese New Year"), days: ["2027-02-06", "2028-01-26"], after: 7, words: /\b(chinese new year|cny|lunar new year|ang ?pao|ang ?pow|red packet|mandarin orange|lantern|tanglung|cheongsam|bak ?kwa)\b/i },
+  { name: tx("Deepavali"), days: ["2026-11-08", "2027-10-29", "2028-10-17"], after: 3, words: /\b(deepavali|diwali|saree|sari|kurta|lehenga|kolam|diya|murukku)\b/i },
+  { name: tx("Christmas"), days: ["2026-12-25", "2027-12-25", "2028-12-25"], after: 1, words: /\b(christmas|xmas|santa|reindeer|snowman|advent|ornament|hamper)\b/i },
+  { name: tx("Back to school"), days: ["2027-01-11", "2028-01-10"], after: 14, words: /\b(school|sekolah|stationery|alat tulis|pencil case|kotak pensel|backpack|uniform|lunch ?box|bekas makanan|water bottle|botol air)\b/i },
+  { name: tx("Hari Raya Haji"), days: ["2027-05-17", "2028-05-05"], after: 3, words: /\b(aidiladha|raya haji|korban|qurban)\b/i },
+  { name: tx("Merdeka"), days: ["2027-08-31", "2028-08-31"], after: 16, words: /\b(merdeka|jalur gemilang|bendera)\b/i },
 ];
 const LEAD_DAYS = 42;
 
@@ -111,21 +113,29 @@ export function weekDelta(now: number, prev: number): string {
 }
 
 const MYT = 8 * 3600_000;
-/** "Good morning" etc. by Malaysia time. */
-export function greeting(now: number): string {
+/** "Good morning" etc. by Malaysia time, in `lang`. */
+export function greeting(now: number, lang: Lang = "en"): string {
   const h = new Date(now + MYT).getUTCHours();
-  return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+  return h < 12 ? translate(lang, "Good morning") : h < 18 ? translate(lang, "Good afternoon") : translate(lang, "Good evening");
 }
 
-/** "Saturday, 14 October" in Malaysia time. */
-export function longDay(now: number): string {
+/** "Saturday, 14 October" in Malaysia time ("10月14日星期六" in Chinese). */
+export function longDay(now: number, lang: Lang = "en"): string {
+  if (lang === "zh") return new Date(now).toLocaleDateString("zh-CN", { month: "long", day: "numeric", weekday: "long", timeZone: "Asia/Kuala_Lumpur" });
   const part = (o: Intl.DateTimeFormatOptions) => new Date(now).toLocaleDateString("en-GB", { ...o, timeZone: "Asia/Kuala_Lumpur" });
   return `${part({ weekday: "long" })}, ${part({ day: "numeric" })} ${part({ month: "long" })}`;
 }
 
-/** "Today · 8:00 pm", "Tomorrow · 12:00 pm", "Posted today · 6:00 am", "Sat 18 Oct · 8:00 pm". */
-export function postWhen(at: number, now: number, posted: boolean): string {
+/** "Today · 8:00 pm", "Tomorrow · 12:00 pm", "Posted today · 6:00 am", "Sat 18 Oct · 8:00 pm" (Chinese: "明天 · 下午8:00"). */
+export function postWhen(at: number, now: number, posted: boolean, lang: Lang = "en"): string {
   const day = (t: number) => new Date(t + MYT).toISOString().slice(0, 10);
+  if (lang === "zh") {
+    const d = day(at);
+    const rel = d === day(now) ? translate(lang, "Today") : d === day(now + 86400_000) ? translate(lang, "Tomorrow") : d === day(now - 86400_000) ? translate(lang, "Yesterday") : "";
+    const when = rel || new Date(at).toLocaleDateString("zh-CN", { weekday: "short", month: "long", day: "numeric", timeZone: "Asia/Kuala_Lumpur" });
+    const time = new Date(at).toLocaleTimeString("zh-CN", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kuala_Lumpur" });
+    return `${posted ? translate(lang, "Posted {when}", { when }) : when} · ${time}`;
+  }
   const time = new Date(at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kuala_Lumpur" }).toLowerCase();
   const d = day(at);
   const rel = d === day(now) ? "today" : d === day(now + 86400_000) ? "tomorrow" : d === day(now - 86400_000) ? "yesterday" : "";

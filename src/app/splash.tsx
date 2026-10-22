@@ -1,4 +1,7 @@
 import Image from "next/image";
+import { LangSwitch } from "@/lib/i18n/client.tsx";
+import { makeT, type Lang } from "@/lib/i18n/lang.ts";
+import { wordsFor } from "@/lib/i18n/translate.ts";
 
 const TILES: [string, string, string, string, string][] = [
   // position, background, icon colour, rotation, icon path (video, yellow cart, coins, LIVE, link)
@@ -10,10 +13,15 @@ const TILES: [string, string, string, string, string][] = [
 ];
 const css = (s: string) => Object.fromEntries(s.split(";").map((p) => p.split(":").map((x) => x.trim())).map(([k, v]) => [k.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), v]));
 
-/** Brand screen (Style A) shared by sign-in and the connected page: the logo's ripple stands for a post going viral. */
-export function Splash({ children }: { children: React.ReactNode }) {
+/**
+ * Brand screen (Style A) shared by sign-in and the connected page: the logo's ripple stands for a post going viral. `lang` words
+ * it, with the EN | 中文 switch in the corner (the page wraps it in LangProvider).
+ */
+export function Splash({ lang = "en", children }: { lang?: Lang; children: React.ReactNode }) {
+  const t = makeT(wordsFor(lang));
   return (
     <main className="rz-splash">
+      <div className="rz-langbar"><LangSwitch /></div>
       <div className="rz-tiles" aria-hidden="true">
         {TILES.map(([pos, bg, fg, rot, d], i) => (
           <span key={i} className="rz-tile" style={{ ...css(pos), animationDelay: `${-i * 0.7}s` }}>
@@ -32,7 +40,7 @@ export function Splash({ children }: { children: React.ReactNode }) {
         </div>
       </div>
       <p className="rz-name">Rezekii</p>
-      <p className="rz-tag">CONNECTING AFFILIATES</p>
+      <p className="rz-tag">{t("CONNECTING AFFILIATES")}</p>
       <div className="rz-card">{children}</div>
       <p className="rz-foot">
         <a href="mailto:support@rezekii.com">support@rezekii.com</a>

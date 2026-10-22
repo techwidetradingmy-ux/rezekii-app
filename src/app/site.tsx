@@ -16,15 +16,19 @@ export const SUPPORT_EMAIL = "support@rezekii.com";
 
 export { TikTokLogo } from "./tiktok-logo";
 
-/** Top bar. "hero" sits on the homepage band; "plain" is for legal pages; "app" is the signed-in menu. Signed-in people get their photo and Account (Settings for admins) instead of "Sign in". */
-export async function SiteNav({ variant, staticPage = false }: { variant: "hero" | "plain" | "app"; staticPage?: boolean }) {
+/**
+ * Top bar. "hero" sits on the homepage band; "plain" is for legal pages; "app" is the signed-in menu. Signed-in people get their
+ * photo and Account (Settings for admins) instead of "Sign in". `lang` words the static pages (the homepage is / or /zh); the
+ * signed-in menu follows the device's choice. The EN | 中文 switch shows on the homepage and in the creator app.
+ */
+export async function SiteNav({ variant, staticPage = false, lang = "en" }: { variant: "hero" | "plain" | "app"; staticPage?: boolean; lang?: Lang }) {
   // The homepage stays static (served from the CDN); its account button is checked in the browser.
   const clientAccount = variant === "hero" || staticPage;
   const user = clientAccount ? null : await currentUser();
   const photo = user ? myPhoto(user) : null;
   // The signed-in app is in English or Chinese for creators; everything else here stays English.
   const creatorApp = variant === "app" && !!user && user.role !== "admin";
-  const t = tFor(creatorApp ? await getLang() : "en");
+  const t = tFor(creatorApp ? await getLang() : lang);
   const nav = (
     <nav className={`site-nav site-wrap${variant === "app" ? " site-nav-app" : ""}`} aria-label="Main">
       <Link href="/" className="site-brand">
@@ -36,10 +40,10 @@ export async function SiteNav({ variant, staticPage = false }: { variant: "hero"
       <span className="site-spacer" />
       {variant === "hero" ? (
         <>
-          <a href="#earn">Earn more</a>
-          <a href="#compare">Compare</a>
-          <a href="#levels">Levels</a>
-          <a href="#faq">FAQ</a>
+          <a href="#earn">{t("Earn more")}</a>
+          <a href="#compare">{t("Compare")}</a>
+          <a href="#levels">{t("Levels")}</a>
+          <a href="#faq">{t("FAQ")}</a>
         </>
       ) : variant === "app" ? (
         <MenuLinks admin={user?.role === "admin"} />
@@ -49,7 +53,7 @@ export async function SiteNav({ variant, staticPage = false }: { variant: "hero"
           <Link href="/terms">Terms of Service</Link>
         </>
       )}
-      {creatorApp && <LangSwitch />}
+      {(creatorApp || variant === "hero") && <LangSwitch />}
       {clientAccount ? (
         <NavAccount />
       ) : user ? (

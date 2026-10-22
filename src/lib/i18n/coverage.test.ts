@@ -20,11 +20,12 @@ const FILES = ["app", "modules"].flatMap((dir) =>
     .filter((f) => /\.tsx?$/.test(f) && !SKIP.test(f)),
 );
 
-/** Every English text written as t("…"), tx("…") or translate(lang, "…") in a file. */
+/** Every English text written as t("…"), tx("…") or translate(lang, "…") in a file, in double or single quotes. */
 function keysIn(file: string): string[] {
   const text = readFileSync(new URL(file, src), "utf8");
   const out: string[] = [];
-  for (const m of text.matchAll(/\b(?:t\(|tx\(|translate\(\s*\w+\s*,)\s*"((?:[^"\\]|\\.)*)"/g)) out.push(JSON.parse(`"${m[1]}"`));
+  for (const m of text.matchAll(/\b(?:t\(|tx\(|translate\(\s*\w+\s*,)\s*(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')/g))
+    out.push(m[1] !== undefined ? JSON.parse(`"${m[1]}"`) : m[2].replace(/\\(.)/g, "$1"));
   return out;
 }
 

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getLang, tFor } from "@/lib/i18n/server.ts";
 import { myPostsData } from "@/modules/posting/my-posts.ts";
 import { canUseSocial } from "@/modules/social/access.ts";
 import { boardPosts } from "@/modules/social/board.ts";
@@ -16,12 +17,14 @@ export const dynamic = "force-dynamic";
 export default async function MyPostsPage() {
   const user = await currentUser();
   if (!user) redirect("/signin");
+  const lang = await getLang();
+  const t = tFor(lang);
   if (canUseSocial(user)) {
-    const [board, brands] = await Promise.all([boardPosts(user.id), listBrands(user.id).catch(() => [])]);
+    const [board, brands] = await Promise.all([boardPosts(user.id, lang), listBrands(user.id).catch(() => [])]);
     return (
       <main className="site-wrap app-main">
-        <nav className="app-crumbs" aria-label="Breadcrumb"><Link href="/app/admin">Today</Link><span aria-hidden="true">›</span><span>All channels</span></nav>
-        <h1>All channels</h1>
+        <nav className="app-crumbs" aria-label={t("Breadcrumb")}><Link href="/app/admin">{t("Today")}</Link><span aria-hidden="true">›</span><span>{t("All channels")}</span></nav>
+        <h1>{t("All channels")}</h1>
         <Board posts={board.posts} now={board.now} brands={brands} />
       </main>
     );
@@ -30,8 +33,8 @@ export default async function MyPostsPage() {
   return (
     <>
       <main className="site-wrap app-main">
-        <nav className="app-crumbs" aria-label="Breadcrumb"><Link href="/app">Today</Link><span aria-hidden="true">›</span><span>My posts</span></nav>
-        <h1>My posts</h1>
+        <nav className="app-crumbs" aria-label={t("Breadcrumb")}><Link href="/app">{t("Today")}</Link><span aria-hidden="true">›</span><span>{t("My posts")}</span></nav>
+        <h1>{t("My posts")}</h1>
         <PostsView initialPosts={data.posts} initialStats={data.stats} now={data.now} />
       </main>
     </>

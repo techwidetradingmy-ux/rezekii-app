@@ -2,7 +2,11 @@
  * Facebook Page, Instagram and Threads posting rules (docs/flows/social-posting.md), kept free of I/O so the composer
  * and the server use exactly the same ones. TikTok's own rules stay in modules/posting/rules.ts.
  */
+import { makeT, type T } from "../../lib/i18n/lang.ts";
+
 export type Platform = "facebook" | "instagram" | "threads";
+/** English, as written (the server's checks); New post passes its own translator. */
+const EN: T = makeT(null);
 export type Channel = Platform | "tiktok";
 export const PLATFORMS: Platform[] = ["facebook", "instagram", "threads"];
 export const NAMES: Record<Channel, string> = { tiktok: "TikTok", facebook: "Facebook", instagram: "Instagram", threads: "Threads" };
@@ -122,22 +126,23 @@ export function aboveTags(text: string, line: string): string {
 }
 
 /** Plain-language problems that block scheduling this channel (empty = OK). */
-export function channelProblems(ch: Platform, caption: string, comment: string, durationSec?: number | null): string[] {
+export function channelProblems(ch: Platform, caption: string, comment: string, durationSec?: number | null, t: T = EN): string[] {
   const out: string[] = [];
   const n = lengthFor(ch, caption);
-  if (n > CAPTION_MAX[ch]) out.push(`${NAMES[ch]} allows ${CAPTION_MAX[ch].toLocaleString("en-US")} characters${ch === "threads" ? " (an emoji counts as 2–4)" : ""}. This caption has ${n.toLocaleString("en-US")}.`);
-  if (comment && lengthFor(ch, comment) > COMMENT_MAX[ch]) out.push(`${NAMES[ch]} first comment: ${COMMENT_MAX[ch].toLocaleString("en-US")} characters at most.`);
-  if (ch === "threads" && links(caption).length > THREADS_LINK_MAX) out.push(`Threads allows at most ${THREADS_LINK_MAX} links in a post.`);
-  if (ch === "threads" && durationSec && durationSec > THREADS_MAX_SECONDS) out.push("Threads takes videos up to 5 minutes.");
-  if (ch === "instagram" && durationSec && durationSec < 3) out.push("Instagram Reels must be at least 3 seconds long.");
+  const v = { app: NAMES[ch], max: CAPTION_MAX[ch].toLocaleString("en-US"), n: n.toLocaleString("en-US") };
+  if (n > CAPTION_MAX[ch]) out.push(ch === "threads" ? t("{app} allows {max} characters (an emoji counts as 2–4). This caption has {n}.", v) : t("{app} allows {max} characters. This caption has {n}.", v));
+  if (comment && lengthFor(ch, comment) > COMMENT_MAX[ch]) out.push(t("{app} first comment: {max} characters at most.", { app: NAMES[ch], max: COMMENT_MAX[ch].toLocaleString("en-US") }));
+  if (ch === "threads" && links(caption).length > THREADS_LINK_MAX) out.push(t("Threads allows at most {max} links in a post.", { max: THREADS_LINK_MAX }));
+  if (ch === "threads" && durationSec && durationSec > THREADS_MAX_SECONDS) out.push(t("Threads takes videos up to 5 minutes."));
+  if (ch === "instagram" && durationSec && durationSec < 3) out.push(t("Instagram Reels must be at least 3 seconds long."));
   return out;
 }
 
 /** Warnings that don't block (the channel will still take the post). */
-export function channelWarnings(ch: Channel, caption: string): string[] {
+export function channelWarnings(ch: Channel, caption: string, t: T = EN): string[] {
   const n = hashtags(caption).length;
-  if ((ch === "instagram" || ch === "tiktok") && n > HASHTAG_MAX[ch]) return [`${NAMES[ch]} allows ${HASHTAG_MAX[ch]} hashtags. This caption has ${n}.`];
-  if (ch === "threads" && n > 0) return ["On Threads, hashtags in the text show as plain words. A post gets one topic: set it in the Topic box."];
+  if ((ch === "instagram" || ch === "tiktok") && n > HASHTAG_MAX[ch]) return [t("{app} allows {max} hashtags. This caption has {n}.", { app: NAMES[ch], max: HASHTAG_MAX[ch], n })];
+  if (ch === "threads" && n > 0) return [t("On Threads, hashtags in the text show as plain words. A post gets one topic: set it in the Topic box.")];
   return [];
 }
 

@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useLang, useT } from "@/lib/i18n/client.tsx";
+import { dateLocale, tx } from "@/lib/i18n/lang.ts";
 import type { TapProduct } from "@/modules/tap/catalog.ts";
 import type { TodayData, TodayStat } from "@/modules/today/today.ts";
 import type { ConvertRow } from "@/modules/tap/convert.ts";
@@ -23,19 +25,19 @@ const IC = {
 };
 
 const QUICK: [string, string, string, keyof typeof IC, string, string][] = [
-  ["Post a video", "Schedule to your TikTok", "/app/new", "video", "#fe2c55", "#ffffff"],
-  ["Convert links", "Your affiliate links", "/app/links", "link", "#25c8f4", "#ffffff"],
-  ["Marketplace", "Products with free samples", "/app/marketplace", "store", "#00c073", "#ffffff"],
-  ["My Samples", "Your free samples and their status", "/app/my-tap", "cart", "#ffc700", "#3b2a00"],
-  ["Earnings & level", "Grow to Silver and Gold", "/app/levels", "coins", "#7c3aed", "#ffffff"],
-  ["Top LIVEs", "See who sells live", "/app/rankings", "live", "#0d1117", "#25f4ee"],
+  [tx("Post a video"), tx("Schedule to your TikTok"), "/app/new", "video", "#fe2c55", "#ffffff"],
+  [tx("Convert links"), tx("Your affiliate links"), "/app/links", "link", "#25c8f4", "#ffffff"],
+  [tx("Marketplace"), tx("Products with free samples"), "/app/marketplace", "store", "#00c073", "#ffffff"],
+  [tx("My Samples"), tx("Your free samples and their status"), "/app/my-tap", "cart", "#ffc700", "#3b2a00"],
+  [tx("Earnings & level"), tx("Grow to Silver and Gold"), "/app/levels", "coins", "#7c3aed", "#ffffff"],
+  [tx("Top LIVEs"), tx("See who sells live"), "/app/rankings", "live", "#0d1117", "#25f4ee"],
 ];
 
 const STAT_LOOK: Record<TodayStat["key"], [string, string, keyof typeof IC, string, string]> = {
-  links: ["Links made this week", "/app/links", "link", "#d9f6fd", "#0e7490"],
-  showcase: ["Products in showcase", "/app/marketplace", "cart", "#fff4c2", "#8a6100"],
-  samples: ["Samples in progress", "/app/my-tap", "box", "#ffe4ea", "#c21f45"],
-  open: ["Marketplace products", "/app/marketplace", "store", "#e1f8eb", "#007a4b"],
+  links: [tx("Links made this week"), "/app/links", "link", "#d9f6fd", "#0e7490"],
+  showcase: [tx("Products in showcase"), "/app/marketplace", "cart", "#fff4c2", "#8a6100"],
+  samples: [tx("Samples in progress"), "/app/my-tap", "box", "#ffe4ea", "#c21f45"],
+  open: [tx("Marketplace products"), "/app/marketplace", "store", "#e1f8eb", "#007a4b"],
 };
 
 const TAGS = ["threads", "whatsapp", "facebook", "instagram", "telegram", "youtube"];
@@ -52,6 +54,8 @@ function Icon({ d, size, stroke, width = 2.2 }: { d: string; size: number; strok
 
 /** Today, as designed in the mockup (Main page): quick actions, this week, picks, link converter, next posts, closing soon and best sellers. */
 export function TodayView({ data }: { data: TodayData }) {
+  const t = useT();
+  const lang = useLang();
   const tap = useTap(data.requestedIds);
   const byId = new Map(data.products.map((p) => [p.id, p]));
   const [now, setNow] = useState(data.now);
@@ -75,8 +79,8 @@ export function TodayView({ data }: { data: TodayData }) {
 
   useEffect(() => {
     if (!data.camp) return;
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
   }, [data.camp]);
 
   const openPanel = (p: TapProduct) => {
@@ -102,31 +106,31 @@ export function TodayView({ data }: { data: TodayData }) {
 
   async function convert() {
     if (phase === "loading") return;
-    if (!lines.length) return flash("Paste at least one product link", false);
+    if (!lines.length) return flash(t("Paste at least one product link"), false);
     setPhase("loading");
     try {
       const r = await fetch("/api/tap/convert", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ links: lines, tags }) });
       const d = (await r.json().catch(() => ({}))) as { rows?: ConvertRow[]; error?: string };
-      if (!r.ok || !d.rows) throw new Error(d.error || "Could not convert the links. Please try again.");
+      if (!r.ok || !d.rows) throw new Error(d.error || tx("Could not convert the links. Please try again."));
       setRows(d.rows);
       setPhase("done");
     } catch (err) {
       setPhase("idle");
-      flash(err instanceof Error ? err.message : String(err), false);
+      flash(err instanceof Error ? t(err.message) : String(err), false);
     }
   }
   async function copy(link: string) {
     try {
       await navigator.clipboard.writeText(link);
-      flash("Link copied");
+      flash(t("Link copied"));
     } catch {
-      flash("Copy did not work. Select the link and copy it.", false);
+      flash(t("Copy did not work. Select the link and copy it."), false);
     }
   }
 
   const camp = data.camp;
   const left = camp ? Math.max(0, Math.floor((camp.end * 1000 - now) / 1000)) : 0;
-  const campDay = camp ? new Date(camp.end * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" }) : "";
+  const campDay = camp ? new Date(camp.end * 1000).toLocaleDateString(dateLocale(lang), { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" }) : "";
   const best = data.best[sort].map((id) => byId.get(id)).filter((p): p is TapProduct => !!p);
   const picks = data.picks.map((id) => byId.get(id)).filter((p): p is TapProduct => !!p);
   const hasWaiting = rows.some((r) => r.kind === "shop");
@@ -134,27 +138,27 @@ export function TodayView({ data }: { data: TodayData }) {
   return (
     <>
       <CommissionRaises flash={flash} />
-      <section className="nv-up" aria-label="Quick actions" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 }}>
+      <section className="nv-up" aria-label={t("Quick actions")} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 }}>
         {QUICK.map(([label, note, href, icon, bg, fg]) => (
           <Link key={label} href={href} className="nv-card nv-press td-quick" style={{ textDecoration: "none", color: "var(--text)", padding: 16, display: "flex", flexDirection: "column", gap: 10, borderRadius: 22 }}>
             <span className="td-qico" style={{ background: bg }}><Icon d={IC[icon]} size={24} stroke={fg} /></span>
             <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <strong style={{ fontSize: 15 }}>{label}</strong>
-              <span style={{ fontSize: 12, color: "var(--muted)", lineHeight: 1.4 }}>{note}</span>
+              <strong style={{ fontSize: 15 }}>{t(label)}</strong>
+              <span style={{ fontSize: 12, color: "var(--muted)", lineHeight: 1.4 }}>{t(note)}</span>
             </span>
           </Link>
         ))}
       </section>
 
-      <section className="nv-up nv-card" aria-label="This week" style={{ boxShadow: "var(--shadow)", borderRadius: 26, padding: "24px 12px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 8 }}>
+      <section className="nv-up nv-card" aria-label={t("This week")} style={{ boxShadow: "var(--shadow)", borderRadius: 26, padding: "24px 12px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 8 }}>
         {data.stats.map((raw) => {
-          const st = raw.key === "showcase" && showcase ? { ...raw, value: showcase.count, note: `${showcase.tap} through Rezekii${showcase.more ? " · first 200" : ""}` } : raw;
+          const st = raw.key === "showcase" && showcase ? { ...raw, value: showcase.count, note: `${t("{n} through Rezekii", { n: showcase.tap })}${showcase.more ? t(" · first 200") : ""}` } : raw;
           const [label, href, icon, bg, fg] = STAT_LOOK[st.key];
           return (
             <Link key={st.key} href={href} className="nv-row" style={{ display: "flex", flexDirection: "column", gap: 6, padding: "8px 16px", borderRadius: 16, textDecoration: "none", color: "var(--text)" }}>
               <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span className="td-sico" style={{ background: bg }}><Icon d={IC[icon]} size={16} stroke={fg} width={2.4} /></span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--muted)" }}>{label}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--muted)" }}>{t(label)}</span>
               </span>
               <span style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
                 <span style={{ fontSize: 32, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{n(st.value)}</span>
@@ -171,11 +175,11 @@ export function TodayView({ data }: { data: TodayData }) {
           <span style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0, flex: "1 1 320px" }}>
             <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span className="td-ai">✦ AI</span>
-              <h2 id="mrec" className="nv-h2" style={{ fontSize: 22 }}>Recommended for you</h2>
+              <h2 id="mrec" className="nv-h2" style={{ fontSize: 22 }}>{t("Recommended for you")}</h2>
             </span>
             <span style={{ fontSize: 14, color: "var(--muted)", lineHeight: 1.5 }}>{data.basis}</span>
           </span>
-          <Link href="/app/marketplace" className="nv-link">See all</Link>
+          <Link href="/app/marketplace" className="nv-link">{t("See all")}</Link>
         </div>
         <div className="mk-grid">
           {picks.map((p) => (
@@ -189,18 +193,18 @@ export function TodayView({ data }: { data: TodayData }) {
       <div style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start" }}>
         <section className="nv-up nv-card" aria-labelledby="mconv" style={{ animationDelay: "80ms", flex: "999 1 540px", minWidth: 0, padding: 24, display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-            <h2 id="mconv" className="nv-h2">Convert product links</h2>
-            <Link href="/app/links" className="nv-link">Open link converter</Link>
+            <h2 id="mconv" className="nv-h2">{t("Convert product links")}</h2>
+            <Link href="/app/links" className="nv-link">{t("Open link converter")}</Link>
           </div>
-          <label htmlFor="mpaste" className="nv-label">Paste TikTok product links, one per line. Each becomes your own affiliate link.</label>
+          <label htmlFor="mpaste" className="nv-label">{t("Paste TikTok product links, one per line. Each becomes your own affiliate link.")}</label>
           <textarea id="mpaste" className="nv-input" rows={3} value={paste} placeholder="https://shop.tiktok.com/view/product/…" onChange={(e) => { setPaste(e.target.value); setPhase("idle"); }} />
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }} role="group" aria-label="Link tags">
-            <span className="nv-label" style={{ marginRight: 4 }}>One link per tag</span>
-            {TAGS.map((t) => {
-              const on = tags.includes(t);
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }} role="group" aria-label={t("Link tags")}>
+            <span className="nv-label" style={{ marginRight: 4 }}>{t("One link per tag")}</span>
+            {TAGS.map((tag) => {
+              const on = tags.includes(tag);
               return (
-                <button key={t} type="button" className={`nv-chip nv-press${on ? " on" : ""}`} aria-pressed={on} onClick={() => { setTags(on ? tags.filter((x) => x !== t) : [...tags, t]); setPhase("idle"); }}>
-                  {t}
+                <button key={tag} type="button" className={`nv-chip nv-press${on ? " on" : ""}`} aria-pressed={on} onClick={() => { setTags(on ? tags.filter((x) => x !== tag) : [...tags, tag]); setPhase("idle"); }}>
+                  {tag}
                 </button>
               );
             })}
@@ -208,10 +212,10 @@ export function TodayView({ data }: { data: TodayData }) {
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
             <button type="button" className="nv-btn nv-press nv-cta" onClick={convert} style={{ height: 50, padding: "0 24px", fontSize: 16 }}>
               {phase === "loading" && <span className="nv-spin" aria-hidden="true" />}
-              {phase === "loading" ? "Converting via TikTok Shop…" : phase === "done" ? "Convert again" : "Convert links"}
+              {phase === "loading" ? t("Converting via TikTok Shop…") : phase === "done" ? t("Convert again") : t("Convert links")}
             </button>
             <span style={{ fontSize: 13, color: "var(--muted)" }}>
-              {lines.length} {lines.length === 1 ? "link" : "links"} · {tagsUsed.length} {tagsUsed.length === 1 ? "tag" : "tags"}
+              {lines.length === 1 ? t("{n} link", { n: 1 }) : t("{n} links", { n: lines.length })} · {tagsUsed.length === 1 ? t("{n} tag", { n: 1 }) : t("{n} tags", { n: tagsUsed.length })}
             </span>
           </div>
           {phase === "done" && (
@@ -219,20 +223,20 @@ export function TodayView({ data }: { data: TodayData }) {
               {rows.map((r, i) => (
                 <div key={i} className="nv-up" style={{ animationDelay: `${i * 60}ms`, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, padding: "12px 14px", borderTop: i ? "1px solid var(--border)" : 0 }}>
                   <span className={`nv-badge ${r.kind === "tap" || r.kind === "aff" ? "b-green" : r.kind === "shop" ? "b-amber" : "b-red"}`} style={{ background: r.kind === "tap" || r.kind === "aff" ? "var(--surface)" : undefined }}>
-                    {r.kind === "aff" ? (r.tag ?? "no tag") : r.kind === "tap" ? "TAP · add to showcase" : r.tag ? `${r.tag} · ${r.note}` : r.note}
+                    {r.kind === "aff" ? (r.tag ?? t("no tag")) : r.kind === "tap" ? t("TAP · add to showcase") : r.tag ? `${r.tag} · ${t(r.note)}` : t(r.note)}
                   </span>
                   <span style={{ flex: 1, minWidth: 200, fontFamily: "ui-monospace, monospace", fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={r.link ?? r.input}>
                     {r.link ?? r.input}
                   </span>
                   {r.kind === "tap" && r.link && (
-                    <a href={r.link} target="_blank" rel="noreferrer" className="nv-btn2 nv-sm nv-press" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}>Open</a>
+                    <a href={r.link} target="_blank" rel="noreferrer" className="nv-btn2 nv-sm nv-press" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}>{t("Open")}</a>
                   )}
-                  {r.link && <button type="button" className="nv-btn2 nv-sm nv-press" onClick={() => copy(r.link!)}>Copy</button>}
+                  {r.link && <button type="button" className="nv-btn2 nv-sm nv-press" onClick={() => copy(r.link!)}>{t("Copy")}</button>}
                 </div>
               ))}
               {hasWaiting && (
                 <p style={{ margin: 0, padding: "12px 14px", borderTop: "1px solid var(--border)", fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>
-                  Tagged affiliate links for any product turn on once TikTok approves Rezekii&apos;s TikTok Shop connection. Marketplace products work now.
+                  {t("Tagged affiliate links for any product turn on once TikTok approves Rezekii's TikTok Shop connection. Marketplace products work now.")}
                 </p>
               )}
             </div>
@@ -242,8 +246,8 @@ export function TodayView({ data }: { data: TodayData }) {
         <div style={{ flex: "1 1 320px", display: "flex", flexDirection: "column", gap: 24 }}>
           <section className="nv-up nv-card" aria-labelledby="mnext" style={{ animationDelay: "110ms", padding: 22, display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-              <h2 id="mnext" className="nv-h2" style={{ fontSize: 19 }}>Your next posts</h2>
-              <Link href="/app/posts" className="nv-link">My posts</Link>
+              <h2 id="mnext" className="nv-h2" style={{ fontSize: 19 }}>{t("Your next posts")}</h2>
+              <Link href="/app/posts" className="nv-link">{t("My posts")}</Link>
             </div>
             {data.nextPosts.length ? (
               data.nextPosts.map((np, i) => (
@@ -257,9 +261,9 @@ export function TodayView({ data }: { data: TodayData }) {
                 </div>
               ))
             ) : (
-              <span style={{ fontSize: 14, color: "var(--muted)" }}>Nothing scheduled yet. Post a video now or pick a time.</span>
+              <span style={{ fontSize: 14, color: "var(--muted)" }}>{t("Nothing scheduled yet. Post a video now or pick a time.")}</span>
             )}
-            <Link href="/app/new" className="nv-btn nv-press" style={{ height: 42, fontSize: 14, textDecoration: "none" }}>New post</Link>
+            <Link href="/app/new" className="nv-btn nv-press" style={{ height: 42, fontSize: 14, textDecoration: "none" }}>{t("New post")}</Link>
           </section>
         </div>
       </div>
@@ -267,15 +271,19 @@ export function TodayView({ data }: { data: TodayData }) {
       {camp && (
         <Link href="/app/marketplace" className="nv-up nv-press td-camp" style={{ animationDelay: "240ms" }}>
           <span className="td-camp-copy">
-            <span className="td-camp-tag">CLOSING SOON</span>
-            <span className="td-camp-title">{camp.products} {camp.products === 1 ? "product" : "products"} closing soon, up to {camp.upto}% commission</span>
+            <span className="td-camp-tag">{t("CLOSING SOON")}</span>
+            <span className="td-camp-title">
+              {camp.products === 1 ? t("{n} product closing soon, up to {p}% commission", { n: 1, p: camp.upto }) : t("{n} products closing soon, up to {p}% commission", { n: camp.products, p: camp.upto })}
+            </span>
             <span className="td-camp-sub">
-              {camp.campaigns} {camp.campaigns === 1 ? "campaign closes" : "campaigns close"} in the next 30 days. First: {camp.first} on {campDay}. Add them to your showcase before they go.
+              {camp.campaigns === 1
+                ? t("{c} campaign closes in the next 30 days. First: {first} on {day}. Add them to your showcase before they go.", { c: 1, first: camp.first, day: campDay })
+                : t("{c} campaigns close in the next 30 days. First: {first} on {day}. Add them to your showcase before they go.", { c: camp.campaigns, first: camp.first, day: campDay })}
             </span>
           </span>
-          <span className="td-camp-time" aria-label={`Time left until ${camp.first} closes`}>
-            {([[Math.floor(left / 86400), "days"], [pad2(Math.floor((left % 86400) / 3600)), "hrs"], [pad2(Math.floor((left % 3600) / 60)), "min"], [pad2(left % 60), "sec"]] as const).map(([v, u]) => (
-              <span key={u} className="td-camp-cell"><b>{v}</b><small>{u}</small></span>
+          <span className="td-camp-time" aria-label={t("Time left until {first} closes", { first: camp.first })}>
+            {([[Math.floor(left / 86400), tx("days")], [pad2(Math.floor((left % 86400) / 3600)), tx("hrs")], [pad2(Math.floor((left % 3600) / 60)), tx("min")], [pad2(left % 60), tx("sec")]] as const).map(([v, u]) => (
+              <span key={u} className="td-camp-cell"><b>{v}</b><small>{t(u)}</small></span>
             ))}
           </span>
         </Link>
@@ -284,18 +292,18 @@ export function TodayView({ data }: { data: TodayData }) {
       <section className="nv-up" aria-labelledby="mtap" style={{ animationDelay: "300ms", display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <span style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-            <h2 id="mtap" className="nv-h2" style={{ fontSize: 22 }}>Best-selling in the Marketplace</h2>
-            <span style={{ fontSize: 14, color: "var(--muted)" }}>{sort === 0 ? "Most units sold since yesterday" : "Highest Silver commission first"}</span>
+            <h2 id="mtap" className="nv-h2" style={{ fontSize: 22 }}>{t("Best-selling in the Marketplace")}</h2>
+            <span style={{ fontSize: 14, color: "var(--muted)" }}>{sort === 0 ? t("Most units sold since yesterday") : t("Highest Silver commission first")}</span>
           </span>
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px 14px", minWidth: 0 }}>
-            <div className="nv-seg td-seg" role="group" aria-label="Sort products">
+            <div className="nv-seg td-seg" role="group" aria-label={t("Sort products")}>
               <span className="nv-segthumb" aria-hidden="true" style={{ width: "calc(50% - 2px)", transform: sort === 0 ? "translateX(0)" : "translateX(100%)" }} />
-              {(["Selling now", "Highest commission"] as const).map((label, i) => (
-                <button key={label} type="button" className={sort === i ? "on" : ""} aria-pressed={sort === i} onClick={() => setSort(i as 0 | 1)}>{label}</button>
+              {[tx("Selling now"), tx("Highest commission")].map((label, i) => (
+                <button key={label} type="button" className={sort === i ? "on" : ""} aria-pressed={sort === i} onClick={() => setSort(i as 0 | 1)}>{t(label)}</button>
               ))}
             </div>
-            <Link href="/app/my-tap" className="nv-link">My Samples</Link>
-            <Link href="/app/marketplace" className="nv-link nv-hidem">See all</Link>
+            <Link href="/app/my-tap" className="nv-link">{t("My Samples")}</Link>
+            <Link href="/app/marketplace" className="nv-link nv-hidem">{t("See all")}</Link>
           </div>
         </div>
         <div className="mk-grid">

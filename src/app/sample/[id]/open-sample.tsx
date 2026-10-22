@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useT } from "@/lib/i18n/client.tsx";
+import { tx } from "@/lib/i18n/lang.ts";
 
 type Reply = { ok: boolean; status: number; d: { deeplink?: string; error?: string } };
 const ask = (id: string): Promise<Reply> =>
@@ -12,6 +14,7 @@ const ask = (id: string): Promise<Reply> =>
  * it asks once more after a few seconds before showing the problem.
  */
 export function OpenSample({ id }: { id: string }) {
+  const t = useT();
   const [error, setError] = useState("");
   useEffect(() => {
     let live = true;
@@ -23,19 +26,19 @@ export function OpenSample({ id }: { id: string }) {
       }
       if (!live) return;
       if (r.ok && r.d.deeplink) window.location.replace(r.d.deeplink);
-      else setError(r.d.error || "TikTok didn't open the sample request. Please try again.");
-    })().catch(() => live && setError("Couldn't reach Rezekii. Check your connection and try again."));
+      else setError(r.d.error || tx("TikTok didn't open the sample request. Please try again."));
+    })().catch(() => live && setError(tx("Couldn't reach Rezekii. Check your connection and try again.")));
     return () => { live = false; };
   }, [id]);
   return error ? (
     <>
-      <h1>Couldn&apos;t open the sample request</h1>
-      <p>{error} <a href={`/app/marketplace/${id}`}>Back to the product</a></p>
+      <h1>{t("Couldn't open the sample request")}</h1>
+      <p>{t(error)} <a href={`/app/marketplace/${id}`}>{t("Back to the product")}</a></p>
     </>
   ) : (
     <>
-      <h1>Opening TikTok&apos;s sample request…</h1>
-      <p>Submit it in TikTok. It then shows in My Samples.</p>
+      <h1>{t("Opening TikTok's sample request…")}</h1>
+      <p>{t("Submit it in TikTok. It then shows in My Samples.")}</p>
     </>
   );
 }

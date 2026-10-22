@@ -1,4 +1,6 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import type { Lang } from "../../lib/i18n/lang.ts";
+import { translate } from "../../lib/i18n/translate.ts";
 import type { AppUser } from "../accounts/users.ts";
 import { userTikTokOpenId } from "../posting/store.ts";
 import { accessFor, placesFull, type AccessStatus } from "./access.ts";
@@ -15,8 +17,8 @@ export type OnboardingState = {
   tiktok: boolean;
 };
 
-/** Where a creator is in getting set up: signed in, TikTok Shop linked (required), approved by Techwide. */
-export async function onboardingState(user: AppUser): Promise<OnboardingState> {
+/** Where a creator is in getting set up: signed in, TikTok Shop linked (required), approved by Techwide. `lang` words "signed in". */
+export async function onboardingState(user: AppUser, lang: Lang = "en"): Promise<OnboardingState> {
   const [access, shops, full, openId] = await Promise.all([
     accessFor(user.id),
     supabaseRest(`affiliate_connections?user_id=eq.${user.id}&select=username,avatar_url&order=updated_at.desc&limit=1`).then((r) => (r.ok ? (r.json() as Promise<{ username: string; avatar_url: string | null }[]>) : [])),
@@ -25,7 +27,9 @@ export async function onboardingState(user: AppUser): Promise<OnboardingState> {
   ]);
   const shop = shops[0];
   return {
-    signedIn: user.tiktok_open_id && user.tiktok_username ? `With TikTok · @${user.tiktok_username}` : `As ${user.email ?? "your Rezekii account"}`,
+    signedIn: user.tiktok_open_id && user.tiktok_username
+      ? translate(lang, "With TikTok · @{handle}", { handle: user.tiktok_username })
+      : translate(lang, "As {who}", { who: user.email ?? translate(lang, "your Rezekii account") }),
     status: access?.status ?? "none",
     reason: access?.reason ?? null,
     position: access?.position ?? null,

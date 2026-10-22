@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useT } from "@/lib/i18n/client.tsx";
 
 /** "Sign in" or "My account" on the static homepage, checked in the browser so the page itself can be served from the CDN. */
 export function NavAccount() {
+  const t = useT();
   const [me, setMe] = useState<{ signedIn: boolean; avatar?: string | null } | null>(null);
   useEffect(() => {
     fetch("/api/session", { cache: "no-store" })
@@ -19,12 +21,12 @@ export function NavAccount() {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={me.avatar} alt="" width={26} height={26} />
         ) : null}
-        My account
+        {t("My account")}
       </Link>
     );
   return (
     <Link href="/signin" className="site-signin">
-      Sign in
+      {t("Sign in")}
     </Link>
   );
 }

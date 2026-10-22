@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useT } from "@/lib/i18n/client.tsx";
+import { tx } from "@/lib/i18n/lang.ts";
 import type { Raise } from "@/modules/tap/raises.ts";
 
 const pct = (r: number) => `${(r / 100).toFixed(r % 100 ? 1 : 0)}%`;
@@ -11,6 +13,7 @@ const rm = (v: number) => `RM${v.toFixed(2)}`;
  * through Techwide's TAP campaign. Bulk Add to Showcase adds them through Techwide's TAP link. Hidden when there are none.
  */
 export function CommissionRaises({ flash }: { flash: (text: string, ok?: boolean) => void }) {
+  const t = useT();
   const [raises, setRaises] = useState<Raise[] | null>(null);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [failed, setFailed] = useState<Record<string, string>>({});
@@ -43,11 +46,11 @@ export function CommissionRaises({ flash }: { flash: (text: string, ok?: boolean
     try {
       const r = await fetch("/api/tap/raises", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ productIds: [...picked] }) });
       const d = (await r.json().catch(() => ({}))) as { added?: string[]; failed?: { productId: string; error: string }[]; raises?: Raise[]; error?: string };
-      if (!r.ok) throw new Error(d.error || "Couldn't add them. Please try again.");
+      if (!r.ok) throw new Error(d.error || tx("Couldn't add them. Please try again."));
       const added = d.added?.length ?? 0;
       const nope = d.failed ?? [];
       setFailed(Object.fromEntries(nope.map((f) => [f.productId, f.error])));
-      flash(nope.length ? `${added} added through Rezekii · TikTok didn't accept ${nope.length}` : `${added} added through Rezekii · you earn the higher rate now`, !nope.length || added > 0);
+      flash(nope.length ? t("{a} added through Rezekii · TikTok didn't accept {n}", { a: added, n: nope.length }) : t("{a} added through Rezekii · you earn the higher rate now", { a: added }), !nope.length || added > 0);
       const next = d.raises ?? [];
       if (!next.length) {
         setLeaving(true);
@@ -57,7 +60,7 @@ export function CommissionRaises({ flash }: { flash: (text: string, ok?: boolean
         setPicked(new Set(next.filter((x) => !nope.some((f) => f.productId === x.productId)).map((x) => x.productId)));
       }
     } catch (err) {
-      flash(err instanceof Error ? err.message : String(err), false);
+      flash(err instanceof Error ? t(err.message) : String(err), false);
     } finally {
       setBusy(false);
     }
@@ -68,9 +71,11 @@ export function CommissionRaises({ flash }: { flash: (text: string, ok?: boolean
       <div className="cr-head">
         <span className="cr-badge" aria-hidden="true">▲</span>
         <span style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-          <h2 id="crt" style={{ margin: 0, fontSize: 21, fontWeight: 900 }}>Earn more on products already in your showcase</h2>
+          <h2 id="crt" style={{ margin: 0, fontSize: 21, fontWeight: 900 }}>{t("Earn more on products already in your showcase")}</h2>
           <span style={{ fontSize: 14, opacity: 0.9 }}>
-            {raises.length} {raises.length === 1 ? "product pays" : "products pay"} you more through Rezekii. Add them to your showcase through Rezekii to get the higher rate.
+            {raises.length === 1
+              ? t("{n} product pays you more through Rezekii. Add them to your showcase through Rezekii to get the higher rate.", { n: 1 })
+              : t("{n} products pay you more through Rezekii. Add them to your showcase through Rezekii to get the higher rate.", { n: raises.length })}
           </span>
         </span>
       </div>
@@ -79,24 +84,24 @@ export function CommissionRaises({ flash }: { flash: (text: string, ok?: boolean
           const gain = r.price ? (r.price * (r.tapRate - r.nowRate)) / 10000 : null;
           return (
             <label key={r.productId} className={`cr-row ${picked.has(r.productId) ? "on" : ""}`}>
-              <input type="checkbox" checked={picked.has(r.productId)} onChange={() => toggle(r.productId)} aria-label={`Choose ${r.name}`} />
+              <input type="checkbox" checked={picked.has(r.productId)} onChange={() => toggle(r.productId)} aria-label={t("Choose {name}", { name: r.name })} />
               {r.image ? <span className="cr-img" style={{ backgroundImage: `url("${r.image}")` }} aria-hidden="true" /> : <span className="cr-img" aria-hidden="true" />}
               <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1 }}>
                 <strong className="cr-name">{r.name}</strong>
                 <span style={{ fontSize: 12, color: "var(--muted)" }}>{r.shop}</span>
-                {failed[r.productId] && <span style={{ fontSize: 12, color: "var(--red)", fontWeight: 700 }}>TikTok didn&apos;t accept it: {failed[r.productId]}</span>}
+                {failed[r.productId] && <span style={{ fontSize: 12, color: "var(--red)", fontWeight: 700 }}>{t("TikTok didn't accept it: {reason}", { reason: t(failed[r.productId]) })}</span>}
               </span>
               <span className="cr-rate"><span className="cr-now">{pct(r.nowRate)}</span><span aria-hidden="true">→</span><b>{pct(r.tapRate)}</b></span>
-              {gain !== null && <span className="cr-gain">+{rm(gain)} a sale</span>}
+              {gain !== null && <span className="cr-gain">{t("+{x} a sale", { x: rm(gain) })}</span>}
             </label>
           );
         })}
       </div>
       <div className="cr-acts">
-        <button type="button" className="nv-link" onClick={() => setPicked(allOn ? new Set() : new Set(raises.map((r) => r.productId)))} style={{ color: "inherit" }}>{allOn ? "Clear all" : "Choose all"}</button>
+        <button type="button" className="nv-link" onClick={() => setPicked(allOn ? new Set() : new Set(raises.map((r) => r.productId)))} style={{ color: "inherit" }}>{allOn ? t("Clear all") : t("Choose all")}</button>
         <button type="button" className="cr-btn nv-press" onClick={take} disabled={busy || !picked.size}>
           {busy && <span className="nv-sping" aria-hidden="true" />}
-          {busy ? "Adding through Rezekii…" : `Bulk Add to Showcase · ${picked.size}`}
+          {busy ? t("Adding through Rezekii…") : t("Bulk Add to Showcase · {n}", { n: picked.size })}
         </button>
       </div>
     </section>

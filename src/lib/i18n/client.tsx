@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { LANG_COOKIE, makeT, type Lang, type T, type Words } from "./lang.ts";
 
 const LangContext = createContext<{ lang: Lang; words: Words | null }>({ lang: "en", words: null });
@@ -29,11 +29,14 @@ export function useT(): T {
 export function LangSwitch() {
   const lang = useLang();
   const router = useRouter();
+  const path = usePathname();
   const [pending, start] = useTransition();
   const pick = (next: Lang) => {
     if (next === lang || pending) return;
     document.cookie = `${LANG_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
-    start(() => router.refresh());
+    // The Chinese copies' own addresses (/zh, /zh/signin) are Chinese whatever the cookie says: English is at the plain address.
+    if (next === "en" && /^\/zh(\/|$)/.test(path)) router.replace(path.replace(/^\/zh/, "") || "/");
+    else start(() => router.refresh());
   };
   return (
     <div className={`lang-switch${pending ? " busy" : ""}`} role="group" aria-label="Language / 语言">

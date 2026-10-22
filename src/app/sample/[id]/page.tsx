@@ -1,4 +1,7 @@
 import { redirect } from "next/navigation";
+import { LangProvider } from "@/lib/i18n/client.tsx";
+import { getLang } from "@/lib/i18n/server.ts";
+import { wordsFor } from "@/lib/i18n/translate.ts";
 import { currentUser } from "../../current-user";
 import { Splash } from "../../splash";
 import { OpenSample } from "./open-sample";
@@ -9,9 +12,12 @@ export const dynamic = "force-dynamic";
 export default async function SampleOnPhone({ params }: { params: Promise<{ id: string }> }) {
   const [{ id }, user] = await Promise.all([params, currentUser()]);
   if (!user) redirect("/signin");
+  const lang = await getLang();
   return (
-    <Splash>
-      <OpenSample id={id} />
-    </Splash>
+    <LangProvider lang={lang} words={wordsFor(lang)}>
+      <Splash lang={lang}>
+        <OpenSample id={id} />
+      </Splash>
+    </LangProvider>
   );
 }

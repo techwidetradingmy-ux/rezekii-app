@@ -2,10 +2,14 @@
  * Post settings per app (docs/flows/social-posting.md S1–S5), kept free of I/O so New post and the server check them the
  * same way. Only what each app's API offers: Meta has no private ("Only me") posts for Facebook, Instagram or Threads.
  */
+import { makeT, tx, type T } from "../../lib/i18n/lang.ts";
 import { REEL_SECONDS, hashtags, type Platform } from "./rules.ts";
 
+/** English, as written (the server's checks); New post passes its own translator. */
+const EN: T = makeT(null);
+
 export type ReplyControl = "everyone" | "accounts_you_follow" | "followers_only" | "mentioned_only";
-export const REPLY_CONTROLS: [ReplyControl, string][] = [["everyone", "Everyone"], ["accounts_you_follow", "Accounts you follow"], ["followers_only", "Your followers"], ["mentioned_only", "Only accounts you mention"]];
+export const REPLY_CONTROLS: [ReplyControl, string][] = [["everyone", tx("Everyone")], ["accounts_you_follow", tx("Accounts you follow")], ["followers_only", tx("Your followers")], ["mentioned_only", tx("Only accounts you mention")]];
 export type TrialMode = "off" | "manual" | "auto";
 
 export type FacebookSettings = { draft: boolean };
@@ -51,19 +55,19 @@ export function cleanSettings(platform: Platform, raw: unknown): FacebookSetting
 }
 
 /** Plain-language problems with a channel's settings that block scheduling (empty = OK). */
-export function settingsProblems(platform: Platform, s: Partial<Settings[Platform]>, durationSec?: number | null, collaboratorsTyped?: string, tagsTyped?: string): string[] {
+export function settingsProblems(platform: Platform, s: Partial<Settings[Platform]>, durationSec?: number | null, collaboratorsTyped?: string, tagsTyped?: string, t: T = EN): string[] {
   const out: string[] = [];
   if (platform === "facebook" && (s as FacebookSettings).draft && durationSec != null && (durationSec < REEL_SECONDS.min || durationSec > REEL_SECONDS.max))
-    out.push("Facebook drafts work for Reels only (videos of 3–90 seconds). Choose Publish, or use a shorter video.");
+    out.push(t("Facebook drafts work for Reels only (videos of 3–90 seconds). Choose Publish, or use a shorter video."));
   if (platform === "instagram" && collaboratorsTyped !== undefined) {
     const { list, bad } = parseCollaborators(collaboratorsTyped);
-    if (bad.length) out.push(`Instagram collaborators: "${bad[0]}" isn't an Instagram username.`);
-    if (list.length > COLLABORATORS_MAX) out.push(`Instagram allows up to ${COLLABORATORS_MAX} collaborators.`);
+    if (bad.length) out.push(t("Instagram collaborators: \"{name}\" isn't an Instagram username.", { name: bad[0] }));
+    if (list.length > COLLABORATORS_MAX) out.push(t("Instagram allows up to {max} collaborators.", { max: COLLABORATORS_MAX }));
   }
   if (platform === "instagram" && tagsTyped !== undefined) {
     const { list, bad } = parseCollaborators(tagsTyped);
-    if (bad.length) out.push(`Instagram tagged people: "${bad[0]}" isn't an Instagram username.`);
-    if (list.length > TAGS_MAX) out.push(`Instagram allows up to ${TAGS_MAX} tagged people.`);
+    if (bad.length) out.push(t("Instagram tagged people: \"{name}\" isn't an Instagram username.", { name: bad[0] }));
+    if (list.length > TAGS_MAX) out.push(t("Instagram allows up to {max} tagged people.", { max: TAGS_MAX }));
   }
   return out;
 }

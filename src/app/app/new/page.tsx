@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getLang, tFor } from "@/lib/i18n/server.ts";
 import { userTikTokAccounts } from "@/modules/posting/store.ts";
 import { listAccounts } from "@/modules/social/accounts.ts";
 import { canUseSocial } from "@/modules/social/access.ts";
@@ -17,6 +18,7 @@ export const dynamic = "force-dynamic";
 export default async function NewPostPage({ searchParams }: { searchParams: Promise<{ channel?: string; connect?: string; reuse?: string }> }) {
   const user = await currentUser();
   if (!user) redirect("/signin");
+  const t = tFor(await getLang());
   const tiktok = await userTikTokAccounts(user.id);
   const accounts = tiktok.map((a) => ({ open_id: a.open_id, username: a.username }));
   const social = canUseSocial(user);
@@ -27,17 +29,17 @@ export default async function NewPostPage({ searchParams }: { searchParams: Prom
   return (
     <>
       <main className={`site-wrap app-main ${social ? "" : "app-narrow"}`}>
-        <nav className="app-crumbs" aria-label="Breadcrumb"><Link href={user.role === "admin" ? "/app/admin" : "/app"}>Today</Link><span aria-hidden="true">›</span><span>New post</span></nav>
-        <h1>New post</h1>
+        <nav className="app-crumbs" aria-label={t("Breadcrumb")}><Link href={user.role === "admin" ? "/app/admin" : "/app"}>{t("Today")}</Link><span aria-hidden="true">›</span><span>{t("New post")}</span></nav>
+        <h1>{t("New post")}</h1>
         {social ? (
           <Composer tiktok={tiktok} social={channels} brands={brands} last={last} reuse={reuse} connect={q.channel && q.connect ? { channel: q.channel, result: q.connect } : null} />
         ) : accounts.length ? (
           <NewPostForm accounts={accounts} />
         ) : (
           <section className="card">
-            <h2>Connect TikTok first</h2>
-            <p>Rezekii posts to your own TikTok account. Sign in with TikTok to connect it.</p>
-            <Link href="/api/auth/tiktok/start" className="np-btn">Continue with TikTok</Link>
+            <h2>{t("Connect TikTok first")}</h2>
+            <p>{t("Rezekii posts to your own TikTok account. Sign in with TikTok to connect it.")}</p>
+            <Link href="/api/auth/tiktok/start" className="np-btn">{t("Continue with TikTok")}</Link>
           </section>
         )}
       </main>

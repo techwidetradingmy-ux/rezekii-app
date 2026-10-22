@@ -98,8 +98,10 @@ a { color: var(--gink); }
   .lang-switch { padding: 2px; gap: 0; }
   .lang-switch button { min-width: 0; padding: 0 8px; color: var(--text); }
   .lang-switch button[aria-pressed="true"] { display: none; }
-  .site-nav-app:has(.lang-switch) { column-gap: 8px; }
+  .site-nav:has(.lang-switch) { column-gap: 8px; }
 }
+/* The switch on the brand screen (sign-in, Getting set up, sample, connected): top right, clear of the phone's status bar. */
+.rz-langbar { position: absolute; top: calc(16px + env(safe-area-inset-top, 0px)); right: calc(16px + env(safe-area-inset-right, 0px)); z-index: 2; }
 
 .hero-grid { position: relative; display: flex; flex-wrap: wrap; gap: 40px; align-items: center; padding-block: 28px 72px; }
 .hero-copy { flex: 1 1 460px; min-width: 0; display: flex; flex-direction: column; gap: 20px; }
