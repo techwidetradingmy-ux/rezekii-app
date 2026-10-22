@@ -15,7 +15,7 @@ import { SiteFooter, SiteNav } from "../site";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await currentUser();
   if (user && user.role !== "admin" && !(await creatorReady(user.id))) redirect("/onboarding");
-  const lang = user?.role === "admin" ? "en" : await getLang();
+  const lang = await getLang();
   return (
     <LangProvider lang={lang} words={wordsFor(lang)}>
       <SiteNav variant="app" />
