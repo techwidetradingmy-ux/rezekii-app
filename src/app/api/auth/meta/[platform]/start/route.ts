@@ -10,7 +10,10 @@ import { metaCallbackUrl, metaCookie } from "../../meta.ts";
 
 export const dynamic = "force-dynamic";
 
-/** Connect a Facebook Page, Instagram account or Threads profile: sends the signed-in Admin to that app's own sign-in. */
+/**
+ * Connect a Facebook Page, Instagram account or Threads profile: sends the signed-in account to that app's own sign-in. Admins
+ * are also asked for Community's permissions (numbers, comments, messages), which work for people with a role on the Meta app.
+ */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ platform: string }> }) {
   const { platform } = await params;
   if (!isPlatform(platform)) return NextResponse.redirect(`${appBase(req)}/app/new`);
@@ -23,7 +26,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ plat
   const redirectUri = metaCallbackUrl(req, platform);
   let url: string;
   try {
-    url = platform === "facebook" ? facebookAuthUrl(state, redirectUri) : platform === "instagram" ? instagramAuthUrl(state, redirectUri) : threadsAuthUrl(state, redirectUri);
+    const community = user.role === "admin";
+    url = platform === "facebook" ? facebookAuthUrl(state, redirectUri, community) : platform === "instagram" ? instagramAuthUrl(state, redirectUri, community) : threadsAuthUrl(state, redirectUri, community);
   } catch (err) {
     console.error(`[meta] ${platform} not configured`, err instanceof Error ? err.message : err);
     return NextResponse.redirect(`${appBase(req)}/app/new?channel=${platform}&connect=config`);

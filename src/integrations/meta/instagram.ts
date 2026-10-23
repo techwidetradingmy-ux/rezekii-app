@@ -3,9 +3,12 @@ import { MetaError, GRAPH_VERSION, metaApp, metaFetch, qs } from "./graph.ts";
 /** Instagram API with Instagram Login (Business and Creator accounts; no Facebook Page needed). Tokens last 60 days. */
 const IG = (path: string) => `https://graph.instagram.com/${GRAPH_VERSION}/${path}`;
 export const INSTAGRAM_SCOPES = ["instagram_business_basic", "instagram_business_content_publish", "instagram_business_manage_comments"];
+/** Community (Admins, owner 23 Oct 2026): account and post numbers and the DM inbox, on top of posting. */
+export const INSTAGRAM_COMMUNITY_SCOPES = [...INSTAGRAM_SCOPES, "instagram_business_manage_insights", "instagram_business_manage_messages"];
 
-export function instagramAuthUrl(state: string, redirectUri: string): string {
-  const q = new URLSearchParams({ client_id: metaApp("instagram").id, redirect_uri: redirectUri, response_type: "code", scope: INSTAGRAM_SCOPES.join(","), state, force_reauth: "true" });
+export function instagramAuthUrl(state: string, redirectUri: string, community = false): string {
+  const scope = (community ? INSTAGRAM_COMMUNITY_SCOPES : INSTAGRAM_SCOPES).join(",");
+  const q = new URLSearchParams({ client_id: metaApp("instagram").id, redirect_uri: redirectUri, response_type: "code", scope, state, force_reauth: "true" });
   return `https://www.instagram.com/oauth/authorize?${q}`;
 }
 

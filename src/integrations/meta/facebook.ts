@@ -3,12 +3,18 @@ import { MetaError, GRAPH_VERSION, metaApp, metaFetch, qs } from "./graph.ts";
 /** Facebook Pages (Facebook Login for Business). Page tokens made from a long-lived user token don't expire. */
 const G = (path: string) => `https://graph.facebook.com/${GRAPH_VERSION}/${path}`;
 export const FACEBOOK_SCOPES = ["pages_show_list", "pages_read_engagement", "pages_manage_posts", "pages_manage_engagement", "business_management"];
+/** Community (Admins, owner 23 Oct 2026): Page numbers, comments and instant alerts, on top of posting. */
+export const FACEBOOK_COMMUNITY_SCOPES = [...FACEBOOK_SCOPES, "pages_read_user_content", "read_insights", "pages_manage_metadata"];
 
-/** Facebook Login for Business uses a saved configuration (META_FB_CONFIG_ID) for its permissions; plain scopes otherwise. */
-export function facebookAuthUrl(state: string, redirectUri: string): string {
+/**
+ * Facebook Login for Business uses a saved configuration for its permissions (META_FB_CONFIG_ID; Admins get Community's,
+ * META_FB_COMMUNITY_CONFIG_ID); plain scopes otherwise.
+ */
+export function facebookAuthUrl(state: string, redirectUri: string, community = false): string {
   const q = new URLSearchParams({ client_id: metaApp("facebook").id, redirect_uri: redirectUri, state, response_type: "code" });
-  if (process.env.META_FB_CONFIG_ID) q.set("config_id", process.env.META_FB_CONFIG_ID);
-  else q.set("scope", FACEBOOK_SCOPES.join(","));
+  const config = community ? process.env.META_FB_COMMUNITY_CONFIG_ID : process.env.META_FB_CONFIG_ID;
+  if (config) q.set("config_id", config);
+  else q.set("scope", (community ? FACEBOOK_COMMUNITY_SCOPES : FACEBOOK_SCOPES).join(","));
   return `https://www.facebook.com/${GRAPH_VERSION}/dialog/oauth?${q}`;
 }
 

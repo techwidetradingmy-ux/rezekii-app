@@ -4,9 +4,15 @@ import type { ContainerStatus } from "./instagram.ts";
 /** Threads API (its own app id and secret inside the Meta app). Tokens last 60 days. */
 const TH = (path: string) => `https://graph.threads.net/${THREADS_VERSION}/${path}`;
 export const THREADS_SCOPES = ["threads_basic", "threads_content_publish", "threads_manage_replies"];
+/** Community (Admins, owner 23 Oct 2026): numbers, replies and mentions, keyword search, profile lookup, delete, places. */
+export const THREADS_COMMUNITY_SCOPES = [
+  ...THREADS_SCOPES, "threads_manage_insights", "threads_read_replies", "threads_manage_mentions", "threads_keyword_search", "threads_profile_discovery",
+  "threads_delete", "threads_location_tagging",
+];
 
-export function threadsAuthUrl(state: string, redirectUri: string): string {
-  const q = new URLSearchParams({ client_id: metaApp("threads").id, redirect_uri: redirectUri, scope: THREADS_SCOPES.join(","), response_type: "code", state });
+export function threadsAuthUrl(state: string, redirectUri: string, community = false): string {
+  const scope = (community ? THREADS_COMMUNITY_SCOPES : THREADS_SCOPES).join(",");
+  const q = new URLSearchParams({ client_id: metaApp("threads").id, redirect_uri: redirectUri, scope, response_type: "code", state });
   return `https://threads.net/oauth/authorize?${q}`;
 }
 
