@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { AUTHOR_TYPES, CATEGORIES, FOLLOWER_BANDS, TT_LEVELS, bestSlot, mytDay, mytHour, planDay, planNewest } from "./plan.ts";
+import { AUTHOR_TYPES, CATEGORIES, FOLLOWER_BANDS, TT_LEVELS, bestSlot, mytDay, mytHour, mytWeekday, planDay, planNewest } from "./plan.ts";
 
 // 2026-10-13 06:30 in Malaysia = 2026-10-12 22:30 UTC.
 const now = Date.parse("2026-10-12T22:30:00Z");
@@ -27,7 +27,11 @@ test("refresh plan: first run fills 30 days, later runs only the missing ones", 
   const older = first.filter((t) => t.kind === "best" && t.priority === 4);
   assert.equal(older.length, 29 * lists);
   assert.equal(new Set(first.map((t) => t.key)).size, first.length, "keys are unique");
-  assert.equal(first.filter((t) => t.kind === "marketplace").length, FOLLOWER_BANDS.length);
+  // The usual marketplace search is weekly: 13 Oct 2026 is a Tuesday, the day before a Monday.
+  assert.equal(mytWeekday(now), 2);
+  assert.equal(first.filter((t) => t.kind === "marketplace").length, 0);
+  const monday = Date.parse("2026-10-11T22:30:00Z"); // 12 October, 06:30 in Malaysia
+  assert.equal(planDay(monday, new Set()).filter((t) => t.kind === "marketplace").length, FOLLOWER_BANDS.length);
   assert.equal(first[0].kind, "tap_campaigns");
   assert.equal(first.filter((t) => t.kind === "levels").length, 1);
   assert.deepEqual(first.find((t) => t.kind === "rankings")?.params, { day: "2026-10-11" });

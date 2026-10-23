@@ -11,6 +11,14 @@ export const mytDay = (now: number, n = 0) => new Date(now + MYT - n * DAY).toIS
 /** Malaysia's hour of the day, 0-23. */
 export const mytHour = (now: number) => new Date(now + MYT).getUTCHours();
 
+/**
+ * The usual Creator Marketplace search runs once a week, on Mondays (owner, 23 Oct 2026: every creator is in already, and the
+ * daily search was most of Rezekii's server use). The level-split search still runs on the 1st.
+ */
+export const MARKET_WEEKDAY = 1;
+/** Malaysia's day of the week, 0 = Sunday. */
+export const mytWeekday = (now: number) => new Date(now + MYT).getUTCDay();
+
 /** Tasks are planned right after midnight (Malaysia time), so the new day starts with fresh data (owner, 14 Oct 2026). */
 export const PLAN_HOUR = 0;
 export const DATA_LAG_DAYS = 2;
@@ -112,12 +120,13 @@ export function planDay(now: number, haveDays: Set<string>, newestBuilt = false,
   // linked creators' agency status (every 2 weeks) and TikTok level (on the 1st): queues one task per creator who is due
   tasks.push({ key: "agency", kind: "agency", params: {}, priority: 6 });
   // On the 1st the marketplace search is also split by TikTok's creator level, so each creator's level comes with it (levels
-  // change monthly). It takes more than a day, so it carries on past midnight and the usual search waits for it.
+  // change monthly). It takes more than a day, so it carries on past midnight and the usual search waits for it. The usual
+  // search runs on Mondays.
   if (mytDay(now).endsWith("-01")) {
     for (const [i, level] of TT_LEVELS.entries())
       for (const [min, max] of FOLLOWER_BANDS)
         tasks.push({ key: `marketplace|lv${i}|${min}-${max ?? "up"}`, kind: "marketplace", params: { min, max, level }, priority: 6 });
-  } else if (!levelPassOpen) {
+  } else if (!levelPassOpen && mytWeekday(now) === MARKET_WEEKDAY) {
     for (const [min, max] of FOLLOWER_BANDS)
       tasks.push({ key: `marketplace|${min}-${max ?? "up"}`, kind: "marketplace", params: { min, max }, priority: 6 });
   }

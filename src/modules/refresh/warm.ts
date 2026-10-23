@@ -6,11 +6,14 @@ const PAGES = ["/", "/signin", "/app", "/app/marketplace", "/app/my-tap", "/app/
 const DATA = ["/api/rankings/daily", "/api/rankings/top", "/api/rankings/sellers", "/api/rankings/list", "/api/rankings/creator"];
 
 /**
- * Keeps the site quick on a first visit (owner, 15 Oct 2026): every 4 minutes the timer opens each page and the Rankings data
- * routes, so their servers and caches are already running when a creator arrives. A failed warm-up changes nothing.
+ * Keeps the site quick on a first visit (owner, 15 Oct 2026): the timer opens each page and the Rankings data routes, so their
+ * servers and caches are already running when a creator arrives. Every 15 minutes from 7 am to 1 am Malaysia time (owner,
+ * 23 Oct 2026: fewer warm-ups, less server use; the timer calls on every quarter hour). A failed warm-up changes nothing.
  */
 export async function warmSite(origin: string, token: string, now = Date.now()): Promise<number> {
-  if (new Date(now).getUTCMinutes() % 4 !== 0) return 0;
+  const at = new Date(now);
+  const hour = (at.getUTCHours() + 8) % 24;
+  if (at.getUTCMinutes() % 15 !== 0 || (hour >= 1 && hour < 7)) return 0;
   const hit = (path: string, headers: Record<string, string> = {}) =>
     fetch(origin + path, { redirect: "manual", cache: "no-store", headers, signal: AbortSignal.timeout(20_000) }).then((r) => r.body?.cancel(), () => undefined);
   await Promise.all([...PAGES.map((p) => hit(p)), ...DATA.map((p) => hit(p, { "x-warm": token }))]);

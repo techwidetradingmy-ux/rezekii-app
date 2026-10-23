@@ -105,8 +105,11 @@ export async function marketplaceOpen(): Promise<boolean> {
   return ((await res.json()) as unknown[]).length > 0;
 }
 
-/** How old a profile may get before it is read again, so a WhatsApp number or email added to a bio later is picked up. */
-export const DETAIL_REFRESH_DAYS = 30;
+/**
+ * How old a profile may get before it is read again, so a WhatsApp number or email added to a bio later is picked up. 90 days
+ * (owner, 23 Oct 2026: every creator has a profile, and re-reading them all monthly used most of Rezekii's server time).
+ */
+export const DETAIL_REFRESH_DAYS = 90;
 
 /**
  * Creators whose profile is due: never read yet (best-seller creators first), then, once everyone has one, profiles older

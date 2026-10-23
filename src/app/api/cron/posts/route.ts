@@ -10,7 +10,8 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 /**
- * Called every minute by the Supabase timer (pg_cron + pg_net) with the token kept in Supabase Vault. TikTok (up to 2 due
+ * Called by the Supabase timer (pg_cron + pg_net) with the token kept in Supabase Vault: every minute while posting work is
+ * waiting, and every quarter hour anyway for the upkeep below (see posting_work_due). TikTok (up to 2 due
  * posts, then the ones it's processing) and Facebook, Instagram and Threads run side by side, so a slow TikTok upload
  * doesn't hold the others up.
  */
