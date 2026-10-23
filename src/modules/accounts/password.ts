@@ -7,6 +7,8 @@ const scrypt = (password: string, salt: Buffer, keylen: number, opts: ScryptOpti
   new Promise<Buffer>((resolve, reject) => scryptCb(password, salt, keylen, { ...opts, maxmem: 64 * 1024 * 1024 }, (err, key) => (err ? reject(err) : resolve(key))));
 
 export const PASSWORD_MIN = 8;
+/** Admins can see every creator and post to connected Pages, so their passwords are longer. */
+export const ADMIN_PASSWORD_MIN = 12;
 export const PASSWORD_MAX = 128;
 
 export async function hashPassword(password: string): Promise<string> {
@@ -53,10 +55,10 @@ export function emailLoginProblem(a: { role: string; hasPassword: boolean; curre
   return a.password === undefined ? null : passwordProblem(a.password);
 }
 
-/** Why a new password is not accepted, or null when it is fine. */
-export function passwordProblem(password: unknown): string | null {
+/** Why a new password is not accepted, or null when it is fine. `min` is ADMIN_PASSWORD_MIN for admin accounts. */
+export function passwordProblem(password: unknown, min = PASSWORD_MIN): string | null {
   const pw = String(password ?? "");
-  if (pw.length < PASSWORD_MIN) return `Use at least ${PASSWORD_MIN} characters.`;
+  if (pw.length < min) return `Use at least ${min} characters.`;
   if (pw.length > PASSWORD_MAX) return `Use at most ${PASSWORD_MAX} characters.`;
   return null;
 }

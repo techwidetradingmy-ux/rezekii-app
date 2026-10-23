@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { cleanEmail, emailLoginProblem, hashPassword, passwordProblem, verifyPassword } from "./password.ts";
+import { ADMIN_PASSWORD_MIN, cleanEmail, emailLoginProblem, hashPassword, passwordProblem, verifyPassword } from "./password.ts";
 
 test("password: hash and verify", async () => {
   const h = await hashPassword("correct horse battery");
@@ -24,6 +24,9 @@ test("password: email and length rules", () => {
   assert.equal(passwordProblem("short"), "Use at least 8 characters.");
   assert.equal(passwordProblem("long enough"), null);
   assert.equal(passwordProblem("x".repeat(129)), "Use at most 128 characters.");
+  // Admin accounts need 12.
+  assert.equal(passwordProblem("eleven char", ADMIN_PASSWORD_MIN), "Use at least 12 characters.");
+  assert.equal(passwordProblem("twelve chars", ADMIN_PASSWORD_MIN), null);
 });
 
 test("email sign-in: added with an email and a password, then each changes on its own with the current password", () => {

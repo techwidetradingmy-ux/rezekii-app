@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import type { ActivityKind } from "@/modules/admin/admins.ts";
+import type { ActivityKind, AdminRow } from "@/modules/admin/admins.ts";
 import type { SettingsData } from "@/modules/admin/settings.ts";
 import { Hud, useToast } from "../../marketplace/use-tap-actions";
 import { saveTheme, useTheme } from "../../use-theme";
@@ -33,7 +33,9 @@ export function SettingsView({ d, me, startTab }: { d: SettingsData; me: string;
   const theme = useTheme();
   const [tab, setTab] = useState(startTab);
   const [newEmail, setNewEmail] = useState("");
-  const [remove, setRemove] = useState<string | null>(null);
+  const [remove, setRemove] = useState<AdminRow | null>(null);
+  const [pwFor, setPwFor] = useState<string | null>(null);
+  const [pw, setPw] = useState("");
   const [times, setTimes] = useState(d.times);
   const [newTime, setNewTime] = useState("");
   const [lq, setLq] = useState("");
@@ -59,6 +61,13 @@ export function SettingsView({ d, me, startTab }: { d: SettingsData; me: string;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)) return flash("Enter a valid email address", false);
     if (d.admins.some((a) => a.email === em)) return flash("Already an admin", false);
     if (await call("/api/admin/admins", { method: "POST", body: JSON.stringify({ email: em }) }, `${em} can sign in with Google as admin`)) setNewEmail("");
+  }
+  async function setPassword(a: AdminRow) {
+    if (!a.id || !pw) return;
+    if (await call(`/api/admin/creators/${a.id}`, { method: "POST", body: JSON.stringify({ password: pw }) }, `New password set for ${a.email}`)) {
+      setPw("");
+      setPwFor(null);
+    }
   }
   async function saveTimes(next: string[], msg: string) {
     const j = await call("/api/admin/settings", { method: "PUT", body: JSON.stringify({ times: next }) }, msg);
@@ -86,7 +95,7 @@ export function SettingsView({ d, me, startTab }: { d: SettingsData; me: string;
           <div style={{ padding: "20px 22px 12px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
             <span style={{ flex: 1, minWidth: 240, display: "flex", flexDirection: "column", gap: 4 }}>
               <h2 id="stadm" className="nv-h2">Admins</h2>
-              <span style={{ fontSize: 14, color: "var(--muted)" }}>Anyone on this list can sign in with Google as an admin. All admins can do everything.</span>
+              <span style={{ fontSize: 14, color: "var(--muted)" }}>Anyone on this list can sign in as an admin: with Google, or with email and password for accounts made admin in Creators. All admins can do everything.</span>
             </span>
             <form action="/api/auth/signout" method="post" style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontSize: 13, color: "var(--muted)" }}>Signed in as {me}</span>
@@ -94,16 +103,24 @@ export function SettingsView({ d, me, startTab }: { d: SettingsData; me: string;
             </form>
           </div>
           {d.admins.map((a, i) => (
-            <div key={a.email} className="nv-row" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 14, padding: "14px 22px", borderTop: "1px solid var(--line)" }}>
+            <div key={a.id ?? a.email} className="nv-row" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 14, padding: "14px 22px", borderTop: "1px solid var(--line)" }}>
               <span aria-hidden="true" style={{ width: 40, height: 40, borderRadius: "50%", background: COLORS[i % COLORS.length], color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800 }}>{a.email.charAt(0).toUpperCase()}</span>
               <span style={{ flex: 1, minWidth: 220, display: "flex", flexDirection: "column", gap: 2 }}>
                 <span style={{ fontWeight: 700, overflowWrap: "anywhere" }}>{a.email}</span>
                 <span style={{ fontSize: 13, color: "var(--muted)" }}>
                   {a.email === me.toLowerCase() ? "You · " : ""}
-                  {a.fixed ? "Set in Rezekii's server settings" : `Added by ${a.addedBy ?? "an admin"}${a.addedAt ? ` on ${new Date(a.addedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" })}` : ""}`}
+                  {a.id ? "Signs in with email and password" : a.fixed ? "Set in Rezekii's server settings" : `Added by ${a.addedBy ?? "an admin"}${a.addedAt ? ` on ${new Date(a.addedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" })}` : ""}`}
                 </span>
               </span>
-              <button type="button" className="nv-btn2 nv-sm nv-press" onClick={() => setRemove(a.email)} disabled={a.fixed || a.email === me.toLowerCase()} style={{ color: "var(--red)" }}>Remove</button>
+              {a.id && <button type="button" className="nv-btn2 nv-sm nv-press" onClick={() => { setPw(""); setPwFor(pwFor === a.id ? null : (a.id ?? null)); }}>New password</button>}
+              <button type="button" className="nv-btn2 nv-sm nv-press" onClick={() => setRemove(a)} disabled={a.fixed || a.email === me.toLowerCase()} style={{ color: "var(--red)" }}>Remove</button>
+              {a.id && pwFor === a.id && (
+                <span className="nv-expand" style={{ flexBasis: "100%", display: "flex", flexWrap: "wrap", gap: 8, paddingLeft: 54 }}>
+                  <label htmlFor={`stpw-${a.id}`} style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>New password for {a.email}</label>
+                  <input id={`stpw-${a.id}`} type="password" className="nv-input" autoComplete="new-password" placeholder="At least 12 characters" value={pw} onChange={(e) => setPw(e.target.value)} onKeyDown={(e) => e.key === "Enter" && setPassword(a)} style={{ flex: "1 1 200px", height: 40 }} />
+                  <button type="button" className="nv-btn nv-sm nv-press" disabled={busy || !pw} onClick={() => setPassword(a)} style={{ height: 40 }}>Set password</button>
+                </span>
+              )}
             </div>
           ))}
           <div style={{ padding: "16px 22px 20px", borderTop: "1px solid var(--line)", display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
@@ -243,12 +260,12 @@ export function SettingsView({ d, me, startTab }: { d: SettingsData; me: string;
           <button type="button" className="nv-dimalert" aria-label="Cancel" onClick={() => setRemove(null)} />
           <div className="nv-alert" role="alertdialog" aria-modal="true" aria-labelledby="stat">
             <div style={{ padding: "20px 18px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
-              <span id="stat" style={{ fontSize: 17, fontWeight: 700, overflowWrap: "anywhere" }}>Remove {remove}?</span>
+              <span id="stat" style={{ fontSize: 17, fontWeight: 700, overflowWrap: "anywhere" }}>Remove {remove.email}?</span>
               <span style={{ fontSize: 13, lineHeight: 1.45 }}>They won&apos;t be able to use admin screens any more. Their sign-ins end now.</span>
             </div>
             <div className="nv-alert-b">
               <button type="button" onClick={() => setRemove(null)}>Cancel</button>
-              <button type="button" className="danger" disabled={busy} onClick={async () => { const em = remove; setRemove(null); await call(`/api/admin/admins?email=${encodeURIComponent(em)}`, { method: "DELETE" }, `${em} removed`); }}>Remove</button>
+              <button type="button" className="danger" disabled={busy} onClick={async () => { const a = remove; setRemove(null); await call(a.id ? `/api/admin/admins?id=${a.id}` : `/api/admin/admins?email=${encodeURIComponent(a.email)}`, { method: "DELETE" }, `${a.email} removed`); }}>Remove</button>
             </div>
           </div>
         </>

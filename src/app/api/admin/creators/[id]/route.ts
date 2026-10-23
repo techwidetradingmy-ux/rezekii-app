@@ -1,7 +1,7 @@
 import { after, NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
-import { actorName } from "@/modules/admin/admins.ts";
-import { removeCreator, setGoldInvite } from "@/modules/admin/creators.ts";
+import { actorName, makeEmailAdmin } from "@/modules/admin/admins.ts";
+import { removeCreator, setGoldInvite, setPasswordFor } from "@/modules/admin/creators.ts";
 import { approvedCreatorToken, decideCreator } from "@/modules/creator-accounts/access.ts";
 import { syncCreatorOrders } from "@/modules/sales/orders.ts";
 
@@ -16,12 +16,24 @@ async function admin(req: NextRequest) {
   return user?.role === "admin" ? user : null;
 }
 
-/** Gold invitation { gold: true | false }, or the TikTok Shop approval { decision: "approve" | "reject", reason }. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Gold invitation { gold: true | false }, the TikTok Shop approval { decision: "approve" | "reject", reason }, a new password
+ * for an email-and-password account { password }, or making such an account an admin { admin: true }.
+ */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await admin(req);
   if (!user) return NextResponse.json({ error: "Admins only." }, { status: 403 });
   const id = (await params).id;
-  const b = (await req.json().catch(() => ({}))) as { gold?: boolean; decision?: string; reason?: string };
+  const b = (await req.json().catch(() => ({}))) as { gold?: boolean; decision?: string; reason?: string; password?: string; admin?: boolean };
+  if (b.password !== undefined || b.admin === true) {
+    if (!UUID.test(id)) return NextResponse.json({ error: "That account no longer exists." }, { status: 404 });
+    if (b.admin === true)
+      return (await makeEmailAdmin(id, actorName(user.email))) ? NextResponse.json({ ok: true }) : NextResponse.json({ error: "Only an account that signs in with email and password alone can be made admin." }, { status: 409 });
+    const r = await setPasswordFor(id, b.password, { id: user.id, name: actorName(user.email) });
+    return r.ok ? NextResponse.json(r) : NextResponse.json({ error: r.error }, { status: r.status });
+  }
   if (b.decision === "approve" || b.decision === "reject") {
     const reason = String(b.reason ?? "").trim().slice(0, 200);
     if (b.decision === "reject" && !reason) return NextResponse.json({ error: "Add a reason the creator will see." }, { status: 400 });

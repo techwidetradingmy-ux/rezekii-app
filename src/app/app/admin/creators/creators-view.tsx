@@ -20,6 +20,12 @@ const ago = (iso: string, now: number) => {
   const d = Math.floor((now - Date.parse(iso)) / 86400_000);
   return d <= 0 ? "today" : d === 1 ? "yesterday" : d < 30 ? `${d} days ago` : new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kuala_Lumpur" });
 };
+/** Exact date and time (Malaysia), so an admin can tell which account they just created. */
+const when = (iso: string) => new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kuala_Lumpur" });
+const methods = (c: CreatorRow) => [c.google && "Google", c.tiktokLogin && `TikTok ${c.tiktokLogin}`, c.password && "Email and password"].filter(Boolean).join(" · ") || "—";
+const socialOf = (c: CreatorRow, platform: string) => c.social.filter((s) => s.platform === platform).map((s) => `${s.name}${s.active ? "" : " (reconnect)"}`).join(", ") || "Not connected";
+/** Accounts that sign in with email and password alone: the only ones that can be made admin here. */
+const emailOnly = (c: CreatorRow) => c.password && !c.google && !c.tiktokLogin;
 
 function Avatar({ c, size }: { c: CreatorRow; size: number }) {
   return c.avatar ? (
@@ -43,11 +49,13 @@ export function CreatorsView({ creators, places, auto, now }: { creators: Creato
   const [busy, setBusy] = useState(false);
   const [rejecting, setRejecting] = useState<string | null>(null);
   const [reason, setReason] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [makeAdmin, setMakeAdmin] = useState(false);
   const used = Math.min(places, 25);
   const waitlist = creators.filter((c) => c.access === "waitlist" || c.access === "invited").sort((a, b) => (a.requestedAt ?? "").localeCompare(b.requestedAt ?? ""));
   const inTab = [(c: CreatorRow) => c.access === "waiting", (c: CreatorRow) => c.access === "waitlist" || c.access === "invited", (c: CreatorRow) => c.access === "approved", (c: CreatorRow) => c.access === "rejected", () => true];
   const s = q.trim().toLowerCase();
-  const shown = creators.filter((c) => inTab[tab](c) && (!s || `${c.handle} ${c.name}`.toLowerCase().includes(s)));
+  const shown = creators.filter((c) => inTab[tab](c) && (!s || [c.handle, c.name, c.email, c.tiktokAccount, c.shopAccount, ...c.social.map((x) => x.name)].join(" ").toLowerCase().includes(s)));
   const counts = inTab.map((f) => creators.filter(f).length);
 
   const closePanel = () => {
@@ -93,6 +101,28 @@ export function CreatorsView({ creators, places, auto, now }: { creators: Creato
     if (!r.ok) return flash(j.error || "Could not change the invitation.", false);
     flash(invited ? `${c.handle} is now Gold` : `Gold invitation withdrawn · ${c.handle} moves at the next daily update`);
     setOpen({ ...c, goldInvited: invited, level: invited ? "gold" : c.level });
+    router.refresh();
+  }
+  async function setPassword(c: CreatorRow) {
+    if (busy || !newPw) return;
+    setBusy(true);
+    const r = await fetch(`/api/admin/creators/${c.id}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ password: newPw }) });
+    const j = (await r.json().catch(() => ({}))) as { error?: string };
+    setBusy(false);
+    if (!r.ok) return flash(j.error || "Could not set the password.", false);
+    setNewPw("");
+    flash(`New password set for ${c.email ?? c.handle} · their other sign-ins ended`);
+  }
+  async function grantAdmin() {
+    if (!open || busy) return;
+    setBusy(true);
+    const r = await fetch(`/api/admin/creators/${open.id}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ admin: true }) });
+    const j = (await r.json().catch(() => ({}))) as { error?: string };
+    setBusy(false);
+    setMakeAdmin(false);
+    if (!r.ok) return flash(j.error || "Could not make this account an admin.", false);
+    flash(`${open.email ?? open.handle} is now an admin · listed in Settings → Admins`);
+    closePanel();
     router.refresh();
   }
   async function remove() {
@@ -156,7 +186,7 @@ export function CreatorsView({ creators, places, auto, now }: { creators: Creato
         <div style={{ padding: "18px 22px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
           <h2 id="crlist" className="nv-h2" style={{ flex: 1, minWidth: 180 }}>Creator accounts</h2>
           <label htmlFor="crq" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Search creators</label>
-          <input id="crq" type="text" className="nv-input" placeholder="Search handle or name" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 240, maxWidth: "100%" }} />
+          <input id="crq" type="text" className="nv-input" placeholder="Search handle, name or email" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 240, maxWidth: "100%" }} />
           <div className="nv-seg" role="group" aria-label="Status" style={{ width: 560, maxWidth: "100%" }}>
             <span className="nv-segthumb" aria-hidden="true" style={{ width: "calc(20% - 1px)", transform: `translateX(${tab * 100}%)` }} />
             {TABS.map((label, i) => <button key={label} type="button" className={tab === i ? "on" : ""} aria-pressed={tab === i} onClick={() => setTab(i)}>{label} {counts[i]}</button>)}
@@ -165,11 +195,11 @@ export function CreatorsView({ creators, places, auto, now }: { creators: Creato
         {shown.map((c) => (
           <div key={c.id} className="nv-row" style={{ padding: "14px 22px", borderTop: "1px solid var(--line)", display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 14 }}>
-            <button type="button" onClick={() => { setClosing(false); setOpen(c); }} style={{ border: 0, background: "transparent", padding: 0, display: "flex", alignItems: "center", gap: 14, color: "var(--text)", textAlign: "left", flex: 1, minWidth: 240, cursor: "pointer" }}>
+            <button type="button" onClick={() => { setClosing(false); setNewPw(""); setOpen(c); }} style={{ border: 0, background: "transparent", padding: 0, display: "flex", alignItems: "center", gap: 14, color: "var(--text)", textAlign: "left", flex: 1, minWidth: 240, cursor: "pointer" }}>
               <Avatar c={c} size={44} />
               <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
                 <span style={{ fontSize: 15, fontWeight: 800, overflowWrap: "anywhere" }}>{c.handle} {c.name !== c.handle.replace("@", "") && <span style={{ fontWeight: 600, color: "var(--muted)" }}>· {c.name}</span>}</span>
-                <span style={{ fontSize: 13, color: "var(--muted)" }}>Joined {ago(c.joined, now)}{c.links ? ` · ${n(c.links)} links made` : ""}{c.samples ? ` · ${n(c.samples)} samples` : ""}</span>
+                <span style={{ fontSize: 13, color: "var(--muted)", overflowWrap: "anywhere" }}>{c.email && c.email !== c.handle ? `${c.email} · ` : ""}Joined {ago(c.joined, now)}{c.links ? ` · ${n(c.links)} links made` : ""}{c.samples ? ` · ${n(c.samples)} samples` : ""}</span>
               </span>
             </button>
             <span style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -218,12 +248,46 @@ export function CreatorsView({ creators, places, auto, now }: { creators: Creato
               </span>
             </div>
             <div style={{ borderRadius: 18, background: "var(--surface2)", overflow: "hidden" }}>
-              {([["TikTok Shop", open.shop ? "Linked" : "Not linked"], ["Status", ACCESS[open.access][0]], ["TikTok", open.tiktok ? "Connected" : "Not connected"], ["Level", `${LEVEL[open.level]}${open.goldInvited ? " · Gold invited" : ""}`], ["Links made", n(open.links)], ["Samples asked for", n(open.samples)], ["Joined", ago(open.joined, now)]] as const).map(([k, v], i) => (
+              {([
+                ["Email", open.email ?? "—"],
+                ["Signs in with", methods(open)],
+                ["TikTok Shop", open.shopAccount ? `${open.shopAccount} · linked` : "Not linked"],
+                ["Status", ACCESS[open.access][0]],
+                ["TikTok (posting)", open.tiktokAccount ?? "Not connected"],
+                ["Facebook", socialOf(open, "facebook")],
+                ["Instagram", socialOf(open, "instagram")],
+                ["Threads", socialOf(open, "threads")],
+                ["Level", `${LEVEL[open.level]}${open.goldInvited ? " · Gold invited" : ""}`],
+                ["Links made", n(open.links)],
+                ["Samples asked for", n(open.samples)],
+                ["Last sign-in", open.lastSignIn ? when(open.lastSignIn) : "—"],
+                ["Joined", when(open.joined)],
+              ] as const).map(([k, v], i) => (
                 <div key={k} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "11px 14px", borderTop: i ? "1px solid var(--border)" : 0, fontSize: 14 }}>
-                  <span style={{ color: "var(--muted)" }}>{k}</span><span style={{ fontWeight: 700, textAlign: "right" }}>{v}</span>
+                  <span style={{ color: "var(--muted)", flexShrink: 0 }}>{k}</span><span style={{ fontWeight: 700, textAlign: "right", overflowWrap: "anywhere" }}>{v}</span>
                 </div>
               ))}
             </div>
+            {open.password && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 16, borderRadius: 18, background: "var(--surface2)" }}>
+                <span style={{ fontWeight: 800 }}>Set a new password</span>
+                <span style={{ fontSize: 13, color: "var(--muted)" }}>For when they forget it. Tell them the new one; their other sign-ins end. Passwords are never shown, only replaced.</span>
+                <span style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  <label htmlFor="crpw" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>New password for {open.email ?? open.handle}</label>
+                  <input id="crpw" type="password" className="nv-input" autoComplete="new-password" placeholder="At least 8 characters" value={newPw} onChange={(e) => setNewPw(e.target.value)} onKeyDown={(e) => e.key === "Enter" && setPassword(open)} style={{ flex: "1 1 180px", height: 40 }} />
+                  <button type="button" className="nv-btn2 nv-sm nv-press" disabled={busy || !newPw} onClick={() => setPassword(open)} style={{ height: 40 }}>Set password</button>
+                </span>
+              </div>
+            )}
+            {emailOnly(open) && (
+              <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12, padding: 16, borderRadius: 18, background: "var(--surface2)" }}>
+                <span style={{ flex: "1 1 220px", display: "flex", flexDirection: "column", gap: 2 }}>
+                  <span style={{ fontWeight: 800 }}>Admin access</span>
+                  <span style={{ fontSize: 13, color: "var(--muted)" }}>Only for an account you created yourself: anyone can sign up with any email address. This one was created {when(open.joined)}.</span>
+                </span>
+                <button type="button" className="nv-btn2 nv-sm nv-press" disabled={busy} onClick={() => setMakeAdmin(true)}>Make admin</button>
+              </div>
+            )}
             <div style={{ display: "flex", alignItems: "center", gap: 14, padding: 16, borderRadius: 18, background: open.goldInvited ? "#fff8e1" : "var(--surface2)", color: open.goldInvited ? "#3d2a00" : "var(--text)" }}>
               <Emblem level="gold" size={44} />
               <span style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
@@ -233,6 +297,22 @@ export function CreatorsView({ creators, places, auto, now }: { creators: Creato
               <button type="button" className={open.goldInvited ? "nv-btn2 nv-sm nv-press" : "nv-btn nv-sm nv-press"} disabled={busy} onClick={() => gold(open, !open.goldInvited)}>{open.goldInvited ? "Withdraw" : "Invite to Gold"}</button>
             </div>
             <button type="button" className="nv-link" onClick={() => { setTyped(""); setAlert(true); }} style={{ color: "var(--red)", alignSelf: "flex-start" }}>Remove this creator from Rezekii</button>
+          </div>
+        </>
+      )}
+
+      {makeAdmin && open && (
+        <>
+          <button type="button" className="nv-dimalert" aria-label="Cancel" onClick={() => setMakeAdmin(false)} />
+          <div className="nv-alert" role="alertdialog" aria-modal="true" aria-labelledby="cradm">
+            <div style={{ padding: "20px 18px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
+              <span id="cradm" style={{ fontSize: 17, fontWeight: 700, overflowWrap: "anywhere" }}>Make {open.email ?? open.handle} an admin?</span>
+              <span style={{ fontSize: 13, lineHeight: 1.45 }}>Created {when(open.joined)}. It will see every creator and can post to connected Pages, signing in with its email and password. Only continue if you created this account. Admin passwords need 12 characters: set a new one here if theirs is shorter. Remove admin any time in Settings → Admins.</span>
+            </div>
+            <div className="nv-alert-b">
+              <button type="button" onClick={() => setMakeAdmin(false)}>Cancel</button>
+              <button type="button" onClick={grantAdmin} disabled={busy}>Make admin</button>
+            </div>
           </div>
         </>
       )}
