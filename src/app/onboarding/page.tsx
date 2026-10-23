@@ -32,8 +32,8 @@ const Check = ({ size = 20, color = "#0d1117" }: { size?: number; color?: string
 );
 
 /**
- * Getting set up, as designed in the mockup (Creator onboarding): signed in, link TikTok Shop (required), Techwide's approval.
- * Every creator page sends people here until their TikTok Shop is linked and approved.
+ * Getting set up, as designed in the mockup (Creator onboarding): signed in, link TikTok Shop, Techwide's approval. Linking
+ * is recommended, not required (owner, 23 Oct 2026): the creator pages work without it and their banner leads here.
  */
 export default async function Onboarding({ searchParams }: { searchParams: Promise<{ result?: string }> }) {
   const user = await currentUser();
@@ -49,7 +49,7 @@ export default async function Onboarding({ searchParams }: { searchParams: Promi
   const invited = s.status === "invited" && !linked;
   const waitlist = s.status === "waitlist" && !linked;
   const handle = s.shop ? `@${s.shop.username}` : "";
-  const badge = linked ? [t("Linked"), "b-green"] : waitlist ? [t("Waitlist"), "b-amber"] : invited ? [t("Your place is ready"), "b-green"] : [t("Required"), "b-solid"];
+  const badge = linked ? [t("Linked"), "b-green"] : waitlist ? [t("Waitlist"), "b-amber"] : invited ? [t("Your place is ready"), "b-green"] : [t("Recommended"), "b-solid"];
   const reason = t("Reason from Techwide: \"{reason}\" ").split("{reason}");
 
   return (
@@ -71,7 +71,8 @@ export default async function Onboarding({ searchParams }: { searchParams: Promi
           </div>
           <div>
             <h1 className="nv-title" style={{ margin: 0, fontSize: 34, fontWeight: 800, letterSpacing: "-0.02em" }}>{t("Let's get you set up")}</h1>
-            <p style={{ margin: "6px 0 0", fontSize: 15, opacity: 0.92 }}>{t("One required step: link your TikTok Shop. Then Techwide approves your account.")}</p>
+            <p style={{ margin: "6px 0 0", fontSize: 15, opacity: 0.92 }}>{t("Link your TikTok Shop to make affiliate links, add products to your showcase and request free samples. Techwide then approves it.")}</p>
+            {step < 3 && <a href="/app" className="ob-skip">{t("Explore Rezekii first")}</a>}
           </div>
           <ol className="ob-steps" aria-label={t("Progress")}>
             {[t("Sign in"), t("Link TikTok Shop"), t("Approval")].map((label, i) => (
@@ -95,7 +96,7 @@ export default async function Onboarding({ searchParams }: { searchParams: Promi
             <span className="ob-ico"><TikTokShopLogo size={38} /></span>
             <span style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
               <h2 id="ob2">{t("Link your TikTok Shop")}</h2>
-              <span className="ob-sub">{t("Required · makes your affiliate links and manages your showcase")}</span>
+              <span className="ob-sub">{t("Recommended · makes your affiliate links and manages your showcase")}</span>
             </span>
             <span className={`nv-badge ${badge[1]}`}>{badge[0]}</span>
           </div>

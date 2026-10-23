@@ -207,14 +207,15 @@ export const PUBLIC: Record<string, string> = {
   // Getting set up
   "Get started · Rezekii": "开始设置 · Rezekii",
   "Let's get you set up": "我们来完成设置吧",
-  "One required step: link your TikTok Shop. Then Techwide approves your account.": "只有一个必需步骤：连接你的 TikTok Shop。之后由 Techwide 审核你的账户。",
+  "Link your TikTok Shop to make affiliate links, add products to your showcase and request free samples. Techwide then approves it.": "连接你的 TikTok Shop，就能生成推广链接、把商品加入橱窗、申请免费样品，之后由 Techwide 审核。",
+  "Explore Rezekii first": "先逛逛 Rezekii",
   "Signed in": "已登录",
   "With TikTok · @{handle}": "通过 TikTok · @{handle}",
   "As {who}": "身份：{who}",
   "your Rezekii account": "你的 Rezekii 账户",
   "Link your TikTok Shop": "连接你的 TikTok Shop",
-  "Required": "必需",
-  "Required · makes your affiliate links and manages your showcase": "必需 · 用于生成你的推广链接并管理你的橱窗",
+  "Recommended": "建议",
+  "Recommended · makes your affiliate links and manages your showcase": "建议 · 用于生成你的推广链接并管理你的橱窗",
   "Name and photo from TikTok Shop": "名字和头像来自 TikTok Shop",
   "Turn any TikTok product link into your own affiliate link": "把任何 TikTok 商品链接转换成你自己的推广链接",
   "Add Marketplace products to your showcase in one tap": "一键把选品广场商品加入橱窗",
@@ -247,6 +248,14 @@ export const PUBLIC: Record<string, string> = {
   "You didn't approve Rezekii in TikTok Shop, so nothing was linked.": "你没有在 TikTok Shop 中授权 Rezekii，因此没有连接任何账户。",
   "The link expired or was opened in a different browser. Try again.": "链接已过期，或是在另一个浏览器中打开的。请重试。",
   "TikTok Shop didn't finish linking. Try again.": "TikTok Shop 没有完成连接。请重试。",
+
+  // The banner on creator pages until TikTok Shop is linked and approved
+  "Link your TikTok Shop to make affiliate links, add products to your showcase and request free samples.": "连接你的 TikTok Shop，就能生成推广链接、把商品加入橱窗、申请免费样品。",
+  "A place freed up for you. Link your TikTok Shop to make affiliate links, add products to your showcase and request free samples.": "有名额为你空出来了。连接你的 TikTok Shop，就能生成推广链接、把商品加入橱窗、申请免费样品。",
+  "Techwide is checking your TikTok Shop link. Affiliate links, showcase and samples turn on once it's approved.": "Techwide 正在审核你的 TikTok Shop 连接。审核通过后，推广链接、橱窗和样品功能就会开启。",
+  "You're on the waitlist for a TikTok Shop place. Affiliate links, showcase and samples turn on once you can link it.": "你在 TikTok Shop 名额的候补名单中。可以连接后，推广链接、橱窗和样品功能就会开启。",
+  "Your TikTok Shop link wasn't approved. You can link it again to ask again.": "你的 TikTok Shop 连接未通过审核。你可以重新连接再次申请。",
+  "See status": "查看状态",
 
   // After linking TikTok Shop (/connected)
   "Your TikTok Shop account is linked and approved. Affiliate links, product lookup and showcase are ready on Rezekii.": "你的 TikTok Shop 账户已连接并通过审核。推广链接、商品查询和橱窗功能已在 Rezekii 上就绪。",

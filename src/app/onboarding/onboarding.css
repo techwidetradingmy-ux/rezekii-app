@@ -5,6 +5,7 @@
 .ob-wrap { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
 .ob-main { max-width: 760px; margin: -64px auto 0; padding: 0 16px 60px; position: relative; display: flex; flex-direction: column; gap: 16px; }
 .ob-logo { position: relative; width: 44px; height: 44px; border-radius: 13px; background: #ffffff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ob-skip { display: inline-block; margin-top: 10px; color: #ffffff; font-size: 14px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 .ob-out { border: 0; background: none; color: #ffffff; font: inherit; font-weight: 700; font-size: 14px; cursor: pointer; padding: 6px 0; }
 .ob-steps { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .ob-steps li { display: flex; flex-direction: column; gap: 8px; font-size: 13px; font-weight: 700; }

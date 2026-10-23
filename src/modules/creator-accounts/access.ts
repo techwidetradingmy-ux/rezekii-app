@@ -121,10 +121,13 @@ export async function unlinkCreator(userId: string, username: string | null): Pr
   await inviteNext();
 }
 
-/** A creator may use Rezekii once their TikTok Shop is linked and Techwide has approved it. */
-export async function creatorReady(userId: string): Promise<boolean> {
+/** Where a creator's TikTok Shop link stands. Rezekii works without it; affiliate links, showcase and samples need "ready". */
+export type ShopStatus = "ready" | "none" | "waiting" | "waitlist" | "invited" | "rejected";
+
+export async function shopStatus(userId: string): Promise<ShopStatus> {
   const [access, linked] = await Promise.all([accessFor(userId), count(`affiliate_connections?user_id=eq.${userId}&select=user_id`)]);
-  return access?.status === "approved" && linked > 0;
+  if (linked > 0) return access?.status === "approved" ? "ready" : "waiting";
+  return access?.status === "waitlist" || access?.status === "invited" || access?.status === "rejected" ? access.status : "none";
 }
 
 /** The TikTok Shop token of an approved creator, or null (not linked, not approved yet, or it could not be renewed). */
