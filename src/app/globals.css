@@ -100,6 +100,14 @@ a { color: var(--gink); }
   .lang-switch button[aria-pressed="true"] { display: none; }
   .site-nav:has(.lang-switch) { column-gap: 8px; }
 }
+/* Admin dashboard / Creator view, for accounts with admin access: in the top bar, and on phones on Account and Settings instead. */
+.view-switch { height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; white-space: nowrap; transition: border-color 0.2s, color 0.2s; }
+.view-switch:hover { border-color: var(--gink); color: var(--gink); }
+.vs-page { display: none; }
+@media (max-width: 480px) {
+  .site-nav .view-switch { display: none; }
+  .vs-page { display: inline-flex; }
+}
 /* The switch on the brand screen (sign-in, Getting set up, sample, connected): top right, clear of the phone's status bar. */
 .rz-langbar { position: absolute; top: calc(16px + env(safe-area-inset-top, 0px)); right: calc(16px + env(safe-area-inset-right, 0px)); z-index: 2; }
 

@@ -9,6 +9,8 @@ import { getLang, tFor } from "@/lib/i18n/server.ts";
 import { BottomNav } from "./bottom-nav";
 import { MenuLinks } from "./menu-links";
 import { NavAccount } from "./nav-account";
+import { adminView } from "./view";
+import { ViewSwitch } from "./view-switch";
 
 export const COMPANY = "Techwide Marketing Sdn Bhd";
 export const COMPANY_NO = "202001017785";
@@ -18,16 +20,18 @@ export { TikTokLogo } from "./tiktok-logo";
 
 /**
  * Top bar. "hero" sits on the homepage band; "plain" is for legal pages; "app" is the signed-in menu. Signed-in people get their
- * photo and Account (Settings for admins) instead of "Sign in". `lang` words the static pages (the homepage is / or /zh); the
- * signed-in menu follows the device's choice. The EN | 中文 switch shows on the homepage and in the creator app.
+ * photo and Account (Settings in the admin dashboard) instead of "Sign in". `lang` words the static pages (the homepage is / or
+ * /zh); the signed-in menu follows the device's choice. The EN | 中文 switch shows on the homepage and the creator pages;
+ * accounts with admin access also get the Admin dashboard / Creator view switch (on phones it's on Account and Settings).
  */
 export async function SiteNav({ variant, staticPage = false, lang = "en" }: { variant: "hero" | "plain" | "app"; staticPage?: boolean; lang?: Lang }) {
   // The homepage stays static (served from the CDN); its account button is checked in the browser.
   const clientAccount = variant === "hero" || staticPage;
   const user = clientAccount ? null : await currentUser();
   const photo = user ? myPhoto(user) : null;
-  // The signed-in app is in English or Chinese for creators; everything else here stays English.
-  const creatorApp = variant === "app" && !!user && user.role !== "admin";
+  // The creator pages are in English or Chinese; the admin dashboard and everything else here stays English.
+  const adminOn = variant === "app" && (await adminView(user));
+  const creatorApp = variant === "app" && !!user && !adminOn;
   const t = tFor(creatorApp ? await getLang() : lang);
   const nav = (
     <nav className={`site-nav site-wrap${variant === "app" ? " site-nav-app" : ""}`} aria-label="Main">
@@ -46,24 +50,25 @@ export async function SiteNav({ variant, staticPage = false, lang = "en" }: { va
           <a href="#faq">{t("FAQ")}</a>
         </>
       ) : variant === "app" ? (
-        <MenuLinks admin={user?.role === "admin"} />
+        <MenuLinks admin={adminOn} />
       ) : (
         <>
           <Link href="/privacy">Privacy Policy</Link>
           <Link href="/terms">Terms of Service</Link>
         </>
       )}
+      {variant === "app" && user?.role === "admin" && <ViewSwitch to={adminOn ? "creator" : "admin"} />}
       {(creatorApp || variant === "hero") && <LangSwitch />}
       {clientAccount ? (
         <NavAccount />
       ) : user ? (
-        <Link href={variant !== "app" ? "/app" : user.role === "admin" ? "/app/admin/settings" : "/app/accounts"} className="site-signin site-account" aria-label={variant === "app" ? (user.role === "admin" ? "Settings" : t("Account")) : "Open Rezekii"}>
+        <Link href={variant !== "app" ? "/app" : adminOn ? "/app/admin/settings" : "/app/accounts"} className="site-signin site-account" aria-label={variant === "app" ? (adminOn ? "Settings" : t("Account")) : "Open Rezekii"}>
           {photo ? (
             // Avatars come from many TikTok and Google CDN hosts, so a plain img (as on /app).
             // eslint-disable-next-line @next/next/no-img-element
             <img src={photo} alt="" width={26} height={26} />
           ) : null}
-          {variant === "app" ? (user.role === "admin" ? "Settings" : t("Account")) : "My account"}
+          {variant === "app" ? (adminOn ? "Settings" : t("Account")) : "My account"}
         </Link>
       ) : (
         <Link href="/signin" className="site-signin">
@@ -76,7 +81,7 @@ export async function SiteNav({ variant, staticPage = false, lang = "en" }: { va
   return (
     <>
       <header className="site-plainnav">{nav}</header>
-      {variant === "app" && user && <BottomNav admin={user.role === "admin"} />}
+      {variant === "app" && user && <BottomNav admin={adminOn} />}
     </>
   );
 }

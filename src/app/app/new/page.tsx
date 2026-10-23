@@ -8,6 +8,7 @@ import { canUseSocial } from "@/modules/social/access.ts";
 import { lastPostChannels, listBrands } from "@/modules/social/brands.ts";
 import { loadRecipe } from "@/modules/social/recipes.ts";
 import { currentUser } from "../../current-user";
+import { adminView } from "../../view";
 import { Composer } from "./composer";
 import { NewPostForm } from "./new-post-form";
 
@@ -29,7 +30,7 @@ export default async function NewPostPage({ searchParams }: { searchParams: Prom
   return (
     <>
       <main className={`site-wrap app-main ${social ? "" : "app-narrow"}`}>
-        <nav className="app-crumbs" aria-label={t("Breadcrumb")}><Link href={user.role === "admin" ? "/app/admin" : "/app"}>{t("Today")}</Link><span aria-hidden="true">›</span><span>{t("New post")}</span></nav>
+        <nav className="app-crumbs" aria-label={t("Breadcrumb")}><Link href={(await adminView(user)) ? "/app/admin" : "/app"}>{t("Today")}</Link><span aria-hidden="true">›</span><span>{t("New post")}</span></nav>
         <h1>{t("New post")}</h1>
         {social ? (
           <Composer tiktok={tiktok} social={channels} brands={brands} last={last} reuse={reuse} connect={q.channel && q.connect ? { channel: q.channel, result: q.connect } : null} />

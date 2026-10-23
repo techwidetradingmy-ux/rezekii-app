@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { todayData } from "@/modules/today/today.ts";
 import { getLang, tFor } from "@/lib/i18n/server.ts";
 import { currentUser } from "../current-user";
+import { adminView } from "../view";
 import { TodayView } from "./today-view";
 
 export const metadata: Metadata = { title: "Today · Rezekii" };
@@ -12,7 +13,7 @@ export const dynamic = "force-dynamic";
 export default async function AppHome() {
   const user = await currentUser();
   if (!user) redirect("/signin");
-  if (user.role === "admin") redirect("/app/admin");
+  if (await adminView(user)) redirect("/app/admin");
   const lang = await getLang();
   const t = tFor(lang);
   const data = await todayData(user, lang);

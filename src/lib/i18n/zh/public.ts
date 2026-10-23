@@ -233,7 +233,6 @@ export const PUBLIC: Record<string, string> = {
   "Join the waitlist": "加入候补名单",
   "Joining…": "正在加入…",
   "Couldn't join the waitlist. Try again.": "无法加入候补名单，请重试。",
-  "Techwide accounts don't need a place.": "Techwide 账户不需要名额。",
   "A place just freed up. Link your TikTok Shop now.": "刚好有名额空出来了。现在就连接你的 TikTok Shop。",
   "Waiting for Techwide to approve": "等待 Techwide 审核",
   "We're checking {handle}. This usually takes about one working day. You'll see the result here.": "我们正在审核 {handle}，通常需要约一个工作日。结果会显示在这里。",

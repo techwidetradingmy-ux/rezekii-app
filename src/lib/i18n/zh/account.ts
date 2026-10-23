@@ -121,4 +121,6 @@ export const ACCOUNT: Record<string, string> = {
   "Vietnam": "越南",
   "Can add affiliate products": "可添加推广商品",
   "Can go LIVE": "可以直播",
+  "Admin dashboard": "管理后台",
+  "Creator view": "达人视图",
 };

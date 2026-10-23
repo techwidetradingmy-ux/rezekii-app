@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { LangProvider, LangSwitch } from "@/lib/i18n/client.tsx";
+import { adminView } from "../view";
+import { ViewSwitch } from "../view-switch";
 import { tx } from "@/lib/i18n/lang.ts";
 import { getLang, tFor } from "@/lib/i18n/server.ts";
 import { wordsFor } from "@/lib/i18n/translate.ts";
@@ -36,7 +38,7 @@ const Check = ({ size = 20, color = "#0d1117" }: { size?: number; color?: string
 export default async function Onboarding({ searchParams }: { searchParams: Promise<{ result?: string }> }) {
   const user = await currentUser();
   if (!user) redirect("/signin");
-  if (user.role === "admin") redirect("/app/admin");
+  if (await adminView(user)) redirect("/app/admin");
   const lang = await getLang();
   const t = tFor(lang);
   const [s, { result }] = await Promise.all([onboardingState(user, lang), searchParams]);
@@ -61,6 +63,7 @@ export default async function Onboarding({ searchParams }: { searchParams: Promi
               <img src="/master-logo-transparent.png" alt="" width={30} height={30} />
             </span>
             <span style={{ fontSize: 20, fontWeight: 800, flex: 1 }}>Rezekii</span>
+            {user.role === "admin" && <ViewSwitch to="admin" />}
             <LangSwitch />
             <form action="/api/auth/signout" method="post">
               <button type="submit" className="ob-out">{t("Sign out")}</button>

@@ -138,7 +138,7 @@ export async function setEmailLogin(userId: string, change: { email?: string | n
   if (!me) return { ok: false, error: "Sign in first.", status: 401 };
   const currentOk = !!me.password_hash && (await verifyPassword(current, me.password_hash));
   const problem = emailLoginProblem({ role: me.role, hasPassword: !!me.password_hash, currentOk, ...change, googleEmail: me.google_sub ? me.email : null });
-  if (problem) return { ok: false, error: problem, status: me.role !== "creator" || (me.password_hash && !currentOk) ? 403 : 400 };
+  if (problem) return { ok: false, error: problem, status: (me.role !== "creator" && me.google_sub) || (me.password_hash && !currentOk) ? 403 : 400 };
   const taken: EmailResult = { ok: false, error: "Another Rezekii account already signs in with this email.", status: 409 };
   if (change.email) {
     const others = (await (await supabaseRest(`app_users?email=eq.${encodeURIComponent(change.email)}&password_hash=not.is.null&id=neq.${userId}&select=id&limit=1`)).json()) as unknown[];

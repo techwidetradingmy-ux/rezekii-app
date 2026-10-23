@@ -62,7 +62,7 @@ export async function joinWaitlist(user: { id: string; tiktok_username: string |
  * or approved when they were approved before, automatic approval is on, or the handle is on the pre-approved list.
  * With every place taken they join the waitlist and nothing is saved.
  */
-export async function linkCreator(user: { id: string; tiktok_username: string | null }, profile: { openId: string; username: string; avatarUrl?: string }, tokens: TokenSet): Promise<LinkResult> {
+export async function linkCreator(user: { id: string; role?: string; tiktok_username: string | null }, profile: { openId: string; username: string; avatarUrl?: string }, tokens: TokenSet): Promise<LinkResult> {
   const [holder] = (await (await supabaseRest(`affiliate_connections?creator_user_open_id=eq.${encodeURIComponent(profile.openId)}&select=user_id&limit=1`)).json()) as { user_id: string | null }[];
   if (holder?.user_id && holder.user_id !== user.id) return "taken";
   const current = await accessFor(user.id);
@@ -74,12 +74,13 @@ export async function linkCreator(user: { id: string; tiktok_username: string | 
   await saveAffiliateConnection({ ...profile, userId: user.id }, tokens);
   // An email or Google account takes the TikTok handle from TikTok Shop, so its TAP sales and samples show up.
   if (!user.tiktok_username) await supabaseRest(`app_users?id=eq.${user.id}&tiktok_username=is.null`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ tiktok_username: handle }) });
-  const approved = current?.status === "approved" || isAllowedDuringProof(handle) || (await autoApprove());
+  // Accounts with admin access don't wait for approval.
+  const approved = current?.status === "approved" || user.role === "admin" || isAllowedDuringProof(handle) || (await autoApprove());
   await supabaseRest("creator_access?on_conflict=user_id", json({
     user_id: user.id, status: approved ? "approved" : "waiting", username: handle, reason: null,
     requested_at: current?.status === "approved" ? current.requestedAt : now(),
     decided_at: approved ? (current?.decidedAt ?? now()) : null,
-    decided_by: approved && current?.status !== "approved" ? (isAllowedDuringProof(handle) ? "pre-approved handle" : "automatic approval") : null,
+    decided_by: approved && current?.status !== "approved" ? (user.role === "admin" ? "admin account" : isAllowedDuringProof(handle) ? "pre-approved handle" : "automatic approval") : null,
   }));
   return approved ? "connected" : "waiting";
 }

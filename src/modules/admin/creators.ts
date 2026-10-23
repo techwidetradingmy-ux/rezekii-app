@@ -39,15 +39,17 @@ export type CreatorRow = {
   /** Facebook Pages, Instagram and Threads accounts connected for posting. */
   social: { platform: string; name: string; active: boolean }[];
   lastSignIn: string | null;
+  /** Has admin access (can switch to the admin dashboard). */
+  admin: boolean;
 };
 
 type U = AppUser & { google_sub: string | null; created_at: string; last_sign_in_at: string | null };
 const tally = <T,>(rows: T[], key: (r: T) => string) => rows.reduce((m, r) => m.set(key(r), (m.get(key(r)) ?? 0) + 1), new Map<string, number>());
 
-/** Every creator account with how they sign in, the accounts they connected, level, links and samples. */
+/** Every account (admins use the creator pages too) with how they sign in, the accounts they connected, level, links and samples. */
 export async function creatorList(): Promise<CreatorRow[]> {
   const [users, levels, conns, shops, links, samples, access, saved, withPassword, socials] = await Promise.all([
-    supabaseRest(`app_users?role=eq.creator&select=${USER_COLUMNS},google_sub,created_at,last_sign_in_at&order=created_at.desc&limit=5000`).then((r) => r.json() as Promise<U[]>),
+    supabaseRest(`app_users?role=in.(creator,admin)&select=${USER_COLUMNS},google_sub,created_at,last_sign_in_at&order=created_at.desc&limit=5000`).then((r) => r.json() as Promise<U[]>),
     supabaseRest("creator_levels?select=user_id,level,gold_invited&limit=5000").then((r) => r.json() as Promise<{ user_id: string; level: Level; gold_invited: boolean }[]>),
     supabaseRest("tiktok_connections?select=user_id,username&limit=5000").then((r) => r.json() as Promise<{ user_id: string; username: string | null }[]>),
     supabaseRest("affiliate_connections?select=username,user_id&limit=5000").then((r) => r.json() as Promise<{ username: string; user_id: string | null }[]>),
@@ -56,7 +58,7 @@ export async function creatorList(): Promise<CreatorRow[]> {
     supabaseRest("creator_access?select=user_id,status,reason,requested_at&limit=5000").then((r) => r.json() as Promise<{ user_id: string; status: AccessStatus; reason: string | null; requested_at: string }[]>),
     savedPhotos().catch(() => new Map<string, string>()),
     // Which accounts have a password (the hashes themselves are never read).
-    supabaseRest("app_users?role=eq.creator&password_hash=not.is.null&select=id&limit=5000").then((r) => r.json() as Promise<{ id: string }[]>),
+    supabaseRest("app_users?role=in.(creator,admin)&password_hash=not.is.null&select=id&limit=5000").then((r) => r.json() as Promise<{ id: string }[]>),
     supabaseRest("social_accounts?select=user_id,platform,name,username,status&order=connected_at&limit=5000").then((r) => r.json() as Promise<{ user_id: string; platform: string; name: string | null; username: string | null; status: string }[]>),
   ]);
   const acc = new Map(access.map((a) => [a.user_id, a]));
@@ -97,6 +99,7 @@ export async function creatorList(): Promise<CreatorRow[]> {
     shopAccount,
     social: social.get(u.id) ?? [],
     lastSignIn: u.last_sign_in_at,
+    admin: u.role === "admin",
     };
   });
 }

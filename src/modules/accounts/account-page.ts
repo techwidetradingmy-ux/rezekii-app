@@ -48,11 +48,11 @@ export async function accountPage(user: AppUser, lang: Lang = "en"): Promise<Acc
     accountOverview(user, tapRows, lang),
     supabaseRest(`affiliate_connections?user_id=eq.${user.id}&select=username,avatar_url,connected_at,tt_level,agency&limit=1`).then((r) => r.json() as Promise<{ username: string; avatar_url: string | null; connected_at: string; tt_level: number | null; agency: "managed" | "independent" | null }[]>),
     supabaseRest(`creator_access?user_id=eq.${user.id}&select=decided_at,status&limit=1`).then((r) => r.json() as Promise<{ decided_at: string | null; status: string }[]>),
-    user.role === "creator" ? salesSummary(user.id, 30) : Promise.resolve(null),
+    salesSummary(user.id, 30),
     levelPage(user.id, user.tiktok_username),
     tapRows,
     savedShowcase(user.id),
-    user.role === "creator" ? shopProfile(user.id) : Promise.resolve({ region: null, permissions: [] as string[], cancelled: false }),
+    shopProfile(user.id),
   ]);
   const withSample = tap.rows.filter((r) => r.stage > 0);
   return {

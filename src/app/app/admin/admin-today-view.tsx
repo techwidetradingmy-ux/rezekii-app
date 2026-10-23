@@ -68,7 +68,7 @@ export function AdminTodayView({ d }: { d: AdminToday }) {
     { label: "Posts today", value: n(d.stats.posts), note: d.stats.postsNote, href: "/app/admin/calendar" },
     { label: "Links made today", value: n(d.stats.linksToday), note: "by all creators", href: "/app/admin/stats" },
     { label: "Creators waiting", value: n(d.stats.creatorsWaiting), note: "approve each account", href: "/app/admin/creators" },
-    { label: "Creator accounts", value: n(d.stats.creators), note: `${d.stats.creatorsShop} linked to TikTok Shop`, href: "/app/admin/accounts" },
+    { label: "Creator accounts", value: n(d.stats.creators), note: `${d.stats.creatorsShop} linked to TikTok Shop`, href: "/app/admin/creators" },
   ];
   const needCount = d.needs.length + d.stats.creatorsWaiting;
 
@@ -215,7 +215,7 @@ export function AdminTodayView({ d }: { d: AdminToday }) {
         </div>
 
         <div style={{ flex: "1 1 320px", display: "flex", flexDirection: "column", gap: 24 }}>
-          <Link href="/app/admin/accounts" className="nv-up nv-card nv-hover" aria-label={`${used} of 25 TikTok Shop places used`} style={{ animationDelay: "100ms", padding: 22, display: "flex", alignItems: "center", gap: 18, textDecoration: "none", color: "var(--text)" }}>
+          <Link href="/app/admin/creators" className="nv-up nv-card nv-hover" aria-label={`${used} of 25 TikTok Shop places used`} style={{ animationDelay: "100ms", padding: 22, display: "flex", alignItems: "center", gap: 18, textDecoration: "none", color: "var(--text)" }}>
             <svg width="96" height="96" viewBox="0 0 96 96" aria-hidden="true" style={{ flexShrink: 0 }}>
               <circle cx="48" cy="48" r="40" fill="none" stroke="var(--seg)" strokeWidth="10" />
               <circle cx="48" cy="48" r="40" fill="none" stroke={used >= 25 ? "#f59e0b" : "#00c073"} strokeWidth="10" strokeLinecap="round" strokeDasharray="251.3" strokeDashoffset={251.3 * (1 - used / 25)} transform="rotate(-90 48 48)" style={{ transition: "stroke-dashoffset 1s cubic-bezier(.2,.7,.2,1)" }} />

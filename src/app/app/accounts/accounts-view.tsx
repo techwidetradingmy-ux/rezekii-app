@@ -64,7 +64,7 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
   });
 
   // The latest orders from TikTok when the page opens (at most every 15 minutes), so the numbers are current without a button.
-  const linked = !!d.shop && me.role !== "admin";
+  const linked = !!d.shop;
   useEffect(() => {
     if (!linked) return;
     let stop = false;
@@ -174,7 +174,8 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
               {shop?.approvedAt && <span className="nv-badge b-green">{t("Approved by Techwide")}</span>}
               {typeof shop?.ttLevel === "number" && <span className="nv-badge ac-tts"><LevelIcon lv={shop.ttLevel} size={15} />TikTok Shop Lv{shop.ttLevel}</span>}
               {shop?.agency === "managed" && <span className="nv-badge b-gray" title={t("TikTok's Creator Marketplace lists you as managed by an agency")}>{t("Agency managed")}</span>}
-              {me.role === "admin" ? <span className="nv-badge b-blue">{t("Techwide admin")}</span> : <span className={`ac-lvl ac-lvl-${d.level.level}`}><Emblem level={d.level.level} size={18} lang={lang} />{t("{level} level", { level: levelName })}</span>}
+              {me.role === "admin" && <span className="nv-badge b-blue">{t("Techwide admin")}</span>}
+              <span className={`ac-lvl ac-lvl-${d.level.level}`}><Emblem level={d.level.level} size={18} lang={lang} />{t("{level} level", { level: levelName })}</span>
             </span>
           </span>
         </div>
@@ -251,7 +252,6 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
           </div>
         </section>
 
-        {me.role === "creator" && (
           <section className="nv-up nv-card ac-level" aria-labelledby="aclvl" style={{ animationDelay: "140ms" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <Emblem level={d.level.level} size={56} animate lang={lang} />
@@ -268,10 +268,8 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
             )}
             <Link href="/app/levels" className="nv-btn2 nv-sm nv-press" style={{ alignSelf: "flex-start", textDecoration: "none" }}>{t("Levels and benefits")}</Link>
           </section>
-        )}
       </div>
 
-      {me.role === "creator" && (
         <section className="nv-up nv-card" aria-labelledby="acsmp" style={{ padding: 22, display: "flex", flexDirection: "column", gap: 14, animationDelay: "160ms" }}>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "space-between", alignItems: "baseline" }}>
             <span style={{ display: "flex", flexDirection: "column", gap: 2 }}><h2 id="acsmp" className="nv-h2">{t("Samples")}</h2><span style={{ fontSize: 13, color: "var(--muted)" }}>{t("Free samples through Rezekii, with TikTok's status")}</span></span>
@@ -303,9 +301,8 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
             </div>
           )}
         </section>
-      )}
 
-      {me.role === "creator" && (
+      {(me.role === "creator" || !o.emailLogin.googleEmail) && (
         <SignInSecurity email={o.emailLogin.email} has={o.emailLogin.has} googleEmail={o.emailLogin.googleEmail} tiktok={o.emailLogin.tiktok} onDone={(m) => { flash(m); router.refresh(); }} />
       )}
 

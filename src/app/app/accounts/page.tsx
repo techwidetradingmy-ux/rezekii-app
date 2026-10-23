@@ -5,6 +5,7 @@ import { getLang, tFor } from "@/lib/i18n/server.ts";
 import { currentUser } from "../../current-user";
 import { myPhoto } from "@/modules/photos/store.ts";
 import { AccountsView } from "./accounts-view";
+import { ViewSwitch } from "../../view-switch";
 
 export const metadata: Metadata = { title: "Account · Rezekii" };
 export const dynamic = "force-dynamic";
@@ -20,9 +21,12 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
   return (
     <div className="nv nv-page">
       <main className="site-wrap app-main nv-main">
-        <div>
-          <h1 className="nv-title">{t("Account")}</h1>
-          <p className="nv-sub">{t("Your TikTok Shop profile, earnings and settings")}</p>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
+          <div>
+            <h1 className="nv-title">{t("Account")}</h1>
+            <p className="nv-sub">{t("Your TikTok Shop profile, earnings and settings")}</p>
+          </div>
+          {user.role === "admin" && <span className="vs-page"><ViewSwitch to="admin" /></span>}
         </div>
         <AccountsView
           me={{ name, avatar: myPhoto(user), initial: name.replace("@", "").slice(0, 1).toUpperCase(), role: user.role, tiktokUsername: user.tiktok_username }}

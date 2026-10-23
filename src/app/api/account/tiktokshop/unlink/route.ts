@@ -8,7 +8,6 @@ export const dynamic = "force-dynamic";
 export async function POST() {
   const user = await currentUser();
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
-  if (user.role === "admin") return NextResponse.json({ error: "Techwide accounts don't link TikTok Shop here." }, { status: 400 });
   await unlinkCreator(user.id, user.tiktok_username);
   return NextResponse.json({ ok: true });
 }

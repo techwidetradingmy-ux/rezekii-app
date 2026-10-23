@@ -43,7 +43,7 @@ export function cleanEmail(email: unknown): string | null {
  * in with Google keeps its Google email, because Google sign-in writes that email to the account each time.
  */
 export function emailLoginProblem(a: { role: string; hasPassword: boolean; currentOk: boolean; email?: string | null; password?: string; googleEmail: string | null }): string | null {
-  if (a.role !== "creator") return "Admin accounts sign in with Google.";
+  if (a.role !== "creator" && a.googleEmail) return "Admin accounts sign in with Google.";
   if (a.hasPassword && !a.currentOk) return "Your current password is wrong.";
   if (!a.hasPassword && a.email === undefined) return "Enter your email.";
   if (!a.hasPassword && a.password === undefined) return "Choose a password.";
@@ -52,7 +52,7 @@ export function emailLoginProblem(a: { role: string; hasPassword: boolean; curre
     if (!a.email) return "Enter a valid email address.";
     if (a.googleEmail && a.email !== a.googleEmail.toLowerCase()) return "This account signs in with Google, so use your Google email.";
   }
-  return a.password === undefined ? null : passwordProblem(a.password);
+  return a.password === undefined ? null : passwordProblem(a.password, a.role === "admin" ? ADMIN_PASSWORD_MIN : undefined);
 }
 
 /** Why a new password is not accepted, or null when it is fine. `min` is ADMIN_PASSWORD_MIN for admin accounts. */

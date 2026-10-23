@@ -8,7 +8,6 @@ export const dynamic = "force-dynamic";
 export async function POST() {
   const user = await currentUser();
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
-  if (user.role === "admin") return NextResponse.json({ error: "Techwide accounts don't need a place." }, { status: 400 });
   const result = await joinWaitlist(user);
   if (result === "free") return NextResponse.json({ error: "A place just freed up. Link your TikTok Shop now." }, { status: 409 });
   return NextResponse.json({ ok: true });

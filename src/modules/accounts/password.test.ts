@@ -36,7 +36,10 @@ test("email sign-in: added with an email and a password, then each changes on it
   assert.equal(emailLoginProblem({ ...first, password: "long enough" }), "Enter your email.");
   assert.equal(emailLoginProblem({ ...first, email: null, password: "long enough" }), "Enter a valid email address.");
   assert.equal(emailLoginProblem({ ...first, email: "tina@techwide.my", password: "short" }), "Use at least 8 characters.");
-  assert.equal(emailLoginProblem({ ...first, role: "admin", email: "a@techwide.my", password: "long enough" }), "Admin accounts sign in with Google.");
+  assert.equal(emailLoginProblem({ ...first, role: "admin", email: "a@techwide.my", password: "long enough", googleEmail: "a@techwide.my" }), "Admin accounts sign in with Google.");
+  // Admins who sign in with email and password (made admin in Creators) keep it, with 12 characters.
+  assert.equal(emailLoginProblem({ ...first, role: "admin", email: "a@techwide.my", password: "long enough" }), "Use at least 12 characters.");
+  assert.equal(emailLoginProblem({ ...first, role: "admin", email: "a@techwide.my", password: "long enough!" }), null);
 
   const later = { role: "creator", hasPassword: true, currentOk: true, googleEmail: null };
   assert.equal(emailLoginProblem({ ...later, email: "new@techwide.my" }), null); // email only

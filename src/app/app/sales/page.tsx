@@ -4,6 +4,7 @@ import { salesFrame } from "@/modules/sales/frames.ts";
 import { dateLocale } from "@/lib/i18n/lang.ts";
 import { getLang, tFor } from "@/lib/i18n/server.ts";
 import { currentUser } from "../../current-user";
+import { adminView } from "../../view";
 import { myPhoto } from "@/modules/photos/store.ts";
 import { SalesView } from "./sales-view";
 
@@ -14,7 +15,7 @@ export const dynamic = "force-dynamic";
 export default async function SalesPage() {
   const user = await currentUser();
   if (!user) redirect("/signin");
-  if (user.role === "admin") redirect("/app/admin/stats");
+  if (await adminView(user)) redirect("/app/admin/stats");
   const lang = await getLang();
   const t = tFor(lang);
   const d = await salesFrame(user.id, "30d", "all", "none", undefined, lang);

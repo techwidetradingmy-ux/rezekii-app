@@ -6,6 +6,7 @@ import type { ActivityKind, AdminRow } from "@/modules/admin/admins.ts";
 import type { SettingsData } from "@/modules/admin/settings.ts";
 import { Hud, useToast } from "../../marketplace/use-tap-actions";
 import { saveTheme, useTheme } from "../../use-theme";
+import { ViewSwitch } from "../../../view-switch";
 import "../../marketplace/marketplace.css";
 import "../../today.css";
 import "../../accounts/accounts.css";
@@ -80,7 +81,10 @@ export function SettingsView({ d, me, startTab }: { d: SettingsData; me: string;
   return (
     <>
       <div>
-        <h1 className="nv-title">Settings</h1>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <h1 className="nv-title">Settings</h1>
+          <span className="vs-page"><ViewSwitch to="creator" /></span>
+        </div>
         <p className="nv-sub">Admins, posting times, activity log and system health</p>
       </div>
 

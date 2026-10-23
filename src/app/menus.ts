@@ -33,7 +33,7 @@ export const ADMIN_MENU: Section[] = [
   { href: "/app/admin", label: "Today", short: "Today", icon: "home", pages: [] },
   {
     href: "/app/admin/calendar", label: "Content", short: "Content", icon: "cal",
-    pages: [["/app/admin/calendar", "Calendar"], ["/app/posts", "All channels"], ["/app/admin/drafts", "Drafts"], ["/app/new", "New post"], ["/app/admin/accounts", "Team accounts"]],
+    pages: [["/app/admin/calendar", "Calendar"], ["/app/posts", "All channels"], ["/app/admin/drafts", "Drafts"], ["/app/new", "New post"]],
   },
   { href: "/app/admin/creators", label: "Creators", short: "Creators", icon: "users", pages: [] },
   { href: "/app/admin/tap", label: "TAP", short: "TAP", icon: "tag", pages: [["/app/admin/tap", "Campaigns"], ["/app/admin/samples", "Samples"]] },
