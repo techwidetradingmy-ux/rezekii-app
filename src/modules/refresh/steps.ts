@@ -7,6 +7,7 @@ import { smallImage } from "../tap/image.ts";
 import { updateLevels } from "../levels/store.ts";
 import { pruneActivity } from "../admin/admins.ts";
 import { refreshVideos } from "../admin/videos.ts";
+import { refreshCommunity } from "../community/numbers.ts";
 import { approvedCreatorToken } from "../creator-accounts/access.ts";
 import { linkedCreators, syncCreatorOrders } from "../sales/orders.ts";
 import { buildRankings, rankings as builtRankings } from "../rankings/store.ts";
@@ -188,6 +189,12 @@ async function videos(t: TaskRow, { deadline }: Ctx): Promise<StepResult> {
   if (r.next !== null) return { count: r.count, more: true, cursor: String(r.next) };
   await pruneActivity();
   return { count: r.count };
+}
+
+/** The Admins' Facebook, Instagram and Threads numbers, channel by channel, carrying on from `cursor` when time runs out. */
+async function community(t: TaskRow, { deadline }: Ctx): Promise<StepResult> {
+  const r = await refreshCommunity(t.cursor ? Number(t.cursor) : 0, deadline - 8000);
+  return r.next !== null ? { count: r.count, more: true, cursor: String(r.next) } : { count: r.count };
 }
 
 /** [productId, name, shop, image] */
@@ -437,6 +444,7 @@ export const STEPS: Record<string, (t: TaskRow, ctx: Ctx) => Promise<StepResult>
   levels,
   rankings,
   videos,
+  community,
   orders,
   details,
   photos,

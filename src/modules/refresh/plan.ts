@@ -1,6 +1,6 @@
 /** What the daily refresh fetches, as a list of tasks. Pure: no network, no database. */
 
-export type TaskKind = "tap_campaigns" | "tap_products" | "tap_catalog" | "tap_samples" | "tap_samples_mine" | "tap_creators" | "levels" | "rankings" | "videos" | "orders" | "best" | "details" | "photos" | "marketplace" | "agency";
+export type TaskKind = "tap_campaigns" | "tap_products" | "tap_catalog" | "tap_samples" | "tap_samples_mine" | "tap_creators" | "levels" | "rankings" | "videos" | "orders" | "best" | "details" | "photos" | "marketplace" | "agency" | "community";
 export type PlannedTask = { key: string; kind: TaskKind; params: Record<string, unknown>; priority: number };
 
 const DAY = 86_400_000;
@@ -100,6 +100,8 @@ export function planDay(now: number, haveDays: Set<string>, newestBuilt = false,
     { key: "videos", kind: "videos", params: {}, priority: 6 },
     // every linked creator's own affiliate orders (Sales page, admin Stats, Rankings by real GMV)
     { key: "orders", kind: "orders", params: {}, priority: 6 },
+    // the Admins' Facebook, Instagram and Threads numbers (Community → Numbers)
+    { key: "community", kind: "community", params: {}, priority: 6 },
   ];
 
   if (!newestBuilt) tasks.push(...planNewest(newest));

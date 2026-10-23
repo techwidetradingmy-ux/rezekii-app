@@ -15,6 +15,7 @@ const ICON = {
   chart: "M4 20V11M10 20V5M16 20v-6M3 20h18",
   tag: "M20 12 12 20l-8-8V4h8zM8 8h.01",
   user: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0",
+  chat: "M4 5h16v11H9l-5 4zM8 10h8M8 13h5",
   users: "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 14 0M16 3.5a4 4 0 0 1 0 7.5M22 21a7 7 0 0 0-5-6.7",
   gear: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z",
 };
@@ -22,7 +23,7 @@ type Tab = [string, string, keyof typeof ICON];
 // Phones get five tabs: admins' Stats, Rankings and Settings sit under More.
 const CREATOR: Tab[] = CREATOR_MENU.map((s) => [s.href, s.short, s.icon]);
 const ADMIN: Tab[] = [...ADMIN_MENU.slice(0, 4).map((s): Tab => [s.href, s.short, s.icon]), ["/app/admin/settings", "More", "gear"]];
-const MORE = ["/app/admin/stats", "/app/rankings", "/app/admin/settings"];
+const MORE = ["/app/admin/stats", "/app/admin/community", "/app/rankings", "/app/admin/settings"];
 
 /** The phone menu from the mockup: five tabs fixed to the bottom of the screen (phones only). */
 export function BottomNav({ admin }: { admin: boolean }) {

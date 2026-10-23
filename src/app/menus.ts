@@ -2,7 +2,7 @@
  * The signed-in menus (approved 14 Oct 2026): only the main sections in the top row; each section's other pages are a
  * sub-menu inside it, and settings live behind the profile photo (Account for creators, Settings for admins).
  */
-export type Icon = "home" | "bag" | "chart" | "cal" | "trophy" | "users" | "tag" | "gear" | "user";
+export type Icon = "home" | "bag" | "chart" | "cal" | "trophy" | "users" | "tag" | "gear" | "user" | "chat";
 export type Section = {
   href: string;
   label: string;
@@ -38,6 +38,8 @@ export const ADMIN_MENU: Section[] = [
   { href: "/app/admin/creators", label: "Creators", short: "Creators", icon: "users", pages: [] },
   { href: "/app/admin/tap", label: "TAP", short: "TAP", icon: "tag", pages: [["/app/admin/tap", "Campaigns"], ["/app/admin/samples", "Samples"]] },
   { href: "/app/admin/stats", label: "Stats", short: "Stats", icon: "chart", pages: [] },
+  // Facebook, Instagram and Threads in one place (owner, 23 Oct 2026); Numbers first, the inboxes next.
+  { href: "/app/admin/community", label: "Community", short: "Community", icon: "chat", pages: [["/app/admin/community", "Numbers"]] },
   { href: "/app/rankings", label: "Rankings", short: "Ranks", icon: "trophy", pages: [] },
 ];
 export const ADMIN_ACCOUNT: Section = { href: "/app/admin/settings", label: "Settings", short: "Settings", icon: "gear", pages: [] };
