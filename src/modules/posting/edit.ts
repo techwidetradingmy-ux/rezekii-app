@@ -40,7 +40,7 @@ export type PostDetails = {
     id: string; account: string | null; status: PostRow["status"]; mode: PostRow["mode"]; caption: string; privacy: string | null;
     allowComments: boolean; allowDuet: boolean; allowStitch: boolean; brandOrganic: boolean; brandedContent: boolean; isAigc: boolean;
   };
-  channels: { id: string; platform: SocialPostRow["platform"]; name: string; status: SocialPostRow["status"]; caption: string; firstComment: string; commentImage: string | null; linkReminder: boolean; settings: Record<string, unknown> }[];
+  channels: { id: string; platform: SocialPostRow["platform"]; name: string; status: SocialPostRow["status"]; caption: string; firstComment: string; commentImage: string | null; settings: Record<string, unknown> }[];
 };
 
 /** Everything the post was scheduled with, for its Details. */
@@ -64,7 +64,7 @@ export async function postDetails(userId: string, key: string): Promise<PostDeta
       id: t.id, account: account ? `@${account}` : null, status: t.status, mode: t.mode, caption: t.caption, privacy: t.privacy_level,
       allowComments: t.allow_comments, allowDuet: t.allow_duet, allowStitch: t.allow_stitch, brandOrganic: t.brand_organic, brandedContent: t.branded_content, isAigc: t.is_aigc,
     },
-    channels: p.channels.map((c, i) => ({ id: c.id, platform: c.platform, name: c.account_name ?? c.platform, status: c.status, caption: c.caption, firstComment: c.first_comment, commentImage: images[i], linkReminder: c.link_reminder, settings: c.settings ?? {} })),
+    channels: p.channels.map((c, i) => ({ id: c.id, platform: c.platform, name: c.account_name ?? c.platform, status: c.status, caption: c.caption, firstComment: c.first_comment, commentImage: images[i], settings: c.settings ?? {} })),
   };
 }
 

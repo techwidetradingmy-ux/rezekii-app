@@ -129,11 +129,31 @@ export async function photoSources(users: string[]): Promise<{ username: string;
   return (await supabaseRest(`market_creators?username=in.(${encodeURIComponent(list)})&select=username,creator_key,open_id,da:detail->avatar->>url,ma:market->avatar->>url`)).json();
 }
 
+/** The profile fields Rankings shows (detailOf in rankings/build.ts) and the photo address. */
+const DETAIL_KEEP = [
+  "nickname", "bio_description", "gmv", "gmv_range", "video_gmv", "live_gmv", "units_sold", "avg_commission_rate", "ec_video_count", "ec_live_count",
+  "category_ids", "category_gmv_distribution", "content_gmv_distribution", "follower_age", "follower_gender", "brand_collaboration_count", "promoted_product_num", "error",
+];
+/**
+ * A creator profile as kept: only what Rezekii reads, the photo's address and the first 6 follower locations (Rankings shows
+ * 3). TikTok's whole answer took most of the database (owner, 23 Oct 2026); the same rule trimmed the saved ones.
+ */
+export function trimDetail(detail: unknown): unknown {
+  if (!detail || typeof detail !== "object" || Array.isArray(detail)) return detail;
+  const d = detail as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const k of DETAIL_KEEP) if (k in d) out[k] = d[k];
+  const url = (d.avatar as { url?: unknown } | null | undefined)?.url;
+  if (url) out.avatar = { url };
+  if (Array.isArray(d.follower_location)) out.follower_location = d.follower_location.slice(0, 6);
+  return out;
+}
+
 export async function saveDetail(key: string, detail: unknown, error: string | null): Promise<void> {
   await supabaseRest(`market_creators?creator_key=eq.${encodeURIComponent(key)}`, {
     method: "PATCH",
     headers: { prefer: "return=minimal" },
-    body: JSON.stringify({ detail, detail_error: error, detail_at: new Date().toISOString() }),
+    body: JSON.stringify({ detail: trimDetail(detail), detail_error: error, detail_at: new Date().toISOString() }),
   });
 }
 

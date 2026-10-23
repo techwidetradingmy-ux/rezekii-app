@@ -23,7 +23,7 @@ export async function GET() {
   return NextResponse.json({ posts: await listSocialPosts(user.id) });
 }
 
-type ChannelIn = { accountId?: string; caption?: string; firstComment?: string; linkReminder?: boolean; settings?: unknown };
+type ChannelIn = { accountId?: string; caption?: string; firstComment?: string; settings?: unknown };
 type Body = { source?: "upload" | "link"; storagePath?: string; linkUrl?: string; durationSec?: number; when?: string; tiktokPostId?: string; commentImagePath?: string; channels?: ChannelIn[]; staged?: boolean };
 const bad = (error: string | string[], status = 400) => NextResponse.json({ error }, { status });
 
@@ -109,7 +109,6 @@ export async function POST(req: NextRequest) {
       caption: String(c.caption ?? ""),
       first_comment: draft ? "" : String(c.firstComment ?? ""),
       comment_image_path: (a.platform === "facebook" && !draft) || a.platform === "threads" ? commentImage : null,
-      link_reminder: a.platform === "facebook" && !!c.linkReminder,
       status: scheduledAt && !b.staged ? "scheduled" : "draft",
       scheduled_at: scheduledAt?.toISOString() ?? null,
       next_attempt_at: scheduledAt?.toISOString() ?? null,

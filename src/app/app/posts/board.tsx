@@ -15,10 +15,10 @@ import "./board.css";
 const TZ = "Asia/Kuala_Lumpur";
 const dayKey = (iso: string) => new Date(iso).toLocaleDateString("en-CA", { timeZone: TZ });
 const time = (iso: string, lang: Lang) => new Date(iso).toLocaleTimeString(dateLocale(lang), { timeZone: TZ, hour: "numeric", minute: "2-digit", hour12: true });
-const LOOK: Record<BoardState, [string, string]> = { removed: [tx("Removed"), "badge-gray"], fbdraft: [tx("Draft in Facebook"), "badge-gray"], draft: [tx("Draft"), "badge-gray"], scheduled: [tx("Scheduled"), "badge-blue"], posting: [tx("Posting"), "badge-blue"], posted: [tx("Posted"), ""], failed: [tx("Failed"), "badge-red"], link: [tx("Add product link"), "badge-amber"] };
+const LOOK: Record<BoardState, [string, string]> = { removed: [tx("Removed"), "badge-gray"], fbdraft: [tx("Draft in Facebook"), "badge-gray"], draft: [tx("Draft"), "badge-gray"], scheduled: [tx("Scheduled"), "badge-blue"], posting: [tx("Posting"), "badge-blue"], posted: [tx("Posted"), ""], failed: [tx("Failed"), "badge-red"] };
 // Worst first: an app's icon shows the state of its least-finished channel.
-const RANK: BoardState[] = ["failed", "link", "posting", "scheduled", "draft", "fbdraft", "removed", "posted"];
-const needs = (p: BoardPost) => p.channels.some((c) => c.state === "failed" || c.state === "link" || c.commentFailed);
+const RANK: BoardState[] = ["failed", "posting", "scheduled", "draft", "fbdraft", "removed", "posted"];
+const needs = (p: BoardPost) => p.channels.some((c) => c.state === "failed" || c.commentFailed);
 type Filter = "all" | "upcoming" | "posted" | "attention";
 
 /**
@@ -67,7 +67,7 @@ export function Board({ posts, now, brands }: { posts: BoardPost[]; now: number;
     if (!chans.length) return false;
     if (filter === "attention") return needs(p);
     if (filter === "upcoming") return chans.some((c) => c.state === "scheduled" || c.state === "posting");
-    if (filter === "posted") return chans.some((c) => c.state === "posted" || c.state === "link");
+    if (filter === "posted") return chans.some((c) => c.state === "posted");
     return true;
   };
   const list = posts.filter(visible);
@@ -75,14 +75,14 @@ export function Board({ posts, now, brands }: { posts: BoardPost[]; now: number;
   const inWeek = posts.filter((p) => p.at && dayKey(p.at) >= today && dayKey(p.at) < weekEnd);
   const attention = posts.filter(needs).length;
 
-  async function act(c: BoardChannel, action: "cancel" | "link-done" | "retry-comment" | "retry") {
+  async function act(c: BoardChannel, action: "cancel" | "retry-comment" | "retry") {
     setBusy(c.id + action);
     const r = c.kind === "tiktok"
       ? await fetch(`/api/posts/${c.id}/${action === "retry" ? "retry" : "cancel"}`, { method: "POST" }).catch(() => null)
       : await fetch(`/api/social/posts/${c.id}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action }) }).catch(() => null);
     const d = (await r?.json().catch(() => ({}))) as { error?: string };
     setBusy("");
-    setNote(r?.ok ? (action === "cancel" ? t("{name}: cancelled.", { name: c.name }) : action === "link-done" ? t("Marked done.") : action === "retry" ? t("{name}: trying again within a minute.", { name: c.name }) : t("The first comment will be tried again within a minute.")) : t(d?.error ?? tx("That didn't work. Try again.")));
+    setNote(r?.ok ? (action === "cancel" ? t("{name}: cancelled.", { name: c.name }) : action === "retry" ? t("{name}: trying again within a minute.", { name: c.name }) : t("The first comment will be tried again within a minute.")) : t(d?.error ?? tx("That didn't work. Try again.")));
     router.refresh();
   }
 
@@ -95,7 +95,7 @@ export function Board({ posts, now, brands }: { posts: BoardPost[]; now: number;
     })}</span>
   );
   const sub = (p: BoardPost) => {
-    const bad = p.channels.filter((c) => c.state === "failed" || c.state === "link" || c.commentFailed).length;
+    const bad = p.channels.filter((c) => c.state === "failed" || c.commentFailed).length;
     if (bad) return <small className="warn">{bad > 1 ? t("{n} need attention", { n: bad }) : t("{n} needs attention", { n: bad })}</small>;
     const allPosted = p.channels.every((c) => c.state === "posted");
     const posting = p.channels.some((c) => c.state === "posting");
@@ -123,7 +123,6 @@ export function Board({ posts, now, brands }: { posts: BoardPost[]; now: number;
                 <span className={`badge ${LOOK[c.state][1]}`}>{t(LOOK[c.state][0])}</span>
                 <span className="x">{c.note}</span>
                 <span className="bd-acts">
-                  {c.linkReminder && <button type="button" className="btn-outline" disabled={!!busy} onClick={() => act(c, "link-done")}>{t("Done")}</button>}
                   {c.commentFailed && <button type="button" className="btn-outline" disabled={!!busy} onClick={() => act(c, "retry-comment")}>{t("Retry comment")}</button>}
                   {c.canRetry && <button type="button" className="btn-outline" disabled={!!busy} onClick={() => act(c, "retry")}>{busy === c.id + "retry" ? t("Trying…") : t("Try again")}</button>}
                   {c.canCancel && <button type="button" className="btn-outline" disabled={!!busy} onClick={() => act(c, "cancel")}>{busy === c.id + "cancel" ? t("Cancelling…") : t("Cancel")}</button>}

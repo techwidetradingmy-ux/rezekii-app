@@ -84,7 +84,6 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
   const [ownComment, setOwnComment] = useState(r0?.comment ?? "");
   const [link, setLink] = useState(r0?.link ?? "");
   const [cta, setCta] = useState(r0?.cta ?? "");
-  const [remind, setRemind] = useState(r0?.remind ?? true);
   const [capOver, setCapOver] = useState<Partial<Record<Channel, string>>>(r0?.captions ?? {});
   const [comOver, setComOver] = useState<Partial<Record<Channel, string>>>(r0?.comments ?? {});
   const [place, setPlace] = useState<Partial<Record<Channel, Placement>>>(r0?.place ?? {});
@@ -267,7 +266,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
         const r = await fetch("/api/social/posts", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ ...video, durationSec, when: at, tiktokPostId: tiktokPost?.id, commentImagePath, staged: !!edit, channels: metaPicked.map((a) => ({ accountId: a.id, caption: captionOf(a.platform), firstComment: a.platform === "facebook" && fbDraft ? "" : commentOf(a.platform), linkReminder: a.platform === "facebook" && remind && !!link.trim(), settings: settingsFor(a.platform) })) }),
+          body: JSON.stringify({ ...video, durationSec, when: at, tiktokPostId: tiktokPost?.id, commentImagePath, staged: !!edit, channels: metaPicked.map((a) => ({ accountId: a.id, caption: captionOf(a.platform), firstComment: a.platform === "facebook" && fbDraft ? "" : commentOf(a.platform), settings: settingsFor(a.platform) })) }),
         });
         const d = (await r.json()) as { posts?: { scheduled_at: string | null; group_id: string }[]; error?: string | string[] };
         if (!r.ok || !d.posts) {
@@ -286,7 +285,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
         if (!s.ok) throw new Error(t(sd.error || tx("Your changes couldn't be saved.")));
       }
       // Kept with the post for Reuse (M7); a failure here doesn't affect the post.
-      const recipe: Recipe = { channels: [...picked], main, tags: tagsText, comment: ownComment, link, cta, remind, captions: capOver, comments: comOver, place, topic: topicOver, fbDraft, igFeed, igTrial, collaborators: collabText, tagged: tagText, replies };
+      const recipe: Recipe = { channels: [...picked], main, tags: tagsText, comment: ownComment, link, cta, captions: capOver, comments: comOver, place, topic: topicOver, fbDraft, igFeed, igTrial, collaborators: collabText, tagged: tagText, replies };
       if (key) void fetch("/api/social/recipes", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ key, recipe }), keepalive: true }).catch(() => {});
       setDone({ summary: summary(), at: at2, draft: when === "draft" });
     } catch (e) {
@@ -309,7 +308,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
 
   const counts = apps.map((p) => { const n = lengthFor(p, captionOf(p)); const max = CAPTION_MAX[p]; return <span key={p} className={n > max ? "over" : ""}><BrandIcon ch={p} size={14} />{n.toLocaleString("en-US")} / {max.toLocaleString("en-US")}</span>; });
   const linkWhere = (p: Channel) => { const pl = placeOf(p); return p === "tiktok" ? t("not added (the product goes in the yellow basket)") : pl.caption && pl.comment ? t("caption and first comment") : pl.caption ? t("caption") : pl.comment ? t("first comment") : t("not added"); };
-  const notes = pApp ? previewNotes(pApp, captionOf(pApp), commentOf(pApp), !!link.trim(), remind, fbView, { fbDraft, igFeed, igTrial, replies, tagged }, t) : [];
+  const notes = pApp ? previewNotes(pApp, captionOf(pApp), commentOf(pApp), !!link.trim(), fbView, { fbDraft, igFeed, igTrial, replies, tagged }, t) : [];
   const q = query.trim().toLowerCase();
   const results = channels.filter((c) => c.status === "active" && (!q || `${c.name} ${c.sub} ${NAMES[c.app]}`.toLowerCase().includes(q)));
   const missing = APPS.filter((p) => !channels.some((c) => c.app === p));
@@ -465,12 +464,6 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
             <label className="cx-field"><b>{t("Product link")}</b><input className="np-input" type="url" inputMode="url" value={link} onChange={(e) => setLink(e.target.value.trim())} placeholder={t("https://… (Shopee or TikTok Shop)")} aria-label={t("Product link")} /></label>
             {apps.length > 0 && <ul className="cx-how">{apps.map((p) => <li key={p}><BrandIcon ch={p} size={18} /><span><b>{appLabel(p)}:</b> {linkWhere(p)}</span></li>)}</ul>}
             {apps.length > 0 && <p className="np-muted">{t("Change where it goes in each app's caption tab.")}</p>}
-            {apps.includes("facebook") && link.trim() && (
-              <div className="np-switchrow">
-                <span><b>{t("Remind me to add the Shopee product link on Facebook")}</b><small>{t("Facebook's \"Add a product link\" (Monetization) can only be added in Facebook. Rezekii keeps a reminder on each Facebook post until you tick Done.")}</small></span>
-                <button type="button" role="switch" aria-checked={remind} className={remind ? "np-switch on" : "np-switch"} onClick={() => setRemind(!remind)} aria-label={t("Remind me to add the product link")}><span /></button>
-              </div>
-            )}
           </section>
 
           {ttKey && (
@@ -601,7 +594,7 @@ const PREVIEW_NOTE: Record<Channel, string> = {
 };
 
 /** Notes under the phone where an app treats the post differently. [text, informational] */
-function previewNotes(ch: Channel, caption: string, comment: string, hasLink: boolean, remind: boolean, fbView: "reels" | "feed", s: { fbDraft: boolean; igFeed: boolean; igTrial: TrialMode; replies: ReplyControl; tagged: string[] }, t: T): [string, boolean][] {
+function previewNotes(ch: Channel, caption: string, comment: string, hasLink: boolean, fbView: "reels" | "feed", s: { fbDraft: boolean; igFeed: boolean; igTrial: TrialMode; replies: ReplyControl; tagged: string[] }, t: T): [string, boolean][] {
   const out: [string, boolean][] = [];
   if (ch === "facebook" && s.fbDraft) out.push([t("Saved as a draft on the Page: nobody sees it until you publish it in Facebook. It shows like this once published."), true]);
   if (ch === "instagram" && !s.igFeed) out.push([t("Shows in the Reels tab only, not in the main feed."), true]);
@@ -613,7 +606,6 @@ function previewNotes(ch: Channel, caption: string, comment: string, hasLink: bo
   if (ch === "instagram" && comment) out.push([t("The first comment goes out right after the Reel is published.") + (links(comment).length ? t(" Links in Instagram comments can't be tapped either.") : ""), true]);
   if (ch === "facebook" && fbView === "reels" && links(caption).length) out.push([t("Links in Facebook Reels captions can't be tapped.") + (s.fbDraft ? "" : t(" The link in the first comment can.")), false]);
   if (ch === "facebook" && (links(caption).length || links(comment).length)) out.push([t("Facebook is testing a limit of 2 posts or comments with links a month for Pages without Meta One. Over the limit, links may not be tappable."), false]);
-  if (ch === "facebook" && hasLink && remind) out.push([t("After posting, add the Shopee product link in Facebook (Monetization). Rezekii keeps a reminder until you tick Done."), true]);
   if (ch === "facebook" && comment && !s.fbDraft) out.push([t("The first comment goes out from the Page right after posting."), true]);
   if (ch === "threads" && comment) out.push([t("The first comment goes out as your own reply under the post, right after it's published."), true]);
   return out;

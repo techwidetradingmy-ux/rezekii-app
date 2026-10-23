@@ -14,7 +14,6 @@ export type Recipe = {
   comment: string;
   link: string;
   cta: string;
-  remind: boolean;
   captions: Partial<Record<Channel, string>>;
   comments: Partial<Record<Channel, string>>;
   place: Partial<Record<Channel, Placement>>;
@@ -44,7 +43,7 @@ export function cleanRecipe(raw: unknown): Recipe | null {
   const channels = Array.isArray(r.channels) ? [...new Set(r.channels.filter((k): k is string => typeof k === "string" && k.length <= 200))].slice(0, 100) : [];
   return {
     channels,
-    main: str(r.main), tags: str(r.tags, 1000), comment: str(r.comment), link: str(r.link, 2000), cta: str(r.cta, 200), remind: r.remind !== false,
+    main: str(r.main), tags: str(r.tags, 1000), comment: str(r.comment), link: str(r.link, 2000), cta: str(r.cta, 200),
     captions: perApp(r.captions, isText), comments: perApp(r.comments, isText), place: perApp(r.place, isPlace),
     topic: typeof r.topic === "string" ? r.topic.slice(0, 100) : null,
     fbDraft: r.fbDraft === true, igFeed: r.igFeed !== false,
@@ -54,7 +53,7 @@ export function cleanRecipe(raw: unknown): Recipe | null {
   };
 }
 
-type SocialRow = { account_id: string | null; platform: Exclude<Channel, "tiktok">; caption: string; first_comment: string; link_reminder: boolean; settings: Record<string, unknown> | null };
+type SocialRow = { account_id: string | null; platform: Exclude<Channel, "tiktok">; caption: string; first_comment: string; settings: Record<string, unknown> | null };
 
 /**
  * For posts made before recipes were kept: each app's own caption and first comment as they went out, and its settings.
@@ -74,7 +73,6 @@ export function recipeFromPosts(social: SocialRow[], tiktok: { tiktok_open_id: s
     channels: [...(tiktok ? [tiktokKey(tiktok.tiktok_open_id)] : []), ...social.map((s) => s.account_id).filter(Boolean)],
     main: tiktok?.caption || social[0]?.caption || "",
     captions, comments,
-    remind: social.some((s) => s.link_reminder),
     fbDraft: fb.draft === true,
     igFeed: ig.feed !== false, igTrial: ig.trial,
     collaborators: Array.isArray(ig.collaborators) ? ig.collaborators.map((u) => `@${u}`).join(" ") : "",

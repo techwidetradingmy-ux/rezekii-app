@@ -82,7 +82,6 @@ export function PostDetails({ postKey }: { postKey: string }) {
           <dl className="pd-list">
             {line(t("Caption"), c.caption || t("No caption"))}
             {c.firstComment ? line(t("First comment"), c.firstComment) : null}
-            {c.linkReminder ? line(t("Product link"), t("Reminder to add the Shopee product link after it's posted")) : null}
             {settingsOf(c).map(([k, v]) => line(k, v))}
           </dl>
           {c.commentImage && (

@@ -11,13 +11,18 @@ const DATA = ["/api/rankings/daily", "/api/rankings/top", "/api/rankings/sellers
  * 23 Oct 2026: fewer warm-ups, less server use; the timer calls on every quarter hour). A failed warm-up changes nothing.
  */
 export async function warmSite(origin: string, token: string, now = Date.now()): Promise<number> {
-  const at = new Date(now);
-  const hour = (at.getUTCHours() + 8) % 24;
-  if (at.getUTCMinutes() % 15 !== 0 || (hour >= 1 && hour < 7)) return 0;
+  if (!warmDue(now)) return 0;
   const hit = (path: string, headers: Record<string, string> = {}) =>
     fetch(origin + path, { redirect: "manual", cache: "no-store", headers, signal: AbortSignal.timeout(20_000) }).then((r) => r.body?.cancel(), () => undefined);
   await Promise.all([...PAGES.map((p) => hit(p)), ...DATA.map((p) => hit(p, { "x-warm": token }))]);
   return PAGES.length + DATA.length;
+}
+
+/** Whether this tick warms the site: every quarter hour from 7 am to 1 am Malaysia time. */
+export function warmDue(now: number): boolean {
+  const at = new Date(now);
+  const hour = (at.getUTCHours() + 8) % 24;
+  return at.getUTCMinutes() % 15 === 0 && !(hour >= 1 && hour < 7);
 }
 
 /** True for the timer's warm-up request (it carries the timer's own token). */

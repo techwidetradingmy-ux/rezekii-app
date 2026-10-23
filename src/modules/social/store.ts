@@ -20,8 +20,6 @@ export type SocialPostRow = {
   first_comment: string;
   /** One image under the first comment (Facebook and Threads only). */
   comment_image_path: string | null;
-  link_reminder: boolean;
-  link_done: boolean;
   status: SocialStatus;
   scheduled_at: string | null;
   next_attempt_at: string | null;
@@ -39,7 +37,7 @@ export type SocialPostRow = {
   live_checked_at: string | null;
   created_at: string;
 };
-export type NewSocialPost = Omit<SocialPostRow, "id" | "created_at" | "live_checked_at" | "attempts" | "container_id" | "external_post_id" | "permalink" | "comment_status" | "comment_id" | "comment_error" | "last_error" | "posted_at" | "link_done">;
+export type NewSocialPost = Omit<SocialPostRow, "id" | "created_at" | "live_checked_at" | "attempts" | "container_id" | "external_post_id" | "permalink" | "comment_status" | "comment_id" | "comment_error" | "last_error" | "posted_at">;
 
 const post = (body: unknown, prefer = "return=representation"): RequestInit => ({ method: "POST", headers: { prefer }, body: JSON.stringify(body) });
 const FINAL = new Set<SocialStatus>(["posted", "failed", "cancelled", "removed"]);
