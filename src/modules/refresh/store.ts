@@ -129,7 +129,7 @@ export async function photoSources(users: string[]): Promise<{ username: string;
   return (await supabaseRest(`market_creators?username=in.(${encodeURIComponent(list)})&select=username,creator_key,open_id,da:detail->avatar->>url,ma:market->avatar->>url`)).json();
 }
 
-/** The profile fields Rankings shows (detailOf in rankings/build.ts) and the photo address. */
+/** The profile fields Rankings shows (detailOf in rankings/build.ts). */
 const DETAIL_KEEP = [
   "nickname", "bio_description", "gmv", "gmv_range", "video_gmv", "live_gmv", "units_sold", "avg_commission_rate", "ec_video_count", "ec_live_count",
   "category_ids", "category_gmv_distribution", "content_gmv_distribution", "follower_age", "follower_gender", "brand_collaboration_count", "promoted_product_num", "error",
@@ -139,13 +139,26 @@ const DETAIL_KEEP = [
  * 3). TikTok's whole answer took most of the database (owner, 23 Oct 2026); the same rule trimmed the saved ones.
  */
 export function trimDetail(detail: unknown): unknown {
-  if (!detail || typeof detail !== "object" || Array.isArray(detail)) return detail;
-  const d = detail as Record<string, unknown>;
+  const out = keepOf(detail, DETAIL_KEEP);
+  if (!out) return detail;
+  const loc = (detail as Record<string, unknown>).follower_location;
+  if (Array.isArray(loc)) out.follower_location = loc.slice(0, 6);
+  return out;
+}
+
+/** The Creator Marketplace fields Find creators shows (rank_find, findRow in rankings/build.ts). */
+const MARKET_KEEP = ["username", "nickname", "follower_count", "gmv", "video_gmv", "live_gmv", "gmv_range", "avg_ec_video_view_count"];
+/** A Creator Marketplace entry as kept: about half of TikTok's answer (owner, 23 Oct 2026). */
+export const trimMarket = (market: unknown): unknown => keepOf(market, MARKET_KEEP) ?? market;
+
+/** `keys` and the photo's address from one of TikTok's creator answers, or null when it isn't an object. */
+function keepOf(v: unknown, keys: string[]): Record<string, unknown> | null {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return null;
+  const d = v as Record<string, unknown>;
   const out: Record<string, unknown> = {};
-  for (const k of DETAIL_KEEP) if (k in d) out[k] = d[k];
+  for (const k of keys) if (k in d) out[k] = d[k];
   const url = (d.avatar as { url?: unknown } | null | undefined)?.url;
   if (url) out.avatar = { url };
-  if (Array.isArray(d.follower_location)) out.follower_location = d.follower_location.slice(0, 6);
   return out;
 }
 

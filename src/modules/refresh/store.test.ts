@@ -1,7 +1,21 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { detailOf } from "../rankings/build.ts";
-import { mergeCreatorRows, trimDetail } from "./store.ts";
+import { detailOf, findRow } from "../rankings/build.ts";
+import { mergeCreatorRows, trimDetail, trimMarket } from "./store.ts";
+
+test("a trimmed Creator Marketplace entry gives Find creators exactly the same row", () => {
+  const full = {
+    username: "tina", nickname: "Tina", follower_count: 12345, gmv: { amount: "1234.5" }, video_gmv: { amount: "800" }, live_gmv: { amount: "434.5" },
+    gmv_range: { formatted_range: "US$1K-10K", minimum_amount: "1000", maximum_amount: "10000" }, avg_ec_video_view_count: 4321,
+    avatar: { url: "https://p16.tiktokcdn.com/a.jpeg", url_list: ["https://a", "https://b"] },
+    creator_open_id: "x".repeat(60), category_ids: ["1", "2"], ec_video_engagement_rate: "0.1", selection_region: "MY", top_follower_demographics: { ages: [] },
+  };
+  const trimmed = trimMarket(full) as Record<string, unknown>;
+  assert.deepEqual(findRow(trimmed), findRow(full));
+  for (const gone of ["creator_open_id", "category_ids", "ec_video_engagement_rate", "selection_region", "top_follower_demographics"]) assert.ok(!(gone in trimmed), gone);
+  assert.deepEqual(trimmed.avatar, { url: "https://p16.tiktokcdn.com/a.jpeg" });
+  assert.equal(trimMarket(null), null);
+});
 
 test("a trimmed creator profile gives Rankings exactly the same details, without the fields nothing reads", () => {
   const loc = ["MY", "OTHER", "SG", "ID", "TH", "PH", "VN", "BN"].map((key, i) => ({ key, value: String(0.5 / (i + 1)) }));

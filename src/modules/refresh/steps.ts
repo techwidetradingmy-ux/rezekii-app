@@ -19,7 +19,7 @@ import { getBestselling, getMarketplaceCreator, searchMarketplaceCreators, type 
 import { TT_LEVELS, bestSlot, mytDay, type PlannedTask } from "./plan.ts";
 import { TAG_START, tagFilters, tagNext, tagTask, type TagState } from "../accounts/tags.ts";
 import type { Sessions } from "./sessions.ts";
-import { catalogSales, creatorsNeedingDetail, linkedUsername, marketplaceOpen, openTaskCount, photoSources, rebuildTapCatalog, saveDetail, saveSnapshot, saveTags, snapshotItems, tagsDue, type TaskRow, upsertCreatorProducts, upsertCreators } from "./store.ts";
+import { catalogSales, creatorsNeedingDetail, linkedUsername, marketplaceOpen, openTaskCount, photoSources, rebuildTapCatalog, saveDetail, saveSnapshot, saveTags, snapshotItems, tagsDue, trimMarket, type TaskRow, upsertCreatorProducts, upsertCreators } from "./store.ts";
 
 /** TikTok's "too many requests" code, shared by the app's whole API group. */
 export const RATE_LIMITED = 36009002;
@@ -392,7 +392,7 @@ async function marketplace(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
   await upsertCreators(
     items
       .filter((c) => c.creator_open_id || c.username)
-      .map((c) => ({ creator_key: c.creator_open_id ?? `u:${c.username}`, open_id: c.creator_open_id ?? null, username: c.username ?? null, market: c, ...level })),
+      .map((c) => ({ creator_key: c.creator_open_id ?? `u:${c.username}`, open_id: c.creator_open_id ?? null, username: c.username ?? null, market: trimMarket(c), ...level })),
   );
   const next = data.next_page_token;
   const total = t.result_count + items.length;
