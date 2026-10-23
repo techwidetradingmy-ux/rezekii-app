@@ -8,6 +8,7 @@ import { getAccount } from "@/modules/social/accounts.ts";
 import { canUseSocial } from "@/modules/social/access.ts";
 import { NAMES, channelProblems, facebookAsReel } from "@/modules/social/rules.ts";
 import { cleanSettings, settingsProblems } from "@/modules/social/settings.ts";
+import { fileInUse } from "@/modules/posting/edit.ts";
 import { copyUpload, insertSocialPosts, listSocialPosts, postsInDay, type NewSocialPost } from "@/modules/social/store.ts";
 
 export const dynamic = "force-dynamic";
@@ -23,12 +24,13 @@ export async function GET() {
 }
 
 type ChannelIn = { accountId?: string; caption?: string; firstComment?: string; linkReminder?: boolean; settings?: unknown };
-type Body = { source?: "upload" | "link"; storagePath?: string; linkUrl?: string; durationSec?: number; when?: string; tiktokPostId?: string; commentImagePath?: string; channels?: ChannelIn[] };
+type Body = { source?: "upload" | "link"; storagePath?: string; linkUrl?: string; durationSec?: number; when?: string; tiktokPostId?: string; commentImagePath?: string; channels?: ChannelIn[]; staged?: boolean };
 const bad = (error: string | string[], status = 400) => NextResponse.json({ error }, { status });
 
 /**
  * Schedules the Meta channels of one New post. Each channel gets its own post (its own caption and first comment), all in
  * one group with the TikTok post when there is one. With a TikTok post, the channels go out at the TikTok post's time.
+ * `staged`: an edit being saved, held as drafts with their time until /api/posts/swap puts them in place of the old post.
  */
 export async function POST(req: NextRequest) {
   const user = await currentUser();
@@ -37,7 +39,7 @@ export async function POST(req: NextRequest) {
   const b = (await req.json().catch(() => ({}))) as Body;
   if (b.source === "upload" ? !b.storagePath?.startsWith(`${user.id}/`) : b.source === "link" ? !/^https:\/\/\S+$/.test(b.linkUrl ?? "") : true)
     return bad("Add a video: upload one or paste an https link.");
-  const commentImage = b.commentImagePath ?? null;
+  let commentImage = b.commentImagePath ?? null;
   if (commentImage && !new RegExp(`^${user.id}/comment/[0-9a-f-]{36}\\.(jpg|png)$`).test(commentImage)) return bad("The comment image upload wasn't found. Add it again.");
   const channels = (b.channels ?? []).filter((c) => c.accountId);
   if (!channels.length) return bad("Pick at least one Facebook, Instagram or Threads channel.");
@@ -74,12 +76,18 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // With TikTok in the post, the channels get their own copy of the upload (TikTok deletes its file once it has posted).
+  // With TikTok in the post, the channels get their own copy of the upload (TikTok deletes its file once it has posted). An
+  // edit copies the video and comment image it kept too: the old post's files go once it is replaced.
   let storagePath: string | null = b.source === "upload" ? (b.storagePath as string) : null;
-  if (storagePath && tiktok) {
+  if (storagePath && (tiktok || (b.staged && (await fileInUse(storagePath))))) {
     const copy = `${user.id}/social/${randomUUID()}.${storagePath.split(".").pop()}`;
     await copyUpload(storagePath, copy);
     storagePath = copy;
+  }
+  if (commentImage && b.staged && (await fileInUse(commentImage))) {
+    const copy = `${user.id}/comment/${randomUUID()}.${commentImage.split(".").pop()}`;
+    await copyUpload(commentImage, copy);
+    commentImage = copy;
   }
   const groupId = randomUUID();
   const rows: NewSocialPost[] = channels.map((c, i) => {
@@ -102,7 +110,7 @@ export async function POST(req: NextRequest) {
       first_comment: draft ? "" : String(c.firstComment ?? ""),
       comment_image_path: (a.platform === "facebook" && !draft) || a.platform === "threads" ? commentImage : null,
       link_reminder: a.platform === "facebook" && !!c.linkReminder,
-      status: scheduledAt ? "scheduled" : "draft",
+      status: scheduledAt && !b.staged ? "scheduled" : "draft",
       scheduled_at: scheduledAt?.toISOString() ?? null,
       next_attempt_at: scheduledAt?.toISOString() ?? null,
       settings,

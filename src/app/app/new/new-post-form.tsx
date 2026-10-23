@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { CreatorInfo, PrivacyLevel } from "@/integrations/tiktok/posting.ts";
 import { useLang, useT } from "@/lib/i18n/client.tsx";
 import { dateLocale, tx, type Lang } from "@/lib/i18n/lang.ts";
+import type { EditPost } from "@/modules/posting/edit.ts";
 import { CAPTION_MAX, consentLine, postProblems, type PostChoice } from "@/modules/posting/rules.ts";
 
 type Info = CreatorInfo & { nextRecommended: string };
@@ -17,35 +18,41 @@ const PRIVACY_LABEL: Record<PrivacyLevel, string> = {
   SELF_ONLY: tx("Only me"),
 };
 const myt = (iso: string, lang: Lang) => new Date(iso).toLocaleString(dateLocale(lang), { timeZone: "Asia/Kuala_Lumpur", weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true });
+/** An ISO time as the value of a datetime-local field (this device's time). */
+export const localInput = (iso: string) => { const d = new Date(iso); return new Date(d.getTime() - d.getTimezoneOffset() * 60e3).toISOString().slice(0, 16); };
 
 export type PostAccount = { open_id: string; username: string | null };
 
 /**
  * New post: TikTok's Content Sharing Guidelines, step by step, for the creator's own TikTok account. Admins with several
- * Techwide team accounts pick which one to post to first.
+ * Techwide team accounts pick which one to post to first. `edit`: a scheduled post filled in to change, its video kept (or
+ * replaced); saving holds the changed post and then swaps it in for the old one, if that hasn't started sending.
  */
-export function NewPostForm({ accounts }: { accounts: PostAccount[] }) {
+export function NewPostForm({ accounts, edit }: { accounts: PostAccount[]; edit?: EditPost | null }) {
   const t = useT();
   const lang = useLang();
-  const [account, setAccount] = useState(accounts[accounts.length - 1]?.open_id ?? "");
+  const e0 = edit?.tiktok;
+  const [account, setAccount] = useState(e0?.account ?? accounts[accounts.length - 1]?.open_id ?? "");
   const [info, setInfo] = useState<Info | null>(null);
   const [infoError, setInfoError] = useState("");
-  const [mode, setMode] = useState<"direct" | "inbox">("direct");
-  const [source, setSource] = useState<"upload" | "link">("upload");
+  const [mode, setMode] = useState<"direct" | "inbox">(e0?.mode ?? "direct");
+  const [source, setSource] = useState<"upload" | "link">(edit?.video.source ?? "upload");
   const [file, setFile] = useState<File | null>(null);
-  const [linkUrl, setLinkUrl] = useState("");
-  const [durationSec, setDurationSec] = useState<number | null>(null);
-  const [caption, setCaption] = useState("");
-  const [privacy, setPrivacy] = useState<PrivacyLevel | "">("");
-  const [allowComments, setAllowComments] = useState(false);
-  const [allowDuet, setAllowDuet] = useState(false);
-  const [allowStitch, setAllowStitch] = useState(false);
-  const [promo, setPromo] = useState(false);
-  const [brandOrganic, setBrandOrganic] = useState(false);
-  const [brandedContent, setBrandedContent] = useState(false);
-  const [isAigc, setIsAigc] = useState(false);
-  const [when, setWhen] = useState<When>("now");
-  const [pickAt, setPickAt] = useState("");
+  // An edit keeps the post's video until another one is picked.
+  const [kept, setKept] = useState(edit?.video ?? null);
+  const [linkUrl, setLinkUrl] = useState(edit?.video.linkUrl ?? "");
+  const [durationSec, setDurationSec] = useState<number | null>(edit?.video.durationSec ?? null);
+  const [caption, setCaption] = useState(e0?.caption ?? "");
+  const [privacy, setPrivacy] = useState<PrivacyLevel | "">((e0?.privacy as PrivacyLevel | null) ?? "");
+  const [allowComments, setAllowComments] = useState(e0?.allowComments ?? false);
+  const [allowDuet, setAllowDuet] = useState(e0?.allowDuet ?? false);
+  const [allowStitch, setAllowStitch] = useState(e0?.allowStitch ?? false);
+  const [promo, setPromo] = useState(!!(e0?.brandOrganic || e0?.brandedContent));
+  const [brandOrganic, setBrandOrganic] = useState(e0?.brandOrganic ?? false);
+  const [brandedContent, setBrandedContent] = useState(e0?.brandedContent ?? false);
+  const [isAigc, setIsAigc] = useState(e0?.isAigc ?? false);
+  const [when, setWhen] = useState<When>(edit ? (edit.at ? "pick" : "draft") : "now");
+  const [pickAt, setPickAt] = useState(edit?.at ? localInput(edit.at) : "");
   const [busy, setBusy] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
   const [done, setDone] = useState<{ status: string; scheduledAt: string | null } | null>(null);
@@ -70,11 +77,11 @@ export function NewPostForm({ accounts }: { accounts: PostAccount[] }) {
   const choice: PostChoice = { mode, caption, privacyLevel: privacy || null, allowComments, allowDuet, allowStitch, promo, brandOrganic, brandedContent, isAigc, durationSec };
   const problems = useMemo(() => {
     const out: string[] = [];
-    if (source === "upload" ? !file : !/^https:\/\/\S+$/.test(linkUrl)) out.push(t("Add a video: upload one or paste an https link."));
+    if (source === "upload" ? !file && !kept?.storagePath : !/^https:\/\/\S+$/.test(linkUrl)) out.push(t("Add a video: upload one or paste an https link."));
     if (info && when !== "draft") out.push(...postProblems(choice, info, t));
     if (when === "pick" && !pickAt) out.push(t("Pick a date and time."));
     return out;
-  }, [source, file, linkUrl, info, when, pickAt, mode, caption, privacy, promo, brandOrganic, brandedContent, durationSec, t]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [source, file, kept, linkUrl, info, when, pickAt, mode, caption, privacy, promo, brandOrganic, brandedContent, durationSec, t]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const brandedPrivateClash = promo && brandedContent;
   const promoLabel = promo && brandedContent ? t("Your video will be labeled \"Paid partnership\".") : promo && brandOrganic ? t("Your video will be labeled \"Promotional content\".") : "";
@@ -83,7 +90,7 @@ export function NewPostForm({ accounts }: { accounts: PostAccount[] }) {
     setErrors([]);
     if (problems.length) return setErrors(problems);
     try {
-      let storagePath: string | undefined;
+      let storagePath: string | undefined = source === "upload" && !file ? (kept?.storagePath ?? undefined) : undefined;
       if (source === "upload" && file) {
         setBusy(t("Uploading your video…"));
         const r = await fetch("/api/posts/upload", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ type: file.type, size: file.size }) });
@@ -98,11 +105,17 @@ export function NewPostForm({ accounts }: { accounts: PostAccount[] }) {
       const r = await fetch("/api/posts", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ ...choice, source, storagePath, linkUrl: source === "link" ? linkUrl : undefined, when: at, consent: true, account: account || undefined }),
+        body: JSON.stringify({ ...choice, source, storagePath, linkUrl: source === "link" ? linkUrl : undefined, when: at, consent: true, account: account || undefined, staged: !!edit }),
       });
-      const d = (await r.json()) as { post?: { status: string; scheduled_at: string | null }; error?: string | string[] };
+      const d = (await r.json()) as { post?: { id: string; status: string; scheduled_at: string | null }; error?: string | string[] };
       if (!r.ok || !d.post) throw new Error(Array.isArray(d.error) ? d.error.map((x) => t(x)).join(" ") : t(d.error || tx("Something went wrong.")));
-      setDone({ status: d.post.status, scheduledAt: d.post.scheduled_at });
+      if (edit) {
+        setBusy(t("Saving your changes…"));
+        const s = await fetch("/api/posts/swap", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ old: edit.key, new: d.post.id }) });
+        const sd = (await s.json().catch(() => ({}))) as { error?: string };
+        if (!s.ok) throw new Error(t(sd.error || tx("Your changes couldn't be saved.")));
+      }
+      setDone({ status: when === "draft" ? "draft" : "scheduled", scheduledAt: d.post.scheduled_at });
     } catch (e) {
       setErrors([e instanceof Error ? e.message : t("Something went wrong.")]);
     } finally {
@@ -114,7 +127,7 @@ export function NewPostForm({ accounts }: { accounts: PostAccount[] }) {
     return (
       <section className="card np-done" role="status">
         <span className="np-done-ico" aria-hidden="true">✓</span>
-        <h2>{done.status === "draft" ? t("Saved as a draft") : when === "now" ? (mode === "inbox" ? t("Sending to your TikTok drafts") : t("Sending to TikTok now")) : t("Scheduled")}</h2>
+        <h2>{edit ? t("Changes saved") : done.status === "draft" ? t("Saved as a draft") : when === "now" ? (mode === "inbox" ? t("Sending to your TikTok drafts") : t("Sending to TikTok now")) : t("Scheduled")}</h2>
         <p>
           {done.status === "draft"
             ? t("It's saved in Rezekii. Schedule it from My posts whenever you're ready.")
@@ -125,7 +138,7 @@ export function NewPostForm({ accounts }: { accounts: PostAccount[] }) {
         </p>
         <div className="np-row">
           <Link href="/app/posts" className="np-btn">{t("See it in My posts")}</Link>
-          <button type="button" className="btn-outline" onClick={() => window.location.reload()}>{t("New post")}</button>
+          {!edit && <button type="button" className="btn-outline" onClick={() => window.location.reload()}>{t("New post")}</button>}
         </div>
       </section>
     );
@@ -133,6 +146,7 @@ export function NewPostForm({ accounts }: { accounts: PostAccount[] }) {
 
   return (
     <form className="np" onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate>
+      {edit && <p className="np-note" role="status">{t("Editing your scheduled post. Saving replaces it, as long as it hasn't started sending.")}</p>}
       {accounts.length > 1 && (
         <label className="card np-account" style={{ display: "flex", flexDirection: "column", alignItems: "stretch", gap: 6 }}>
           <small>{t("Post to")}</small>
@@ -170,14 +184,14 @@ export function NewPostForm({ accounts }: { accounts: PostAccount[] }) {
         </div>
         {source === "upload" ? (
           <label className="np-drop">
-            <input type="file" accept="video/mp4,video/quicktime,video/webm" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setDurationSec(null); }} />
-            <span>{file ? `${file.name} · ${(file.size / 1048576).toFixed(1)} MB` : t("Choose an MP4, MOV or WebM video (up to 50 MB)")}</span>
+            <input type="file" accept="video/mp4,video/quicktime,video/webm" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setDurationSec(null); setKept(null); }} />
+            <span>{file ? `${file.name} · ${(file.size / 1048576).toFixed(1)} MB` : kept?.storagePath ? t("The post's video is kept. Choose another to replace it.") : t("Choose an MP4, MOV or WebM video (up to 50 MB)")}</span>
           </label>
         ) : (
           <input className="np-input" type="url" inputMode="url" placeholder={t("https://… (Google Drive, Dropbox or a direct file link)")} value={linkUrl} onChange={(e) => setLinkUrl(e.target.value.trim())} aria-label={t("Video link")} />
         )}
-        {(preview || (source === "link" && /^https:\/\//.test(linkUrl))) && (
-          <video className="np-preview" src={source === "upload" ? preview : linkUrl} controls playsInline muted onLoadedMetadata={(e) => setDurationSec(Math.round(e.currentTarget.duration))} aria-label={t("Preview of your video")} />
+        {(preview || (source === "upload" && kept?.url) || (source === "link" && /^https:\/\//.test(linkUrl))) && (
+          <video className="np-preview" src={source === "upload" ? preview || kept?.url || "" : linkUrl} controls playsInline muted onLoadedMetadata={(e) => setDurationSec(Math.round(e.currentTarget.duration))} aria-label={t("Preview of your video")} />
         )}
         {durationSec !== null && info && <p className="np-muted">{t("Length {length} · TikTok allows up to {max} min for this account.", { length: `${Math.floor(durationSec / 60)}:${String(durationSec % 60).padStart(2, "0")}`, max: Math.floor(info.max_video_post_duration_sec / 60) })}</p>}
       </section>
@@ -248,7 +262,7 @@ export function NewPostForm({ accounts }: { accounts: PostAccount[] }) {
       {errors.length > 0 && <ul className="np-errors" role="alert">{errors.map((e) => <li key={e}>{e}</li>)}</ul>}
       {mode === "direct" && when !== "draft" && <p className="np-consent">{consentLine(choice, t)}</p>}
       <button type="submit" className="np-btn np-submit" disabled={!!busy || (!info && when !== "draft")}>
-        {busy || (when === "draft" ? t("Save draft") : when === "now" ? (mode === "direct" ? t("Post now") : t("Send to TikTok drafts")) : t("Schedule"))}
+        {busy || (edit ? t("Save changes") : when === "draft" ? t("Save draft") : when === "now" ? (mode === "direct" ? t("Post now") : t("Send to TikTok drafts")) : t("Schedule"))}
       </button>
     </form>
   );

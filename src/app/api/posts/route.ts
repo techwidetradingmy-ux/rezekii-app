@@ -14,12 +14,13 @@ export async function GET() {
   return NextResponse.json({ posts: await listPosts(user.id) });
 }
 
-type Body = Partial<PostChoice> & { source?: "upload" | "link"; storagePath?: string; linkUrl?: string; when?: string; consent?: boolean; account?: string };
+type Body = Partial<PostChoice> & { source?: "upload" | "link"; storagePath?: string; linkUrl?: string; when?: string; consent?: boolean; account?: string; staged?: boolean };
 const bad = (error: string | string[]) => NextResponse.json({ error }, { status: 400 });
 
 /**
  * Creates a post for the signed-in creator's own TikTok account.
- * `when`: "now", "recommended", "draft" (saved in Rezekii only) or an ISO time.
+ * `when`: "now", "recommended", "draft" (saved in Rezekii only) or an ISO time. `staged`: an edit being saved; it is held as
+ * a draft with its time until /api/posts/swap puts it in place of the old post.
  */
 export async function POST(req: NextRequest) {
   const user = await currentUser();
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest) {
     brand_organic: choice.promo && choice.brandOrganic,
     branded_content: choice.promo && choice.brandedContent,
     is_aigc: choice.isAigc,
-    status: scheduledAt ? "scheduled" : "draft",
+    status: scheduledAt && !b.staged ? "scheduled" : "draft",
     scheduled_at: scheduledAt?.toISOString() ?? null,
     next_attempt_at: scheduledAt?.toISOString() ?? null,
   });

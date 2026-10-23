@@ -100,6 +100,20 @@ a { color: var(--gink); }
   .lang-switch button[aria-pressed="true"] { display: none; }
   .site-nav:has(.lang-switch) { column-gap: 8px; }
 }
+/* A post's Details on My posts and All channels: everything it was scheduled with, and Edit. */
+.mp-acts { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.pd { grid-column: 1 / -1; display: grid; gap: 12px; padding: 14px; border-radius: 14px; background: var(--surface2); min-width: 0; }
+.pd-top { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
+.pd-video { width: 150px; max-width: 100%; aspect-ratio: 9 / 16; border-radius: 12px; background: #000000; object-fit: contain; }
+.pd-list { margin: 0; display: grid; gap: 6px; flex: 1 1 240px; min-width: 0; }
+.pd-ln { display: grid; grid-template-columns: minmax(110px, 32%) minmax(0, 1fr); gap: 10px; font-size: 14px; line-height: 1.45; }
+.pd-ln dt { color: var(--muted); }
+.pd-ln dd { margin: 0; font-weight: 600; white-space: pre-wrap; overflow-wrap: anywhere; }
+.pd-ch { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+.pd-ch h4 { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 15px; }
+.pd-img { max-width: 140px; border-radius: 10px; }
+.pd-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+@media (max-width: 480px) { .pd-ln { grid-template-columns: 1fr; gap: 2px; } }
 /* Creator pages without an approved TikTok Shop link: what it unlocks, and the way to Getting set up (see ShopBanner). */
 .shop-banner { margin-top: 14px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; padding: 12px 16px; border-radius: 16px; background: var(--surface); border: 1px solid var(--border); font-size: 14px; font-weight: 600; line-height: 1.45; }
 .shop-banner span { flex: 1 1 260px; min-width: 0; }

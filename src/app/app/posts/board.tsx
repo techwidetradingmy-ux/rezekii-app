@@ -9,6 +9,7 @@ import type { BoardChannel, BoardPost, BoardState } from "@/modules/social/board
 import type { Brand } from "@/modules/social/brands.ts";
 import type { Channel } from "@/modules/social/rules.ts";
 import { BrandIcon } from "../brand-icons";
+import { PostDetails } from "./post-details";
 import "./board.css";
 
 const TZ = "Asia/Kuala_Lumpur";
@@ -114,6 +115,7 @@ export function Board({ posts, now, brands }: { posts: BoardPost[]; now: number;
         <Link className="bd-reuse" href={`/app/new?reuse=${p.key}`} title={t("New post filled in like this one")}>{t("Reuse")}</Link>
         {isOpen && (
           <div className="bd-det">
+            <PostDetails postKey={p.key} />
             {p.channels.map((c) => (
               <div key={c.id} className="bd-ln">
                 <BrandIcon ch={c.kind} size={20} />

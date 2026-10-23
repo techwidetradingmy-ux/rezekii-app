@@ -5,6 +5,7 @@ import Link from "next/link";
 import { shortCount, type TikTokVideo } from "@/integrations/tiktok/stats.ts";
 import { useLang, useT } from "@/lib/i18n/client.tsx";
 import { dateLocale, tx, type Lang } from "@/lib/i18n/lang.ts";
+import { PostDetails } from "./post-details";
 
 type Post = {
   id: string;
@@ -47,6 +48,7 @@ export function PostsView({ initialPosts, initialStats, now }: { initialPosts: P
   const [view, setView] = useState<"list" | "week">("list");
   const [weekStart, setWeekStart] = useState(() => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d; });
   const [busyId, setBusyId] = useState("");
+  const [openId, setOpenId] = useState("");
   const [note, setNote] = useState("");
   const [loadedAt, setLoadedAt] = useState(now);
   const [stats, setStats] = useState<Stats>(initialStats);
@@ -111,9 +113,13 @@ export function PostsView({ initialPosts, initialStats, now }: { initialPosts: P
           )}
         </span>
         <span className={`badge ${cls}`}>{t(label)}</span>
-        {(p.status === "scheduled" || p.status === "failed") && (
-          <button type="button" className="btn-outline mp-cancel" disabled={busyId === p.id} onClick={() => cancel(p)}>{busyId === p.id ? t("Cancelling…") : t("Cancel")}</button>
-        )}
+        <span className="mp-acts">
+          <button type="button" className="btn-outline mp-cancel" aria-expanded={openId === p.id} onClick={() => setOpenId(openId === p.id ? "" : p.id)}>{openId === p.id ? t("Hide details") : t("Details")}</button>
+          {(p.status === "scheduled" || p.status === "failed") && (
+            <button type="button" className="btn-outline mp-cancel" disabled={busyId === p.id} onClick={() => cancel(p)}>{busyId === p.id ? t("Cancelling…") : t("Cancel")}</button>
+          )}
+        </span>
+        {openId === p.id && <PostDetails postKey={p.id} />}
       </li>
     );
   };
@@ -198,7 +204,7 @@ export function PostsView({ initialPosts, initialStats, now }: { initialPosts: P
           </div>
         </section>
       )}
-      <p className="np-muted">{t("Times are Malaysia time. Posts can be cancelled until they start sending to TikTok. Posts already on TikTok can only be edited or deleted in the TikTok app.")}</p>
+      <p className="np-muted">{t("Times are Malaysia time. Posts can be checked, edited or cancelled until they start sending to TikTok. Posts already on TikTok can only be edited or deleted in the TikTok app.")}</p>
     </div>
   );
 }
