@@ -17,7 +17,7 @@ export const metadata: Metadata = { title: "New post · Rezekii" };
 export const dynamic = "force-dynamic";
 
 /**
- * New post. Admins get Facebook, Instagram and Threads next to TikTok, picked by brand (?channel=&connect= reports a connection
+ * New post. Everyone gets Facebook, Instagram and Threads next to TikTok, picked by brand (?channel=&connect= reports a connection
  * result). ?edit=<post>: the scheduled post, filled in to change; saving replaces it.
  */
 export default async function NewPostPage({ searchParams }: { searchParams: Promise<{ channel?: string; connect?: string; reuse?: string; edit?: string }> }) {

@@ -2,9 +2,9 @@ import type { AppUser } from "../accounts/users.ts";
 import type { Platform } from "./rules.ts";
 
 /**
- * While the Meta app is in Development mode only accounts with a role on it can connect, so the new channels show for
- * Admins only (flow W1). Opening them to creators is a separate change.
+ * Facebook, Instagram and Threads posting, for every signed-in account (owner, 23 Oct 2026: Meta's App Review tests it as a
+ * creator). Until Meta approves the permissions, only people with a role on the Meta app can finish connecting.
  */
-export const canUseSocial = (u: Pick<AppUser, "role"> | null | undefined) => u?.role === "admin";
+export const canUseSocial = (u: Pick<AppUser, "role"> | null | undefined) => !!u;
 
 export const isPlatform = (p: string | null | undefined): p is Platform => p === "facebook" || p === "instagram" || p === "threads";
