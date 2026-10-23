@@ -120,10 +120,23 @@ export async function buildRankings(day: string): Promise<Built> {
   }
 
   const rate30 = rates.creators["30D"] || 4.08;
-  const detailRows = await paged<{ username: string; detail: Raw }>("market_creators?detail=not.is.null&select=username,detail&order=username");
+  // TikTok's daily top-100 video lists from every saved day, for each creator's best-selling video and its daily figures.
+  const vdays = await paged<{ as_of: string; slot: string; items: Raw[] }>(`market_snapshots?dataset=eq.videos&slot=in.(${encodeURIComponent("1D|LOCAL")},${encodeURIComponent("1D|USD")})&as_of=gte.${minus(day, 59)}&select=as_of,slot,items&order=as_of`);
+  // Profiles are kept only for creators the Rankings views can show: those in a saved creators list from the last 60 days
+  // (owner, 15 Oct 2026); the creator panel reads anyone else's profile on its own (creatorDetail). Only the profiles the build
+  // uses are read (owner, 23 Oct 2026: reading all 48,000 took about 100 s, past the timer's limit): those creators, LIVE
+  // creators (their photos) and anyone sharing a nickname with a creator in the video lists (videos are matched by nickname).
+  const listed = new Set(await rpc<string[]>("rank_listed_json", { p_from: minus(day, 59), p_to: day }));
+  for (const s of SLOTS) for (const r of creators[s]) listed.add(r[1]);
+  const liveUsers = [...lLists.values()].flat().map((l) => String(l.creator_name ?? "")).filter(Boolean);
+  const nicks = [...new Set(vdays.filter((r) => r.slot.endsWith("USD")).flatMap((r) => r.items.map((x) => String(x.nick_name ?? ""))).filter(Boolean))];
+  const profiles = await rpc<Record<string, Raw>>("rank_profiles_json", { p_users: [...listed, ...liveUsers], p_nicks: nicks });
   const details: Record<string, Detail> = {};
-  for (const r of detailRows) if (r.username && r.detail && typeof r.detail === "object" && !("error" in r.detail)) details[r.username] = detailOf(r.detail, rate30);
-  const find = (await rpc<Raw[]>("rank_find_json", {})).map((m) => findRow(m)).sort((a, b) => b[8] - a[8] || b[2] - a[2]);
+  for (const [u, d] of Object.entries(profiles)) details[u] = detailOf(d, rate30);
+  // In 4 parts, so each database call stays well under its time limit (in one piece it took 4-15 s).
+  const market: Raw[] = [];
+  for (let part = 0; part < 4; part++) market.push(...(await rpc<Raw[]>("rank_find_json", { p_part: part, p_parts: 4 })));
+  const find = market.map((m) => findRow(m)).sort((a, b) => b[8] - a[8] || b[2] - a[2]);
   const avatarOf = new Map(find.map((f) => [f[0].slice(1), f[7]]));
   // A profile's photo address may have expired while the marketplace list's is newer: use whichever still works.
   for (const [u, d] of Object.entries(details)) if (!freshUrl(d.a) && freshUrl(avatarOf.get(u))) d.a = avatarOf.get(u) ?? null;
@@ -147,8 +160,6 @@ export async function buildRankings(day: string): Promise<Built> {
   }
   for (const s of SLOTS) for (const r of creators[s]) if (!details[r[1]] && avatarOf.get(r[1])) details[r[1]] = { ...emptyDetail(), a: avatarOf.get(r[1]) ?? null };
 
-  // TikTok's daily top-100 video lists from every saved day, for each creator's best-selling video and its daily figures.
-  const vdays = await paged<{ as_of: string; slot: string; items: Raw[] }>(`market_snapshots?dataset=eq.videos&slot=in.(${encodeURIComponent("1D|LOCAL")},${encodeURIComponent("1D|USD")})&as_of=gte.${minus(day, 59)}&select=as_of,slot,items&order=as_of`);
   const byDay = new Map<string, VideoDay>();
   for (const r of vdays) {
     const d = byDay.get(r.as_of) ?? { day: r.as_of, L: [], U: [] };
@@ -157,12 +168,6 @@ export async function buildRankings(day: string): Promise<Built> {
     byDay.set(r.as_of, d);
   }
   const bv = bestVideos([...byDay.values()], details, videos["30D"]);
-
-  // Profiles are kept only for creators the Rankings views can show: those in a saved creators list from the last 60 days
-  // (owner, 15 Oct 2026). Keeping every profile read for the level pass (12,258 on 15 Oct, 7.7 MB) made this row too large
-  // to read in time; the creator panel reads anyone else's profile on its own (creatorDetail).
-  const listed = await listedCreators(day);
-  for (const s of SLOTS) for (const r of creators[s]) listed.add(r[1]);
   const shown = Object.fromEntries(Object.entries(details).filter(([u]) => listed.has(u)));
 
   const lv = await savedLevels();
@@ -177,14 +182,6 @@ export async function buildRankings(day: string): Promise<Built> {
   cache = { at: Date.now(), data: withPhotos({ ...built, pm: [], find: [] }, await savedPhotos().catch(() => new Map<string, string>())) };
   parts.clear();
   return built;
-}
-
-/** Every creator in a saved creators list (any period or type) from the 60 days up to `day`. */
-async function listedCreators(day: string): Promise<Set<string>> {
-  const out = new Set<string>();
-  for (const r of await paged<{ items: Raw[] | null }>(`market_snapshots?dataset=eq.creators&as_of=gte.${minus(day, 59)}&as_of=lte.${day}&select=items&order=as_of,slot`))
-    for (const it of r.items ?? []) if (typeof it.user_name === "string") out.add(it.user_name);
-  return out;
 }
 
 /** One creator's profile read on its own, for a creator outside the Rankings lists (no profile in the built rankings). */
