@@ -31,12 +31,15 @@ export function metricValues(data: Metric[] | undefined): Record<string, number>
   return out;
 }
 
+/** No permission (the channel wasn't connected with Community's permissions): asking metric by metric won't help. */
+const refused = (err: unknown) => err instanceof MetaError && (err.needsReconnect || err.code === 10 || err.code === 200);
+
 /** Reads `metrics` in one call; when Meta refuses the set, one call per metric, keeping the ones it answers. */
 async function metricsOf(url: (metrics: string) => string, metrics: string[]): Promise<Record<string, number>> {
   try {
     return metricValues((await metaFetch<{ data?: Metric[] }>(url(metrics.join(",")))).data);
   } catch (err) {
-    if (err instanceof MetaError && err.needsReconnect) throw err;
+    if (refused(err)) throw err;
     const out: Record<string, number> = {};
     for (const m of metrics) {
       try {
@@ -130,9 +133,11 @@ export async function instagramPosts(igId: string, token: string, since: string)
   const r = await firstAccepted<{ data?: IgMedia[] }>([url(`${base},caption`), url(base)]);
   const recent = (r.data ?? []).filter((x) => !x.timestamp || x.timestamp >= since);
   const out: PostStat[] = [];
+  let allowed = true;
   for (const x of recent) {
-    const m = await metricsOf((metrics) => IG(`${x.id}/insights?${qs({ metric: metrics, access_token: token })}`), ["views", "reach", "saved", "shares"]).catch((err) => {
+    const m = !allowed ? {} : await metricsOf((metrics) => IG(`${x.id}/insights?${qs({ metric: metrics, access_token: token })}`), ["views", "reach", "saved", "shares"]).catch((err) => {
       if (err instanceof MetaError && err.needsReconnect) throw err;
+      if (refused(err)) allowed = false;
       return {};
     });
     const numbers: PostNumbers = { ...pick(m, { views: "views", reach: "reach", saves: "saved", shares: "shares" }) };
@@ -162,9 +167,11 @@ type ThreadsPost = { id: string; timestamp?: string; permalink?: string; text?: 
 export async function threadsPosts(userId: string, token: string, since: string): Promise<PostStat[]> {
   const r = await metaFetch<{ data?: ThreadsPost[] }>(TH(`${userId}/threads?${qs({ fields: "id,timestamp,permalink,text,thumbnail_url,media_type", since: unix(since), limit: "30", access_token: token })}`));
   const out: PostStat[] = [];
+  let allowed = true;
   for (const x of (r.data ?? []).filter((p) => p.media_type !== "REPOST_FACADE")) {
-    const m = await metricsOf((metrics) => TH(`${x.id}/insights?${qs({ metric: metrics, access_token: token })}`), ["views", "likes", "replies", "reposts", "quotes", "shares"]).catch((err) => {
+    const m = !allowed ? {} : await metricsOf((metrics) => TH(`${x.id}/insights?${qs({ metric: metrics, access_token: token })}`), ["views", "likes", "replies", "reposts", "quotes", "shares"]).catch((err) => {
       if (err instanceof MetaError && err.needsReconnect) throw err;
+      if (refused(err)) allowed = false;
       return {} as Record<string, number>;
     });
     out.push({ id: x.id, postedAt: x.timestamp ?? null, permalink: x.permalink ?? null, caption: (x.text ?? "").slice(0, 200), thumb: x.thumbnail_url ?? null, numbers: pick(m, { views: "views", likes: "likes", comments: "replies", reposts: "reposts", quotes: "quotes", shares: "shares" }) });

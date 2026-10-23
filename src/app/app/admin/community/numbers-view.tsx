@@ -102,7 +102,10 @@ export function NumbersView({ channels, days, posts, refreshedAt, now }: { chann
         <section className="nv-card" role="note" style={{ padding: "14px 18px", display: "flex", flexDirection: "column", gap: 6 }}>
           <b>{notes.length === 1 ? "1 channel" : `${notes.length} channels`} couldn&apos;t be read</b>
           <span style={{ fontSize: 13, color: "var(--muted)" }}>Channels connected before Community need connecting again once (Posts → New post → Channels → Connect) so Meta allows the numbers.</span>
-          <span style={{ fontSize: 13 }}>{notes.slice(0, 8).map(([c, note]) => `${c.name}: ${note}`).join(" · ")}{notes.length > 8 ? ` · and ${notes.length - 8} more` : ""}</span>
+          {[...new Set(notes.map(([, note]) => note))].map((note) => {
+            const names = notes.filter(([, x]) => x === note).map(([c]) => c.name);
+            return <span key={note} style={{ fontSize: 13 }}><b>{note}</b> {names.slice(0, 12).join(", ")}{names.length > 12 ? ` and ${names.length - 12} more` : ""}</span>;
+          })}
         </section>
       )}
 
