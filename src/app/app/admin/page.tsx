@@ -8,8 +8,8 @@ export const dynamic = "force-dynamic";
 
 /** Techwide's admin Today, as designed in the mockup. */
 export default async function AdminTodayPage() {
-  await requireAdmin();
-  const d = await adminToday();
+  const me = await requireAdmin();
+  const d = await adminToday(me.id);
   return (
     <>
       <div className="nv nv-page">

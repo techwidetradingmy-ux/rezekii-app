@@ -1,4 +1,5 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import { MetaError } from "../../integrations/meta/graph.ts";
 import { facebookPicture } from "../../integrations/meta/facebook.ts";
 import { instagramProfile, refreshInstagramToken } from "../../integrations/meta/instagram.ts";
 import { refreshThreadsToken, threadsProfile } from "../../integrations/meta/threads.ts";
@@ -90,21 +91,28 @@ export async function freshToken(acc: SocialAccount): Promise<string> {
   return t.token;
 }
 
-const PICTURE_EVERY_MS = 2 * 86400e3;
+const PICTURE_EVERY_MS = 86400e3;
 
-/** Accounts whose profile picture link wasn't refreshed for 2 days (Facebook's and Instagram's links expire after a few). */
+/** Accounts not checked for a day: the daily sign-in check, which also refreshes the profile picture link (Facebook's and Instagram's links expire after a few days). */
 export async function accountsForPictures(limit: number): Promise<SocialAccount[]> {
   const before = new Date(Date.now() - PICTURE_EVERY_MS).toISOString();
   return (await supabaseRest(`social_accounts?status=eq.active&avatar_checked_at=lt.${encodeURIComponent(before)}&order=avatar_checked_at&limit=${limit}`)).json();
 }
 
-/** Fetches the account's current picture link and saves it; the check time moves on even if the app didn't answer. */
+/**
+ * Fetches the account's current picture link and saves it. Meta saying the sign-in has ended marks the channel "Reconnect"
+ * (as a failed post does); the check time moves on even if the app didn't answer.
+ */
 export async function refreshPicture(acc: SocialAccount): Promise<string> {
   let url: string | null | undefined;
   try {
     if (acc.platform === "facebook") url = await facebookPicture(acc.external_id, decryptToken(acc.token_enc));
     else if (acc.platform === "instagram") url = (await instagramProfile(await freshToken(acc))).profile_picture_url;
     else url = (await threadsProfile(await freshToken(acc))).threads_profile_picture_url;
+  } catch (err) {
+    if (!(err instanceof MetaError && err.needsReconnect)) throw err;
+    await markReconnect(acc.id);
+    return "needs reconnecting";
   } finally {
     await supabaseRest(`social_accounts?id=eq.${acc.id}`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ avatar_checked_at: iso(), ...(url ? { avatar_url: url } : {}) }) });
   }

@@ -118,7 +118,8 @@ export function AdminTodayView({ d }: { d: AdminToday }) {
                     {r.techwide && r.kind !== "reconnect" && r.postId && (
                       <Link href={`/app/admin/calendar?post=${r.postId}`} className="nv-btn nv-sm nv-press" style={{ textDecoration: "none" }}>{r.kind === "failed" ? "Reschedule" : "Open"}</Link>
                     )}
-                    {r.techwide && r.kind === "reconnect" && <a href="/api/auth/tiktok/start" className="nv-btn nv-sm nv-press" style={{ textDecoration: "none" }}>Reconnect now</a>}
+                    {r.techwide && r.kind === "reconnect" && r.by && <span style={{ fontSize: 13, color: "var(--muted)" }}>Connected by {r.by} · they reconnect</span>}
+                    {r.techwide && r.kind === "reconnect" && !r.by && <a href={r.href ?? "/api/auth/tiktok/start"} className="nv-btn nv-sm nv-press" style={{ textDecoration: "none" }}>Reconnect now</a>}
                   </span>
                 </div>
               );

@@ -1,12 +1,14 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { mytDay } from "../refresh/plan.ts";
 import { greeting, longDay } from "../today/rules.ts";
+import { NAMES, type Platform } from "../social/rules.ts";
 import { allAccounts, shopPlacesUsed } from "./accounts.ts";
 import { systemHealth, type HealthLine } from "./health.ts";
 import { postsBetween, type CalPost, type CalStatus } from "./posts.ts";
 import { commission, type Commission } from "./tap.ts";
 
-export type Need = { kind: "failed" | "unconfirmed" | "reconnect"; title: string; detail: string; techwide: boolean; postId?: string };
+/** A reconnect item's button goes to `href` (TikTok's sign-in when not given); `by` names the admin who must reconnect instead. */
+export type Need = { kind: "failed" | "unconfirmed" | "reconnect"; title: string; detail: string; techwide: boolean; postId?: string; href?: string; by?: string };
 export type TimelineRow = { handle: string; posts: { time: string; left: number; status: CalStatus; title: string }[] };
 export type CreatorWaiting = { id: string; handle: string; name: string; avatar: string | null; tiktok: boolean; at: string };
 export type AdminToday = {
@@ -31,14 +33,56 @@ const count = async (path: string) => {
   return Number((res.headers.get("content-range") ?? "*/0").split("/")[1]) || 0;
 };
 
-/** Everything the admin Today page shows, from Rezekii's own records and the daily refresh. */
-export async function adminToday(): Promise<AdminToday> {
+export type ReconnectChannel = { user_id: string; platform: Platform; name: string | null; username: string | null };
+export type ChannelOwner = { id: string; role: "admin" | "creator"; display_name: string | null; email: string | null };
+const UNIT: Record<Platform, [string, string]> = { facebook: ["Page", "Pages"], instagram: ["account", "accounts"], threads: ["profile", "profiles"] };
+
+/**
+ * Facebook, Instagram and Threads channels marked "Reconnect", one item per owner per app. Only the admin who connected them
+ * can connect them again, so only they get the button; another admin's show who must do it.
+ */
+export function channelReconnects(rows: ReconnectChannel[], owners: ChannelOwner[], adminId: string): Need[] {
+  const byId = new Map(owners.map((u) => [u.id, u]));
+  const groups = new Map<string, ReconnectChannel[]>();
+  for (const r of rows) {
+    const list = groups.get(`${r.user_id} ${r.platform}`) ?? [];
+    list.push(r);
+    groups.set(`${r.user_id} ${r.platform}`, list);
+  }
+  return [...groups.values()].map((list) => {
+    const { user_id, platform } = list[0];
+    const owner = byId.get(user_id);
+    const mine = user_id === adminId;
+    const admin = mine || owner?.role === "admin";
+    const names = list.map((r) => r.name ?? r.username ?? NAMES[platform]);
+    const shown = names.length <= 2 ? names.join(" and ") : `${names.slice(0, 2).join(", ")} and ${names.length - 2} more`;
+    return {
+      kind: "reconnect" as const,
+      title: `Reconnect needed · ${NAMES[platform]} · ${list.length} ${UNIT[platform][list.length === 1 ? 0 : 1]}`,
+      detail: `${shown} can't post until ${list.length === 1 ? "it's" : "they're"} connected again.`,
+      techwide: admin,
+      href: mine ? `/api/auth/meta/${platform}/start` : undefined,
+      by: admin && !mine ? owner?.display_name || owner?.email || "another admin" : undefined,
+    };
+  });
+}
+
+/** The channels marked "Reconnect" and their owners (looked up only when there are some). */
+async function reconnectChannels(): Promise<{ rows: ReconnectChannel[]; owners: ChannelOwner[] }> {
+  const rows = (await (await supabaseRest("social_accounts?status=eq.reconnect&select=user_id,platform,name,username&order=connected_at&limit=2000")).json()) as ReconnectChannel[];
+  if (!rows.length) return { rows, owners: [] };
+  const ids = [...new Set(rows.map((r) => r.user_id))].join(",");
+  return { rows, owners: (await (await supabaseRest(`app_users?id=in.(${ids})&select=id,role,display_name,email`)).json()) as ChannelOwner[] };
+}
+
+/** Everything the admin Today page shows the signed-in admin (`adminId`), from Rezekii's own records and the daily refresh. */
+export async function adminToday(adminId: string): Promise<AdminToday> {
   const now = Date.now();
   const dayStart = Date.parse(`${mytDay(now)}T00:00:00Z`) - MYT;
   const startIso = new Date(dayStart).toISOString();
   const endIso = new Date(dayStart + 86400_000).toISOString();
   const twoDaysAgo = new Date(now - 2 * 86400_000).toISOString();
-  const [today, recent, accounts, links, samplesWaiting, waitingRows, creators, places, health, tapLive, com, creatorsWaiting] = await Promise.all([
+  const [today, recent, accounts, links, samplesWaiting, waitingRows, creators, places, health, tapLive, com, creatorsWaiting, channels] = await Promise.all([
     postsBetween(startIso, endIso),
     postsBetween(twoDaysAgo, new Date(now).toISOString()),
     allAccounts(),
@@ -51,6 +95,7 @@ export async function adminToday(): Promise<AdminToday> {
     count("tap_catalog?select=product_id"),
     commission(),
     count("creator_access?status=eq.waiting&select=user_id"),
+    reconnectChannels(),
   ]);
   const by = (s: CalStatus) => today.filter((p) => p.status === s).length;
   const seen = new Set<string>();
@@ -59,6 +104,7 @@ export async function adminToday(): Promise<AdminToday> {
     ...posts.filter((p) => p.status === "failed").map((p) => ({ kind: "failed" as const, title: `Failed post · ${p.handle} · ${time(p.at)}`, detail: p.error ?? "TikTok refused the post.", techwide: p.techwide, postId: p.id })),
     ...posts.filter((p) => p.status === "unconfirmed").map((p) => ({ kind: "unconfirmed" as const, title: `Unconfirmed post · ${p.handle} · ${time(p.at)}`, detail: "Sent to TikTok, but TikTok hasn't confirmed it after 30 minutes. Check the account on TikTok first.", techwide: p.techwide, postId: p.id })),
     ...accounts.filter((a) => a.tiktok === "expired").map((a) => ({ kind: "reconnect" as const, title: `Reconnect needed · ${a.handle}`, detail: `TikTok Connection expired.${a.queued ? ` ${a.queued} ${a.queued === 1 ? "post is" : "posts are"} paused until ${a.techwide ? "it is reconnected" : "the owner reconnects"}.` : ""}`, techwide: a.techwide })),
+    ...channelReconnects(channels.rows, channels.owners, adminId),
   ];
   const rows = new Map<string, TimelineRow>();
   for (const p of today.sort((a, b) => a.at.localeCompare(b.at))) {

@@ -1,7 +1,7 @@
 import { MetaError } from "../../integrations/meta/graph.ts";
 import { facebookDay, facebookPosts, instagramDay, instagramPosts, threadsDay, threadsPosts, type DayNumbers, type PostNumbers, type PostStat } from "../../integrations/meta/insights.ts";
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
-import { freshToken, type SocialAccount } from "../social/accounts.ts";
+import { freshToken, markReconnect, type SocialAccount } from "../social/accounts.ts";
 import type { Platform } from "../social/rules.ts";
 
 /**
@@ -16,11 +16,11 @@ const POST_DAYS = 30;
 const post = (path: string, rows: unknown[]) =>
   supabaseRest(path, { method: "POST", headers: { prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify(rows) });
 
-/** The Admins' active channels, oldest first. */
+/** The Admins' channels, oldest first: active ones and those waiting to be reconnected, so a channel never silently drops off Numbers. */
 async function adminChannels(): Promise<SocialAccount[]> {
   const admins = (await (await supabaseRest("app_users?role=eq.admin&select=id")).json()) as { id: string }[];
   if (!admins.length) return [];
-  return (await supabaseRest(`social_accounts?user_id=in.(${admins.map((a) => a.id).join(",")})&status=eq.active&order=connected_at`)).json();
+  return (await supabaseRest(`social_accounts?user_id=in.(${admins.map((a) => a.id).join(",")})&status=in.(active,reconnect)&order=connected_at`)).json();
 }
 
 /** Yesterday in Malaysia, as its date and its start and end times. */
@@ -42,23 +42,27 @@ export function noteFor(err: unknown): string {
 const DAY_READERS: Record<Platform, (id: string, token: string, from: string, to: string) => Promise<DayNumbers>> = { facebook: facebookDay, instagram: instagramDay, threads: threadsDay };
 const POST_READERS: Record<Platform, (id: string, token: string, since: string) => Promise<PostStat[]>> = { facebook: facebookPosts, instagram: instagramPosts, threads: threadsPosts };
 
-/** One channel's yesterday and recent posts, saved. */
+/** One channel's yesterday and recent posts, saved. Meta saying the sign-in has ended also marks the channel "Reconnect". */
 async function refreshChannel(acc: SocialAccount, now: number): Promise<number> {
   const { day, from, to } = yesterday(now);
   let numbers: DayNumbers & { note?: string };
   let posts: PostStat[] = [];
+  let failed: unknown;
   try {
     const token = await freshToken(acc);
     // The day and the posts are read apart: a Page connected before Community can still list its posts.
     const [d, p] = await Promise.allSettled([DAY_READERS[acc.platform](acc.external_id, token, from, to), POST_READERS[acc.platform](acc.external_id, token, new Date(now - POST_DAYS * DAY).toISOString())]);
+    if (d.status === "rejected") failed = d.reason;
     numbers = d.status === "fulfilled" ? d.value : { note: noteFor(d.reason) };
     // Facebook answers an empty list, not an error, when the Page wasn't connected with Community's permissions.
     if (d.status === "fulfilled" && [numbers.views, numbers.reach, numbers.engagement, numbers.profile_views].every((v) => v === undefined))
       numbers = { ...numbers, note: "Connect this channel again to allow Community's numbers." };
     if (p.status === "fulfilled") posts = p.value;
   } catch (err) {
+    failed = err;
     numbers = { note: noteFor(err) };
   }
+  if (failed instanceof MetaError && failed.needsReconnect && acc.status !== "reconnect") await markReconnect(acc.id);
   const fetched = new Date(now).toISOString();
   await post("social_stats?on_conflict=account_id,day", [{ account_id: acc.id, day, numbers, fetched_at: fetched }]);
   if (posts.length)
