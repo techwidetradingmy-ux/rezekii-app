@@ -22,7 +22,7 @@ const ago = (iso: string, now: number) => {
 };
 /** Exact date and time (Malaysia), so an admin can tell which account they just created. */
 const when = (iso: string) => new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kuala_Lumpur" });
-const methods = (c: CreatorRow) => [c.google && "Google", c.tiktokLogin && `TikTok ${c.tiktokLogin}`, c.password && "Email and password"].filter(Boolean).join(" · ") || "—";
+const methods = (c: CreatorRow) => [c.google && "Google", c.tiktokLogin && `TikTok ${c.tiktokLogin}`, c.password && (c.loginEmail ? `Email ${c.loginEmail}` : "Email and password")].filter(Boolean).join(" · ") || "—";
 const socialOf = (c: CreatorRow, platform: string) => c.social.filter((s) => s.platform === platform).map((s) => `${s.name}${s.active ? "" : " (reconnect)"}`).join(", ") || "Not connected";
 /** Accounts that sign in with email and password alone: the only ones that can be made admin here. */
 const emailOnly = (c: CreatorRow) => c.password && !c.google && !c.tiktokLogin && !c.admin;
@@ -55,7 +55,7 @@ export function CreatorsView({ creators, places, auto, now }: { creators: Creato
   const waitlist = creators.filter((c) => c.access === "waitlist" || c.access === "invited").sort((a, b) => (a.requestedAt ?? "").localeCompare(b.requestedAt ?? ""));
   const inTab = [(c: CreatorRow) => c.access === "waiting", (c: CreatorRow) => c.access === "waitlist" || c.access === "invited", (c: CreatorRow) => c.access === "approved", (c: CreatorRow) => c.access === "rejected", (c: CreatorRow) => c.admin, () => true];
   const s = q.trim().toLowerCase();
-  const shown = creators.filter((c) => inTab[tab](c) && (!s || [c.handle, c.name, c.email, c.tiktokAccount, c.shopAccount, ...c.social.map((x) => x.name)].join(" ").toLowerCase().includes(s)));
+  const shown = creators.filter((c) => inTab[tab](c) && (!s || [c.handle, c.name, c.email, c.loginEmail, c.tiktokAccount, c.shopAccount, ...c.social.map((x) => x.name)].join(" ").toLowerCase().includes(s)));
   const counts = inTab.map((f) => creators.filter(f).length);
 
   const closePanel = () => {

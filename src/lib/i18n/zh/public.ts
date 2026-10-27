@@ -201,7 +201,6 @@ export const PUBLIC: Record<string, string> = {
   "Enter your email.": "请输入你的邮箱。",
   "Choose a password.": "请设置密码。",
   "Nothing to change.": "没有需要更改的内容。",
-  "This account signs in with Google, so use your Google email.": "此账户使用 Google 登录，请使用你的 Google 邮箱。",
 
   // Getting set up
   "Get started · Rezekii": "开始设置 · Rezekii",

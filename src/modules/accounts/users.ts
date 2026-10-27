@@ -166,13 +166,18 @@ const LOCK_AFTER = 5;
 const LOCK_MINUTES = 15;
 let dummyHash: Promise<string> | null = null;
 
-/** Creates a creator account that signs in with email and password. The email must not already have a password account. */
+/** Whether another account (not `except`) already uses `email`: as its sign-in email, or its Google or sign-up email. */
+async function emailInUse(email: string, except?: string): Promise<boolean> {
+  const res = await supabaseRest("rpc/email_in_use", { method: "POST", body: JSON.stringify({ p_email: email, p_except: except ?? null }) });
+  return (await res.json()) === true;
+}
+
+/** Creates a creator account that signs in with email and password. No other account may use the email in any way. */
 export async function createEmailUser(email: string, password: string, name: string | null): Promise<EmailResult> {
-  const taken = (await (await supabaseRest(`app_users?email=eq.${encodeURIComponent(email)}&password_hash=not.is.null&select=id&limit=1`)).json()) as unknown[];
   const exists: EmailResult = { ok: false, error: "An account with this email already exists. Sign in instead.", status: 409 };
-  if (taken.length) return exists;
+  if (await emailInUse(email)) return exists;
   try {
-    const user = await insert({ email, display_name: name, role: "creator", password_hash: await hashPassword(password), last_sign_in_at: now() });
+    const user = await insert({ email, login_email: email, display_name: name, role: "creator", password_hash: await hashPassword(password), last_sign_in_at: now() });
     return { ok: true, user };
   } catch (err) {
     // Two sign-ups with the same email at once: the unique index refuses the second.
@@ -181,26 +186,27 @@ export async function createEmailUser(email: string, password: string, name: str
   }
 }
 
-/** Adds email sign-in to a signed-in account, or changes its email or password; the rules are in emailLoginProblem. */
+/**
+ * Adds email sign-in to a signed-in account, or changes its sign-in email or password; the rules are in emailLoginProblem.
+ * The sign-in email may be any address no other account uses. An account that signs in with Google keeps its Google email
+ * as `email`; for the others the sign-in email is their email too.
+ */
 export async function setEmailLogin(userId: string, change: { email?: string | null; password?: string }, current: string): Promise<EmailResult> {
-  type Row = { role: string; email: string | null; google_sub: string | null; password_hash: string | null };
-  const [me] = (await (await supabaseRest(`app_users?id=eq.${userId}&select=role,email,google_sub,password_hash&limit=1`)).json()) as Row[];
+  type Row = { role: string; google_sub: string | null; password_hash: string | null };
+  const [me] = (await (await supabaseRest(`app_users?id=eq.${userId}&select=role,google_sub,password_hash&limit=1`)).json()) as Row[];
   if (!me) return { ok: false, error: "Sign in first.", status: 401 };
   const currentOk = !!me.password_hash && (await verifyPassword(current, me.password_hash));
-  const problem = emailLoginProblem({ role: me.role, hasPassword: !!me.password_hash, currentOk, ...change, googleEmail: me.google_sub ? me.email : null });
+  const problem = emailLoginProblem({ role: me.role, hasPassword: !!me.password_hash, currentOk, ...change });
   if (problem) return { ok: false, error: problem, status: me.password_hash && !currentOk ? 403 : 400 };
-  const taken: EmailResult = { ok: false, error: "Another Rezekii account already signs in with this email.", status: 409 };
-  if (change.email) {
-    const others = (await (await supabaseRest(`app_users?email=eq.${encodeURIComponent(change.email)}&password_hash=not.is.null&id=neq.${userId}&select=id&limit=1`)).json()) as unknown[];
-    if (others.length) return taken;
-  }
+  const taken: EmailResult = { ok: false, error: "Another Rezekii account already uses this email.", status: 409 };
+  if (change.email && (await emailInUse(change.email, userId))) return taken;
   const fields: Record<string, unknown> = { failed_logins: 0, locked_until: null };
-  if (change.email) fields.email = change.email;
+  if (change.email) Object.assign(fields, { login_email: change.email }, me.google_sub ? {} : { email: change.email });
   if (change.password !== undefined) fields.password_hash = await hashPassword(change.password);
   try {
     return { ok: true, user: await patch(userId, fields) };
   } catch (err) {
-    // The unique index on email logins refuses an email another account took at the same moment.
+    // The unique indexes refuse an email another account took at the same moment.
     if (err instanceof Error && err.message.startsWith("Supabase 409")) return taken;
     throw err;
   }
@@ -213,7 +219,7 @@ export async function setEmailLogin(userId: string, change: { email?: string | n
 export async function emailSignIn(email: string, password: string): Promise<EmailResult> {
   const wrong: EmailResult = { ok: false, error: "Wrong email or password.", status: 401 };
   type Row = { id: string; password_hash: string; failed_logins: number; locked_until: string | null; role: AppUser["role"]; email: string | null; google_sub: string | null };
-  const [row] = (await (await supabaseRest(`app_users?email=eq.${encodeURIComponent(email)}&password_hash=not.is.null&select=id,password_hash,failed_logins,locked_until,role,email,google_sub&limit=1`)).json()) as Row[];
+  const [row] = (await (await supabaseRest(`app_users?login_email=eq.${encodeURIComponent(email.toLowerCase())}&password_hash=not.is.null&select=id,password_hash,failed_logins,locked_until,role,email,google_sub&limit=1`)).json()) as Row[];
   if (!row) {
     dummyHash ??= hashPassword("not a real password");
     await verifyPassword(password, await dummyHash);

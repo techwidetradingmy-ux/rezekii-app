@@ -10,13 +10,13 @@ type Props = { email: string | null; has: boolean; googleEmail: string | null; t
 /**
  * Sign-in & security on Account (owner's pick C, 15 Oct 2026): the ways this account signs in, then email and password side
  * by side. Email sign-in is added with an email and a password; after that each one changes on its own, with the current
- * password. An account that also signs in with Google keeps its Google email. `min`: the shortest password allowed (12 for admins).
+ * password. The sign-in email is its own address (27 Oct 2026): an account that also signs in with Google may use a different
+ * one, and Google sign-in doesn't change it. `min`: the shortest password allowed (12 for admins).
  */
 export function SignInSecurity({ email, has, googleEmail, tiktok, min, onDone }: Props) {
   const t = useT();
   const [busy, setBusy] = useState<Which | null>(null);
   const [error, setError] = useState<{ which: Which; text: string } | null>(null);
-  const emailLocked = has && !!googleEmail;
 
   async function send(which: Which, form: HTMLFormElement, body: Record<string, unknown>, done: string) {
     if (busy) return;
@@ -75,35 +75,31 @@ export function SignInSecurity({ email, has, googleEmail, tiktok, min, onDone }:
         <form className="ac-sig-card" onSubmit={saveEmail}>
           <h3>{has ? t("Email") : t("Add email sign-in")}</h3>
           <span className="ac-note">
-            {emailLocked ? t("You sign in with {email}, your Google email. It changes with your Google account.", { email: email ?? "" }) : has ? t("You sign in with {email}. Change it here.", { email: email ?? "" }) : t("Add an email and password to sign in without TikTok. You can still sign in the way you do now.")}
+            {has ? t("You sign in with {email}. Change it here.", { email: email ?? "" }) : googleEmail ? t("Add an email and password to sign in without Google. Any email no other Rezekii account uses; it can differ from your Google email.") : t("Add an email and password to sign in without TikTok. You can still sign in the way you do now.")}
           </span>
-          {!emailLocked && (
+          <label className="ac-f">
+            {has ? t("New email") : t("Email")}
+            <input name="email" type="email" className="nv-input" required placeholder="you@example.com" autoComplete="email" />
+          </label>
+          {has ? (
+            <label className="ac-f">
+              {t("Your password")}
+              <input name="current" type="password" className="nv-input" required autoComplete="current-password" />
+            </label>
+          ) : (
             <>
               <label className="ac-f">
-                {has ? t("New email") : t("Email")}
-                <input name="email" type="email" className="nv-input" required readOnly={!!googleEmail} defaultValue={googleEmail ?? ""} placeholder="you@example.com" autoComplete="email" />
+                {t("Password")}
+                <input name="password" type="password" className="nv-input" required minLength={min} maxLength={128} placeholder={t("At least {n} characters", { n: min })} autoComplete="new-password" />
               </label>
-              {has ? (
-                <label className="ac-f">
-                  {t("Your password")}
-                  <input name="current" type="password" className="nv-input" required autoComplete="current-password" />
-                </label>
-              ) : (
-                <>
-                  <label className="ac-f">
-                    {t("Password")}
-                    <input name="password" type="password" className="nv-input" required minLength={min} maxLength={128} placeholder={t("At least {n} characters", { n: min })} autoComplete="new-password" />
-                  </label>
-                  <label className="ac-f">
-                    {t("Type it again")}
-                    <input name="again" type="password" className="nv-input" required minLength={min} maxLength={128} autoComplete="new-password" />
-                  </label>
-                </>
-              )}
-              {error?.which === "email" && <span role="alert" className="ac-err">{t(error.text)}</span>}
-              <button type="submit" className="nv-btn nv-press" disabled={busy === "email"}>{busy === "email" ? t("Saving…") : has ? t("Change email") : t("Add email sign-in")}</button>
+              <label className="ac-f">
+                {t("Type it again")}
+                <input name="again" type="password" className="nv-input" required minLength={min} maxLength={128} autoComplete="new-password" />
+              </label>
             </>
           )}
+          {error?.which === "email" && <span role="alert" className="ac-err">{t(error.text)}</span>}
+          <button type="submit" className="nv-btn nv-press" disabled={busy === "email"}>{busy === "email" ? t("Saving…") : has ? t("Change email") : t("Add email sign-in")}</button>
         </form>
 
         <form className={`ac-sig-card ${has ? "" : "ac-off"}`} onSubmit={savePassword}>

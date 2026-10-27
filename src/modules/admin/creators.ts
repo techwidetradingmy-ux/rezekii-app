@@ -27,8 +27,10 @@ export type CreatorRow = {
   access: AccessStatus | "none";
   reason: string | null;
   requestedAt: string | null;
-  /** Sign-in email: their Google address, or the email they sign in with. */
+  /** Their email: their Google address, or the email they signed up with. */
   email: string | null;
+  /** The email they sign in with, with a password (can differ from a Google address). */
+  loginEmail: string | null;
   /** Signs in with Google / with TikTok (@handle) / with email and password. */
   google: boolean;
   tiktokLogin: string | null;
@@ -43,13 +45,13 @@ export type CreatorRow = {
   admin: boolean;
 };
 
-type U = AppUser & { google_sub: string | null; created_at: string; last_sign_in_at: string | null };
+type U = AppUser & { google_sub: string | null; login_email: string | null; created_at: string; last_sign_in_at: string | null };
 const tally = <T,>(rows: T[], key: (r: T) => string) => rows.reduce((m, r) => m.set(key(r), (m.get(key(r)) ?? 0) + 1), new Map<string, number>());
 
 /** Every account (admins use the creator pages too) with how they sign in, the accounts they connected, level, links and samples. */
 export async function creatorList(): Promise<CreatorRow[]> {
   const [users, levels, conns, shops, links, samples, access, saved, withPassword, socials] = await Promise.all([
-    supabaseRest(`app_users?role=in.(creator,admin)&select=${USER_COLUMNS},google_sub,created_at,last_sign_in_at&order=created_at.desc&limit=5000`).then((r) => r.json() as Promise<U[]>),
+    supabaseRest(`app_users?role=in.(creator,admin)&select=${USER_COLUMNS},google_sub,login_email,created_at,last_sign_in_at&order=created_at.desc&limit=5000`).then((r) => r.json() as Promise<U[]>),
     supabaseRest("creator_levels?select=user_id,level,gold_invited&limit=5000").then((r) => r.json() as Promise<{ user_id: string; level: Level; gold_invited: boolean }[]>),
     supabaseRest("tiktok_connections?select=user_id,username&limit=5000").then((r) => r.json() as Promise<{ user_id: string; username: string | null }[]>),
     supabaseRest("affiliate_connections?select=username,user_id&limit=5000").then((r) => r.json() as Promise<{ username: string; user_id: string | null }[]>),
@@ -92,6 +94,7 @@ export async function creatorList(): Promise<CreatorRow[]> {
     reason: acc.get(u.id)?.reason ?? null,
     requestedAt: acc.get(u.id)?.requested_at ?? null,
     email: u.email,
+    loginEmail: u.login_email,
     google: !!u.google_sub,
     tiktokLogin: u.tiktok_open_id ? at(u.tiktok_username) ?? "TikTok" : null,
     password: pw.has(u.id),

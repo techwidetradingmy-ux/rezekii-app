@@ -35,7 +35,7 @@ const day = (iso: string, lang: Lang = "en") => new Date(iso).toLocaleDateString
 export async function accountOverview(user: AppUser, tapRows?: ReturnType<typeof myTapRows>, lang: Lang = "en"): Promise<AccountOverview> {
   const weekAgo = new Date(Date.now() - 7 * 86400_000).toISOString();
   const [[row], hasPassword, [conn], shop, links, tap] = await Promise.all([
-    supabaseRest(`app_users?id=eq.${user.id}&select=google_sub,created_at`).then((r) => r.json() as Promise<{ google_sub: string | null; created_at: string }[]>),
+    supabaseRest(`app_users?id=eq.${user.id}&select=google_sub,created_at,login_email`).then((r) => r.json() as Promise<{ google_sub: string | null; created_at: string; login_email: string | null }[]>),
     count(`app_users?id=eq.${user.id}&password_hash=not.is.null&select=id`),
     supabaseRest(`tiktok_connections?user_id=eq.${user.id}&select=username,connected_at,status&order=updated_at.desc&limit=1`).then((r) => r.json() as Promise<{ username: string | null; connected_at: string; status: string }[]>),
     Promise.all([
@@ -48,7 +48,7 @@ export async function accountOverview(user: AppUser, tapRows?: ReturnType<typeof
   const signIn = [
     ...(user.tiktok_open_id ? [`TikTok${user.tiktok_username ? ` · @${user.tiktok_username}` : ""}`] : []),
     ...(row?.google_sub ? [`Google${user.email ? ` · ${user.email}` : ""}`] : []),
-    ...(hasPassword && user.email ? [`${translate(lang, "email")} · ${user.email}`] : []),
+    ...(hasPassword && row?.login_email ? [`${translate(lang, "email")} · ${row.login_email}`] : []),
   ];
   return {
     joined: row ? day(row.created_at, lang) : "",
@@ -57,7 +57,7 @@ export async function accountOverview(user: AppUser, tapRows?: ReturnType<typeof
     shop: { status: shop[0]?.status ?? "none", reason: shop[0]?.reason ?? null, position: shop[0]?.position ?? null, linked: !!shop[1][0], handle: shop[1][0]?.username ?? null },
     linksThisWeek: links,
     showcase: tap.rows.filter((r) => r.campaignId).length,
-    emailLogin: { email: hasPassword ? user.email : null, has: !!hasPassword, googleEmail: row?.google_sub ? user.email : null, tiktok: user.tiktok_open_id ? `@${user.tiktok_username ?? "TikTok"}` : null },
+    emailLogin: { email: hasPassword ? (row?.login_email ?? null) : null, has: !!hasPassword, googleEmail: row?.google_sub ? user.email : null, tiktok: user.tiktok_open_id ? `@${user.tiktok_username ?? "TikTok"}` : null },
   };
 }
 

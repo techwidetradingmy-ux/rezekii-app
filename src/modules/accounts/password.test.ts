@@ -30,27 +30,22 @@ test("password: email and length rules", () => {
 });
 
 test("email sign-in: added with an email and a password, then each changes on its own with the current password", () => {
-  const first = { role: "creator", hasPassword: false, currentOk: false, googleEmail: null };
+  const first = { role: "creator", hasPassword: false, currentOk: false };
   assert.equal(emailLoginProblem({ ...first, email: "tina@techwide.my", password: "long enough" }), null);
   assert.equal(emailLoginProblem({ ...first, email: "tina@techwide.my" }), "Choose a password.");
   assert.equal(emailLoginProblem({ ...first, password: "long enough" }), "Enter your email.");
   assert.equal(emailLoginProblem({ ...first, email: null, password: "long enough" }), "Enter a valid email address.");
   assert.equal(emailLoginProblem({ ...first, email: "tina@techwide.my", password: "short" }), "Use at least 8 characters.");
-  // A Google admin may add a password too (27 Oct 2026): their Google email, and 12 characters.
-  assert.equal(emailLoginProblem({ ...first, role: "admin", email: "a@techwide.my", password: "long enough", googleEmail: "a@techwide.my" }), "Use at least 12 characters.");
-  assert.equal(emailLoginProblem({ ...first, role: "admin", email: "a@techwide.my", password: "long enough!", googleEmail: "a@techwide.my" }), null);
-  assert.equal(emailLoginProblem({ ...first, role: "admin", email: "b@techwide.my", password: "long enough!", googleEmail: "a@techwide.my" }), "This account signs in with Google, so use your Google email.");
-  // Admins who sign in with email and password (made admin in Creators) keep it, with 12 characters.
+  // Admins may add a password too (27 Oct 2026), with 12 characters and any sign-in email no other account uses.
   assert.equal(emailLoginProblem({ ...first, role: "admin", email: "a@techwide.my", password: "long enough" }), "Use at least 12 characters.");
   assert.equal(emailLoginProblem({ ...first, role: "admin", email: "a@techwide.my", password: "long enough!" }), null);
 
-  const later = { role: "creator", hasPassword: true, currentOk: true, googleEmail: null };
+  const later = { role: "creator", hasPassword: true, currentOk: true };
   assert.equal(emailLoginProblem({ ...later, email: "new@techwide.my" }), null); // email only
   assert.equal(emailLoginProblem({ ...later, password: "new password" }), null); // password only
   assert.equal(emailLoginProblem({ ...later }), "Nothing to change.");
   assert.equal(emailLoginProblem({ ...later, currentOk: false, email: "new@techwide.my" }), "Your current password is wrong.");
 
-  // An account that also signs in with Google keeps its Google email.
-  assert.equal(emailLoginProblem({ ...first, googleEmail: "Tina@Techwide.my", email: "tina@techwide.my", password: "long enough" }), null);
-  assert.equal(emailLoginProblem({ ...first, googleEmail: "tina@techwide.my", email: "other@gmail.com", password: "long enough" }), "This account signs in with Google, so use your Google email.");
+  // The sign-in email is its own address (27 Oct 2026): an account that also uses Google may pick a different one.
+  assert.equal(emailLoginProblem({ ...first, email: "other@gmail.com", password: "long enough" }), null);
 });
