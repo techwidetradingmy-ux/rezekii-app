@@ -707,7 +707,7 @@ function ChannelsSheet({ channels, onDisconnect, onCheck, onClose }: { channels:
                   ) : (
                     <button type="button" className="btn-outline" disabled={!!busy} onClick={() => run(c, "check", onCheck)}>{busy === c.key + "check" ? t("Checking…") : t("Check now")}</button>
                   )}
-                  <button type="button" className="cx-link" disabled={!!busy} onClick={() => run(c, "off", onDisconnect)}>{busy === c.key + "off" ? t("Disconnecting…") : t("Disconnect")}</button>
+                  <button type="button" className="cx-link cx-off" disabled={!!busy} onClick={() => run(c, "off", onDisconnect)}>{busy === c.key + "off" ? t("Disconnecting…") : t("Disconnect")}</button>
                 </div>
               </div>
             ))}

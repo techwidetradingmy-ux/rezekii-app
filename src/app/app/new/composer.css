@@ -45,7 +45,7 @@
 .cx-ch small { color: var(--muted); font-size: 12.5px; }
 .cx-ch .np-btn, .cx-ch .btn-outline { flex-shrink: 0; }
 .cx-acts { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-.cx-link { border: 0; background: none; padding: 6px 2px; color: var(--red); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.cx-acts .cx-off { padding: 6px 2px; color: var(--red); font-size: 13px; }
 .cx-acts [disabled] { opacity: 0.5; cursor: default; }
 .cx-ch > .cx-face { flex: 0 0 auto; display: inline-grid; width: 34px; height: 34px; }
 .cx-ch > .cx-faces { flex: 0 0 auto; display: inline-flex; }
