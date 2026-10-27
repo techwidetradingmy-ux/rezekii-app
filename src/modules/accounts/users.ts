@@ -1,6 +1,7 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import type { TikTokTokens } from "../../integrations/tiktok/login.ts";
 import { encryptToken } from "../creator-accounts/token-crypto.ts";
+import { tiktokKey } from "../social/picker.ts";
 import { emailLoginProblem, hashPassword, verifyPassword } from "./password.ts";
 
 export type AppUser = {
@@ -59,19 +60,47 @@ export async function upsertTikTokUser(t: { open_id: string; username?: string; 
   return existing ? patch(existing.id, fields) : insert({ ...fields, tiktok_open_id: t.open_id, role: "creator" });
 }
 
+export type TikTokProfile = { open_id: string; union_id?: string; username?: string; display_name?: string; avatar_url?: string };
+
+/**
+ * When rezekii.com moved from TikTok's Sandbox key to the Production key, TikTok gave every account a new open_id. A
+ * connection saved before then (and not seen since) under the same TikTok username is the same account. Usernames can pass
+ * to someone else in time, so this match stops at the end of 2026; union_id (saved from now on) needs no end.
+ */
+export const PRODUCTION_KEY_FROM = "2026-10-26T10:20:00Z";
+const BY_USERNAME_UNTIL = Date.parse("2027-01-01T00:00:00+08:00");
+
+/** The same TikTok account connected before under another open_id: by union_id, or by username for a pre-switch connection. */
+export async function earlierConnection(t: TikTokProfile, now = Date.now()): Promise<{ open_id: string; user_id: string } | null> {
+  const not = `open_id=neq.${encodeURIComponent(t.open_id)}`;
+  const byUnion = t.union_id ? `tiktok_connections?union_id=eq.${encodeURIComponent(t.union_id)}&${not}&select=open_id,user_id&limit=1` : null;
+  const byName = t.username && now < BY_USERNAME_UNTIL ? `tiktok_connections?username=eq.${encodeURIComponent(t.username.toLowerCase())}&union_id=is.null&updated_at=lt.${PRODUCTION_KEY_FROM}&${not}&select=open_id,user_id&limit=1` : null;
+  for (const path of [byUnion, byName]) {
+    if (!path) continue;
+    const [c] = (await (await supabaseRest(path)).json()) as { open_id: string; user_id: string }[];
+    if (c) return c;
+  }
+  return null;
+}
+
 /**
  * TikTok from Account: when someone is already signed in and no other Rezekii account uses this TikTok account, it is
- * connected to the signed-in account (their own name and photo are kept). Otherwise it signs in as usual.
+ * connected to the signed-in account (their own name and photo are kept). Otherwise it signs in as usual. An account TikTok
+ * gave a new open_id (see earlierConnection) stays with the Rezekii account it belonged to.
  */
-export async function linkOrSignInTikTok(
-  current: AppUser | null,
-  t: { open_id: string; username?: string; display_name?: string; avatar_url?: string },
-): Promise<{ user: AppUser; linked: boolean } | { taken: true }> {
-  const owner = await findBy("tiktok_open_id", t.open_id);
+export async function linkOrSignInTikTok(current: AppUser | null, t: TikTokProfile): Promise<{ user: AppUser; linked: boolean } | { taken: true }> {
+  let owner = await findBy("tiktok_open_id", t.open_id);
   if (!owner) {
     // Held as another account's connection (e.g. a Techwide team account): never sign in with it, and never move it.
     const [conn] = (await (await supabaseRest(`tiktok_connections?open_id=eq.${encodeURIComponent(t.open_id)}&select=user_id&limit=1`)).json()) as { user_id: string }[];
     if (conn && conn.user_id !== current?.id) return { taken: true };
+    const before = conn ? null : await earlierConnection(t);
+    if (before && before.user_id !== current?.id) {
+      // Signing in with it: only when it was that Rezekii account's own TikTok sign-in, not a team account it holds.
+      const [u] = current ? [] : ((await (await supabaseRest(`app_users?id=eq.${before.user_id}&select=${USER_COLUMNS}&limit=1`)).json()) as AppUser[]);
+      if (!u || u.tiktok_open_id !== before.open_id) return { taken: true };
+      owner = await patch(u.id, { tiktok_open_id: t.open_id });
+    }
   }
   // Signed in already and this TikTok has its own Rezekii account: keep the two apart (no silent switch of accounts).
   if (current && owner && owner.id !== current.id) return { taken: true };
@@ -90,13 +119,19 @@ export async function linkOrSignInTikTok(
 
 const inSeconds = (s: number) => new Date(Date.now() + s * 1000).toISOString();
 
-/** Saves the account's TikTok connection (tokens encrypted), used later for posting. */
-export async function saveTikTokConnection(userId: string, profile: { open_id: string; username?: string; display_name?: string; avatar_url?: string }, tokens: TikTokTokens): Promise<void> {
+/**
+ * Saves the account's TikTok connection (tokens encrypted), used later for posting; connecting again makes it active. The
+ * same account's connection under an earlier open_id is replaced: its posts, videos and brands move to the new one.
+ */
+export async function saveTikTokConnection(userId: string, profile: TikTokProfile, tokens: TikTokTokens): Promise<void> {
+  const before = await earlierConnection(profile);
   await supabaseRest("tiktok_connections?on_conflict=open_id", {
     method: "POST",
     headers: { prefer: "resolution=merge-duplicates,return=minimal" },
     body: JSON.stringify({
       open_id: profile.open_id,
+      union_id: profile.union_id ?? null,
+      status: "active",
       user_id: userId,
       username: profile.username?.toLowerCase() ?? null,
       display_name: profile.display_name ?? null,
@@ -109,6 +144,19 @@ export async function saveTikTokConnection(userId: string, profile: { open_id: s
       updated_at: now(),
     }),
   });
+  if (before?.user_id === userId) await replaceTikTokConnection(userId, before.open_id, profile.open_id);
+}
+
+/** The account's old open_id gives way to its new one: posts, saved videos and brand channels move over, the old connection goes. */
+export async function replaceTikTokConnection(userId: string, oldId: string, newId: string): Promise<void> {
+  const from = encodeURIComponent(oldId);
+  const move = (path: string, body: unknown) => supabaseRest(path, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify(body) });
+  await move(`posts?user_id=eq.${userId}&tiktok_open_id=eq.${from}`, { tiktok_open_id: newId });
+  await move(`tiktok_videos?open_id=eq.${from}`, { open_id: newId });
+  const brands = (await (await supabaseRest(`social_brands?user_id=eq.${userId}&channels=cs.${encodeURIComponent(`{"${tiktokKey(oldId)}"}`)}&select=id,channels`)).json()) as { id: string; channels: string[] }[];
+  for (const b of brands) await move(`social_brands?id=eq.${b.id}`, { channels: b.channels.map((c) => (c === tiktokKey(oldId) ? tiktokKey(newId) : c)) });
+  await move(`app_users?id=eq.${userId}&tiktok_open_id=eq.${from}`, { tiktok_open_id: newId });
+  await supabaseRest(`tiktok_connections?open_id=eq.${from}&user_id=eq.${userId}`, { method: "DELETE", headers: { prefer: "return=minimal" } });
 }
 
 export type EmailResult = { ok: true; user: AppUser } | { ok: false; error: string; status: number };

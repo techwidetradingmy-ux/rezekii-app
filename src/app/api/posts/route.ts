@@ -3,7 +3,7 @@ import { currentUser } from "@/app/current-user";
 import { queryCreatorInfo, type PrivacyLevel } from "@/integrations/tiktok/posting.ts";
 import { postingHours } from "@/modules/posting/times.ts";
 import { nextRecommendedSlot, postProblems, type PostChoice } from "@/modules/posting/rules.ts";
-import { freshTikTokToken, insertPost, listPosts, scheduledTimes, userTikTokOpenId } from "@/modules/posting/store.ts";
+import { freshTikTokToken, insertPost, listPosts, markTikTokReconnect, RECONNECT_TIKTOK, scheduledTimes, TIKTOK_LOST, userTikTokOpenId } from "@/modules/posting/store.ts";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +47,16 @@ export async function POST(req: NextRequest) {
   const when = b.when ?? "draft";
   let scheduledAt: Date | null = null;
   if (when !== "draft") {
-    const info = await queryCreatorInfo(await freshTikTokToken(openId));
+    const token = await freshTikTokToken(openId).catch((err: unknown) => {
+      if (err instanceof Error && err.message === RECONNECT_TIKTOK) return null;
+      throw err;
+    });
+    if (!token) return NextResponse.json({ error: RECONNECT_TIKTOK }, { status: 409 });
+    const info = await queryCreatorInfo(token);
+    if (info.error && TIKTOK_LOST.has(info.error.code)) {
+      await markTikTokReconnect(openId);
+      return NextResponse.json({ error: RECONNECT_TIKTOK }, { status: 409 });
+    }
     if (info.error || !info.data) return NextResponse.json({ error: "TikTok says this account can't post right now. Try again later." }, { status: 503 });
     const problems = postProblems(choice, info.data);
     if (problems.length) return bad(problems);

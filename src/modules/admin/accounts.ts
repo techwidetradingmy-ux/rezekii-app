@@ -12,21 +12,21 @@ export type AdminAccount = {
   owner: string;
   techwide: boolean;
   shop: boolean;
-  /** "ok" | "expired" (TikTok's refresh token ran out: the owner must sign in with TikTok again) */
+  /** "ok" | "expired" (TikTok's refresh token ran out, or TikTok stopped accepting the connection: the owner must connect it again) */
   tiktok: "ok" | "expired";
   queued: number;
   links30: number;
   connectedAt: string;
 };
 
-type Conn = { open_id: string; user_id: string; username: string | null; display_name: string | null; avatar_url: string | null; refresh_token_expires_at: string; connected_at: string };
+type Conn = { open_id: string; user_id: string; username: string | null; display_name: string | null; avatar_url: string | null; refresh_token_expires_at: string; status: string; connected_at: string };
 type User = { id: string; role: "admin" | "creator"; display_name: string | null; email: string | null };
 
 /** Every TikTok account connected to Rezekii: Techwide's own (held by admins) and creators'. */
 export async function allAccounts(): Promise<AdminAccount[]> {
   const since = new Date(Date.now() - 30 * 86400_000).toISOString();
   const [conns, users, shops, queued, links, saved] = await Promise.all([
-    supabaseRest("tiktok_connections?select=open_id,user_id,username,display_name,avatar_url,refresh_token_expires_at,connected_at&order=connected_at&limit=2000").then((r) => r.json() as Promise<Conn[]>),
+    supabaseRest("tiktok_connections?select=open_id,user_id,username,display_name,avatar_url,refresh_token_expires_at,status,connected_at&order=connected_at&limit=2000").then((r) => r.json() as Promise<Conn[]>),
     supabaseRest("app_users?select=id,role,display_name,email&limit=5000").then((r) => r.json() as Promise<User[]>),
     supabaseRest("affiliate_connections?select=username&limit=2000").then((r) => r.json() as Promise<{ username: string }[]>),
     supabaseRest("posts?status=in.(scheduled,publishing,processing)&select=tiktok_open_id&limit=10000").then((r) => r.json() as Promise<{ tiktok_open_id: string }[]>),
@@ -51,7 +51,7 @@ export async function allAccounts(): Promise<AdminAccount[]> {
       owner: techwide ? "Techwide" : `Creator · ${u?.display_name || u?.email || handle}`,
       techwide,
       shop: !!c.username && shopSet.has(c.username.toLowerCase()),
-      tiktok: Date.parse(c.refresh_token_expires_at) < Date.now() ? "expired" : "ok",
+      tiktok: c.status === "reconnect" || Date.parse(c.refresh_token_expires_at) < Date.now() ? "expired" : "ok",
       queued: q.get(c.open_id) ?? 0,
       // Links are made by the Rezekii account; a creator has one TikTok account, so they are shown on it.
       links30: techwide ? 0 : (l.get(c.user_id) ?? 0),

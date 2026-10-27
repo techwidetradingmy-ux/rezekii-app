@@ -1,11 +1,11 @@
 import { chunkRange, fetchPublishStatus, initVideoPost, planChunks, queryCreatorInfo, uploadChunk } from "../../integrations/tiktok/posting.ts";
 import { deleteUpload, openMedia } from "./media.ts";
 import { nextRetry, postProblems, statusFromTikTok, toPostInfo } from "./rules.ts";
-import { choiceFromRow, freshTikTokToken, updatePost, type PostRow } from "./store.ts";
+import { choiceFromRow, freshTikTokToken, markTikTokReconnect, RECONNECT_TIKTOK, TIKTOK_LOST, updatePost, type PostRow } from "./store.ts";
 
-/** A try failed: schedule the next try, or mark the post Failed after the last one. Keeps TikTok's reason. */
-export async function recordFailure(post: PostRow, reason: string): Promise<"retry" | "failed"> {
-  const next = nextRetry(post.attempts, new Date());
+/** A try failed: schedule the next try, or mark the post Failed after the last one (`final`: no more tries). Keeps TikTok's reason. */
+export async function recordFailure(post: PostRow, reason: string, final = false): Promise<"retry" | "failed"> {
+  const next = final ? null : nextRetry(post.attempts, new Date());
   await updatePost(post.id, next ? { status: "scheduled", next_attempt_at: next.toISOString(), last_error: reason } : { status: "failed", next_attempt_at: null, last_error: reason });
   return next ? "retry" : "failed";
 }
@@ -20,6 +20,7 @@ export async function publishPost(post: PostRow): Promise<string> {
     const token = await freshTikTokToken(post.tiktok_open_id);
     const info = await queryCreatorInfo(token);
     step(info.error ? `creator info error ${info.error.code}` : "creator info ok");
+    if (info.error && TIKTOK_LOST.has(info.error.code)) return await lost(post);
     if (info.error || !info.data) return await recordFailure(post, `TikTok says this account can't post right now (${info.error?.message ?? "no creator info"}).`);
     const problems = postProblems(choiceFromRow(post), info.data);
     if (problems.length) return await recordFailure(post, problems.join(" "));
@@ -28,6 +29,7 @@ export async function publishPost(post: PostRow): Promise<string> {
     const plan = planChunks(media.size);
     step(`video ${media.size} bytes in ${plan.totalChunks} chunk(s); starting TikTok upload`);
     const init = await initVideoPost(token, post.mode, plan, post.mode === "direct" ? toPostInfo(choiceFromRow(post), info.data) : undefined);
+    if (init.error && TIKTOK_LOST.has(init.error.code)) return await lost(post);
     if (init.error || !init.data) return await recordFailure(post, (init.error && TIKTOK_REASONS[init.error.code]) ?? `TikTok refused the post: ${init.error?.message ?? "no upload address"} (${init.error?.code ?? "?"}).`);
     step(`TikTok upload started (publish ${init.data.publish_id})`);
 
@@ -41,8 +43,15 @@ export async function publishPost(post: PostRow): Promise<string> {
   } catch (err) {
     const msg = err instanceof Error ? (err.name === "TimeoutError" ? "A call took too long and was stopped (" + err.message + ")." : err.message) : String(err);
     step(`failed: ${msg}`);
-    return recordFailure(post, msg);
+    return recordFailure(post, msg, msg === RECONNECT_TIKTOK);
   }
+}
+
+/** TikTok no longer accepts the account's connection: it's marked Reconnect and the post fails now (trying again won't help). */
+async function lost(post: PostRow): Promise<"failed"> {
+  await markTikTokReconnect(post.tiktok_open_id);
+  await recordFailure(post, RECONNECT_TIKTOK, true);
+  return "failed";
 }
 
 /** TikTok's error codes that need the creator to act, in plain words. */
@@ -57,8 +66,13 @@ const STUCK_MS = 30 * 60e3;
 /** Asks TikTok how a processing post is doing; finishes it (and deletes the upload) once TikTok confirms. */
 export async function checkProcessing(post: PostRow): Promise<string> {
   if (!post.publish_id) return recordFailure(post, "No TikTok upload to check.");
-  const token = await freshTikTokToken(post.tiktok_open_id);
+  const token = await freshTikTokToken(post.tiktok_open_id).catch((err: unknown) => {
+    if (err instanceof Error && err.message === RECONNECT_TIKTOK) return null;
+    throw err;
+  });
+  if (!token) return recordFailure(post, RECONNECT_TIKTOK, true);
   const r = await fetchPublishStatus(token, post.publish_id);
+  if (r.error && TIKTOK_LOST.has(r.error.code)) return lost(post);
   if (r.error || !r.data) return "unknown";
   const done = statusFromTikTok(r.data.status);
   if (done === "failed") return recordFailure(post, `TikTok couldn't publish it: ${r.data.fail_reason ?? "no reason given"}.`);

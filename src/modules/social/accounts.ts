@@ -119,6 +119,13 @@ export async function refreshPicture(acc: SocialAccount): Promise<string> {
   return url ? "picture refreshed" : "no picture";
 }
 
+/** Check now (Channels): the daily sign-in check, run at once; a channel that works again is active again. */
+export async function checkAccount(acc: SocialAccount): Promise<"active" | "reconnect"> {
+  if ((await refreshPicture(acc)) === "needs reconnecting") return "reconnect";
+  if (acc.status === "reconnect") await supabaseRest(`social_accounts?id=eq.${acc.id}`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ status: "active", updated_at: iso() }) });
+  return "active";
+}
+
 /** Accounts whose 60-day token runs out within a week, renewed by the timer even when nothing is posted. */
 export async function accountsToRenew(limit: number): Promise<SocialAccount[]> {
   const soon = new Date(Date.now() + RENEW_BEFORE_MS).toISOString();

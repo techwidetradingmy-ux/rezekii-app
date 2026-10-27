@@ -1,6 +1,6 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { listVideosPage, queryVideos, type TikTokVideo } from "../../integrations/tiktok/stats.ts";
-import { freshTikTokToken } from "../posting/store.ts";
+import { freshTikTokToken, markTikTokReconnect, TIKTOK_LOST } from "../posting/store.ts";
 
 const KEEP_DAYS = 90;
 const MAX_PAGES = 8;
@@ -57,6 +57,8 @@ export async function refreshVideos(start: number, stopAt: number): Promise<{ co
       const r = await listVideosPage(token, cursor);
       if (r.error || !r.data) {
         console.error("[videos] list", c.username, r.error);
+        // TikTok no longer accepts the connection: it shows "Reconnect" (the error reads "<code>: <message>").
+        if (r.error && TIKTOK_LOST.has(r.error.split(":")[0])) await markTikTokReconnect(c.open_id);
         break;
       }
       const recent = r.data.videos.filter((v) => (v.create_time ?? 0) >= oldest);

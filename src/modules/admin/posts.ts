@@ -38,15 +38,15 @@ export function calStatus(p: Pick<PostRow, "status" | "updated_at">, expired: bo
   return null;
 }
 
-type Conn = { open_id: string; user_id: string; username: string | null; refresh_token_expires_at: string };
+type Conn = { open_id: string; user_id: string; username: string | null; refresh_token_expires_at: string; status: string };
 
 async function accountIndex() {
   const [conns, admins] = await Promise.all([
-    supabaseRest("tiktok_connections?select=open_id,user_id,username,refresh_token_expires_at&limit=2000").then((r) => r.json() as Promise<Conn[]>),
+    supabaseRest("tiktok_connections?select=open_id,user_id,username,refresh_token_expires_at,status&limit=2000").then((r) => r.json() as Promise<Conn[]>),
     supabaseRest("app_users?role=eq.admin&select=id").then((r) => r.json() as Promise<{ id: string }[]>),
   ]);
   const adminIds = new Set(admins.map((a) => a.id));
-  return new Map(conns.map((c) => [c.open_id, { handle: c.username ? `@${c.username}` : "TikTok account", techwide: adminIds.has(c.user_id), expired: Date.parse(c.refresh_token_expires_at) < Date.now() }]));
+  return new Map(conns.map((c) => [c.open_id, { handle: c.username ? `@${c.username}` : "TikTok account", techwide: adminIds.has(c.user_id), expired: c.status === "reconnect" || Date.parse(c.refresh_token_expires_at) < Date.now() }]));
 }
 
 /** Every post on every account between two times (not drafts or cancelled), with video numbers for published ones. */

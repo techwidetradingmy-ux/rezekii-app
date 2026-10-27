@@ -53,6 +53,8 @@ export const ACCOUNT: Record<string, string> = {
   "Not connected": "未连接",
   "Disconnect": "断开",
   "Connecting…": "正在连接…",
+  "Needs reconnecting": "需要重新连接",
+  "TikTok stopped accepting Rezekii's connection. Reconnect to post and see stats again.": "TikTok 已不再接受 Rezekii 的连接。重新连接后即可再次发布并查看数据。",
   "Connect TikTok": "连接 TikTok",
   "Keep {level} next month": "下个月保持{level}",
   "Sales through Rezekii towards keeping {level}": "为保持{level}而通过 Rezekii 完成的销售",

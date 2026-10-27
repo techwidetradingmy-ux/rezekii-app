@@ -12,7 +12,8 @@ export type AccountOverview = {
   joined: string;
   /** How the account signs in: "TikTok · @handle", "Google · email", "email · address" */
   signIn: string[];
-  tiktok: { username: string | null; connectedAt: string } | null;
+  /** `reconnect`: TikTok stopped accepting the connection, so posting waits until it is connected again. */
+  tiktok: { username: string | null; connectedAt: string; reconnect: boolean } | null;
   /** The TikTok Shop link and where its approval stands ("none" = never linked). */
   shop: { status: AccessStatus | "none"; reason: string | null; position: number | null; linked: boolean; handle: string | null };
   linksThisWeek: number;
@@ -36,7 +37,7 @@ export async function accountOverview(user: AppUser, tapRows?: ReturnType<typeof
   const [[row], hasPassword, [conn], shop, links, tap] = await Promise.all([
     supabaseRest(`app_users?id=eq.${user.id}&select=google_sub,created_at`).then((r) => r.json() as Promise<{ google_sub: string | null; created_at: string }[]>),
     count(`app_users?id=eq.${user.id}&password_hash=not.is.null&select=id`),
-    supabaseRest(`tiktok_connections?user_id=eq.${user.id}&select=username,connected_at&order=updated_at.desc&limit=1`).then((r) => r.json() as Promise<{ username: string | null; connected_at: string }[]>),
+    supabaseRest(`tiktok_connections?user_id=eq.${user.id}&select=username,connected_at,status&order=updated_at.desc&limit=1`).then((r) => r.json() as Promise<{ username: string | null; connected_at: string; status: string }[]>),
     Promise.all([
       accessFor(user.id),
       supabaseRest(`affiliate_connections?user_id=eq.${user.id}&select=username&limit=1`).then((r) => r.json() as Promise<{ username: string }[]>),
@@ -52,7 +53,7 @@ export async function accountOverview(user: AppUser, tapRows?: ReturnType<typeof
   return {
     joined: row ? day(row.created_at, lang) : "",
     signIn,
-    tiktok: conn ? { username: conn.username, connectedAt: day(conn.connected_at, lang) } : null,
+    tiktok: conn ? { username: conn.username, connectedAt: day(conn.connected_at, lang), reconnect: conn.status === "reconnect" } : null,
     shop: { status: shop[0]?.status ?? "none", reason: shop[0]?.reason ?? null, position: shop[0]?.position ?? null, linked: !!shop[1][0], handle: shop[1][0]?.username ?? null },
     linksThisWeek: links,
     showcase: tap.rows.filter((r) => r.campaignId).length,
@@ -85,6 +86,25 @@ export async function disconnectTikTok(userId: string): Promise<{ drafts: number
   });
   const drafts = ((await res.json()) as unknown[]).length;
   if (openIds.length) await supabaseRest(`tiktok_connections?user_id=eq.${userId}`, { method: "DELETE", headers: { prefer: "return=minimal" } });
+  return { drafts };
+}
+
+/**
+ * Disconnect one TikTok account (Channels): as Disconnect TikTok, for that account only; the user's other TikTok accounts
+ * stay. Returns null when it isn't one of theirs.
+ */
+export async function disconnectTikTokAccount(userId: string, openId: string): Promise<{ drafts: number } | null> {
+  const id = encodeURIComponent(openId);
+  const [c] = (await (await supabaseRest(`tiktok_connections?open_id=eq.${id}&user_id=eq.${userId}&select=access_token_enc&limit=1`)).json()) as { access_token_enc: string }[];
+  if (!c) return null;
+  await Promise.resolve().then(() => revokeTikTokToken(decryptToken(c.access_token_enc))).catch((err) => console.error("[account] revoke failed", err instanceof Error ? err.message : err));
+  const res = await supabaseRest(`posts?user_id=eq.${userId}&tiktok_open_id=eq.${id}&status=eq.scheduled&select=id`, {
+    method: "PATCH",
+    headers: { prefer: "return=representation" },
+    body: JSON.stringify({ status: "draft", next_attempt_at: null, updated_at: new Date().toISOString() }),
+  });
+  const drafts = ((await res.json()) as unknown[]).length;
+  await supabaseRest(`tiktok_connections?open_id=eq.${id}&user_id=eq.${userId}`, { method: "DELETE", headers: { prefer: "return=minimal" } });
   return { drafts };
 }
 

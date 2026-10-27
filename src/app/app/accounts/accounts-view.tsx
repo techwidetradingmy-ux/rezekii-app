@@ -46,13 +46,14 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
   const [welcomed, setWelcomed] = useState(false);
   const o = d.overview;
 
+  const ttWorks = !!o.tiktok && !o.tiktok.reconnect;
   useEffect(() => {
-    if (!o.tiktok) return;
+    if (!ttWorks) return;
     fetch("/api/tiktok/stats", { cache: "no-store" })
       .then((r) => r.json())
       .then((x: { account?: AccountStats | null }) => setStats(x.account ?? null))
       .catch(() => {});
-  }, [o.tiktok]);
+  }, [ttWorks]);
   useEffect(() => {
     if (!justConnected || welcomed) return;
     const timer = setTimeout(() => {
@@ -117,7 +118,9 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
   const s = d.sales;
   const change = s && s.prevGmv > 0 ? Math.round(((s.gmv - s.prevGmv) / s.prevGmv) * 100) : null;
   const keepPct = Math.min(100, Math.round((d.level.monthSales / d.level.keep) * 100));
-  const ttNote = o.tiktok
+  const ttNote = o.tiktok?.reconnect
+    ? t("TikTok stopped accepting Rezekii's connection. Reconnect to post and see stats again.")
+    : o.tiktok
     ? [t("Connected"), stats?.follower_count !== undefined ? t("{n} followers", { n: shortCount(stats.follower_count) }) : null, stats?.likes_count !== undefined ? t("{n} likes", { n: shortCount(stats.likes_count) }) : null, stats?.video_count !== undefined ? t("{n} videos", { n: shortCount(stats.video_count) }) : null, t("posting and video stats on")].filter(Boolean).join(" · ")
     : t("Connect to schedule posts and see views and likes");
   const tiles = s
@@ -238,11 +241,19 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
           <div className="ac-line">
             <TikTokTile />
             <span style={{ flex: 1, display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
-              <span style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}><strong>TikTok</strong><span className={`nv-badge ${o.tiktok ? "b-green" : "b-amber"}`}>{o.tiktok ? t("Connected") : t("Not connected")}</span></span>
+              <span style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}><strong>TikTok</strong><span className={`nv-badge ${ttWorks ? "b-green" : "b-amber"}`}>{ttWorks ? t("Connected") : o.tiktok ? t("Needs reconnecting") : t("Not connected")}</span></span>
               <span style={{ fontSize: 13, color: "var(--muted)" }}>{ttNote}</span>
             </span>
             {o.tiktok ? (
-              <button type="button" className="nv-link" onClick={() => setAlert("disconnect")} style={{ color: "var(--red)" }}>{t("Disconnect")}</button>
+              <span style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+                {o.tiktok.reconnect && (
+                  <a href="/api/auth/tiktok/start" className="nv-btn3 nv-sm nv-press" onClick={() => setConnecting(true)}>
+                    {connecting && <span className="nv-sping" aria-hidden="true" />}
+                    {connecting ? t("Connecting…") : t("Reconnect")}
+                  </a>
+                )}
+                <button type="button" className="nv-link" onClick={() => setAlert("disconnect")} style={{ color: "var(--red)" }}>{t("Disconnect")}</button>
+              </span>
             ) : (
               <a href="/api/auth/tiktok/start" className="nv-btn3 nv-sm nv-press" onClick={() => setConnecting(true)}>
                 {connecting && <span className="nv-sping" aria-hidden="true" />}

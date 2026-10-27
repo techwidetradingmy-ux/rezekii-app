@@ -20,7 +20,7 @@ export async function systemHealth(): Promise<Health> {
     supabaseRest("seller_connections?select=shop_name,refresh_token_expires_at&order=updated_at.desc&limit=1").then((r) => r.json() as Promise<{ shop_name: string; refresh_token_expires_at: string }[]>),
     supabaseRest("refresh_tasks?select=run_date,key,status,last_error,updated_at&order=run_date.desc,updated_at.desc&limit=2000").then((r) => r.json() as Promise<{ run_date: string; key: string; status: string; last_error: string | null; updated_at: string }[]>),
     supabaseRest(`posts?status=eq.failed&updated_at=gte.${weekAgo}&select=tiktok_open_id,last_error,updated_at&order=updated_at.desc&limit=20`).then((r) => r.json() as Promise<{ tiktok_open_id: string; last_error: string | null; updated_at: string }[]>),
-    supabaseRest(`tiktok_connections?refresh_token_expires_at=lt.${new Date().toISOString()}&select=open_id`, { headers: { prefer: "count=exact", range: "0-0" } }).then((r) => Number((r.headers.get("content-range") ?? "*/0").split("/")[1]) || 0),
+    supabaseRest(`tiktok_connections?or=(status.eq.reconnect,refresh_token_expires_at.lt.${new Date().toISOString()})&select=open_id`, { headers: { prefer: "count=exact", range: "0-0" } }).then((r) => Number((r.headers.get("content-range") ?? "*/0").split("/")[1]) || 0),
   ]);
   const runDate = tasks[0]?.run_date ?? null;
   const run = tasks.filter((t) => t.run_date === runDate);

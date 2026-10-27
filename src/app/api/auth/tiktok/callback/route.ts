@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     const tokens = reply as TikTokTokens;
     const info = await getTikTokUser(tokens.access_token);
     if (info.error) console.error("[tiktok] user info failed", info.error.code, info.error.message);
-    const profile = { open_id: tokens.open_id, username: info.user?.username, display_name: info.user?.display_name, avatar_url: info.user?.avatar_url };
+    const profile = { open_id: tokens.open_id, union_id: info.user?.union_id, username: info.user?.username, display_name: info.user?.display_name, avatar_url: info.user?.avatar_url };
     // Already signed in (Connect TikTok on Account): connect it to that account and go back there.
     const current = await userForSession(req.cookies.get(SESSION_COOKIE)?.value).catch(() => null);
     const result = await linkOrSignInTikTok(current, profile);

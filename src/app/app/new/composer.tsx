@@ -21,7 +21,7 @@ import "./composer.css";
 
 type Info = CreatorInfo & { nextRecommended: string };
 type When = "now" | "recommended" | "pick" | "draft";
-export type TikTokAccount = { open_id: string; username: string | null; avatar_url: string | null };
+export type TikTokAccount = { open_id: string; username: string | null; avatar_url: string | null; status: "active" | "reconnect" };
 const TT = "tiktok";
 const APPS: Channel[] = ["tiktok", "facebook", "instagram", "threads"];
 // What a channel is called in each app, for "Facebook · 3 Pages".
@@ -61,14 +61,15 @@ function Face({ ch, badge = true }: { ch: Pick<Ch, "app" | "avatar">; badge?: bo
  * setting its Content Sharing Guidelines require. `edit`: a scheduled post filled in to change (its recipe comes as `reuse`),
  * with its video and comment image kept; saving holds the changed post and swaps it in for the old one.
  */
-export function Composer({ tiktok, social: initialSocial, brands: initialBrands, last, reuse, edit, connect }: { tiktok: TikTokAccount[]; social: PublicAccount[]; brands: Brand[]; last: string[]; reuse: { recipe: Recipe; at: string | null } | null; edit?: EditPost | null; connect: { channel: string; result: string } | null }) {
+export function Composer({ tiktok: initialTikTok, social: initialSocial, brands: initialBrands, last, reuse, edit, connect }: { tiktok: TikTokAccount[]; social: PublicAccount[]; brands: Brand[]; last: string[]; reuse: { recipe: Recipe; at: string | null } | null; edit?: EditPost | null; connect: { channel: string; result: string } | null }) {
   const t = useT();
   const lang = useLang();
+  const [tiktok, setTikTok] = useState(initialTikTok);
   const [social, setSocial] = useState(initialSocial);
   const [brands, setBrands] = useState(initialBrands);
   // Reuse (M7): New post starts from an earlier post's channels, text and settings; only the video is picked again.
   const r0 = reuse?.recipe;
-  const [picked, setPicked] = useState<Set<string>>(() => (r0 ? cleanPick(r0.channels, new Set([...tiktok.map((a) => tiktokKey(a.open_id)), ...initialSocial.filter((a) => a.status === "active").map((a) => a.id)])) : new Set()));
+  const [picked, setPicked] = useState<Set<string>>(() => (r0 ? cleanPick(r0.channels, new Set([...initialTikTok.filter((a) => a.status === "active").map((a) => tiktokKey(a.open_id)), ...initialSocial.filter((a) => a.status === "active").map((a) => a.id)])) : new Set()));
   const [query, setQuery] = useState("");
   const [listOpen, setListOpen] = useState(false);
   const finder = useRef<HTMLDivElement>(null);
@@ -135,7 +136,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
 
   // Every channel, TikTok accounts first; only active ones can be picked.
   const channels: Ch[] = useMemo(() => [
-    ...tiktok.map((a): Ch => ({ key: tiktokKey(a.open_id), app: "tiktok", name: a.username ? `@${a.username}` : "TikTok", sub: "TikTok", avatar: a.avatar_url, status: "active" })),
+    ...tiktok.map((a): Ch => ({ key: tiktokKey(a.open_id), app: "tiktok", name: a.username ? `@${a.username}` : "TikTok", sub: "TikTok", avatar: a.avatar_url, status: a.status })),
     ...social.map((a): Ch => ({ key: a.id, app: a.platform, name: a.name ?? NAMES[a.platform], sub: a.platform === "facebook" ? t("Facebook Page") : a.username ? `@${a.username}` : NAMES[a.platform], avatar: a.avatar_url, status: a.status, account: a })),
   ], [tiktok, social, t]);
   const byKey = useMemo(() => new Map(channels.map((c) => [c.key, c])), [channels]);
@@ -207,12 +208,25 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
   })();
   const warnings = apps.flatMap((p) => channelWarnings(p, captionOf(p), t));
 
-  async function disconnect(a: PublicAccount) {
-    const r = await fetch(`/api/social/accounts/${a.id}`, { method: "DELETE" }).catch(() => null);
+  async function disconnect(c: Ch) {
+    const tt = isTikTokKey(c.key);
+    const r = await fetch(tt ? `/api/account/tiktok/${encodeURIComponent(openIdOf(c.key))}` : `/api/social/accounts/${c.key}`, { method: "DELETE" }).catch(() => null);
     if (!r?.ok) return setToast(t("Couldn't disconnect. Try again."));
-    setSocial((s) => s.filter((x) => x.id !== a.id));
-    setPicked((s) => new Set([...s].filter((k) => k !== a.id)));
-    setToast(t("{name} disconnected. Its scheduled posts were cancelled.", { name: a.name ?? NAMES[a.platform] }));
+    if (tt) setTikTok((s) => s.filter((x) => tiktokKey(x.open_id) !== c.key));
+    else setSocial((s) => s.filter((x) => x.id !== c.key));
+    setPicked((s) => new Set([...s].filter((k) => k !== c.key)));
+    setToast(tt ? t("{name} disconnected. Its scheduled posts moved to drafts.", { name: c.name }) : t("{name} disconnected. Its scheduled posts were cancelled.", { name: c.name }));
+  }
+  // Check now: asks the app whether the channel still works and shows the answer.
+  async function check(c: Ch) {
+    const r = await fetch("/api/channels/check", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ key: c.key }) }).catch(() => null);
+    const x = (await r?.json().catch(() => ({}))) as { status?: "active" | "reconnect"; error?: string } | undefined;
+    if (!r?.ok || !x?.status) return setToast(t(x?.error || tx("Couldn't check. Try again.")));
+    const status = x.status;
+    if (isTikTokKey(c.key)) setTikTok((s) => s.map((a) => (tiktokKey(a.open_id) === c.key ? { ...a, status } : a)));
+    else setSocial((s) => s.map((a) => (a.id === c.key ? { ...a, status } : a)));
+    if (status === "reconnect") setPicked((s) => new Set([...s].filter((k) => k !== c.key)));
+    setToast(status === "active" ? t("{name} is connected and working.", { name: c.name }) : t("{name} needs reconnecting. Press Reconnect to sign in again.", { name: c.name }));
   }
   function sameAsLast() {
     const next = cleanPick(last, connected);
@@ -580,7 +594,7 @@ export function Composer({ tiktok, social: initialSocial, brands: initialBrands,
         </aside>
       </form>
 
-      {sheet === "channels" && <ChannelsSheet channels={channels} onDisconnect={disconnect} onClose={() => setSheet("")} />}
+      {sheet === "channels" && <ChannelsSheet channels={channels} onDisconnect={disconnect} onCheck={check} onClose={() => setSheet("")} />}
       {sheet === "brands" && <BrandsSheet brands={brands} channels={channels} byKey={byKey} connected={connected} onSaved={(b) => setBrands((list) => [...list.filter((x) => x.id !== b.id), b].sort((x, y) => x.name.localeCompare(y.name)))} onDeleted={(id) => setBrands((list) => list.filter((x) => x.id !== id))} onClose={() => setSheet("")} />}
     </>
   );
@@ -660,10 +674,18 @@ function Sheet({ title, extra, onClose, children }: { title: string; extra?: Rea
   );
 }
 
-/** Channels: everything connected, grouped by app, with a search for long lists of Pages. */
-function ChannelsSheet({ channels, onDisconnect, onClose }: { channels: Ch[]; onDisconnect: (a: PublicAccount) => void; onClose: () => void }) {
+/**
+ * Channels: everything connected, grouped by app, with a search for long lists of Pages. Each channel can be checked now,
+ * reconnected when the app stopped accepting it, or disconnected.
+ */
+function ChannelsSheet({ channels, onDisconnect, onCheck, onClose }: { channels: Ch[]; onDisconnect: (c: Ch) => Promise<void>; onCheck: (c: Ch) => Promise<void>; onClose: () => void }) {
   const t = useT();
   const [q, setQ] = useState("");
+  const [busy, setBusy] = useState("");
+  const run = (c: Ch, what: string, fn: (c: Ch) => Promise<void>) => {
+    setBusy(c.key + what);
+    fn(c).finally(() => setBusy(""));
+  };
   const s = q.trim().toLowerCase();
   return (
     <Sheet title={t("Channels")} onClose={onClose}>
@@ -679,7 +701,14 @@ function ChannelsSheet({ channels, onDisconnect, onClose }: { channels: Ch[]; on
               <div key={c.key} className="cx-ch">
                 <Face ch={c} />
                 <span><b>{c.name}</b><small>{c.sub}{c.status === "reconnect" ? t(" · needs reconnecting") : ""}</small></span>
-                {c.app === "tiktok" ? <span className="badge">{t("Connected")}</span> : c.status === "reconnect" ? <a className="np-btn" href={`/api/auth/meta/${c.app}/start`}>{t("Reconnect")}</a> : <button type="button" className="btn-outline" onClick={() => c.account && onDisconnect(c.account)}>{t("Disconnect")}</button>}
+                <div className="cx-acts">
+                  {c.status === "reconnect" ? (
+                    <a className="np-btn" href={c.app === "tiktok" ? "/api/auth/tiktok/start" : `/api/auth/meta/${c.app}/start`}>{t("Reconnect")}</a>
+                  ) : (
+                    <button type="button" className="btn-outline" disabled={!!busy} onClick={() => run(c, "check", onCheck)}>{busy === c.key + "check" ? t("Checking…") : t("Check now")}</button>
+                  )}
+                  <button type="button" className="cx-link" disabled={!!busy} onClick={() => run(c, "off", onDisconnect)}>{busy === c.key + "off" ? t("Disconnecting…") : t("Disconnect")}</button>
+                </div>
               </div>
             ))}
             {!s && <div className="cx-ch"><BrandIcon ch={p} size={34} /><span><b>{list.length ? t("Add {unit}", { unit: t(UNIT[p]) }) : t("Connect {app}", { app: NAMES[p] })}</b><small>{p === "facebook" ? t("Pick which Pages after signing in") : p === "instagram" ? t("Business or Creator account") : p === "threads" ? t("Your Threads profile") : t("Your TikTok account")}</small></span><a className="np-btn" href={p === "tiktok" ? "/api/auth/tiktok/start" : `/api/auth/meta/${p}/start`}>{t("Connect")}</a></div>}

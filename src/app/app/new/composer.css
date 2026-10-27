@@ -44,6 +44,9 @@
 .cx-ch > span { flex: 1; min-width: 0; display: grid; line-height: 1.3; }
 .cx-ch small { color: var(--muted); font-size: 12.5px; }
 .cx-ch .np-btn, .cx-ch .btn-outline { flex-shrink: 0; }
+.cx-acts { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.cx-link { border: 0; background: none; padding: 6px 2px; color: var(--red); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.cx-acts [disabled] { opacity: 0.5; cursor: default; }
 .cx-ch > .cx-face { flex: 0 0 auto; display: inline-grid; width: 34px; height: 34px; }
 .cx-ch > .cx-faces { flex: 0 0 auto; display: inline-flex; }
 /* Post to by brand (B1–B8): brand chips with pictures, a channel search, picked channels grouped by app. */
