@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { decryptToken, encryptToken } from "./token-crypto.ts";
 import { isAllowedDuringProof } from "./affiliate-connections.ts";
+import { linkCreator } from "./access.ts";
 
 process.env.TOKEN_ENCRYPTION_KEY = randomBytes(32).toString("base64");
 
@@ -39,4 +40,21 @@ test("proof allow-list: only listed handles, case and @ ignored", () => {
   assert.equal(isAllowedDuringProof(""), false);
   process.env.PROOF_ALLOWED_HANDLES = "";
   assert.equal(isAllowedDuringProof("tinawellnesshacks"), false);
+});
+
+test("no 25-creator limit: with 30 creators already linked, the next one is linked, not put on the waitlist", async () => {
+  process.env.SUPABASE_URL = "https://db.test";
+  process.env.SUPABASE_SECRET_KEY = "secret";
+  const calls: { path: string; method: string; body: { status?: string } | null }[] = [];
+  globalThis.fetch = (async (input: string | URL, init: RequestInit = {}) => {
+    const path = decodeURIComponent(String(input).replace("https://db.test/rest/v1/", ""));
+    calls.push({ path, method: init.method ?? "GET", body: init.body ? JSON.parse(String(init.body)) : null });
+    // Every count says 30 accounts are linked already; every lookup finds nothing.
+    return new Response("[]", { status: 200, headers: { "content-range": "0-0/30" } });
+  }) as typeof fetch;
+  const tokens = { access_token: "a", access_token_expire_in: 2_000_000_000, refresh_token: "r", refresh_token_expire_in: 2_000_000_000 };
+  const result = await linkCreator({ id: "u31", role: "creator", tiktok_username: "new_creator" }, { openId: "OPEN31", username: "New_Creator" }, tokens);
+  assert.equal(result, "waiting");
+  assert.ok(calls.some((c) => c.method === "POST" && c.path.startsWith("affiliate_connections")), "the TikTok Shop link is saved");
+  assert.equal(calls.find((c) => c.method === "POST" && c.path.startsWith("creator_access"))?.body?.status, "waiting");
 });

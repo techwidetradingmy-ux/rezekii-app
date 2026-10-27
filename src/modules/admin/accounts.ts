@@ -60,7 +60,7 @@ export async function allAccounts(): Promise<AdminAccount[]> {
   });
 }
 
-/** How many TikTok Shop places the Partner Center app has used (it allows 25 while in beta). */
+/** How many accounts have linked TikTok Shop (no limit since TikTok approved Rezekii's Shop app). */
 export async function shopPlacesUsed(): Promise<number> {
   const res = await supabaseRest("affiliate_connections?select=username", { headers: { prefer: "count=exact", range: "0-0" } });
   return Number((res.headers.get("content-range") ?? "*/0").split("/")[1]) || 0;

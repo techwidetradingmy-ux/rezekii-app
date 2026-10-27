@@ -51,7 +51,6 @@ export function AdminTodayView({ d }: { d: AdminToday }) {
     flash(approve ? `${handle} approved` : j.invited ? `Place freed · ${j.invited} invited to link TikTok Shop` : `${handle} rejected`);
     router.refresh();
   }
-  const used = Math.min(d.places, 25);
   const c = d.commission;
 
   async function markPublished(id: string) {
@@ -216,16 +215,15 @@ export function AdminTodayView({ d }: { d: AdminToday }) {
         </div>
 
         <div style={{ flex: "1 1 320px", display: "flex", flexDirection: "column", gap: 24 }}>
-          <Link href="/app/admin/creators" className="nv-up nv-card nv-hover" aria-label={`${used} of 25 TikTok Shop places used`} style={{ animationDelay: "100ms", padding: 22, display: "flex", alignItems: "center", gap: 18, textDecoration: "none", color: "var(--text)" }}>
+          <Link href="/app/admin/creators" className="nv-up nv-card nv-hover" aria-label={`${d.places} accounts linked TikTok Shop`} style={{ animationDelay: "100ms", padding: 22, display: "flex", alignItems: "center", gap: 18, textDecoration: "none", color: "var(--text)" }}>
             <svg width="96" height="96" viewBox="0 0 96 96" aria-hidden="true" style={{ flexShrink: 0 }}>
-              <circle cx="48" cy="48" r="40" fill="none" stroke="var(--seg)" strokeWidth="10" />
-              <circle cx="48" cy="48" r="40" fill="none" stroke={used >= 25 ? "#f59e0b" : "#00c073"} strokeWidth="10" strokeLinecap="round" strokeDasharray="251.3" strokeDashoffset={251.3 * (1 - used / 25)} transform="rotate(-90 48 48)" style={{ transition: "stroke-dashoffset 1s cubic-bezier(.2,.7,.2,1)" }} />
-              <text x="48" y="54" textAnchor="middle" fontSize="20" fontWeight="800" fill="currentColor" fontFamily="Albert Sans, sans-serif">{used}/25</text>
+              <circle cx="48" cy="48" r="40" fill="none" stroke="#00c073" strokeWidth="10" />
+              <text x="48" y="54" textAnchor="middle" fontSize="20" fontWeight="800" fill="currentColor" fontFamily="Albert Sans, sans-serif">{d.places}</text>
             </svg>
             <span style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <span style={{ fontSize: 17, fontWeight: 800 }}>TikTok Shop places</span>
+              <span style={{ fontSize: 17, fontWeight: 800 }}>Linked TikTok Shop</span>
               <span style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.45 }}>
-                {used >= 25 ? "All 25 places are taken until TikTok reviews Rezekii's Shop app." : `${25 - used} of 25 places free. Each account that links TikTok Shop takes one while the app is in beta.`}
+                {`${d.places === 1 ? "1 account has" : `${d.places} accounts have`} linked TikTok Shop. There's no limit since TikTok approved Rezekii's Shop app.`}
               </span>
             </span>
           </Link>

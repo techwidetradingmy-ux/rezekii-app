@@ -51,7 +51,6 @@ export function CreatorsView({ creators, places, auto, now }: { creators: Creato
   const [reason, setReason] = useState("");
   const [newPw, setNewPw] = useState("");
   const [makeAdmin, setMakeAdmin] = useState(false);
-  const used = Math.min(places, 25);
   const waitlist = creators.filter((c) => c.access === "waitlist" || c.access === "invited").sort((a, b) => (a.requestedAt ?? "").localeCompare(b.requestedAt ?? ""));
   const inTab = [(c: CreatorRow) => c.access === "waiting", (c: CreatorRow) => c.access === "waitlist" || c.access === "invited", (c: CreatorRow) => c.access === "approved", (c: CreatorRow) => c.access === "rejected", (c: CreatorRow) => c.admin, () => true];
   const s = q.trim().toLowerCase();
@@ -149,22 +148,19 @@ export function CreatorsView({ creators, places, auto, now }: { creators: Creato
     <>
       <div>
         <h1 className="nv-title">Creators</h1>
-        <p className="nv-sub">Approve each creator account · manage the waitlist for TikTok Shop places</p>
+        <p className="nv-sub">Approve each creator account</p>
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "stretch" }}>
-        <section className="nv-up nv-card" aria-label={`${used} of 25 TikTok Shop places used`} style={{ flex: "1 1 340px", boxShadow: "var(--shadow)", borderRadius: 26, padding: 22, display: "flex", alignItems: "center", gap: 18 }}>
+        <section className="nv-up nv-card" aria-label={`${places} accounts linked TikTok Shop`} style={{ flex: "1 1 340px", boxShadow: "var(--shadow)", borderRadius: 26, padding: 22, display: "flex", alignItems: "center", gap: 18 }}>
           <svg width="110" height="110" viewBox="0 0 96 96" aria-hidden="true" style={{ flexShrink: 0 }}>
-            <circle cx="48" cy="48" r="40" fill="none" stroke="var(--seg)" strokeWidth="10" />
-            <circle cx="48" cy="48" r="40" fill="none" stroke={used >= 25 ? "#f59e0b" : "#00c073"} strokeWidth="10" strokeLinecap="round" strokeDasharray="251.3" strokeDashoffset={251.3 * (1 - used / 25)} transform="rotate(-90 48 48)" style={{ transition: "stroke-dashoffset 1s cubic-bezier(.2,.7,.2,1)" }} />
-            <text x="48" y="54" textAnchor="middle" fontSize="20" fontWeight="800" fill="currentColor" fontFamily="Albert Sans, sans-serif">{used}/25</text>
+            <circle cx="48" cy="48" r="40" fill="none" stroke="#00c073" strokeWidth="10" />
+            <text x="48" y="54" textAnchor="middle" fontSize="20" fontWeight="800" fill="currentColor" fontFamily="Albert Sans, sans-serif">{places}</text>
           </svg>
           <span style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={{ fontSize: 18, fontWeight: 800 }}>TikTok Shop places</span>
+            <span style={{ fontSize: 18, fontWeight: 800 }}>Linked TikTok Shop</span>
             <span style={{ fontSize: 14, color: "var(--muted)", lineHeight: 1.45 }}>
-              {used >= 25
-                ? `All places are taken, so new creators join the waitlist${waitlist.length ? ` (${waitlist.length} waiting)` : ""}. Rejecting or removing an account frees a place, and the next creator on the waitlist is invited automatically.`
-                : `${25 - used} ${25 - used === 1 ? "place is" : "places are"} free. Each creator who links TikTok Shop takes one while Rezekii's Shop app is in beta.`}
+              {`${places === 1 ? "1 account has" : `${places} accounts have`} linked TikTok Shop. There's no limit since TikTok approved Rezekii's Shop app.`}
             </span>
             <span style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6 }}>
               <button type="button" role="switch" aria-checked={auto} aria-labelledby="crauto" className={`nv-switch${auto ? " on" : ""}`} disabled={busy} onClick={() => setAuto(!auto)}><span /></button>

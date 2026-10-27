@@ -22,7 +22,7 @@ export async function onboardingState(user: AppUser, lang: Lang = "en"): Promise
   const [access, shops, full, openId] = await Promise.all([
     accessFor(user.id),
     supabaseRest(`affiliate_connections?user_id=eq.${user.id}&select=username,avatar_url&order=updated_at.desc&limit=1`).then((r) => (r.ok ? (r.json() as Promise<{ username: string; avatar_url: string | null }[]>) : [])),
-    placesFull(user.id),
+    placesFull(),
     userTikTokOpenId(user.id),
   ]);
   const shop = shops[0];

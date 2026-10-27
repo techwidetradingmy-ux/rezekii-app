@@ -3,9 +3,6 @@ import type { TokenSet } from "../../integrations/tiktok-shop/auth.ts";
 import { logActivity } from "../admin/admins.ts";
 import { connectionForUser, freshCreatorToken, isAllowedDuringProof, saveAffiliateConnection } from "./affiliate-connections.ts";
 
-/** Rezekii's Partner Center app allows 25 linked creators while it is in beta. */
-export const PLACES = 25;
-
 export type AccessStatus = "waiting" | "approved" | "rejected" | "waitlist" | "invited";
 export type Access = { status: AccessStatus; reason: string | null; requestedAt: string; decidedAt: string | null; position: number | null };
 export type LinkResult = "connected" | "waiting" | "waitlist" | "taken";
@@ -36,41 +33,31 @@ export async function setAutoApprove(on: boolean, userId: string, actor: string)
   await logActivity(actor, "Creators", on ? "turned on automatic approval for new creators" : "turned off automatic approval for new creators");
 }
 
-/** Places taken: linked creators, plus invitations still open (an invited creator's place is kept for them). */
-async function placesTaken(exceptUser: string): Promise<number> {
-  const [linked, invited] = await Promise.all([count("affiliate_connections?select=creator_user_open_id"), count(`creator_access?status=eq.invited&user_id=neq.${exceptUser}&select=user_id`)]);
-  return linked + invited;
-}
-
-/** True when every place is taken for this creator: not linked yet and no invitation of their own. */
-export async function placesFull(userId: string): Promise<boolean> {
-  const [current, linked] = await Promise.all([accessFor(userId), count(`affiliate_connections?user_id=eq.${userId}&select=user_id`)]);
-  if (linked > 0 || current?.status === "invited") return false;
-  return (await placesTaken(userId)) >= PLACES;
+/**
+ * Never full: TikTok approved Rezekii's Shop app (Oct 2026), which lifted the 25-creator beta limit.
+ * Kept so the waitlist screens from the beta still compile; nobody reaches them now.
+ */
+export async function placesFull(): Promise<boolean> {
+  return false;
 }
 
 /** Joins the waitlist without linking (every place is taken). Keeps an earlier place in the queue. */
 export async function joinWaitlist(user: { id: string; tiktok_username: string | null }): Promise<"waitlist" | "free"> {
-  if (!(await placesFull(user.id))) return "free";
+  if (!(await placesFull())) return "free";
   const current = await accessFor(user.id);
   await supabaseRest("creator_access?on_conflict=user_id", json({ user_id: user.id, status: "waitlist", username: user.tiktok_username?.toLowerCase() ?? null, reason: null, requested_at: current?.status === "waitlist" ? current.requestedAt : now(), decided_at: null, decided_by: null }));
   return "waitlist";
 }
 
 /**
- * A signed-in creator came back from TikTok Shop. Saves the link if a place is free (or theirs already) and sets them waiting,
- * or approved when they were approved before, automatic approval is on, or the handle is on the pre-approved list.
- * With every place taken they join the waitlist and nothing is saved.
+ * A signed-in creator came back from TikTok Shop. Saves the link and sets them waiting, or approved when they were approved
+ * before, automatic approval is on, or the handle is on the pre-approved list. There is no limit on linked creators.
  */
 export async function linkCreator(user: { id: string; role?: string; tiktok_username: string | null }, profile: { openId: string; username: string; avatarUrl?: string }, tokens: TokenSet): Promise<LinkResult> {
   const [holder] = (await (await supabaseRest(`affiliate_connections?creator_user_open_id=eq.${encodeURIComponent(profile.openId)}&select=user_id&limit=1`)).json()) as { user_id: string | null }[];
   if (holder?.user_id && holder.user_id !== user.id) return "taken";
   const current = await accessFor(user.id);
   const handle = profile.username.toLowerCase();
-  if (!holder && current?.status !== "invited" && (await placesTaken(user.id)) >= PLACES) {
-    await supabaseRest("creator_access?on_conflict=user_id", json({ user_id: user.id, status: "waitlist", username: handle, reason: null, requested_at: current?.status === "waitlist" ? current.requestedAt : now(), decided_at: null, decided_by: null }));
-    return "waitlist";
-  }
   await saveAffiliateConnection({ ...profile, userId: user.id }, tokens);
   // An email or Google account takes the TikTok handle from TikTok Shop, so its TAP sales and samples show up.
   if (!user.tiktok_username) await supabaseRest(`app_users?id=eq.${user.id}&tiktok_username=is.null`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ tiktok_username: handle }) });
@@ -85,9 +72,8 @@ export async function linkCreator(user: { id: string; role?: string; tiktok_user
   return approved ? "connected" : "waiting";
 }
 
-/** The next creator on the waitlist is invited when a place is free. Returns their handle, or null. */
+/** The next creator left on the beta waitlist is invited to link. Returns their handle, or null. */
 export async function inviteNext(): Promise<string | null> {
-  if ((await placesTaken("00000000-0000-0000-0000-000000000000")) >= PLACES) return null;
   const [next] = (await (await supabaseRest("creator_access?status=eq.waitlist&select=user_id,username&order=requested_at&limit=1")).json()) as { user_id: string; username: string | null }[];
   if (!next) return null;
   await supabaseRest(`creator_access?user_id=eq.${next.user_id}`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ status: "invited", decided_at: now(), decided_by: "waitlist" }) });
