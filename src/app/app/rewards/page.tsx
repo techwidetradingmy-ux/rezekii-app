@@ -191,7 +191,7 @@ export default function RewardsMissions() {
         <span className="v2-medal" style={{ width: 52, height: 52, animation: "none" }}><Icon name="medal" size={26} /></span>
         <span style={{ flex: 1, display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
           <b>Badges: {BADGES.filter((b) => b.got).length} of {BADGES.length}</b>
-          <span className="v2-small">Next up: 7-day streak, 1 more day</span>
+          <span className="v2-small">Next up: Highly active, 14 more days</span>
         </span>
         <Icon name="arrow" size={18} />
       </Link>

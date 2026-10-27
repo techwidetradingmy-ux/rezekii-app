@@ -179,7 +179,7 @@ export const TIERS = [
 export const BADGE_INFO: Record<string, string> = {
   "First scan": "Ran your first showcase scan.",
   "Link master": "Linked TikTok Shop, your TikTok account and one more platform.",
-  "7-day streak": "Post every day for 7 days in a row. You're on day 6.",
+  "7-day streak": "Post every day for 7 days in a row.",
   "Sample star": "Posted all 3 videos for a sample on time.",
   "Highly active": "30 days in a row and every sample delivered. The rarest badge on Rezekii.",
   "First RM 1,000": "Earned your first RM 1,000 of commission through TikTok Shop.",

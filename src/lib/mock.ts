@@ -64,7 +64,7 @@ export const CREATOR = {
   level: "Silver" as "Bronze" | "Silver" | "Gold",
   tiktokLevel: 4,
   activity: "Active" as "New" | "Active" | "Highly active",
-  streak: 6,
+  streak: 16,
   credits: 1250,
   showcaseSize: 1248,
   checkedThisMonth: 1248,
@@ -101,7 +101,7 @@ export const MY_SAMPLES: MySample[] = [
   { id: "s1", productId: "p21", status: "Posting", videos: 2, due: "2 Nov", receivedAt: "26 Oct" },
   { id: "s2", productId: "p11", status: "Shipped", videos: 0 },
   { id: "s3", productId: "p05", status: "Approved", videos: 0 },
-  { id: "s4", productId: "p08", status: "Not approved", videos: 0, reason: "Designated samples go to Highly active creators (30 days in a row). You're on day 6." },
+  { id: "s4", productId: "p08", status: "Not approved", videos: 0, reason: "Designated samples go to Highly active creators (30 days in a row). You're on day 16." },
   { id: "s5", productId: "p02", status: "Done", videos: 3, receivedAt: "2 Oct" },
 ];
 
@@ -165,7 +165,7 @@ export const MISSIONS: Mission[] = [
 export const BADGES = [
   { name: "First scan", got: true },
   { name: "Link master", got: true },
-  { name: "7-day streak", got: false },
+  { name: "7-day streak", got: true },
   { name: "Sample star", got: true },
   { name: "Highly active", got: false, honour: true },
   { name: "First RM 1,000", got: true },
@@ -235,7 +235,7 @@ export const TAP_PIPELINE = [
 
 export type Verdict = "Approve" | "Look" | "Reject";
 export const SAMPLE_REVIEW = [
-  { id: "SR-221", handle: "@aisyah.glow", productId: "p24", pool: "Designated", verdict: "Approve" as Verdict, facts: "Highly active · 35 days in a row · delivered 3 / 3 samples (9 videos) · Silver · TikTok Lv.4 · Home matches", summary: "Always delivers on time and meets every condition for designated samples." },
+  { id: "SR-221", handle: "@mei.ling.deals", productId: "p24", pool: "Designated", verdict: "Approve" as Verdict, facts: "Highly active · 31 days in a row · delivered 3 / 3 samples (9 videos) · Silver · TikTok Lv.5 · Home matches", summary: "Always delivers on time and meets every condition for designated samples." },
   { id: "SR-222", handle: "@farah.home", productId: "p14", pool: "Advanced", verdict: "Look" as Verdict, facts: "Active · 11 days in a row · Bronze · last sample 1 video short, due in 2 days", summary: "Previous sample not finished yet, but not overdue." },
   { id: "SR-223", handle: "@mira.new", productId: "p08", pool: "Designated", verdict: "Reject" as Verdict, facts: "New · joined 4 days ago · no videos yet", summary: "Designated samples go to Highly active creators. Suggest 3 open samples instead." },
   { id: "SR-224", handle: "@hafiz.tech", productId: "p13", pool: "Open", verdict: "Approve" as Verdict, facts: "New · TikTok Shop linked · Electronics matches", summary: "Open samples are for everyone; category matches." },
@@ -243,7 +243,7 @@ export const SAMPLE_REVIEW = [
 ];
 
 export const PEOPLE = [
-  { handle: "@aisyah.glow", name: "Aisyah Rahman", state: "Selangor", level: "Silver", tt: 4, activity: "Active", streak: 6, gmv30: 18420, status: "Approved", mcn: false },
+  { handle: "@aisyah.glow", name: "Aisyah Rahman", state: "Selangor", level: "Silver", tt: 4, activity: "Active", streak: 16, gmv30: 18420, status: "Approved", mcn: false },
   { handle: "@kak.ros.kitchen", name: "Rosnah Ismail", state: "Johor", level: "Gold", tt: 6, activity: "Highly active", streak: 42, gmv30: 64210, status: "Approved", mcn: true },
   { handle: "@mei.ling.deals", name: "Tan Mei Ling", state: "Kuala Lumpur", level: "Silver", tt: 5, activity: "Highly active", streak: 31, gmv30: 22880, status: "Approved", mcn: false },
   { handle: "@farah.home", name: "Farah Aziz", state: "Penang", level: "Bronze", tt: 3, activity: "Active", streak: 11, gmv30: 3410, status: "Approved", mcn: false },

@@ -15,7 +15,7 @@ const WITH_SAMPLES = PRODUCTS.filter((p) => p.samples);
 const unfinished = MY_SAMPLES.find((s) => s.status === "Posting");
 const unfinishedName = unfinished ? product(unfinished.productId).name : "";
 
-/** The conditions for one product, ticked against Aisyah (Active, 6-day streak, Silver, TikTok Lv.4, one sample still posting). */
+/** The conditions for one product, ticked against Aisyah (Active, 16-day streak, Silver, TikTok Lv.4, one sample still posting). */
 function conditionsFor(p: Product): Cond[] {
   const pool = p.samples as Pool;
   const base: Cond[] = [
