@@ -23,19 +23,29 @@ export function Count({ value, format = (n: number) => Math.round(n).toLocaleStr
   const [n, setN] = useState(value);
   const started = useRef(false);
   useEffect(() => {
-    if (started.current) return;
+    // After the first roll, follow new values straight away (range switches and the like).
+    if (started.current) {
+      setN(value);
+      return;
+    }
     started.current = true;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const t0 = performance.now();
     let raf = 0;
     const tick = (t: number) => {
-      const p = Math.min(1, (t - t0) / ms);
+      // A frame's timestamp can be a little earlier than t0, so clamp at 0.
+      const p = Math.max(0, Math.min(1, (t - t0) / ms));
       setN(value * (1 - Math.pow(1 - p, 3)));
       if (p < 1) raf = requestAnimationFrame(tick);
     };
     setN(0);
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    // Background tabs pause frames: land on the real number anyway.
+    const done = window.setTimeout(() => setN(value), ms + 300);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearTimeout(done);
+    };
   }, [value, ms]);
   return <span className="v2-num">{format(n)}</span>;
 }
@@ -198,7 +208,7 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
       <div style={{ display: "flex", justifyContent: "center" }}>
         <div className={`v2-sharecard ${shape === "Square" ? "square" : ""}`}>
           <div className="v2-row" style={{ gap: 8 }}>
-            <span className="v2-av" style={{ background: "#ffffff", color: "#00804f" }}>{handle.slice(1, 3).toUpperCase()}</span>
+            <span className="v2-av" style={{ background: "#ffffff", color: "#00804f" }}>{handle.startsWith("@") ? handle.slice(1, 3).toUpperCase() : handle.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase()}</span>
             <b style={{ fontSize: 13 }}>{handle}</b>
           </div>
           <div className="lbl">{label}</div>

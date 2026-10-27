@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Albert_Sans } from "next/font/google";
+import Script from "next/script";
 import { DemoProvider } from "@/components/demo";
 import "./globals.css";
 import "./v2.css";
@@ -14,10 +15,14 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#00874f", viewportFit: "cover" };
 
+/** Applies the Light / Dark choice from Account before the page paints (saved on this device only). */
+const THEME_SCRIPT = `try{var t=localStorage.getItem("rz2_theme");if(t==="Light"||t==="Dark"){document.documentElement.dataset.theme=t.toLowerCase()}}catch(e){}`;
+
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={albertSans.className}>
+        <Script id="rz2-theme" strategy="beforeInteractive">{THEME_SCRIPT}</Script>
         <DemoProvider>{children}</DemoProvider>
       </body>
     </html>

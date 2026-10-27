@@ -50,7 +50,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
   return (
     <>
       <DemoStrip />
-      <header className="v2-top">
+      <header className="v2-top" data-app={app}>
         <nav className="site-nav site-wrap" aria-label="Main">
           <Link href={HOME[app]} className="site-brand">
             <span>

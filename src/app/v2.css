@@ -31,7 +31,7 @@ body { font-feature-settings: "tnum" 0; }
 .v2-narrow { max-width: 860px; }
 @media (max-width: 760px) {
   .v2-menu { display: none; }
-  .v2-acct span { display: none; }
+  .v2-acct > span:not(.v2-av) { display: none; }
   .v2-acct { padding: 0 4px; }
   .v2-main { padding-block: 18px 40px; gap: 16px; }
 }
@@ -195,8 +195,8 @@ body { font-feature-settings: "tnum" 0; }
 .v2-meter i.amber { background: linear-gradient(90deg, #ffd27a, #f5a623); }
 .v2-meter i.blue { background: linear-gradient(90deg, #8fb2ff, #1d4ed8); }
 @keyframes v2Grow { from { transform: scaleX(0); } to { transform: none; } }
-.v2-colchart { display: flex; align-items: flex-end; gap: 6px; height: 140px; padding-top: 8px; }
-.v2-colchart span { flex: 1; border-radius: 8px 8px 3px 3px; background: linear-gradient(180deg, #22dc95, #00a862); transform-origin: bottom; animation: v2Rise 0.8s var(--ease) both; min-width: 6px; }
+.v2-colchart { display: flex; align-items: flex-end; gap: clamp(2px, 1vw, 6px); height: 140px; padding-top: 8px; min-width: 0; }
+.v2-colchart span { flex: 1; border-radius: 8px 8px 3px 3px; background: linear-gradient(180deg, #22dc95, #00a862); transform-origin: bottom; animation: v2Rise 0.8s var(--ease) both; min-width: 2px; }
 .v2-colchart span.dim { background: var(--line); }
 @keyframes v2Rise { from { transform: scaleY(0); } to { transform: none; } }
 .v2-axis { display: flex; gap: 6px; font-size: 11px; color: var(--muted); }
@@ -297,3 +297,20 @@ body { font-feature-settings: "tnum" 0; }
 @media (min-width: 761px) { .v2-toast { bottom: 32px; } }
 .v2-demo-toggle { height: 26px; padding: 0 10px; border-radius: 999px; border: 1px solid currentColor; background: transparent; color: inherit; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
 @media (max-width: 760px) { .v2-demo .site-wrap > a { display: none; } .v2-demo .site-wrap > a[href="/tour"] { display: inline; } }
+
+/* V1 hides top-bar links on phones; keep the bell and the account button visible in V2. */
+@media (max-width: 640px) {
+  .v2-top .site-nav > a.v2-iconbtn, .v2-top .site-nav > a.v2-acct { display: inline-flex; }
+  .v2-top .site-nav { column-gap: 10px; padding-block: 10px; }
+  .v2-top .site-brand { font-size: 19px !important; }
+  .v2-top .site-brand span { width: 36px; height: 36px; }
+}
+.v2-acct, .v2-iconbtn, .v2-top .lang-switch, .v2-workspace { flex-shrink: 0; }
+
+/* Admin has nine sections: tighter menu, and the Settings label only on wide screens. */
+.v2-top[data-app="admin"] .v2-menu { gap: 0; }
+.v2-top[data-app="admin"] .v2-menu a { padding: 0 10px; font-size: 14px; }
+@media (max-width: 1360px) { .v2-top[data-app="admin"] .v2-acct > span:not(.v2-av) { display: none; } .v2-top[data-app="admin"] .v2-acct { padding: 0 4px; } }
+@media (max-width: 1080px) { .v2-top[data-app="admin"] .v2-menu a { padding: 0 7px; font-size: 13px; } }
+/* Sheets and celebrations rendered inside an animated list keep their own entrance. */
+.v2-in > .v2-backdrop, .v2-in > .v2-celebrate { animation: v2Fade 0.2s var(--ease) both; animation-delay: 0ms; }
