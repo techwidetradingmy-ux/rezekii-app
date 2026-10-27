@@ -1,0 +1,261 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
+import { Icon } from "./icons";
+import { useDemo } from "./demo";
+
+/** Page title row: large title, one line under it, optional actions on the right. */
+export function Title({ title, sub, children }: { title: string; sub?: React.ReactNode; children?: React.ReactNode }) {
+  return (
+    <div className="v2-title">
+      <div>
+        <h1>{title}</h1>
+        {sub && <p>{sub}</p>}
+      </div>
+      {children && <div className="v2-row">{children}</div>}
+    </div>
+  );
+}
+
+/** Counts up to `value` once on first paint (skipped when the device asks for reduced motion). */
+export function Count({ value, format = (n: number) => Math.round(n).toLocaleString("en-MY"), ms = 900 }: { value: number; format?: (n: number) => string; ms?: number }) {
+  const [n, setN] = useState(value);
+  const started = useRef(false);
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const t0 = performance.now();
+    let raf = 0;
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - t0) / ms);
+      setN(value * (1 - Math.pow(1 - p, 3)));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    setN(0);
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value, ms]);
+  return <span className="v2-num">{format(n)}</span>;
+}
+
+export function Stat({ label, value, note, tone }: { label: string; value: React.ReactNode; note?: string; tone?: "up" | "down" }) {
+  return (
+    <div className="v2-stat">
+      <small>{label}</small>
+      <b>{value}</b>
+      {note && <em className={tone}>{note}</em>}
+    </div>
+  );
+}
+
+/** Horizontal bars: label, meter, value. */
+export function Bars({ rows, tone }: { rows: { label: string; value: number; display?: string; tone?: "red" | "amber" | "blue" }[]; tone?: "red" | "amber" | "blue" }) {
+  const max = Math.max(...rows.map((r) => r.value), 1);
+  return (
+    <div className="v2-bars">
+      {rows.map((r, i) => (
+        <div className="v2-bar" key={r.label}>
+          <span title={r.label}>{r.label}</span>
+          <span className="v2-meter"><i className={r.tone ?? tone} style={{ width: `${(r.value / max) * 100}%`, animationDelay: `${i * 60}ms` }} /></span>
+          <b>{r.display ?? r.value}</b>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Column chart with an x-axis. */
+export function Columns({ values, labels }: { values: number[]; labels?: string[] }) {
+  const max = Math.max(...values, 1);
+  return (
+    <div>
+      <div className="v2-colchart">
+        {values.map((v, i) => (
+          <span key={i} style={{ height: `${(v / max) * 100}%`, animationDelay: `${i * 40}ms` }} title={String(v)} />
+        ))}
+      </div>
+      {labels && (
+        <div className="v2-axis">
+          {labels.map((l, i) => (
+            <span key={i}>{l}</span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function Progress({ value, max = 100 }: { value: number; max?: number }) {
+  return (
+    <div className="v2-prog" role="progressbar" aria-valuenow={value} aria-valuemax={max}>
+      <i style={{ width: `${Math.min(100, (value / max) * 100)}%` }} />
+    </div>
+  );
+}
+
+/** iOS segmented control. */
+export function Seg<T extends string>({ value, options, onChange }: { value: T; options: readonly T[] | T[]; onChange: (v: T) => void }) {
+  return (
+    <div className="np-seg" role="group">
+      {options.map((o) => (
+        <button key={o} type="button" className={o === value ? "on" : undefined} aria-pressed={o === value} onClick={() => onChange(o)}>
+          {o}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Bottom sheet on phones, centred card on desktop. Escape or a tap outside closes it. */
+export function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", k);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", k);
+      document.body.style.overflow = "";
+    };
+  }, [onClose]);
+  return (
+    <div className="v2-backdrop" onClick={onClose}>
+      <div className="v2-sheet" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()} style={{ position: "relative" }}>
+        <span className="v2-sheet-grab" />
+        <h2>{title}</h2>
+        <button type="button" className="v2-iconbtn v2-sheet-x" aria-label="Close" onClick={onClose}>
+          <Icon name="x" size={18} />
+        </button>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/** A made-up QR pattern for the invite code on share cards. */
+export function Qr() {
+  const cells: [number, number][] = [];
+  let seed = 7;
+  for (let y = 0; y < 21; y++)
+    for (let x = 0; x < 21; x++) {
+      seed = (seed * 9301 + 49297) % 233280;
+      const finder = (x < 7 && y < 7) || (x > 13 && y < 7) || (x < 7 && y > 13);
+      if (finder) {
+        const fx = x > 13 ? x - 14 : x, fy = y > 13 ? y - 14 : y;
+        if (fx === 0 || fx === 6 || fy === 0 || fy === 6 || (fx > 1 && fx < 5 && fy > 1 && fy < 5)) cells.push([x, y]);
+      } else if (seed / 233280 > 0.55) cells.push([x, y]);
+    }
+  return (
+    <span className="v2-qr" aria-label="Invite QR code">
+      <svg viewBox="0 0 21 21" shapeRendering="crispEdges">
+        {cells.map(([x, y]) => (
+          <rect key={`${x}-${y}`} x={x} y={y} width="1" height="1" fill="#0b1a13" />
+        ))}
+      </svg>
+    </span>
+  );
+}
+
+const CONFETTI = ["#00c073", "#22dc95", "#f5a623", "#e8005a", "#25f4ee", "#ffd34d"];
+
+/** Full-screen celebration: medal, what was earned, one line of encouragement, share or continue. */
+export function Celebrate({ title, line, cheer, onShare, onClose, tone = "gold", icon = "trophy" }: {
+  title: string; line: string; cheer: string; onShare?: () => void; onClose: () => void; tone?: "gold" | "green"; icon?: Parameters<typeof Icon>[0]["name"];
+}) {
+  return (
+    <div className="v2-celebrate" onClick={onClose}>
+      <div className="v2-cele-card" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
+        <div className="v2-confetti" aria-hidden="true">
+          {Array.from({ length: 28 }, (_, i) => (
+            <i key={i} style={{ left: `${(i * 37) % 100}%`, background: CONFETTI[i % CONFETTI.length], animationDelay: `${(i % 7) * 90}ms`, transform: `rotate(${i * 23}deg)` }} />
+          ))}
+        </div>
+        <span className={`v2-medal ${tone === "green" ? "green" : ""}`}><Icon name={icon} size={46} width={2.2} /></span>
+        <h2>{title}</h2>
+        <p style={{ fontWeight: 800, color: "var(--gink)" }}>{line}</p>
+        <p>{cheer}</p>
+        <div className="v2-stack" style={{ width: "100%", marginTop: 6 }}>
+          {onShare && (
+            <button type="button" className="np-btn" onClick={onShare}>
+              <Icon name="share" size={18} /> Share this moment
+            </button>
+          )}
+          <button type="button" className="btn-outline" onClick={onClose}>Continue</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Ready-made share card (story or square) with the creator's invite QR, plus the places to send it. */
+export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow" }: { onClose: () => void; big: string; label: string; lines: string[]; handle?: string }) {
+  const [shape, setShape] = useState<"Story" | "Square">("Story");
+  const { toast } = useDemo();
+  return (
+    <Sheet title="Share" onClose={onClose}>
+      <Seg value={shape} options={["Story", "Square"] as const} onChange={setShape} />
+      <div style={{ display: "flex", justifyContent: "center" }}>
+        <div className={`v2-sharecard ${shape === "Square" ? "square" : ""}`}>
+          <div className="v2-row" style={{ gap: 8 }}>
+            <span className="v2-av" style={{ background: "#ffffff", color: "#00804f" }}>{handle.slice(1, 3).toUpperCase()}</span>
+            <b style={{ fontSize: 13 }}>{handle}</b>
+          </div>
+          <div className="lbl">{label}</div>
+          <div className="big">{big}</div>
+          {lines.map((l) => (
+            <div key={l} className="lbl">{l}</div>
+          ))}
+          <div className="foot">
+            <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <span>Rezekii</span>
+              <span style={{ fontWeight: 600, opacity: 0.85 }}>Join with my link</span>
+            </span>
+            <span style={{ flex: 1 }} />
+            <Qr />
+          </div>
+        </div>
+      </div>
+      <p className="v2-small" style={{ margin: 0, textAlign: "center" }}>Your invite QR is on the card. Only real numbers from your account; you can hide any of them.</p>
+      <div className="v2-chips" style={{ justifyContent: "center" }}>
+        {["TikTok", "Instagram", "Facebook", "WhatsApp"].map((p) => (
+          <button key={p} type="button" className="v2-chip" onClick={() => { toast(`Opening ${p}…`); onClose(); }}>{p}</button>
+        ))}
+      </div>
+      <button type="button" className="np-btn" onClick={() => { toast("Image saved"); onClose(); }}>Save image</button>
+    </Sheet>
+  );
+}
+
+/** Blurs key numbers until TikTok Shop is linked (blueprint 7.3); everything else stays usable. */
+export function Lock({ children, what = "commission" }: { children: React.ReactNode; what?: string }) {
+  const { linked, setLinked } = useDemo();
+  if (linked) return <>{children}</>;
+  return (
+    <div className="v2-lock" style={{ borderRadius: 22 }}>
+      <div className="v2-blur" aria-hidden="true">{children}</div>
+      <div className="v2-lock-cover">
+        <Icon name="lock" size={26} />
+        <b>Link TikTok Shop to see {what}</b>
+        <span className="v2-small">It also proves you're a real creator.</span>
+        <button type="button" className="np-btn v2-btn-sm" onClick={() => setLinked(true)}>Link TikTok Shop</button>
+      </div>
+    </div>
+  );
+}
+
+/** Small blurred number for inline use. */
+export function Hidden({ children }: { children: React.ReactNode }) {
+  const { linked } = useDemo();
+  return linked ? <>{children}</> : <span className="v2-blur" style={{ display: "inline-block" }}>{children}</span>;
+}
+
+export function Empty({ title, line, href, cta }: { title: string; line: string; href?: string; cta?: string }) {
+  return (
+    <div className="v2-card flat" style={{ alignItems: "flex-start" }}>
+      <b>{title}</b>
+      <span className="v2-muted">{line}</span>
+      {href && cta && <Link href={href} className="np-btn v2-btn-sm">{cta}</Link>}
+    </div>
+  );
+}
