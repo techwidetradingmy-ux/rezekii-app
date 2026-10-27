@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { accountPage } from "@/modules/accounts/account-page.ts";
-import { ADMIN_PASSWORD_MIN, PASSWORD_MIN } from "@/modules/accounts/password.ts";
+import { PASSWORD_MIN } from "@/modules/accounts/password.ts";
 import { getLang, tFor } from "@/lib/i18n/server.ts";
 import { currentUser } from "../../current-user";
 import { myPhoto } from "@/modules/photos/store.ts";
@@ -30,7 +30,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
           {user.role === "admin" && <span className="vs-page"><ViewSwitch to="admin" /></span>}
         </div>
         <AccountsView
-          me={{ name, avatar: myPhoto(user), initial: name.replace("@", "").slice(0, 1).toUpperCase(), role: user.role, tiktokUsername: user.tiktok_username, passwordMin: user.role === "admin" ? ADMIN_PASSWORD_MIN : PASSWORD_MIN }}
+          me={{ name, avatar: myPhoto(user), initial: name.replace("@", "").slice(0, 1).toUpperCase(), role: user.role, tiktokUsername: user.tiktok_username, passwordMin: PASSWORD_MIN }}
           d={d}
           now={d.now}
           justConnected={q.connected === "tiktok"}

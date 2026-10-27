@@ -121,7 +121,7 @@ export function SettingsView({ d, me, startTab }: { d: SettingsData; me: string;
               {a.id && pwFor === a.id && (
                 <span className="nv-expand" style={{ flexBasis: "100%", display: "flex", flexWrap: "wrap", gap: 8, paddingLeft: 54 }}>
                   <label htmlFor={`stpw-${a.id}`} style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>New password for {a.email}</label>
-                  <input id={`stpw-${a.id}`} type="password" className="nv-input" autoComplete="new-password" placeholder="At least 12 characters" value={pw} onChange={(e) => setPw(e.target.value)} onKeyDown={(e) => e.key === "Enter" && setPassword(a)} style={{ flex: "1 1 200px", height: 40 }} />
+                  <input id={`stpw-${a.id}`} type="password" className="nv-input" autoComplete="new-password" placeholder="At least 8 characters" value={pw} onChange={(e) => setPw(e.target.value)} onKeyDown={(e) => e.key === "Enter" && setPassword(a)} style={{ flex: "1 1 200px", height: 40 }} />
                   <button type="button" className="nv-btn nv-sm nv-press" disabled={busy || !pw} onClick={() => setPassword(a)} style={{ height: 40 }}>Set password</button>
                 </span>
               )}

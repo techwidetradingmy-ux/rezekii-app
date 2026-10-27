@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { ADMIN_PASSWORD_MIN, cleanEmail, emailLoginProblem, hashPassword, passwordProblem, verifyPassword } from "./password.ts";
+import { cleanEmail, emailLoginProblem, hashPassword, passwordProblem, verifyPassword } from "./password.ts";
 
 test("password: hash and verify", async () => {
   const h = await hashPassword("correct horse battery");
@@ -24,9 +24,6 @@ test("password: email and length rules", () => {
   assert.equal(passwordProblem("short"), "Use at least 8 characters.");
   assert.equal(passwordProblem("long enough"), null);
   assert.equal(passwordProblem("x".repeat(129)), "Use at most 128 characters.");
-  // Admin accounts need 12.
-  assert.equal(passwordProblem("eleven char", ADMIN_PASSWORD_MIN), "Use at least 12 characters.");
-  assert.equal(passwordProblem("twelve chars", ADMIN_PASSWORD_MIN), null);
 });
 
 test("email sign-in: added with an email and a password, then each changes on its own with the current password", () => {
@@ -36,9 +33,9 @@ test("email sign-in: added with an email and a password, then each changes on it
   assert.equal(emailLoginProblem({ ...first, password: "long enough" }), "Enter your email.");
   assert.equal(emailLoginProblem({ ...first, email: null, password: "long enough" }), "Enter a valid email address.");
   assert.equal(emailLoginProblem({ ...first, email: "tina@techwide.my", password: "short" }), "Use at least 8 characters.");
-  // Admins may add a password too (27 Oct 2026), with 12 characters and any sign-in email no other account uses.
-  assert.equal(emailLoginProblem({ ...first, role: "admin", email: "a@techwide.my", password: "long enough" }), "Use at least 12 characters.");
-  assert.equal(emailLoginProblem({ ...first, role: "admin", email: "a@techwide.my", password: "long enough!" }), null);
+  // Admins may add a password too, with the same 8 characters as everyone (27 Oct 2026).
+  assert.equal(emailLoginProblem({ ...first, role: "admin", email: "a@techwide.my", password: "short" }), "Use at least 8 characters.");
+  assert.equal(emailLoginProblem({ ...first, role: "admin", email: "a@techwide.my", password: "8 chars!" }), null);
 
   const later = { role: "creator", hasPassword: true, currentOk: true };
   assert.equal(emailLoginProblem({ ...later, email: "new@techwide.my" }), null); // email only

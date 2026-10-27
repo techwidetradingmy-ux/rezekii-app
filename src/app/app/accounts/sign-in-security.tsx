@@ -11,7 +11,7 @@ type Props = { email: string | null; has: boolean; googleEmail: string | null; t
  * Sign-in & security on Account (owner's pick C, 15 Oct 2026): the ways this account signs in, then email and password side
  * by side. Email sign-in is added with an email and a password; after that each one changes on its own, with the current
  * password. The sign-in email is its own address (27 Oct 2026): an account that also signs in with Google may use a different
- * one, and Google sign-in doesn't change it. `min`: the shortest password allowed (12 for admins).
+ * one, and Google sign-in doesn't change it. `min`: the shortest password allowed.
  */
 export function SignInSecurity({ email, has, googleEmail, tiktok, min, onDone }: Props) {
   const t = useT();

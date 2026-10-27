@@ -1,6 +1,6 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { deleteAccount } from "../accounts/manage.ts";
-import { ADMIN_PASSWORD_MIN, hashPassword, passwordProblem } from "../accounts/password.ts";
+import { hashPassword, passwordProblem } from "../accounts/password.ts";
 import type { AppUser } from "../accounts/users.ts";
 import { USER_COLUMNS } from "../accounts/users.ts";
 import type { Level } from "../levels/rules.ts";
@@ -137,12 +137,12 @@ export async function removeCreator(id: string, actor: string): Promise<boolean>
 
 /**
  * Sets a new password for an account that signs in with email and password (a creator, or an admin made from one), e.g. when
- * they forgot it. Admin accounts need 12 characters. Their other sign-ins end, except the admin's own. Never logged.
+ * they forgot it. Their other sign-ins end, except the admin's own. Never logged.
  */
 export async function setPasswordFor(id: string, password: unknown, actor: { id: string; name: string }): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
   const [u] = (await (await supabaseRest(`app_users?id=eq.${id}&password_hash=not.is.null&select=id,role,email&limit=1`)).json()) as { id: string; role: string; email: string | null }[];
   if (!u) return { ok: false, error: "This account doesn't sign in with email and password.", status: 404 };
-  const problem = passwordProblem(password, u.role === "admin" ? ADMIN_PASSWORD_MIN : undefined);
+  const problem = passwordProblem(password);
   if (problem) return { ok: false, error: problem, status: 400 };
   await supabaseRest(`app_users?id=eq.${u.id}`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ password_hash: await hashPassword(String(password)), failed_logins: 0, locked_until: null }) });
   if (u.id !== actor.id) await supabaseRest(`app_sessions?user_id=eq.${u.id}`, { method: "DELETE", headers: { prefer: "return=minimal" } });

@@ -19,7 +19,7 @@ import "../marketplace/marketplace.css";
 import "../today.css";
 import "./accounts.css";
 
-/** `passwordMin`: the shortest password this account may choose (longer for admins). */
+/** `passwordMin`: the shortest password allowed (PASSWORD_MIN). */
 type Me = { name: string; avatar: string | null; initial: string; role: "admin" | "creator"; tiktokUsername: string | null; passwordMin: number };
 type Alert = "disconnect" | "unlink" | "delete" | null;
 

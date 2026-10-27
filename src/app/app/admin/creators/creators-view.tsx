@@ -276,7 +276,7 @@ export function CreatorsView({ creators, places, auto, now }: { creators: Creato
                 <span style={{ fontSize: 13, color: "var(--muted)" }}>For when they forget it. Tell them the new one; their other sign-ins end. Passwords are never shown, only replaced.</span>
                 <span style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                   <label htmlFor="crpw" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>New password for {open.email ?? open.handle}</label>
-                  <input id="crpw" type="password" className="nv-input" autoComplete="new-password" placeholder={open.admin ? "At least 12 characters" : "At least 8 characters"} value={newPw} onChange={(e) => setNewPw(e.target.value)} onKeyDown={(e) => e.key === "Enter" && setPassword(open)} style={{ flex: "1 1 180px", height: 40 }} />
+                  <input id="crpw" type="password" className="nv-input" autoComplete="new-password" placeholder="At least 8 characters" value={newPw} onChange={(e) => setNewPw(e.target.value)} onKeyDown={(e) => e.key === "Enter" && setPassword(open)} style={{ flex: "1 1 180px", height: 40 }} />
                   <button type="button" className="nv-btn2 nv-sm nv-press" disabled={busy || !newPw} onClick={() => setPassword(open)} style={{ height: 40 }}>Set password</button>
                 </span>
               </div>
@@ -311,7 +311,7 @@ export function CreatorsView({ creators, places, auto, now }: { creators: Creato
           <div className="nv-alert" role="alertdialog" aria-modal="true" aria-labelledby="cradm">
             <div style={{ padding: "20px 18px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
               <span id="cradm" style={{ fontSize: 17, fontWeight: 700, overflowWrap: "anywhere" }}>Make {open.email ?? open.handle} an admin?</span>
-              <span style={{ fontSize: 13, lineHeight: 1.45 }}>Created {when(open.joined)}. It will see every creator and can post to connected Pages, signing in with its email and password. Only continue if you created this account. Admin passwords need 12 characters: set a new one here if theirs is shorter. Remove admin any time in Settings → Admins.</span>
+              <span style={{ fontSize: 13, lineHeight: 1.45 }}>Created {when(open.joined)}. It will see every creator and can post to connected Pages, signing in with its email and password. Only continue if you created this account. Remove admin any time in Settings → Admins.</span>
             </div>
             <div className="nv-alert-b">
               <button type="button" onClick={() => setMakeAdmin(false)}>Cancel</button>
