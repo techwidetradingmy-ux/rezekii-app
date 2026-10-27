@@ -104,7 +104,7 @@ export const ACCOUNT: Record<string, string> = {
   "New email": "新邮箱",
   "Your password": "你的密码",
   "Password": "密码",
-  "At least 8 characters": "至少 8 个字符",
+  "At least {n} characters": "至少 {n} 个字符",
   "Type it again": "再输入一次",
   "Saving…": "正在保存…",
   "Change email": "更改邮箱",

@@ -197,7 +197,6 @@ export const PUBLIC: Record<string, string> = {
   "Use at least 8 characters.": "请至少使用 8 个字符。",
   "Use at most 128 characters.": "最多只能使用 128 个字符。",
   "Too many tries. Please wait 15 minutes and try again.": "尝试次数太多。请等待 15 分钟后再试。",
-  "Admin accounts sign in with Google.": "管理员账户请使用 Google 登录。",
   "Your current password is wrong.": "你的当前密码不正确。",
   "Enter your email.": "请输入你的邮箱。",
   "Choose a password.": "请设置密码。",

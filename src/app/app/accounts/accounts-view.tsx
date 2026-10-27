@@ -19,7 +19,8 @@ import "../marketplace/marketplace.css";
 import "../today.css";
 import "./accounts.css";
 
-type Me = { name: string; avatar: string | null; initial: string; role: "admin" | "creator"; tiktokUsername: string | null };
+/** `passwordMin`: the shortest password this account may choose (longer for admins). */
+type Me = { name: string; avatar: string | null; initial: string; role: "admin" | "creator"; tiktokUsername: string | null; passwordMin: number };
 type Alert = "disconnect" | "unlink" | "delete" | null;
 
 const LEVEL_NAME = { bronze: tx("Bronze"), silver: tx("Silver"), gold: tx("Gold") };
@@ -313,9 +314,7 @@ export function AccountsView({ me, d, now, justConnected }: { me: Me; d: Account
           )}
         </section>
 
-      {(me.role === "creator" || !o.emailLogin.googleEmail) && (
-        <SignInSecurity email={o.emailLogin.email} has={o.emailLogin.has} googleEmail={o.emailLogin.googleEmail} tiktok={o.emailLogin.tiktok} onDone={(m) => { flash(m); router.refresh(); }} />
-      )}
+      <SignInSecurity email={o.emailLogin.email} has={o.emailLogin.has} googleEmail={o.emailLogin.googleEmail} tiktok={o.emailLogin.tiktok} min={me.passwordMin} onDone={(m) => { flash(m); router.refresh(); }} />
 
       <div className="ac-row">
         <section className="nv-up nv-card" aria-labelledby="acset" style={{ flex: "1 1 520px", overflow: "hidden", minWidth: 0, animationDelay: "180ms" }}>

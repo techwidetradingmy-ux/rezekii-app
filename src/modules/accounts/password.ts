@@ -39,11 +39,11 @@ export function cleanEmail(email: unknown): string | null {
  * Why an account's email sign-in can't be added or changed, or null when it can (owner, 15 Oct 2026: any creator account,
  * however it was made, can also sign in with email). The first time it needs an email and a password; after that the email
  * and the password change on their own, each confirmed with the current password. `email` / `password` are undefined when
- * not being changed (an email that isn't valid is null). Admin accounts sign in with Google only. An account that also signs
- * in with Google keeps its Google email, because Google sign-in writes that email to the account each time.
+ * not being changed (an email that isn't valid is null). Admin accounts may add it too (owner, 27 Oct 2026), with a
+ * password of at least ADMIN_PASSWORD_MIN. An account that also signs in with Google keeps its Google email, because Google
+ * sign-in writes that email to the account each time.
  */
 export function emailLoginProblem(a: { role: string; hasPassword: boolean; currentOk: boolean; email?: string | null; password?: string; googleEmail: string | null }): string | null {
-  if (a.role !== "creator" && a.googleEmail) return "Admin accounts sign in with Google.";
   if (a.hasPassword && !a.currentOk) return "Your current password is wrong.";
   if (!a.hasPassword && a.email === undefined) return "Enter your email.";
   if (!a.hasPassword && a.password === undefined) return "Choose a password.";

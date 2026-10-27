@@ -5,14 +5,14 @@ import { useT } from "@/lib/i18n/client.tsx";
 import { tx } from "@/lib/i18n/lang.ts";
 
 type Which = "email" | "password";
-type Props = { email: string | null; has: boolean; googleEmail: string | null; tiktok: string | null; onDone: (message: string) => void };
+type Props = { email: string | null; has: boolean; googleEmail: string | null; tiktok: string | null; min: number; onDone: (message: string) => void };
 
 /**
  * Sign-in & security on Account (owner's pick C, 15 Oct 2026): the ways this account signs in, then email and password side
  * by side. Email sign-in is added with an email and a password; after that each one changes on its own, with the current
- * password. An account that also signs in with Google keeps its Google email.
+ * password. An account that also signs in with Google keeps its Google email. `min`: the shortest password allowed (12 for admins).
  */
-export function SignInSecurity({ email, has, googleEmail, tiktok, onDone }: Props) {
+export function SignInSecurity({ email, has, googleEmail, tiktok, min, onDone }: Props) {
   const t = useT();
   const [busy, setBusy] = useState<Which | null>(null);
   const [error, setError] = useState<{ which: Which; text: string } | null>(null);
@@ -92,11 +92,11 @@ export function SignInSecurity({ email, has, googleEmail, tiktok, onDone }: Prop
                 <>
                   <label className="ac-f">
                     {t("Password")}
-                    <input name="password" type="password" className="nv-input" required minLength={8} maxLength={128} placeholder={t("At least 8 characters")} autoComplete="new-password" />
+                    <input name="password" type="password" className="nv-input" required minLength={min} maxLength={128} placeholder={t("At least {n} characters", { n: min })} autoComplete="new-password" />
                   </label>
                   <label className="ac-f">
                     {t("Type it again")}
-                    <input name="again" type="password" className="nv-input" required minLength={8} maxLength={128} autoComplete="new-password" />
+                    <input name="again" type="password" className="nv-input" required minLength={min} maxLength={128} autoComplete="new-password" />
                   </label>
                 </>
               )}
@@ -116,11 +116,11 @@ export function SignInSecurity({ email, has, googleEmail, tiktok, onDone }: Prop
             </label>
             <label className="ac-f">
               {t("New password")}
-              <input name="password" type="password" className="nv-input" required minLength={8} maxLength={128} placeholder={t("At least 8 characters")} autoComplete="new-password" />
+              <input name="password" type="password" className="nv-input" required minLength={min} maxLength={128} placeholder={t("At least {n} characters", { n: min })} autoComplete="new-password" />
             </label>
             <label className="ac-f">
               {t("Type it again")}
-              <input name="again" type="password" className="nv-input" required minLength={8} maxLength={128} autoComplete="new-password" />
+              <input name="again" type="password" className="nv-input" required minLength={min} maxLength={128} autoComplete="new-password" />
             </label>
             {error?.which === "password" && <span role="alert" className="ac-err">{t(error.text)}</span>}
             <button type="submit" className="nv-btn nv-press" disabled={busy === "password"}>{busy === "password" ? t("Saving…") : t("Change password")}</button>

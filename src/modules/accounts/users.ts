@@ -45,10 +45,12 @@ async function insert(fields: Record<string, unknown>): Promise<AppUser> {
   return (await first(res)) as AppUser;
 }
 
+/** The admin emails added in Settings (on top of ADMIN_EMAILS). */
+const addedAdmins = async () => ((await (await supabaseRest("admin_emails?select=email")).json()) as { email: string }[]).map((r) => r.email);
+
 /** Signs in with Google: finds the account by Google ID or creates it. The role is re-checked against the admin list every time. */
 export async function upsertGoogleUser(g: { sub: string; email?: string; email_verified?: boolean; name?: string; picture?: string }): Promise<AppUser> {
-  const added = ((await (await supabaseRest("admin_emails?select=email")).json()) as { email: string }[]).map((r) => r.email);
-  const fields = { email: g.email ?? null, display_name: g.name ?? null, avatar_url: g.picture ?? null, role: roleForGoogle(g.email, g.email_verified, added), last_sign_in_at: now() };
+  const fields = { email: g.email ?? null, display_name: g.name ?? null, avatar_url: g.picture ?? null, role: roleForGoogle(g.email, g.email_verified, await addedAdmins()), last_sign_in_at: now() };
   const existing = await findBy("google_sub", g.sub);
   return existing ? patch(existing.id, fields) : insert({ ...fields, google_sub: g.sub });
 }
@@ -186,7 +188,7 @@ export async function setEmailLogin(userId: string, change: { email?: string | n
   if (!me) return { ok: false, error: "Sign in first.", status: 401 };
   const currentOk = !!me.password_hash && (await verifyPassword(current, me.password_hash));
   const problem = emailLoginProblem({ role: me.role, hasPassword: !!me.password_hash, currentOk, ...change, googleEmail: me.google_sub ? me.email : null });
-  if (problem) return { ok: false, error: problem, status: (me.role !== "creator" && me.google_sub) || (me.password_hash && !currentOk) ? 403 : 400 };
+  if (problem) return { ok: false, error: problem, status: me.password_hash && !currentOk ? 403 : 400 };
   const taken: EmailResult = { ok: false, error: "Another Rezekii account already signs in with this email.", status: 409 };
   if (change.email) {
     const others = (await (await supabaseRest(`app_users?email=eq.${encodeURIComponent(change.email)}&password_hash=not.is.null&id=neq.${userId}&select=id&limit=1`)).json()) as unknown[];
@@ -204,11 +206,14 @@ export async function setEmailLogin(userId: string, change: { email?: string | n
   }
 }
 
-/** Email sign-in. After 5 wrong passwords the account is locked for 15 minutes. Unknown emails take as long as wrong passwords. */
+/**
+ * Email sign-in. After 5 wrong passwords the account is locked for 15 minutes. Unknown emails take as long as wrong passwords.
+ * A Google admin signing in with their password stays admin only while their email is on the admin list, as with Google.
+ */
 export async function emailSignIn(email: string, password: string): Promise<EmailResult> {
   const wrong: EmailResult = { ok: false, error: "Wrong email or password.", status: 401 };
-  type Row = { id: string; password_hash: string; failed_logins: number; locked_until: string | null };
-  const [row] = (await (await supabaseRest(`app_users?email=eq.${encodeURIComponent(email)}&password_hash=not.is.null&select=id,password_hash,failed_logins,locked_until&limit=1`)).json()) as Row[];
+  type Row = { id: string; password_hash: string; failed_logins: number; locked_until: string | null; role: AppUser["role"]; email: string | null; google_sub: string | null };
+  const [row] = (await (await supabaseRest(`app_users?email=eq.${encodeURIComponent(email)}&password_hash=not.is.null&select=id,password_hash,failed_logins,locked_until,role,email,google_sub&limit=1`)).json()) as Row[];
   if (!row) {
     dummyHash ??= hashPassword("not a real password");
     await verifyPassword(password, await dummyHash);
@@ -221,5 +226,6 @@ export async function emailSignIn(email: string, password: string): Promise<Emai
     await supabaseRest(`app_users?id=eq.${row.id}`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ failed_logins: lock ? 0 : n, locked_until: lock ? new Date(Date.now() + LOCK_MINUTES * 60_000).toISOString() : null }) });
     return lock ? { ok: false, error: `Too many tries. Please wait ${LOCK_MINUTES} minutes and try again.`, status: 429 } : wrong;
   }
-  return { ok: true, user: await patch(row.id, { failed_logins: 0, locked_until: null, last_sign_in_at: now() }) };
+  const demoted = row.role === "admin" && !!row.google_sub && roleForGoogle(row.email ?? undefined, true, await addedAdmins()) !== "admin";
+  return { ok: true, user: await patch(row.id, { failed_logins: 0, locked_until: null, last_sign_in_at: now(), ...(demoted ? { role: "creator" } : {}) }) };
 }

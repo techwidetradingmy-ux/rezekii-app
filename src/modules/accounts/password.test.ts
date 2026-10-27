@@ -36,7 +36,10 @@ test("email sign-in: added with an email and a password, then each changes on it
   assert.equal(emailLoginProblem({ ...first, password: "long enough" }), "Enter your email.");
   assert.equal(emailLoginProblem({ ...first, email: null, password: "long enough" }), "Enter a valid email address.");
   assert.equal(emailLoginProblem({ ...first, email: "tina@techwide.my", password: "short" }), "Use at least 8 characters.");
-  assert.equal(emailLoginProblem({ ...first, role: "admin", email: "a@techwide.my", password: "long enough", googleEmail: "a@techwide.my" }), "Admin accounts sign in with Google.");
+  // A Google admin may add a password too (27 Oct 2026): their Google email, and 12 characters.
+  assert.equal(emailLoginProblem({ ...first, role: "admin", email: "a@techwide.my", password: "long enough", googleEmail: "a@techwide.my" }), "Use at least 12 characters.");
+  assert.equal(emailLoginProblem({ ...first, role: "admin", email: "a@techwide.my", password: "long enough!", googleEmail: "a@techwide.my" }), null);
+  assert.equal(emailLoginProblem({ ...first, role: "admin", email: "b@techwide.my", password: "long enough!", googleEmail: "a@techwide.my" }), "This account signs in with Google, so use your Google email.");
   // Admins who sign in with email and password (made admin in Creators) keep it, with 12 characters.
   assert.equal(emailLoginProblem({ ...first, role: "admin", email: "a@techwide.my", password: "long enough" }), "Use at least 12 characters.");
   assert.equal(emailLoginProblem({ ...first, role: "admin", email: "a@techwide.my", password: "long enough!" }), null);
