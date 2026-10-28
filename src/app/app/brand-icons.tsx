@@ -3,6 +3,11 @@
 import { useId } from "react";
 import type { Channel } from "@/modules/social/rules.ts";
 
+/** Shopee's mark (Connect Shopee; not a posting channel yet, so not one of BrandIcon's channels). */
+export function ShopeeIcon({ size = 22 }: { size?: number }) {
+  return <svg style={{ width: size, height: size }} viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="#EE4D2D" /><path fill="none" stroke="#fff" strokeWidth="1.6" strokeLinejoin="round" d="M6.6 8.6h10.8l-.8 9.6H7.4z" /><path fill="none" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" d="M9.4 8.4a2.6 2.6 0 0 1 5.2 0" /><text x="12" y="16.4" textAnchor="middle" fontFamily="Arial,Helvetica,sans-serif" fontSize="7" fontWeight="700" fill="#fff">S</text></svg>;
+}
+
 /** Brand marks for the channel chips and counts. */
 export function BrandIcon({ ch, size = 22 }: { ch: Channel; size?: number }) {
   const s = { width: size, height: size };

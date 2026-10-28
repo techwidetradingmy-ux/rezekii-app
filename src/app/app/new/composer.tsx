@@ -15,7 +15,8 @@ import type { EditPost } from "@/modules/posting/edit.ts";
 import type { Recipe } from "@/modules/social/recipe.ts";
 import { localInput } from "./new-post-form";
 import { CAPTION_MAX, COMMENT_MAX, DEFAULT_PLACEMENT, NAMES, parseHashtags, withHashtags, autoCaption, autoComment, channelProblems, channelWarnings, lengthFor, links, postedCaption, type Channel, type Placement, type Platform } from "@/modules/social/rules.ts";
-import { BrandIcon } from "../brand-icons";
+import { BrandIcon, ShopeeIcon } from "../brand-icons";
+import type { PublicShopee } from "@/modules/shopee/connections.ts";
 import { PhonePreview, type Who } from "./phone-previews";
 import "./composer.css";
 
@@ -61,11 +62,13 @@ function Face({ ch, badge = true }: { ch: Pick<Ch, "app" | "avatar">; badge?: bo
  * setting its Content Sharing Guidelines require. `edit`: a scheduled post filled in to change (its recipe comes as `reuse`),
  * with its video and comment image kept; saving holds the changed post and swaps it in for the old one.
  */
-export function Composer({ tiktok: initialTikTok, social: initialSocial, brands: initialBrands, last, reuse, edit, connect }: { tiktok: TikTokAccount[]; social: PublicAccount[]; brands: Brand[]; last: string[]; reuse: { recipe: Recipe; at: string | null } | null; edit?: EditPost | null; connect: { channel: string; result: string } | null }) {
+export function Composer({ tiktok: initialTikTok, social: initialSocial, shopee: initialShopee, brands: initialBrands, last, reuse, edit, connect }: { tiktok: TikTokAccount[]; social: PublicAccount[]; shopee: PublicShopee[] | null; brands: Brand[]; last: string[]; reuse: { recipe: Recipe; at: string | null } | null; edit?: EditPost | null; connect: { channel: string; result: string } | null }) {
   const t = useT();
   const lang = useLang();
   const [tiktok, setTikTok] = useState(initialTikTok);
   const [social, setSocial] = useState(initialSocial);
+  // Connected Shopee accounts (null: Shopee isn't set up on this site). Shown in Channels only; Shopee posting comes later.
+  const [shopee, setShopee] = useState(initialShopee);
   const [brands, setBrands] = useState(initialBrands);
   // Reuse (M7): New post starts from an earlier post's channels, text and settings; only the video is picked again.
   const r0 = reuse?.recipe;
@@ -132,7 +135,7 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
   const [busy, setBusy] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
   const [done, setDone] = useState<{ summary: string; at: string | null; draft: boolean } | null>(null);
-  const [toast, setToast] = useState(() => (edit ? t("Editing your scheduled post. Saving replaces it, as long as it hasn't started sending.") : connect && CONNECT_MSG[connect.result] ? CONNECT_MSG[connect.result](NAMES[connect.channel as Platform] ?? t("The channel"), t) : reuse ? (reuse.at ? t("Filled in from your post of {date}. Pick a video, then post.", { date: new Date(reuse.at).toLocaleDateString(dateLocale(lang), { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" }) }) : t("Filled in from your post. Pick a video, then post.")) : ""));
+  const [toast, setToast] = useState(() => (edit ? t("Editing your scheduled post. Saving replaces it, as long as it hasn't started sending.") : connect && CONNECT_MSG[connect.result] ? CONNECT_MSG[connect.result](NAMES[connect.channel as Platform] ?? (connect.channel === "shopee" ? "Shopee" : t("The channel")), t) : reuse ? (reuse.at ? t("Filled in from your post of {date}. Pick a video, then post.", { date: new Date(reuse.at).toLocaleDateString(dateLocale(lang), { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" }) }) : t("Filled in from your post. Pick a video, then post.")) : ""));
 
   // Every channel, TikTok accounts first; only active ones can be picked.
   const channels: Ch[] = useMemo(() => [
@@ -227,6 +230,21 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
     else setSocial((s) => s.map((a) => (a.id === c.key ? { ...a, status } : a)));
     if (status === "reconnect") setPicked((s) => new Set([...s].filter((k) => k !== c.key)));
     setToast(status === "active" ? t("{name} is connected and working.", { name: c.name }) : t("{name} needs reconnecting. Press Reconnect to sign in again.", { name: c.name }));
+  }
+  // Shopee (Channels only): disconnect, and Check now, which renews the Shopee sign-in.
+  async function shopeeOff(s: PublicShopee, name: string) {
+    const r = await fetch(`/api/shopee/connections/${s.id}`, { method: "DELETE" }).catch(() => null);
+    if (!r?.ok) return setToast(t("Couldn't disconnect. Try again."));
+    setShopee((list) => list && list.filter((x) => x.id !== s.id));
+    setToast(t("{name} disconnected.", { name }));
+  }
+  async function shopeeCheck(s: PublicShopee, name: string) {
+    const r = await fetch("/api/channels/check", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ key: `shopee:${s.id}` }) }).catch(() => null);
+    const x = (await r?.json().catch(() => ({}))) as { status?: "active" | "reconnect"; error?: string } | undefined;
+    if (!r?.ok || !x?.status) return setToast(t(x?.error || tx("Couldn't check. Try again.")));
+    const status = x.status;
+    setShopee((list) => list && list.map((a) => (a.id === s.id ? { ...a, status } : a)));
+    setToast(status === "active" ? t("{name} is connected and working.", { name }) : t("{name} needs reconnecting. Press Reconnect to sign in again.", { name }));
   }
   function sameAsLast() {
     const next = cleanPick(last, connected);
@@ -339,7 +357,7 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
               <span className="cx-links">
                 {last.length > 0 && <button type="button" className="cx-link" onClick={sameAsLast}>{t("Same as last post")}</button>}
                 <button type="button" className="cx-link" onClick={() => setSheet("brands")}>{t("Manage brands")}</button>
-                <button type="button" className="cx-link" onClick={() => setSheet("channels")}>{t("Channels · {n}", { n: channels.length })}</button>
+                <button type="button" className="cx-link" onClick={() => setSheet("channels")}>{t("Channels · {n}", { n: channels.length + (shopee?.length ?? 0) })}</button>
               </span>
             </div>
             <div className="cx-group">
@@ -594,7 +612,7 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
         </aside>
       </form>
 
-      {sheet === "channels" && <ChannelsSheet channels={channels} onDisconnect={disconnect} onCheck={check} onClose={() => setSheet("")} />}
+      {sheet === "channels" && <ChannelsSheet channels={channels} shopee={shopee} onDisconnect={disconnect} onCheck={check} onShopeeOff={shopeeOff} onShopeeCheck={shopeeCheck} onClose={() => setSheet("")} />}
       {sheet === "brands" && <BrandsSheet brands={brands} channels={channels} byKey={byKey} connected={connected} onSaved={(b) => setBrands((list) => [...list.filter((x) => x.id !== b.id), b].sort((x, y) => x.name.localeCompare(y.name)))} onDeleted={(id) => setBrands((list) => list.filter((x) => x.id !== id))} onClose={() => setSheet("")} />}
     </>
   );
@@ -678,7 +696,7 @@ function Sheet({ title, extra, onClose, children }: { title: string; extra?: Rea
  * Channels: everything connected, grouped by app, with a search for long lists of Pages. Each channel can be checked now,
  * reconnected when the app stopped accepting it, or disconnected.
  */
-function ChannelsSheet({ channels, onDisconnect, onCheck, onClose }: { channels: Ch[]; onDisconnect: (c: Ch) => Promise<void>; onCheck: (c: Ch) => Promise<void>; onClose: () => void }) {
+function ChannelsSheet({ channels, shopee, onDisconnect, onCheck, onShopeeOff, onShopeeCheck, onClose }: { channels: Ch[]; shopee: PublicShopee[] | null; onDisconnect: (c: Ch) => Promise<void>; onCheck: (c: Ch) => Promise<void>; onShopeeOff: (s: PublicShopee, name: string) => Promise<void>; onShopeeCheck: (s: PublicShopee, name: string) => Promise<void>; onClose: () => void }) {
   const t = useT();
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState("");
@@ -687,6 +705,12 @@ function ChannelsSheet({ channels, onDisconnect, onCheck, onClose }: { channels:
     fn(c).finally(() => setBusy(""));
   };
   const s = q.trim().toLowerCase();
+  const shopeeName = (a: PublicShopee) => a.name ?? (a.role === "seller" ? t("Shopee shop") : t("Shopee affiliate"));
+  const shopeeList = (shopee ?? []).filter((a) => !s || `${shopeeName(a)} shopee`.toLowerCase().includes(s));
+  const runShopee = (a: PublicShopee, what: string, fn: (s: PublicShopee, name: string) => Promise<void>) => {
+    setBusy(a.id + what);
+    fn(a, shopeeName(a)).finally(() => setBusy(""));
+  };
   return (
     <Sheet title={t("Channels")} onClose={onClose}>
       <p className="np-muted">{t("Connect once, then pick the channel whenever you post. You sign in on each app's own page; Rezekii never sees your password.")}</p>
@@ -715,6 +739,36 @@ function ChannelsSheet({ channels, onDisconnect, onCheck, onClose }: { channels:
           </div>
         );
       })}
+      {shopee && (!s || shopeeList.length > 0) && (
+        <div className="cx-group">
+          <span className="cx-gh"><ShopeeIcon size={16} />Shopee{shopeeList.length ? ` · ${shopeeList.length}` : ""}</span>
+          {shopeeList.map((a) => (
+            <div key={a.id} className="cx-ch">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <span className="cx-face">{a.avatar_url ? <img src={a.avatar_url} alt="" /> : <ShopeeIcon size={26} />}</span>
+              <span><b>{shopeeName(a)}</b><small>{a.role === "seller" ? t("Seller") : t("Affiliate")}{a.status === "reconnect" ? t(" · needs reconnecting") : ""}</small></span>
+              <div className="cx-acts">
+                {a.status === "reconnect" ? (
+                  <a className="np-btn" href={`/api/auth/shopee/start?role=${a.role}`}>{t("Reconnect")}</a>
+                ) : (
+                  <button type="button" className="btn-outline" disabled={!!busy} onClick={() => runShopee(a, "check", onShopeeCheck)}>{busy === a.id + "check" ? t("Checking…") : t("Check now")}</button>
+                )}
+                <button type="button" className="cx-link cx-off" disabled={!!busy} onClick={() => runShopee(a, "off", onShopeeOff)}>{busy === a.id + "off" ? t("Disconnecting…") : t("Disconnect")}</button>
+              </div>
+            </div>
+          ))}
+          {!s && (
+            <div className="cx-ch">
+              <ShopeeIcon size={34} />
+              <span><b>{shopeeList.length ? t("Add {unit}", { unit: t("accounts") }) : t("Connect {app}", { app: "Shopee" })}</b><small>{t("Sellers sign in as their shop, affiliates with their own Shopee account. Posting to Shopee Video isn't available yet.")}</small></span>
+              <div className="cx-acts">
+                <a className="np-btn" href="/api/auth/shopee/start?role=seller">{t("Seller")}</a>
+                <a className="np-btn" href="/api/auth/shopee/start?role=affiliate">{t("Affiliate")}</a>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
       <p className="np-muted">{t("Facebook Groups can't be added: Meta closed posting to Groups for all apps in 2024.")}</p>
       <button type="button" className="np-btn" onClick={onClose}>{t("Done")}</button>
     </Sheet>

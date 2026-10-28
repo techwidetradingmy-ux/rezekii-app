@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { checkTikTokConnection, userTikTokOpenId } from "@/modules/posting/store.ts";
+import { checkShopee, getShopee } from "@/modules/shopee/connections.ts";
 import { checkAccount, getAccount } from "@/modules/social/accounts.ts";
 import { isTikTokKey, openIdOf } from "@/modules/social/picker.ts";
 
@@ -19,6 +20,11 @@ export async function POST(req: NextRequest) {
       const openId = await userTikTokOpenId(user.id, openIdOf(key));
       if (openId !== openIdOf(key)) return NextResponse.json({ error: "That channel isn't connected." }, { status: 404 });
       return NextResponse.json({ status: await checkTikTokConnection(openId) });
+    }
+    if (key.startsWith("shopee:")) {
+      const c = /^shopee:[0-9a-f-]{36}$/.test(key) ? await getShopee(key.slice(7), user.id) : null;
+      if (!c) return NextResponse.json({ error: "That channel isn't connected." }, { status: 404 });
+      return NextResponse.json({ status: await checkShopee(c) });
     }
     if (!/^[0-9a-f-]{36}$/.test(key)) return NextResponse.json({ error: "Which channel?" }, { status: 400 });
     const acc = await getAccount(key, user.id);

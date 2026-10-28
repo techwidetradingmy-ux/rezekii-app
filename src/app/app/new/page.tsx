@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getLang, tFor } from "@/lib/i18n/server.ts";
 import { userTikTokAccounts } from "@/modules/posting/store.ts";
+import { listShopee } from "@/modules/shopee/connections.ts";
 import { listAccounts } from "@/modules/social/accounts.ts";
 import { canUseSocial } from "@/modules/social/access.ts";
 import { lastPostChannels, listBrands } from "@/modules/social/brands.ts";
@@ -28,7 +29,9 @@ export default async function NewPostPage({ searchParams }: { searchParams: Prom
   const accounts = tiktok.map((a) => ({ open_id: a.open_id, username: a.username }));
   const social = canUseSocial(user);
   const q = await searchParams;
-  const [channels, brands, last] = social ? await Promise.all([listAccounts(user.id).catch(() => []), listBrands(user.id).catch(() => []), lastPostChannels(user.id).catch(() => [])]) : [[], [], []];
+  // Connect Shopee shows only where the Shopee app's keys are set.
+  const shopeeOn = !!process.env.SHOPEE_PARTNER_ID;
+  const [channels, brands, last, shopee] = social ? await Promise.all([listAccounts(user.id).catch(() => []), listBrands(user.id).catch(() => []), lastPostChannels(user.id).catch(() => []), shopeeOn ? listShopee(user.id).catch(() => []) : null]) : [[], [], [], null];
   // ?reuse=<post>: New post starts filled in from that post (M7).
   const reuse = social && q.reuse && !q.edit ? await loadRecipe(user.id, q.reuse).catch(() => null) : null;
   const edit = q.edit ? await loadEdit(user.id, q.edit).catch(() => null) : null;
@@ -44,7 +47,7 @@ export default async function NewPostPage({ searchParams }: { searchParams: Prom
             <Link href="/app/posts" className="np-btn">{t("Back to my posts")}</Link>
           </section>
         ) : social ? (
-          <Composer tiktok={tiktok} social={channels} brands={brands} last={last} reuse={edit?.recipe ? { recipe: edit.recipe, at: null } : reuse} edit={edit} connect={q.channel && q.connect ? { channel: q.channel, result: q.connect } : null} />
+          <Composer tiktok={tiktok} social={channels} shopee={shopee} brands={brands} last={last} reuse={edit?.recipe ? { recipe: edit.recipe, at: null } : reuse} edit={edit} connect={q.channel && q.connect ? { channel: q.channel, result: q.connect } : null} />
         ) : accounts.length ? (
           <NewPostForm accounts={accounts} edit={edit} />
         ) : (

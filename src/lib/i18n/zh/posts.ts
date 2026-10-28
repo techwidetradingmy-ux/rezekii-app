@@ -384,6 +384,13 @@ export const POSTS: Record<string, string> = {
   "Your TikTok account": "你的 TikTok 账户",
   "Connect": "连接",
   "Facebook Groups can't be added: Meta closed posting to Groups for all apps in 2024.": "无法添加 Facebook 群组：Meta 已于 2024 年关闭所有应用向群组发布的功能。",
+  // Connect Shopee (Channels)
+  "Shopee shop": "Shopee 店铺",
+  "Shopee affiliate": "Shopee 联盟账户",
+  "Seller": "卖家",
+  "Affiliate": "联盟达人",
+  "{name} disconnected.": "{name} 已断开。",
+  "Sellers sign in as their shop, affiliates with their own Shopee account. Posting to Shopee Video isn't available yet.": "卖家以店铺登录，联盟达人以自己的 Shopee 账户登录。暂时还不能发布到 Shopee Video。",
   "Couldn't save the brand. Try again.": "无法保存品牌，请重试。",
   "Couldn't delete the brand. Try again.": "无法删除品牌，请重试。",
   "Edit brand": "编辑品牌",
