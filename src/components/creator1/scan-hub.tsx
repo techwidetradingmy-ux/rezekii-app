@@ -31,12 +31,12 @@ const FLY = PRODUCTS.slice(0, 13).map((p) => p.img);
 const raiseItem = (r: Raise): Item => {
   const p = product(r.productId);
   return r.nowRate === null
-    ? { id: r.id, productId: r.productId, kind: "same", from: p.publicRate, fromLabel: "Open", to: r.tapRate, note: `Same product · until ${r.until}` }
-    : { id: r.id, productId: r.productId, kind: "same", from: r.nowRate, fromLabel: "Yours", to: r.tapRate, note: `Same product · until ${r.until}` };
+    ? { id: r.id, productId: r.productId, kind: "same", from: p.publicRate, fromLabel: "Open", to: r.tapRate, note: `Until ${r.until}` }
+    : { id: r.id, productId: r.productId, kind: "same", from: r.nowRate, fromLabel: "Yours", to: r.tapRate, note: `Until ${r.until}` };
 };
 const similarItem = (id: string): Item => {
   const p = product(id);
-  return { id: `sim-${id}`, productId: id, kind: "similar", from: p.publicRate, fromLabel: "Open", to: p.tapRate, note: `Similar · ${p.category}` };
+  return { id: `sim-${id}`, productId: id, kind: "similar", from: p.publicRate, fromLabel: "Open", to: p.tapRate, note: "" };
 };
 
 /**
@@ -294,7 +294,6 @@ export function ScanHub() {
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={product(card.productId).img} alt="" draggable={false} />
                       <b>{product(card.productId).name}</b>
-                      <small>{product(card.productId).shop} · {product(card.productId).rating.toFixed(1)}★</small>
                       <span className="sh-rate">
                         <span><small>{card.fromLabel}</small>{card.from}%</span>
                         <Icon name="arrow" size={13} />
@@ -360,7 +359,7 @@ export function ScanHub() {
                         <img src={p.img} alt="" />
                         <span className="sh-name">
                           <b>{fresh.includes(it.id) && <span className="badge badge-blue">New</span>} {p.name}</b>
-                          <small>{p.rating < 4 && <span className={p.rating < 3 ? "sh-rt bad" : "sh-rt"}>{p.rating.toFixed(1)}★</span>}{p.shop} · {it.note}</small>
+                          {it.note && <small>{it.note}</small>}
                         </span>
                         <span className="sh-rate" aria-label={`${it.fromLabel} ${it.from}%, through Techwide ${it.to}%`}>
                           <span><small>{it.fromLabel}</small>{it.from}%</span>
@@ -387,7 +386,7 @@ export function ScanHub() {
                       </span>
                       <span className="sh-name">
                         <b>{p.name}</b>
-                        <small>{p.shop}{p.samples === "advanced" ? " · free sample at Silver" : ""}</small>
+                        {p.samples === "advanced" && <small>Free sample at Silver</small>}
                       </span>
                       <span className="sh-rate" aria-label={`Now ${p.publicRate}%, at Silver ${p.tapRate}%`}>
                         <span><small>Now</small>{p.publicRate}%</span>

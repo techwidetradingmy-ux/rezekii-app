@@ -593,13 +593,13 @@
 .sh-thumbs img { width: 26px; height: 26px; border-radius: 8px; object-fit: cover; border: 2px solid var(--surface); margin-left: -8px; }
 .sh-thumbs img:first-child { margin-left: 0; }
 .sh-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; animation: v2Rise2 0.25s var(--ease) both; }
-.sh-list li label { display: grid; grid-template-columns: 22px 40px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 12px; background: var(--surface); cursor: pointer; }
+.sh-list li label { display: grid; grid-template-columns: 22px 64px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 12px; background: var(--surface); cursor: pointer; }
 .sh-list li.fresh label { box-shadow: inset 0 0 0 1.5px #00c073; }
 .sh-list input { width: 18px; height: 18px; accent-color: #00c073; margin: 0; }
-.sh-list img { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; }
+.sh-list img { width: 64px; height: 64px; border-radius: 12px; object-fit: cover; }
 .sh-name { display: flex; flex-direction: column; min-width: 0; }
-.sh-name b { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sh-name small { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sh-name b { font-size: 15px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.sh-name small { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sh-rate { display: inline-flex; align-items: center; gap: 6px; font-weight: 900; font-variant-numeric: tabular-nums; color: var(--muted); }
 .sh-rate > span { display: flex; flex-direction: column; align-items: center; line-height: 1.05; font-size: 14px; }
 .sh-rate small { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
@@ -614,9 +614,9 @@
 .sh-fine { margin: -6px 0 0; font-size: 12px; color: var(--muted); }
 @media (max-width: 560px) {
   .sh-drop { margin-left: 0; flex: 1 1 100%; justify-content: center; }
-  .sh-list li label { grid-template-columns: 20px 36px minmax(0, 1fr); }
+  .sh-list li label { grid-template-columns: 20px 60px minmax(0, 1fr); }
   .sh-list li label .sh-rate { grid-column: 3; justify-self: start; }
-  .sh-list img { width: 36px; height: 36px; }
+  .sh-list img { width: 60px; height: 60px; }
 }
 
 .ai-teaser { display: flex; align-items: center; gap: 14px; padding: 16px 18px; text-decoration: none; color: var(--text); transition: transform 0.2s var(--ease); }
@@ -691,8 +691,6 @@
 .st-skip { margin: 0; display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: var(--muted); line-height: 1.45; }
 .st-skip svg { flex-shrink: 0; margin-top: 2px; color: var(--amber); }
 @media (max-width: 900px) { .st-grid { grid-template-columns: 1fr; } }
-.sh-rt { display: inline-block; margin-right: 6px; padding: 0 5px; border-radius: 5px; background: var(--asoft); color: var(--amber); font-weight: 800; }
-.sh-rt.bad { background: var(--rsoft); color: var(--red); }
 
 /* Rating check */
 .rc-hub { gap: 16px; }
@@ -962,14 +960,15 @@ a.sh-go { text-decoration: none; }
 .sh-deckend .sh-go, .sh-deckend .sh-again { height: 42px; width: 100%; justify-content: center; }
 /* Bronze only: what Silver would unlock, shown quietly and never addable. */
 .sh-tabs > button[role="tab"].sh-tab-lock { color: var(--muted); }
-.sh-locked .sh-lockrow { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 12px; background: var(--surface); }
-.sh-lockimg { position: relative; width: 40px; height: 40px; }
+.sh-locked .sh-lockrow { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 12px; background: var(--surface); }
+.sh-lockimg { position: relative; width: 64px; height: 64px; }
+.sh-lockimg img { width: 64px; height: 64px; }
 .sh-lockimg img { filter: grayscale(0.85); opacity: 0.6; }
 .sh-lockimg i { position: absolute; right: -4px; bottom: -4px; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; background: var(--text); color: var(--bg); border: 2px solid var(--surface); }
 .sh-locked .sh-name b { color: var(--body); }
 .sh-locked .sh-rate .to { color: var(--body); }
 .sh-lockline { padding: 8px 10px; font-size: 12.5px; font-weight: 700; color: var(--muted); }
-@media (max-width: 640px) { .sh-locked .sh-lockrow { grid-template-columns: 36px minmax(0, 1fr); } .sh-locked .sh-lockrow .sh-rate { grid-column: 2; justify-self: start; } .sh-lockimg, .sh-lockimg img { width: 36px; height: 36px; } }
+@media (max-width: 640px) { .sh-locked .sh-lockrow { grid-template-columns: 60px minmax(0, 1fr); } .sh-locked .sh-lockrow .sh-rate { grid-column: 2; justify-self: start; } .sh-lockimg, .sh-lockimg img { width: 60px; height: 60px; } }
 @media (prefers-reduced-motion: reduce) { .sh-fly, .sh-cf, .sh-burst { display: none; } .sh-blip.pop .sh-bin, .sh-card, .sh-core, .sh-hub.busy .sh-core { animation: none !important; } }
 /* Phone: the scanner stacks (the two-column rule above was overriding the earlier phone rule), so the radar and swipe card get full width. */
 @media (max-width: 760px) { .sh-top { grid-template-columns: 1fr; gap: 16px; } }
