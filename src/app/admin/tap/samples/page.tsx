@@ -43,7 +43,7 @@ export default function SampleReview() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="Sample review" sub="The system checks each request against the rules first. You make the call.">
+      <Title title="Sample Review" sub="The system checks each request against the rules first. You make the call.">
         <button type="button" className="np-btn v2-btn-sm" disabled={toApprove.length === 0} onClick={() => setWalk(true)}>
           <Icon name="check" size={16} /> Handle all suggested approvals ({toApprove.length})
         </button>

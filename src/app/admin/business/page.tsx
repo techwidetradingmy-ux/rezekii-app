@@ -33,7 +33,7 @@ export default function BusinessHome() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 20 }}>
-      <Title title="My merchants & creators" sub="Bring people in with your QR or link. Everyone who joins through it is yours to follow up.">
+      <Title title="My Merchants & Creators" sub="Bring people in with your QR or link. Everyone who joins through it is yours to follow up.">
         <label className="v2-small" style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700 }}>
           Workbench of
           <select className="np-input ad-select" value={who} onChange={(e) => setWho(e.target.value)}>

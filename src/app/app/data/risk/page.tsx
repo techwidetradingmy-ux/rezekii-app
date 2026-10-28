@@ -37,7 +37,7 @@ export default function DataRisk() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 20 }}>
-      <Title title="Risk check" sub="Low ratings, cancellations and returns that could hurt your account · updated today 09:12" />
+      <Title title="Risk Check" sub="Low ratings, cancellations and returns that could hurt your account · updated today 09:12" />
       <RatingScan />
       <h2 className="v2-h2" style={{ marginTop: 8 }}>Cancellations and returns · last 30 days</h2>
 

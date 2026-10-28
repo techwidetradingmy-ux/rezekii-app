@@ -22,7 +22,7 @@ export default function ConsentLog() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="Consent log" sub="Who agreed to which Terms and Privacy Policy before linking TikTok Shop, and what happened since. Nobody can edit or delete entries.">
+      <Title title="Consent Log" sub="Who agreed to which Terms and Privacy Policy before linking TikTok Shop, and what happened since. Nobody can edit or delete entries.">
         <button type="button" className="ad-btn-ghost" onClick={() => toast(`Exported ${shown.length} records as CSV`)}><Icon name="doc" size={15} /> Export</button>
       </Title>
 

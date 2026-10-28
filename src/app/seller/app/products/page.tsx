@@ -34,7 +34,7 @@ export default function ShopProducts() {
 
   return (
     <div className="v2-stack v2-in">
-      <Title title="Shop products" sub={<>Read from {SELLER.shop} on Seller Center · synced {UPDATED}</>}>
+      <Title title="Shop Products" sub={<>Read from {SELLER.shop} on Seller Center · synced {UPDATED}</>}>
         <button type="button" className="btn-outline" onClick={sync} disabled={syncing}>
           {syncing ? <span className="sl-spin" /> : <Icon name="refresh" size={18} />} Sync now
         </button>

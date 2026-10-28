@@ -58,7 +58,7 @@ export default function TapInvite() {
 
   return (
     <div className="v2-stack v2-in">
-      <Title title="You're invited to a TAP campaign" sub={`From ${I.from}, ${I.team} · sent ${I.sent} · open until ${I.expires}`} />
+      <Title title="You're Invited to a TAP Campaign" sub={`From ${I.from}, ${I.team} · sent ${I.sent} · open until ${I.expires}`} />
       <ConnBanner />
 
       <section className="v2-card si-hero">

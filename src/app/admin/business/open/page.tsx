@@ -33,7 +33,7 @@ export default function OpenCampaigns() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="Open campaigns" sub="Techwide TAP campaigns taking registrations right now. Recommend them to your merchants." />
+      <Title title="Open Campaigns" sub="Techwide TAP campaigns taking registrations right now. Recommend them to your merchants." />
 
       <Chips label="Category" value={cat} onChange={setCat} options={cats.map((c) => [c, c === "All" ? OPEN_CAMPAIGNS.length : OPEN_CAMPAIGNS.filter((x) => x.category === c).length] as [string, number])} />
 

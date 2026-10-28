@@ -36,7 +36,7 @@ export default function AdminAccess() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="Admin access" sub="Staff use their normal Rezekii sign-in. Give an account access here and pick what it can do." />
+      <Title title="Admin Access" sub="Staff use their normal Rezekii sign-in. Give an account access here and pick what it can do." />
 
       <section className="v2-card">
         <h2 className="v2-h2">Give access</h2>

@@ -31,7 +31,7 @@ export default function GrowthProgress() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="Progress per person" sub="Check where someone is, and see which missions people get stuck on.">
+      <Title title="Progress per Person" sub="Check where someone is, and see which missions people get stuck on.">
         <button type="button" className="ad-btn-ghost" onClick={() => toast("Exported as CSV")}><Icon name="doc" size={15} /> Export</button>
       </Title>
 

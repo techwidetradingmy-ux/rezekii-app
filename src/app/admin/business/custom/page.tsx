@@ -27,7 +27,7 @@ export default function CustomService() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="Custom service" sub="Sellers who'd rather have our team run it for them." />
+      <Title title="Custom Service" sub="Sellers who'd rather have our team run it for them." />
 
       <Chips<Filter> label="Filter" value={filter} onChange={setFilter} options={[["Open", list.filter(isOpen).length], ["Done or declined", list.filter((x) => !isOpen(x)).length]]} />
 

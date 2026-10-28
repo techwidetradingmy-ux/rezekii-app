@@ -31,7 +31,7 @@ export default function FeedbackInbox() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="Feedback inbox" sub="What creators and sellers tell us. Page, device and account are attached automatically." />
+      <Title title="Feedback Inbox" sub="What creators and sellers tell us. Page, device and account are attached automatically." />
 
       <div className="ad-bar">
         <Seg value={show} options={["To do", "Done"] as const} onChange={setShow} />

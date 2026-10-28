@@ -39,7 +39,7 @@ export default function Changes() {
 
   return (
     <div className="v2-stack v2-in">
-      <Title title="Change or end" sub="Send a request and our team makes the change in TAP. Most are done within 1 working day." />
+      <Title title="Change or End" sub="Send a request and our team makes the change in TAP. Most are done within 1 working day." />
 
       <div className="v2-split">
         <section className="v2-card">

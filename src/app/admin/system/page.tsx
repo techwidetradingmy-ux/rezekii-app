@@ -57,7 +57,7 @@ export default function SystemSettings() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="Settings & presets" sub="What sellers and creators see as defaults. Every change is logged with before and after.">
+      <Title title="Settings & Presets" sub="What sellers and creators see as defaults. Every change is logged with before and after.">
         <Link href="/admin/system/audit" className="ad-btn-ghost"><Icon name="doc" size={15} /> Audit log</Link>
       </Title>
 

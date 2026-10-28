@@ -34,7 +34,7 @@ export default function PublishingOps() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="Publishing ops" sub="Posts that failed for any creator or seller. Retry what we can; tell the user when they need to act.">
+      <Title title="Publishing Ops" sub="Posts that failed for any creator or seller. Retry what we can; tell the user when they need to act.">
         <button type="button" className="np-btn v2-btn-sm" disabled={retryable.length === 0} onClick={() => retry(retryable.map((p) => p.id))}>
           <Icon name="refresh" size={16} /> Retry all that can be retried ({retryable.length})
         </button>

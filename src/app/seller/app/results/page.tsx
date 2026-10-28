@@ -18,7 +18,7 @@ export default function Results() {
 
   return (
     <div className="v2-stack v2-in">
-      <Title title="TAP performance" sub={<Source />}>
+      <Title title="TAP Performance" sub={<Source />}>
         <button type="button" className="btn-outline" onClick={() => toast("Report saved as CSV")}><Icon name="doc" size={18} /> Export</button>
       </Title>
       <Seg value={range} options={RANGES} onChange={setRange} />

@@ -53,7 +53,7 @@ export default function TapCampaigns() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="TAP campaigns" sub="Techwide's campaigns on TikTok. Don't let one end by accident.">
+      <Title title="TAP Campaigns" sub="Techwide's campaigns on TikTok. Don't let one end by accident.">
         <button type="button" className="np-btn v2-btn-sm" disabled={busy || ending.length === 0} onClick={extendAll}>
           {busy ? <span className="ad-spin"><Icon name="refresh" size={16} /></span> : <Icon name="cal" size={16} />}
           Extend all ending in 14 days ({ending.length})

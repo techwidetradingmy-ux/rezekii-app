@@ -125,7 +125,7 @@ export default function SubmitProducts() {
 
   return (
     <div className="v2-stack v2-in">
-      <Title title="Submit products" sub="Pick products and submit. We've set everything else for you." />
+      <Title title="Submit Products" sub="Pick products and submit. We've set everything else for you." />
       <ConnBanner />
       <Link href="/seller/app/invite" className="si-banner">
         <span className="si-banner-ico"><Icon name="send" size={18} /></span>

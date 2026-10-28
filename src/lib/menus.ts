@@ -10,7 +10,7 @@ export const MENUS: Record<AppKind, Section[]> = {
     { href: "/app/market", label: "Marketplace", icon: "bag", pages: [] },
     {
       href: "/app/data", label: "Analytics", icon: "chart",
-      pages: [["/app/data", "Overview"], ["/app/data/performance", "Performance"], ["/app/data/risk", "Risk check"], ["/app/data/payouts", "Payouts"]],
+      pages: [["/app/data", "Overview"], ["/app/data/performance", "Performance"], ["/app/data/risk", "Risk Check"], ["/app/data/payouts", "Payouts"]],
     },
     { href: "/app/publish", label: "Publish", icon: "send", pages: [["/app/publish", "New Post"], ["/app/publish/plan", "Today's Ideas"], ["/app/publish/calendar", "Content Calendar"]] },
     { href: "/app/rewards", label: "Missions", icon: "gift", pages: [] },
@@ -19,28 +19,28 @@ export const MENUS: Record<AppKind, Section[]> = {
     { href: "/seller/app", label: "Home", icon: "home", pages: [] },
     {
       href: "/seller/app/products", label: "Products", icon: "box",
-      pages: [["/seller/app/products", "Shop products"], ["/seller/app/submit", "Submit products"], ["/seller/app/progress", "Progress"], ["/seller/app/changes", "Change or end"]],
+      pages: [["/seller/app/products", "Shop Products"], ["/seller/app/submit", "Submit Products"], ["/seller/app/progress", "Progress"], ["/seller/app/changes", "Change or End"]],
     },
     {
       href: "/seller/app/results", label: "Results", icon: "chart",
-      pages: [["/seller/app/results", "TAP performance"], ["/seller/app/results/samples", "Where samples went"], ["/seller/app/results/competitors", "AI competitors"]],
+      pages: [["/seller/app/results", "TAP Performance"], ["/seller/app/results/samples", "Where Samples Went"], ["/seller/app/results/competitors", "AI Competitors"]],
     },
     { href: "/seller/app/publish", label: "Publish", icon: "send", pages: [["/seller/app/publish", "New Post"], ["/seller/app/publish/calendar", "Content Calendar"]] },
     { href: "/seller/app/rewards", label: "Rewards", icon: "gift", pages: [["/seller/app/rewards", "Missions"], ["/seller/app/rewards/referral", "Referral"], ["/seller/app/rewards/wallet", "Wallet"]] },
   ],
   admin: [
     { href: "/admin", label: "Today", icon: "home", pages: [] },
-    { href: "/admin/tap", label: "TAP", icon: "kanban", pages: [["/admin/tap", "Pipeline"], ["/admin/tap/campaigns", "Campaigns"], ["/admin/tap/samples", "Sample review"]] },
+    { href: "/admin/tap", label: "TAP", icon: "kanban", pages: [["/admin/tap", "Pipeline"], ["/admin/tap/campaigns", "Campaigns"], ["/admin/tap/samples", "Sample Review"]] },
     {
       href: "/admin/business", label: "Business", icon: "briefcase",
-      pages: [["/admin/business", "My merchants & creators"], ["/admin/business/performance", "Live performance"], ["/admin/business/open", "Open campaigns"], ["/admin/business/custom", "Custom service"]],
+      pages: [["/admin/business", "My Merchants & Creators"], ["/admin/business/performance", "Live Performance"], ["/admin/business/open", "Open Campaigns"], ["/admin/business/custom", "Custom Service"]],
     },
-    { href: "/admin/users", label: "Users", icon: "users", pages: [["/admin/users", "Review"], ["/admin/users/sellers", "Sellers"], ["/admin/users/creators", "Creators"], ["/admin/users/access", "Admin access"]] },
-    { href: "/admin/growth", label: "Growth", icon: "gift", pages: [["/admin/growth", "Missions"], ["/admin/growth/progress", "Progress per person"], ["/admin/growth/referrals", "Referrals"]] },
+    { href: "/admin/users", label: "Users", icon: "users", pages: [["/admin/users", "Review"], ["/admin/users/sellers", "Sellers"], ["/admin/users/creators", "Creators"], ["/admin/users/access", "Admin Access"]] },
+    { href: "/admin/growth", label: "Growth", icon: "gift", pages: [["/admin/growth", "Missions"], ["/admin/growth/progress", "Progress per Person"], ["/admin/growth/referrals", "Referrals"]] },
     { href: "/admin/accounts", label: "Accounts", icon: "wallet", pages: [["/admin/accounts", "Ledger"], ["/admin/accounts/reconcile", "Reconciliation"]] },
     { href: "/admin/analytics", label: "Analytics", icon: "chart", pages: [] },
-    { href: "/admin/support", label: "Support", icon: "inbox", pages: [["/admin/support", "Disputes"], ["/admin/support/feedback", "Feedback inbox"]] },
-    { href: "/admin/system", label: "System", icon: "gear", pages: [["/admin/system", "Settings & presets"], ["/admin/system/publishing", "Publishing ops"], ["/admin/system/audit", "Audit log"], ["/admin/system/consent", "Consent log"]] },
+    { href: "/admin/support", label: "Support", icon: "inbox", pages: [["/admin/support", "Disputes"], ["/admin/support/feedback", "Feedback Inbox"]] },
+    { href: "/admin/system", label: "System", icon: "gear", pages: [["/admin/system", "Settings & Presets"], ["/admin/system/publishing", "Publishing Ops"], ["/admin/system/audit", "Audit Log"], ["/admin/system/consent", "Consent Log"]] },
   ],
 };
 

@@ -129,7 +129,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
             ))}
           </div>
           {!section && (path.startsWith(ACCOUNT[app]) || path.includes("/notifications")) && (
-            <span className="v2-crumb"><b>{path.includes("/notifications") ? "Notifications" : app === "admin" ? "System" : "My account"}</b></span>
+            <span className="v2-crumb"><b>{path.includes("/notifications") ? "Notifications" : app === "admin" ? "System" : "My Account"}</b></span>
           )}
           {section && (
             <span className="v2-crumb">

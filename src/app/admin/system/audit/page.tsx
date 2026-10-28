@@ -20,7 +20,7 @@ export default function AuditLog() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="Audit log" sub="Every staff action and system change, with before and after. Nobody can edit or delete entries.">
+      <Title title="Audit Log" sub="Every staff action and system change, with before and after. Nobody can edit or delete entries.">
         <button type="button" className="ad-btn-ghost" onClick={() => toast(`Exported ${shown.length} entries as CSV`)}><Icon name="doc" size={15} /> Export</button>
       </Title>
 

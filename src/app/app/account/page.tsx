@@ -22,12 +22,12 @@ const TYPES = ["Affiliate", "UGC", "Artist", "Influencer"] as const;
 /** One account page, every personal section; the address bar keeps the section (#referral) so links can open it. */
 const TABS = [
   ["profile", "Profile", "user"],
-  ["level", "Level & badges", "medal"],
+  ["level", "Level & Badges", "medal"],
   ["wallet", "Wallet", "wallet"],
   ["referral", "Referral", "users"],
-  ["samples", "Samples & delivery", "box"],
+  ["samples", "Samples & Delivery", "box"],
   ["connections", "Connections", "link"],
-  ["rate-card", "Rate card", "tag"],
+  ["rate-card", "Rate Card", "tag"],
   ["settings", "Settings", "gear"],
 ] as const satisfies readonly (readonly [string, string, IconName])[];
 type TabKey = (typeof TABS)[number][0];
@@ -153,7 +153,7 @@ export default function Account() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 22 }}>
-      <Title title="My account" sub="Your details, level, wallet, referrals, samples and settings in one place" />
+      <Title title="My Account" sub="Your details, level, wallet, referrals, samples and settings in one place" />
 
       <div className="cr2-settings acc-layout">
         {/* Owner, 28 Oct 2026: on a wide screen the profile and the sections sit in a side bar. */}

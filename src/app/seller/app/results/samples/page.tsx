@@ -23,7 +23,7 @@ export default function SamplesWent() {
 
   return (
     <div className="v2-stack v2-in">
-      <Title title="Where samples went" sub={<Source />} />
+      <Title title="Where Samples Went" sub={<Source />} />
 
       <section className="v2-card">
         <div className="v2-card-h">

@@ -92,7 +92,7 @@ export default function TapPipeline() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="TAP pipeline" sub="Every request from sellers, by where it is now. Cards also show how the TikTok side is doing.">
+      <Title title="TAP Pipeline" sub="Every request from sellers, by where it is now. Cards also show how the TikTok side is doing.">
         <button type="button" className={`ad-btn-ghost ${mine ? "on" : ""}`} aria-pressed={mine} onClick={() => setMine(!mine)}>
           <Icon name="user" size={16} /> Mine only
         </button>
