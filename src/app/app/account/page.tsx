@@ -409,7 +409,7 @@ export default function Account() {
                 ))}
               </div>
             </div>
-            <Link href="/signin" className="cr2-cell cr2-cellbtn">Sign out</Link>
+            <Link href="/signin" className="cr2-cell cr2-cellbtn acc-signout">Sign out</Link>
             <button type="button" className="cr2-cell cr2-cellbtn danger" onClick={() => { setDelText(""); setDelSheet(true); }}>Delete account</button>
           </div>
         </section>
@@ -486,6 +486,10 @@ export default function Account() {
         <section className="cr2-group">
           <h2>Help & feedback</h2>
           <div className="cr2-cells">
+            {/* The page footer is hidden on phones, so its links live here (owner, 29 Oct 2026). */}
+            <a className="cr2-cell acc-link" href="mailto:support@rezekii.com"><span className="lbl">Contact support</span><span className="v2-small">support@rezekii.com</span><Icon name="arrow" size={16} /></a>
+            <a className="cr2-cell acc-link" href="https://rezekii.com/privacy" target="_blank" rel="noreferrer"><span className="lbl">Privacy Policy</span><Icon name="arrow" size={16} /></a>
+            <a className="cr2-cell acc-link" href="https://rezekii.com/terms" target="_blank" rel="noreferrer"><span className="lbl">Terms of Service</span><Icon name="arrow" size={16} /></a>
             <div className="cr2-cell stack">
               <span className="lbl">Tell the team</span>
               <div className="v2-chips">

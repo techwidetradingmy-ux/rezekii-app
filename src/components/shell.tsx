@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
 import { useDemo } from "./demo";
-import { AiMark, Portal, Sheet } from "./ui";
+import { Portal, Sheet } from "./ui";
 import { ACCOUNT_TABS, OPEN_ACCOUNT_MENU } from "@/lib/account-tabs";
 import { useSideScroll } from "./side-scroll";
 import { ACCOUNT, HOME, MENUS, pageFor, sectionFor, type AppKind } from "@/lib/menus";
@@ -177,7 +177,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
                         onClick={(e) => { if (x.hash) { e.preventDefault(); window.location.hash = x.hash; } setPgOpen(false); }}
                       >
                         {/* AI-made pages carry the AI mark so the feature stands out (owner, 29 Oct 2026). */}
-                        <span>{x.label}</span>{AI_PAGES.includes(x.label) && <AiMark size={22} />}{x.on && <Icon name="check" size={16} />}
+                        <span>{x.label}</span>{AI_PAGES.includes(x.label) && <svg className="v2-pgai" viewBox="0 0 24 24" width="17" height="17" aria-label="AI"><path d="M11 3Q12 11 20 12Q12 13 11 21Q10 13 2 12Q10 11 11 3Z" fill="currentColor" /><path d="M19 1.5Q19.3 4.7 22.5 5Q19.3 5.3 19 8.5Q18.7 5.3 15.5 5Q18.7 4.7 19 1.5Z" fill="currentColor" /></svg>}{x.on && <Icon name="check" size={16} />}
                       </Link>
                     ))}
                   </span>
@@ -341,6 +341,17 @@ function AccountPanel({ onClose }: { onClose: () => void }) {
             </Link>
           ))}
         </nav>
+        {/* Sign out lives in the panel on phones, not in Settings (owner, 29 Oct 2026). */}
+        <Link href="/signin" className="ap-signout" onClick={onClose}><Icon name="back" size={17} /> Sign out</Link>
+        {/* Legal and contact sit at the foot of the panel on phones (owner, 29 Oct 2026). */}
+        <footer className="ap-foot">
+          <span className="ap-links">
+            <a href="https://rezekii.com/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>
+            <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer">Terms of Service</a>
+            <a href="mailto:support@rezekii.com">Support</a>
+          </span>
+          <small>© 2026 Rezekii · Built by Techwide</small>
+        </footer>
       </aside>
     </Portal>
   );
