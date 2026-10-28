@@ -648,3 +648,36 @@ body { font-feature-settings: "tnum" 0; }
 .an-dot { display: inline-block; width: 10px; height: 10px; margin-right: 8px; border-radius: 50%; vertical-align: 4px; }
 .an-dot.ok { background: #00c073; box-shadow: 0 0 0 4px rgba(0, 192, 115, 0.18); }
 .an-dot.bad { background: var(--red); box-shadow: 0 0 0 4px rgba(225, 75, 59, 0.18); }
+
+/* Phones (owner, 28 Oct 2026): no text smaller than 13px. Share-card images, phone previews and tiny badges on icons keep their size. */
+@media (max-width: 760px) {
+  .v2-demo { font-size: 13px; }
+  .v2-workspace { font-size: 13px; }
+  .v2-stat em { font-size: 13px; }
+  .v2-next small { font-size: 13px; }
+  .v2-quick small { font-size: 13px; }
+  .v2-pcard small { font-size: 13px; }
+  .v2-chip small { font-size: 13px; }
+  .v2-sharecard .foot { font-size: 13px; }
+  .v2-axis { font-size: 13px; }
+  .v2-table th { font-size: 13px; }
+  .v2-ticket small { font-size: 13px; }
+  .v2-badge { font-size: 13px; }
+  .v2-days span { font-size: 13px; }
+  .v2-chest { font-size: 13px; }
+  .v2-x, .v2-ok { font-size: 13px; }
+  .v2-demo-toggle { font-size: 13px; }
+  .v2-ailabel { font-size: 13px; }
+  .cp-sub { font-size: 13px; }
+  .cp-week span { font-size: 13px; }
+  .cp-hint { font-size: 13px; }
+  .cp-gt { font-size: 13px; }
+  .cp-cmp button { font-size: 13px; }
+  .v2-shfmt button small { font-size: 13px; }
+  .v2-app { font-size: 13px; }
+  .v2-flow small { font-size: 13px; }
+  .rf-side small { font-size: 13px; }
+  .rf-side > span { font-size: 13px; }
+  .rf-note { font-size: 13px; }
+}
+@media (max-width: 760px) { .nv-bottom a, .badge { font-size: 13px; } }

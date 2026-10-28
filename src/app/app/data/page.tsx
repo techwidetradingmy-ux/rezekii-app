@@ -177,12 +177,12 @@ export default function DataOverview() {
           </Lock>
         </section>
 
-        <section className="v2-card">
+        <section className="v2-card an-time">
           <div className="v2-card-h">
             <h2 className="v2-h2">Best time to post <Tip label="About best time" text="Average views per video you posted in each time slot, last 30 days." /></h2>
             <span className="an-hv">High virality · {bestTime[0]}</span>
           </div>
-          <Bars rows={POST_TIMES.map(([label, v]) => ({ label, value: v, display: short(v), tone: v < avgViews ? ("blue" as const) : undefined }))} />
+          <Bars rows={POST_TIMES.map(([label, v]) => ({ label, value: v, display: `${short(v)} views`, tone: v < avgViews ? ("blue" as const) : undefined }))} />
         </section>
       </div>
 

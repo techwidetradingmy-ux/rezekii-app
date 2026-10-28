@@ -230,3 +230,25 @@
 .mx-strip-week i.on { background: #f05a28; }
 .mx-strip-week i.today { box-shadow: inset 0 0 0 2px #f05a28; background: #ffffff; }
 @media (max-width: 480px) { .mx-strip-week { display: none; } .mx-strip { grid-template-columns: auto minmax(0, 1fr) 16px; } }
+
+/* Phones (owner, 28 Oct 2026): no text smaller than 13px. Share-card images, phone previews and tiny badges on icons keep their size. */
+@media (max-width: 760px) {
+  .ms-prog { font-size: 13px; }
+  .ms-side small { font-size: 13px; }
+  .ms-get { font-size: 13px; }
+  .ms-chest small { font-size: 13px; }
+  .ms-soon { font-size: 13px; }
+  .mx-tiername { font-size: 13px; }
+  .mx-wd { font-size: 13px; }
+  .mx-next em { font-size: 13px; }
+  .mx-tiers b { font-size: 13px; }
+  .mx-tiers small { font-size: 13px; }
+  .mx-today-h small { font-size: 13px; }
+  .mx-chest small { font-size: 13px; }
+  .mx-main > small { font-size: 13px; }
+  .mx-mini small { font-size: 13px; }
+  .mx-brand small { font-size: 13px; }
+  .mx-brand em { font-size: 13px; }
+  .mx-rule { font-size: 13px; }
+  .mx-strip-txt small { font-size: 13px; }
+}

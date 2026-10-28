@@ -456,3 +456,34 @@
 /* Caption tabs: just each app's icon (owner, 28 Oct 2026). */
 .pb-tabs button.pb-tab-ic { flex: 0 0 auto; min-width: 48px; padding: 0 12px; justify-content: center; }
 .pb-section h2 .v2-tipwrap, .pb-field .v2-tipwrap { margin-left: 2px; }
+
+/* Phones (owner, 28 Oct 2026): no text smaller than 13px. Share-card images, phone previews and tiny badges on icons keep their size. */
+@media (max-width: 760px) {
+  .pb-counts > span { font-size: 13px; }
+  .pb-ch small { font-size: 13px; }
+  .pb-gh { font-size: 13px; }
+  .pb-blabel small { font-size: 13px; }
+  .pb-res small { font-size: 13px; }
+  .pb-tag { font-size: 13px; }
+  .pb-check small { font-size: 13px; }
+  .pb-opt { font-size: 13px; }
+  .pb-legend { font-size: 13px; }
+  .pb-steps li > b { font-size: 13px; }
+  .pb-steps small { font-size: 13px; }
+  .pb-how li small { font-size: 13px; }
+  .pb-sug { font-size: 13px; }
+  .pb-side-h { font-size: 13px; }
+  .pb-cmt-h { font-size: 13px; }
+  .pb-cmt-row b { font-size: 13px; }
+  .sq-tile small { font-size: 13px; }
+  .sq-wd { font-size: 13px; }
+  .sq-day b { font-size: 13px; }
+  .sq-legend { font-size: 13px; }
+  .sq-when { font-size: 13px; }
+  .sq-pill { font-size: 13px; }
+  .sq-views { font-size: 13px; }
+  .sq-why small { font-size: 13px; }
+  .sq-edit-apps { font-size: 13px; }
+  .pb-cost { font-size: 13px; }
+  .sq-src { font-size: 13px; }
+}

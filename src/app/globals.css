@@ -496,3 +496,16 @@ textarea.np-input { resize: vertical; line-height: 1.5; }
 .sub-menu a:hover { border-color: #00c073; color: var(--text); }
 .sub-menu a.on { background: var(--text); color: var(--bg); border-color: var(--text); }
 @keyframes subIn { from { transform: scaleX(0); } to { transform: none; } }
+
+/* Phones (owner, 28 Oct 2026): no text smaller than 13px. Share-card images, phone previews and tiny badges on icons keep their size. */
+@media (max-width: 760px) {
+  .hero-fine { font-size: 13px; }
+  .cap { font-size: 13px; }
+  .stat3 small { font-size: 13px; }
+  .hm-fine { font-size: 13px; }
+  .hm-prod small { font-size: 13px; }
+  .signin-legal { font-size: 13px; }
+  .np-count { font-size: 13px; }
+  .mp-chip { font-size: 13px; }
+  .tt-card small { font-size: 13px; }
+}

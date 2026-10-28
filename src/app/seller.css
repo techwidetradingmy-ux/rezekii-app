@@ -396,3 +396,39 @@
 .si-sync svg { flex-shrink: 0; margin-top: 2px; color: var(--gink); }
 .sl-sticky > .si-acts { flex: 0 0 auto; display: flex; flex-direction: row; gap: 8px; }
 @media (max-width: 760px) { .sl-sticky > .si-acts { flex: 1 1 100%; } .sl-sticky > .si-acts .np-btn { flex: 1 1 0; } }
+
+/* Phones (owner, 28 Oct 2026): no text smaller than 13px. Share-card images, phone previews and tiny badges on icons keep their size. */
+@media (max-width: 760px) {
+  .sl-tag { font-size: 13px; }
+  .sl-dash-h small { font-size: 13px; }
+  .sl-live { font-size: 13px; }
+  .sl-up { font-size: 13px; }
+  .sl-avs em { font-size: 13px; }
+  .sl-ava { font-size: 13px; }
+  .sl-chip-float { font-size: 13px; }
+  .sl-window-bar { font-size: 13px; }
+  .sl-ob-or { font-size: 13px; }
+  .sl-stages { font-size: 13px; }
+  .sl-mini-steps span { font-size: 13px; }
+  .sl-act small { font-size: 13px; }
+  .sl-act time { font-size: 13px; }
+  .sl-pick-rate small { font-size: 13px; }
+  .sl-track b { font-size: 13px; }
+  .sl-track small { font-size: 13px; }
+  .sl-poster span { font-size: 13px; }
+  .sl-vid small { font-size: 13px; }
+  .sl-plat.sm { font-size: 13px; }
+  .sl-day > small { font-size: 13px; }
+  .sl-post { font-size: 13px; }
+  .sl-post b { font-size: 13px; }
+  .sl-post small { font-size: 13px; }
+  .sl-res > span { font-size: 13px; }
+  .sl-wallet small { font-size: 13px; }
+  .sl-clock small { font-size: 13px; }
+  .sl-ledger small { font-size: 13px; }
+  .sl-group-h { font-size: 13px; }
+  .sl-radio-list .np-radio small { font-size: 13px; }
+  .si-banner small { font-size: 13px; }
+  .si-from small { font-size: 13px; }
+  .si-terms small { font-size: 13px; }
+}

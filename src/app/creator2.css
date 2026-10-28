@@ -737,3 +737,61 @@ li.done .cr2-check.num { background: #00c073; border-color: #00c073; }
 .cc-dot { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: #00c073; border: 3px solid var(--surface); box-shadow: 0 2px 8px rgba(0, 120, 70, 0.4); pointer-events: none; }
 .cc-axis { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; color: var(--muted); }
 .an-hv { font-size: 12.5px; font-weight: 800; padding: 4px 10px; border-radius: 99px; background: var(--gsoft); color: var(--gink); white-space: nowrap; }
+
+/* Phones (owner, 28 Oct 2026): no text smaller than 13px. Share-card images, phone previews and tiny badges on icons keep their size. */
+@media (max-width: 760px) {
+  .cr2-cols span em { font-size: 13px; }
+  .cr2-axis { font-size: 13px; }
+  .cr2-mini small { font-size: 13px; }
+  .cr2-plat small { font-size: 13px; }
+  .cr2-dayhead { font-size: 13px; }
+  .cr2-cal small { font-size: 13px; }
+  .cr2-cal span { font-size: 13px; }
+  .cr2-chestlbl { font-size: 13px; }
+  .cr2-mission small { font-size: 13px; }
+  .cr2-level small { font-size: 13px; }
+  .cr2-stop small { font-size: 13px; }
+  .cr2-stop em { font-size: 13px; }
+  .cr2-funnel span { font-size: 13px; }
+  .cr2-person small { font-size: 13px; }
+  .cr2-balance small { font-size: 13px; }
+  .cr2-bsplit span { font-size: 13px; }
+  .cr2-ledger small { font-size: 13px; }
+  .cr2-conn small { font-size: 13px; }
+  .cr2-notifyhead { font-size: 13px; }
+  .cr2-notify small { font-size: 13px; }
+  .cr2-aisum-h small { font-size: 13px; }
+  .cr2-health small { font-size: 13px; }
+  .cr2-health em { font-size: 13px; }
+  .cr2-watch-row small { font-size: 13px; }
+  .cr2-flags i { font-size: 13px; }
+  .cr2-tag { font-size: 13px; }
+  .cr2-extra small { font-size: 13px; }
+  .cr2-paycal-wd { font-size: 13px; }
+  .cr2-payday b { font-size: 13px; }
+  .cr2-payday small { font-size: 13px; }
+  .cr2-paytable .hd { font-size: 13px; }
+  .cr2-paytable small { font-size: 13px; }
+  .cr2-eq small { font-size: 13px; }
+  .cr2-eq em { font-size: 13px; }
+  .cr2-lvchip, .cr2-actchip, .cr2-wachip { font-size: 13px; }
+  .cr2-wachip { font-size: 13px; }
+  .cr2-risk small { font-size: 13px; }
+  .pf-hint { font-size: 13px; }
+  .pf-lock { font-size: 13px; }
+  .pf-opt { font-size: 13px; }
+  .pf-l { font-size: 13px; }
+  .pf-l small { font-size: 13px; }
+  .pf-sub { font-size: 13px; }
+  .cr2-exp { font-size: 13px; }
+  .si-m small { font-size: 13px; }
+  .rc-lbl small { font-size: 13px; }
+  .rc-price small { font-size: 13px; }
+  .rc-input i { font-size: 13px; }
+  .rc-prev-h { font-size: 13px; }
+  .rc-prev-row small { font-size: 13px; }
+  .rc-prev-pack small { font-size: 13px; }
+  .rc-prev-pack em { font-size: 13px; }
+  .an-hv { font-size: 13px; }
+}
+.an-time .v2-bar { grid-template-columns: minmax(80px, 28%) minmax(0, 1fr) 96px; }

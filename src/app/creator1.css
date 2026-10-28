@@ -1020,3 +1020,77 @@ a.sh-go { text-decoration: none; }
   .td-idea { padding: 4px 8px; font-size: 13px; }
   .td-sample { height: 32px; }
 }
+
+/* Phones (owner, 28 Oct 2026): no text smaller than 13px. Share-card images, phone previews and tiny badges on icons keep their size. */
+@media (max-width: 760px) {
+  .cr1-live { font-size: 13px; }
+  .cr1-scanhead small { font-size: 13px; }
+  .cr1-found s { font-size: 13px; }
+  .cr1-scanfoot small { font-size: 13px; }
+  .cr1-pchip { font-size: 13px; }
+  .cr1-d-medals i, .cr1-bronze-medals i { font-size: 13px; }
+  .cr1-d-chip { font-size: 13px; }
+  .cr1-node b { font-size: 13px; }
+  .cr1-story-facts small { font-size: 13px; }
+  .cr1-story footer { font-size: 13px; }
+  .cr1-fine { font-size: 13px; }
+  .cr1-who small { font-size: 13px; }
+  .cr1-rate small { font-size: 13px; }
+  .cr1-bulkrow small { font-size: 13px; }
+  .ai-steps small { font-size: 13px; }
+  .ai-insight small { font-size: 13px; }
+  .ai-insight em { font-size: 13px; }
+  .ai-fit b em { font-size: 13px; }
+  .ai-fit small { font-size: 13px; }
+  .ai-fico { font-size: 13px; }
+  .ai-sort > span { font-size: 13px; }
+  .ai-rank { font-size: 13px; }
+  .ai-match b { font-size: 13px; }
+  .ai-meta { font-size: 13px; }
+  .ai-conv > span { font-size: 13px; }
+  .ai-earn { font-size: 13px; }
+  .ai-btn { font-size: 13px; }
+  .ai-fine { font-size: 13px; }
+  .mk-row { font-size: 13px; }
+  .mk-left { font-size: 13px; }
+  .cr1-reqd { font-size: 13px; }
+  .cr1-suggest small { font-size: 13px; }
+  .cr1-steps li { font-size: 13px; }
+  .cr1-note-main small { font-size: 13px; }
+  .cr1-parcel-steps i { font-size: 13px; }
+  .sh-kicker { font-size: 13px; }
+  .sh-stats small { font-size: 13px; }
+  .sh-howlbl { font-size: 13px; }
+  .sh-tabs > button[role="tab"] em { font-size: 13px; }
+  .sh-rate small { font-size: 13px; }
+  .sh-added { font-size: 13px; }
+  .sh-added b { font-size: 13px; }
+  .sh-fine { font-size: 13px; }
+  .mk-select span { font-size: 13px; }
+  .mk-switch em { font-size: 13px; }
+  .mk-meta { font-size: 13px; }
+  .mk-rates small { font-size: 13px; }
+  .mk-earn { font-size: 13px; }
+  .mk-earn em { font-size: 13px; }
+  .st-h em { font-size: 13px; }
+  .st-views { font-size: 13px; }
+  .st-why { font-size: 13px; }
+  .st-chips > span { font-size: 13px; }
+  .st-idea { font-size: 13px; }
+  .rc-bands small { font-size: 13px; }
+  .rc-name small { font-size: 13px; }
+  .ss-entry small { font-size: 13px; }
+  .ss-head small { font-size: 13px; }
+  .ss-note { font-size: 13px; }
+  .ss-hint { font-size: 13px; }
+  .td-from { font-size: 13px; }
+  .td-why { font-size: 13px; }
+  .td-idea { font-size: 13px; }
+  .td-chips > span { font-size: 13px; }
+  .sh-core small { font-size: 13px; }
+  .sh-deckbar { font-size: 13px; }
+  .sh-card small { font-size: 13px; }
+  .sh-stamp { font-size: 13px; }
+  .sh-deckacts small { font-size: 13px; }
+  .sh-lockline { font-size: 13px; }
+}
