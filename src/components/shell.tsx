@@ -144,12 +144,6 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
             </span>
           )}
           <span className="site-spacer" />
-          {app === "creator" && (
-            <span className="lang-switch" role="group" aria-label="Language">
-              <button type="button" aria-pressed="true">EN</button>
-              <button type="button" aria-pressed="false">中文</button>
-            </span>
-          )}
           {app !== "admin" && (
             <Link
               href={INVITE[app]}

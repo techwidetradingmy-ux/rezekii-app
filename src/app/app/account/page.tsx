@@ -103,6 +103,7 @@ export default function Account() {
   const [topic, setTopic] = useState("Idea");
   const [msg, setMsg] = useState("");
   const [theme, setTheme] = useState<Theme>("Auto");
+  const [lang, setLang] = useState<"English" | "中文">("English");
 
   useEffect(() => {
     let saved: string | null = null;
@@ -486,8 +487,12 @@ export default function Account() {
         </section>
 
         <section className="cr2-group">
-          <h2>Appearance</h2>
+          <h2>Language & appearance</h2>
           <div className="cr2-cells">
+            <div className="cr2-cell">
+              <span className="lbl">Language</span>
+              <span className="val"><Seg value={lang} options={["English", "中文"] as const} onChange={(l) => { setLang(l); toast(l === "中文" ? "已切换为中文" : "Switched to English"); }} /></span>
+            </div>
             <div className="cr2-cell">
               <span className="lbl">Theme</span>
               <span className="val"><Seg value={theme} options={["Light", "Dark", "Auto"] as const} onChange={applyTheme} /></span>

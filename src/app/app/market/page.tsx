@@ -157,7 +157,7 @@ export default function Marketplace() {
       </section>
 
       <p className="mk-count">
-        {list.length} product{list.length === 1 ? "" : "s"}{cat !== "All" ? ` in ${cat}` : ""}{onlySamples ? " with free samples you can get" : ""} · sorted by {SORTS.find(([k]) => k === sort)![1].toLowerCase()}
+        {list.length} product{list.length === 1 ? "" : "s"}
         {(cat !== "All" || onlySamples || term) && <button type="button" className="v2-link" onClick={() => { setQ(""); setCat("All"); setOnlySamples(false); }}>Clear</button>}
         <span className="mk-view" role="group" aria-label="View">
           <button type="button" aria-pressed={view === "grid"} aria-label="Grid view" onClick={() => pickView("grid")}><Icon name="grid" size={16} /></button>
