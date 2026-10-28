@@ -53,6 +53,10 @@ export default function SignIn() {
   const [codeState, setCodeState] = useState<"busy" | "ok" | undefined>();
   const [wait, setWait] = useState(0);
   const [welcome, setWelcome] = useState("");
+  // Owner, 28 Oct 2026: which kind of affiliate creator they are, picked at sign-up. More than one is fine.
+  const [kinds, setKinds] = useState<string[]>([]);
+  const [otherKind, setOtherKind] = useState("");
+  const kindError = !kinds.length ? "Pick at least one" : kinds.includes("Others") && !otherKind.trim() ? "Tell us which one" : "";
 
   const tel = tidyPhone(phone);
   const go = (s: Step) => {
@@ -152,6 +156,26 @@ export default function SignIn() {
     </label>
   );
 
+  const kindField = (
+    <div className="v2-field">
+      What kind of creator are you?
+      <div className="v2-chips cr1-kinds" role="group" aria-label="Kind of creator">
+        {["TikTok Affiliate", "Shopee Affiliate", "Threads Affiliate", "Others"].map((k) => {
+          const on = kinds.includes(k);
+          return (
+            <button key={k} type="button" className={`v2-chip ${on ? "on" : ""}`} aria-pressed={on} onClick={() => setKinds((l) => (on ? l.filter((x) => x !== k) : [...l, k]))}>
+              {on && <Icon name="check" size={14} width={3} />}{k}
+            </button>
+          );
+        })}
+      </div>
+      {kinds.includes("Others") && (
+        <input className="np-input" placeholder="e.g. Lazada Affiliate, UGC creator" value={otherKind} onChange={(e) => setOtherKind(e.target.value)} aria-label="Other kind of creator" aria-invalid={tried && !otherKind.trim()} />
+      )}
+      {tried && kindError ? <small className="cr1-err">{kindError}</small> : <small>Pick all that fit.</small>}
+    </div>
+  );
+
   const emailField = (
     <label className="v2-field">
       Email
@@ -197,7 +221,7 @@ export default function SignIn() {
         onSubmit={(e) => {
           e.preventDefault();
           setTried(true);
-          if (!state || tel.error) return;
+          if (!state || tel.error || kindError) return;
           finish(`Welcome to Rezekii, ${PROVIDER[provider].who.split(" ")[0]}`);
         }}
       >
@@ -212,8 +236,9 @@ export default function SignIn() {
         </div>
         <div>
           <h1>One more thing</h1>
-          <p>Two details and you&apos;re in.</p>
+          <p>Three quick details and you&apos;re in.</p>
         </div>
+        {kindField}
         {stateField}
         {phoneField}
         <button type="submit" className="np-btn np-submit">Continue <Icon name="arrow" size={18} /></button>
@@ -228,7 +253,7 @@ export default function SignIn() {
           e.preventDefault();
           setTried(true);
           if (!isEmail(email)) return;
-          if (isNew && (name.trim().length < 2 || !state || tel.error)) return;
+          if (isNew && (name.trim().length < 2 || !state || tel.error || kindError)) return;
           sendCode(isNew ? "signup" : "signin");
         }}
       >
@@ -243,6 +268,7 @@ export default function SignIn() {
           </label>
         )}
         {emailField}
+        {isNew && kindField}
         {isNew && stateField}
         {isNew && phoneField}
         <button type="submit" className="np-btn np-submit">Send me a code</button>
