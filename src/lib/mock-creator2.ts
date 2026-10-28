@@ -168,9 +168,9 @@ export const VIRAL = [
 ];
 /** New products to try today: marketplace products with a free sample she can get, rated 4★+, matched to her categories. */
 export const TRY_TODAY = [
-  { productId: "p20", why: "Muslim fashion sells 2.3× your average. A try-on video fits." },
-  { productId: "p11", why: "RM 9.90 add-on that sells fast on LIVE with your kitchen products." },
-  { productId: "p07", why: "Fashion is your top category, and polos sell all year." },
+  { productId: "p20", why: "Muslim fashion sells 2.3× your average. A try-on video fits.", idea: "Try-on: 3 ways to style it for work" },
+  { productId: "p11", why: "RM 9.90 add-on that sells fast on LIVE with your kitchen products.", idea: "Show it next to your best kitchen seller" },
+  { productId: "p07", why: "Fashion is your top category, and polos sell all year.", idea: "Fit check: 3 sizes side by side" },
 ];
 
 /** Views by posting time against the creator's own average (1 = average), last 30 days. */

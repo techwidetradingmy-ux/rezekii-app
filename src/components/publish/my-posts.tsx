@@ -7,6 +7,8 @@ import { Sheet, Title } from "@/components/ui";
 import { CalendarPicker, dayName } from "@/components/calendar-picker";
 import { PlatformIcon } from "@/components/creator2/bits";
 import { POST_CREDITS, type MyPost, type PostStatus, type PostTarget, type PublishSetup } from "@/lib/mock-publish";
+import { product } from "@/lib/mock";
+import { IDEA_DRAFTS, type IdeaDraft } from "@/components/creator1/shoot-today";
 import { CAPTION_MAX, ICON, NAMES, type Channel } from "./rules";
 import "@/app/creator2.css";
 import "@/app/publish.css";
@@ -70,6 +72,18 @@ const next = (s: PostStatus): PostStatus => STEPS[Math.min(STEPS.indexOf(s) + 1,
 export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup; posts: MyPost[]; newPost: string }) {
   const { toast } = useDemo();
   const [posts, setPosts] = useState(start);
+  // Drafts made in Today's Ideas (creator only; preview keeps them in this browser tab).
+  useEffect(() => {
+    try {
+      const drafts: IdeaDraft[] = JSON.parse(sessionStorage.getItem(IDEA_DRAFTS) ?? "[]");
+      const first = setup.channels.find((c) => c.status === "active");
+      if (!drafts.length || !first || !newPost.startsWith("/app/")) return;
+      setPosts((all) => [
+        ...drafts.filter((d) => !all.some((p) => p.id === d.id)).map((d) => ({ id: d.id, date: "", time: "", caption: d.idea, comment: "", cover: product(d.productId).img, seconds: 0, targets: [{ key: first.key, status: "draft" as const }] })),
+        ...all,
+      ]);
+    } catch {}
+  }, [setup.channels, newPost]);
   const [preset, setPreset] = useState<string | null>("around");
   const [[from, to], setRange] = useState<[string, string]>(RANGE.around);
   const [only, setOnly] = useState<Group | null>(null);
@@ -133,7 +147,7 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
         <span className="sq-cover">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={p.cover} alt="" />
-          <small>{Math.floor(p.seconds / 60)}:{String(p.seconds % 60).padStart(2, "0")}</small>
+          {p.seconds > 0 && <small>{Math.floor(p.seconds / 60)}:{String(p.seconds % 60).padStart(2, "0")}</small>}
         </span>
         <span className="sq-body">
           <span className="sq-when">

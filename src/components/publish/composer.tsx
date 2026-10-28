@@ -241,7 +241,10 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   }
   // Arriving with ?sample opens New post already filled in (for demos).
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).has("sample")) fillSample();
+    const q = new URLSearchParams(window.location.search);
+    if (q.has("sample")) fillSample();
+    // From Today's Ideas: the idea becomes the start of the caption; she adds the video.
+    else if (q.get("idea")) { setMain(q.get("idea")!.slice(0, 200)); say("Idea from Today's Ideas filled in. Add your video and pick your channels."); }
   }, []);
 
   function submit() {
