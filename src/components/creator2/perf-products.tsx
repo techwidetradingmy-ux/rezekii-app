@@ -1,46 +1,69 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { Icon } from "@/components/icons";
-import { Lock } from "@/components/ui";
-import { ANALYTICS, RAISES, product, rm } from "@/lib/mock";
-import { PREV_ORDERS, VIDEOS } from "@/lib/mock-creator2";
+import { Lock, Sheet } from "@/components/ui";
+import { ANALYTICS, product, rm, short } from "@/lib/mock";
+import { PREV_ORDERS, SHORT, VIDEOS, type VideoRow } from "@/lib/mock-creator2";
+
+const COLORS = ["#00c073", "#2f80ed", "#f5a623", "#e8005a", "#8b7dff"];
 import "@/app/creator2.css";
 
-/** Performance by product: what it earned, how it's trending, its rating, and which video sold it most. */
+/** Performance by product: a donut of where her commission comes from, then what each product earned, its trend and best video. */
 export function ProductList() {
   const total = ANALYTICS.commissionEst;
+  const [video, setVideo] = useState<VideoRow | null>(null);
   const rows = [...ANALYTICS.byProduct].sort((a, b) => b.commission - a.commission);
   const top = rows[0];
   const topShare = Math.round((top.commission / total) * 100);
+  const name = (id: string) => SHORT[id] ?? product(id).name;
+  // Share of income as a donut (owner, 28 Oct 2026: a pie reads better than a sentence). "Other" is everything else she sold.
+  const other = Math.max(0, total - rows.reduce((a, b) => a + b.commission, 0));
+  const slices = [
+    ...rows.map((b, i) => ({ id: b.productId, label: name(b.productId), value: b.commission, color: COLORS[i % COLORS.length] })),
+    ...(other > 0 ? [{ id: "other", label: "Other", value: other, color: "#c9d3ce" }] : []),
+  ];
+  const starts = slices.map((_, i) => slices.slice(0, i).reduce((a, x) => a + (x.value / total) * 100, 0));
 
   return (
     <div className="v2-stack" style={{ gap: 20 }}>
 
-      {topShare >= 35 && (
-        <div className="v2-alert">
-          <span>
-            {topShare}% of your commission comes from the {product(top.productId).name.toLowerCase()}. Add 1–2 strong products to
-            spread the risk.
-          </span>
-          <Link href="/app/data/performance#ai">See AI picks</Link>
-        </div>
-      )}
+      <Lock what="where your commission comes from">
+        <section className="v2-card pd-card" aria-label="Where your commission comes from">
+          <div className="pd-ring" role="img" aria-label={slices.map((s) => `${s.label} ${Math.round((s.value / total) * 100)}%`).join(", ")}>
+            <svg viewBox="0 0 42 42" aria-hidden="true">
+              <circle cx="21" cy="21" r="15.915" fill="none" stroke="var(--line)" strokeWidth="6" />
+              {slices.map((s, i) => {
+                const pct = (s.value / total) * 100;
+                return <circle key={s.id} cx="21" cy="21" r="15.915" fill="none" stroke={s.color} strokeWidth="6" strokeDasharray={`${Math.max(0, pct - 0.6)} ${100 - Math.max(0, pct - 0.6)}`} strokeDashoffset={25 - starts[i]} />;
+              })}
+            </svg>
+            <span className="pd-mid"><b>{topShare}%</b><small>{name(top.productId)}</small></span>
+          </div>
+          <ul className="pd-legend">
+            {slices.map((s) => {
+              const row = <><i style={{ background: s.color }} /><span>{s.label}</span><b>{Math.round((s.value / total) * 100)}%</b></>;
+              // Tap a product to jump to its card here (owner, 28 Oct 2026: see it on Rezekii, not TikTok).
+              return <li key={s.id}>{s.id === "other" ? <span className="pd-row">{row}</span> : <a className="pd-row" href={`#pd-${s.id}`} onClick={(e) => { e.preventDefault(); const el = document.getElementById(`pd-${s.id}`); el?.scrollIntoView({ behavior: "smooth", block: "center" }); el?.classList.remove("pd-flash"); void el?.offsetWidth; el?.classList.add("pd-flash"); }}>{row}<Icon name="arrow" size={14} /></a>}</li>;
+            })}
+          </ul>
+          {topShare >= 35 && <Link href="/app/data/ai-picks" className="pd-tip">Too much from one product? See AI Picks <Icon name="arrow" size={14} /></Link>}
+        </section>
+      </Lock>
 
       <Lock what="what each product earned">
         <div className="cr2-list">
           {rows.map((b, i) => {
             const p = product(b.productId);
-            const share = Math.round((b.commission / total) * 100);
             const prev = PREV_ORDERS[b.productId] ?? b.orders;
             const change = Math.round(((b.orders - prev) / prev) * 100);
             const dropping = change <= -20;
             const lowRated = p.rating < 3;
             const highCancel = b.cancel > 15;
             const vids = VIDEOS.filter((v) => v.productId === b.productId).sort((x, y) => y.orders - x.orders);
-            const raise = RAISES.find((r) => r.productId === b.productId && r.eligible);
             return (
-              <article key={b.productId} className="v2-card" style={{ gap: 14 }}>
+              <article key={b.productId} id={`pd-${b.productId}`} className="v2-card" style={{ gap: 14 }}>
                 <div className="cr2-vhead">
                   <span className="cr2-thumb sq">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -48,7 +71,6 @@ export function ProductList() {
                   </span>
                   <span>
                     <strong>{p.name}</strong>
-                    <small>{p.shop}</small>
                     <span className="cr2-tags">
                       {i === 0 && <span className="badge">Top earner</span>}
                       {dropping && <span className="badge badge-amber">Sales dropping · {change}% orders</span>}
@@ -60,44 +82,38 @@ export function ProductList() {
                   <span className="v2-num" style={{ fontWeight: 900, fontSize: 18 }}>{rm(b.commission)}</span>
                 </div>
 
-                <div className="cr2-share">
-                  <span className="v2-meter"><i style={{ width: `${share}%`, animationDelay: `${i * 60}ms` }} /></span>
-                  <b>{share}%</b>
-                </div>
-                <span className="v2-small" style={{ marginTop: -8 }}>Share of your income</span>
-
                 <div className="cr2-mini">
                   <span><small>Orders</small><b>{b.orders}</b></span>
                   <span><small>Cancel rate</small><b className={highCancel ? "cr2-red" : undefined}>{b.cancel}%</b></span>
                   <span><small>Rating</small><b className={lowRated ? "cr2-red" : undefined}>{p.rating.toFixed(1)} / 5</b></span>
                 </div>
 
-                {vids[0] && (
-                  <p className="cr2-note" style={{ color: "var(--body)" }}>
-                    <Icon name="video" size={15} />
-                    <span>Top video: <b>&ldquo;{vids[0].title}&rdquo;</b> ({vids[0].date}), {vids[0].orders} of {b.orders} orders.</span>
-                  </p>
-                )}
-                {dropping && <p className="cr2-note"><Icon name="alert" size={15} /><span>{prev} orders the 30 days before, {b.orders} now. Try a fresh video.</span></p>}
-                {lowRated && <p className="cr2-note"><Icon name="star" size={15} /><span>Rated below 3.0. This can hurt buyer trust.</span></p>}
+                {/* Top video as a button (owner, 28 Oct 2026: less text); it opens here, on Rezekii. */}
+                {vids[0] && <button type="button" className="pd-vid" onClick={() => setVideo(vids[0])}><Icon name="video" size={16} /> Top video</button>}
+                {dropping && <p className="cr2-note"><Icon name="alert" size={15} /><span>Was {prev} orders, now {b.orders}. Try a fresh video.</span></p>}
 
-                {raise && (
-                  <Link href="/app#scan" className="cr2-uprate">
-                    <span>Better rate available</span>
-                    <b>{raise.nowRate === null ? "?" : `${raise.nowRate}%`} → {raise.tapRate}%</b>
-                    <Icon name="arrow" size={16} />
-                  </Link>
-                )}
               </article>
             );
           })}
         </div>
       </Lock>
 
-      <p className="cr2-note">
-        <Icon name="wallet" size={15} />
-        <span>Commission is estimated until each order settles.</span>
-      </p>
+      {video && (
+        <Sheet title="Top video" onClose={() => setVideo(null)}>
+          <div className="pd-player">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={product(video.productId).img} alt="" />
+            <span className="pd-play" aria-hidden="true"><Icon name="video" size={26} /></span>
+          </div>
+          <b style={{ fontSize: 16 }}>{video.title}</b>
+          <div className="cr2-mini">
+            <span><small>Views</small><b>{video.views === null ? "—" : short(video.views)}</b></span>
+            <span><small>Orders</small><b>{video.orders}</b></span>
+            <span><small>Commission</small><b>{rm(video.commission, 0)}</b></span>
+            <span><small>Posted</small><b>{video.date}</b></span>
+          </div>
+        </Sheet>
+      )}
     </div>
   );
 }
