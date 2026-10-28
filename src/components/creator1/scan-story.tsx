@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Count, Portal, ShareSheet } from "@/components/ui";
-import { ANALYTICS, CREATOR, REFERRAL_REWARD, product, rm, short } from "@/lib/mock";
+import { ANALYTICS, CREATOR, product, rm, short } from "@/lib/mock";
 import { ORDER_HISTORY } from "@/lib/mock-creator1";
 
 export type StoryItem = { id: string; productId: string; from: number; to: number; added?: boolean };
@@ -201,8 +201,7 @@ export function ScanStory({ checked, items, onAdd, onClose }: { checked: number;
                   <Icon name="plus" size={18} width={2.6} /> {!pick.length ? "Tick at least one" : pick.length === open.length && open.length > 1 ? `Add all ${pick.length}` : `Add ${pick.length}`}
                 </button>
               )}
-              <button type="button" className="ss-btn" onClick={() => toast(`Opening WhatsApp with your link: ${LINK}`)}><Icon name="users" size={18} /> Challenge a friend</button>
-              <small className="ss-note">+{REFERRAL_REWARD.inviter} credits for you, +{REFERRAL_REWARD.friend} for your friend.</small>
+              <button type="button" className="ss-btn" onClick={() => toast(`Opening WhatsApp with your link: ${LINK}`)}><Icon name="users" size={18} /> Share with friends</button>
             </div>
           )}
         </div>
