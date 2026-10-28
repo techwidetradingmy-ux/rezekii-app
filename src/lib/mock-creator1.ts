@@ -75,6 +75,9 @@ export const NOT_ELIGIBLE: Record<string, string> = {
 /** What a fresh scan finds in this preview. */
 export const NEW_ON_RESCAN: Raise = { id: "r7", productId: "p16", nowRate: 6, tapRate: 8, until: "31 Dec", eligible: true };
 
+/** Shown to Bronze creators only (owner, 28 Oct 2026): what Silver would unlock, a nudge to grow, never addable at Bronze. */
+export const SILVER_UNLOCKS = ["p03", "p20", "p09"];
+
 /** A product TikTok refused to add; it stays hidden from results for 30 days. */
 export const REFUSED = { productId: "p17", tiktok: "Adding product failed. Please contact TikTok.", hiddenUntil: "27 Nov" };
 

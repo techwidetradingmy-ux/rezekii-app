@@ -18,7 +18,7 @@ const WHO: Record<AppKind, { name: string; initials: string; label: string; phot
 
 /** The preview strip: sample data notice, and quick jumps between the three apps. */
 export function DemoStrip() {
-  const { linked, setLinked } = useDemo();
+  const { linked, setLinked, bronze, setBronze } = useDemo();
   return (
     <div className="v2-demo">
       <div className="site-wrap">
@@ -33,6 +33,9 @@ export function DemoStrip() {
         <Link href="/compare">Compare views</Link>
         <button type="button" className="v2-demo-toggle" onClick={() => setLinked(!linked)}>
           {linked ? "Show as not linked" : "Show as linked"}
+        </button>
+        <button type="button" className="v2-demo-toggle" onClick={() => setBronze(!bronze)}>
+          {bronze ? "Show as Silver" : "Show as Bronze"}
         </button>
       </div>
     </div>

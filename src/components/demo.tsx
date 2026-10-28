@@ -27,8 +27,11 @@ type Demo = {
   waAsking: boolean;
   waDone: () => void;
   waCancel: () => void;
+  /** Show the creator as Bronze (owner, 28 Oct 2026: to preview the "Unlock at Silver" tab). */
+  bronze: boolean;
+  setBronze: (on: boolean) => void;
 };
-const Ctx = createContext<Demo>({ linked: true, setLinked: () => {}, toast: () => {}, consent: null, recordConsent: () => {}, asking: null, agree: () => {}, cancelLink: () => {}, waVerified: false, setWaVerified: () => {}, requireWa: () => {}, waAsking: false, waDone: () => {}, waCancel: () => {} });
+const Ctx = createContext<Demo>({ linked: true, setLinked: () => {}, toast: () => {}, consent: null, recordConsent: () => {}, asking: null, agree: () => {}, cancelLink: () => {}, waVerified: false, setWaVerified: () => {}, requireWa: () => {}, waAsking: false, waDone: () => {}, waCancel: () => {}, bronze: false, setBronze: () => {} });
 
 const now = () => new Date().toLocaleString("en-MY", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kuala_Lumpur" });
 /** Aisyah agreed when she linked during sign-up. */
@@ -41,10 +44,12 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   const [msg, setMsg] = useState<string | null>(null);
   const [waVerified, setWaVerified] = useState(false);
   const [waNext, setWaNext] = useState<(() => void) | null>(null);
+  const [bronze, setBronzeState] = useState(false);
 
   useEffect(() => {
     try {
       if (localStorage.getItem("rz2_linked") === "0") setLinkedState(false);
+      if (localStorage.getItem("rz2_bronze") === "1") setBronzeState(true);
       const saved = localStorage.getItem("rz2_consent");
       if (saved) setConsent(saved === "none" ? null : (JSON.parse(saved) as Consent));
     } catch {}
@@ -91,6 +96,13 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         waAsking: !!waNext,
         waDone: () => { setWaVerified(true); const t = waNext; setWaNext(null); t?.(); },
         waCancel: () => setWaNext(null),
+        bronze,
+        setBronze: (on) => {
+          setBronzeState(on);
+          try {
+            localStorage.setItem("rz2_bronze", on ? "1" : "0");
+          } catch {}
+        },
       }}
     >
       {children}
