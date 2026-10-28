@@ -6,13 +6,14 @@ import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Title } from "@/components/ui";
 import { Chips, Pill, Switch } from "@/components/admin/bits";
+import { TapInvites } from "@/components/admin/tap-invite";
 import { CAMPAIGNS, LONGEST_END, type Campaign } from "@/lib/mock-admin";
 import { rm } from "@/lib/mock";
 
 type Filter = "All live" | "Ending in 14 days" | "Auto-extend on" | "Ended";
 type Outcome = { total: number; ok: string[]; failed: [string, string][] };
 
-/** Techwide TAP campaigns: end dates, auto-extend, and one batch to extend everything ending soon. */
+/** Techwide TAP campaigns: invites to sellers, end dates, auto-extend, and one batch to extend everything ending soon. */
 export default function TapCampaigns() {
   const { toast } = useDemo();
   const [list, setList] = useState<Campaign[]>(CAMPAIGNS);
@@ -58,6 +59,8 @@ export default function TapCampaigns() {
           Extend all ending in 14 days ({ending.length})
         </button>
       </Title>
+
+      <TapInvites />
 
       {ending.length > 0 && !out && (
         <div className="v2-alert">

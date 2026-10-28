@@ -327,3 +327,15 @@
 
 /* B+ · Rezekii green: tinted icon squares */
 .ad-qico, .ad-mico { background: var(--gsoft) !important; color: var(--gink) !important; box-shadow: none !important; }
+/* TAP invites (owner, 28 Oct 2026). */
+.ad-pickgrid { display: grid; gap: 6px; }
+.ad-pick { display: grid; grid-template-columns: auto 44px minmax(0, 1fr); gap: 10px; align-items: center; padding: 8px 10px; border-radius: 14px; border: 1.5px solid var(--line); cursor: pointer; }
+.ad-pick.on { border-color: #00c073; background: var(--gsoft); }
+.ad-pick input { accent-color: #00c073; width: 18px; height: 18px; }
+.ad-pick img { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; }
+.ad-pick > span { display: grid; min-width: 0; }
+.ad-pick b { font-size: 13.5px; }
+.ad-pick small { font-size: 12.5px; color: var(--muted); }
+.ad-sent { display: grid; justify-items: center; gap: 6px; text-align: center; padding: 8px 0; }
+.ad-sent-ico { width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center; background: #00c073; color: #ffffff; }
+.ad-sent small { color: var(--muted); }

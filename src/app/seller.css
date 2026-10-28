@@ -371,3 +371,28 @@
 .sl-dense .v2-colchart, .sl-dense .v2-axis { gap: 3px; }
 .sl-dense .v2-colchart span { min-width: 2px; border-radius: 4px 4px 2px 2px; }
 .sl-cols .v2-axis span { min-width: 0; white-space: nowrap; overflow: visible; }
+/* TAP invite (owner, 28 Oct 2026): the page a seller opens from Techwide's invite, and its banner on Submit products. */
+.si-banner { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 14px 16px; border-radius: 18px; background: linear-gradient(135deg, #eafaf2, #f3f1ff); border: 1.5px solid #b8ead2; color: var(--text); text-decoration: none; box-shadow: var(--shadow); }
+.si-banner > span:nth-child(2) { display: grid; gap: 2px; min-width: 0; }
+.si-banner b { font-size: 14.5px; }
+.si-banner small { font-size: 12.5px; color: var(--muted); }
+.si-banner-ico { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: #00c073; color: #ffffff; }
+.si-banner-go { display: inline-flex; align-items: center; gap: 4px; font-weight: 800; color: var(--gink); font-size: 14px; }
+@media (max-width: 520px) { .si-banner { grid-template-columns: auto minmax(0, 1fr); } .si-banner-go { grid-column: 2; } }
+.si-hero { gap: 14px; background: linear-gradient(160deg, #ffffff, #f2fbf6); }
+.si-from { display: flex; align-items: center; gap: 10px; }
+.si-from > span:last-child { display: grid; }
+.si-from small { font-size: 12.5px; color: var(--muted); }
+.si-note { margin: 0; padding: 12px 14px; border-radius: 14px; background: var(--surface2); font-style: italic; color: var(--body); line-height: 1.5; }
+.si-name { margin: 0; font-size: 22px; font-weight: 900; letter-spacing: -0.02em; }
+.si-terms { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.si-terms > span { display: grid; gap: 2px; padding: 12px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); min-width: 0; }
+.si-terms svg { color: var(--gink); }
+.si-terms b { font-size: 14px; }
+.si-terms small { font-size: 12px; color: var(--muted); }
+@media (max-width: 720px) { .si-terms { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.si-sync { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.si-sync li { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: var(--body); line-height: 1.45; }
+.si-sync svg { flex-shrink: 0; margin-top: 2px; color: var(--gink); }
+.sl-sticky > .si-acts { flex: 0 0 auto; display: flex; flex-direction: row; gap: 8px; }
+@media (max-width: 760px) { .sl-sticky > .si-acts { flex: 1 1 100%; } .sl-sticky > .si-acts .np-btn { flex: 1 1 0; } }

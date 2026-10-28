@@ -8,7 +8,7 @@ import { useDemo } from "@/components/demo";
 import { Sheet, Title } from "@/components/ui";
 import { ConnBanner, ContactSheet, TermsSheet } from "@/components/seller/seller-ui";
 import { rm, short } from "@/lib/mock";
-import { SHOP_ITEMS, TODAY, heat, listStatus, type ShopItem } from "@/lib/mock-seller";
+import { SHOP_ITEMS, TAP_INVITE, TODAY, heat, listStatus, type ShopItem } from "@/lib/mock-seller";
 
 type Raise = "2" | "ai" | "8" | "custom";
 type Presets = { end: string; extend: boolean; niche: string; subs: string[]; level: string; gmv: string; format: string; gender: string };
@@ -127,6 +127,11 @@ export default function SubmitProducts() {
     <div className="v2-stack v2-in">
       <Title title="Submit products" sub="Pick products and submit. We've set everything else for you." />
       <ConnBanner />
+      <Link href="/seller/app/invite" className="si-banner">
+        <span className="si-banner-ico"><Icon name="send" size={18} /></span>
+        <span><b>{TAP_INVITE.from} invited you: {TAP_INVITE.name}</b><small>Public +{TAP_INVITE.raise}% · {TAP_INVITE.samples} samples · {TAP_INVITE.products.length} products picked for you · open until {TAP_INVITE.expires}</small></span>
+        <span className="si-banner-go">Review <Icon name="arrow" size={15} /></span>
+      </Link>
 
       <section className="v2-card">
         <div className="sl-step-h"><span className="n">1</span><h2>Pick products</h2><span className="v2-small">{sel.length} selected</span></div>

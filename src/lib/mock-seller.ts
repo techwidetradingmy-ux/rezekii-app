@@ -324,3 +324,31 @@ export function tidyPhone(raw: string, dial: string): { ok: boolean; pretty: str
 }
 
 export { PRODUCTS, SELLER, SELLER_RESULTS };
+
+/* ---------------- TAP invites (owner, 28 Oct 2026): campaigns start two ways, both end in the same pipeline ---------------- */
+
+/** A campaign Techwide set up and sent to a seller to register: what the seller sees from the link. */
+export const TAP_INVITE = {
+  code: "TAP-7Q2",
+  from: "Aina",
+  team: "Techwide TAP team",
+  sent: "28 Oct, 10:05 AM",
+  expires: "11 Nov",
+  name: "Year-end kitchen push",
+  raise: 6,
+  samples: 40,
+  end: "31 Jan 2027",
+  extend: true,
+  niche: "Home & Kitchen",
+  note: "Your granite pot did well in October. We'd like to push it with about 40 creators before year-end, and try the new thermos too.",
+  products: ["x01", "x02"],
+};
+
+export type InviteStatus = "Sent" | "Opened" | "Registered" | "Expired";
+/** Invites Techwide has sent, as the admin sees them. Registered ones are already in the TAP pipeline. */
+export const TAP_INVITES: { code: string; shop: string; name: string; products: number; raise: number; status: InviteStatus; when: string; by: string }[] = [
+  { code: "TAP-7Q1", shop: "Dapur Pintar", name: "Raya open house set", products: 3, raise: 5, status: "Registered", when: "26 Oct", by: "Wei Jie" },
+  { code: "TAP-7P8", shop: "Lena Home", name: "Bedroom refresh", products: 2, raise: 4, status: "Opened", when: "27 Oct", by: "Nadia" },
+  { code: "TAP-7P3", shop: "Mawar Wear", name: "Year-end modest wear", products: 4, raise: 6, status: "Sent", when: "27 Oct", by: "Nadia" },
+  { code: "TAP-7M9", shop: "Festa Craft", name: "Back to school", products: 2, raise: 4, status: "Expired", when: "12 Oct", by: "Aina" },
+];
