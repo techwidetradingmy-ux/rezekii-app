@@ -635,3 +635,18 @@ li.done .cr2-check { background: #00c073; border-color: #00c073; animation: v2Po
 .si-ico.tt { background: #0d1117; color: #25f4ee; }
 .si-ico.gg { background: #ffffff; color: #4285f4; box-shadow: inset 0 0 0 1px var(--border); }
 .si-ico.em { background: var(--surface2); color: var(--body); }
+/* Analytics on desktop (owner, 28 Oct 2026: website first): numbers and the AI summary across the top, charts on the left, the action plan on the right. */
+@media (min-width: 1200px) {
+  .v2-stack.an-page { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); grid-template-areas: "title title" "kpi kpi" "ai ai" "chart plan" "split plan" "top plan"; gap: 22px 22px; align-items: start; }
+  .an-page > .v2-title { grid-area: title; }
+  .an-page > .v2-stack { grid-area: kpi; }
+  .an-page > .cr2-aisum { grid-area: ai; }
+  .an-page > .cr2-plan { grid-area: plan; }
+  .an-page > .an-chart { grid-area: chart; }
+  .an-page > .an-split { grid-area: split; }
+  .an-page > .an-top { grid-area: top; }
+  .an-page > * { margin: 0 !important; min-width: 0; }
+  .an-page .cr2-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .an-page .cr2-plan-list li { grid-template-columns: 28px minmax(0, 1fr); align-items: start; }
+  .an-page .cr2-plan-list li > :last-child { grid-column: 2; justify-self: start; }
+}

@@ -62,7 +62,7 @@ export default function DataOverview() {
   const gap = chart.points.length > 14 ? 3 : 6;
 
   return (
-    <div className="v2-stack v2-in" style={{ gap: 22 }}>
+    <div className="v2-stack v2-in an-page" style={{ gap: 22 }}>
       <Title title="Analytics" sub={<>Updated today 09:12 · from your TikTok Shop orders</>}>
         <CalendarPicker
           label={custom ? `${dayName(from)} – ${dayName(to)}` : PRESETS.find(([k]) => k === range)![1]}
@@ -200,7 +200,7 @@ export default function DataOverview() {
         </ol>
       </section>
 
-      <section className="v2-card">
+      <section className="v2-card an-chart">
         <div className="v2-card-h">
           <h2 className="v2-h2">Commission per {chart.unit}</h2>
           <span className="v2-small">{range === "Lifetime" ? "Since March 2026" : `Last ${range}`} · {rm(d.est)}</span>
@@ -228,7 +228,7 @@ export default function DataOverview() {
         <p className="v2-small" style={{ margin: 0 }}>Estimated commission by the {chart.unit} the order was placed. The latest {chart.unit} is still in progress.</p>
       </section>
 
-      <div className="v2-grid2">
+      <div className="v2-grid2 an-split">
         <section className="v2-card">
           <div className="v2-card-h">
             <h2 className="v2-h2">Where your commission comes from</h2>
@@ -256,7 +256,7 @@ export default function DataOverview() {
         </section>
       </div>
 
-      <section className="v2-card">
+      <section className="v2-card an-top">
         <div className="v2-card-h">
           <h2 className="v2-h2">Top earning products</h2>
           <Link href="/app/data/performance#product">All products</Link>

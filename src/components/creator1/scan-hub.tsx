@@ -39,6 +39,10 @@ export function ScanHub() {
   const [similar, setSimilar] = useState<string[]>(SIMILAR);
   const [tab, setTab] = useState<Tab>("same");
   const [open, setOpen] = useState(false);
+  // Desktop (owner, 28 Oct 2026: website first): the list sits open beside the scanner.
+  useEffect(() => {
+    if (window.matchMedia("(min-width: 1200px)").matches) setOpen(true);
+  }, []);
   const [unticked, setUnticked] = useState<string[]>([]);
   const [fresh, setFresh] = useState<string[]>([]);
   const [pending, setPending] = useState<Pending[]>([]);

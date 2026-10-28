@@ -69,7 +69,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
   return (
     <>
       <DemoStrip />
-      <div className="v2-app" data-app={app}>
+      <div className="v2-shellgrid" data-app={app}>
       <aside className="v2-side" aria-label="Main menu">
         <Link href={HOME[app]} className="v2-side-brand">
           <span><Image src="/master-logo-transparent.png" alt="" width={30} height={30} /></span>

@@ -770,3 +770,14 @@
 .mka-legend > span { display: inline-flex; align-items: center; gap: 6px; }
 .mka-legend b { color: var(--gink); }
 .cr1-kinds .v2-chip { height: 38px; font-size: 14px; }
+/* Home on desktop (owner, 28 Oct 2026: website first): scanner on the left, the full list on the right, ready to add. */
+@media (min-width: 1200px) {
+  .sh-hub { display: grid; grid-template-columns: 360px minmax(0, 1fr); grid-template-areas: "top panel" "acts panel" "fine panel"; grid-template-rows: auto auto 1fr; column-gap: 28px; row-gap: 16px; align-items: start; }
+  .sh-hub > .sh-top { grid-area: top; grid-template-columns: 1fr; gap: 14px; }
+  .sh-hub > .sh-top .sh-radar { max-width: 250px; }
+  .sh-hub > .sh-panel { grid-area: panel; align-self: start; }
+  .sh-hub > .sh-acts { grid-area: acts; flex-direction: column; align-items: stretch; }
+  .sh-hub > .sh-acts .sh-go, .sh-hub > .sh-acts .sh-again { width: 100%; justify-content: center; }
+  .sh-hub > .sh-fine { grid-area: fine; margin: 0; }
+  .sh-hub .sh-drop { display: none; }
+}
