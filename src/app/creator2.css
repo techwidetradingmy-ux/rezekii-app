@@ -894,3 +894,10 @@ span.pd-row { grid-template-columns: 12px minmax(0, 1fr) auto 14px; }
 .pl-keys b { color: var(--text); }
 .pl-bar .v, .pl-keys .v { background: #00c073; }
 .pl-bar .l, .pl-keys .l { background: #e8005a; }
+/* Donut A (owner, 29 Oct 2026): gaps between slices; the tapped slice grows, the rest soften. */
+.pd-slice { cursor: pointer; opacity: 0.45; transition: opacity 0.2s var(--ease), stroke-width 0.2s var(--ease); outline: none; }
+.pd-slice.on { opacity: 1; stroke-width: 7.4; }
+.pd-slice:focus-visible { opacity: 1; }
+.pd-mid { pointer-events: none; }
+.pd-mid em { font-style: normal; font-size: 13px; font-weight: 800; color: var(--text); }
+.pd-legend .pd-on { font-weight: 800; }

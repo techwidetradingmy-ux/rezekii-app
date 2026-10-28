@@ -42,28 +42,36 @@ export function ProductList() {
     ...(other > 0 ? [{ id: "other", label: "Other", value: other, color: "#c9d3ce" }] : []),
   ];
   const starts = slices.map((_, i) => slices.slice(0, i).reduce((a, x) => a + (x.value / total) * 100, 0));
+  // The slice shown in the middle: the top earner until she taps another.
+  const [sel, setSel] = useState<string | null>(null);
+  const shown = slices.find((s) => s.id === sel) ?? slices[0];
 
   return (
     <div className="v2-stack" style={{ gap: 20 }}>
-      <div className="pl-source"><Seg value={source} options={["All", "Video", "LIVE"] as const} onChange={(s) => { setSource(s); setOpenId(null); }} /></div>
+      <div className="pl-source"><Seg value={source} options={["All", "Video", "LIVE"] as const} onChange={(s) => { setSource(s); setOpenId(null); setSel(null); }} /></div>
 
       <Lock what="where your commission comes from">
         <section className="v2-card pd-card" aria-label="Where your commission comes from">
-          <div className="pd-ring" role="img" aria-label={slices.map((s) => `${s.label} ${Math.round((s.value / total) * 100)}%`).join(", ")}>
-            <svg viewBox="0 0 42 42" aria-hidden="true">
-              <circle cx="21" cy="21" r="15.915" fill="none" stroke="var(--line)" strokeWidth="6" />
+          <div className="pd-ring" role="group" aria-label="Share of commission by product">
+            <svg viewBox="0 0 42 42">
               {slices.map((s, i) => {
                 const pct = (s.value / total) * 100;
-                return <circle key={s.id} cx="21" cy="21" r="15.915" fill="none" stroke={s.color} strokeWidth="6" strokeDasharray={`${Math.max(0, pct - 0.6)} ${100 - Math.max(0, pct - 0.6)}`} strokeDashoffset={25 - starts[i]} />;
+                const len = Math.max(0.4, pct - 2.2);
+                return (
+                  <circle key={s.id} className={`pd-slice${shown.id === s.id ? " on" : ""}`} cx="21" cy="21" r="15.915" fill="none" stroke={s.color} strokeWidth="6"
+                    strokeDasharray={`${len} ${100 - len}`} strokeDashoffset={25 - starts[i] - 1.1} pointerEvents="stroke"
+                    role="button" tabIndex={0} aria-label={`${s.label} ${Math.round(pct)}%`} aria-pressed={shown.id === s.id}
+                    onClick={() => setSel(s.id)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSel(s.id); } }} />
+                );
               })}
             </svg>
-            <span className="pd-mid"><b>{topShare}%</b><small>{name(top.productId)}</small></span>
+            <span className="pd-mid" aria-live="polite"><b>{Math.round((shown.value / total) * 100)}%</b><small>{shown.label}</small><em>{rm(shown.value, 0)}</em></span>
           </div>
           <ul className="pd-legend">
             {slices.map((s) => {
-              const row = <><i style={{ background: s.color }} /><span>{s.label}</span><b>{Math.round((s.value / total) * 100)}%</b></>;
+              const row = <><i style={{ background: s.color }} /><span className={shown.id === s.id ? "pd-on" : undefined}>{s.label}</span><b>{Math.round((s.value / total) * 100)}%</b></>;
               // Tap a product to jump to its card here (owner, 28 Oct 2026: see it on Rezekii, not TikTok).
-              return <li key={s.id}>{s.id === "other" ? <span className="pd-row">{row}</span> : <a className="pd-row" href={`#pd-${s.id}`} onClick={(e) => { e.preventDefault(); const el = document.getElementById(`pd-${s.id}`); setOpenId(s.id); el?.scrollIntoView({ behavior: "smooth", block: "center" }); el?.classList.remove("pd-flash"); void el?.offsetWidth; el?.classList.add("pd-flash"); }}>{row}<Icon name="arrow" size={14} /></a>}</li>;
+              return <li key={s.id}>{s.id === "other" ? <span className="pd-row">{row}</span> : <a className="pd-row" href={`#pd-${s.id}`} onClick={(e) => { e.preventDefault(); const el = document.getElementById(`pd-${s.id}`); setOpenId(s.id); setSel(s.id); el?.scrollIntoView({ behavior: "smooth", block: "center" }); el?.classList.remove("pd-flash"); void el?.offsetWidth; el?.classList.add("pd-flash"); }}>{row}<Icon name="arrow" size={14} /></a>}</li>;
             })}
           </ul>
           {topShare >= 35 && <Link href="/app/data/ai-picks" className="pd-tip">Too much from one product? See AI Picks <Icon name="arrow" size={14} /></Link>}
