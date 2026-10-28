@@ -11,7 +11,12 @@ const SLIDE_MS = 4200;
 const LINK = `rezekii.com/c/${CREATOR.handle.replace(/^@/, "")}`;
 const ISSUE = "Issue 28 Oct 2026";
 
+/** The coin mascot's mood on each cover (owner, 29 Oct 2026: cute, cartoon, made to share). */
+type Mood = "happy" | "wow" | "sad" | "proud";
 type CoverProps = {
+  mood: Mood;
+  /** A product photo shown as a small card on the cover (the best raise). */
+  product?: string;
   photo: string;
   kick: string;
   big: React.ReactNode;
@@ -22,19 +27,66 @@ type CoverProps = {
   label: string;
 };
 
-/**
- * One magazine cover (owner, 28 Oct 2026: option C). Her photo or video fills a framed panel inside the safe area; the masthead
- * and the rezekii.com watermark brand every cover. Sized in container units, so the story and the share card look the same.
- */
-export function Cover({ photo, kick, big, head, sub, video, label }: CoverProps) {
+/** Rezi, the Rezekii coin: a cute gold coin whose face and arms change with the mood. */
+function Rezi({ mood }: { mood: Mood }) {
+  const g = `rz-coin-${mood}`;
+  const arms = mood === "sad" ? ["M26 74 L14 90", "M94 74 L106 90"] : mood === "proud" ? ["M24 70 L10 66", "M96 70 L110 66"] : ["M24 62 L10 42", "M96 62 L110 42"];
   return (
-    <div className="mg" role="img" aria-label={label}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className="mg-blur" src={photo} alt="" />
+    <svg className="rz-coin" viewBox="0 0 120 120" aria-hidden="true">
+      <defs>
+        <radialGradient id={g} cx="35%" cy="28%" r="78%">
+          <stop offset="0" stopColor="#fff4bf" />
+          <stop offset="0.45" stopColor="#ffd34d" />
+          <stop offset="1" stopColor="#f0a020" />
+        </radialGradient>
+      </defs>
+      {arms.map((d) => <path key={d} d={d} stroke="#d98a10" strokeWidth="6" strokeLinecap="round" fill="none" />)}
+      <circle cx="60" cy="64" r="42" fill={`url(#${g})`} stroke="#d98a10" strokeWidth="3" />
+      <circle cx="60" cy="64" r="34" fill="none" stroke="#f7c04d" strokeWidth="2" strokeDasharray="3 4" />
+      <ellipse cx="44" cy="40" rx="10" ry="5" fill="#ffffff" opacity="0.6" />
+      <ellipse cx="38" cy="76" rx="6" ry="3.5" fill="#ff8fa3" opacity="0.7" />
+      <ellipse cx="82" cy="76" rx="6" ry="3.5" fill="#ff8fa3" opacity="0.7" />
+      {mood === "happy" && <>
+        <path d="M40 62 q6 -8 12 0 M68 62 q6 -8 12 0" stroke="#5a2d00" strokeWidth="3.5" strokeLinecap="round" fill="none" />
+        <path d="M46 74 q14 16 28 0 z" fill="#5a2d00" /><path d="M54 80 q6 4 12 0" fill="#ff6b81" />
+      </>}
+      {mood === "wow" && <>
+        <path d="M46 52 l2 5 5 .5 -4 3.5 1.2 5 -4.2-2.8 -4.2 2.8 1.2-5 -4-3.5 5-.5z M74 52 l2 5 5 .5 -4 3.5 1.2 5 -4.2-2.8 -4.2 2.8 1.2-5 -4-3.5 5-.5z" fill="#ff5a5f" />
+        <ellipse cx="60" cy="80" rx="7" ry="8" fill="#5a2d00" />
+      </>}
+      {mood === "sad" && <>
+        <path d="M37 56 l13 -6 M83 56 l-13 -6" stroke="#5a2d00" strokeWidth="3" strokeLinecap="round" />
+        <circle cx="46" cy="64" r="4" fill="#5a2d00" /><circle cx="74" cy="64" r="4" fill="#5a2d00" />
+        <path d="M48 86 q12 -10 24 0" stroke="#5a2d00" strokeWidth="3.5" strokeLinecap="round" fill="none" />
+        <path className="rz-tear" d="M44 70 q-4 7 0 9 q4 -2 0 -9z" fill="#5ab8ff" />
+      </>}
+      {mood === "proud" && <>
+        <path d="M40 62 q6 6 12 0 M68 62 q6 6 12 0" stroke="#5a2d00" strokeWidth="3.5" strokeLinecap="round" fill="none" />
+        <path d="M50 78 q10 8 20 0" stroke="#5a2d00" strokeWidth="3.5" strokeLinecap="round" fill="none" />
+      </>}
+    </svg>
+  );
+}
+
+/** A banknote with little wings, for money flying away. */
+const Bill = () => (
+  <svg viewBox="0 0 60 34" aria-hidden="true">
+    <path d="M6 12 q-6 -10 -2 -12 q6 2 8 10z M54 12 q6 -10 2 -12 q-6 2 -8 10z" fill="#ffffff" opacity="0.9" />
+    <rect x="8" y="8" width="44" height="24" rx="4" fill="#35c27f" stroke="#1d8f5a" strokeWidth="2" />
+    <circle cx="30" cy="20" r="6" fill="#1d8f5a" />
+    <text x="30" y="23" textAnchor="middle" fontSize="7" fontWeight="900" fill="#d7ffe9">RM</text>
+  </svg>
+);
+
+/**
+ * A scan-recap cover (owner, 29 Oct 2026): cartoon style made to share. Rezi the coin shows the mood (happy, wow, sad,
+ * proud) on a bright gradient; her photo sits small by her handle so it's still her story; the Rezekii mark stays small.
+ */
+export function Cover({ mood, product: prod, photo, kick, big, head, sub, label }: CoverProps) {
+  return (
+    <div className={`mg ill ${mood}`} role="img" aria-label={label}>
       <div className="mg-safe">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="mg-photo" src={photo} alt="" />
-        <i className="mg-shade" />
+        <span className="il-fx" aria-hidden="true">{Array.from({ length: 9 }, (_, k) => <i key={k} />)}</span>
         <div className="mg-top">
           <span className="mg-mast">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -43,14 +95,30 @@ export function Cover({ photo, kick, big, head, sub, video, label }: CoverProps)
           </span>
           <span className="mg-issue">{ISSUE}</span>
         </div>
-        {video && <span className="mg-vid"><Icon name="video" size={12} width={2.4} /> {video.title} · {short(video.views)} views</span>}
+        <div className="il-art">
+          <Rezi mood={mood} />
+          {mood === "sad" && <span className="il-bills"><Bill /><Bill /><Bill /></span>}
+          {prod && (
+            <span className="il-prod">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={prod} alt="" />
+            </span>
+          )}
+        </div>
         <div className="mg-lines">
           <span className="mg-kick">{kick}</span>
           <strong className="mg-big">{big}</strong>
           <span className="mg-head">{head}</span>
           {sub && <span className="mg-sub">{sub}</span>}
         </div>
-        <span className="mg-mark"><b>rezekii.com</b><span>{CREATOR.handle}</span></span>
+        <span className="mg-mark">
+          <b>rezekii.com</b>
+          <span className="il-me">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={photo} alt="" />
+            {CREATOR.handle}
+          </span>
+        </span>
       </div>
     </div>
   );
@@ -112,25 +180,25 @@ export function ScanStory({ checked, items, onAdd, onClose }: { checked: number;
   const cover = (s: Slide, live: boolean): (CoverProps & { caption: string }) | null => {
     const n = (v: number, f?: (x: number) => string) => (live ? <Count value={v} ms={1200} format={f} /> : f ? f(v) : v.toLocaleString("en-MY"));
     if (s === "found") return {
-      photo: CREATOR.photo, kick: "Showcase scan", big: n(items.length), head: `product${items.length === 1 ? "" : "s"} can pay me more`, sub: `Out of ${checked.toLocaleString("en-MY")} I promote`,
+      mood: "happy", photo: CREATOR.photo, kick: "Showcase scan", big: n(items.length), head: `product${items.length === 1 ? "" : "s"} can pay me more`, sub: `Out of ${checked.toLocaleString("en-MY")} I promote`,
       label: `${items.length} products in my showcase can pay me more`,
       caption: `Rezekii found ${items.length} products in my showcase that can pay me more 👀 Check yours free 👉 ${LINK} #RezekiiScan #TikTokShopMY`,
     };
     if (s === "best" && best) {
       const p = product(best.productId);
       return {
-        photo: p.img, video: bestVideo ? { title: bestVideo.title, views: bestVideo.views } : undefined, kick: "Best raise", big: `${best.to}%`, head: p.name, sub: `Up from ${best.from}%`,
+        mood: "wow", product: p.img, photo: CREATOR.photo, video: bestVideo ? { title: bestVideo.title, views: bestVideo.views } : undefined, kick: "Best raise", big: `${best.to}%`, head: p.name, sub: `Up from ${best.from}%`,
         label: `Best raise: ${p.name}, ${best.from}% to ${best.to}%`,
         caption: `${p.name}: ${best.from}% → ${best.to}% commission with Rezekii 🙌 Check yours free 👉 ${LINK} #RezekiiScan #TikTokShopMY`,
       };
     }
     if (s === "money") return {
-      photo: CREATOR.photo, kick: `Since ${ORDER_HISTORY.since}`, big: n(extra, (x) => rm(x, 0)), head: "left on the table", sub: "My sales at the better rates · estimate",
+      mood: "sad", photo: CREATOR.photo, kick: `Since ${ORDER_HISTORY.since}`, big: n(extra, (x) => rm(x, 0)), head: "commission I never got 😢", sub: "My sales at the better rates · estimate",
       label: `${rm(extra, 0)} left on the table since ${ORDER_HISTORY.since}`,
       caption: `I left ${rm(extra, 0)} on the table since ${ORDER_HISTORY.since} 😭 Rezekii found it. See yours free 👉 ${LINK} #RezekiiScan #TikTokShopMY`,
     };
     if (s === "checked") return {
-      photo: CREATOR.photo, kick: "Showcase scan", big: n(checked), head: "products checked", sub: "All at the best rate",
+      mood: "proud", photo: CREATOR.photo, kick: "Showcase scan", big: n(checked), head: "products checked", sub: "All at the best rate",
       label: `${checked} products checked, all at the best rate`,
       caption: `Rezekii checked all ${checked.toLocaleString("en-MY")} products in my showcase ✅ Check yours free 👉 ${LINK} #RezekiiScan #TikTokShopMY`,
     };

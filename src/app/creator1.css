@@ -1222,3 +1222,50 @@ button.cr1-note-main { padding: 0; border: 0; background: none; color: var(--tex
   .td-dots i { width: 6px; height: 6px; border-radius: 99px; background: var(--border); transition: width 0.2s var(--ease), background 0.2s; }
   .td-dots i.on { width: 16px; background: #00c073; }
 }
+/* Scan recap covers, cartoon style (owner, 29 Oct 2026): Rezi the coin on a bright gradient, a mood per page. */
+.mg.ill { background: #14102e; }
+.mg.ill .mg-safe { top: 8%; bottom: 8%; left: 6%; right: 6%; }
+.mg.ill.happy .mg-safe { background: radial-gradient(70% 45% at 50% 34%, rgba(255, 255, 255, 0.35), transparent 70%), linear-gradient(165deg, #3ee6a6 0%, #00b46c 55%, #00804f 100%); }
+.mg.ill.wow .mg-safe { background: radial-gradient(70% 45% at 50% 34%, rgba(255, 255, 255, 0.35), transparent 70%), linear-gradient(165deg, #ffb347 0%, #ff6a88 55%, #c2185b 100%); }
+.mg.ill.sad .mg-safe { background: radial-gradient(70% 45% at 50% 34%, rgba(255, 255, 255, 0.22), transparent 70%), linear-gradient(170deg, #8fa0ff 0%, #5b5bd6 55%, #2e2a7a 100%); }
+.mg.ill.proud .mg-safe { background: radial-gradient(70% 45% at 50% 34%, rgba(255, 255, 255, 0.35), transparent 70%), linear-gradient(165deg, #4fd1ff 0%, #2f80ed 55%, #1d4ed8 100%); }
+.il-art { position: absolute; left: 0; right: 0; top: 14cqw; display: grid; place-items: center; height: 58cqw; }
+.rz-coin { width: 52cqw; height: 52cqw; filter: drop-shadow(0 3cqw 4cqw rgba(0, 0, 0, 0.25)); animation: rzBob 2.6s ease-in-out infinite; }
+@keyframes rzBob { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-2.5cqw) rotate(2deg); } }
+.mg.ill.sad .rz-coin { animation-duration: 3.4s; }
+.rz-tear { animation: rzTear 1.8s ease-in infinite; }
+@keyframes rzTear { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(14px); opacity: 0; } }
+.il-bills { position: absolute; inset: 0; pointer-events: none; }
+.il-bills svg { position: absolute; width: 15cqw; height: auto; animation: ilFly 3.2s ease-in infinite; }
+.il-bills svg:nth-child(1) { left: 8%; top: 46%; }
+.il-bills svg:nth-child(2) { right: 8%; top: 30%; animation-delay: 1s; }
+.il-bills svg:nth-child(3) { left: 22%; top: 12%; animation-delay: 2s; width: 12cqw; }
+@keyframes ilFly { 0% { transform: translate(0, 0) scale(0.9); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(6cqw, -22cqw) scale(1.05); opacity: 0; } }
+.il-prod { position: absolute; right: 6cqw; bottom: 0; width: 24cqw; height: 24cqw; padding: 1.2cqw; border-radius: 4cqw; background: #ffffff; box-shadow: 0 2cqw 5cqw rgba(0, 0, 0, 0.25); }
+.il-prod img { width: 100%; height: 100%; object-fit: cover; border-radius: 3cqw; }
+/* Mood effects: confetti (happy), sparkles (wow), rain (sad), checks (proud). */
+.il-fx { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.il-fx i { position: absolute; top: -6%; width: 2cqw; height: 3.4cqw; border-radius: 0.6cqw; opacity: 0.9; animation: ilFall 4s linear infinite; }
+.il-fx i:nth-child(1) { left: 8%; background: #ffd34d; animation-delay: 0s; }
+.il-fx i:nth-child(2) { left: 20%; background: #ffffff; animation-delay: 1.2s; }
+.il-fx i:nth-child(3) { left: 33%; background: #ff8fa3; animation-delay: 2.3s; }
+.il-fx i:nth-child(4) { left: 47%; background: #ffffff; animation-delay: 0.6s; }
+.il-fx i:nth-child(5) { left: 60%; background: #ffd34d; animation-delay: 1.8s; }
+.il-fx i:nth-child(6) { left: 72%; background: #b9a8ff; animation-delay: 3s; }
+.il-fx i:nth-child(7) { left: 84%; background: #ffffff; animation-delay: 0.3s; }
+.il-fx i:nth-child(8) { left: 92%; background: #ff8fa3; animation-delay: 2.6s; }
+.il-fx i:nth-child(9) { left: 54%; background: #ffd34d; animation-delay: 3.5s; }
+@keyframes ilFall { 0% { transform: translateY(0) rotate(0); } 100% { transform: translateY(130cqw) rotate(320deg); } }
+.mg.ill.sad .il-fx i { width: 0.6cqw; height: 5cqw; border-radius: 99px; background: rgba(255, 255, 255, 0.5); animation-duration: 1.4s; }
+.mg.ill.wow .il-fx i { width: 2.6cqw; height: 2.6cqw; border-radius: 0; background: #fff6c2; clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); animation: ilTwinkle 1.8s ease-in-out infinite; top: auto; }
+.mg.ill.wow .il-fx i:nth-child(odd) { top: 12%; } .mg.ill.wow .il-fx i:nth-child(even) { top: 34%; }
+@keyframes ilTwinkle { 0%, 100% { transform: scale(0.4); opacity: 0.3; } 50% { transform: scale(1.1); opacity: 1; } }
+.mg.ill.proud .il-fx i { width: 3cqw; height: 1.6cqw; border-radius: 0; background: none; border-left: 0.8cqw solid rgba(255, 255, 255, 0.7); border-bottom: 0.8cqw solid rgba(255, 255, 255, 0.7); transform: rotate(-45deg); animation: ilFloat 5s ease-in-out infinite; top: auto; bottom: -6%; }
+@keyframes ilFloat { 0% { transform: translateY(0) rotate(-45deg); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(-120cqw) rotate(-45deg); opacity: 0; } }
+.mg.ill .mg-lines { bottom: 11cqw; text-shadow: 0 0.6cqw 2.4cqw rgba(0, 0, 0, 0.25); }
+.mg.ill .mg-kick { color: #ffffff; opacity: 0.9; }
+.mg.ill .mg-big { font-size: 17cqw; }
+.mg.ill .mg-mark { align-items: center; }
+.il-me { display: inline-flex; align-items: center; gap: 1.4cqw; }
+.il-me img { width: 6cqw; height: 6cqw; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 0.6cqw rgba(255, 255, 255, 0.85); }
+@media (prefers-reduced-motion: reduce) { .rz-coin, .rz-tear, .il-bills svg, .il-fx i { animation: none !important; } }
