@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
 import { useDemo } from "./demo";
 import { Sheet } from "./ui";
@@ -49,6 +49,18 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
   const who = WHO[app];
   const [more, setMore] = useState(false);
   const menu = MENUS[app];
+  // Where the top menu's pill sits: measured from the open section's link, again on resize.
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [pill, setPill] = useState<{ left: number; width: number } | null>(null);
+  useLayoutEffect(() => {
+    const place = () => {
+      const on = menuRef.current?.querySelector<HTMLAnchorElement>("a.on");
+      setPill(on ? { left: on.offsetLeft, width: on.offsetWidth } : null);
+    };
+    place();
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+  }, [section?.href]);
   const phoneTabs = app === "admin" ? menu.slice(0, 4) : menu;
   const navIndex = phoneTabs.findIndex((s) => s.href === section?.href) >= 0 ? phoneTabs.findIndex((s) => s.href === section?.href) : app === "admin" && menu.slice(4).some((s) => s.href === section?.href) ? phoneTabs.length : -1;
   return (
@@ -63,10 +75,12 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
             Rezekii
           </Link>
           {app !== "creator" && <span className="v2-workspace">{app === "seller" ? "Seller" : "Admin"}</span>}
-          <div className="v2-menu">
+          <div className="v2-menu" ref={menuRef}>
+            {/* The same green pill as the phone tab bar, sliding to the open section (owner, 28 Oct 2026). */}
+            {pill && <span className="v2-menu-ind" aria-hidden="true" style={{ left: pill.left, width: pill.width }} />}
             {menu.map((s) => (
               <Link key={s.href} href={s.href} className={section?.href === s.href ? "on" : undefined} aria-current={section?.href === s.href ? "page" : undefined}>
-                {s.label}
+                {s.label === "Marketplace" ? <><span className="v2-long">Marketplace</span><span className="v2-short">Market</span></> : s.label}
               </Link>
             ))}
           </div>
@@ -130,7 +144,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
           <a href="mailto:support@rezekii.com">support@rezekii.com</a>
         </div>
       </footer>
-      <nav className="nv-bottom" aria-label="Main menu (phone)" style={{ ["--n" as string]: phoneTabs.length + (app === "admin" ? 1 : 0) }}>
+      <nav className="nv-bottom" data-app={app} aria-label="Main menu (phone)" style={{ ["--n" as string]: phoneTabs.length + (app === "admin" ? 1 : 0) }}>
         {/* A green pill that slides to the open tab (owner, 28 Oct 2026: make the tab bar easier to see). */}
         {navIndex >= 0 && <span className="nv-ind" aria-hidden="true" style={{ ["--i" as string]: navIndex }} />}
         {phoneTabs.map((s) => (
