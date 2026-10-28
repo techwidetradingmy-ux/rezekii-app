@@ -21,6 +21,41 @@ const STICKER: Record<string, { icon: IconName; from: string; to: string; progre
   Gold: { icon: "trophy", from: "#ffe08a", to: "#c98510" },
 };
 const SPARK = ["#ffd34d", "#25f4ee", "#ff5ca8", "#22dc95", "#8b7dff", "#ffffff"];
+
+/** A pointy-top hexagon path around (cx, cy). */
+const hex = (cx: number, cy: number, rad: number) =>
+  `M${[-90, -30, 30, 90, 150, 210].map((a) => `${(cx + rad * Math.cos((a * Math.PI) / 180)).toFixed(2)} ${(cy + rad * Math.sin((a * Math.PI) / 180)).toFixed(2)}`).join("L")}Z`;
+
+/** A badge as an honour emblem (owner, 28 Oct 2026): a metal-rimmed hexagon in the badge's colours, its icon in the middle, and a shine. Grey and locked until earned. */
+function BadgeEmblem({ name, got, size = 76 }: { name: string; got: boolean; size?: number }) {
+  const s = STICKER[name];
+  const id = `lb-${name.replace(/[^a-z0-9]/gi, "")}`;
+  const [c1, c2] = got ? [s.from, s.to] : ["#eef2f5", "#b4bec9"];
+  return (
+    <span className={`lb-em ${got ? "got" : "off"}`} style={{ width: size, height: size * 1.08 }}>
+      <svg viewBox="0 0 100 108" aria-hidden="true">
+        <defs>
+          <linearGradient id={`${id}-r`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor={c1} />
+            <stop offset="0.5" stopColor="#ffffff" stopOpacity={got ? 0.9 : 0.6} />
+            <stop offset="1" stopColor={c2} />
+          </linearGradient>
+          <linearGradient id={`${id}-f`} x1="0" y1="0" x2="0.6" y2="1">
+            <stop offset="0" stopColor={c1} />
+            <stop offset="1" stopColor={c2} />
+          </linearGradient>
+        </defs>
+        <path d={hex(50, 54, 48)} fill={`url(#${id}-r)`} />
+        <path d={hex(50, 54, 40)} fill={`url(#${id}-f)`} />
+        <path d={hex(50, 54, 40)} fill="none" stroke="#ffffff" strokeOpacity="0.55" strokeWidth="1.5" />
+        <path d="M18 34 50 16l32 18" fill="none" stroke="#ffffff" strokeOpacity={got ? 0.45 : 0.3} strokeWidth="3" strokeLinecap="round" />
+        {got && <path d="M84 12l2 5 5 2-5 2-2 5-2-5-5-2 5-2z M16 84l1.5 3.5 3.5 1.5-3.5 1.5-1.5 3.5-1.5-3.5-3.5-1.5 3.5-1.5z" fill="#ffffff" />}
+      </svg>
+      <span className="lb-em-ico"><Icon name={got ? s.icon : "lock"} size={Math.round(size * 0.34)} width={2.2} /></span>
+      {got && <span className="lb-em-shine" aria-hidden="true" />}
+    </span>
+  );
+}
 const KEY: Record<string, Level> = { Bronze: "bronze", Silver: "silver", Gold: "gold" };
 
 type Share = { big: string; label: string; lines: string[]; level?: Level; kicker?: string };
@@ -152,17 +187,14 @@ export function LevelBadges() {
           <h2 className="v2-h2">Badges</h2>
           <span className="badge">{got} of {BADGES.length} collected</span>
         </div>
-        <div className="lb-stickers">
-          {BADGES.map((b, i) => {
+        <div className="lb-badges">
+          {BADGES.map((b) => {
             const s = STICKER[b.name];
             return (
-              <button key={b.name} type="button" className={`lb-sticker ${b.got ? "got" : ""}`} style={{ "--r": `${((i * 7) % 9) - 4}deg` } as React.CSSProperties} onClick={() => setBadge(b)}>
-                <span className="lb-sk" style={{ background: b.got ? `linear-gradient(140deg, ${s.from}, ${s.to})` : undefined }}>
-                  <Icon name={b.got ? s.icon : "lock"} size={26} width={2.2} />
-                  {b.got && <span className="lb-shine" aria-hidden="true" />}
-                </span>
+              <button key={b.name} type="button" className={`lb-badge ${b.got ? "got" : ""}`} onClick={() => setBadge(b)}>
+                <BadgeEmblem name={b.name} got={b.got} />
                 <b>{b.name}</b>
-                {!b.got && s.progress && <small>{s.progress[0]} / {s.progress[1]} days</small>}
+                <small>{b.got ? "Collected" : s.progress ? `${s.progress[0]} / ${s.progress[1]} days` : "Locked"}</small>
               </button>
             );
           })}
@@ -172,10 +204,7 @@ export function LevelBadges() {
       {badge && (
         <Sheet title={badge.name} onClose={() => setBadge(null)}>
           <div className="lb-bigsticker">
-            <span className={`lb-sk big ${badge.got ? "" : "off"}`} style={{ background: badge.got ? `linear-gradient(140deg, ${STICKER[badge.name].from}, ${STICKER[badge.name].to})` : undefined }}>
-              <Icon name={badge.got ? STICKER[badge.name].icon : "lock"} size={52} width={2} />
-              {badge.got && <span className="lb-shine" aria-hidden="true" />}
-            </span>
+            <BadgeEmblem name={badge.name} got={badge.got} size={132} />
           </div>
           <p style={{ margin: 0, textAlign: "center", lineHeight: 1.5 }}>{BADGE_INFO[badge.name]}</p>
           <span className={`badge ${badge.got ? "" : "badge-gray"}`} style={{ alignSelf: "center" }}>{badge.got ? "Collected" : "Not yet"}</span>

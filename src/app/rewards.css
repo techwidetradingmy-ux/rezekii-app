@@ -173,3 +173,24 @@
   .mx-brand em { grid-column: 2; }
 }
 @media (prefers-reduced-motion: reduce) { .mx-big-emblem, .mx-bar i { animation: none; } }
+
+/* Badges as honour emblems (owner, 28 Oct 2026): straight rows, metal-rimmed hexagons, a shine on earned ones. */
+.lb-badges { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px 10px; }
+.lb-badge { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; border: 0; border-radius: 18px; background: none; color: var(--text); font: inherit; cursor: pointer; text-align: center; transition: background 0.2s; }
+.lb-badge:hover { background: var(--surface2); }
+.lb-badge b { margin-top: 4px; font-size: 13px; line-height: 1.25; }
+.lb-badge small { font-size: 11.5px; font-weight: 700; color: var(--muted); }
+.lb-badge.got small { color: var(--gink); }
+.lb-em { position: relative; display: inline-grid; place-items: center; flex-shrink: 0; transition: transform 0.3s var(--spring); }
+.lb-em > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.lb-em.got > svg { filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.18)); }
+.lb-em.off { opacity: 0.85; }
+.lb-badge:hover .lb-em { transform: translateY(-3px) scale(1.06); }
+.lb-em-ico { position: relative; display: grid; place-items: center; color: #ffffff; margin-top: 8%; }
+.lb-em.got .lb-em-ico svg { filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3)); }
+.lb-em.off .lb-em-ico { color: #8a96a3; }
+.lb-em-shine { position: absolute; inset: 0; clip-path: polygon(50% 5%, 94% 30%, 94% 81%, 50% 106%, 6% 81%, 6% 30%); overflow: hidden; pointer-events: none; }
+.lb-em-shine::after { content: ""; position: absolute; top: -10%; left: -70%; width: 45%; height: 130%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.75), transparent); transform: skewX(-18deg); animation: lbEmShine 3.6s ease-in-out infinite; }
+@keyframes lbEmShine { 0%, 55% { left: -70%; } 85%, 100% { left: 130%; } }
+@media (max-width: 420px) { .lb-badges { gap: 14px 4px; } .lb-badge b { font-size: 12px; } }
+@media (prefers-reduced-motion: reduce) { .lb-em-shine::after { animation: none; display: none; } }

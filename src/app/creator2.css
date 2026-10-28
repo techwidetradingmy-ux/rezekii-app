@@ -572,3 +572,52 @@ li.done .cr2-check { background: #00c073; border-color: #00c073; animation: v2Po
 .cr2-risk.watch .cr2-risk-bar i:nth-child(-n+2) { background: #f5a623; }
 .cr2-risk.high b { color: var(--red); }
 .cr2-risk.high .cr2-risk-bar i { background: #e14b3b; }
+.cr2-phone { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 8px; } .cr2-phone select { font-weight: 800; }
+/* Profile in one box (owner, 28 Oct 2026): two columns of fields, saved once, then locked; changes go through support. */
+.pf-card { display: grid; gap: 16px; padding: 18px; border-radius: 22px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.pf-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.pf-head h2 { margin: 0; font-size: 17px; font-weight: 800; text-transform: none; letter-spacing: 0; color: var(--text); }
+.pf-hint { font-size: 12.5px; color: var(--muted); font-weight: 700; }
+.pf-lock { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px; border-radius: 99px; background: var(--surface2); color: var(--body); font-size: 12.5px; font-weight: 800; }
+.pf-req { font-style: normal; color: #e14b3b; font-weight: 900; }
+.pf-opt { display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 99px; background: var(--surface2); color: var(--muted); font-size: 11.5px; font-weight: 800; }
+.pf-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; }
+.pf-f { display: grid; gap: 6px; align-content: start; min-width: 0; }
+.pf-f.wide { grid-column: 1 / -1; }
+.pf-l { font-size: 12.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.pf-l small { display: block; margin-top: 2px; font-size: 12px; font-weight: 600; text-transform: none; letter-spacing: 0; }
+.pf-v { display: flex; align-items: center; min-height: 44px; padding: 0 14px; border-radius: 12px; background: var(--surface2); font-size: 15px; font-weight: 700; color: var(--text); }
+.pf-sub { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
+.pf-niches { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.pf-card .np-seg { align-self: start; }
+.pf-err { margin: 0; padding: 10px 14px; border-radius: 12px; background: #fff3f1; color: #c2362a; font-size: 13px; font-weight: 700; display: grid; gap: 2px; list-style: none; }
+.pf-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-top: 14px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+.pf-card.locked { background: linear-gradient(180deg, var(--surface), #f7fcf9); }
+.pf-sum { margin: 0; display: grid; gap: 0; border-radius: 14px; border: 1px solid var(--line); overflow: hidden; }
+.pf-sum > div { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 10px; padding: 9px 12px; border-top: 1px solid var(--line); font-size: 14px; }
+.pf-sum > div:first-child { border-top: 0; }
+.pf-sum dt { color: var(--muted); font-weight: 700; }
+.pf-sum dd { margin: 0; font-weight: 700; }
+@media (max-width: 640px) { .pf-grid { grid-template-columns: 1fr; } .pf-niches { grid-template-columns: 1fr; } }
+/* My account side bar (owner, 28 Oct 2026): profile and sections on the left, the open section on the right. */
+.acc-side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+@media (min-width: 900px) {
+  .cr2-settings.acc-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); column-gap: 24px; row-gap: 22px; align-items: start; max-width: none; }
+  .acc-layout > .acc-side { grid-column: 1; grid-row: 1 / span 40; position: sticky; top: 96px; }
+  .acc-layout > :not(.acc-side) { grid-column: 2; min-width: 0; }
+  .acc-side .cr2-profile { flex-direction: column; align-items: flex-start; gap: 10px; padding: 16px; }
+  .acc-side .cr2-chips { flex-wrap: wrap; }
+  .acc-side .acc-tabs { flex-direction: column; flex-wrap: nowrap; gap: 2px; margin: 0; padding: 6px; border-radius: 20px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
+  .acc-side .acc-tabs button { width: 100%; justify-content: flex-start; height: 44px; border: 0; border-radius: 14px; background: transparent; font-weight: 700; }
+  .acc-side .acc-tabs button:hover { background: var(--surface2); }
+  .acc-side .acc-tabs button.on { background: var(--gsoft); color: var(--gink); }
+  .acc-side .acc-tabs button.on svg { color: var(--gink); }
+  .acc-side .acc-tabs .badge { margin-left: auto; }
+}
+/* Simple wallet (owner, 28 Oct 2026): one big number, when credits expire, two buttons. */
+.cr2-balance { display: grid; gap: 10px; }
+.cr2-balance .big b, .cr2-balance .big b span { font-size: 60px; font-weight: 900; letter-spacing: -0.03em; line-height: 1; opacity: 1; }
+.cr2-exp { justify-self: start; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 99px; background: rgba(255, 255, 255, 0.16); font-size: 12.5px; font-weight: 800; }
+.cr2-bacts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.cr2-bbtn { display: inline-flex; align-items: center; gap: 6px; height: 42px; padding: 0 16px; border-radius: 12px; background: #ffffff; color: #00804f; font-weight: 800; font-size: 14px; text-decoration: none; }
+.cr2-bacts .cr2-sharebtn { height: 42px; background: rgba(255, 255, 255, 0.14); border-color: rgba(255, 255, 255, 0.35); color: #ffffff; }

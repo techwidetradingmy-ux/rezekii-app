@@ -33,12 +33,20 @@ type TabKey = (typeof TABS)[number][0];
 const active = MY_SAMPLES.filter((x) => !["Done", "Not approved"].includes(x.status)).length;
 type Theme = "Light" | "Dark" | "Auto";
 
-/** 012-345 6789 → +60123456789; anything that isn't a Malaysian mobile number returns null. */
-function toMsia(raw: string) {
-  let d = raw.replace(/\D/g, "");
-  if (d.startsWith("0")) d = `6${d}`;
-  if (!d.startsWith("60")) d = `60${d}`;
-  return /^601\d{8,9}$/.test(d) ? `+${d}` : null;
+/** A red star for a required field. */
+const Req = () => <i className="pf-req" title="Required">*</i>;
+/** Country codes for WhatsApp numbers (owner, 28 Oct 2026: a fixed format with the code in front). Malaysia first. */
+const CODES: [string, string, string][] = [["+60", "MY", "Malaysia"], ["+65", "SG", "Singapore"], ["+62", "ID", "Indonesia"], ["+66", "TH", "Thailand"], ["+63", "PH", "Philippines"], ["+84", "VN", "Vietnam"], ["+673", "BN", "Brunei"], ["+86", "CN", "China"]];
+/** The number's digits without a leading 0, or null when it isn't a mobile number for that country. */
+function digitsFor(cc: string, raw: string) {
+  const d = raw.replace(/\D/g, "").replace(/^0+/, "");
+  const ok = cc === "+60" ? /^1\d{8,9}$/.test(d) : cc === "+65" ? /^[89]\d{7}$/.test(d) : /^\d{7,12}$/.test(d);
+  return ok ? d : null;
+}
+/** Malaysia: 12-345 6789 or 11-2345 6789; elsewhere in groups of four. */
+function prettyNum(cc: string, d: string) {
+  if (cc === "+60") return d.length === 9 ? `${d.slice(0, 2)}-${d.slice(2, 5)} ${d.slice(5)}` : `${d.slice(0, 2)}-${d.slice(2, 6)} ${d.slice(6)}`;
+  return d.replace(/(\d{4})(?=\d)/g, "$1 ");
 }
 
 /** My account: profile, connections, samples & delivery, rate card (later) and settings, grouped like iOS Settings. Nothing is saved. */
@@ -70,7 +78,8 @@ export default function Account() {
 
   const [name, setName] = useState(CREATOR.name);
   const [state, setState] = useState(CREATOR.state);
-  const [phone, setPhone] = useState("012-345 6789");
+  const [cc, setCc] = useState("+60");
+  const [phone, setPhone] = useState("12-345 6789");
   const [verified, setVerified] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [waSheet, setWaSheet] = useState(false);
@@ -79,6 +88,11 @@ export default function Account() {
   const [niche, setNiche] = useState("Home Supplies");
   const [sub1, setSub1] = useState("Muslim Fashion");
   const [sub2, setSub2] = useState("");
+  const [locked, setLocked] = useState(false);
+  const [tried, setTried] = useState(false);
+  const [confirmSave, setConfirmSave] = useState(false);
+  const [changeSheet, setChangeSheet] = useState(false);
+  const [change, setChange] = useState({ what: "WhatsApp number", to: "", why: "" });
   const [addr, setAddr] = useState({ to: "", phone: "", line: "", postcode: "", city: "", state: "" });
   const [conn, setConn] = useState<Record<string, boolean>>(Object.fromEntries(SOCIALS.map((s) => [s.name, s.linked])));
   const [notify, setNotify] = useState<Record<string, [boolean, boolean]>>({ samples: [true, true], chances: [true, true], posts: [true, false], rewards: [true, false] });
@@ -110,7 +124,13 @@ export default function Account() {
     } catch {}
   };
 
-  const intl = toMsia(phone);
+  const local = digitsFor(cc, phone);
+  const intl = local ? `${cc}${local}` : null;
+  const profileErrors = [
+    !name.trim() && "Enter your name.",
+    !local && "Enter a valid WhatsApp number.",
+    types.length === 0 && "Pick at least one creator type.",
+  ].filter(Boolean) as string[];
   const verifyNow = () => {
     setVerifying(true);
     toast("Opening WhatsApp…");
@@ -134,7 +154,9 @@ export default function Account() {
     <div className="v2-stack v2-in" style={{ gap: 22 }}>
       <Title title="My account" sub="Your details, level, wallet, referrals, samples and settings in one place" />
 
-      <div className="cr2-settings">
+      <div className="cr2-settings acc-layout">
+        {/* Owner, 28 Oct 2026: on a wide screen the profile and the sections sit in a side bar. */}
+        <aside className="acc-side">
         <div className="cr2-cells">
           <div className="cr2-profile">
             <LevelFace lv={linked ? CREATOR.tiktokLevel : null} size={76} img={CREATOR.photo} name={CREATOR.name} />
@@ -165,86 +187,113 @@ export default function Account() {
             </button>
           ))}
         </div>
+        </aside>
 
         {tab === "profile" && (
           <>
+        {/* Owner, 28 Oct 2026: the whole profile in one box; once saved it's locked, and changes go through support. */}
         <section className="cr2-group">
-          <h2>Profile</h2>
-          <div className="cr2-cells">
-            <div className="cr2-cell">
-              <label htmlFor="cr2-name">Name</label>
-              <input id="cr2-name" className="np-input val" value={name} onChange={(e) => setName(e.target.value)} />
+          <div className={`pf-card${locked ? " locked" : ""}`}>
+            <div className="pf-head">
+              <h2>Your profile</h2>
+              {locked ? <span className="pf-lock"><Icon name="lock" size={14} /> Saved · locked</span> : <span className="pf-hint"><Req /> required</span>}
             </div>
-            <div className="cr2-cell">
-              <label htmlFor="cr2-state">State</label>
-              <select id="cr2-state" className="np-input val" value={state} onChange={(e) => setState(e.target.value)}>
-                {MY_STATES.map((s) => <option key={s}>{s}</option>)}
-              </select>
-            </div>
-            <div className="cr2-cell">
-              <label htmlFor="cr2-wa">WhatsApp number</label>
-              <span className="val v2-stack" style={{ gap: 8 }}>
-                <input id="cr2-wa" className="np-input" inputMode="tel" value={phone} onChange={(e) => { setPhone(e.target.value); setVerified(false); }} />
-                <span className="v2-row" style={{ gap: 8 }}>
-                  {intl ? <span className="v2-small">Saved as {intl}</span> : <span className="v2-small cr2-red" style={{ fontWeight: 700 }}>Enter a Malaysian mobile number, e.g. 012-345 6789</span>}
-                  <span className="sp" style={{ flex: 1 }} />
+
+            <div className="pf-grid">
+              <label className="pf-f">
+                <span className="pf-l">Name {!locked && <Req />}</span>
+                {locked ? <b className="pf-v">{name}</b> : <input className="np-input" value={name} onChange={(e) => setName(e.target.value)} />}
+              </label>
+              <label className="pf-f">
+                <span className="pf-l">State {!locked && <Req />}</span>
+                {locked ? <b className="pf-v">{state}</b> : (
+                  <select className="np-input" value={state} onChange={(e) => setState(e.target.value)}>
+                    {MY_STATES.map((x) => <option key={x}>{x}</option>)}
+                  </select>
+                )}
+              </label>
+
+              <div className="pf-f wide">
+                <span className="pf-l">WhatsApp number {!locked && <Req />}</span>
+                {locked ? (
+                  <b className="pf-v">{cc} {local ? prettyNum(cc, local) : phone}</b>
+                ) : (
+                  <span className="cr2-phone">
+                    <select className="np-input" value={cc} onChange={(e) => { setCc(e.target.value); setVerified(false); }} aria-label="Country code">
+                      {CODES.map(([code, short, cname]) => <option key={code} value={code} title={cname}>{short} {code}</option>)}
+                    </select>
+                    <input id="cr2-wa" className="np-input" inputMode="tel" value={phone} aria-label="WhatsApp number" placeholder={cc === "+60" ? "12-345 6789" : "Mobile number"} onChange={(e) => { setPhone(e.target.value); setVerified(false); }} onBlur={() => local && setPhone(prettyNum(cc, local))} />
+                  </span>
+                )}
+                <span className="pf-sub">
+                  {!local && !locked ? <span className="cr2-red" style={{ fontWeight: 700 }}>{cc === "+60" ? "Enter a Malaysian mobile number, e.g. 12-345 6789" : "Enter a mobile number"}</span> : <span>Only the Techwide team sees it, for samples and parcels.</span>}
                   {verified ? (
                     <span className="badge"><Icon name="check" size={13} width={3} /> Verified</span>
                   ) : (
                     <button type="button" className="np-btn v2-btn-sm cr2-wabtn" disabled={!intl} onClick={() => setWaSheet(true)}>
-                      <Icon name="whatsapp" size={16} /> Verify with WhatsApp
+                      <Icon name="whatsapp" size={16} /> Verify
                     </button>
                   )}
                 </span>
-              </span>
-            </div>
-            <div className="cr2-cell">
-              <span className="lbl">Gender</span>
-              <span className="val"><Seg value={gender} options={["Female", "Male"] as const} onChange={setGender} /></span>
-            </div>
-          </div>
-          <p>Your WhatsApp number is only for the Techwide team, for samples and parcels. It&apos;s never shown to sellers.</p>
-        </section>
+              </div>
 
-        <section className="cr2-group">
-          <h2>What you do</h2>
-          <div className="cr2-cells">
-            <div className="cr2-cell stack">
-              <span className="lbl">Creator type <span className="v2-small" style={{ fontWeight: 600 }}>· pick all that fit</span></span>
-              <div className="v2-chips">
-                {TYPES.map((t) => {
-                  const on = types.includes(t);
-                  return (
-                    <button key={t} type="button" aria-pressed={on} className={`v2-chip ${on ? "on" : ""}`} onClick={() => setTypes((l) => (on ? l.filter((x) => x !== t) : [...l, t]))}>
-                      {on && <Icon name="check" size={14} width={3} />}{t}
-                    </button>
-                  );
-                })}
+              <div className="pf-f">
+                <span className="pf-l">Gender {!locked && <Req />}</span>
+                {locked ? <b className="pf-v">{gender}</b> : <Seg value={gender} options={["Female", "Male"] as const} onChange={setGender} />}
+              </div>
+              <div className="pf-f">
+                <span className="pf-l">Creator type {!locked && <Req />}</span>
+                {locked ? <b className="pf-v">{types.join(", ")}</b> : (
+                  <div className="v2-chips">
+                    {TYPES.map((t) => {
+                      const on = types.includes(t);
+                      return (
+                        <button key={t} type="button" aria-pressed={on} className={`v2-chip ${on ? "on" : ""}`} onClick={() => setTypes((l) => (on ? l.filter((x) => x !== t) : [...l, t]))}>
+                          {on && <Icon name="check" size={14} width={3} />}{t}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="pf-f wide">
+                <span className="pf-l">Niches {!locked && <Req />} <small>Same categories as TikTok Shop. Sellers match samples by them.</small></span>
+                {locked ? (
+                  <b className="pf-v">{[niche, sub1, sub2].filter(Boolean).join(" · ")}</b>
+                ) : (
+                  <span className="pf-niches">
+                    <select className="np-input" value={niche} onChange={(e) => setNiche(e.target.value)} aria-label="Main niche">
+                      {NICHES.map((n) => <option key={n}>{n}</option>)}
+                    </select>
+                    <select className="np-input" value={sub1} onChange={(e) => setSub1(e.target.value)} aria-label="Second niche, optional">
+                      <option value="">2nd (optional)</option>
+                      {NICHES.filter((n) => n !== niche).map((n) => <option key={n}>{n}</option>)}
+                    </select>
+                    <select className="np-input" value={sub2} onChange={(e) => setSub2(e.target.value)} aria-label="Third niche, optional">
+                      <option value="">3rd (optional)</option>
+                      {NICHES.filter((n) => n !== niche && n !== sub1).map((n) => <option key={n}>{n}</option>)}
+                    </select>
+                  </span>
+                )}
               </div>
             </div>
-            <div className="cr2-cell">
-              <label htmlFor="cr2-n1">Main niche</label>
-              <select id="cr2-n1" className="np-input val" value={niche} onChange={(e) => setNiche(e.target.value)}>
-                {NICHES.map((n) => <option key={n}>{n}</option>)}
-              </select>
-            </div>
-            <div className="cr2-cell">
-              <label htmlFor="cr2-n2">Second niche <span className="v2-small" style={{ fontWeight: 600 }}>optional</span></label>
-              <select id="cr2-n2" className="np-input val" value={sub1} onChange={(e) => setSub1(e.target.value)}>
-                <option value="">None</option>
-                {NICHES.filter((n) => n !== niche).map((n) => <option key={n}>{n}</option>)}
-              </select>
-            </div>
-            <div className="cr2-cell">
-              <label htmlFor="cr2-n3">Third niche <span className="v2-small" style={{ fontWeight: 600 }}>optional</span></label>
-              <select id="cr2-n3" className="np-input val" value={sub2} onChange={(e) => setSub2(e.target.value)}>
-                <option value="">None</option>
-                {NICHES.filter((n) => n !== niche && n !== sub1).map((n) => <option key={n}>{n}</option>)}
-              </select>
+
+            {profileErrors.length > 0 && tried && <ul className="pf-err" role="alert">{profileErrors.map((x) => <li key={x}>{x}</li>)}</ul>}
+            <div className="pf-foot">
+              {locked ? (
+                <>
+                  <span>Need to change something? Our support team updates it for you.</span>
+                  <button type="button" className="btn-outline v2-btn-sm" onClick={() => setChangeSheet(true)}><Icon name="whatsapp" size={15} /> Contact support</button>
+                </>
+              ) : (
+                <>
+                  <span>Check it carefully: once saved, only support can change it.</span>
+                  <button type="button" className="np-btn" onClick={() => { setTried(true); if (!profileErrors.length) setConfirmSave(true); }}>Save profile</button>
+                </>
+              )}
             </div>
           </div>
-          <p>Sellers use your niche, type and gender to match samples and campaigns. Same categories as TikTok Shop.</p>
-          <button type="button" className="np-btn" style={{ alignSelf: "flex-start", marginLeft: 0 }} onClick={() => toast("Profile saved")}>Save profile</button>
         </section>
 
         <section className="cr2-group">
@@ -479,9 +528,36 @@ export default function Account() {
           </>
         )}
       </div>
+      {confirmSave && (
+        <Sheet title="Save your profile?" onClose={() => setConfirmSave(false)}>
+          <p className="v2-muted" style={{ margin: 0 }}>After saving, you can&apos;t change it yourself. If something needs changing later, our support team does it for you.</p>
+          <dl className="pf-sum">
+            <div><dt>Name</dt><dd>{name}</dd></div>
+            <div><dt>State</dt><dd>{state}</dd></div>
+            <div><dt>WhatsApp</dt><dd>{cc} {local ? prettyNum(cc, local) : ""}</dd></div>
+            <div><dt>Gender</dt><dd>{gender}</dd></div>
+            <div><dt>Creator type</dt><dd>{types.join(", ")}</dd></div>
+            <div><dt>Niches</dt><dd>{[niche, sub1, sub2].filter(Boolean).join(" · ")}</dd></div>
+          </dl>
+          <button type="button" className="np-btn" onClick={() => { setLocked(true); setConfirmSave(false); toast("Profile saved"); }}>Save profile</button>
+          <button type="button" className="btn-outline" style={{ height: 48 }} onClick={() => setConfirmSave(false)}>Go back and edit</button>
+        </Sheet>
+      )}
+      {changeSheet && (
+        <Sheet title="Ask support to change your profile" onClose={() => setChangeSheet(false)}>
+          <label className="v2-field">What to change
+            <select className="np-input" value={change.what} onChange={(e) => setChange({ ...change, what: e.target.value })}>
+              {["Name", "State", "WhatsApp number", "Gender", "Creator type", "Niches"].map((x) => <option key={x}>{x}</option>)}
+            </select>
+          </label>
+          <label className="v2-field">Change it to<input className="np-input" value={change.to} onChange={(e) => setChange({ ...change, to: e.target.value })} placeholder="The new value" /></label>
+          <label className="v2-field">Why <span className="pf-opt">Optional</span><textarea className="np-input" rows={2} value={change.why} onChange={(e) => setChange({ ...change, why: e.target.value })} placeholder="e.g. I changed my number" /></label>
+          <button type="button" className="np-btn" disabled={!change.to.trim()} onClick={() => { setChangeSheet(false); setChange({ what: "WhatsApp number", to: "", why: "" }); toast("Sent to support. We'll reply on WhatsApp within 1 working day."); }}>Send to support</button>
+        </Sheet>
+      )}
       {waSheet && (
         <Sheet title="Verify with WhatsApp" onClose={() => setWaSheet(false)}>
-          <p className="v2-muted" style={{ margin: 0 }}>Takes 10 seconds and it&apos;s free. It proves {intl} really has WhatsApp, so the team can reach you about samples.</p>
+          <p className="v2-muted" style={{ margin: 0 }}>Takes 10 seconds and it&apos;s free. It proves {cc} {local && prettyNum(cc, local)} really has WhatsApp, so the team can reach you about samples.</p>
           <ol className="cr2-steps">
             <li><i>1</i><span><b>Tap Open WhatsApp.</b> WhatsApp opens with a message already written, with your code in it.</span></li>
             <li><i>2</i><span><b>Send it</b> without changing anything.</span></li>

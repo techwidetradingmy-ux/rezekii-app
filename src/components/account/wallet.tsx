@@ -8,51 +8,29 @@ import { ShareButton } from "@/components/creator2/bits";
 import { CREATOR, LEDGER } from "@/lib/mock";
 import "@/app/creator2.css";
 
-const SPLIT = { available: 1150, reserved: 100, expiring: 200 };
+/** Credits that expire soonest (credits last 12 months; the oldest are used first). */
+const EXPIRING = 200;
 
 /** Wallet (in My account): credits balance and every credit in and out. */
 export function Wallet() {
   const [show, setShow] = useState<"All" | "Earned" | "Used">("All");
   const rows = LEDGER.filter((l) => (show === "All" ? true : show === "Earned" ? l.amount > 0 : l.amount < 0));
-  const earned = LEDGER.filter((l) => l.amount > 0).reduce((s, l) => s + l.amount, 0);
 
   return (
     <div className="v2-stack" style={{ gap: 20 }}>
-      <div className="acc-head"><span className="v2-small">Credits you earn from missions and referrals</span>
-        <ShareButton big={`${CREATOR.credits.toLocaleString("en-MY")} credits`} label="Earned on Rezekii" lines={["From posting and inviting", `${CREATOR.streak} days in a row`]} />
-      </div>
-
+      {/* Owner, 28 Oct 2026: a simple wallet. One big balance, when credits expire, and two buttons. */}
       <section className="cr2-balance" aria-label="Credits balance">
-        <small>Balance</small>
+        <small>Your credits</small>
         <div className="big">
           <b><Count value={CREATOR.credits} /></b>
-          <span>credits</span>
         </div>
-        <div className="cr2-bsplit">
-          <span>Available<b>{SPLIT.available.toLocaleString("en-MY")}</b></span>
-          <span>Reserved<b>{SPLIT.reserved}</b></span>
-          <span>Expiring in 30 days<b>{SPLIT.expiring}</b></span>
+        <span className="cr2-exp"><Icon name="clock" size={14} /> {EXPIRING} expire on 27 Nov</span>
+        <div className="cr2-bacts">
+          <Link href="/app/rewards" className="cr2-bbtn"><Icon name="gift" size={16} /> Earn more</Link>
+          <ShareButton big={`${CREATOR.credits.toLocaleString("en-MY")} credits`} label="Earned on Rezekii" lines={["From posting and inviting", `${CREATOR.streak} days in a row`]} />
         </div>
       </section>
-
-      <div className="v2-alert">
-        <span>Credits are not cash and can&apos;t be withdrawn. Use them inside Rezekii, for example for AI scripts.</span>
-      </div>
-
-      <div className="v2-grid3">
-        <div className="v2-card tight flat">
-          <span className="v2-small">Reserved</span>
-          <span style={{ fontSize: 14, lineHeight: 1.45 }}>Held for a job that&apos;s still running. If it fails, they come back.</span>
-        </div>
-        <div className="v2-card tight flat">
-          <span className="v2-small">Expiring soon</span>
-          <span style={{ fontSize: 14, lineHeight: 1.45 }}>Credits last 12 months. The oldest are used first, so 200 expire by 27 Nov if unused.</span>
-        </div>
-        <Link href="/app/rewards" className="v2-card tight flat" style={{ textDecoration: "none", color: "var(--text)" }}>
-          <span className="v2-small">Earn more</span>
-          <span style={{ fontSize: 14, lineHeight: 1.45, display: "flex", alignItems: "center", gap: 6 }}>Open today&apos;s chests and finish your missions <Icon name="arrow" size={15} /></span>
-        </Link>
-      </div>
+      <p className="v2-small" style={{ margin: "-8px 0 0" }}>Credits aren&apos;t cash. Use them for AI tools in Rezekii.</p>
 
       <section className="v2-card">
         <div className="v2-card-h">
@@ -75,7 +53,6 @@ export function Wallet() {
           })}
           {rows.length === 0 && <p className="v2-muted" style={{ margin: "12px 0 0" }}>Nothing here yet.</p>}
         </div>
-        <span className="v2-small">Earned in this list: +{earned} credits. Every change comes from the ledger, so the balance always adds up.</span>
       </section>
     </div>
   );
