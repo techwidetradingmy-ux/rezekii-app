@@ -12,7 +12,7 @@ export const MENUS: Record<AppKind, Section[]> = {
       href: "/app/data", label: "Analytics", icon: "chart",
       pages: [["/app/data", "Overview"], ["/app/data/performance", "Performance"], ["/app/data/risk", "Risk check"], ["/app/data/payouts", "Payouts"]],
     },
-    { href: "/app/publish", label: "Publish", icon: "send", pages: [["/app/publish", "Cross-Channel Posting"], ["/app/publish/plan", "Today's Ideas"], ["/app/publish/calendar", "Content Calendar"]] },
+    { href: "/app/publish", label: "Publish", icon: "send", pages: [["/app/publish", "New Post"], ["/app/publish/plan", "Today's Ideas"], ["/app/publish/calendar", "Content Calendar"]] },
     { href: "/app/rewards", label: "Missions", icon: "gift", pages: [] },
   ],
   seller: [
@@ -25,7 +25,7 @@ export const MENUS: Record<AppKind, Section[]> = {
       href: "/seller/app/results", label: "Results", icon: "chart",
       pages: [["/seller/app/results", "TAP performance"], ["/seller/app/results/samples", "Where samples went"], ["/seller/app/results/competitors", "AI competitors"]],
     },
-    { href: "/seller/app/publish", label: "Publish", icon: "send", pages: [["/seller/app/publish", "Cross-Channel Posting"], ["/seller/app/publish/calendar", "Content Calendar"]] },
+    { href: "/seller/app/publish", label: "Publish", icon: "send", pages: [["/seller/app/publish", "New Post"], ["/seller/app/publish/calendar", "Content Calendar"]] },
     { href: "/seller/app/rewards", label: "Rewards", icon: "gift", pages: [["/seller/app/rewards", "Missions"], ["/seller/app/rewards/referral", "Referral"], ["/seller/app/rewards/wallet", "Wallet"]] },
   ],
   admin: [
