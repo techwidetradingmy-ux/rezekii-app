@@ -9,7 +9,6 @@ import { useSideScroll } from "@/components/side-scroll";
 import { PlatformIcon } from "@/components/creator2/bits";
 import { CREATOR, MY_SAMPLES, SOCIALS } from "@/lib/mock";
 import { MySamples } from "@/components/creator1/my-samples";
-import { SCOPES } from "@/components/consent";
 import { LevelFace } from "@/components/level-face";
 import { LevelBadges } from "@/components/account/level-badges";
 import { Referral } from "@/components/account/referral";
@@ -379,17 +378,6 @@ export default function Account() {
               </div>
             ))}
           </div>
-          {consent && (
-            <div className="cs-record">
-              <Icon name="shield" size={16} />
-              <span>
-                {consent.unlinkedAt
-                  ? <>TikTok Shop unlinked on {consent.unlinkedAt}. We stopped reading it and delete its data within 30 days.</>
-                  : <>Agreed to Terms v{consent.terms} and Privacy Policy v{consent.privacy} on {consent.at}. We read: {SCOPES.creator.join(", ").toLowerCase()}.</>}
-              </span>
-            </div>
-          )}
-          <p>We never see your passwords. Disconnect anytime in each app.</p>
         </section>
         )}
 
