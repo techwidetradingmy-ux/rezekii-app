@@ -208,6 +208,8 @@ export const INVITES = [
 
 export const LEDGER = [
   { when: "Today 10:02", what: "Mission: Post today (tier 3)", amount: 20 },
+  { when: "Today 09:40", what: "Cross-channel post · 3 channels", amount: -15 },
+  { when: "Yesterday", what: "Refund: Instagram post failed", amount: 5 },
   { when: "Yesterday", what: "Referral: @hafiz.tech", amount: 100 },
   { when: "21 Oct", what: "AI script generation", amount: -12 },
   { when: "21 Oct", what: "Refund: generation failed", amount: 12 },

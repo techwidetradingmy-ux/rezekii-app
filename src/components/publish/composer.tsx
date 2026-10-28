@@ -6,7 +6,7 @@ import { useDemo } from "@/components/demo";
 import { Icon } from "@/components/icons";
 import { Sheet } from "@/components/ui";
 import { PlatformIcon } from "@/components/creator2/bits";
-import type { PubBrand, PubChannel, PublishSetup } from "@/lib/mock-publish";
+import { POST_CREDITS, type PubBrand, type PubChannel, type PublishSetup } from "@/lib/mock-publish";
 import { PhonePreview, type Who } from "./phone-previews";
 import {
   APPS, CAPTION_MAX, COLLABORATORS_MAX, COMMENT_MAX, ICON, NAMES, PRIVACY, REPLY_CONTROLS, TAGS_MAX, UNIT,
@@ -110,7 +110,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   const [tried, setTried] = useState(false);
   const [flash, setFlash] = useState<Sec | "">("");
   const [check, setCheck] = useState<"" | "busy" | "ok">("");
-  const [done, setDone] = useState<{ summary: string; when: When; at: string } | null>(null);
+  const [done, setDone] = useState<{ summary: string; when: When; at: string; cost: number } | null>(null);
 
   const byKey = useMemo(() => new Map(channels.map((c) => [c.key, c])), [channels]);
   const connected = useMemo(() => new Set(channels.filter((c) => c.status === "active").map((c) => c.key)), [channels]);
@@ -171,6 +171,8 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   const cover = source === "upload" && sample && !file ? setup.sample.cover : null;
   const hasVideo = source === "upload" ? !!file || sample : /^https:\/\/\S+$/.test(linkUrl);
 
+  // Cross-channel posting costs credits per channel (owner, 28 Oct 2026). Drafts are free; failed or cancelled channels get theirs back.
+  const cost = when === "draft" ? 0 : keys.length * POST_CREDITS;
   const problems = ((): Problem[] => {
     const out: Problem[] = [];
     if (!keys.length) out.push(["Pick at least one channel to post to.", "channels"]);
@@ -190,6 +192,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
       if (g.bad.length) out.push([`Instagram tagged people: "${g.bad[0]}" isn't an Instagram username.`, "settings"]);
     }
     if (when === "pick" && !pickAt) out.push(["Pick a date and time.", "when"]);
+    if (cost > setup.credits) out.push([`Not enough credits: this needs ${cost}, you have ${setup.credits.toLocaleString("en-MY")}. Earn more in Missions, or save it as a draft.`, "when"]);
     return out;
   })();
   const shown = tried ? problems : [];
@@ -247,7 +250,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     setBusy(when === "draft" ? "Saving…" : "Scheduling…");
     window.setTimeout(() => {
       setBusy("");
-      setDone({ summary: summary(), when, at: when === "pick" ? pretty(pickAt) : RECOMMENDED });
+      setDone({ summary: summary(), when, at: when === "pick" ? pretty(pickAt) : RECOMMENDED, cost });
     }, 700);
   }
 
@@ -260,6 +263,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
           {done.when === "draft" ? `Saved in Rezekii for ${done.summary}.` : done.when === "now" ? `${done.summary}: posting now.` : `${done.summary}: ${done.at} (Malaysia time).`} Follow each
           channel&apos;s live status in your Content Calendar, and edit or cancel it there until it starts sending.
         </p>
+        {done.cost > 0 && <p className="pb-sent-cost">{done.cost} credits used. If a channel fails or you cancel it, its credits come back.</p>}
         <div className="np-row">
           <Link href={setup.calendar} className="np-btn">Open Content Calendar</Link>
           <button type="button" className="btn-outline" onClick={onNew}>New Post</button>
@@ -607,8 +611,14 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
           )}
           {ttKey && mode === "direct" && when !== "draft" && <p className="np-consent">{consentLine(promo.on, promo.branded)}</p>}
           <button type="submit" className="np-btn np-submit" disabled={!!busy}>
-            {busy || `${when === "draft" ? "Save draft" : when === "now" ? "Post now" : "Schedule"} · ${keys.length === 1 ? "1 channel" : `${keys.length} channels`}`}
+            {busy || `${when === "draft" ? "Save draft" : when === "now" ? "Post now" : "Schedule"} · ${keys.length === 1 ? "1 channel" : `${keys.length} channels`}${cost ? ` · ${cost} credits` : ""}`}
           </button>
+          <p className="pb-cost">
+            <Icon name="wallet" size={14} />
+            <span>
+              {POST_CREDITS} credits per channel{when === "draft" ? ", charged when you schedule it" : ""}. You have {setup.credits.toLocaleString("en-MY")}. A channel that fails or is cancelled gets its credits back. <Link href={setup.earn}>Earn more</Link>
+            </span>
+          </p>
         </aside>
       </form>
 

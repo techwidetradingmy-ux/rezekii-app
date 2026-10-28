@@ -3,6 +3,11 @@
  * connected or sent anywhere.
  */
 import type { Channel } from "@/components/publish/rules";
+import { CREATOR } from "./mock";
+import { SELLER_CREDITS } from "./mock-seller";
+
+/** Cross-channel posting costs credits per channel (owner, 28 Oct 2026). Admin can change it. */
+export const POST_CREDITS = 5;
 
 export type PubChannel = { key: string; app: Channel; name: string; sub: string; initials: string; color: string; status: "active" | "reconnect" };
 export type PubBrand = { id: string; name: string; channels: string[] };
@@ -19,6 +24,9 @@ export type PublishSetup = {
   calendar: string;
   /** TikTok's video pre-check (creator API: violations and quality before posting). */
   precheck?: boolean;
+  /** Wallet balance, and where to earn more credits. */
+  credits: number;
+  earn: string;
 };
 
 const ch = (key: string, app: Channel, name: string, sub: string, initials: string, color: string, status: PubChannel["status"] = "active"): PubChannel => ({ key, app, name, sub, initials, color, status });
@@ -44,6 +52,8 @@ export const CREATOR_SETUP: PublishSetup = {
   },
   calendar: "/app/publish/calendar",
   precheck: true,
+  credits: CREATOR.credits,
+  earn: "/app/rewards",
 };
 
 export const SELLER_SETUP: PublishSetup = {
@@ -72,6 +82,8 @@ export const SELLER_SETUP: PublishSetup = {
     seconds: 34,
   },
   calendar: "/seller/app/publish/calendar",
+  credits: SELLER_CREDITS,
+  earn: "/seller/app/rewards",
 };
 
 /* ---------------- Content calendar ---------------- */

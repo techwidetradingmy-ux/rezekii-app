@@ -8,6 +8,7 @@ import { useDemo } from "@/components/demo";
 import { Title } from "@/components/ui";
 import { Pill, Switch } from "@/components/admin/bits";
 import { FLAGS } from "@/lib/mock-admin";
+import { POST_CREDITS } from "@/lib/mock-publish";
 
 type Heat = { label: string; note: string; lo: number; hi: number | null };
 
@@ -41,6 +42,7 @@ export default function SystemSettings() {
   const [wa, setWa] = useState({ verify: true, replies: true, link: true });
   const [flags, setFlags] = useState(FLAGS);
   const [terms, setTerms] = useState({ v: 2, since: "24 Oct 2026", agreed: 41 });
+  const [perChannel, setPerChannel] = useState(POST_CREDITS);
 
   const addUplift = () => {
     const n = Math.round(Number(newUp));
@@ -113,6 +115,15 @@ export default function SystemSettings() {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section className="v2-card">
+        <h2 className="v2-h2">Cross-channel posting price</h2>
+        <span className="v2-small">Credits per channel, for creators and sellers. Drafts are free; a channel that fails or is cancelled gets its credits back. A new price applies to posts scheduled after it&apos;s saved.</span>
+        <div className="v2-row" style={{ gap: 10 }}>
+          <Stepper label="credits per channel" value={perChannel} min={0} max={50} onChange={touch(setPerChannel)} />
+          <span className="v2-small">credits per channel · a post to 4 channels costs {perChannel * 4}</span>
         </div>
       </section>
 

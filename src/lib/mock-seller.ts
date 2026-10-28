@@ -229,10 +229,11 @@ export const SELLER_INVITES = [
 ];
 
 export const SELLER_LEDGER = [
-  { when: "Today 08:15", what: "Referral: Bayu Sports Gear", amount: 200 },
+  { when: "Today 09:10", what: "Cross-channel post · 4 channels", amount: -20 },
+  { when: "Today 08:15", what: "Referral: Bayu Sports Gear", amount: 100 },
   { when: "19 Oct", what: "Mission: Submit your first products", amount: 100 },
-  { when: "11 Oct", what: "Referral: @hana.masak", amount: 200 },
-  { when: "4 Oct", what: "Referral: Rumah Rapi MY", amount: 200 },
+  { when: "11 Oct", what: "Referral: @hana.masak", amount: 100 },
+  { when: "4 Oct", what: "Referral: Rumah Rapi MY", amount: 100 },
   { when: "13 Sep", what: "Mission: Add your contact name and phone", amount: 50 },
   { when: "12 Sep", what: "Mission: Connect Seller Center", amount: 100 },
 ];

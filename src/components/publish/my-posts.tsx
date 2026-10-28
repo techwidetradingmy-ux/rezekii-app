@@ -6,7 +6,7 @@ import { useDemo } from "@/components/demo";
 import { Sheet, Title } from "@/components/ui";
 import { CalendarPicker, dayName } from "@/components/calendar-picker";
 import { PlatformIcon } from "@/components/creator2/bits";
-import type { MyPost, PostStatus, PostTarget, PublishSetup } from "@/lib/mock-publish";
+import { POST_CREDITS, type MyPost, type PostStatus, type PostTarget, type PublishSetup } from "@/lib/mock-publish";
 import { CAPTION_MAX, ICON, NAMES, type Channel } from "./rules";
 import "@/app/creator2.css";
 import "@/app/publish.css";
@@ -107,13 +107,13 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
     setPosts((all) => all.map((p) => (p.id !== postId ? p : { ...p, targets: p.targets.map((t) => (t.key === key ? { ...t, ...patch } : t)) })));
   const fix = (p: MyPost, t: PostTarget) => {
     const name = `${NAMES[appOf(t)]} ${chan(t.key)?.name ?? ""}`.trim();
-    toast(t.fix === "Reconnect" ? `${name} reconnected. Posting again…` : `Trying ${name} again…`);
+    toast(`${t.fix === "Reconnect" ? `${name} reconnected. Posting again…` : `Trying ${name} again…`} ${POST_CREDITS} credits`);
     setTarget(p.id, t.key, { status: "uploading", reason: undefined, fix: undefined });
   };
   const cancel = (p: MyPost) => {
     setPosts((all) => all.map((x) => (x.id !== p.id ? x : { ...x, date: "", time: "", targets: x.targets.map((t) => ({ ...t, status: "draft" as const })) })));
     setCancelling(null);
-    toast("Cancelled. The post is kept in your drafts.");
+    toast(`Cancelled. ${p.targets.length * POST_CREDITS} credits are back in your wallet; the post is kept in your drafts.`);
   };
 
   // The month map: each day shows a dot per post, in its group's colour.
@@ -148,7 +148,7 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
                   {t.status === "posted" && t.views ? <small className="sq-views"><Icon name="eye" size={13} /> {views(t.views)} views</small> : null}
                   {t.status === "failed" && (
                     <span className="sq-why">
-                      <small>{t.reason}</small>
+                      <small>{t.reason} · {POST_CREDITS} credits returned</small>
                       <button type="button" className={t.fix === "Reconnect" ? "np-btn v2-btn-sm" : "btn-outline v2-btn-sm"} onClick={() => fix(p, t)}>{t.fix ?? "Retry"}</button>
                     </span>
                   )}

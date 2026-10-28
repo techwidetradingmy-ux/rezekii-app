@@ -440,3 +440,9 @@
   .sq-page > .sq-map { grid-column: 1; grid-row: 3 / span 12; position: sticky; top: 84px; }
   .sq-page .sq-day { height: 50px; }
 }
+
+/* Credits per channel (owner, 28 Oct 2026): the cost sits right under the post button. */
+.pb-cost { margin: 0; display: flex; gap: 6px; align-items: flex-start; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+.pb-cost svg { flex-shrink: 0; margin-top: 2px; }
+.pb-cost a { color: var(--gink); font-weight: 800; }
+.pb-sent-cost { margin: 0; font-size: 13px; font-weight: 700; color: var(--gink); }
