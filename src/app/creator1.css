@@ -1182,3 +1182,18 @@ button.cr1-note-main { padding: 0; border: 0; background: none; color: var(--tex
 @media (max-width: 760px) { .cr1-note-tag { font-size: 13px; } }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cr1-urgent { background: linear-gradient(180deg, #3a1714, var(--surface) 60%); border-color: #6b2620; } }
 :root[data-theme="dark"] .cr1-urgent { background: linear-gradient(180deg, #3a1714, var(--surface) 60%); border-color: #6b2620; }
+/* Story covers (owner, 29 Oct 2026): the Rezekii mark is small; the creator is the focus. */
+.mg-mast { gap: 1.2cqw; font-size: 3.8cqw; letter-spacing: 0.06em; padding: 1cqw 2.2cqw 1cqw 1cqw; border-radius: 99px; background: rgba(0, 0, 0, 0.28); }
+.mg-mast img { width: 4.6cqw; height: 4.6cqw; padding: 0.5cqw; border-radius: 1.3cqw; }
+/* Scan button feels alive (owner, 29 Oct 2026): the icon breathes and the ring glows while idle, it lifts on hover, fills
+   green while held, and phones give a small buzz on press and when the scan is ready. */
+.sh-core > svg:not(.sh-ring) { animation: shBreath 2.4s ease-in-out infinite; }
+@keyframes shBreath { 0%, 100% { transform: scale(1); } 50% { transform: scale(0.88); } }
+.sh-ring circle.track { animation: shGlow 2.4s ease-in-out infinite; }
+@keyframes shGlow { 0%, 100% { stroke: rgba(0, 192, 115, 0.16); } 50% { stroke: rgba(0, 192, 115, 0.45); } }
+@media (hover: hover) { .sh-core:not(:disabled):hover { transform: translateY(-3px) scale(1.04); box-shadow: 0 18px 32px -12px rgba(0, 110, 64, 0.55), inset 0 0 0 1px rgba(0, 192, 115, 0.35); } }
+.sh-core.holding { background: color-mix(in srgb, #00c073 calc(var(--hold, 0) * 100%), var(--surface)); color: color-mix(in srgb, #ffffff calc(var(--hold, 0) * 100%), #00a862); transform: scale(calc(0.97 - var(--hold, 0) * 0.03)); }
+.sh-core.holding small { color: inherit; }
+.sh-core.holding > svg:not(.sh-ring), .sh-core.full > svg:not(.sh-ring) { animation: none; }
+.sh-core.holding .sh-ring circle.track, .sh-core.full .sh-ring circle.track { animation: none; }
+@media (prefers-reduced-motion: reduce) { .sh-core > svg:not(.sh-ring), .sh-ring circle.track { animation: none; } }

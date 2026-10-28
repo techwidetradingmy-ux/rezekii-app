@@ -133,6 +133,7 @@ export function ScanHub() {
     if (scanning) return;
     if (!linked) return setLinked(true);
     e.currentTarget.setPointerCapture(e.pointerId);
+    navigator.vibrate?.(8);
     holdFrom.current = performance.now();
     const tick = (t: number) => {
       const k = Math.min(1, (t - holdFrom.current) / HOLD_MS);
@@ -224,7 +225,7 @@ export function ScanHub() {
             {/* The big button in the middle (owner, 28 Oct 2026): press and hold to scan. */}
             <button
               type="button"
-              className={`sh-core${hold >= 1 ? " full" : ""}`}
+              className={`sh-core${hold >= 1 ? " full" : hold > 0 ? " holding" : ""}`}
               onPointerDown={holdDown}
               onPointerUp={holdUp}
               onPointerCancel={holdUp}

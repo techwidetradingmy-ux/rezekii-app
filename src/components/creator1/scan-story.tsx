@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
-import { useDemo } from "@/components/demo";
 import { Count, Portal, ShareSheet } from "@/components/ui";
 import { ANALYTICS, CREATOR, product, rm, short } from "@/lib/mock";
 import { ORDER_HISTORY } from "@/lib/mock-creator1";
@@ -65,9 +64,10 @@ type Slide = "found" | "best" | "money" | "checked" | "end";
  * The last page is where she picks which raises to add.
  */
 export function ScanStory({ checked, items, onAdd, onClose }: { checked: number; items: StoryItem[]; onAdd: (ids: string[]) => void; onClose: () => void }) {
-  const { toast } = useDemo();
   const [i, setI] = useState(0);
   const [share, setShare] = useState<Slide | null>(null);
+  // Invite affiliate friends to try the scan, free (owner, 29 Oct 2026).
+  const [invite, setInvite] = useState(false);
   // All are ticked to start; she can raise one, some or all. Ratings stay out of the recap (Risk Check covers them).
   const open = items.filter((it) => !it.added);
   const [pick, setPick] = useState<string[]>(() => open.map((it) => it.id));
@@ -137,6 +137,19 @@ export function ScanStory({ checked, items, onAdd, onClose }: { checked: number;
     return null;
   };
 
+  if (invite) {
+    return (
+      <ShareSheet
+        title="Invite friends to scan free"
+        onClose={() => setInvite(false)}
+        moment="invite"
+        big="Scan your showcase free"
+        label="Find better commission on Rezekii"
+        lines={["Same products, better rates", "Free for TikTok creators"]}
+        caption={`I just scanned my TikTok Shop showcase and found better commission on products I already sell 💸 Free to try for affiliates: ${LINK} #RezekiiScan #TikTokShopMY`}
+      />
+    );
+  }
   const shared = share ? cover(share, false) : null;
   if (shared) {
     const { caption, ...card } = shared;
@@ -201,7 +214,7 @@ export function ScanStory({ checked, items, onAdd, onClose }: { checked: number;
                   <Icon name="plus" size={18} width={2.6} /> {!pick.length ? "Tick at least one" : pick.length === open.length && open.length > 1 ? `Add all ${pick.length}` : `Add ${pick.length}`}
                 </button>
               )}
-              <button type="button" className="ss-btn" onClick={() => toast(`Opening WhatsApp with your link: ${LINK}`)}><Icon name="users" size={18} /> Share with friends</button>
+              <button type="button" className="ss-btn" onClick={() => setInvite(true)}><Icon name="users" size={18} /> Invite friends to scan free</button>
             </div>
           )}
         </div>

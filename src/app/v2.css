@@ -858,3 +858,10 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { display
 :root[data-theme="dark"] .v2-aitag { background: #2a2350; color: #b9a8ff; }
 .sh-kicker .v2-aitag { margin-left: 6px; }
 @media (max-width: 760px) { .v2-aitag { font-size: 13px; height: 22px; } }
+/* The Scan tab always glows softly so it reads as tappable (owner, 29 Oct 2026). */
+.nv-scan-btn { position: relative; }
+.nv-scan-btn::after { content: ""; position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 0 rgba(0, 192, 115, 0.55); animation: nvGlow 2.2s ease-out infinite; pointer-events: none; }
+@keyframes nvGlow { 0% { box-shadow: 0 0 0 0 rgba(0, 192, 115, 0.55); } 70% { box-shadow: 0 0 0 12px rgba(0, 192, 115, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 192, 115, 0); } }
+.nv-scan-btn svg { animation: nvBreath 2.2s ease-in-out infinite; }
+@keyframes nvBreath { 0%, 100% { transform: scale(1); } 50% { transform: scale(0.9); } }
+@media (prefers-reduced-motion: reduce) { .nv-scan-btn::after, .nv-scan-btn svg { animation: none; } }
