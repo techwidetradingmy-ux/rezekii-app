@@ -92,13 +92,13 @@ export function Stat({ label, value, note, tone }: { label: React.ReactNode; val
 }
 
 /** Horizontal bars: label, meter, value. */
-export function Bars({ rows, tone }: { rows: { label: string; value: number; display?: string; tone?: "red" | "amber" | "blue" }[]; tone?: "red" | "amber" | "blue" }) {
+export function Bars({ rows, tone }: { rows: { label: string; value: number; display?: string; tone?: "red" | "amber" | "blue"; onPick?: () => void }[]; tone?: "red" | "amber" | "blue" }) {
   const max = Math.max(...rows.map((r) => r.value), 1);
   return (
     <div className="v2-bars">
       {rows.map((r, i) => (
         <div className="v2-bar" key={r.label}>
-          <span title={r.label}>{r.label}</span>
+          {r.onPick ? <button type="button" className="v2-bar-pick" title={r.label} onClick={r.onPick}>{r.label}</button> : <span title={r.label}>{r.label}</span>}
           <span className="v2-meter"><i className={r.tone ?? tone} style={{ width: `${(r.value / max) * 100}%`, animationDelay: `${i * 60}ms` }} /></span>
           <b>{r.display ?? r.value}</b>
         </div>
@@ -180,6 +180,41 @@ export function Sheet({ title, onClose, children, wide = false }: { title: strin
         </div>
       </div>
     </Portal>
+  );
+}
+
+/**
+ * Before removing products from her showcase (owner, 28 Oct 2026): TikTok doesn't say whether videos already linking a product
+ * keep working, so she sees the risk and confirms she takes responsibility. The Remove button works only after the tick.
+ */
+export function RemoveWarn({ items, onConfirm, onClose }: { items: { id: string; name: string; img: string }[]; onConfirm: () => void; onClose: () => void }) {
+  const [ok, setOk] = useState(false);
+  const many = items.length > 1;
+  return (
+    <Sheet title={many ? `Remove ${items.length} products?` : "Remove this product?"} onClose={onClose}>
+      <div className="rw-items">
+        {items.slice(0, 4).map((p) => (
+          <span key={p.id}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={p.img} alt="" />
+            <b>{p.name}</b>
+          </span>
+        ))}
+        {items.length > 4 && <small>+{items.length - 4} more</small>}
+      </div>
+      <ul className="rw-risk">
+        <li><Icon name="alert" size={16} /> TikTok may also remove {many ? "their links" : "its link"} from your videos and LIVE. Those videos could stop earning.</li>
+        <li><Icon name="alert" size={16} /> A locked commission rate may end.</li>
+      </ul>
+      <label className="rw-ok">
+        <input type="checkbox" checked={ok} onChange={(e) => setOk(e.target.checked)} />
+        <span>I understand the risk and take responsibility for this.</span>
+      </label>
+      <div className="v2-row" style={{ gap: 8 }}>
+        <button type="button" className="btn-outline" style={{ flex: 1 }} onClick={onClose}>Keep</button>
+        <button type="button" className="np-btn rw-go" style={{ flex: 1 }} disabled={!ok} onClick={onConfirm}>Remove</button>
+      </div>
+    </Sheet>
   );
 }
 

@@ -6,7 +6,8 @@ import { Icon } from "@/components/icons";
 import { Bars, Lock, Seg, Stat, Title } from "@/components/ui";
 import { RatingScan } from "@/components/creator1/rating-scan";
 import { ANALYTICS, product, rm } from "@/lib/mock";
-import { SHORT, VIDEOS } from "@/lib/mock-creator2";
+import { SHORT, VIDEOS, type VideoRow } from "@/lib/mock-creator2";
+import { ProductSheet, VideoSheet } from "@/components/creator2/view-sheets";
 import "@/app/creator2.css";
 
 const cancelled = (orders: number, rate: number) => Math.round((orders * rate) / 100);
@@ -18,6 +19,8 @@ const tone = (rate: number) => (rate > 15 ? "red" : rate > 10 ? "amber" : undefi
  */
 export default function DataRisk() {
   const [by, setBy] = useState<"By video" | "By product">("By video");
+  const [openVideo, setOpenVideo] = useState<VideoRow | null>(null);
+  const [openProduct, setOpenProduct] = useState<string | null>(null);
 
   const vids = VIDEOS.map((v) => ({ ...v, cancelled: cancelled(v.orders, v.cancel) }));
   const prods = ANALYTICS.byProduct.map((b) => ({ ...b, cancelled: cancelled(b.orders, b.cancel) }));
@@ -75,9 +78,9 @@ export default function DataRisk() {
         </div>
         <Lock what="cancel rates">
           {by === "By video" ? (
-            <Bars key="v" rows={[...vids].sort((a, b) => b.cancel - a.cancel).map((v) => ({ label: v.title, value: v.cancel, display: `${v.cancel}%`, tone: tone(v.cancel) }))} />
+            <Bars key="v" rows={[...vids].sort((a, b) => b.cancel - a.cancel).map((v) => ({ label: v.title, value: v.cancel, display: `${v.cancel}%`, tone: tone(v.cancel), onPick: () => setOpenVideo(VIDEOS.find((x) => x.id === v.id) ?? null) }))} />
           ) : (
-            <Bars key="p" rows={[...prods].sort((a, b) => b.cancel - a.cancel).map((b) => ({ label: SHORT[b.productId] ?? product(b.productId).name, value: b.cancel, display: `${b.cancel}%`, tone: tone(b.cancel) }))} />
+            <Bars key="p" rows={[...prods].sort((a, b) => b.cancel - a.cancel).map((b) => ({ label: SHORT[b.productId] ?? product(b.productId).name, value: b.cancel, display: `${b.cancel}%`, tone: tone(b.cancel), onPick: () => setOpenProduct(b.productId) }))} />
           )}
         </Lock>
         <div className="v2-tablewrap">
@@ -115,22 +118,9 @@ export default function DataRisk() {
         </div>
       </section>
 
-        <section className="v2-card cr2-attn">
-          <h2 className="v2-h2"><Icon name="video" size={20} /> High-risk videos</h2>
-          <p className="v2-small" style={{ margin: 0 }}>Over 15% cancelled. Your average: {ANALYTICS.cancelRate}%.</p>
-          {highRisk.map((v) => (
-            <div key={v.id} className="v2-stack" style={{ gap: 8, paddingTop: 12, borderTop: "1px solid var(--line)" }}>
-              <div className="v2-row" style={{ justifyContent: "space-between" }}>
-                <strong style={{ minWidth: 0 }}>{v.title}</strong>
-                <span className="badge badge-red">{v.cancel}%</span>
-              </div>
-              <span className="v2-small">{v.date} · {v.cancelled} cancelled, {v.refunds} refunded</span>
-              <ul className="cr2-do">{(ADVICE[v.id] ?? []).map((a) => <li key={a}>{a}</li>)}</ul>
-              <Link href="/app/data/performance" className="btn-outline v2-btn-sm" style={{ alignSelf: "flex-start" }}>See video</Link>
-            </div>
-          ))}
-        </section>
 
+      {openVideo && <VideoSheet video={openVideo} onClose={() => setOpenVideo(null)} />}
+      {openProduct && <ProductSheet productId={openProduct} onClose={() => setOpenProduct(null)} />}
     </div>
   );
 }

@@ -1094,3 +1094,4 @@ a.sh-go { text-decoration: none; }
   .sh-deckacts small { font-size: 13px; }
   .sh-lockline { font-size: 13px; }
 }
+.rc-name small.rc-bad { color: var(--red); font-weight: 700; }

@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
-import { Lock, Sheet } from "@/components/ui";
-import { ANALYTICS, product, rm, short } from "@/lib/mock";
+import { Lock } from "@/components/ui";
+import { VideoSheet } from "@/components/creator2/view-sheets";
+import { ANALYTICS, product, rm } from "@/lib/mock";
 import { PREV_ORDERS, SHORT, VIDEOS, type VideoRow } from "@/lib/mock-creator2";
 
 const COLORS = ["#00c073", "#2f80ed", "#f5a623", "#e8005a", "#8b7dff"];
@@ -98,22 +99,7 @@ export function ProductList() {
         </div>
       </Lock>
 
-      {video && (
-        <Sheet title="Top video" onClose={() => setVideo(null)}>
-          <div className="pd-player">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={product(video.productId).img} alt="" />
-            <span className="pd-play" aria-hidden="true"><Icon name="video" size={26} /></span>
-          </div>
-          <b style={{ fontSize: 16 }}>{video.title}</b>
-          <div className="cr2-mini">
-            <span><small>Views</small><b>{video.views === null ? "—" : short(video.views)}</b></span>
-            <span><small>Orders</small><b>{video.orders}</b></span>
-            <span><small>Commission</small><b>{rm(video.commission, 0)}</b></span>
-            <span><small>Posted</small><b>{video.date}</b></span>
-          </div>
-        </Sheet>
-      )}
+      {video && <VideoSheet video={video} onClose={() => setVideo(null)} />}
     </div>
   );
 }

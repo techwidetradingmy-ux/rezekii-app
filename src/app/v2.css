@@ -681,3 +681,21 @@ body { font-feature-settings: "tnum" 0; }
   .rf-note { font-size: 13px; }
 }
 @media (max-width: 760px) { .nv-bottom a, .badge { font-size: 13px; } }
+/* Remove-from-showcase warning (owner, 28 Oct 2026). */
+.rw-items { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.rw-items > span { display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 6px; border-radius: 12px; background: var(--surface2); min-width: 0; max-width: 100%; }
+.rw-items img { width: 36px; height: 36px; border-radius: 9px; object-fit: cover; flex-shrink: 0; }
+.rw-items b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rw-items small { font-size: 13px; color: var(--muted); font-weight: 700; }
+.rw-risk { list-style: none; margin: 0; padding: 12px 14px; border-radius: 14px; background: var(--asoft); color: var(--amber); display: grid; gap: 8px; font-size: 14px; font-weight: 700; line-height: 1.4; }
+.rw-risk li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 8px; align-items: start; }
+.rw-risk svg { margin-top: 2px; }
+.rw-ok { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; font-weight: 700; line-height: 1.4; cursor: pointer; }
+.rw-ok input { width: 20px; height: 20px; margin: 0; accent-color: #00c073; flex-shrink: 0; }
+.rw-go:disabled { opacity: 0.45; cursor: not-allowed; }
+/* Sub-menu: a soft fade on the right while there's more to scroll (owner, 28 Oct 2026). */
+.v2-subwrap .sub-menu { scroll-behavior: smooth; user-select: none; -webkit-user-select: none; }
+.v2-subwrap .sub-menu.more-right { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent); }
+.v2-bar-pick { padding: 0; border: 0; background: none; color: var(--text); font: inherit; font-weight: 600; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 3px; cursor: pointer; }
+.v2-bar-pick:hover { text-decoration-color: #00c073; color: var(--gink); }
+.ps-img { width: 100%; max-width: 280px; aspect-ratio: 1; object-fit: cover; border-radius: 18px; margin: 0 auto; }

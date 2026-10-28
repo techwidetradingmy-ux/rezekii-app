@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { Count, Flow, Lock } from "@/components/ui";
+import { Count, Flow, Lock, RemoveWarn } from "@/components/ui";
 import { CREATOR, PRODUCTS, rm } from "@/lib/mock";
 import "@/app/creator1.css";
 
@@ -41,10 +41,17 @@ export function RatingScan() {
   const danger = live.filter((p) => p.rating < DANGER);
   const low = live.filter((p) => p.rating >= DANGER);
   const healthy = CREATOR.showcaseSize - FLAGGED.length;
+  // Removing asks first: she sees the risk and confirms (owner, 28 Oct 2026).
+  const [ask, setAsk] = useState<string[] | null>(null);
   const remove = (ids: string[]) => {
     if (!linked) return setLinked(true);
-    setRemoved((r) => [...r, ...ids]);
-    toast(ids.length > 1 ? `${ids.length} products removed from your showcase` : "Removed from your showcase");
+    setAsk(ids);
+  };
+  const confirmRemove = () => {
+    if (!ask) return;
+    setRemoved((r) => [...r, ...ask]);
+    toast(ask.length > 1 ? `${ask.length} products removed from your showcase` : "Removed from your showcase");
+    setAsk(null);
   };
 
   const row = (p: (typeof PRODUCTS)[number]) => {
@@ -56,7 +63,7 @@ export function RatingScan() {
         <img src={p.img} alt="" />
         <span className="rc-name">
           <b>{p.name}</b>
-          <small>{p.shop} · {rm(p.price)} · {s.orders} orders · {s.cancel}% cancelled{s.returned ? ` · ${s.returned} returned` : ""}</small>
+          <small className={s.cancel > 10 ? "rc-bad" : undefined}>{s.cancel}% cancelled</small>
         </span>
         <span className="rc-stars" aria-label={`${p.rating.toFixed(1)} stars`}>
           <Icon name="star" size={14} width={2.4} /> {p.rating.toFixed(1)}
@@ -132,7 +139,7 @@ export function RatingScan() {
           <ul>{low.map(row)}</ul>
         </section>
       )}
-      <p className="cr2-note"><Icon name="shield" size={15} /><span>No need to delete old videos. Removing a product keeps earned commission.</span></p>
+      {ask && <RemoveWarn items={ask.map((id) => PRODUCTS.find((p) => p.id === id)!).map((p) => ({ id: p.id, name: p.name, img: p.img }))} onConfirm={confirmRemove} onClose={() => setAsk(null)} />}
     </>
   );
 }

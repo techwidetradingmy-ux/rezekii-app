@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { CalendarPicker, between, dayName, iso } from "@/components/calendar-picker";
 import { useDemo } from "@/components/demo";
-import { AiMark, Bars, Count, Lock, Progress, Seg, Stat, Tip, Title } from "@/components/ui";
+import { AiMark, Bars, Count, Lock, Progress, RemoveWarn, Seg, Stat, Tip, Title } from "@/components/ui";
 import { product, rm, short } from "@/lib/mock";
 import { ACTIONS, CHARTS, POST_TIMES, RANGES, RANGE_DATA, SHORT, WATCH, type RangeKey } from "@/lib/mock-creator2";
 import { FLAGGED } from "@/components/creator1/rating-scan";
@@ -46,9 +46,14 @@ export default function DataOverview() {
   const change = (n: number | null) => (n === null ? "New" : <><Icon name="trend" size={14} width={2.4} /> {n}%</>);
   const rangeLabel = custom ? `${dayName(from)} – ${dayName(to)}` : PRESETS.find(([k]) => k === range)![1];
 
-  const remove = (id: string) => {
-    setRemoved((r) => [...r, id]);
-    toast(`Removed from your showcase: ${product(id).name}`);
+  // Removing asks first: she sees the risk and confirms (owner, 28 Oct 2026).
+  const [ask, setAsk] = useState<string | null>(null);
+  const remove = (id: string) => setAsk(id);
+  const confirmRemove = () => {
+    if (!ask) return;
+    setRemoved((r) => [...r, ask]);
+    toast(`Removed from your showcase: ${product(ask).name}`);
+    setAsk(null);
   };
   const isDone = (a: (typeof ACTIONS)[number]) => ticked.includes(a.id) || (!!a.remove && removed.includes(a.remove));
   const doneCount = ACTIONS.filter(isDone).length;
@@ -236,6 +241,7 @@ export default function DataOverview() {
         </ol>
         {PLAN.length > 3 && <button type="button" className="v2-link an-more" onClick={() => setAllPlan((x) => !x)}>{allPlan ? "Show less" : `+${PLAN.length - 3} more`}</button>}
       </section>
+      {ask && <RemoveWarn items={[{ id: ask, name: product(ask).name, img: product(ask).img }]} onConfirm={confirmRemove} onClose={() => setAsk(null)} />}
     </div>
   );
 }
