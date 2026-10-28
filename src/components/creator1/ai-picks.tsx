@@ -136,9 +136,9 @@ export function AiPicks() {
               <em>8 in 10 of your orders</em>
             </div>
             <div>
-              <small>Your audience</small>
-              <b>{AI_PROFILE.audience}</b>
-              <em>{AI_PROFILE.audienceShare}% of your viewers</em>
+              <small>Your average order</small>
+              <b>RM {AI_PROFILE.aov.toFixed(2)}</b>
+              <em>From your orders, last 30 days</em>
             </div>
           </div>
 
@@ -238,7 +238,7 @@ export function AiPicks() {
           )}
 
           <p className="ai-fine">
-            <b>Match</b> is how well a product fits your categories, prices and audience, out of 100; it isn&apos;t a sales forecast. <b>Video / LIVE</b>{" "}
+            <b>Match</b> is how well a product fits your categories, prices and how you sell, out of 100; it isn&apos;t a sales forecast. <b>Video / LIVE</b>{" "}
             is orders per 100 viewers in Malaysia, last 7 days. <b>#</b> is its rank in its category on TikTok Shop this week. <b>Earn</b>{" "}is
             Techwide&apos;s rate where we run a campaign, otherwise TikTok&apos;s open rate. Free samples are only for products in Techwide&apos;s campaigns, and show when your level opens them.
           </p>

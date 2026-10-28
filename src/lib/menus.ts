@@ -6,13 +6,13 @@ export type AppKind = "creator" | "seller" | "admin";
 
 export const MENUS: Record<AppKind, Section[]> = {
   creator: [
-    { href: "/app", label: "Home", icon: "home", pages: [["/app", "Scanner"], ["/app/ai-picks", "AI picks"]] },
+    { href: "/app", label: "Home", icon: "home", pages: [] },
     { href: "/app/market", label: "Marketplace", icon: "bag", pages: [] },
     {
       href: "/app/data", label: "Analytics", icon: "chart",
-      pages: [["/app/data", "Overview"], ["/app/data/performance", "Performance"], ["/app/data/risk", "Risk check"], ["/app/data/payouts", "Payouts"]],
+      pages: [["/app/data", "Overview"], ["/app/data/performance", "Performance"], ["/app/data/ai-picks", "AI picks"], ["/app/data/risk", "Risk check"], ["/app/data/payouts", "Payouts"]],
     },
-    { href: "/app/publish", label: "Publish", icon: "send", pages: [["/app/publish", "New post"], ["/app/publish/calendar", "Scheduled & posted"]] },
+    { href: "/app/publish", label: "Publish", icon: "send", pages: [["/app/publish", "New post"], ["/app/publish/plan", "What to film"], ["/app/publish/calendar", "Scheduled & posted"]] },
     { href: "/app/rewards", label: "Missions", icon: "gift", pages: [] },
   ],
   seller: [

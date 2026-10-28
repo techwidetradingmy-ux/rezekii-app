@@ -10,15 +10,15 @@ import "@/app/creator1.css";
 /** Under 4 stars is low; under 3 is the danger zone. */
 const LOW = 4;
 const DANGER = 3;
-/** What we know about each low-rated product in the showcase (last 30 days, from TikTok). */
-const SEEN: Record<string, { orders: number; cancel: number; complaints: number }> = {
-  p17: { orders: 70, cancel: 21.4, complaints: 9 },
-  p22: { orders: 96, cancel: 17.7, complaints: 6 },
-  p23: { orders: 12, cancel: 8.3, complaints: 1 },
-  p19: { orders: 9, cancel: 11.1, complaints: 1 },
-  p04: { orders: 18, cancel: 5.6, complaints: 0 },
+/** Her orders for each low-rated product in the showcase (last 30 days, from TikTok): how many, and how many were cancelled or returned. */
+const SEEN: Record<string, { orders: number; cancel: number; returned: number }> = {
+  p17: { orders: 70, cancel: 21.4, returned: 6 },
+  p22: { orders: 96, cancel: 17.7, returned: 4 },
+  p23: { orders: 12, cancel: 8.3, returned: 1 },
+  p19: { orders: 9, cancel: 11.1, returned: 0 },
+  p04: { orders: 18, cancel: 5.6, returned: 1 },
 };
-const FLAGGED = PRODUCTS.filter((p) => p.rating < LOW && SEEN[p.id]).sort((a, b) => a.rating - b.rating);
+export const FLAGGED = PRODUCTS.filter((p) => p.rating < LOW && SEEN[p.id]).sort((a, b) => a.rating - b.rating);
 const SCAN_MS = 2600;
 
 /**
@@ -56,7 +56,7 @@ export function RatingScan() {
         <img src={p.img} alt="" />
         <span className="rc-name">
           <b>{p.name}</b>
-          <small>{p.shop} · {rm(p.price)} · {s.orders} orders · {s.cancel}% cancelled{s.complaints ? ` · ${s.complaints} complaint${s.complaints > 1 ? "s" : ""}` : ""}</small>
+          <small>{p.shop} · {rm(p.price)} · {s.orders} orders · {s.cancel}% cancelled{s.returned ? ` · ${s.returned} returned` : ""}</small>
         </span>
         <span className="rc-stars" aria-label={`${p.rating.toFixed(1)} stars`}>
           <Icon name="star" size={14} width={2.4} /> {p.rating.toFixed(1)}
@@ -76,7 +76,7 @@ export function RatingScan() {
           steps={[
             { icon: "scan", title: "We read every product's rating", note: "Your whole showcase, from TikTok" },
             { icon: "star", title: "Under 4★ is low", note: "Buyers trust it less" },
-            { icon: "alert", title: "Under 3★ is the danger zone", note: "Costs your account health", tone: "red" },
+            { icon: "alert", title: "Under 3★ is the danger zone", note: "Can hurt your account", tone: "red" },
             { icon: "check", title: "Avoid promoting them", note: "Keep posting with 4★ and up" },
           ]}
         />
@@ -118,7 +118,7 @@ export function RatingScan() {
             <h2 className="v2-h2"><span className="rc-dot bad" /> Danger zone · under 3★</h2>
             <span className="badge badge-red">{danger.length}</span>
           </div>
-          <p className="v2-small" style={{ margin: 0 }}>Avoid promoting these. Cancels, complaints and low ratings lower your account health, and TikTok can limit your traffic.</p>
+          <p className="v2-small" style={{ margin: 0 }}>Avoid promoting these. Low ratings, cancels and returns can lower your account health on TikTok, and TikTok can then limit your traffic.</p>
           <ul>{danger.map(row)}</ul>
         </section>
       )}

@@ -7,7 +7,8 @@ import { CalendarPicker, between, dayName, iso } from "@/components/calendar-pic
 import { useDemo } from "@/components/demo";
 import { AiMark, Bars, Count, Lock, Progress, Seg, Stat, Title } from "@/components/ui";
 import { product, rm } from "@/lib/mock";
-import { ACTIONS, CHARTS, HEALTH, POST_TIMES, RANGES, RANGE_DATA, SHORT, WATCH, type RangeKey } from "@/lib/mock-creator2";
+import { ACTIONS, CHARTS, POST_TIMES, RANGES, RANGE_DATA, SHORT, WATCH, type RangeKey } from "@/lib/mock-creator2";
+import { FLAGGED } from "@/components/creator1/rating-scan";
 import "@/app/creator2.css";
 
 const pct = (n: number, of: number) => Math.round((n / of) * 100);
@@ -45,6 +46,11 @@ export default function DataOverview() {
   const isDone = (a: (typeof ACTIONS)[number]) => ticked.includes(a.id) || (!!a.remove && removed.includes(a.remove));
   const doneCount = ACTIONS.filter(isDone).length;
   const watching = WATCH.filter((w) => !removed.includes(w.productId));
+  // Rezekii's own risk level (owner, 28 Oct 2026), read from real data only: showcase ratings and her cancelled orders.
+  // TikTok doesn't share its account health score with apps, so we never show one.
+  const under3 = FLAGGED.filter((p) => p.rating < 3 && !removed.includes(p.id)).length;
+  const under4 = FLAGGED.filter((p) => p.rating >= 3).length;
+  const risk = under3 >= 3 || d.cancel > 15 ? "High" : under3 > 0 || d.cancel > 10 ? "Watch" : "Low";
 
   const channelRows = (["Videos", "LIVE", "Showcase"] as const).map((label, i) => ({ label, value: d.channel[i], display: `${d.channel[i]}%` }));
   const productRows = [
@@ -114,12 +120,12 @@ export default function DataOverview() {
           <div className="cr2-watch-h">
             <span>
               <b><Icon name="alert" size={17} /> {watching.length ? `Avoid promoting ${watching.length === 1 ? "this product" : `these ${watching.length} products`}` : "No low-rated products"}</b>
-              <small>They&apos;re lowering your account health</small>
+              <small>Low ratings and cancels can hurt your account</small>
             </span>
-            <span className="cr2-health" title="Account health from TikTok, out of 100">
-              <small>Account health</small>
-              <b>{HEALTH.score}</b>
-              <em><Icon name="arrow" size={11} width={3} /> {Math.abs(HEALTH.change)} in 30 days</em>
+            <span className={`cr2-risk ${risk.toLowerCase()}`} title="Rezekii's risk level, from your product ratings and cancelled orders">
+              <small>Risk level</small>
+              <span className="cr2-risk-bar" aria-hidden="true">{["Low", "Watch", "High"].map((l) => <i key={l} className={l === risk ? "on" : ""} />)}</span>
+              <b>{risk}</b>
             </span>
           </div>
           {WATCH.map((w) => {
@@ -134,9 +140,8 @@ export default function DataOverview() {
                   <span className="cr2-flags">
                     <i>{w.cancel}% cancelled</i>
                     <i>{w.rating.toFixed(1)} ★</i>
-                    <i>{w.complaints} complaints</i>
                   </span>
-                  <small>{w.issue}</small>
+                  <small>{w.orders} of your orders in 30 days · {Math.round((w.orders * w.cancel) / 100)} cancelled · {w.returned} returned</small>
                 </span>
                 {gone ? (
                   <span className="badge badge-gray"><Icon name="check" size={12} width={3} /> Removed</span>
@@ -148,8 +153,9 @@ export default function DataOverview() {
           })}
           <Link href="/app/data/risk" className="v2-link" style={{ fontSize: 13.5, padding: "4px 2px 0" }}>Check every product&apos;s rating →</Link>
           <p className="cr2-watch-why">
-            Cancels, complaints and low ratings cost you account health. When it drops, TikTok can limit your traffic, and your GMV drops with it. Removing a
-            product doesn&apos;t touch commission you&apos;ve already earned.
+            Risk level is Rezekii&apos;s own check, worked out from {under3} product{under3 === 1 ? "" : "s"} under 3★, {under4} under 4★ and {d.cancel}% of your
+            orders cancelled. TikTok doesn&apos;t share its account health score with apps: see it in your TikTok Shop app. Removing a product doesn&apos;t touch
+            commission you&apos;ve already earned.
           </p>
         </div>
       </section>

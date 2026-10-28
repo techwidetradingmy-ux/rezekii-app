@@ -27,7 +27,7 @@ function Spark({ points }: { points: number[] }) {
  * and three new products from the marketplace with a free sample she can get. A rising video on a low-rated product is skipped,
  * with the reason.
  */
-export function ShootToday() {
+export function ShootToday({ bare = false }: { bare?: boolean }) {
   const { linked, setLinked, toast } = useDemo();
   const [asked, setAsked] = useState<string[]>([]);
   const [added, setAdded] = useState<string[]>([]);
@@ -36,14 +36,14 @@ export function ShootToday() {
 
   return (
     <section className="v2-aicard st-box" aria-label="Today's plan">
-      <div className="ai-head">
+      {!bare && <div className="ai-head">
         <AiMark size={44} />
         <span>
           <span className="v2-ailabel">Today&apos;s plan</span>
           <h2>What to film today</h2>
           <small>Worked out this morning from your videos, your sales, ratings and the marketplace</small>
         </span>
-      </div>
+      </div>}
 
       <h3 className="st-h">
         <Icon name="flame" size={16} /> From your showcase <em>taking off right now</em>

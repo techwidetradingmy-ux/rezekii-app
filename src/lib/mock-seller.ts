@@ -352,3 +352,6 @@ export const TAP_INVITES: { code: string; shop: string; name: string; products: 
   { code: "TAP-7P3", shop: "Mawar Wear", name: "Year-end modest wear", products: 4, raise: 6, status: "Sent", when: "27 Oct", by: "Nadia" },
   { code: "TAP-7M9", shop: "Festa Craft", name: "Back to school", products: 2, raise: 4, status: "Expired", when: "12 Oct", by: "Aina" },
 ];
+
+/** Days in a row the shop has done at least one daily mission (counted by Rezekii). */
+export const SELLER_STREAK = 9;

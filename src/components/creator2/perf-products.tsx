@@ -23,7 +23,7 @@ export function ProductList() {
             {topShare}% of your commission comes from one product, the {product(top.productId).name.toLowerCase()}. If its stock or rate
             changes, your income moves with it. One or two more strong products would spread the risk.
           </span>
-          <Link href="/app/ai-picks">See AI picks</Link>
+          <Link href="/app/data/ai-picks">See AI picks</Link>
         </div>
       )}
 

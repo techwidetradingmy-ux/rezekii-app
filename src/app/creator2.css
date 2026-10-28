@@ -559,3 +559,16 @@ li.done .cr2-check { background: #00c073; border-color: #00c073; animation: v2Po
 .cr2-actchip { color: #ffffff; background: linear-gradient(135deg, #f5a623, #e8005a); }
 .cr2-wachip { border: 1px dashed var(--border); background: var(--surface); color: var(--amber); font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
 .cr2-tag.green { background: var(--gsoft); color: var(--gink); }
+
+/* Risk level (owner, 28 Oct 2026): Rezekii's own check from ratings and cancels, never TikTok's account health score. */
+.cr2-risk { flex-shrink: 0; display: grid; gap: 4px; padding: 8px 12px; border-radius: 14px; background: var(--surface); min-width: 110px; }
+.cr2-risk small { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.cr2-risk b { font-size: 18px; font-weight: 900; line-height: 1.1; }
+.cr2-risk-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+.cr2-risk-bar i { height: 6px; border-radius: 99px; background: var(--line); }
+.cr2-risk.low b { color: var(--gink); }
+.cr2-risk.low .cr2-risk-bar i:nth-child(1) { background: #00c073; }
+.cr2-risk.watch b { color: #b97a00; }
+.cr2-risk.watch .cr2-risk-bar i:nth-child(-n+2) { background: #f5a623; }
+.cr2-risk.high b { color: var(--red); }
+.cr2-risk.high .cr2-risk-bar i { background: #e14b3b; }

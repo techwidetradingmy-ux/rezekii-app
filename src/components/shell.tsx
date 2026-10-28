@@ -50,6 +50,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
   const [more, setMore] = useState(false);
   const menu = MENUS[app];
   const phoneTabs = app === "admin" ? menu.slice(0, 4) : menu;
+  const navIndex = phoneTabs.findIndex((s) => s.href === section?.href) >= 0 ? phoneTabs.findIndex((s) => s.href === section?.href) : app === "admin" && menu.slice(4).some((s) => s.href === section?.href) ? phoneTabs.length : -1;
   return (
     <>
       <DemoStrip />
@@ -129,7 +130,9 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
           <a href="#">support@rezekii.com</a>
         </div>
       </footer>
-      <nav className="nv-bottom" aria-label="Main menu (phone)">
+      <nav className="nv-bottom" aria-label="Main menu (phone)" style={{ ["--n" as string]: phoneTabs.length + (app === "admin" ? 1 : 0) }}>
+        {/* A green pill that slides to the open tab (owner, 28 Oct 2026: make the tab bar easier to see). */}
+        {navIndex >= 0 && <span className="nv-ind" aria-hidden="true" style={{ ["--i" as string]: navIndex }} />}
         {phoneTabs.map((s) => (
           <Link key={s.href} href={s.href} className={section?.href === s.href ? "on" : ""} aria-current={section?.href === s.href ? "page" : undefined}>
             <Icon name={s.icon} size={24} />

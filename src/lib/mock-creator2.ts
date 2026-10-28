@@ -141,22 +141,21 @@ export const CHARTS: Record<RangeKey, Chart> = {
   Lifetime: { unit: "month", points: [["Mar", 96.4], ["Apr", 268.0], ["May", 455.9], ["Jun", 612.3], ["Jul", 861.0], ["Aug", 1180.4], ["Sep", 1689.3], ["Oct", 1857.1]] },
 };
 
-/** Showcase products hurting account health (TikTok, last 30 days): cancels, complaints, low ratings. */
+/** Showcase products to avoid (last 30 days): buyer rating from TikTok's product data, cancels and returns from her own orders. */
 export const WATCH = [
-  { productId: "p17", cancel: 21.4, rating: 2.8, complaints: 9, issue: "Buyers say the colours don't match the photos." },
-  { productId: "p22", cancel: 17.7, rating: 2.9, complaints: 6, issue: "Buyers say it still needs scrubbing." },
+  { productId: "p17", cancel: 21.4, rating: 2.8, orders: 70, returned: 6 },
+  { productId: "p22", cancel: 17.7, rating: 2.9, orders: 96, returned: 4 },
 ];
-export const HEALTH = { score: 86, change: -4 };
 
 /** The action plan on My data: what to do next, each one written from a number above. */
 export type Action = { id: string; tag: "Shoot today" | "Fix now" | "This week" | "Grow"; icon: IconName; title: string; why: string; cta: string; href?: string; remove?: string };
 export const ACTIONS: Action[] = [
   { id: "a0", tag: "Shoot today", icon: "flame", title: "Film 2 more thermos videos today", why: "Your 12 Oct thermos video got 41.2K views in the last 24 hours, 5× your usual. The thermos is rated 4.7★ and sold 23 today.", cta: "Plan videos", href: "/app/publish" },
-  { id: "a1", tag: "Fix now", icon: "alert", title: "Avoid promoting the AirySoft pillowcase", why: "Rated 2.8★ with 21.4% cancelled and 9 complaints in 30 days. Low-rated products cost you account health.", cta: "Remove from showcase", remove: "p17" },
+  { id: "a1", tag: "Fix now", icon: "alert", title: "Avoid promoting the AirySoft pillowcase", why: "Rated 2.8★, and 21.4% of your orders for it were cancelled in 30 days. Low ratings and cancels can hurt your account.", cta: "Remove from showcase", remove: "p17" },
   { id: "a2", tag: "Fix now", icon: "star", title: "Check your showcase for low ratings", why: "2 products are under 3★ (danger zone) and 3 are under 4★. Keep posting; pick 4★ products for new videos.", cta: "Run risk check", href: "/app/data/risk" },
   { id: "a3", tag: "This week", icon: "cal", title: "Post 1 more thermos video by 2 Nov", why: "Your free sample needs 3 of 3 videos. The thermos is also your top earner: 39% of your commission.", cta: "Submit video link", href: "/app/account#samples" },
   { id: "a4", tag: "This week", icon: "scan", title: "Add 4 products that pay more", why: "Products already in your showcase, paying +1% to +5% more through Techwide.", cta: "See scan results", href: "/app#scan" },
-  { id: "a5", tag: "Grow", icon: "video", title: "Go LIVE with kitchen products", why: "Just 2 LIVE sessions a week bring about a quarter of your commission. Choppers and cookware sell 2.6× better on LIVE than on video.", cta: "See LIVE picks", href: "/app/ai-picks" },
+  { id: "a5", tag: "Grow", icon: "video", title: "Go LIVE with kitchen products", why: "Just 2 LIVE sessions a week bring about a quarter of your commission. Choppers and cookware sell 2.6× better on LIVE than on video.", cta: "See LIVE picks", href: "/app/data/ai-picks" },
   { id: "a6", tag: "Grow", icon: "send", title: "Post between 8 and 10 pm", why: "Your videos posted 8 to 10 pm got 1.8× the views of daytime posts in the last 30 days.", cta: "Schedule a post", href: "/app/publish" },
 ];
 

@@ -96,7 +96,7 @@ export const AI_PICKS: AiPick[] = [
   { productId: "p20", from: "tap", fit: "video", match: 96, why: "Muslim fashion sells 2.3× your average. Try-on videos convert best.", video: 3.4, live: 2.1, week: 18200, rank: 2 },
   { productId: "p13", from: "tap", fit: "video", match: 91, why: "Best rate in Electronics. A 15-second demo is enough.", video: 4.1, live: 2.6, week: 26400, rank: 1 },
   { productId: "p21", from: "tap", fit: "video", match: 89, why: "Home & Kitchen is your #2 category; your last thermos video sold 166.", video: 2.9, live: 2.2, week: 15800, rank: 6 },
-  { productId: "p05", from: "tap", fit: "video", match: 87, why: "78% of your viewers are women 18 to 34, the main buyers.", video: 3.1, live: 1.9, week: 21900, rank: 4 },
+  { productId: "p05", from: "tap", fit: "video", match: 87, why: "Fashion is 46% of your sales, and this sells best at your price range.", video: 3.1, live: 1.9, week: 21900, rank: 4 },
   { productId: "p10", from: "tiktok", fit: "video", match: 85, why: "Rising in Fashion, your top category, and inside your price range.", video: 2.7, live: 1.8, week: 24300, rank: 3 },
   { productId: "p02", from: "tap", fit: "video", match: 83, why: "Cheap basic that fits into outfit videos you already make.", video: 2.4, live: 1.6, week: 31200, rank: 1 },
   { productId: "p15", from: "tiktok", fit: "video", match: 79, why: "Top 5 in Fashion this week. Similar pants already sell for you.", video: 2.5, live: 1.7, week: 19800, rank: 5 },
@@ -113,8 +113,8 @@ export const AI_PROFILE = {
   compared: 3482,
   categories: [["Fashion", 46], ["Home & Kitchen", 31], ["Muslim Fashion", 14]] as [string, number][],
   price: "RM 10–40",
-  audience: "Women 18–34",
-  audienceShare: 78,
+  /** Average order value of her orders, last 30 days. */
+  aov: 31.4,
   video: 72,
 };
 

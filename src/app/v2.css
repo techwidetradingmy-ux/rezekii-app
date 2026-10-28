@@ -524,3 +524,16 @@ body { font-feature-settings: "tnum" 0; }
 .v2-story.vid .st-t { animation: stText 5s cubic-bezier(0.2, 0.8, 0.2, 1) infinite; }
 .v2-story.vid .st-quote { animation: stQuote 5s cubic-bezier(0.2, 0.8, 0.2, 1) infinite; }
 @media (prefers-reduced-motion: reduce) { .v2-story * { animation: none !important; } }
+
+/* Bottom tab bar (owner, 28 Oct 2026): a green pill slides to the open tab, its icon turns white and pops; easier to see. */
+.nv-bottom { box-shadow: 0 -8px 24px -12px rgba(0, 60, 36, 0.18); }
+.nv-bottom a { position: relative; z-index: 1; gap: 6px; transition: color 0.25s; -webkit-tap-highlight-color: transparent; }
+.nv-bottom a svg { transition: transform 0.25s var(--ease), color 0.25s; }
+.nv-bottom a:active svg { transform: scale(0.86); }
+.nv-bottom a.on { color: var(--gink); font-weight: 800; }
+.nv-bottom a.on svg { color: #ffffff; animation: nvIconPop 0.5s cubic-bezier(0.3, 1.5, 0.4, 1) both; }
+.nv-ind { position: absolute; z-index: 0; top: 5px; left: 6px; width: calc((100% - 12px) / var(--n)); height: 30px; display: flex; justify-content: center; transform: translateX(calc(100% * var(--i))); transition: transform 0.5s cubic-bezier(0.3, 1.35, 0.4, 1); pointer-events: none; }
+.nv-ind::before { content: ""; width: 56px; max-width: 92%; height: 100%; border-radius: 999px; background: linear-gradient(135deg, #00c073, #22dc95); box-shadow: 0 6px 16px -6px rgba(0, 154, 92, 0.75); animation: nvGlow 2.6s ease-in-out infinite; }
+@keyframes nvGlow { 50% { box-shadow: 0 6px 20px -4px rgba(0, 192, 115, 0.85); } }
+@keyframes nvIconPop { 0% { transform: scale(0.7); } 60% { transform: scale(1.18); } 100% { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .nv-ind { transition: none; } .nv-ind::before, .nv-bottom a.on svg { animation: none; } }

@@ -99,7 +99,7 @@ export const SELLER_CONDS: Record<string, Cond[]> = {
   p14: [{ label: "Seller: Home & Kitchen videos in the last 30 days", ok: true, you: "You posted 9" }],
   p03: [{ label: "Seller: Fashion videos in the last 30 days", ok: true, you: "You posted 4" }],
   p20: [{ label: "Seller: Muslim fashion audience", ok: true, you: "Your Muslim fashion videos sell 2.3× your average" }],
-  p05: [{ label: "Seller: mostly women in your audience", ok: true, you: "78% of your audience are women" }],
+  p05: [{ label: "Seller: Fashion sales in the last 30 days", ok: true, you: "Fashion is 46% of your sales" }],
 };
 
 /** One-off sample notes, so the grid feels real. */
