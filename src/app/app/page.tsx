@@ -1,6 +1,7 @@
 "use client";
 
 import { ScanHub } from "@/components/creator1/scan-hub";
+import { CoverageCard } from "@/components/creator1/showcase-coverage";
 import { CREATOR } from "@/lib/mock";
 import "@/app/creator1.css";
 
@@ -12,6 +13,7 @@ export default function CreatorHome() {
         <h1 style={{ margin: 0, fontSize: 30, fontWeight: 800, letterSpacing: "-0.02em" }}>Good morning, {CREATOR.first}</h1>
       </div>
       <ScanHub />
+      <CoverageCard />
     </div>
   );
 }

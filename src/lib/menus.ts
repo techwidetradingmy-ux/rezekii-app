@@ -31,7 +31,7 @@ export const MENUS: Record<AppKind, Section[]> = {
   ],
   admin: [
     { href: "/admin", label: "Today", icon: "home", pages: [] },
-    { href: "/admin/tap", label: "TAP", icon: "kanban", pages: [["/admin/tap", "Pipeline"], ["/admin/tap/campaigns", "Campaigns"], ["/admin/tap/samples", "Sample Review"]] },
+    { href: "/admin/tap", label: "TAP", icon: "kanban", pages: [["/admin/tap", "Pipeline"], ["/admin/tap/campaigns", "Campaigns"], ["/admin/tap/samples", "Sample Review"], ["/admin/tap/requests", "Product Requests"]] },
     {
       href: "/admin/business", label: "Business", icon: "briefcase",
       pages: [["/admin/business", "My Merchants & Creators"], ["/admin/business/performance", "Live Performance"], ["/admin/business/open", "Open Campaigns"], ["/admin/business/custom", "Custom Service"]],

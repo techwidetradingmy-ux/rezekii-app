@@ -343,3 +343,4 @@
 /* Referral rewards setting: two amounts and Save on one row. */
 .rf-admin { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
 .rf-admin .v2-field { flex: 1 1 140px; max-width: 200px; }
+.ad-reqtile { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; flex-shrink: 0; color: #ffffff; font-size: 17px; font-weight: 900; }
