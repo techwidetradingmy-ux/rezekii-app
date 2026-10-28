@@ -64,7 +64,7 @@ const STEPS: PostStatus[] = ["scheduled", "uploading", "sending", "processing", 
 const next = (s: PostStatus): PostStatus => STEPS[Math.min(STEPS.indexOf(s) + 1, STEPS.length - 1)];
 
 /**
- * Scheduled & posted (owner, 28 Oct 2026): every post with each app's live status, V1-style, for any dates from the same
+ * Content calendar (owner, 28 Oct 2026): every post with each app's live status, V1-style, for any dates from the same
  * picker as Analytics. Scheduled posts and drafts can be edited or cancelled right here; a failed app can be retried.
  */
 export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup; posts: MyPost[]; newPost: string }) {
@@ -176,7 +176,7 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
 
   return (
     <div className="v2-stack v2-in sq-page" style={{ gap: 18 }}>
-      <Title title="Scheduled & posted" sub="Every post and its live status on each app · Malaysia time">
+      <Title title="Content calendar" sub="Every post and its live status on each app · Malaysia time">
         <CalendarPicker
           label={label}
           sub={`${dayName(from)} – ${dayName(to)}`}

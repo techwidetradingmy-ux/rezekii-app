@@ -4,7 +4,7 @@ import { ScanHub } from "@/components/creator1/scan-hub";
 import { CREATOR } from "@/lib/mock";
 import "@/app/creator1.css";
 
-/** Creator home (owner, 28 Oct 2026): the showcase scanner only. What to film is under Publish, AI picks under Analytics. */
+/** Creator home (owner, 28 Oct 2026): the showcase scanner only. Ideas for today is under Publish, AI picks under Analytics. */
 export default function CreatorHome() {
   return (
     <div className="v2-stack v2-in" style={{ gap: 22 }}>

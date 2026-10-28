@@ -40,7 +40,7 @@ export function ShootToday({ bare = false }: { bare?: boolean }) {
         <AiMark size={44} />
         <span>
           <span className="v2-ailabel">Today&apos;s plan</span>
-          <h2>What to film today</h2>
+          <h2>Ideas for today</h2>
           <small>Worked out this morning from your videos, your sales, ratings and the marketplace</small>
         </span>
       </div>}

@@ -258,10 +258,10 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
         <h2>{done.when === "draft" ? "Saved as a draft" : done.when === "now" ? "On its way" : "Scheduled"}</h2>
         <p>
           {done.when === "draft" ? `Saved in Rezekii for ${done.summary}.` : done.when === "now" ? `${done.summary}: posting now.` : `${done.summary}: ${done.at} (Malaysia time).`} Follow each
-          channel&apos;s live status in Scheduled &amp; posted, and edit or cancel it there until it starts sending.
+          channel&apos;s live status in your content calendar, and edit or cancel it there until it starts sending.
         </p>
         <div className="np-row">
-          <Link href={setup.calendar} className="np-btn">See it in Scheduled &amp; posted</Link>
+          <Link href={setup.calendar} className="np-btn">Open content calendar</Link>
           <button type="button" className="btn-outline" onClick={onNew}>New post</button>
         </div>
       </section>

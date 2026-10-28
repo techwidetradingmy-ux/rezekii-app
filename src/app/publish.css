@@ -337,7 +337,7 @@
 .pb-fix button svg { flex-shrink: 0; color: #c2362a; }
 @media (prefers-reduced-motion: reduce) { .pb .pb-card.flash { animation: none; } }
 
-/* Scheduled & posted (sq-): live status per app, the month map, edit and cancel in place. */
+/* Content calendar (sq-): live status per app, the month map, edit and cancel in place. */
 .sq-tiles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
 .sq-tile { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 10px; align-items: center; padding: 12px; border-radius: 18px; border: 1.5px solid var(--line); background: var(--surface); box-shadow: var(--shadow); font: inherit; color: var(--text); text-align: left; cursor: pointer; transition: border-color 0.2s, transform 0.15s; }
 .sq-tile:active { transform: scale(0.97); }
@@ -432,7 +432,7 @@
 @keyframes pb-pulse { 50% { transform: scale(0.88); opacity: 0.7; } }
 @media (max-width: 560px) { .pb-check { grid-template-columns: auto minmax(0, 1fr); } .pb-check .btn-outline { grid-column: 1 / -1; } }
 @media (prefers-reduced-motion: reduce) { .pb-check.busy .pb-check-ico { animation: none; } }
-/* Scheduled & posted on desktop (owner, 28 Oct 2026: website first): the month on the left stays in view, posts on the right. */
+/* Content calendar on desktop (owner, 28 Oct 2026: website first): the month on the left stays in view, posts on the right. */
 @media (min-width: 1200px) {
   .v2-stack.sq-page { display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: 18px 24px; align-items: start; }
   .sq-page > * { margin: 0 !important; min-width: 0; grid-column: 2; }

@@ -74,7 +74,7 @@ export const SELLER_SETUP: PublishSetup = {
   calendar: "/seller/app/publish/calendar",
 };
 
-/* ---------------- Scheduled & posted ---------------- */
+/* ---------------- Content calendar ---------------- */
 
 /** One channel's state, V1's live statuses: Draft → Scheduled → Uploading → Sending/Publishing → Processing → Posted. */
 export type PostStatus = "draft" | "scheduled" | "uploading" | "sending" | "processing" | "posted" | "inbox" | "failed";
