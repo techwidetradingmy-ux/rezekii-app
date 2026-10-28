@@ -179,7 +179,7 @@ export default function Marketplace() {
                 {requested.includes(p.id) && <span className="cr1-reqd"><Icon name="check" size={13} width={3} /> Requested</span>}
               </span>
               <strong>{p.name}</strong>
-              <small className="mk-meta">{rm(p.price)} · {p.sold >= 1e6 ? `${(p.sold / 1e6).toFixed(1)}M` : `${Math.round(p.sold / 1e3)}K`} sold · {p.category}</small>
+              <small className="mk-meta">{rm(p.price)} · {p.sold >= 1e6 ? `${(p.sold / 1e6).toFixed(1)}M` : `${Math.round(p.sold / 1e3)}K`} sold</small>
               <span className="mk-rates" aria-label={`Open plan ${p.publicRate}%, Rezekii ${p.tapRate}%`}>
                 <span><small>Open plan</small><s>{p.publicRate}%</s></span>
                 <Icon name="arrow" size={14} />
@@ -196,9 +196,14 @@ export default function Marketplace() {
                 <button type="button" className={isAdded ? "ai-btn done" : "ai-btn"} disabled={isAdded} onClick={() => addToShowcase(p)}>
                   <Icon name={isAdded ? "check" : "plus"} size={14} width={2.6} /> {isAdded ? "In showcase" : "Add to showcase"}
                 </button>
-                {p.samples && (
+                {p.samples ? (
                   <button type="button" className={`ai-btn ghost ${requested.includes(p.id) ? "asked" : ""}`} disabled={requested.includes(p.id)} onClick={() => open(p)}>
                     <Icon name={requested.includes(p.id) ? "check" : "gift"} size={14} /> {requested.includes(p.id) ? "Requested" : "Free sample"}
+                  </button>
+                ) : (
+                  // Same two buttons on every card so they line up; grey when there's no sample.
+                  <button type="button" className="ai-btn ghost off" disabled>
+                    <Icon name="gift" size={14} /> No free sample
                   </button>
                 )}
               </span>
