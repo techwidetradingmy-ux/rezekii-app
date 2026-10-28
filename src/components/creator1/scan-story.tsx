@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Count, Portal, ShareSheet } from "@/components/ui";
-import { ANALYTICS, CREATOR, REFERRAL_REWARD, product, rm } from "@/lib/mock";
+import { ANALYTICS, CREATOR, PRODUCTS, REFERRAL_REWARD, product, rm } from "@/lib/mock";
 
 export type StoryItem = { id: string; productId: string; from: number; to: number; added?: boolean };
 const SLIDE_MS = 4200;
@@ -60,6 +60,8 @@ export function ScanStory({ checked, items, onAdd, onClose }: { checked: number;
   const caption = `Rezekii found ${items.length} better commissions hiding in my TikTok showcase 👀 Up to +${best ? best.to - best.from : 0}%. Check yours free 👉 ${LINK} #RezekiiScan #TikTokShopMY`;
 
   const missed = rm(extra);
+  // Photo-led slides (owner, 28 Oct 2026: option B): her own product photos fill the background, words sit on top.
+  const wall = [...new Set([...items.map((it) => product(it.productId).img), ...ANALYTICS.byProduct.map((b) => product(b.productId).img), ...PRODUCTS.map((p) => p.img)])].slice(0, 15);
   if (share === "money") {
     return (
       <ShareSheet
@@ -80,6 +82,16 @@ export function ScanStory({ checked, items, onAdd, onClose }: { checked: number;
     <Portal>
       <div className="ss-back" onClick={(e) => e.target === e.currentTarget && onClose()}>
         <div className={`ss-frame ss-${at}`} role="dialog" aria-modal="true" aria-label="Your scan recap" onClick={tap}>
+          <div key={`bg-${at}`} className="ss-bg" aria-hidden="true">
+            {at === "best" && best ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img className="ss-bg-hero" src={product(best.productId).img} alt="" />
+            ) : at !== "end" ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <span className="ss-mosaic">{wall.map((src, n) => <img key={src} src={src} alt="" style={{ animationDelay: `${n * 40}ms` }} />)}</span>
+            ) : null}
+            <i className="ss-shade" />
+          </div>
           <div className="ss-bars" aria-hidden="true">
             {slides.map((s, n) => <span key={s}><i className={n < i ? "full" : n === i ? "now" : ""} style={n === i ? { animationDuration: `${SLIDE_MS}ms` } : undefined} /></span>)}
           </div>
@@ -103,12 +115,6 @@ export function ScanStory({ checked, items, onAdd, onClose }: { checked: number;
                 <span className="ss-kick">We checked</span>
                 <strong className="ss-big"><Count value={checked} ms={1400} /></strong>
                 <h2>products in your showcase</h2>
-                <span className="ss-thumbs" aria-hidden="true">
-                  {items.slice(0, 5).map((it, n) => (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img key={it.id} src={product(it.productId).img} alt="" style={{ animationDelay: `${n * 120}ms`, ["--r" as string]: `${(n % 2 ? 1 : -1) * (4 + n * 2)}deg` }} />
-                  ))}
-                </span>
               </>
             )}
             {at === "found" && (
@@ -130,8 +136,6 @@ export function ScanStory({ checked, items, onAdd, onClose }: { checked: number;
             {at === "best" && best && (
               <>
                 <span className="ss-kick">Your best raise</span>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className="ss-hero" src={product(best.productId).img} alt="" />
                 <h2>{product(best.productId).name}</h2>
                 <span className="ss-rate"><s>{best.from}%</s><Icon name="arrow" size={20} width={2.6} /><b>{best.to}%</b></span>
                 <span className="ss-sticker" style={{ ["--r" as string]: "8deg" }}>+{best.to - best.from}% 🔥</span>

@@ -902,3 +902,23 @@
 .td-bar .np-btn:disabled { opacity: 0.55; }
 @media (max-width: 760px) { .td-bar { bottom: calc(76px + env(safe-area-inset-bottom, 0px)); } .td-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } }
 @media (max-width: 420px) { .td-grid { grid-template-columns: 1fr; } }
+
+/* Recap story, photo-led (owner, 28 Oct 2026: option B): her product photos behind every slide, words at the bottom like a story caption. */
+.ss-frame, .ss-frame.ss-intro, .ss-frame.ss-checked, .ss-frame.ss-found, .ss-frame.ss-best, .ss-frame.ss-money { background: #0d1117; }
+.ss-frame.ss-end { background: radial-gradient(120% 60% at 50% 0%, #0f5e3f, transparent 60%), #0d1117; }
+.ss-bars, .ss-head, .ss-body, .ss-hint { position: relative; z-index: 1; }
+.ss-bg { position: absolute; inset: 0; z-index: 0; overflow: hidden; }
+.ss-mosaic { position: absolute; inset: -6%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(5, minmax(0, 1fr)); gap: 4px; transform: rotate(-5deg) scale(1.08); animation: ssDrift 16s ease-in-out infinite alternate; }
+.ss-mosaic img { width: 100%; height: 100%; min-height: 0; object-fit: cover; border-radius: 10px; animation: ssTile 0.6s var(--ease) both; }
+@keyframes ssTile { from { opacity: 0; transform: scale(0.85); } }
+@keyframes ssDrift { to { transform: rotate(-5deg) scale(1.08) translateY(-6%); } }
+.ss-bg-hero { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; animation: ssKen 9s ease-out both; }
+@keyframes ssKen { from { transform: scale(1.15); } to { transform: scale(1); } }
+.ss-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.12) 26%, rgba(0, 0, 0, 0.3) 52%, rgba(0, 0, 0, 0.88) 100%); }
+.ss-found .ss-shade, .ss-money .ss-shade { background: linear-gradient(180deg, rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.78) 40%, rgba(0, 0, 0, 0.9)); }
+.ss-frame:not(.ss-end) .ss-body { justify-content: flex-end; padding-bottom: 6px; }
+.ss-body { text-shadow: 0 2px 14px rgba(0, 0, 0, 0.5); }
+.ss-body .ss-btn, .ss-body .ss-sticker, .ss-body .ss-row { text-shadow: none; }
+.ss-best .ss-rate b { color: #5fe3ab; }
+.ss-grid img { border-width: 2px; }
+@media (prefers-reduced-motion: reduce) { .ss-mosaic, .ss-mosaic img, .ss-bg-hero { animation: none !important; } }
