@@ -3,6 +3,7 @@ import { Albert_Sans } from "next/font/google";
 import Script from "next/script";
 import { DemoProvider } from "@/components/demo";
 import { ConsentGate } from "@/components/consent";
+import { WaGate } from "@/components/wa-gate";
 import "./globals.css";
 import "./v2.css";
 
@@ -24,7 +25,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en" suppressHydrationWarning>
       <body className={albertSans.className}>
         <Script id="rz2-theme" strategy="beforeInteractive">{THEME_SCRIPT}</Script>
-        <DemoProvider>{children}<ConsentGate /></DemoProvider>
+        <DemoProvider>{children}<ConsentGate /><WaGate /></DemoProvider>
       </body>
     </html>
   );

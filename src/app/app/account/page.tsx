@@ -51,7 +51,7 @@ function prettyNum(cc: string, d: string) {
 
 /** My account: profile, connections, samples & delivery, rate card (later) and settings, grouped like iOS Settings. Nothing is saved. */
 export default function Account() {
-  const { linked, setLinked, toast, consent } = useDemo();
+  const { linked, setLinked, toast, consent, waVerified: verified, setWaVerified: setVerified } = useDemo();
   const [unlink, setUnlink] = useState(false);
   const [tab, setTab] = useState<TabKey>("profile");
   const [email, setEmail] = useState("aisyah.r@example.com");
@@ -80,7 +80,6 @@ export default function Account() {
   const [state, setState] = useState(CREATOR.state);
   const [cc, setCc] = useState("+60");
   const [phone, setPhone] = useState("12-345 6789");
-  const [verified, setVerified] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [waSheet, setWaSheet] = useState(false);
   const [gender, setGender] = useState<"Female" | "Male">("Female");

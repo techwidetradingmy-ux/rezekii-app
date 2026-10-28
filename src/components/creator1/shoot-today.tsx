@@ -28,7 +28,7 @@ function Spark({ points }: { points: number[] }) {
  * with the reason.
  */
 export function ShootToday({ bare = false }: { bare?: boolean }) {
-  const { linked, setLinked, toast } = useDemo();
+  const { linked, setLinked, toast, requireWa } = useDemo();
   const [asked, setAsked] = useState<string[]>([]);
   const [added, setAdded] = useState<string[]>([]);
   const mine = VIRAL.filter((v) => product(v.productId).rating >= 4).slice(0, 3);
@@ -103,7 +103,7 @@ export function ShootToday({ bare = false }: { bare?: boolean }) {
                   type="button"
                   className={isAsked ? "ai-btn done" : "ai-btn"}
                   disabled={isAsked}
-                  onClick={() => { if (!linked) return setLinked(true); setAsked((a) => [...a, p.id]); toast("Sample requested. The Techwide team approves it, usually within 2 working days."); }}
+                  onClick={() => { if (!linked) return setLinked(true); requireWa(() => { setAsked((a) => [...a, p.id]); toast("Sample requested. The Techwide team approves it, usually within 2 working days."); }); }}
                 >
                   <Icon name={isAsked ? "check" : "gift"} size={14} /> {isAsked ? "Requested" : "Free sample"}
                 </button>

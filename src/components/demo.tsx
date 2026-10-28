@@ -19,8 +19,16 @@ type Demo = {
   asking: Role | null;
   agree: () => void;
   cancelLink: () => void;
+  /** WhatsApp verified (owner, 28 Oct 2026: needed before any free sample request). */
+  waVerified: boolean;
+  setWaVerified: (on: boolean) => void;
+  /** Runs `then` now if WhatsApp is verified; otherwise asks to verify first, then runs it. */
+  requireWa: (then: () => void) => void;
+  waAsking: boolean;
+  waDone: () => void;
+  waCancel: () => void;
 };
-const Ctx = createContext<Demo>({ linked: true, setLinked: () => {}, toast: () => {}, consent: null, recordConsent: () => {}, asking: null, agree: () => {}, cancelLink: () => {} });
+const Ctx = createContext<Demo>({ linked: true, setLinked: () => {}, toast: () => {}, consent: null, recordConsent: () => {}, asking: null, agree: () => {}, cancelLink: () => {}, waVerified: false, setWaVerified: () => {}, requireWa: () => {}, waAsking: false, waDone: () => {}, waCancel: () => {} });
 
 const now = () => new Date().toLocaleString("en-MY", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kuala_Lumpur" });
 /** Aisyah agreed when she linked during sign-up. */
@@ -31,6 +39,8 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   const [consent, setConsent] = useState<Consent | null>(FIRST);
   const [asking, setAsking] = useState<Role | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [waVerified, setWaVerified] = useState(false);
+  const [waNext, setWaNext] = useState<(() => void) | null>(null);
 
   useEffect(() => {
     try {
@@ -73,7 +83,16 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <Ctx.Provider value={{ linked, setLinked, toast, consent, recordConsent, asking, agree, cancelLink: () => setAsking(null) }}>
+    <Ctx.Provider
+      value={{
+        linked, setLinked, toast, consent, recordConsent, asking, agree, cancelLink: () => setAsking(null),
+        waVerified, setWaVerified,
+        requireWa: (then) => (waVerified ? then() : setWaNext(() => then)),
+        waAsking: !!waNext,
+        waDone: () => { setWaVerified(true); const t = waNext; setWaNext(null); t?.(); },
+        waCancel: () => setWaNext(null),
+      }}
+    >
       {children}
       {msg && (
         <div role="status" className="v2-toast">

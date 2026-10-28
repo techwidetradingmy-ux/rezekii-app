@@ -32,7 +32,7 @@ const rateOf = (pk: AiPick) => (pk.from === "tap" ? product(pk.productId).tapRat
  * and ranks what fits, split into products that sell on video and products that sell on LIVE.
  */
 export function AiPicks() {
-  const { linked, setLinked, toast } = useDemo();
+  const { linked, setLinked, toast, requireWa } = useDemo();
   const [run, setRun] = useState(0);
   const [phase, setPhase] = useState(0);
   const [fit, setFit] = useState<Fit>("video");
@@ -188,7 +188,7 @@ export function AiPicks() {
                     <span className="ai-foot">
                       <span className="ai-earn">Earn <b><Hidden>{rateOf(pk)}%</Hidden></b></span>
                       {sample && (
-                        <button type="button" className={`ai-btn ghost ${asked ? "asked" : ""}`} disabled={asked} onClick={() => setSampleFor(p)}>
+                        <button type="button" className={`ai-btn ghost ${asked ? "asked" : ""}`} disabled={asked} onClick={() => requireWa(() => setSampleFor(p))}>
                           <Icon name={asked ? "check" : "gift"} size={14} width={asked ? 2.8 : 1.9} /> {asked ? "Requested" : "Free sample"}
                         </button>
                       )}

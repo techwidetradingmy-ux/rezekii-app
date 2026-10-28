@@ -48,7 +48,7 @@ function conditionsFor(p: Product): Cond[] {
  * per sale. Add to showcase in one tap; request a free sample where the product has one. Filter by category, samples and tier, then sort.
  */
 export default function Marketplace() {
-  const { linked, setLinked, toast } = useDemo();
+  const { linked, setLinked, toast, requireWa } = useDemo();
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("All");
   const [sort, setSort] = useState<SortKey>("sold");
@@ -197,7 +197,7 @@ export default function Marketplace() {
                   <Icon name={isAdded ? "check" : "plus"} size={14} width={2.6} /> {isAdded ? "In showcase" : "Add to showcase"}
                 </button>
                 {p.samples ? (
-                  <button type="button" className={`ai-btn ghost ${requested.includes(p.id) ? "asked" : ""}`} disabled={requested.includes(p.id)} onClick={() => open(p)}>
+                  <button type="button" className={`ai-btn ghost ${requested.includes(p.id) ? "asked" : ""}`} disabled={requested.includes(p.id)} onClick={() => requireWa(() => open(p))}>
                     <Icon name={requested.includes(p.id) ? "check" : "gift"} size={14} /> {requested.includes(p.id) ? "Requested" : "Free sample"}
                   </button>
                 ) : (
@@ -303,7 +303,7 @@ export default function Marketplace() {
                 <h3>You can get these now</h3>
                 <div className="v2-divide">
                   {suggest.map((p) => (
-                    <button key={p.id} type="button" className="cr1-suggest" onClick={() => open(p)}>
+                    <button key={p.id} type="button" className="cr1-suggest" onClick={() => requireWa(() => open(p))}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={p.img} alt="" />
                       <span>
