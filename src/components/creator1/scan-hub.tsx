@@ -6,6 +6,7 @@ import { useDemo } from "@/components/demo";
 import { Count, Flow, Hidden, Sheet } from "@/components/ui";
 import { CREATOR, RAISES, SIMILAR, product, type Raise } from "@/lib/mock";
 import { NEW_ON_RESCAN, NOT_ELIGIBLE, REFUSED } from "@/lib/mock-creator1";
+import { ScanStory } from "@/components/creator1/scan-story";
 
 type Tab = "same" | "similar";
 /** One product the creator can move to a better rate: the same listing (raise) or a similar one in TAP. */
@@ -52,6 +53,7 @@ export function ScanHub() {
   const [bulk, setBulk] = useState<Bulk | null>(null);
   const [why, setWhy] = useState(false);
   const [asked, setAsked] = useState<string[]>([]);
+  const [story, setStory] = useState(false);
   const timers = useRef<number[]>([]);
 
   useEffect(() => () => timers.current.forEach((t) => window.clearTimeout(t)), []);
@@ -101,6 +103,8 @@ export function ScanHub() {
         setOpen(true);
         toast("Scan finished: 1 new better rate");
       } else toast("Scan finished: nothing new since your last scan");
+      // The recap plays after every scan (owner, 28 Oct 2026: social media vibes, made to share).
+      setStory(true);
     }, SCAN_MS);
   }
 
@@ -125,6 +129,13 @@ export function ScanHub() {
         <span className="sh-grid" aria-hidden="true" />
         <div className="sh-top">
           <div className="sh-left">
+            {linked && same.length > 0 && !scanning && (
+              <button type="button" className="ss-entry" onClick={() => setStory(true)}>
+                <span className="ss-ring">{/* eslint-disable-next-line @next/next/no-img-element */}<img src={CREATOR.photo} alt="" /></span>
+                <span><b>Your scan recap</b><small>{same.length} better rates found · watch</small></span>
+                <Icon name="arrow" size={16} />
+              </button>
+            )}
             <span className="sh-kicker"><i />{scanning ? "Scanning your showcase…" : "Showcase scanner"}</span>
             <h2>
               <b><Count key={scanKey} value={linked ? CREATOR.showcaseSize : 0} ms={scanning ? SCAN_MS - 300 : 900} /></b> products checked
@@ -307,6 +318,14 @@ export function ScanHub() {
             <p className="v2-small" style={{ margin: 0 }}>Adding through Techwide, up to 5 at a time. Keep this open or close it; it carries on either way.</p>
           )}
         </Sheet>
+      )}
+      {story && (
+        <ScanStory
+          checked={CREATOR.showcaseSize}
+          items={same.map((it) => ({ id: it.id, productId: it.productId, from: it.from, to: it.to }))}
+          onAddAll={() => add(same)}
+          onClose={() => setStory(false)}
+        />
       )}
     </div>
   );

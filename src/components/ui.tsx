@@ -232,15 +232,15 @@ const BLESS = [
  * "Share your proud moment" (V1's share window): the card in 3 designs, sized for each platform, as an image or a 5-second
  * video, with a blessing, a caption and the apps to send it to. Shows achievements, never sales.
  */
-export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow", level, kicker = "Proud moment" }: {
-  onClose: () => void; big: string; label: string; lines: string[]; handle?: string; level?: Level; kicker?: string;
+export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow", level, kicker = "Proud moment", caption: captionInit }: {
+  onClose: () => void; big: string; label: string; lines: string[]; handle?: string; level?: Level; kicker?: string; caption?: string;
 }) {
   const { toast } = useDemo();
   const [fmt, setFmt] = useState<(typeof FORMATS)[number]["key"]>("story");
   const [design, setDesign] = useState(0);
   const [video, setVideo] = useState(false);
   const [bless, setBless] = useState(0);
-  const [caption, setCaption] = useState(`Alhamdulillah! ${label}: ${big} on Rezekii 🎉 #RezekiiCreator #TikTokShopMY`);
+  const [caption, setCaption] = useState(captionInit ?? `Alhamdulillah! ${label}: ${big} on Rezekii 🎉 #RezekiiCreator #TikTokShopMY`);
   const f = FORMATS.find((x) => x.key === fmt)!;
   const initials = handle.startsWith("@") ? handle.slice(1, 3).toUpperCase() : handle.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
   const send = (app: string) => toast(app === "More" ? "Opening your phone's share menu…" : `Opening ${app} with your ${video ? "video" : "image"} and caption…`);
