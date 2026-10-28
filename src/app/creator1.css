@@ -938,16 +938,20 @@
 @keyframes shCf { 0% { opacity: 1; transform: rotate(var(--a)) translateY(-12px); } 100% { opacity: 0; transform: rotate(var(--a)) translateY(-46px) rotate(160deg); } }
 .sh-fly { position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; margin: -20px 0 0 -20px; border-radius: 10px; object-fit: cover; box-shadow: 0 0 0 2px #ffffff, 0 6px 14px -4px rgba(0, 0, 0, 0.3); z-index: 2; pointer-events: none; animation: shFly 0.95s cubic-bezier(0.55, 0, 0.75, 0.4) both; }
 @keyframes shFly { 0% { left: var(--x0); top: var(--y0); opacity: 0; transform: scale(1) rotate(-12deg); } 18% { opacity: 1; } 100% { left: 50%; top: 50%; opacity: 0; transform: scale(0.2) rotate(0deg); } }
-.sh-core { z-index: 3; transform: scale(calc(1 + var(--hold, 0) * 0.3)); }
+.sh-core { z-index: 3; width: 88px; height: 88px; margin: -44px 0 0 -44px; padding: 0; border: 0; font: inherit; flex-direction: column; gap: 2px; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; transform: scale(calc(1 + var(--hold, 0) * 0.12)); transition: transform 0.12s var(--ease), background-color 0.15s; animation: shCall 2.2s ease-out infinite; }
+.sh-core small { font-size: 11px; font-weight: 900; line-height: 1; white-space: nowrap; }
+.sh-core:hover { background: #009a5c; }
+.sh-core:focus-visible { outline: 3px solid #00c073; outline-offset: 4px; }
+.sh-core:disabled { cursor: default; }
+.sh-core.full { background: #009a5c; }
+@keyframes shCall { 0% { box-shadow: 0 0 0 0 rgba(0, 192, 115, 0.45), 0 10px 24px -8px rgba(0, 154, 92, 0.7); } 70%, 100% { box-shadow: 0 0 0 18px rgba(0, 192, 115, 0), 0 10px 24px -8px rgba(0, 154, 92, 0.7); } }
+@media (max-width: 760px) { .sh-core { width: 76px; height: 76px; margin: -38px 0 0 -38px; } .sh-core small { font-size: 10px; } }
 .sh-hub.busy .sh-core { animation: shGulp 0.5s ease-in-out infinite alternate; }
 @keyframes shGulp { to { transform: scale(1.14); } }
 .sh-burst { position: absolute; left: 50%; top: 50%; width: 60px; height: 60px; margin: -30px 0 0 -30px; border-radius: 50%; border: 3px solid #00c073; pointer-events: none; animation: shBurst 0.7s ease-out both; }
 @keyframes shBurst { from { transform: scale(0.6); opacity: 1; } to { transform: scale(5); opacity: 0; } }
-.sh-ring { position: absolute; inset: -3%; width: 106%; height: 106%; transform: rotate(-90deg); pointer-events: none; }
-.sh-ring circle { fill: none; stroke: #00c073; stroke-width: 2.4; stroke-dasharray: 100; stroke-linecap: round; }
-.sh-hold { position: relative; isolation: isolate; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-.sh-hold::before { content: ""; position: absolute; inset: 0; z-index: -1; background: rgba(0, 192, 115, 0.2); transform-origin: left; transform: scaleX(var(--hold, 0)); }
-.sh-hold.full { border-color: #00c073; color: var(--gink); }
+.sh-ring { position: absolute; inset: -12px; width: calc(100% + 24px); height: calc(100% + 24px); transform: rotate(-90deg); pointer-events: none; }
+.sh-ring circle { fill: none; stroke: #00c073; stroke-width: 5; stroke-dasharray: 100; stroke-linecap: round; }
 a.sh-go { text-decoration: none; }
 .sh-hub .sh-tip { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--gink); }
 .sh-deck { position: absolute; inset: -4%; z-index: 6; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 10px; border-radius: 22px; background: color-mix(in srgb, var(--surface) 94%, transparent); border: 1px solid var(--border); box-shadow: var(--shadow); animation: v2Rise2 0.2s var(--ease) both; }
@@ -987,6 +991,6 @@ a.sh-go { text-decoration: none; }
 .sh-locked .sh-rate .to { color: var(--body); }
 .sh-lockline { padding: 8px 10px; font-size: 12.5px; font-weight: 700; color: var(--muted); }
 @media (max-width: 640px) { .sh-locked .sh-lockrow { grid-template-columns: 36px minmax(0, 1fr); } .sh-locked .sh-lockrow .sh-rate { grid-column: 2; justify-self: start; } .sh-lockimg, .sh-lockimg img { width: 36px; height: 36px; } }
-@media (prefers-reduced-motion: reduce) { .sh-fly, .sh-cf, .sh-burst { display: none; } .sh-blip.pop .sh-bin, .sh-card, .sh-hub.busy .sh-core { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .sh-fly, .sh-cf, .sh-burst { display: none; } .sh-blip.pop .sh-bin, .sh-card, .sh-core, .sh-hub.busy .sh-core { animation: none !important; } }
 /* Phone: the scanner stacks (the two-column rule above was overriding the earlier phone rule), so the radar and swipe card get full width. */
 @media (max-width: 760px) { .sh-top { grid-template-columns: 1fr; gap: 16px; } }

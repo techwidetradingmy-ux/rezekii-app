@@ -19,7 +19,7 @@ type Pending = { id: string; productId: string; from: number; to: number; state:
 type Deck = { ids: string[]; at: number; kept: string[]; fly: "left" | "right" | null };
 
 /** Where each better rate sits on the radar: angle (deg, clockwise from the top) and distance from the centre (0–1). */
-const BLIPS: [number, number][] = [[38, 0.72], [104, 0.5], [162, 0.8], [228, 0.6], [292, 0.78], [334, 0.42], [70, 0.86]];
+const BLIPS: [number, number][] = [[38, 0.78], [104, 0.68], [162, 0.86], [228, 0.7], [292, 0.84], [334, 0.7], [70, 0.9]];
 const SWEEP_S = 4;
 const SCAN_MS = 4200;
 const HOLD_MS = 900;
@@ -220,10 +220,22 @@ export function ScanHub() {
           <div className="sh-radar" style={{ "--sweep": `${scanning ? 1.2 : SWEEP_S}s` } as React.CSSProperties}>
             <span className="sh-rings" aria-hidden="true" />
             <span className="sh-sweep" aria-hidden="true" />
-            {hold > 0 && (
-              <svg className="sh-ring" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="48" pathLength={100} style={{ strokeDashoffset: 100 - hold * 100 }} /></svg>
-            )}
-            <span className="sh-core" aria-hidden="true"><Icon name="scan" size={22} /></span>
+            {/* The big button in the middle (owner, 28 Oct 2026): press and hold to scan. */}
+            <button
+              type="button"
+              className={`sh-core${hold >= 1 ? " full" : ""}`}
+              onPointerDown={holdDown}
+              onPointerUp={holdUp}
+              onPointerCancel={holdUp}
+              onClick={(e) => { if (e.detail === 0) scanAgain(); }}
+              onContextMenu={(e) => e.preventDefault()}
+              disabled={scanning}
+              aria-label={!linked ? "Link TikTok Shop" : scanning ? "Scanning" : "Scan your showcase. Press and hold"}
+            >
+              {hold > 0 && <svg className="sh-ring" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="47" pathLength={100} style={{ strokeDashoffset: 100 - hold * 100 }} /></svg>}
+              <Icon name="scan" size={30} />
+              <small>{!linked ? "Link to scan" : scanning ? "Scanning" : hold >= 1 ? "Let go" : "Hold to scan"}</small>
+            </button>
             {scanning && <span key={`burst-${scanKey}`} className="sh-burst" aria-hidden="true" />}
             {scanning &&
               FLY.map((src, i) => {
@@ -414,19 +426,12 @@ export function ScanHub() {
           ) : (
             <span className="sh-clear"><Icon name="check" size={16} width={3} /> All added</span>
           )}
-          <button
-            type="button"
-            className={`sh-again sh-hold${hold >= 1 ? " full" : ""}`}
-            onPointerDown={holdDown}
-            onPointerUp={holdUp}
-            onPointerCancel={holdUp}
-            onClick={(e) => { if (e.detail === 0) scanAgain(); }}
-            onContextMenu={(e) => e.preventDefault()}
-            disabled={scanning}
-            aria-label={scanning ? "Scanning" : "Scan again. Press and hold"}
-          >
-            <Icon name="refresh" size={16} /> {scanning ? "Scanning…" : hold >= 1 ? "Let go to scan" : hold > 0 ? "Keep holding…" : "Hold to scan again"}
-          </button>
+          {/* Two ways to scan (owner, 28 Oct 2026): hold the big button in the middle, or tap this one, no hold needed. */}
+          {linked && (
+            <button type="button" className="sh-again" onClick={scanAgain} disabled={scanning}>
+              <Icon name="refresh" size={16} /> {scanning ? "Scanning…" : "Scan now"}
+            </button>
+          )}
         </div>
       </section>
 
