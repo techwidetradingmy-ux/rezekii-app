@@ -1116,3 +1116,20 @@ a.sh-go { text-decoration: none; }
   .td-idea svg { vertical-align: -2px; margin-right: 4px; }
   .td-sample { grid-column: 1 / -1 !important; height: 34px; margin-top: 4px; }
 }
+/* Scan button A (owner, 29 Oct 2026): flat white iOS-style button, a track ring around it, green fills while holding. */
+.sh-core { background: var(--surface); color: #00a862; text-shadow: none; transform: scale(calc(1 - var(--hold, 0) * 0.05)); box-shadow: 0 10px 26px -10px rgba(0, 80, 50, 0.45), inset 0 0 0 1px rgba(0, 192, 115, 0.22); transition: transform 0.12s var(--ease), background-color 0.2s, color 0.2s; }
+.sh-core:hover { background: var(--surface); }
+.sh-core:active { transform: scale(0.95); box-shadow: 0 6px 16px -8px rgba(0, 80, 50, 0.45), inset 0 0 0 1px rgba(0, 192, 115, 0.3); }
+.sh-core.full { background: #00c073; color: #ffffff; }
+.sh-core::after { display: none; }
+.sh-core small { color: var(--muted); font-weight: 800; }
+.sh-core.full small { color: #ffffff; }
+.sh-ring { inset: -10px; width: calc(100% + 20px); height: calc(100% + 20px); }
+.sh-ring circle { stroke-width: 4.5; transition: opacity 0.15s; }
+.sh-ring circle.track { stroke: rgba(0, 192, 115, 0.18); stroke-dashoffset: 0; }
+.sh-hub.busy .sh-ring circle.track { stroke: #00c073; stroke-dasharray: 22 78; animation: shSpin 0.9s linear infinite; transform-origin: 50% 50%; }
+@keyframes shSpin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .sh-hub.busy .sh-ring circle.track { animation: none; } }
+/* Story buttons turn green on hover and while pressed (owner, 29 Oct 2026). */
+.ss-btn { transition: background-color 0.15s, color 0.15s, border-color 0.15s; }
+.ss-btn:not(:disabled):hover, .ss-btn:not(:disabled):active { background: #00c073; border-color: #00c073; color: #ffffff; }

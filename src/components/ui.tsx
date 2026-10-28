@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./icons";
 import { Emblem, SHARE_APPS, type Level } from "./emblems";
@@ -10,12 +10,33 @@ import { useDemo } from "./demo";
 /** A small ⓘ beside a word; tap it to read the explanation (owner, 28 Oct 2026: tooltips instead of text on the page). */
 export function Tip({ text, label = "What's this?" }: { text: React.ReactNode; label?: string }) {
   const [open, setOpen] = useState(false);
+  const btn = useRef<HTMLButtonElement>(null);
+  const bubble = useRef<HTMLSpanElement>(null);
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  // The bubble sits on top of the page and is kept inside the screen (owner, 29 Oct 2026: tips went off the phone's edge).
+  useLayoutEffect(() => {
+    if (!open) return setPos(null);
+    const b = btn.current!.getBoundingClientRect();
+    const w = bubble.current?.offsetWidth ?? 280;
+    const h = bubble.current?.offsetHeight ?? 60;
+    setPos({
+      left: Math.min(Math.max(12, b.left - 8), window.innerWidth - w - 12),
+      top: b.bottom + 6 + h > window.innerHeight - 8 ? Math.max(8, b.top - h - 6) : b.bottom + 6,
+    });
+    const close = () => setOpen(false);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [open]);
   return (
     <span className="v2-tipwrap">
-      <button type="button" className="v2-tipbtn sm" aria-label={label} aria-expanded={open} onClick={() => setOpen((o) => !o)} onBlur={() => setOpen(false)}>
+      <button ref={btn} type="button" className="v2-tipbtn sm" aria-label={label} aria-expanded={open} onClick={() => setOpen((o) => !o)} onBlur={() => setOpen(false)}>
         <Icon name="info" size={15} />
       </button>
-      {open && <span className="v2-tip" role="note">{text}</span>}
+      {open && createPortal(<span ref={bubble} className="v2-tip v2-tipfix" role="note" style={pos ?? { left: 0, top: 0, visibility: "hidden" }}>{text}</span>, document.body)}
     </span>
   );
 }

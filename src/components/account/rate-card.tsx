@@ -309,6 +309,7 @@ function RateShare({ packs, best, items, line, price, unit, showOn }: { packs: P
   const contacts = (showOn.whatsapp ? 1 : 0) + (showOn.email ? 1 : 0);
   return (
     <div className="rcs" role="img" aria-label={`Rate card for ${CREATOR.handle}`}>
+      <span className="rcs-band">
       <span className="rcs-head">
         <span className="rcs-brand">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -322,6 +323,7 @@ function RateShare({ packs, best, items, line, price, unit, showOn }: { packs: P
         <span><b>{CREATOR.handle}</b><small>{CREATOR.level} creator on Rezekii</small></span>
       </span>
       {showOn.accounts && <span className="rcs-socials">{ACCOUNTS.map((a) => <PlatformIcon key={a.name} name={a.name} size={18} />)}</span>}
+      </span>
       {packs.slice(0, 3).map((p) => (
         <span key={p.id} className={`rcs-pack${p === best ? " best" : ""}`}>
           {p === best && <i>Best value</i>}

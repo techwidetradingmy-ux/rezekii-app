@@ -6,10 +6,11 @@ import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
 import { useDemo } from "./demo";
-import { Sheet } from "./ui";
+import { Portal, Sheet } from "./ui";
+import { ACCOUNT_TABS, OPEN_ACCOUNT_MENU } from "@/lib/account-tabs";
 import { useSideScroll } from "./side-scroll";
 import { ACCOUNT, HOME, MENUS, pageFor, sectionFor, type AppKind } from "@/lib/menus";
-import { CREATOR, SELLER } from "@/lib/mock";
+import { CREATOR, MY_SAMPLES, SELLER } from "@/lib/mock";
 
 const WHO: Record<AppKind, { name: string; initials: string; label: string; photo?: string; sub: string }> = {
   creator: { name: CREATOR.first, initials: CREATOR.initials, label: "Account", photo: CREATOR.photo, sub: `${CREATOR.level} creator` },
@@ -62,6 +63,16 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
   // Sub-menu (owner, 28 Oct 2026: felt stuck): the open page scrolls into view, and a mouse wheel or drag scrolls it sideways too.
   const subRef = useRef<HTMLElement>(null);
   useSideScroll(subRef, `${section?.href} ${page}`, "a.on");
+  // Page switcher (owner, 29 Oct 2026, option G): on phones the open page's name sits in the top bar and lists the section's pages.
+  const [pgOpen, setPgOpen] = useState(false);
+  useLayoutEffect(() => setPgOpen(false), [path]);
+  // Account panel (owner, 29 Oct 2026, option B): on phones the avatar opens every account section in a side panel.
+  const [acctOpen, setAcctOpen] = useState(false);
+  useLayoutEffect(() => {
+    const open = () => setAcctOpen(true);
+    window.addEventListener(OPEN_ACCOUNT_MENU, open);
+    return () => window.removeEventListener(OPEN_ACCOUNT_MENU, open);
+  }, []);
   const [pill, setPill] = useState<{ left: number; width: number } | null>(null);
   useLayoutEffect(() => {
     const place = () => {
@@ -129,6 +140,26 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
             Rezekii
           </Link>
           {app !== "creator" && <span className="v2-workspace">{app === "seller" ? "Seller" : "Admin"}</span>}
+          {section && section.pages.length > 1 && (
+            <span className="v2-pgpick">
+              <button type="button" aria-haspopup="menu" aria-expanded={pgOpen} onClick={() => setPgOpen((o) => !o)}>
+                <small>{section.label}</small>
+                <b>{section.pages.find(([h]) => h === page)?.[1] ?? section.label}<Icon name="arrow" size={13} /></b>
+              </button>
+              {pgOpen && (
+                <>
+                  <span className="v2-pgback" onClick={() => setPgOpen(false)} aria-hidden="true" />
+                  <span className="v2-pgmenu" role="menu" aria-label={`${section.label} pages`}>
+                    {section.pages.map(([href, label]) => (
+                      <Link key={href} href={href} role="menuitem" className={page === href ? "on" : undefined} aria-current={page === href ? "page" : undefined} onClick={() => setPgOpen(false)}>
+                        <span>{label}</span>{page === href && <Icon name="check" size={16} />}
+                      </Link>
+                    ))}
+                  </span>
+                </>
+              )}
+            </span>
+          )}
           <div className="v2-menu" ref={menuRef}>
             {/* The same green pill as the phone tab bar, sliding to the open section (owner, 28 Oct 2026). */}
             {pill && <span className="v2-menu-ind" aria-hidden="true" style={{ left: pill.left, width: pill.width }} />}
@@ -166,7 +197,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
             <Icon name="bell" size={20} />
             <b>3</b>
           </Link>
-          <Link href={ACCOUNT[app]} className="v2-acct">
+          <Link href={ACCOUNT[app]} className="v2-acct" onClick={(e) => { if (app === "creator" && window.matchMedia("(max-width: 760px)").matches) { e.preventDefault(); setAcctOpen(true); } }}>
             {who.photo ? (
               // eslint-disable-next-line @next/next/no-img-element
               <span className="v2-av photo"><img src={who.photo} alt="" /></span>
@@ -188,6 +219,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
           </nav>
         </div>
       )}
+      {acctOpen && <AccountPanel onClose={() => setAcctOpen(false)} />}
       <main className="site-wrap v2-main">
         {banner}
         {children}
@@ -239,5 +271,43 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
         </Sheet>
       )}
     </>
+  );
+}
+
+/** Every account section in a panel from the right (phones), with her photo, level and streak on top. */
+function AccountPanel({ onClose }: { onClose: () => void }) {
+  const path = usePathname();
+  const samples = MY_SAMPLES.filter((x) => !["Done", "Not approved"].includes(x.status)).length;
+  const [hash, setHash] = useState("");
+  useLayoutEffect(() => {
+    setHash(window.location.hash.slice(1));
+    const key = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", key);
+    return () => document.removeEventListener("keydown", key);
+  }, [onClose]);
+  const here = (k: string) => path === "/app/account" && (hash || "profile") === k;
+  return (
+    <Portal>
+      <div className="ap-back" onClick={onClose} />
+      <aside className="ap-panel" role="dialog" aria-modal="true" aria-label="My Account">
+        <div className="ap-me">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={CREATOR.photo} alt="" />
+          <span><b>{CREATOR.name}</b><small>{CREATOR.handle}</small><small>{CREATOR.level} · {CREATOR.streak}-day streak</small></span>
+          <button type="button" className="v2-iconbtn" aria-label="Close" onClick={onClose}><Icon name="x" size={18} /></button>
+        </div>
+        <nav className="ap-list" aria-label="Account sections">
+          {ACCOUNT_TABS.map(([k, label, icon]) => (
+            <Link key={k} href={`/app/account#${k}`} className={here(k) ? "on" : undefined} aria-current={here(k) ? "page" : undefined} onClick={onClose}>
+              <span className={`ap-ic ${k}`}><Icon name={icon} size={17} /></span>
+              <span>{label}</span>
+              {k === "wallet" && <small>{CREATOR.credits.toLocaleString("en-MY")}</small>}
+              {k === "samples" && samples > 0 && <i className="badge badge-amber">{samples}</i>}
+              <Icon name="arrow" size={15} />
+            </Link>
+          ))}
+        </nav>
+      </aside>
+    </Portal>
   );
 }

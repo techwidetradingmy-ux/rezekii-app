@@ -766,3 +766,45 @@ body { font-feature-settings: "tnum" 0; }
   .v2-flow li:not(:last-child)::after { top: 19px; left: calc(50% + 22px); right: calc(-50% + 22px); }
   .v2-flow b { font-size: 13px; line-height: 1.2; }
 }
+/* Account panel (owner, 29 Oct 2026, option B): slides in from the right on phones. */
+.ap-back { position: fixed; inset: 0; z-index: 80; background: rgba(8, 20, 14, 0.38); animation: v2Fade 0.2s ease both; }
+.ap-panel { position: fixed; top: 0; right: 0; bottom: 0; z-index: 81; width: min(340px, 86vw); display: flex; flex-direction: column; gap: 14px; padding: calc(16px + env(safe-area-inset-top, 0px)) 14px calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--bg); box-shadow: -20px 0 50px rgba(0, 0, 0, 0.2); overflow-y: auto; animation: apIn 0.26s var(--ease) both; }
+@keyframes apIn { from { transform: translateX(100%); } }
+@keyframes v2Fade { from { opacity: 0; } }
+.ap-me { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); }
+.ap-me img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 2px #00c073; }
+.ap-me > span { flex: 1; display: grid; min-width: 0; }
+.ap-me b { font-size: 16px; font-weight: 800; }
+.ap-me small { font-size: 13px; color: var(--muted); }
+.ap-list { display: grid; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); overflow: hidden; }
+.ap-list a { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-top: 1px solid var(--line); color: var(--text); text-decoration: none; font-size: 15px; font-weight: 700; }
+.ap-list a:first-child { border-top: 0; }
+.ap-list a > span:nth-child(2) { flex: 1; }
+.ap-list a small { font-size: 13px; color: var(--muted); font-weight: 700; }
+.ap-list a > svg { color: var(--muted); }
+.ap-list a.on { background: var(--gsoft); color: var(--gink); }
+.ap-ic { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; color: #ffffff; background: #8a94a6; flex-shrink: 0; }
+.ap-ic.profile { background: #2f80ed; } .ap-ic.level { background: #f5a623; } .ap-ic.wallet { background: #00a862; } .ap-ic.referral { background: #e8005a; }
+.ap-ic.samples { background: #7f77dd; } .ap-ic.connections { background: #6b7785; } .ap-ic.rate-card { background: #0f6e56; } .ap-ic.settings { background: #4b5563; }
+@media (prefers-reduced-motion: reduce) { .ap-panel, .ap-back { animation: none; } }
+/* Page switcher in the top bar (owner, 29 Oct 2026, option G): phones only; the sliding page row goes. */
+.v2-pgpick { display: none; }
+@media (max-width: 760px) {
+  .v2-subwrap { display: none; }
+  .v2-top .site-nav:has(.v2-pgpick) .site-brand { font-size: 0 !important; gap: 0; }
+  .v2-pgpick { position: relative; display: inline-flex; min-width: 0; }
+  .v2-pgpick > button { display: grid; justify-items: start; gap: 0; min-width: 0; max-width: 190px; padding: 3px 12px 3px 10px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; text-align: left; cursor: pointer; line-height: 1.2; }
+  .v2-pgpick small { font-size: 13px; font-weight: 700; color: var(--muted); }
+  .v2-pgpick b { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; font-size: 15px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .v2-pgpick b svg { flex-shrink: 0; transform: rotate(90deg); color: var(--muted); transition: transform 0.2s var(--ease); }
+  .v2-pgpick > button[aria-expanded="true"] { border-color: #00c073; }
+  .v2-pgpick > button[aria-expanded="true"] b svg { transform: rotate(-90deg); }
+  .v2-pgback { position: fixed; inset: 0; z-index: 60; }
+  .v2-pgmenu { position: absolute; top: calc(100% + 8px); left: 0; z-index: 61; width: 230px; padding: 6px; border-radius: 16px; background: var(--surface); border: 1px solid var(--border); box-shadow: 0 18px 40px -12px rgba(0, 40, 25, 0.35); display: grid; gap: 2px; animation: v2Rise2 0.15s var(--ease) both; }
+  .v2-pgmenu a { display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 12px; border-radius: 11px; color: var(--text); text-decoration: none; font-size: 15px; font-weight: 700; }
+  .v2-pgmenu a span { flex: 1; }
+  .v2-pgmenu a.on { background: var(--gsoft); color: var(--gink); }
+}
+/* Tips sit on top of everything and stay inside the screen. */
+.v2-tip.v2-tipfix { position: fixed; z-index: 200; width: max-content; max-width: min(280px, calc(100vw - 24px)); padding: 10px 12px; border-radius: 12px; background: var(--text); color: var(--bg); font-size: 13.5px; font-weight: 600; line-height: 1.45; text-transform: none; letter-spacing: 0; white-space: normal; text-align: left; box-shadow: 0 12px 28px -12px rgba(0, 0, 0, 0.45); animation: v2Rise2 0.15s var(--ease) both; pointer-events: none; }
+@media (max-width: 760px) { .v2-tip.v2-tipfix { font-size: 13px; } }

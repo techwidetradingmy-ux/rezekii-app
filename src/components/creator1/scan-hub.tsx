@@ -233,7 +233,8 @@ export function ScanHub() {
               disabled={scanning}
               aria-label={!linked ? "Link TikTok Shop" : scanning ? "Scanning" : "Scan your showcase. Press and hold"}
             >
-              {hold > 0 && <svg className="sh-ring" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="47" pathLength={100} style={{ strokeDashoffset: 100 - hold * 100 }} /></svg>}
+              {/* Option A (owner, 29 Oct 2026): a ring that fills while she holds, like an Apple Watch activity ring. */}
+              <svg className="sh-ring" viewBox="0 0 100 100" aria-hidden="true"><circle className="track" cx="50" cy="50" r="47" pathLength={100} /><circle cx="50" cy="50" r="47" pathLength={100} style={{ strokeDashoffset: 100 - hold * 100, opacity: hold > 0 ? 1 : 0 }} /></svg>
               <Icon name="scan" size={30} />
               <small>{!linked ? "Link to scan" : scanning ? "Scanning" : hold >= 1 ? "Let go" : "Hold to scan"}</small>
             </button>
