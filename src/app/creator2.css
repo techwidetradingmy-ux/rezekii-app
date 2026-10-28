@@ -873,3 +873,24 @@ span.pd-row { grid-template-columns: 12px minmax(0, 1fr) auto 14px; }
   .cr2-bbtn { height: 38px; padding: 0 12px; justify-content: center; background: #00c073; color: #ffffff; }
   .cr2-bacts .cr2-sharebtn { height: 38px; padding: 0 12px; justify-content: center; background: var(--surface); border-color: var(--border); color: var(--text); }
 }
+/* Performance by LIVE, and video vs LIVE per product (owner, 28 Oct 2026). */
+.pl-source .np-seg { width: 100%; }
+.pl-source .np-seg button { flex: 1; }
+.lv-mark { width: 52px; height: 52px; border-radius: 12px; display: grid; place-items: center; background: linear-gradient(135deg, #ff3b6b, #e8005a); color: #ffffff; font-size: 13px; font-weight: 900; letter-spacing: 0.06em; }
+.lv-thumbs { display: inline-flex; }
+.lv-thumbs img { width: 22px; height: 22px; border-radius: 7px; object-fit: cover; border: 2px solid var(--surface); }
+.lv-thumbs img + img { margin-left: -8px; }
+.lv-prods { display: grid; gap: 6px; }
+.lv-prods button { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 6px 8px; border: 0; border-radius: 12px; background: var(--surface2); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.lv-prods img { width: 36px; height: 36px; border-radius: 9px; object-fit: cover; }
+.lv-prods span { font-size: 14px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lv-prods b { font-size: 14px; font-weight: 900; }
+.pl-split { display: grid; gap: 6px; }
+.pl-bar { display: flex; height: 10px; border-radius: 99px; overflow: hidden; background: var(--line); gap: 2px; }
+.pl-bar i, .pl-keys i { display: block; background: #c9d3ce; }
+.pl-keys { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--muted); font-weight: 700; }
+.pl-keys span { display: inline-flex; align-items: center; gap: 5px; }
+.pl-keys i { width: 10px; height: 10px; border-radius: 3px; }
+.pl-keys b { color: var(--text); }
+.pl-bar .v, .pl-keys .v { background: #00c073; }
+.pl-bar .l, .pl-keys .l { background: #e8005a; }

@@ -195,6 +195,26 @@ export const VIDEOS: VideoRow[] = [
   { id: "v6", title: "Yoga pants try-on, 3 sizes", date: "28 Sep", views: null, orders: 24, gmv: 405.6, commission: 32.4, cancel: 8.3, productId: "p05", refunds: 1 },
 ];
 
+/**
+ * Her LIVEs in the last 30 days (owner, 28 Oct 2026). TikTok tags each creator order with where it came from (video or LIVE)
+ * and which one, so a LIVE is the group of orders that share one LIVE. The time is her first sale in it. TikTok doesn't give
+ * creators viewers or watch time, so there are none here.
+ */
+export type LiveRow = { id: string; date: string; time: string; orders: number; gmv: number; commission: number; cancel: number; products: [string, number][] };
+export const LIVES: LiveRow[] = [
+  { id: "l1", date: "Tue 21 Oct", time: "8 PM", orders: 50, gmv: 1580, commission: 168.4, cancel: 6.2, products: [["p13", 110], ["p21", 58.4]] },
+  { id: "l2", date: "Sat 18 Oct", time: "9 PM", orders: 41, gmv: 1210, commission: 132.6, cancel: 4.8, products: [["p21", 101.6], ["p09", 31]] },
+  { id: "l3", date: "Wed 15 Oct", time: "8:30 PM", orders: 44, gmv: 780, commission: 88, cancel: 12.5, products: [["p17", 60], ["p13", 28]] },
+  { id: "l4", date: "Sun 12 Oct", time: "9 PM", orders: 20, gmv: 640, commission: 71, cancel: 3.1, products: [["p13", 51], ["p21", 20]] },
+];
+
+/** Where a product's commission came from: her videos, her LIVEs, and the rest (showcase and other links). */
+export function channelSplit(productId: string, commission: number) {
+  const video = VIDEOS.filter((v) => v.productId === productId).reduce((a, v) => a + v.commission, 0);
+  const live = LIVES.reduce((a, l) => a + l.products.filter(([id]) => id === productId).reduce((x, [, c]) => x + c, 0), 0);
+  return { video, live, other: Math.max(0, commission - video - live) };
+}
+
 /** Orders in the 30 days before, for the "Sales dropping" tag. */
 export const PREV_ORDERS: Record<string, number> = { p21: 171, p13: 132, p22: 88, p17: 61, p09: 66 };
 

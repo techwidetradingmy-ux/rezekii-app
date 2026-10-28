@@ -3,34 +3,49 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
-import { Lock } from "@/components/ui";
+import { Lock, Seg } from "@/components/ui";
 import { VideoSheet } from "@/components/creator2/view-sheets";
 import { ANALYTICS, product, rm } from "@/lib/mock";
-import { PREV_ORDERS, SHORT, VIDEOS, type VideoRow } from "@/lib/mock-creator2";
+import { LIVES, PREV_ORDERS, SHORT, VIDEOS, channelSplit, type VideoRow } from "@/lib/mock-creator2";
 
 const COLORS = ["#00c073", "#2f80ed", "#f5a623", "#e8005a", "#8b7dff"];
 import "@/app/creator2.css";
 
-/** Performance by product: a donut of where her commission comes from, then what each product earned, its trend and best video. */
+type Source = "All" | "Video" | "LIVE";
+
+/**
+ * Performance by product: a donut of where her commission comes from, then what each product earned, its trend and best video.
+ * The All / Video / LIVE switch (owner, 28 Oct 2026) shows what sells in videos and what sells on LIVE: some products only do well
+ * in one of them.
+ */
 export function ProductList() {
-  const total = ANALYTICS.commissionEst;
+  const [source, setSource] = useState<Source>("All");
+  const videoTotal = Math.round(ANALYTICS.commissionEst * (ANALYTICS.byChannel.find((c) => c.label === "Videos")?.share ?? 0)) / 100;
+  const liveTotal = LIVES.reduce((a, l) => a + l.commission, 0);
+  const total = source === "All" ? ANALYTICS.commissionEst : source === "Video" ? videoTotal : liveTotal;
+  const valueOf = (b: { productId: string; commission: number }) => {
+    if (source === "All") return b.commission;
+    const s = channelSplit(b.productId, b.commission);
+    return source === "Video" ? s.video : s.live;
+  };
   const [video, setVideo] = useState<VideoRow | null>(null);
   // A compact list (owner, 28 Oct 2026: long lists were hard to scroll): one row per product, tap to open its details.
   const [openId, setOpenId] = useState<string | null>(null);
-  const rows = [...ANALYTICS.byProduct].sort((a, b) => b.commission - a.commission);
+  const rows = ANALYTICS.byProduct.map((b) => ({ ...b, value: valueOf(b) })).filter((b) => b.value > 0).sort((a, b) => b.value - a.value);
   const top = rows[0];
-  const topShare = Math.round((top.commission / total) * 100);
+  const topShare = Math.round((top.value / total) * 100);
   const name = (id: string) => SHORT[id] ?? product(id).name;
   // Share of income as a donut (owner, 28 Oct 2026: a pie reads better than a sentence). "Other" is everything else she sold.
-  const other = Math.max(0, total - rows.reduce((a, b) => a + b.commission, 0));
+  const other = Math.max(0, total - rows.reduce((a, b) => a + b.value, 0));
   const slices = [
-    ...rows.map((b, i) => ({ id: b.productId, label: name(b.productId), value: b.commission, color: COLORS[i % COLORS.length] })),
+    ...rows.map((b, i) => ({ id: b.productId, label: name(b.productId), value: b.value, color: COLORS[i % COLORS.length] })),
     ...(other > 0 ? [{ id: "other", label: "Other", value: other, color: "#c9d3ce" }] : []),
   ];
   const starts = slices.map((_, i) => slices.slice(0, i).reduce((a, x) => a + (x.value / total) * 100, 0));
 
   return (
     <div className="v2-stack" style={{ gap: 20 }}>
+      <div className="pl-source"><Seg value={source} options={["All", "Video", "LIVE"] as const} onChange={(s) => { setSource(s); setOpenId(null); }} /></div>
 
       <Lock what="where your commission comes from">
         <section className="v2-card pd-card" aria-label="Where your commission comes from">
@@ -79,10 +94,11 @@ export function ProductList() {
                       {(lowRated || highCancel) && <span className="badge badge-red">{lowRated ? "Low rating" : "High cancels"}</span>}
                     </span>
                   </span>
-                  <b className="v2-num">{rm(b.commission, 0)}</b>
+                  <b className="v2-num">{rm(b.value, 0)}</b>
                   <Icon name="arrow" size={16} />
                 </button>
                 {openId === b.productId && <div className="pl-body">
+                <Split productId={b.productId} commission={b.commission} />
                 <div className="cr2-mini">
                   <span><small>Orders</small><b>{b.orders}</b></span>
                   <span><small>Cancel rate</small><b className={highCancel ? "cr2-red" : undefined}>{b.cancel}%</b></span>
@@ -100,6 +116,19 @@ export function ProductList() {
       </Lock>
 
       {video && <VideoSheet video={video} onClose={() => setVideo(null)} />}
+    </div>
+  );
+}
+
+/** One product's commission split into video, LIVE and the rest, as a thin bar. */
+function Split({ productId, commission }: { productId: string; commission: number }) {
+  const s = channelSplit(productId, commission);
+  const parts = [["Video", s.video, "v"], ["LIVE", s.live, "l"], ["Other", s.other, "o"]] as const;
+  const pct = (v: number) => Math.round((v / commission) * 100);
+  return (
+    <div className="pl-split" role="img" aria-label={parts.map(([l, v]) => `${l} ${pct(v)}%`).join(", ")}>
+      <span className="pl-bar">{parts.map(([l, v, c]) => v > 0 && <i key={l} className={c} style={{ width: `${pct(v)}%` }} />)}</span>
+      <span className="pl-keys">{parts.map(([l, v, c]) => <span key={l}><i className={c} />{l} <b>{pct(v)}%</b></span>)}</span>
     </div>
   );
 }
