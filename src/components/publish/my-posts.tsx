@@ -77,6 +77,9 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
   const [month, setMonth] = useState(() => TODAY.slice(0, 7));
   const [editing, setEditing] = useState<MyPost | null>(null);
   const [cancelling, setCancelling] = useState<string | null>(null);
+  // Owner, 28 Oct 2026: posts she made from her phone show here too, marked, so the calendar is the whole picture.
+  const [src, setSrc] = useState<"all" | "rezekii" | "phone">("all");
+  const srcOk = (p: MyPost) => src === "all" || (src === "phone") === (p.source === "phone");
 
   // Posts going out move one step every couple of seconds, like V1's status updates while TikTok works on them.
   const moving = posts.some((p) => p.targets.some((t) => MOVING.includes(t.status)));
@@ -97,8 +100,8 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
   const chan = (key: string) => setup.channels.find((c) => c.key === key);
   const appOf = (t: PostTarget): Channel => chan(t.key)?.app ?? "facebook";
   const inRange = (p: MyPost) => !p.date || (p.date >= from && p.date <= to);
-  const shown = posts.filter((p) => inRange(p) && (!day || p.date === day) && (!only || groupOf(p) === only));
-  const count = (g: Group) => posts.filter((p) => inRange(p) && groupOf(p) === g).length;
+  const shown = posts.filter((p) => srcOk(p) && inRange(p) && (!day || p.date === day) && (!only || groupOf(p) === only));
+  const count = (g: Group) => posts.filter((p) => srcOk(p) && inRange(p) && groupOf(p) === g).length;
 
   const choose = (a: string, b: string, key: string | null) => { setRange([a, b]); setPreset(key); setDay(null); setMonth(b < TODAY ? b.slice(0, 7) : a > TODAY ? a.slice(0, 7) : TODAY.slice(0, 7)); };
   const label = preset ? PRESETS.find(([k]) => k === preset)![1] : `${dayName(from)} – ${dayName(to)}`;
@@ -133,7 +136,10 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
           <small>{Math.floor(p.seconds / 60)}:{String(p.seconds % 60).padStart(2, "0")}</small>
         </span>
         <span className="sq-body">
-          <span className="sq-when">{p.date ? <><b>{dayLabel(p.date)}</b> · {clock(p.time)}</> : <b>No time yet</b>}</span>
+          <span className="sq-when">
+            {p.date ? <><b>{dayLabel(p.date)}</b> · {clock(p.time)}</> : <b>No time yet</b>}
+            <span className={`sq-src${p.source === "phone" ? " phone" : ""}`}>{p.source === "phone" ? <><Icon name="phone" size={12} /> From phone</> : "Via Rezekii"}</span>
+          </span>
           <strong className="sq-cap">{p.caption}</strong>
           <span className="sq-targets">
             {p.targets.map((t) => {
@@ -202,6 +208,15 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
         ))}
       </div>
 
+      <div className="sq-srcbar">
+        <div className="v2-chips" role="group" aria-label="Posted from">
+          {([["all", "All posts"], ["rezekii", "Via Rezekii"], ["phone", "From phone"]] as const).map(([k, l]) => (
+            <button key={k} type="button" className={`v2-chip${src === k ? " on" : ""}`} aria-pressed={src === k} onClick={() => setSrc(k)}>{k === "phone" && <Icon name="phone" size={15} />}{l}</button>
+          ))}
+        </div>
+        <span className="v2-small">From phone = posts you made in the apps yourself. Rezekii checks your connected accounts every 30 minutes.</span>
+      </div>
+
       <section className="v2-card sq-map">
         <div className="sq-map-h">
           <button type="button" className="cp-nav" aria-label="Previous month" onClick={() => moveMonth(-1)}><Icon name="back" size={16} /></button>
@@ -213,7 +228,7 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
           {Array.from({ length: lead }, (_, i) => <span key={`b${i}`} />)}
           {Array.from({ length: daysIn }, (_, i) => {
             const d = `${month}-${String(i + 1).padStart(2, "0")}`;
-            const list = posts.filter((p) => p.date === d);
+            const list = posts.filter((p) => p.date === d && srcOk(p));
             const out = d < from || d > to;
             return (
               <button key={d} type="button" className={`sq-day${d === TODAY ? " today" : ""}${day === d ? " on" : ""}${out ? " out" : ""}`} onClick={() => setDay(day === d ? null : d)} aria-label={`${dayName(d)}: ${list.length} post${list.length === 1 ? "" : "s"}`} aria-pressed={day === d}>
@@ -254,7 +269,7 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
           <a href={newPost} className="np-btn v2-btn-sm">New Post</a>
         </section>
       )}
-      <p className="v2-small" style={{ margin: 0 }}>A post counts as posted only after the app confirms it. You can edit or cancel until it starts sending; after that, change or delete it in the app itself.</p>
+      <p className="v2-small" style={{ margin: 0 }}>A post counts as posted only after the app confirms it. You can edit or cancel until it starts sending; after that, change or delete it in the app itself. Posts you make from your phone show up here too, once they&apos;re live.</p>
 
       {editing && <EditSheet post={editing} appOf={appOf} chan={chan} onClose={() => setEditing(null)} onSave={(p) => { setPosts((all) => all.map((x) => (x.id === p.id ? p : x))); setEditing(null); toast(p.date ? `Saved. Goes out ${dayLabel(p.date)}, ${clock(p.time)}.` : "Draft saved"); }} />}
     </div>

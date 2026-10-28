@@ -101,6 +101,8 @@ export type MyPost = {
   cover: string;
   seconds: number;
   targets: PostTarget[];
+  /** Posted from her phone in the app itself (owner, 28 Oct 2026). Rezekii reads these from each connected account; missing = posted with Rezekii. */
+  source?: "phone";
 };
 
 const t = (key: string, status: PostStatus, more: Partial<PostTarget> = {}): PostTarget => ({ key, status, ...more });
@@ -118,6 +120,9 @@ export const CREATOR_POSTS: MyPost[] = [
   { id: "m9", date: "2026-10-26", time: "20:15", caption: "Yoga pants fit check", comment: `${CMT}yoga/`, cover: "/products/tap-05.jpg", seconds: 52, targets: [t("tt-aisyah", "posted", { views: 8400 }), t("fb-aisyah", "failed", { reason: "Facebook was busy and didn't answer", fix: "Retry" })] },
   { id: "m10", date: "2026-10-25", time: "13:00", caption: "Pillowcase colours ranked", comment: "", cover: "/products/tap-17.jpg", seconds: 27, targets: [t("tt-aisyah", "inbox")] },
   { id: "m11", date: "2026-10-24", time: "20:30", caption: "Thermos vs a cheap flask", comment: `${CMT}thermos/`, cover: "/products/tap-21.jpg", seconds: 39, targets: [t("tt-aisyah", "posted", { views: 41200 }), t("ig-aisyah", "posted", { views: 5100 }), t("fb-aisyah", "posted", { views: 2300 })] },
+  { id: "m13", date: "2026-10-27", time: "13:20", caption: "GRWM before the office", comment: "", cover: "/products/tap-09.jpg", seconds: 24, source: "phone", targets: [t("tt-aisyah", "posted", { views: 6200 })] },
+  { id: "m14", date: "2026-10-25", time: "21:40", caption: "Thermos refill hack", comment: "", cover: "/products/tap-21.jpg", seconds: 18, source: "phone", targets: [t("ig-aisyah", "posted", { views: 2100 })] },
+  { id: "m15", date: "2026-10-23", time: "08:05", caption: "Rain check: windbreaker on the way to work", comment: "", cover: "/products/tap-03.jpg", seconds: 21, source: "phone", targets: [t("tt-aisyah", "posted", { views: 3300 })] },
   { id: "m12", date: "2026-10-22", time: "21:00", caption: "One cable, four phones", comment: `${CMT}cable/`, cover: "/products/tap-13.jpg", seconds: 25, targets: [t("tt-aisyah", "posted", { views: 9800 }), t("ig-aisyah", "posted", { views: 1200 })] },
 ];
 
@@ -129,5 +134,7 @@ export const SELLER_POSTS_V2: MyPost[] = [
   { id: "s5", date: "", time: "", caption: "Open house set: pot + thermos", comment: "", cover: "/products/tap-08.jpg", seconds: 30, targets: [t("fb-seri", "draft")] },
   { id: "s6", date: "2026-10-27", time: "20:00", caption: "Chopper vs knife: 1 kg onions", comment: `${CMT}chopper/`, cover: "/products/tap-11.jpg", seconds: 34, targets: [t("fb-seri", "posted", { views: 6300 }), t("ig-seri", "posted", { views: 3900 }), t("ig-deals", "failed", { reason: "Instagram stopped accepting posts from Rezekii", fix: "Reconnect" })] },
   { id: "s7", date: "2026-10-24", time: "19:45", caption: "Cordless vacuum: pet hair in one pass", comment: `${CMT}vacuum/`, cover: "/products/tap-18.jpg", seconds: 37, targets: [t("tt-seri", "posted", { views: 22100 }), t("fb-seri", "posted", { views: 2700 })] },
+  { id: "s9", date: "2026-10-26", time: "11:30", caption: "Restock day at the warehouse", comment: "", cover: "/products/tap-18.jpg", seconds: 19, source: "phone", targets: [t("tt-seri", "posted", { views: 4100 })] },
+  { id: "s10", date: "2026-10-23", time: "16:10", caption: "Tumbler colours, quick look", comment: "", cover: "/products/tap-24.jpg", seconds: 15, source: "phone", targets: [t("ig-seri", "posted", { views: 1500 })] },
   { id: "s8", date: "2026-10-21", time: "20:00", caption: "Granite pot: first cook", comment: `${CMT}pot/`, cover: "/products/tap-08.jpg", seconds: 42, targets: [t("fb-seri", "posted", { views: 1900 }), t("th-seri", "posted", { views: 640 })] },
 ];
