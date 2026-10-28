@@ -367,3 +367,19 @@ export function AiMark({ size = 44, busy = false }: { size?: number; busy?: bool
     </span>
   );
 }
+
+type FlowStep = { icon: Parameters<typeof Icon>[0]["name"]; title: string; note?: string; tone?: "red" | "dark" };
+/** A picture instead of a paragraph: steps with icons, joined by arrows (a column on phones). */
+export function Flow({ steps, label }: { steps: FlowStep[]; label: string }) {
+  return (
+    <ol className="v2-flow" aria-label={label}>
+      {steps.map((s) => (
+        <li key={s.title} className={s.tone}>
+          <span className="ic"><Icon name={s.icon} size={20} /></span>
+          <b>{s.title}</b>
+          {s.note && <small>{s.note}</small>}
+        </li>
+      ))}
+    </ol>
+  );
+}

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { CalendarPicker, dayName, iso } from "@/components/calendar-picker";
-import { Count, Lock, Seg, Stat, Title } from "@/components/ui";
+import { Count, Flow, Lock, Seg, Stat, Title } from "@/components/ui";
 import { rm } from "@/lib/mock";
 import { PAYOUTS, payoutDays, type PayoutDay } from "@/lib/mock-creator2";
 import "@/app/creator2.css";
@@ -233,14 +233,24 @@ export default function DataPayouts() {
       </section>
 
       <section className="v2-card flat">
-        <h2 className="cr2-h3">What these mean</h2>
-        <ul className="cr2-do">
-          <li><span><b>Estimated</b>: commission on orders placed, before buyers can still cancel or return.</span></li>
-          <li><span><b>Extra through Rezekii</b>: every order that came through Techwide&apos;s TAP campaigns, traced one by one: what the campaign paid above TikTok&apos;s open rate for the same product at that time.</span></li>
-          <li><span><b>Pending</b>: the order is delivered but the return window isn&apos;t over yet.</span></li>
-          <li><span><b>Paid</b>: TikTok Shop has settled it into your balance. Withdraw it in TikTok Shop.</span></li>
-          <li><span><b>Clawed back</b>: the buyer cancelled or returned after the commission was counted.</span></li>
-        </ul>
+        <h2 className="cr2-h3">How your commission moves</h2>
+        <Flow
+          label="How commission moves from order to payout"
+          steps={[
+            { icon: "bag", title: "Ordered", note: "Estimated" },
+            { icon: "box", title: "Delivered", note: "Pending: return window" },
+            { icon: "wallet", title: "Settled", note: "Paid to your TikTok Shop balance" },
+            { icon: "x", title: "Cancelled or returned", note: "Clawed back", tone: "red" },
+          ]}
+        />
+        <div className="cr2-eq" aria-label="Techwide rate minus open rate equals extra through Rezekii">
+          <span><small>Techwide TAP rate</small><b>10%</b></span>
+          <i>−</i>
+          <span><small>TikTok open rate</small><b>6%</b></span>
+          <i>=</i>
+          <span className="on"><small>Extra through Rezekii</small><b>+4%</b></span>
+          <em>Traced on every TAP order</em>
+        </div>
         <p className="cr2-note"><Icon name="shield" size={15} /><span>We only show money that has already happened. We never forecast what you will earn.</span></p>
       </section>
     </div>

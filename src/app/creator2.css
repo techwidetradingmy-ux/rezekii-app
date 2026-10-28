@@ -451,7 +451,7 @@
 .cr2-plan-list li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 0; animation: v2Rise2 0.4s var(--ease) both; }
 .cr2-plan-list li + li { border-top: 1px solid var(--line); }
 .cr2-plan-list li.done .cr2-plan-main b { text-decoration: line-through; color: var(--muted); }
-.cr2-check { width: 26px; height: 26px; border-radius: 9px; border: 2px solid var(--border); background: var(--surface); color: #03140b; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+.cr2-check { width: 26px; height: 26px; border-radius: 9px; border: 2px solid var(--border); background: var(--surface); color: #ffffff; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
 li.done .cr2-check { background: #00c073; border-color: #00c073; animation: v2Pop 0.3s var(--spring) both; }
 .cr2-plan-main { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; }
 .cr2-plan-main b { font-size: 15px; }
@@ -459,9 +459,9 @@ li.done .cr2-check { background: #00c073; border-color: #00c073; animation: v2Po
 .cr2-tag { height: 20px; padding: 0 7px; border-radius: 6px; font-size: 11px; font-weight: 900; letter-spacing: 0.03em; display: inline-flex; align-items: center; }
 .cr2-tag.red { background: var(--rsoft); color: var(--red); }
 .cr2-tag.amber { background: var(--asoft); color: var(--amber); }
-.cr2-tag.violet { background: rgba(109, 94, 252, 0.12); color: #5b4ee0; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cr2-tag.violet { color: #b9b0ff; } }
-:root[data-theme="dark"] .cr2-tag.violet { color: #b9b0ff; }
+.cr2-tag.violet { background: rgba(0, 192, 115, 0.12); color: #009a5c; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cr2-tag.violet { color: #5fe3ab; } }
+:root[data-theme="dark"] .cr2-tag.violet { color: #5fe3ab; }
 @media (max-width: 560px) {
   .cr2-watch-h { flex-wrap: wrap; }
   .cr2-watch-row { grid-template-columns: 44px minmax(0, 1fr); }
@@ -472,15 +472,15 @@ li.done .cr2-check { background: #00c073; border-color: #00c073; animation: v2Po
 }
 
 /* Payouts: extra through Rezekii, calendar, month table */
-.violet { color: #5b4ee0; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .violet { color: #b9b0ff; } }
-:root[data-theme="dark"] .violet { color: #b9b0ff; }
-.cr2-k-open { background: linear-gradient(90deg, #22dc95, #00b86c); }
-.cr2-k-extra { background: linear-gradient(90deg, #8b7dff, #25c8f4); }
+.violet { color: #009a5c; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .violet { color: #5fe3ab; } }
+:root[data-theme="dark"] .violet { color: #5fe3ab; }
+.cr2-k-open { background: #b8ead2; }
+.cr2-k-extra { background: linear-gradient(90deg, #00c073, #5fe3ab); }
 .cr2-payhead { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 14px; align-items: end; }
 .cr2-amt { font-size: 38px; font-weight: 900; letter-spacing: -0.03em; line-height: 1.1; font-variant-numeric: tabular-nums; }
-.cr2-amt.violet { background: linear-gradient(90deg, #6d5efc, #1aa3cf); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.cr2-extra { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 18px; background: linear-gradient(135deg, rgba(109, 94, 252, 0.1), rgba(37, 200, 244, 0.08)); box-shadow: inset 0 0 0 1.5px rgba(139, 125, 255, 0.35); }
+.cr2-amt.violet { background: linear-gradient(90deg, #00c073, #009a5c); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.cr2-extra { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 18px; background: linear-gradient(135deg, rgba(0, 192, 115, 0.1), rgba(95, 227, 171, 0.08)); box-shadow: inset 0 0 0 1.5px rgba(0, 192, 115, 0.35); }
 .cr2-extra small { font-size: 12.5px; color: var(--body); line-height: 1.4; }
 .cr2-paycal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
 .cr2-paycal-wd { font-size: 11.5px; font-weight: 800; color: var(--muted); text-align: center; padding-bottom: 2px; }
@@ -491,7 +491,7 @@ li.done .cr2-check { background: #00c073; border-color: #00c073; animation: v2Po
 .cr2-payday > i { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; justify-content: flex-end; opacity: 0.32; transform-origin: bottom; animation: v2Rise 0.6s var(--ease) both; }
 .cr2-payday.paid > i { background: #00c073; }
 .cr2-payday.pending > i { background: #f5a623; }
-.cr2-payday > i em { display: block; background: #6d5efc; }
+.cr2-payday > i em { display: block; background: #007a4b; }
 .cr2-payday .claw { position: absolute; right: 6px; top: 7px; width: 7px; height: 7px; border-radius: 50%; background: #e14b3b; }
 .cr2-payday.future { background: var(--surface2); border-color: transparent; cursor: default; color: var(--muted); }
 .cr2-payday.on { border-color: var(--text); }
@@ -536,3 +536,13 @@ li.done .cr2-check { background: #00c073; border-color: #00c073; animation: v2Po
 .cs-tick a { color: var(--gink); font-weight: 800; }
 .cs-record { margin: 0 16px; display: flex; gap: 8px; align-items: flex-start; font-size: 13px; line-height: 1.5; color: var(--body); }
 .cs-record svg { flex-shrink: 0; margin-top: 2px; color: var(--gink); }
+
+/* Payouts: the extra as a sum */
+.cr2-eq { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); }
+.cr2-eq span { display: flex; flex-direction: column; gap: 1px; padding: 8px 12px; border-radius: 12px; background: var(--surface2); }
+.cr2-eq span.on { background: var(--gsoft); }
+.cr2-eq span.on b { color: var(--gink); }
+.cr2-eq small { font-size: 11.5px; font-weight: 700; color: var(--muted); }
+.cr2-eq b { font-size: 18px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.cr2-eq i { font-style: normal; font-size: 20px; font-weight: 900; color: var(--muted); }
+.cr2-eq em { flex-basis: 100%; font-style: normal; font-size: 12.5px; color: var(--muted); }

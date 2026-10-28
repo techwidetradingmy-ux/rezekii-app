@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { Hidden, Sheet, Title } from "@/components/ui";
+import { Flow, Hidden, Sheet, Title } from "@/components/ui";
 import { POOL_ICON, PoolTag } from "@/components/creator1/brand";
 import { CREATOR, MY_SAMPLES, PRODUCTS, product, rm, type Product } from "@/lib/mock";
 import { POOLS, SAMPLE_ACCESS as ACCESS, SAMPLE_LEFT, SELLER_CONDS, type Cond, type Pool } from "@/lib/mock-creator1";
@@ -100,6 +100,19 @@ export default function Marketplace() {
           <button type="button" className="mk-tier info" aria-label="How sample access works" onClick={() => setInfo(true)}><b style={{ fontSize: 18 }}>?</b></button>
         </div>
       </div>
+
+      <section className="v2-card tight">
+        <Flow
+          label="How free samples work"
+          steps={[
+            { icon: "gift", title: "Request", note: "Free, from TAP sellers" },
+            { icon: "shield", title: "Techwide approves", note: "Usually 2 working days" },
+            { icon: "box", title: "Ships via TikTok", note: "Track it in My account" },
+            { icon: "video", title: "Post 3 videos", note: "Bonus if you post in 1 day" },
+            { icon: "wallet", title: "Keep it and earn", note: "Commission on every sale" },
+          ]}
+        />
+      </section>
 
       <div className="mk-cats nv-noscroll" role="group" aria-label="Category">
         {CATS.map((c) => (

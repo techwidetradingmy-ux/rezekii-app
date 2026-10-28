@@ -214,7 +214,7 @@
 .sl-sticky .np-btn { flex: 0 0 auto; }
 @media (max-width: 760px) { .sl-sticky { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); } .sl-sticky .np-btn { flex: 1 1 100%; } }
 .sl-done { align-items: center; text-align: center; padding: 30px 22px; }
-.sl-check { width: 72px; height: 72px; border-radius: 50%; background: var(--btn); box-shadow: var(--btn-shadow), 0 18px 34px -12px rgba(0, 168, 98, 0.7); color: #03140b; display: flex; align-items: center; justify-content: center; animation: v2Medal 0.7s var(--spring) both; }
+.sl-check { width: 72px; height: 72px; border-radius: 50%; background: var(--btn); box-shadow: var(--btn-shadow), 0 18px 34px -12px rgba(0, 168, 98, 0.7); color: #ffffff; display: flex; align-items: center; justify-content: center; animation: v2Medal 0.7s var(--spring) both; }
 .sl-done h2 { margin: 0; font-size: 26px; font-weight: 900; letter-spacing: -0.02em; }
 .sl-done-list { width: 100%; max-width: 520px; text-align: left; }
 
@@ -326,7 +326,7 @@
 .sl-mission strong { font-size: 15px; line-height: 1.35; }
 .sl-mission.done strong { color: var(--muted); }
 .sl-tick-ico { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: var(--surface2); color: var(--muted); }
-.sl-mission.done .sl-tick-ico { background: var(--btn); color: #03140b; box-shadow: var(--btn-shadow); }
+.sl-mission.done .sl-tick-ico { background: var(--btn); color: #ffffff; box-shadow: var(--btn-shadow); }
 @media (max-width: 480px) { .sl-mission { grid-template-columns: 40px minmax(0, 1fr); } .sl-mission > :last-child { grid-column: 2; justify-self: start; } }
 .sl-linkbox { display: flex; gap: 8px; align-items: center; padding: 6px 6px 6px 14px; border-radius: 14px; background: var(--surface2); border: 1.5px dashed var(--border); }
 .sl-linkbox code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: inherit; font-weight: 800; font-size: 15px; }

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { Count, Hidden, Lock, Sheet } from "@/components/ui";
+import { Count, Flow, Hidden, Lock, Sheet } from "@/components/ui";
 import { CREATOR, RAISES, SIMILAR, product, rm, type Raise } from "@/lib/mock";
 import { NEW_ON_RESCAN, NOT_ELIGIBLE, REFUSED } from "@/lib/mock-creator1";
 
@@ -278,14 +278,19 @@ export function ScanHub() {
             );
           })}
         </div>
-        <details className="sh-how">
-          <summary>How the scan works</summary>
-          <ul className="cr1-how">
-            <li>We only compare the same product. Similar products are shown apart and never mixed into the comparison.</li>
-            <li>Rates are for your level ({CREATOR.level}). After you add, we re-read your showcase; a product counts once TikTok confirms it&apos;s under Techwide.</li>
-            <li>We re-scan every day and tell you when something new turns up. If TikTok turns a product down, we hide it for 30 days.</li>
-          </ul>
-        </details>
+      </section>
+
+      <section className="v2-card">
+        <h2 className="v2-h2">How the scan works</h2>
+        <Flow
+          label="How the scan works"
+          steps={[
+            { icon: "scan", title: "We scan your showcase", note: "Every day, every product" },
+            { icon: "tag", title: "Same product, better rate", note: `Rates for ${CREATOR.level}` },
+            { icon: "plus", title: "Add all in one tap", note: "You approve every change" },
+            { icon: "check", title: "TikTok confirms", note: "Then it counts" },
+          ]}
+        />
       </section>
 
       {bulk && (

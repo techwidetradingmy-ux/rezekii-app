@@ -8,7 +8,7 @@
 .ad-pill.bad { background: var(--rsoft); color: var(--red); }
 .ad-pill.info { background: var(--bsoft); color: var(--blue); }
 .ad-av { border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 800; color: #ffffff; letter-spacing: 0.02em; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35); }
-.ad-av.c0 { background: linear-gradient(135deg, #22dc95, #00a862); color: #03140b; }
+.ad-av.c0 { background: linear-gradient(135deg, #22dc95, #00a862); color: #ffffff; }
 .ad-av.c1 { background: linear-gradient(135deg, #7aa2ff, #1d4ed8); }
 .ad-av.c2 { background: linear-gradient(135deg, #ffb35c, #f08a00); color: #2b1600; }
 .ad-av.c3 { background: linear-gradient(135deg, #ff7aa8, #e8005a); }
@@ -184,7 +184,7 @@
 .ad-fact.no { background: var(--rsoft); }
 .ad-fact.no b, .ad-fact.no b svg { color: var(--red); }
 .ad-verdict { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; border-radius: 999px; font-weight: 900; font-size: 14px; white-space: nowrap; }
-.ad-verdict.Approve { background: linear-gradient(180deg, #22dc95, #00aa63); color: #03140b; box-shadow: var(--btn-shadow); }
+.ad-verdict.Approve { background: linear-gradient(180deg, #22dc95, #00aa63); color: #ffffff; box-shadow: var(--btn-shadow); }
 .ad-verdict.Look { background: var(--asoft); color: var(--amber); }
 .ad-verdict.Reject { background: var(--rsoft); color: var(--red); }
 .ad-summary { margin: 0; font-size: 15px; font-weight: 700; line-height: 1.45; }
@@ -324,3 +324,6 @@
 .ad-timeline li { position: relative; display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
 .ad-timeline li::before { content: ""; position: absolute; left: -20px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: #00c073; box-shadow: 0 0 0 3px var(--surface); }
 .ad-timeline b { font-size: 12.5px; color: var(--muted); }
+
+/* B+ · Rezekii green: tinted icon squares */
+.ad-qico, .ad-mico { background: var(--gsoft) !important; color: var(--gink) !important; box-shadow: none !important; }
