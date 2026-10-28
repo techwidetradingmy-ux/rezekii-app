@@ -8,6 +8,7 @@ import { Seg, Sheet, Title } from "@/components/ui";
 import { PlatformIcon } from "@/components/creator2/bits";
 import { CREATOR, MY_SAMPLES, SOCIALS } from "@/lib/mock";
 import { MySamples } from "@/components/creator1/my-samples";
+import { SCOPES } from "@/components/consent";
 import { LevelBadges } from "@/components/account/level-badges";
 import { Referral } from "@/components/account/referral";
 import { Wallet } from "@/components/account/wallet";
@@ -41,7 +42,8 @@ function toMsia(raw: string) {
 
 /** My account: profile, connections, samples & delivery, rate card (later) and settings, grouped like iOS Settings. Nothing is saved. */
 export default function Account() {
-  const { linked, setLinked, toast } = useDemo();
+  const { linked, setLinked, toast, consent } = useDemo();
+  const [unlink, setUnlink] = useState(false);
   const [tab, setTab] = useState<TabKey>("profile");
   const [email, setEmail] = useState("aisyah.r@example.com");
   const [emailSheet, setEmailSheet] = useState(false);
@@ -287,7 +289,9 @@ export default function Account() {
                   <b>{s.label}</b>
                   <small>{s.detail}</small>
                 </span>
-                {s.on ? (
+                {s.on && s.key === "TikTok Shop" ? (
+                  <button type="button" className="btn-outline v2-btn-sm" onClick={() => setUnlink(true)}>Unlink</button>
+                ) : s.on ? (
                   <button
                     type="button"
                     className="btn-outline v2-btn-sm"
@@ -299,7 +303,7 @@ export default function Account() {
                   <button
                     type="button"
                     className="np-btn v2-btn-sm"
-                    onClick={() => { if (s.key === "TikTok Shop") setLinked(true); else setConn((c) => ({ ...c, [s.key]: true })); toast(`${s.label} connected`); }}
+                    onClick={() => { if (s.key === "TikTok Shop") return setLinked(true); setConn((c) => ({ ...c, [s.key]: true })); toast(`${s.label} connected`); }}
                   >
                     {s.key === "TikTok Shop" ? "Link" : "Connect"}
                   </button>
@@ -307,6 +311,16 @@ export default function Account() {
               </div>
             ))}
           </div>
+          {consent && (
+            <div className="cs-record">
+              <Icon name="shield" size={16} />
+              <span>
+                {consent.unlinkedAt
+                  ? <>TikTok Shop unlinked on {consent.unlinkedAt}. We stopped reading it then, and delete its data within 30 days.</>
+                  : <>You agreed to the Terms v{consent.terms} and Privacy Policy v{consent.privacy} on {consent.at}, letting Rezekii read: {SCOPES.creator.join(", ").toLowerCase()}.</>}
+              </span>
+            </div>
+          )}
           <p>We never see your passwords. You can disconnect any of these in the platform&apos;s own settings.</p>
         </section>
         )}
@@ -354,6 +368,25 @@ export default function Account() {
             <Link href="/signin" className="cr2-cell cr2-cellbtn">Sign out</Link>
             <button type="button" className="cr2-cell cr2-cellbtn danger" onClick={() => { setDelText(""); setDelSheet(true); }}>Delete account</button>
           </div>
+        </section>
+
+        <section className="cr2-group">
+          <h2>Privacy & your data</h2>
+          <div className="cr2-cells">
+            <div className="cr2-cell">
+              <span className="lbl">Consent</span>
+              <span className="val v2-muted">{consent && !consent.unlinkedAt ? `Terms v${consent.terms} · Privacy v${consent.privacy} · ${consent.at}` : "None. TikTok Shop isn't linked."}</span>
+            </div>
+            <button type="button" className="cr2-cell cr2-cellbtn" onClick={() => toast("We'll email you a copy of your data within 7 days")}>
+              <span className="lbl">Download my data</span>
+              <span className="chev">Email me a copy <Icon name="arrow" size={16} /></span>
+            </button>
+            <a href="#" className="cr2-cell cr2-cellbtn" onClick={(e) => { e.preventDefault(); toast("Opening the Privacy Policy"); }}>
+              <span className="lbl">Privacy Policy</span>
+              <span className="chev">v1.0 · 28 Oct 2026 <Icon name="arrow" size={16} /></span>
+            </a>
+          </div>
+          <p>We only show your earnings to you. Sellers see your public profile, never your sales, unless you choose to share them.</p>
         </section>
 
         <section className="cr2-group">
@@ -450,6 +483,18 @@ export default function Account() {
             <Icon name="whatsapp" size={18} /> {verifying ? "Waiting for your message…" : "Open WhatsApp"}
           </button>
           <span className="v2-small" style={{ textAlign: "center" }}>You send the message, so it costs you nothing. We never send you a code.</span>
+        </Sheet>
+      )}
+
+      {unlink && (
+        <Sheet title="Unlink TikTok Shop?" onClose={() => setUnlink(false)}>
+          <ul className="cr2-danger" style={{ margin: 0, paddingLeft: 30 }}>
+            <li>We stop reading your TikTok Shop data straight away.</li>
+            <li>Your scan results, earnings and payouts disappear from Rezekii, and we delete that data within 30 days.</li>
+            <li>Products already added through Techwide keep their rate in TikTok until the campaign ends.</li>
+          </ul>
+          <button type="button" className="np-btn cr2-delbtn" onClick={() => { setLinked(false); setUnlink(false); toast("Unlinked. We stopped reading your TikTok Shop data."); }}>Unlink TikTok Shop</button>
+          <button type="button" className="btn-outline" onClick={() => setUnlink(false)}>Keep it linked</button>
         </Sheet>
       )}
 

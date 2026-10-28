@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
+import { ConsentSheet } from "@/components/consent";
 import { DemoStrip } from "@/components/shell";
 import { Celebrate, Sheet } from "@/components/ui";
 import { PhoneField, TermsSheet } from "@/components/seller/seller-ui";
@@ -35,7 +36,7 @@ function GoogleGlyph() {
 /** Seller onboarding: sign in → Connect Seller Center (required) → confirm the shop → contact → sample terms → dashboard. */
 export default function SellerConnect() {
   const router = useRouter();
-  const { toast, setLinked } = useDemo();
+  const { toast, setLinked, recordConsent } = useDemo();
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState<string | null>(null);
   const [via, setVia] = useState("Google");
@@ -46,6 +47,7 @@ export default function SellerConnect() {
   const [mailErr, setMailErr] = useState<string | null>(null);
   // Seller Center
   const [auth, setAuth] = useState(false);
+  const [consent, setConsent] = useState(false);
   const [cancelled, setCancelled] = useState(false);
   // contact
   const [name, setName] = useState(SELLER.contact);
@@ -160,7 +162,7 @@ export default function SellerConnect() {
                 <li><Icon name="check" size={18} width={2.6} stroke="#00a862" /> We only add a product to TAP when you submit it.</li>
                 <li><Icon name="shield" size={18} stroke="#00a862" /> We never change your prices or handle your orders.</li>
               </ul>
-              <button type="button" className="btn-tiktok sl-ob-btn" style={{ border: 0, font: "inherit", fontWeight: 800, cursor: "pointer" }} onClick={() => setAuth(true)}>
+              <button type="button" className="btn-tiktok sl-ob-btn" style={{ border: 0, font: "inherit", fontWeight: 800, cursor: "pointer" }} onClick={() => setConsent(true)}>
                 <TikTokGlyph /> Connect TikTok Shop Seller Center
               </button>
               <p className="v2-small" style={{ margin: 0 }}>Signed in with {via} · Malaysian TikTok Shops only</p>
@@ -253,6 +255,9 @@ export default function SellerConnect() {
             </div>
           </div>
         </Sheet>
+      )}
+      {consent && (
+        <ConsentSheet role="seller" onClose={() => setConsent(false)} onAgree={() => { recordConsent("seller"); setConsent(false); setAuth(true); }} />
       )}
       {terms && <TermsSheet onClose={() => setTerms(false)} />}
       {done && (

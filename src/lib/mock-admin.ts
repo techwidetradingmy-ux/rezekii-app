@@ -497,3 +497,17 @@ export const AUDIT: Audit[] = [
   { id: "A-55150", when: "27 Oct 11:02", who: "Hazwan", role: "Super Admin", action: "Setting changed", target: "Sample quantity presets", before: "30 / 50", after: "30 / 40 / 50" },
   { id: "A-55141", when: "26 Oct 16:44", who: "Aina", role: "Ops", action: "Review passed", target: "TAP-0409 Mawar Wear", before: "In review", after: "To submit" },
 ];
+
+/** Consent records: who agreed to which Terms and Privacy versions before linking, the TikTok permissions granted, and what happened since. Kept as evidence. */
+export type ConsentRow = {
+  id: string; who: string; role: "Creator" | "Seller"; at: string; terms: string; privacy: string; scopes: number; ip: string; device: string; grant: string;
+  status: "Active" | "Unlinked" | "Deleted"; events: [string, string][];
+};
+export const CONSENTS: ConsentRow[] = [
+  { id: "C-30418", who: "@aisyah.glow", role: "Creator", at: "3 Mar 2026 22:24", terms: "1.0", privacy: "1.0", scopes: 5, ip: "175.139.xx.xx", device: "iPhone 15 · Safari", grant: "tts-gr-8f21…c04", status: "Active", events: [["3 Mar 22:24", "Agreed and linked TikTok Shop"], ["28 Oct 09:12", "Data read for daily scan"]] },
+  { id: "C-30415", who: "Seri Living MY", role: "Seller", at: "12 Jan 2026 10:02", terms: "1.0", privacy: "1.0", scopes: 3, ip: "60.48.xx.xx", device: "Windows · Chrome", grant: "tts-gr-71aa…9e2", status: "Active", events: [["12 Jan 10:02", "Agreed and connected Seller Center"], ["27 Oct 16:40", "Products read for TAP submission"]] },
+  { id: "C-30409", who: "@mei.ling.deals", role: "Creator", at: "2 Apr 2026 14:55", terms: "1.0", privacy: "1.0", scopes: 5, ip: "113.211.xx.xx", device: "Android · Chrome", grant: "tts-gr-0c9d…b17", status: "Active", events: [["2 Apr 14:55", "Agreed and linked TikTok Shop"]] },
+  { id: "C-30396", who: "@danial.reviews", role: "Creator", at: "18 Jun 2026 09:20", terms: "1.0", privacy: "1.0", scopes: 5, ip: "202.188.xx.xx", device: "iPhone 13 · Safari", grant: "tts-gr-55b3…e80", status: "Unlinked", events: [["18 Jun 09:20", "Agreed and linked TikTok Shop"], ["20 Oct 21:14", "Unlinked in My account · reading stopped"], ["19 Nov", "Data deletion due"]] },
+  { id: "C-30388", who: "Volt Gadget", role: "Seller", at: "5 May 2026 11:48", terms: "1.0", privacy: "1.0", scopes: 3, ip: "115.132.xx.xx", device: "macOS · Safari", grant: "tts-gr-9de0…a31", status: "Active", events: [["5 May 11:48", "Agreed and connected Seller Center"]] },
+  { id: "C-30361", who: "@zara.home", role: "Creator", at: "9 Feb 2026 20:31", terms: "1.0", privacy: "1.0", scopes: 5, ip: "175.143.xx.xx", device: "Android · Chrome", grant: "tts-gr-2a7f…d55", status: "Deleted", events: [["9 Feb 20:31", "Agreed and linked TikTok Shop"], ["14 Aug 08:02", "Account deleted by the creator · reading stopped"], ["12 Sep 03:00", "TikTok Shop data deleted · record kept"]] },
+];

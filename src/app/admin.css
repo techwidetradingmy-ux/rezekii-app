@@ -315,3 +315,12 @@
   .ad-kpi b { font-size: 22px; }
   .ad-kv > div { grid-template-columns: 1fr; gap: 2px; }
 }
+
+/* Consent log evidence */
+.ad-dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 14px; margin: 0; padding: 12px 14px; border-radius: 14px; background: var(--surface2); font-size: 14px; }
+.ad-dl dt { color: var(--muted); font-weight: 700; }
+.ad-dl dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
+.ad-timeline { list-style: none; margin: 0; padding: 0 0 0 14px; border-left: 2px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+.ad-timeline li { position: relative; display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
+.ad-timeline li::before { content: ""; position: absolute; left: -20px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: #00c073; box-shadow: 0 0 0 3px var(--surface); }
+.ad-timeline b { font-size: 12.5px; color: var(--muted); }

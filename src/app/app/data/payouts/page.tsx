@@ -98,7 +98,7 @@ export default function DataPayouts() {
             <div className="cr2-extra">
               <span className="v2-small">Extra through Rezekii</span>
               <div className="cr2-amt violet">+<Count key={`x${from}${to}`} value={total.extra} format={(n) => rm(n)} /></div>
-              <small>{Math.round((total.extra / Math.max(total.est, 1)) * 100)}% of your commission. TikTok&apos;s open plan wouldn&apos;t have paid this.</small>
+              <small>{Math.round((total.extra / Math.max(total.est, 1)) * 100)}% of your commission, traced from your orders through Techwide&apos;s TAP campaigns. TikTok&apos;s open plan wouldn&apos;t have paid this.</small>
             </div>
           </div>
           <div className="cr2-stack" role="img" aria-label={`Open-plan commission ${rm(open)}, extra through Rezekii ${rm(total.extra)}`}>
@@ -236,7 +236,7 @@ export default function DataPayouts() {
         <h2 className="cr2-h3">What these mean</h2>
         <ul className="cr2-do">
           <li><span><b>Estimated</b>: commission on orders placed, before buyers can still cancel or return.</span></li>
-          <li><span><b>Extra through Rezekii</b>: on orders of products in Techwide&apos;s campaigns, what you got above TikTok&apos;s open rate for the same product. Worked out order by order.</span></li>
+          <li><span><b>Extra through Rezekii</b>: every order that came through Techwide&apos;s TAP campaigns, traced one by one: what the campaign paid above TikTok&apos;s open rate for the same product at that time.</span></li>
           <li><span><b>Pending</b>: the order is delivered but the return window isn&apos;t over yet.</span></li>
           <li><span><b>Paid</b>: TikTok Shop has settled it into your balance. Withdraw it in TikTok Shop.</span></li>
           <li><span><b>Clawed back</b>: the buyer cancelled or returned after the commission was counted.</span></li>

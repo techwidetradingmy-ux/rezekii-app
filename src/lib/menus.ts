@@ -40,7 +40,7 @@ export const MENUS: Record<AppKind, Section[]> = {
     { href: "/admin/accounts", label: "Accounts", icon: "wallet", pages: [["/admin/accounts", "Ledger"], ["/admin/accounts/reconcile", "Reconciliation"]] },
     { href: "/admin/analytics", label: "Analytics", icon: "chart", pages: [] },
     { href: "/admin/support", label: "Support", icon: "inbox", pages: [["/admin/support", "Disputes"], ["/admin/support/feedback", "Feedback inbox"]] },
-    { href: "/admin/system", label: "System", icon: "gear", pages: [["/admin/system", "Settings & presets"], ["/admin/system/publishing", "Publishing ops"], ["/admin/system/audit", "Audit log"]] },
+    { href: "/admin/system", label: "System", icon: "gear", pages: [["/admin/system", "Settings & presets"], ["/admin/system/publishing", "Publishing ops"], ["/admin/system/audit", "Audit log"], ["/admin/system/consent", "Consent log"]] },
   ],
 };
 

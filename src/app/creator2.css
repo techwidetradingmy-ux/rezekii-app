@@ -525,3 +525,14 @@ li.done .cr2-check { background: #00c073; border-color: #00c073; animation: v2Po
 /* Sections moved into My account */
 .acc-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .cr2-settings:has(.lb-hero), .cr2-settings:has(.cr2-balance), .cr2-settings:has(.cr2-ref), .cr2-settings:has(.cr1-sample) { max-width: none; }
+
+/* Consent before linking (consent.tsx) and the record in My account */
+.cs-block { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 16px; background: var(--surface2); }
+.cs-block b { display: flex; align-items: center; gap: 8px; font-size: 14.5px; }
+.cs-block ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; line-height: 1.45; color: var(--body); }
+.cs-block p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--body); }
+.cs-tick { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.5; color: var(--text); cursor: pointer; }
+.cs-tick input { width: 20px; height: 20px; margin-top: 2px; accent-color: #00c073; flex-shrink: 0; }
+.cs-tick a { color: var(--gink); font-weight: 800; }
+.cs-record { margin: 0 16px; display: flex; gap: 8px; align-items: flex-start; font-size: 13px; line-height: 1.5; color: var(--body); }
+.cs-record svg { flex-shrink: 0; margin-top: 2px; color: var(--gink); }

@@ -185,8 +185,8 @@ export const VIDEOS: VideoRow[] = [
 export const PREV_ORDERS: Record<string, number> = { p21: 171, p13: 132, p22: 88, p17: 61, p09: 66 };
 
 /**
- * extra = commission above what TikTok's open plan pays on the same orders, earned through Techwide's TAP campaigns on Rezekii
- * (each order's TAP rate minus the open rate we saw for that product). An estimate until TikTok settles the order.
+ * extra = commission above what TikTok's open plan pays on the same orders: every TAP order is traced, and its TAP rate is
+ * compared with the open rate we recorded for that product when it was scanned. Estimated until TikTok settles the order.
  */
 export type PayoutMonth = { month: string; est: number; paid: number; pending: number; clawed: number; extra: number; status: "Settling" | "Paid" };
 export const PAYOUTS: PayoutMonth[] = [
