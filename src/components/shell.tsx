@@ -3,10 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
 import { useDemo } from "./demo";
 import { Sheet } from "./ui";
+import { useSideScroll } from "./side-scroll";
 import { ACCOUNT, HOME, MENUS, pageFor, sectionFor, type AppKind } from "@/lib/menus";
 import { CREATOR, SELLER } from "@/lib/mock";
 
@@ -60,37 +61,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
   const menuRef = useRef<HTMLDivElement>(null);
   // Sub-menu (owner, 28 Oct 2026: felt stuck): the open page scrolls into view, and a mouse wheel or drag scrolls it sideways too.
   const subRef = useRef<HTMLElement>(null);
-  useEffect(() => {
-    const nav = subRef.current;
-    if (!nav) return;
-    nav.querySelector<HTMLElement>("a.on")?.scrollIntoView({ block: "nearest", inline: "center" });
-    const wheel = (e: WheelEvent) => {
-      if (nav.scrollWidth <= nav.clientWidth || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
-      e.preventDefault();
-      nav.scrollLeft += e.deltaY;
-    };
-    let startX = 0, startLeft = 0, dragging = false, moved = false;
-    const down = (e: PointerEvent) => { if (e.pointerType !== "mouse") return; dragging = true; moved = false; startX = e.clientX; startLeft = nav.scrollLeft; };
-    const move = (e: PointerEvent) => { if (!dragging) return; const dx = e.clientX - startX; if (Math.abs(dx) > 4) moved = true; nav.scrollLeft = startLeft - dx; };
-    const up = () => { dragging = false; };
-    const click = (e: MouseEvent) => { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } };
-    const edges = () => nav.classList.toggle("more-right", nav.scrollLeft + nav.clientWidth < nav.scrollWidth - 4);
-    edges();
-    nav.addEventListener("wheel", wheel, { passive: false });
-    nav.addEventListener("pointerdown", down);
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
-    nav.addEventListener("click", click, true);
-    nav.addEventListener("scroll", edges);
-    return () => {
-      nav.removeEventListener("wheel", wheel);
-      nav.removeEventListener("pointerdown", down);
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-      nav.removeEventListener("click", click, true);
-      nav.removeEventListener("scroll", edges);
-    };
-  }, [section?.href, page]);
+  useSideScroll(subRef, `${section?.href} ${page}`, "a.on");
   const [pill, setPill] = useState<{ left: number; width: number } | null>(null);
   useLayoutEffect(() => {
     const place = () => {

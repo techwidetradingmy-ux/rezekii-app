@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Seg, Sheet, Title } from "@/components/ui";
+import { useSideScroll } from "@/components/side-scroll";
 import { PlatformIcon } from "@/components/creator2/bits";
 import { CREATOR, MY_SAMPLES, SOCIALS } from "@/lib/mock";
 import { MySamples } from "@/components/creator1/my-samples";
@@ -55,6 +56,8 @@ export default function Account() {
   const { linked, setLinked, toast, consent, waVerified: verified, setWaVerified: setVerified } = useDemo();
   const [unlink, setUnlink] = useState(false);
   const [tab, setTab] = useState<TabKey>("profile");
+  const tabsRef = useRef<HTMLDivElement>(null);
+  useSideScroll(tabsRef, tab);
   const [email, setEmail] = useState("aisyah.r@example.com");
   const [emailSheet, setEmailSheet] = useState(false);
   const [newEmail, setNewEmail] = useState("");
@@ -186,7 +189,7 @@ export default function Account() {
           </div>
         </div>
 
-        <div className="acc-tabs nv-noscroll" role="tablist" aria-label="Account sections">
+        <div ref={tabsRef} className="acc-tabs nv-noscroll" role="tablist" aria-label="Account sections">
           {TABS.map(([k, label, icon]) => (
             <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? "on" : undefined} onClick={() => go(k)}>
               <Icon name={icon} size={17} /> {label}
