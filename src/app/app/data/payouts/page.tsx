@@ -84,6 +84,20 @@ export default function DataPayouts() {
         />
       </Title>
 
+      <section className="v2-card flat">
+        <h2 className="cr2-h3">How your commission moves</h2>
+        <Flow
+          label="How commission moves from order to payout"
+          steps={[
+            { icon: "bag", title: "Ordered" },
+            { icon: "box", title: "Delivered" },
+            { icon: "wallet", title: "Settled" },
+            { icon: "x", title: "Cancelled or returned", tone: "red" },
+          ]}
+        />
+        <p className="cr2-note"><Icon name="shield" size={15} /><span>Real earnings only. No forecasts.</span></p>
+      </section>
+
       <Lock what="your payouts">
         <section className="v2-card">
           <div className="v2-card-h">
@@ -232,19 +246,6 @@ export default function DataPayouts() {
         </Lock>
       </section>
 
-      <section className="v2-card flat">
-        <h2 className="cr2-h3">How your commission moves</h2>
-        <Flow
-          label="How commission moves from order to payout"
-          steps={[
-            { icon: "bag", title: "Ordered" },
-            { icon: "box", title: "Delivered" },
-            { icon: "wallet", title: "Settled" },
-            { icon: "x", title: "Cancelled or returned", tone: "red" },
-          ]}
-        />
-        <p className="cr2-note"><Icon name="shield" size={15} /><span>Real earnings only. No forecasts.</span></p>
-      </section>
     </div>
   );
 }
