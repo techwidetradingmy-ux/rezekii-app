@@ -251,30 +251,32 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
         <div className="v2-shleft">
           <div className={`v2-story ds${design} ${fmt} ${video ? "vid" : ""}`} style={{ aspectRatio: f.ratio }} role="img" aria-label={`${label}: ${big}. ${BLESS[bless]}`}>
             {video && <span className="v2-vbar" aria-hidden="true"><span /></span>}
-            <span className="st-bub" aria-hidden="true" style={{ width: 90, height: 90, left: -24, top: "12%" }} />
-            <span className="st-bub b2" aria-hidden="true" style={{ width: 120, height: 120, right: -40, top: "48%" }} />
-            <span className="st-bub b3" aria-hidden="true" style={{ width: 70, height: 70, left: "12%", bottom: "16%" }} />
-            <span className="st-hero">
-              {level ? <Emblem level={level} size={fmt === "wide" ? 70 : 84} animate /> : <span className="st-medal"><Icon name="medal" size={34} width={2.2} /></span>}
-            </span>
-            <span className="st-body">
-              <span className="st-chip st-t">✦ {kicker.toUpperCase()} · OCT 2026</span>
-              <span className="st-who st-t"><span className="v2-av">{initials}</span>{handle}</span>
-              <span className="st-lbl st-t">{label}</span>
-              <strong className="st-big st-t">{big}</strong>
-              {lines.map((l) => <span key={l} className="st-line st-t">{l}</span>)}
-              {fmt !== "wide" && <span className="st-quote">&ldquo;{BLESS[bless]}&rdquo;</span>}
-            </span>
-            <span className="st-cobrand">
-              <span className="st-cb-side">
+            <span className="st-head">
+              <span className="st-brand">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/master-logo-transparent.png" alt="" className="st-cb-logo" />
-                <span className="st-cb-txt"><b>Rezekii</b><small>Join with my link</small></span>
+                <img src="/master-logo-transparent.png" alt="" />
+                Rezekii
               </span>
-              <span className="st-cb-side st-cb-tt">
+              <span className="st-partner">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className="st-cb-plogo" src="/tiktok-shop-partner-logo.png" alt="TikTok Shop Partner" />
+                <img src="/tiktok-shop-partner-logo.png" alt="TikTok Shop Partner" />
               </span>
+            </span>
+            <span className="st-mid">
+              <span className="st-hero">
+                {level ? <Emblem level={level} size={fmt === "wide" ? 64 : fmt === "square" ? 66 : 78} animate /> : <span className="st-medal"><Icon name="medal" size={30} width={2.2} /></span>}
+              </span>
+              <span className="st-body">
+                <span className="st-kick st-t">{kicker} · Oct 2026</span>
+                <span className="st-lbl st-t">{label}</span>
+                <strong className="st-big st-t">{big}</strong>
+                {lines.length > 0 && <span className="st-pills st-t">{lines.map((l) => <span key={l}>{l}</span>)}</span>}
+              </span>
+            </span>
+            {(fmt === "story" || fmt === "post") && <span className="st-quote">&ldquo;{BLESS[bless]}&rdquo;</span>}
+            <span className="st-foot">
+              <span className="v2-av">{initials}</span>
+              <span className="st-foot-txt"><b>{handle}</b><small>Join me on Rezekii</small></span>
               <Qr />
             </span>
           </div>
