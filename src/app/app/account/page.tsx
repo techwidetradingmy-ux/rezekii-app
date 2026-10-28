@@ -178,7 +178,7 @@ export default function Account() {
                   </span>
                 )}
               </strong>
-              <span className="v2-small">{CREATOR.handle} · TikTok Shop Malaysia · {state}</span>
+              <span className="v2-small">{CREATOR.handle}</span>
               {/* Level and streak as two small stat tiles (owner, 29 Oct 2026, option C). */}
               <span className="cr2-mstats">
                 <span><i className={`lv ${CREATOR.level.toLowerCase()}`}><Icon name="gem" size={15} /></i><b>{CREATOR.level}</b><small>Level</small></span>
