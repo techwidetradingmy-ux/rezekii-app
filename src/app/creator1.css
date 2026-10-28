@@ -781,3 +781,23 @@
   .sh-hub > .sh-fine { grid-area: fine; margin: 0; }
   .sh-hub .sh-drop { display: none; }
 }
+/* Marketplace on desktop (owner, 28 Oct 2026: website first): filters in a panel on the left, products four to a row on the right. */
+@media (min-width: 1200px) {
+  .v2-stack.mk-page { display: grid; grid-template-columns: 264px minmax(0, 1fr); grid-template-areas: "title title" "how how" "bar count" "bar legend" "bar grid" "bar empty"; gap: 14px 24px; align-items: start; }
+  .mk-page > * { margin: 0 !important; min-width: 0; }
+  .mk-page > .v2-title { grid-area: title; }
+  .mk-page > section.v2-card { grid-area: how; }
+  .mk-page > .mk-bar { grid-area: bar; position: sticky; top: 84px; flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 12px; padding: 16px; border-radius: 20px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
+  .mk-page > .mk-bar > * { flex: none !important; width: 100%; max-width: none; }
+  .mk-page > .mk-bar .mk-select select { max-width: none; width: 100%; }
+  .mk-page > .mk-bar .mk-tiers { flex-wrap: wrap; justify-content: flex-start; }
+  .mk-page > .mk-count { grid-area: count; }
+  .mk-page > .mka-legend { grid-area: legend; }
+  .mk-page > .mk-grid { grid-area: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .mk-page > .v2-card.flat { grid-area: empty; }
+}
+.mk-bar-h, .mk-bar-l { display: none; }
+@media (min-width: 1200px) {
+  .mk-page > .mk-bar .mk-bar-h { display: block; font-size: 16px; font-weight: 800; }
+  .mk-page > .mk-bar .mk-bar-l { display: block; margin-bottom: -4px; font-size: 11.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+}

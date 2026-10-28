@@ -100,7 +100,7 @@ export default function Marketplace() {
   const suggest = [...openOnes.filter((p) => p.category === sel?.category), ...openOnes.filter((p) => p.category !== sel?.category)].slice(0, 3);
 
   return (
-    <div className="v2-stack v2-in" style={{ gap: 20 }}>
+    <div className="v2-stack v2-in mk-page" style={{ gap: 20 }}>
       <Title title="Marketplace" sub="Every product in Techwide's campaigns: a better rate than TikTok's open plan, and free samples on many.">
         <Link href="/app/account#samples" className="btn-outline v2-btn-sm">My samples <span className="badge">{MY_SAMPLES.filter((s) => !["Done", "Not approved"].includes(s.status)).length}</span></Link>
       </Title>
@@ -119,9 +119,10 @@ export default function Marketplace() {
       </section>
 
       <div className="mk-bar">
+        <span className="mk-bar-h">Filters</span>
         <label className="mk-search">
           <Icon name="search" size={18} />
-          <input className="np-input" type="search" placeholder="Search products or shops" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search products or shops" />
+          <input className="np-input" type="search" placeholder="Search products" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search products or shops" />
         </label>
         <label className="mk-select">
           <span>Category</span>
@@ -140,6 +141,7 @@ export default function Marketplace() {
           <span className="np-switch-like" aria-hidden="true"><i /></span>
           <Icon name="gift" size={16} /> Free samples only <em>{WITH_SAMPLES.length}</em>
         </button>
+        <span className="mk-bar-l">Free sample tiers</span>
         <div className="mk-tiers" role="group" aria-label="Sample tier: tap to filter">
           {POOL_KEYS.map((k) => (
             <button

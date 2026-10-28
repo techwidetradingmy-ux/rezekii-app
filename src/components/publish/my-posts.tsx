@@ -175,7 +175,7 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
   };
 
   return (
-    <div className="v2-stack v2-in" style={{ gap: 18 }}>
+    <div className="v2-stack v2-in sq-page" style={{ gap: 18 }}>
       <Title title="Scheduled & posted" sub="Every post and its live status on each app · Malaysia time">
         <CalendarPicker
           label={label}

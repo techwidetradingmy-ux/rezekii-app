@@ -123,7 +123,7 @@ export function MissionsBoard(p: {
   const ordered = (l: Mission[]) => [...l.filter((m) => m.state !== "done"), ...l.filter((m) => m.state === "done")];
 
   return (
-    <div className="v2-stack v2-in" style={{ gap: 18 }}>
+    <div className="v2-stack v2-in mx-page" style={{ gap: 18 }}>
       <Title title="Missions" sub={p.sub}>
         <Link href={p.walletHref} className="ms-pill"><Icon name="wallet" size={15} /> {credits.toLocaleString("en-MY")} credits</Link>
       </Title>
