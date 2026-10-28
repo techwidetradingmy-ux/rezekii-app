@@ -1,0 +1,25 @@
+/* Compare views: an iPhone frame and a scaled desktop frame of the same page. */
+.cmp { min-height: 100vh; background: #e9efec; display: flex; flex-direction: column; }
+.cmp-bar { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 20px; background: #0d1117; color: #ffffff; }
+.cmp-bar b { font-size: 15px; font-weight: 800; }
+.cmp-bar select { height: 36px; min-width: 240px; padding: 0 10px; border-radius: 10px; border: 0; font: inherit; font-weight: 700; }
+.cmp-bar button { height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.35); background: transparent; color: #ffffff; font: inherit; font-weight: 700; cursor: pointer; }
+.cmp-path { font-size: 13px; opacity: 0.7; font-family: ui-monospace, monospace; }
+.cmp-bar a { margin-left: auto; color: #5fe3ab; font-weight: 700; font-size: 14px; }
+.cmp-stage { flex: 1; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 28px; align-items: start; padding: 24px; }
+.cmp figure { margin: 0; display: grid; gap: 10px; min-width: 0; }
+.cmp figcaption { font-size: 13px; font-weight: 800; color: #4a5568; }
+.cmp-bezel { position: relative; padding: 12px; border-radius: 56px; background: #0b0f0d; box-shadow: 0 30px 60px -28px rgba(0, 0, 0, 0.55), inset 0 0 0 2px #2a2f2c; }
+.cmp-glass { overflow: hidden; border-radius: 44px; background: #ffffff; }
+.cmp-bezel iframe { display: block; border: 0; background: #ffffff; }
+.cmp-status { height: 47px; display: flex; align-items: center; justify-content: space-between; padding: 6px 30px 0 34px; font-size: 15px; color: #0d1117; }
+.cmp-status i { width: 26px; height: 12px; border-radius: 4px; border: 1.5px solid #0d1117; position: relative; }
+.cmp-status i::after { content: ""; position: absolute; inset: 1.5px; right: 5px; border-radius: 2px; background: #0d1117; }
+.cmp-island { position: absolute; z-index: 1; top: 23px; left: 50%; width: 120px; height: 34px; border-radius: 20px; background: #0b0f0d; transform: translateX(-50%); pointer-events: none; }
+.cmp-screen { position: relative; overflow: hidden; border-radius: 14px; background: #ffffff; box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.45), 0 0 0 1px #cfd8d3; padding-top: 34px; }
+.cmp-dots { position: absolute; top: 0; left: 0; right: 0; height: 34px; display: flex; align-items: center; gap: 6px; padding: 0 14px; background: #f1f4f2; border-bottom: 1px solid #dde4e0; }
+.cmp-dots i { width: 11px; height: 11px; border-radius: 50%; background: #ff5f57; }
+.cmp-dots i:nth-child(2) { background: #febc2e; }
+.cmp-dots i:nth-child(3) { background: #28c840; }
+.cmp-screen iframe { display: block; border: 0; transform-origin: top left; }
+@media (max-width: 1000px) { .cmp-stage { grid-template-columns: 1fr; justify-items: center; } .cmp-desk { width: 100%; } }

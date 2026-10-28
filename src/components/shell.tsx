@@ -30,6 +30,7 @@ export function DemoStrip() {
         <Link href="/seller/app">Seller app</Link>
         <Link href="/admin">Admin</Link>
         <Link href="/tour">All pages</Link>
+        <Link href="/compare">Compare views</Link>
         <button type="button" className="v2-demo-toggle" onClick={() => setLinked(!linked)}>
           {linked ? "Show as not linked" : "Show as linked"}
         </button>
