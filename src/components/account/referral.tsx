@@ -29,7 +29,7 @@ export function Referral() {
   return (
     <div className="v2-stack" style={{ gap: 20 }}>
       <div className="acc-head"><span className="v2-small">Invite creators and sellers to earn credits.</span>
-        <ShareButton big="Join me on Rezekii" label="Better commission for your TikTok Shop showcase" lines={[`Use my code ${CODE}: +${REFERRAL_REWARD.friend} credits`, "Free for creators and sellers"]} />
+        <ShareButton big="Join me on Rezekii" label="Better commission for your TikTok Shop showcase" lines={[`Use my code ${CODE}: +${REFERRAL_REWARD.friend} credits`, "Free for creators and sellers"]} moment="invite" />
       </div>
 
       <ReferralOffer />

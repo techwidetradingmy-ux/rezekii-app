@@ -273,7 +273,7 @@ export function MySamples() {
         />
       )}
       {share && (
-        <ShareSheet onClose={() => setShare(null)} big="3 / 3" label="Sample delivered on time" lines={[product(share.productId).name, "Free sample through Rezekii"]} />
+        <ShareSheet onClose={() => setShare(null)} big="3 / 3" label="Sample delivered on time" lines={[product(share.productId).name, "Free sample through Rezekii"]} moment="sample" />
       )}
     </div>
   );

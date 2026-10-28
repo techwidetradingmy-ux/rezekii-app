@@ -52,7 +52,7 @@ export default function SellerWallet() {
       </section>
 
       {share && (
-        <ShareSheet onClose={() => setShare(false)} handle={SELLER.shop} label="Credits earned on Rezekii" big={`${SELLER_CREDITS.toLocaleString("en-MY")}`} lines={["by setting up and inviting friends", "Join free with my link"]} />
+        <ShareSheet onClose={() => setShare(false)} handle={SELLER.shop} label="Credits earned on Rezekii" big={`${SELLER_CREDITS.toLocaleString("en-MY")}`} lines={["by setting up and inviting friends", "Join free with my link"]} moment="credits" />
       )}
     </div>
   );

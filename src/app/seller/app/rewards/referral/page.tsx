@@ -99,6 +99,7 @@ export default function SellerReferral() {
           handle={SELLER.shop}
           label="Sell with creators on TikTok Shop"
           big="RM 0 a month"
+          moment="invite"
           lines={["Commission only when you sell", `Use my code ${CODE}: +${REFERRAL_REWARD.friend} credits`]}
         />
       )}

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon, type IconName } from "@/components/icons";
 import { Emblem, type Level } from "@/components/emblems";
-import { Portal, Progress, ShareSheet, Sheet } from "@/components/ui";
+import { Portal, Progress, ShareSheet, type MomentKind, Sheet } from "@/components/ui";
 import { Honour } from "@/components/creator2/bits";
 import { BADGES, CREATOR } from "@/lib/mock";
 import { BADGE_INFO, LEVELS, TIERS } from "@/lib/mock-creator2";
@@ -58,7 +58,7 @@ function BadgeEmblem({ name, got, size = 76 }: { name: string; got: boolean; siz
 }
 const KEY: Record<string, Level> = { Bronze: "bronze", Silver: "silver", Gold: "gold" };
 
-type Share = { big: string; label: string; lines: string[]; level?: Level; kicker?: string };
+type Share = { big: string; label: string; lines: string[]; level?: Level; kicker?: string; moment: MomentKind };
 
 /**
  * Level & badges (in My account): a collectible creator card that tilts and sparkles, the Bronze → Silver → Gold path with V1's
@@ -162,7 +162,7 @@ export function LevelBadges() {
             </ul>
           </div>
           <div className="v2-row">
-            <button type="button" className="np-btn v2-btn-sm" onClick={() => setShare({ big: `${CREATOR.level} creator`, label: "My creator level on Rezekii", lines: [`TikTok Shop Lv.${CREATOR.tiktokLevel}`, `${got} badges earned`], level: mine, kicker: "Level up" })}>
+            <button type="button" className="np-btn v2-btn-sm" onClick={() => setShare({ big: `${CREATOR.level} creator`, label: "My creator level on Rezekii", lines: [`TikTok Shop Lv.${CREATOR.tiktokLevel}`, `${got} badges earned`], level: mine, kicker: "Level up", moment: "level" })}>
               <Icon name="share" size={16} /> Share my card
             </button>
           </div>
@@ -209,7 +209,7 @@ export function LevelBadges() {
           <p style={{ margin: 0, textAlign: "center", lineHeight: 1.5 }}>{BADGE_INFO[badge.name]}</p>
           <span className={`badge ${badge.got ? "" : "badge-gray"}`} style={{ alignSelf: "center" }}>{badge.got ? "Collected" : "Not yet"}</span>
           {badge.got ? (
-            <button type="button" className="np-btn" onClick={() => { setBadge(null); setShare({ big: badge.name, label: "New badge on Rezekii", lines: [`${CREATOR.level} creator`, `${got} badges so far`], kicker: "New badge" }); }}>
+            <button type="button" className="np-btn" onClick={() => { setBadge(null); setShare({ big: badge.name, label: "New badge on Rezekii", lines: [`${CREATOR.level} creator`, `${got} badges so far`], kicker: "New badge", moment: "badge" }); }}>
               <Icon name="share" size={18} /> Share this badge
             </button>
           ) : (
@@ -235,7 +235,7 @@ export function LevelBadges() {
               <p style={{ fontWeight: 800, color: "var(--gink)" }}>30 days in a row · every sample delivered</p>
               <p>Every free sample is open to you now.</p>
               <div className="v2-stack" style={{ width: "100%", marginTop: 6 }}>
-                <button type="button" className="np-btn" onClick={() => { setUnlock(false); setShare({ big: `Day ${CREATOR.streak} of 30`, label: "On my way to Highly active", lines: ["Posting every day", `${CREATOR.level} creator on Rezekii`], kicker: "Streak" }); }}>
+                <button type="button" className="np-btn" onClick={() => { setUnlock(false); setShare({ big: `Day ${CREATOR.streak} of 30`, label: "On my way to Highly active", lines: ["Posting every day", `${CREATOR.level} creator on Rezekii`], kicker: "Streak", moment: "streak" }); }}>
                   <Icon name="share" size={18} /> Share this moment
                 </button>
                 <button type="button" className="btn-outline" onClick={() => setUnlock(false)}>Continue</button>
@@ -245,7 +245,7 @@ export function LevelBadges() {
         </Portal>
       )}
 
-      {share && <ShareSheet onClose={() => setShare(null)} big={share.big} label={share.label} lines={share.lines} level={share.level} kicker={share.kicker} />}
+      {share && <ShareSheet onClose={() => setShare(null)} big={share.big} label={share.label} lines={share.lines} level={share.level} kicker={share.kicker} moment={share.moment} />}
     </div>
   );
 }

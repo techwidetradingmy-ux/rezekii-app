@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { Icon, type IconName } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { Celebrate, ShareSheet, Sheet, Title } from "@/components/ui";
+import { Celebrate, ShareSheet, Sheet, Title, type MomentKind } from "@/components/ui";
 import "@/app/rewards.css";
 
 /** Streak tiers: each one an honour emblem in its own colour, with bonus credits when it's reached. */
@@ -21,7 +21,7 @@ const tierOf = (d: number) => [...TIERS].reverse().find((t) => d >= t.days) ?? n
 /** One mission: a general action with one button. `share` opens the share card; `ready` can be claimed now. */
 export type Mission = { id: string; icon: IconName; title: string; reward: number; cta: string; href?: string; share?: boolean; progress?: [number, number]; state: "todo" | "ready" | "done"; left?: string; counts?: string };
 type List = "daily" | "starter" | "milestone";
-type Moment = { title: string; line: string; cheer: string; icon: "gift" | "trophy" | "flame"; share?: { big: string; label: string; lines: string[] } };
+type Moment = { title: string; line: string; cheer: string; icon: "gift" | "trophy" | "flame"; share?: { big: string; label: string; lines: string[]; moment: MomentKind } };
 
 /** A streak emblem: a shield in the tier's colours with a flame; grey and locked until reached. */
 function Emblem({ tier, size = 44, locked = false }: { tier: (typeof TIERS)[number]; size?: number; locked?: boolean }) {
@@ -71,7 +71,7 @@ export function MissionsBoard(p: {
   const maxToday = daily.reduce((s, m) => s + m.reward, 0) + chests.reduce((s, c) => s + c.bonus, 0);
   const starterDone = starter.filter((m) => m.state === "done").length;
   const starterLeft = starter.filter((m) => m.state !== "done").reduce((s, m) => s + m.reward, 0);
-  const streakCard = { big: `${streak} days`, label: "My streak on Rezekii", lines: [`${tier?.name ?? "Spark"} tier`, `${tier?.metal ?? "Bronze"} emblem`] };
+  const streakCard = { big: `${streak} days`, label: "My streak on Rezekii", lines: [`${tier?.name ?? "Spark"} tier`, `${tier?.metal ?? "Bronze"} emblem`], moment: "streak" as const };
 
   const finish = (list: List, m: Mission) => {
     setLists((all) => ({ ...all, [list]: all[list].map((x) => (x.id === m.id ? { ...x, state: "done" as const } : x)) }));
@@ -93,12 +93,12 @@ export function MissionsBoard(p: {
         line: `+${gain + (reached?.bonus ?? 0)} credits`,
         cheer: reached ? `${reached.metal} emblem. +${reached.bonus} bonus credits.` : `${next.days - days} days to ${next.name}: +${next.bonus} credits.`,
         icon: "flame",
-        share: { big: `${days} days`, label: "My streak on Rezekii", lines: [`${t?.name ?? "Spark"} tier`, `${t?.metal ?? "Bronze"} emblem`] },
+        share: { big: `${days} days`, label: "My streak on Rezekii", lines: [`${t?.name ?? "Spark"} tier`, `${t?.metal ?? "Bronze"} emblem`], moment: "streak" },
       });
       return;
     }
     if (m.share) return;
-    if (chest) setMoment({ title: "Bonus chest opened", line: `+${gain} credits`, cheer: `${chest.at} daily missions done today.`, icon: "gift", share: { big: `${chest.at} missions`, label: "Done today", lines: [`${streak}-day streak`] } });
+    if (chest) setMoment({ title: "Bonus chest opened", line: `+${gain} credits`, cheer: `${chest.at} daily missions done today.`, icon: "gift", share: { big: `${chest.at} missions`, label: "Done today", lines: [`${streak}-day streak`], moment: "mission" } });
     else if (list === "starter" || list === "milestone") setMoment({ title: `+${m.reward} credits`, line: m.title, cheer: "Nice work.", icon: "trophy" });
     else toast(`+${m.reward} credits`);
   };
@@ -228,6 +228,7 @@ export function MissionsBoard(p: {
           label={share.label}
           lines={share.lines}
           kicker="Missions"
+          moment={share.moment}
           handle={p.handle}
           onShared={() => { if (sharing) { finish(sharing.list, sharing.m); setSharing(null); toast(`Shared. +${sharing.m.reward} credits`); } }}
         />

@@ -27,7 +27,7 @@ export function Wallet() {
         <span className="cr2-exp"><Icon name="clock" size={14} /> {EXPIRING} expire on 27 Nov</span>
         <div className="cr2-bacts">
           <Link href="/app/rewards" className="cr2-bbtn"><Icon name="gift" size={16} /> Earn more</Link>
-          <ShareButton big={`${CREATOR.credits.toLocaleString("en-MY")} credits`} label="Earned on Rezekii" lines={["From posting and inviting", `${CREATOR.streak} days in a row`]} />
+          <ShareButton big={`${CREATOR.credits.toLocaleString("en-MY")} credits`} label="Earned on Rezekii" lines={["From posting and inviting", `${CREATOR.streak} days in a row`]} moment="credits" />
         </div>
       </section>
       <p className="v2-small" style={{ margin: "-8px 0 0" }}>Credits aren&apos;t cash. Use them for AI tools.</p>

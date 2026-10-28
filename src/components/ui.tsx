@@ -283,6 +283,65 @@ const FORMATS = [
   { key: "wide", label: "Wide", ratio: "1.91 / 1", size: "1200 × 630", where: "Facebook and X link posts" },
 ] as const;
 const DESIGNS = ["Pastel", "Certificate", "Night"] as const;
+/** What is being shared. Every moment gets its own hero inside the same branded frame (owner, 28 Oct 2026). */
+export type MomentKind = "streak" | "level" | "badge" | "credits" | "mission" | "sample" | "invite";
+const num = (s: string) => Number(/\d+/.exec(s.replace(/,/g, ""))?.[0] ?? 0);
+
+/** The picture in the middle of a share card: a flame, a podium, a rosette, a receipt, a stamp card, a parcel label or a ticket. */
+function MomentHero({ moment, big, lines, level, size }: { moment: MomentKind; big: string; lines: string[]; level?: Level; size: number }) {
+  const n = num(big);
+  if (moment === "streak") return (
+    <span className="mo-streak">
+      <span className="mo-flame">
+        <svg viewBox="0 0 64 80" aria-hidden="true">
+          <defs><linearGradient id="mo-fl" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stopColor="#ff3d00" /><stop offset="0.55" stopColor="#ff8a00" /><stop offset="1" stopColor="#ffd23f" /></linearGradient></defs>
+          <path d="M32 2c4 16 22 24 22 46a22 22 0 0 1-44 0c0-10 5-16 10-21 0 8 4 13 8 14-4-14 2-28 4-39z" fill="url(#mo-fl)" />
+          <path d="M32 40c2 7 10 10 10 19a10 10 0 0 1-20 0c0-5 3-8 5-10 0 3 2 5 3 5-1-5 1-10 2-14z" fill="#fff3c4" opacity="0.55" />
+        </svg>
+        <b>{n}</b>
+      </span>
+      <span className="mo-week" aria-hidden="true">{Array.from({ length: 7 }, (_, i) => <i key={i} className={i < Math.min(7, n) ? "on" : undefined} />)}</span>
+    </span>
+  );
+  if (moment === "level") return (
+    <span className="mo-podium">
+      <span className="mo-emb">{level ? <Emblem level={level} size={size} animate /> : <span className="st-medal"><Icon name="medal" size={30} width={2.2} /></span>}</span>
+      <span className="mo-steps" aria-hidden="true"><i>2</i><i className="top">1</i><i>3</i></span>
+    </span>
+  );
+  if (moment === "badge") return (
+    <span className="mo-rosette">
+      <span className="mo-tails" aria-hidden="true"><i /><i /></span>
+      <span className="st-medal"><Icon name="medal" size={30} width={2.2} /></span>
+    </span>
+  );
+  if (moment === "credits") return (
+    <span className="mo-receipt">
+      <b className="mo-rc-h">Credits earned</b>
+      {lines.map((l) => <span key={l} className="mo-rc-row"><span>{l}</span><Icon name="check" size={12} width={3} /></span>)}
+      <span className="mo-rc-total"><span>Total</span><b>{big}</b></span>
+    </span>
+  );
+  if (moment === "mission") return (
+    <span className="mo-stamps" aria-hidden="true">
+      {Array.from({ length: 6 }, (_, i) => <i key={i} className={i < n ? "on" : undefined}>{i < n && <Icon name="check" size={14} width={3} />}</i>)}
+    </span>
+  );
+  if (moment === "sample") return (
+    <span className="mo-label">
+      <span className="mo-lb-top"><Icon name="box" size={16} /><b>Free sample</b></span>
+      <span className="mo-bars" aria-hidden="true" />
+      <span className="mo-lb-stamp"><Icon name="check" size={12} width={3} /> Delivered on time</span>
+    </span>
+  );
+  return (
+    <span className="mo-ticket">
+      <Icon name="users" size={22} />
+      <b>Invite</b>
+      <small>Admit one</small>
+    </span>
+  );
+}
 /** The blessing line on every card, from V1. */
 const BLESS = [
   "Rezeki tak pernah salah alamat. Today it found you.",
@@ -296,8 +355,10 @@ const BLESS = [
  * "Share your proud moment" (V1's share window): the card in 3 designs, sized for each platform, as an image or a 5-second
  * video, with a blessing, a caption and the apps to send it to. Shows achievements, never sales.
  */
-export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow", level, kicker = "Proud moment", caption: captionInit, onShared, title = "Share your proud moment", card }: {
+export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow", level, kicker = "Proud moment", caption: captionInit, onShared, title = "Share your proud moment", card, moment }: {
   onClose: () => void; big: string; label: string; lines: string[]; handle?: string; level?: Level; kicker?: string; caption?: string;
+  /** Which hero the card shows; without one it keeps the medal. */
+  moment?: MomentKind;
   title?: string;
   /** A ready-made 9:16 card (like a recap cover) shared as it is, instead of the achievement card and its styles. */
   card?: React.ReactNode;
@@ -323,7 +384,7 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
       <div className="v2-shgrid">
         <div className="v2-shleft">
           {card ? <div className="v2-shcover">{card}</div> : (
-          <div className={`v2-story ds${design} ${fmt} ${video ? "vid" : ""}`} style={{ aspectRatio: f.ratio }} role="img" aria-label={`${label}: ${big}. ${BLESS[bless]}`}>
+          <div className={`v2-story ds${design} ${fmt} ${video ? "vid" : ""} ${moment ? `mo mo-${moment}-card` : ""}`} style={{ aspectRatio: f.ratio }} role="img" aria-label={`${label}: ${big}. ${BLESS[bless]}`}>
             {video && <span className="v2-vbar" aria-hidden="true"><span /></span>}
             <span className="st-head">
               <span className="st-brand">
@@ -338,7 +399,7 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
             </span>
             <span className="st-mid">
               <span className="st-hero">
-                {level ? <Emblem level={level} size={fmt === "wide" ? 64 : fmt === "square" ? 66 : 78} animate /> : <span className="st-medal"><Icon name="medal" size={30} width={2.2} /></span>}
+                {moment ? <MomentHero moment={moment} big={big} lines={lines} level={level} size={fmt === "wide" ? 52 : fmt === "square" ? 56 : 64} /> : level ? <Emblem level={level} size={fmt === "wide" ? 64 : fmt === "square" ? 66 : 78} animate /> : <span className="st-medal"><Icon name="medal" size={30} width={2.2} /></span>}
               </span>
               <span className="st-body">
                 <span className="st-kick st-t">{kicker} · Oct 2026</span>

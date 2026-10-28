@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Icon } from "@/components/icons";
-import { ShareSheet } from "@/components/ui";
+import { ShareSheet, type MomentKind } from "@/components/ui";
 import type { Platform } from "@/lib/mock-creator2";
 
 /** Simple platform marks for the publish screens (drawn, not the official artwork). */
@@ -29,14 +29,14 @@ export function PlatformIcon({ name, size = 40 }: { name: Platform; size?: numbe
 }
 
 /** "Share" button for the top right of every rewards screen: opens the ready-made share card. */
-export function ShareButton({ big, label, lines }: { big: string; label: string; lines: string[] }) {
+export function ShareButton({ big, label, lines, moment }: { big: string; label: string; lines: string[]; moment?: MomentKind }) {
   const [open, setOpen] = useState(false);
   return (
     <>
       <button type="button" className="btn-outline cr2-sharebtn" onClick={() => setOpen(true)}>
         <Icon name="share" size={18} /> Share
       </button>
-      {open && <ShareSheet onClose={() => setOpen(false)} big={big} label={label} lines={lines} />}
+      {open && <ShareSheet onClose={() => setOpen(false)} big={big} label={label} lines={lines} moment={moment} />}
     </>
   );
 }
