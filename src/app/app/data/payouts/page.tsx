@@ -68,7 +68,22 @@ export default function DataPayouts() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 14 }}>
-      <Title title="Payouts" sub="Your commission, and what you earned extra with us." />
+      {/* The small calendar icon, like Analytics (owner, 29 Oct 2026): any preset or a custom range. */}
+      <Title title="Payouts" sub="Your commission, and what you earned extra with us.">
+        <CalendarPicker
+          compact
+          label={label}
+          sub={sub}
+          today={TODAY}
+          first={FIRST}
+          from={from}
+          to={to}
+          onRange={(a, b) => choose(a, b, null)}
+          presets={PRESETS}
+          preset={preset}
+          onPreset={(k) => choose(RANGE[k][0], RANGE[k][1], k)}
+        />
+      </Title>
 
       <section className="v2-card flat pay-flow">
         <h2 className="cr2-h3">How your commission moves <Tip label="About payouts" text="Real earnings only. No forecasts." /></h2>
@@ -83,27 +98,10 @@ export default function DataPayouts() {
         />
       </section>
 
-      {/* The month picker sits below how commission moves (owner, 28 Oct 2026). */}
-      <div className="pay-pick">
-        <CalendarPicker
-          label={label}
-          sub={sub}
-          today={TODAY}
-          first={FIRST}
-          from={from}
-          to={to}
-          onRange={(a, b) => choose(a, b, null)}
-          presets={PRESETS}
-          preset={preset}
-          onPreset={(k) => choose(RANGE[k][0], RANGE[k][1], k)}
-        />
-      </div>
-
       <Lock what="your payouts">
         <section className="v2-card">
           <div className="v2-card-h">
             <h2 className="v2-h2">{label}</h2>
-            {total.pending > 0 ? <span className="badge badge-amber">Settling</span> : <span className="badge">Paid</span>}
           </div>
           <div className="cr2-payhead">
             <div>
