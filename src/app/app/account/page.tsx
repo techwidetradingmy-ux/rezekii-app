@@ -179,12 +179,12 @@ export default function Account() {
                 )}
               </strong>
               <span className="v2-small">{CREATOR.handle} · TikTok Shop Malaysia · {state}</span>
-              <span className="cr2-chips">
-                {/* Icons instead of words (owner, 28 Oct 2026): a medal in her level's colour and a flame with her streak. */}
-                <span className={`cr2-lvchip ico ${CREATOR.level.toLowerCase()}`} title={`${CREATOR.level} creator`} aria-label={`${CREATOR.level} creator`}><Icon name="medal" size={14} /></span>
-                <span className="cr2-actchip" title={`${CREATOR.activity} · ${CREATOR.streak}-day streak`} aria-label={`${CREATOR.activity}, ${CREATOR.streak}-day streak`}><Icon name="flame" size={12} /> {CREATOR.streak}</span>
-                {!verified && <button type="button" className="cr2-wachip" onClick={() => setWaSheet(true)}>Verify WhatsApp</button>}
+              {/* Level and streak as two small stat tiles (owner, 29 Oct 2026, option C). */}
+              <span className="cr2-mstats">
+                <span><i className={`lv ${CREATOR.level.toLowerCase()}`}><Icon name="gem" size={15} /></i><b>{CREATOR.level}</b><small>Level</small></span>
+                <span><i className="st"><Icon name="flame" size={15} /></i><b>{CREATOR.streak} days</b><small>Streak</small></span>
               </span>
+              {!verified && <span className="cr2-chips"><button type="button" className="cr2-wachip" onClick={() => setWaSheet(true)}>Verify WhatsApp</button></span>}
             </span>
           </div>
         </div>
