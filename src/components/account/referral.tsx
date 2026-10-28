@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { Count, Qr, Title } from "@/components/ui";
+import { Count, Qr } from "@/components/ui";
 import { ShareButton } from "@/components/creator2/bits";
 import { INVITES } from "@/lib/mock";
 import "@/app/creator2.css";
@@ -13,8 +13,8 @@ const CODE = "AISYAH8";
 
 const statusPill = (s: string) => (s.includes("paid") ? "badge" : s.includes("pending") ? "badge badge-amber" : "badge badge-gray");
 
-/** Your referral link, who you invited and where each person is, and the rules in plain words. */
-export default function RewardsReferral() {
+/** Referral (in My account, also one tap from the top bar): link, QR, who joined, and credits only for real successes. */
+export function Referral() {
   const { toast } = useDemo();
   const [reminded, setReminded] = useState<string[]>([]);
   const successful = INVITES.filter((i) => i.status.startsWith("Successful")).length;
@@ -28,10 +28,10 @@ export default function RewardsReferral() {
   };
 
   return (
-    <div className="v2-stack v2-in" style={{ gap: 20 }}>
-      <Title title="Referral" sub="Invite creators and sellers. Credits when it's a real success.">
+    <div className="v2-stack" style={{ gap: 20 }}>
+      <div className="acc-head"><span className="v2-small">Invite creators and sellers. Credits when it's a real success.</span>
         <ShareButton big="Join me on Rezekii" label="Better commission for your TikTok Shop showcase" lines={[`Invite code ${CODE}`, "Free for creators and sellers"]} />
-      </Title>
+      </div>
 
       <section className="v2-card">
         <div className="cr2-ref">

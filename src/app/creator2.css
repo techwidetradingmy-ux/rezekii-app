@@ -561,3 +561,7 @@ li.done .cr2-check { background: #00c073; border-color: #00c073; animation: v2Po
 }
 @media (prefers-reduced-motion: reduce) { .cr2-plan-list li, .cr2-payday > i, .cr2-daycard, .cr2-cols span { animation: none !important; } }
 .cr2-payday.out { opacity: 0.35; }
+
+/* Sections moved into My account */
+.acc-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.cr2-settings:has(.lb-hero), .cr2-settings:has(.cr2-balance), .cr2-settings:has(.cr2-ref), .cr2-settings:has(.cr1-sample) { max-width: none; }

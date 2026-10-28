@@ -8,16 +8,22 @@ import { Seg, Sheet, Title } from "@/components/ui";
 import { PlatformIcon } from "@/components/creator2/bits";
 import { CREATOR, MY_SAMPLES, SOCIALS } from "@/lib/mock";
 import { MySamples } from "@/components/creator1/my-samples";
+import { LevelBadges } from "@/components/account/level-badges";
+import { Referral } from "@/components/account/referral";
+import { Wallet } from "@/components/account/wallet";
 import type { IconName } from "@/components/icons";
 import { MY_STATES, NICHES, NOTIFY } from "@/lib/mock-creator2";
 import "@/app/creator2.css";
 
 const TYPES = ["Affiliate", "UGC", "Artist", "Influencer"] as const;
-/** One account page, five sections; the address bar keeps the section (#samples) so links can open it. */
+/** One account page, every personal section; the address bar keeps the section (#referral) so links can open it. */
 const TABS = [
   ["profile", "Profile", "user"],
-  ["connections", "Connections", "link"],
+  ["level", "Level & badges", "medal"],
+  ["wallet", "Wallet", "wallet"],
+  ["referral", "Referral", "users"],
   ["samples", "Samples & delivery", "box"],
+  ["connections", "Connections", "link"],
   ["rate-card", "Rate card", "tag"],
   ["settings", "Settings", "gear"],
 ] as const satisfies readonly (readonly [string, string, IconName])[];
@@ -123,7 +129,7 @@ export default function Account() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 22 }}>
-      <Title title="My account" sub="Your details, connections, samples and settings in one place" />
+      <Title title="My account" sub="Your details, level, wallet, referrals, samples and settings in one place" />
 
       <div className="cr2-settings">
         <div className="cr2-cells">
@@ -305,6 +311,9 @@ export default function Account() {
         </section>
         )}
 
+        {tab === "level" && <LevelBadges />}
+        {tab === "wallet" && <Wallet />}
+        {tab === "referral" && <Referral />}
         {tab === "samples" && <MySamples />}
 
         {tab === "rate-card" && (

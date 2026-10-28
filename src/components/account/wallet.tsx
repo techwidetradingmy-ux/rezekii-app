@@ -3,24 +3,24 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
-import { Count, Seg, Title } from "@/components/ui";
+import { Count, Seg } from "@/components/ui";
 import { ShareButton } from "@/components/creator2/bits";
 import { CREATOR, LEDGER } from "@/lib/mock";
 import "@/app/creator2.css";
 
 const SPLIT = { available: 1150, reserved: 100, expiring: 200 };
 
-/** Credits balance and every movement, straight from the ledger. */
-export default function RewardsWallet() {
+/** Wallet (in My account): credits balance and every credit in and out. */
+export function Wallet() {
   const [show, setShow] = useState<"All" | "Earned" | "Used">("All");
   const rows = LEDGER.filter((l) => (show === "All" ? true : show === "Earned" ? l.amount > 0 : l.amount < 0));
   const earned = LEDGER.filter((l) => l.amount > 0).reduce((s, l) => s + l.amount, 0);
 
   return (
-    <div className="v2-stack v2-in" style={{ gap: 20 }}>
-      <Title title="Wallet" sub="Credits you earn from missions and referrals">
+    <div className="v2-stack" style={{ gap: 20 }}>
+      <div className="acc-head"><span className="v2-small">Credits you earn from missions and referrals</span>
         <ShareButton big={`${CREATOR.credits.toLocaleString("en-MY")} credits`} label="Earned on Rezekii" lines={["From posting and inviting", `${CREATOR.streak} days in a row`]} />
-      </Title>
+      </div>
 
       <section className="cr2-balance" aria-label="Credits balance">
         <small>Balance</small>

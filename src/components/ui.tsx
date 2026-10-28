@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Icon } from "./icons";
+import { Emblem, SHARE_APPS, type Level } from "./emblems";
 import { useDemo } from "./demo";
 
 /** Page title row: large title, one line under it, optional actions on the right. */
@@ -118,8 +120,15 @@ export function Seg<T extends string>({ value, options, onChange }: { value: T; 
   );
 }
 
-/** Bottom sheet on phones, centred card on desktop. Escape or a tap outside closes it. */
-export function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+/** Renders children at the end of <body> once the page is in the browser. */
+export function Portal({ children }: { children: React.ReactNode }) {
+  const [host, setHost] = useState<HTMLElement | null>(null);
+  useEffect(() => setHost(document.body), []);
+  return host ? createPortal(children, host) : null;
+}
+
+/** Bottom sheet on phones, centred card on desktop (`wide` for two columns). Escape or a tap outside closes it. */
+export function Sheet({ title, onClose, children, wide = false }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean }) {
   useEffect(() => {
     const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", k);
@@ -130,16 +139,18 @@ export function Sheet({ title, onClose, children }: { title: string; onClose: ()
     };
   }, [onClose]);
   return (
-    <div className="v2-backdrop" onClick={onClose}>
-      <div className="v2-sheet" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()} style={{ position: "relative" }}>
-        <span className="v2-sheet-grab" />
-        <h2>{title}</h2>
-        <button type="button" className="v2-iconbtn v2-sheet-x" aria-label="Close" onClick={onClose}>
-          <Icon name="x" size={18} />
-        </button>
-        {children}
+    <Portal>
+      <div className="v2-backdrop" onClick={onClose}>
+        <div className={`v2-sheet ${wide ? "wide" : ""}`} role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()} style={{ position: "relative" }}>
+          <span className="v2-sheet-grab" />
+          <h2>{title}</h2>
+          <button type="button" className="v2-iconbtn v2-sheet-x" aria-label="Close" onClick={onClose}>
+            <Icon name="x" size={18} />
+          </button>
+          {children}
+        </div>
       </div>
-    </div>
+    </Portal>
   );
 }
 
@@ -174,6 +185,7 @@ export function Celebrate({ title, line, cheer, onShare, onClose, tone = "gold",
   title: string; line: string; cheer: string; onShare?: () => void; onClose: () => void; tone?: "gold" | "green"; icon?: Parameters<typeof Icon>[0]["name"];
 }) {
   return (
+    <Portal>
     <div className="v2-celebrate" onClick={onClose}>
       <div className="v2-cele-card" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
         <div className="v2-confetti" aria-hidden="true">
@@ -195,44 +207,118 @@ export function Celebrate({ title, line, cheer, onShare, onClose, tone = "gold",
         </div>
       </div>
     </div>
+    </Portal>
   );
 }
 
-/** Ready-made share card (story or square) with the creator's invite QR, plus the places to send it. */
-export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow" }: { onClose: () => void; big: string; label: string; lines: string[]; handle?: string }) {
-  const [shape, setShape] = useState<"Story" | "Square">("Story");
+/** Where a card goes, and its real size there. */
+const FORMATS = [
+  { key: "story", label: "Story", ratio: "9 / 16", size: "1080 × 1920", where: "TikTok, Instagram and WhatsApp stories" },
+  { key: "post", label: "Post", ratio: "4 / 5", size: "1080 × 1350", where: "Instagram and Facebook feed" },
+  { key: "square", label: "Square", ratio: "1 / 1", size: "1080 × 1080", where: "Threads, X and chats" },
+  { key: "wide", label: "Wide", ratio: "1.91 / 1", size: "1200 × 630", where: "Facebook and X link posts" },
+] as const;
+const DESIGNS = ["Pastel", "Certificate", "Night"] as const;
+/** The blessing line on every card, from V1. */
+const BLESS = [
+  "Rezeki tak pernah salah alamat. Today it found you.",
+  "May every post bring more rezeki, and every sale bring more joy.",
+  "Semoga rezeki terus melimpah dan usaha dipermudahkan.",
+  "Small steps, big blessings. Keep shining, keep sharing.",
+  "Your hard work became someone else's good find. Thank you for sharing it.",
+];
+
+/**
+ * "Share your proud moment" (V1's share window): the card in 3 designs, sized for each platform, as an image or a 5-second
+ * video, with a blessing, a caption and the apps to send it to. Shows achievements, never sales.
+ */
+export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow", level, kicker = "Proud moment" }: {
+  onClose: () => void; big: string; label: string; lines: string[]; handle?: string; level?: Level; kicker?: string;
+}) {
   const { toast } = useDemo();
+  const [fmt, setFmt] = useState<(typeof FORMATS)[number]["key"]>("story");
+  const [design, setDesign] = useState(0);
+  const [video, setVideo] = useState(false);
+  const [bless, setBless] = useState(0);
+  const [caption, setCaption] = useState(`Alhamdulillah! ${label}: ${big} on Rezekii 🎉 #RezekiiCreator #TikTokShopMY`);
+  const f = FORMATS.find((x) => x.key === fmt)!;
+  const initials = handle.startsWith("@") ? handle.slice(1, 3).toUpperCase() : handle.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+  const send = (app: string) => toast(app === "More" ? "Opening your phone's share menu…" : `Opening ${app} with your ${video ? "video" : "image"} and caption…`);
+
   return (
-    <Sheet title="Share" onClose={onClose}>
-      <Seg value={shape} options={["Story", "Square"] as const} onChange={setShape} />
-      <div style={{ display: "flex", justifyContent: "center" }}>
-        <div className={`v2-sharecard ${shape === "Square" ? "square" : ""}`}>
-          <div className="v2-row" style={{ gap: 8 }}>
-            <span className="v2-av" style={{ background: "#ffffff", color: "#00804f" }}>{handle.startsWith("@") ? handle.slice(1, 3).toUpperCase() : handle.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase()}</span>
-            <b style={{ fontSize: 13 }}>{handle}</b>
-          </div>
-          <div className="lbl">{label}</div>
-          <div className="big">{big}</div>
-          {lines.map((l) => (
-            <div key={l} className="lbl">{l}</div>
-          ))}
-          <div className="foot">
-            <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <span>Rezekii</span>
-              <span style={{ fontWeight: 600, opacity: 0.85 }}>Join with my link</span>
+    <Sheet title="Share your proud moment" onClose={onClose} wide>
+      <div className="v2-shgrid">
+        <div className="v2-shleft">
+          <div className={`v2-story ds${design} ${fmt} ${video ? "vid" : ""}`} style={{ aspectRatio: f.ratio }} role="img" aria-label={`${label}: ${big}. ${BLESS[bless]}`}>
+            {video && <span className="v2-vbar" aria-hidden="true"><span /></span>}
+            <span className="st-bub" aria-hidden="true" style={{ width: 90, height: 90, left: -24, top: "12%" }} />
+            <span className="st-bub b2" aria-hidden="true" style={{ width: 120, height: 120, right: -40, top: "48%" }} />
+            <span className="st-bub b3" aria-hidden="true" style={{ width: 70, height: 70, left: "12%", bottom: "16%" }} />
+            <span className="st-hero">
+              {level ? <Emblem level={level} size={fmt === "wide" ? 70 : 84} animate /> : <span className="st-medal"><Icon name="medal" size={34} width={2.2} /></span>}
             </span>
-            <span style={{ flex: 1 }} />
-            <Qr />
+            <span className="st-body">
+              <span className="st-chip st-t">✦ {kicker.toUpperCase()} · OCT 2026</span>
+              <span className="st-who st-t"><span className="v2-av">{initials}</span>{handle}</span>
+              <span className="st-lbl st-t">{label}</span>
+              <strong className="st-big st-t">{big}</strong>
+              {lines.map((l) => <span key={l} className="st-line st-t">{l}</span>)}
+              {fmt !== "wide" && <span className="st-quote">&ldquo;{BLESS[bless]}&rdquo;</span>}
+            </span>
+            <span className="st-cobrand">
+              <span className="st-cb-side">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/master-logo-transparent.png" alt="" className="st-cb-logo" />
+                <span className="st-cb-txt"><b>Rezekii</b><small>Join with my link</small></span>
+              </span>
+              <span className="st-cb-side st-cb-tt">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className="st-cb-plogo" src="/tiktok-shop-partner-logo.png" alt="TikTok Shop Partner" />
+              </span>
+              <Qr />
+            </span>
           </div>
+          <span className="v2-small" style={{ textAlign: "center" }}>{f.size} px · {f.where}</span>
+        </div>
+
+        <div className="v2-shright">
+          <div className="v2-shfmt" role="group" aria-label="Size">
+            {FORMATS.map((x) => (
+              <button key={x.key} type="button" className={fmt === x.key ? "on" : undefined} aria-pressed={fmt === x.key} onClick={() => setFmt(x.key)}>
+                <i style={{ aspectRatio: x.ratio }} />
+                <b>{x.label}</b>
+                <small>{x.ratio.replace(" / ", ":")}</small>
+              </button>
+            ))}
+          </div>
+          <Seg value={DESIGNS[design]} options={DESIGNS} onChange={(d) => setDesign(DESIGNS.indexOf(d))} />
+          <Seg value={video ? "Video · 5 sec" : "Image"} options={["Image", "Video · 5 sec"] as const} onChange={(v) => setVideo(v !== "Image")} />
+          <div className="v2-bless">
+            <span aria-hidden="true">✨</span>
+            <span><b>Blessing on your card</b><small>{BLESS[bless]}</small></span>
+            <button type="button" className="btn-outline v2-btn-sm" onClick={() => setBless((b) => (b + 1) % BLESS.length)}>Another</button>
+          </div>
+          <label className="v2-field">
+            Caption
+            <textarea className="np-input" rows={2} value={caption} onChange={(e) => setCaption(e.target.value.slice(0, 300))} />
+          </label>
+          <div className="v2-apps" role="group" aria-label="Share to">
+            {SHARE_APPS.map(([name, bg, d, fill, stroke, sw]) => (
+              <button key={name} type="button" className="v2-app" onClick={() => send(name)}>
+                <span className="ic" style={{ background: bg }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d={d} fill={fill} stroke={stroke} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" /></svg>
+                </span>
+                {name}
+              </button>
+            ))}
+          </div>
+          <div className="v2-row" style={{ gap: 8 }}>
+            <button type="button" className="btn-outline" style={{ flex: 1 }} onClick={() => toast("Link copied: rezekii.com/c/aisyah.glow")}><Icon name="link" size={17} /> Copy link</button>
+            <button type="button" className="np-btn" style={{ flex: 1 }} onClick={() => toast(video ? "Video saved" : "Image saved")}><Icon name="arrow" size={17} /> Save {video ? "video" : "image"}</button>
+          </div>
+          <p className="v2-small" style={{ margin: 0 }}>On a phone, Share opens your phone&apos;s own share menu with the {video ? "video" : "image"} attached. The card shows your achievement and invite QR, never your sales.</p>
         </div>
       </div>
-      <p className="v2-small" style={{ margin: 0, textAlign: "center" }}>Your invite QR is on the card. Only real numbers from your account; you can hide any of them.</p>
-      <div className="v2-chips" style={{ justifyContent: "center" }}>
-        {["TikTok", "Instagram", "Facebook", "WhatsApp"].map((p) => (
-          <button key={p} type="button" className="v2-chip" onClick={() => { toast(`Opening ${p}…`); onClose(); }}>{p}</button>
-        ))}
-      </div>
-      <button type="button" className="np-btn" onClick={() => { toast("Image saved"); onClose(); }}>Save image</button>
     </Sheet>
   );
 }

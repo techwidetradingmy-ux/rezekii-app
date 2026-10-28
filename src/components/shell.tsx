@@ -38,6 +38,9 @@ export function DemoStrip() {
   );
 }
 
+/** The always-visible Invite button: referral is how Rezekii spreads. */
+const INVITE = { creator: "/app/account#referral", seller: "/seller/app/rewards/referral", admin: "" } as const;
+
 /** Signed-in frame, the rezekii.com skeleton: top menu (sections), sub-menu (a section's pages), footer, phone tab bar. */
 export function Shell({ app, children, banner }: { app: AppKind; children: React.ReactNode; banner?: React.ReactNode }) {
   const path = usePathname();
@@ -72,6 +75,20 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
               <button type="button" aria-pressed="true">EN</button>
               <button type="button" aria-pressed="false">中文</button>
             </span>
+          )}
+          {app !== "admin" && (
+            <Link
+              href={INVITE[app]}
+              className="v2-invite"
+              aria-label="Invite friends and earn credits"
+              onClick={(e) => {
+                // Already on My account: switch to the Referral section without leaving the page.
+                if (app === "creator" && path === "/app/account") { e.preventDefault(); window.location.hash = "referral"; }
+              }}
+            >
+              <Icon name="gift" size={18} />
+              <span>Invite</span>
+            </Link>
           )}
           <Link href={app === "admin" ? "/admin" : app === "seller" ? "/seller/app/notifications" : "/app/notifications"} className="v2-iconbtn" aria-label="Notifications">
             <Icon name="bell" size={20} />

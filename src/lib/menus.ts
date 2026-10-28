@@ -13,10 +13,7 @@ export const MENUS: Record<AppKind, Section[]> = {
       pages: [["/app/data", "Overview"], ["/app/data/videos", "Videos"], ["/app/data/products", "Products"], ["/app/data/risk", "Returns & risk"], ["/app/data/payouts", "Payouts"]],
     },
     { href: "/app/publish", label: "Publish", icon: "send", pages: [["/app/publish", "New post"], ["/app/publish/calendar", "Calendar & history"]] },
-    {
-      href: "/app/rewards", label: "Rewards", icon: "gift",
-      pages: [["/app/rewards", "Missions"], ["/app/rewards/level", "Level & badges"], ["/app/rewards/referral", "Referral"], ["/app/rewards/wallet", "Wallet"]],
-    },
+    { href: "/app/rewards", label: "Missions", icon: "gift", pages: [] },
   ],
   seller: [
     { href: "/seller/app", label: "Home", icon: "home", pages: [] },

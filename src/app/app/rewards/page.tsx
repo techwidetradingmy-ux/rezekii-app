@@ -2,213 +2,166 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Icon } from "@/components/icons";
-import { Celebrate, Progress, ShareSheet, Title } from "@/components/ui";
-import { Honour, ShareButton } from "@/components/creator2/bits";
-import { BADGES, CREATOR, MISSIONS } from "@/lib/mock";
-import "@/app/creator2.css";
+import { Icon, type IconName } from "@/components/icons";
+import { useDemo } from "@/components/demo";
+import { Celebrate, ShareSheet, Title } from "@/components/ui";
+import { CREATOR, MISSIONS, MY_SAMPLES, product } from "@/lib/mock";
+import "@/app/rewards.css";
 
 const CHESTS = [
   { at: 1, reward: 10 },
   { at: 3, reward: 20 },
   { at: 5, reward: 20 },
 ];
-const WEEK = ["Thu", "Fri", "Sat", "Sun", "Mon", "Tue", "Wed"];
-const GO: Record<string, string> = { m2: "/app/account", m6: "/app#scan" };
+/** Coming later: brands pay for content. Examples so creators know it's on the way. */
+const BRANDED = [
+  { brand: "Seri Living MY", bg: "linear-gradient(135deg,#ffb35c,#f05a00)", title: "Kitchen hacks week", task: "2 videos using the 900ml spin chopper", reward: "RM 50 per approved video", extra: "Free sample · 40 spots", ends: "Opens Dec" },
+  { brand: "Urban Basics MY", bg: "linear-gradient(135deg,#8b7dff,#5b4ee0)", title: "OOTD try-on challenge", task: "3 try-on videos, any Urban Basics pants", reward: "RM 120 for all 3", extra: "+2% commission for 30 days", ends: "Opens Dec" },
+  { brand: "Bersih Pro", bg: "linear-gradient(135deg,#25f4ee,#00a8a0)", title: "Honest before & after", task: "1 real before-and-after video", reward: "RM 30 bonus at 20 sales", extra: "Top 3 videos win RM 300", ends: "Opens Jan" },
+];
 
+type Row = { id: string; icon: IconName; title: string; get: string; perk?: string; progress?: [number, number]; due?: string; cta: string; href?: string; claim?: () => void };
 type Moment = { title: string; line: string; cheer: string; icon: "gift" | "trophy"; share: { big: string; label: string; lines: string[] } };
 
-/** Missions as a game: streak on top, today's chests, newbie missions with a countdown, then milestones. */
-export default function RewardsMissions() {
+/** Missions: one action list, most rewarding first, each with what you get; today's chests; branded missions coming soon. */
+export default function Missions() {
+  const { toast } = useDemo();
   const daily = MISSIONS.find((m) => m.kind === "daily")!;
-  const newbie = MISSIONS.filter((m) => m.kind === "newbie");
-  const milestones = MISSIONS.filter((m) => m.kind === "milestone");
   const posts = daily.progress;
-
   const [credits, setCredits] = useState(CREATOR.credits);
   const [opened, setOpened] = useState<number[]>([]);
   const [claimed, setClaimed] = useState<string[]>(["m1", "m3", "m4"]);
+  const [notify, setNotify] = useState<string[]>([]);
   const [moment, setMoment] = useState<Moment | null>(null);
   const [share, setShare] = useState<Moment["share"] | null>(null);
 
-  const doneNewbie = newbie.filter((m) => m.done).length;
-  const left = 30 - CREATOR.streak;
   const nextChest = CHESTS.find((c) => c.at > posts);
-  const fill = posts >= 5 ? 1 : posts <= 1 ? 0 : posts <= 3 ? ((posts - 1) / 2) * 0.5 : 0.5 + ((posts - 3) / 2) * 0.5;
+  const readyChest = CHESTS.findIndex((c, i) => posts >= c.at && !opened.includes(i));
+  const sample = MY_SAMPLES.find((s) => s.status === "Posting");
+  const newbie = MISSIONS.filter((m) => m.kind === "newbie");
+  const unclaimed = newbie.filter((m) => m.done && !claimed.includes(m.id));
+  const todo = newbie.filter((m) => !m.done);
 
   const openChest = (i: number) => {
     const c = CHESTS[i];
     setOpened((o) => [...o, i]);
     setCredits((n) => n + c.reward);
-    const more = nextChest ? nextChest.at - posts : 0;
     setMoment({
       title: `Chest ${i + 1} opened`,
       line: `+${c.reward} credits`,
-      cheer: nextChest ? `Post ${more} more today to open the next chest (+${nextChest.reward} credits).` : "All 3 chests open today. Come back tomorrow for new ones.",
+      cheer: nextChest ? `Post ${nextChest.at - posts} more today to open the next chest (+${nextChest.reward} credits).` : "All 3 chests open today. Come back tomorrow.",
       icon: "gift",
       share: { big: `${posts} videos`, label: "Today I posted", lines: [`Chest ${i + 1} opened`, `${CREATOR.streak} days in a row`] },
     });
   };
-
   const claim = (id: string) => {
     const m = MISSIONS.find((x) => x.id === id)!;
     setClaimed((c) => [...c, id]);
     setCredits((n) => n + m.reward);
-    const todo = newbie.filter((x) => !x.done);
-    setMoment({
-      title: "Mission complete",
-      line: `+${m.reward} credits`,
-      cheer: todo.length
-        ? `${todo.length} newbie missions left: ${todo.map((x) => x.title.toLowerCase()).join(" and ")}. Finish within 5 days 12 hours for the full reward.`
-        : "Every newbie mission done. Keep your streak going.",
-      icon: "trophy",
-      share: { big: `${doneNewbie} of 6`, label: "Newbie missions done", lines: [`Just done: ${m.title.toLowerCase()}`, `${CREATOR.streak} days in a row`] },
-    });
+    toast(`+${m.reward} credits`);
   };
+
+  const rows: Row[] = [
+    ...(readyChest >= 0 ? [{ id: "chest", icon: "gift" as IconName, title: `Open today's chest ${readyChest + 1}`, get: `+${CHESTS[readyChest].reward} credits`, cta: "Open", claim: () => openChest(readyChest) }] : []),
+    ...unclaimed.map((m) => ({ id: m.id, icon: "check" as IconName, title: m.title, get: `+${m.reward} credits`, cta: "Claim", claim: () => claim(m.id) })),
+    ...(nextChest
+      ? [{ id: "post", icon: "video" as IconName, title: `Post ${nextChest.at - posts} more video${nextChest.at - posts > 1 ? "s" : ""} today`, get: `+${nextChest.reward} credits`, perk: `Keeps your ${CREATOR.streak}-day streak: ${30 - CREATOR.streak} days to Highly active`, progress: [posts, nextChest.at] as [number, number], due: "Before midnight", cta: "Post now", href: "/app/publish" }]
+      : []),
+    ...(sample ? [{ id: "sample", icon: "box" as IconName, title: `1 more video for your sample: ${product(sample.productId).name}`, get: "+80 credits", perk: "Keeps your sample record at 100%", progress: [sample.videos, 3] as [number, number], due: `Due ${sample.due}`, cta: "Submit link", href: "/app/account#samples" }] : []),
+    ...todo.map((m) => ({ id: m.id, icon: (m.id === "m6" ? "scan" : "whatsapp") as IconName, title: m.title, get: `+${m.reward} credits`, perk: m.id === "m6" ? "Finds products in your showcase that pay more" : "The team can reach you about samples", due: `${m.due} left`, cta: m.id === "m6" ? "Scan now" : "Verify", href: m.id === "m6" ? "/app#scan" : "/app/account#profile" })),
+    { id: "m9", icon: "trophy", title: "Finish your first collaboration", get: "+120 credits", perk: "Get a free sample, post 3 videos", cta: "Find a sample", href: "/app/market" },
+  ];
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 20 }}>
-      <Title title="Missions" sub="Real posts earn credits. Chests reset at midnight, Malaysia time.">
-        <span className="cr2-titleacts">
-          <Link href="/app/rewards/wallet" className="cr2-credits"><Icon name="wallet" size={16} /> {credits.toLocaleString("en-MY")} credits</Link>
-          <ShareButton big={`${CREATOR.streak} days`} label="My posting streak" lines={["in a row, every day", `${CREATOR.activity} creator on Rezekii`]} />
+      <Title title="Missions" sub="Do these to earn credits. Credits pay for AI tools inside Rezekii.">
+        <span className="ms-pills">
+          <Link href="/app/account#level" className="ms-pill fire"><Icon name="flame" size={15} /> {CREATOR.streak}-day streak</Link>
+          <Link href="/app/account#wallet" className="ms-pill"><Icon name="wallet" size={15} /> {credits.toLocaleString("en-MY")} credits</Link>
         </span>
       </Title>
 
-      <section className="cr2-streak" aria-label="Posting streak">
-        <div className="cr2-streak-top">
-          <span className="cr2-flame"><Icon name="flame" size={34} width={2.2} /></span>
-          <div>
-            <h2>{CREATOR.streak} days in a row</h2>
-            <p>You&apos;re {CREATOR.activity}. Any video you post counts toward your streak.</p>
-          </div>
-        </div>
-        <div className="v2-days" aria-label="Last 7 days">
-          {WEEK.map((d, i) => (
-            <span key={d} className={`${i >= 7 - CREATOR.streak ? "on" : ""} ${i === 6 ? "today" : ""}`}>{i === 6 ? "Today" : d}</span>
-          ))}
-        </div>
-        <Link href="/app/rewards/level" className="cr2-streak-goal">
-          <Honour state="off" size={46} />
-          <span>
-            {left} more days to Highly active: honour badge + designated samples
-            <Progress value={CREATOR.streak} max={30} />
-          </span>
-          <Icon name="arrow" size={18} />
-        </Link>
-      </section>
-
-      <div className="v2-grid2">
-        <section className="v2-card">
-          <div className="v2-card-h">
-            <h2 className="v2-h2">Today&apos;s mission</h2>
-            <span className="badge">{posts} of 5 posts</span>
-          </div>
-          <span className="v2-muted">Post a video with a Techwide product in the cart. One video posted to several platforms counts once.</span>
-          <div className="cr2-chests">
-            <div className="v2-tiers">
-              <i style={{ width: `calc((100% - 32px) * ${fill})` }} />
-              {CHESTS.map((c, i) => {
-                const reached = posts >= c.at;
-                const isOpen = opened.includes(i);
-                const ready = reached && !isOpen;
-                return (
-                  <button
-                    key={c.at}
-                    type="button"
-                    className={`v2-chest ${isOpen ? "on" : ready ? "ready" : ""}`}
-                    aria-label={ready ? `Open chest ${i + 1}` : isOpen ? `Chest ${i + 1} opened` : `Chest ${i + 1}: post ${c.at}`}
-                    onClick={() => ready && openChest(i)}
-                    style={{ cursor: ready ? "pointer" : "default" }}
-                  >
-                    {isOpen ? <Icon name="check" size={18} width={3} /> : <Icon name="gift" size={20} />}
-                  </button>
-                );
-              })}
-            </div>
-            <div className="cr2-chestlbl">
-              {CHESTS.map((c) => (
-                <span key={c.at}><b>{c.at} post{c.at > 1 ? "s" : ""}</b>+{c.reward}</span>
-              ))}
-            </div>
-          </div>
-          {CHESTS.some((c, i) => posts >= c.at && !opened.includes(i)) ? (
-            <button type="button" className="np-btn" onClick={() => openChest(CHESTS.findIndex((c, i) => posts >= c.at && !opened.includes(i)))}>
-              <Icon name="gift" size={18} /> Open your chest
-            </button>
-          ) : (
-            <span className="v2-small">{nextChest ? `Post ${nextChest.at - posts} more today to open the next chest.` : "All chests open. See you tomorrow."}</span>
-          )}
-        </section>
-
-        <section className="v2-card">
-          <div className="v2-card-h">
-            <h2 className="v2-h2">Newbie missions</h2>
-            <span className="badge">{doneNewbie} of 6 done</span>
-          </div>
-          <div className="v2-steps">{newbie.map((m) => <i key={m.id} className={m.done ? "on" : undefined} />)}</div>
-          <span className="cr2-timer" style={{ alignSelf: "flex-start" }}><Icon name="cal" size={15} /> 5 days 12 hours left · after that the reward is halved</span>
-          <div className="v2-divide">
-            {newbie.map((m) => (
-              <div key={m.id} className="cr2-mission">
-                <span className={`cr2-mico ${m.done ? "done" : ""}`}><Icon name={m.done ? "check" : "spark"} size={18} width={m.done ? 3 : 1.9} /></span>
-                <span>
-                  <strong>{m.title}</strong>
-                  <span className="cr2-reward"><Icon name="star" size={13} /> +{m.reward} credits</span>
-                </span>
-                {m.done ? (
-                  claimed.includes(m.id) ? <span className="badge badge-gray">Claimed</span> : <button type="button" className="np-btn v2-btn-sm" onClick={() => claim(m.id)}>Claim</button>
-                ) : (
-                  <Link href={GO[m.id] ?? "/app"} className="btn-outline v2-btn-sm">Do it</Link>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
-
-      <section className="v2-card">
+      <section className="v2-card ms-list">
         <div className="v2-card-h">
-          <h2 className="v2-h2">Milestones</h2>
-          <span className="v2-small">Bigger rewards for real results</span>
+          <h2 className="v2-h2">Do these now</h2>
+          <span className="badge">{rows.length} things · up to +{rows.reduce((s, r) => s + Number(r.get.replace(/\D/g, "")), 0)} credits</span>
         </div>
-        <div className="v2-divide">
-          {milestones.map((m) => (
-            <div key={m.id} className="cr2-mission">
-              <span className="cr2-mico"><Icon name="trophy" size={18} /></span>
-              <span>
-                <strong>{m.title}</strong>
-                <Progress value={m.progress} max={m.goal} />
-                <small>{m.progress} of {m.goal} · {m.goal - m.progress} to go</small>
+        <ol>
+          {rows.map((r, i) => (
+            <li key={r.id} className={r.claim ? "ready" : undefined} style={{ animationDelay: `${i * 40}ms` }}>
+              <span className="ms-ico"><Icon name={r.icon} size={19} /></span>
+              <span className="ms-main">
+                <b>{r.title}</b>
+                {r.perk && <small>{r.perk}</small>}
+                {r.progress && (
+                  <span className="ms-prog">
+                    <i><span style={{ width: `${(r.progress[0] / r.progress[1]) * 100}%` }} /></i>
+                    {r.progress[0]} / {r.progress[1]}
+                  </span>
+                )}
               </span>
-              <span className="cr2-reward"><Icon name="star" size={13} /> +{m.reward}</span>
-            </div>
+              <span className="ms-side">
+                <span className="ms-get">{r.get}</span>
+                {r.due && <small>{r.due}</small>}
+                {r.claim ? (
+                  <button type="button" className="np-btn v2-btn-sm" onClick={r.claim}>{r.cta}</button>
+                ) : (
+                  <Link href={r.href!} className="btn-outline v2-btn-sm">{r.cta}</Link>
+                )}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section className="v2-card ms-chests">
+        <div className="v2-card-h">
+          <h2 className="v2-h2">Today&apos;s chests</h2>
+          <span className="v2-small">{posts} posted · resets at midnight</span>
+        </div>
+        <div className="ms-chestrow">
+          {CHESTS.map((c, i) => {
+            const isOpen = opened.includes(i);
+            const ready = posts >= c.at && !isOpen;
+            return (
+              <button key={c.at} type="button" className={`ms-chest ${isOpen ? "open" : ready ? "ready" : ""}`} disabled={!ready} onClick={() => openChest(i)} aria-label={ready ? `Open chest ${i + 1}` : `Chest ${i + 1}`}>
+                <span><Icon name={isOpen ? "check" : "gift"} size={22} width={isOpen ? 3 : 1.9} /></span>
+                <b>{c.at} post{c.at > 1 ? "s" : ""}</b>
+                <small>+{c.reward}</small>
+              </button>
+            );
+          })}
+        </div>
+        <span className="v2-small">One video posted to several platforms counts once. It needs a Techwide product in the cart.</span>
+      </section>
+
+      <section className="ms-branded">
+        <div className="v2-card-h">
+          <h2 className="v2-h2">Branded missions</h2>
+          <span className="badge badge-amber">Coming soon</span>
+        </div>
+        <p className="v2-muted" style={{ margin: 0 }}>Brands will pay you for content here: real money for real videos, on top of your commission. Here&apos;s what they&apos;ll look like.</p>
+        <div className="ms-bgrid">
+          {BRANDED.map((b) => (
+            <article key={b.title} className="ms-bcard">
+              <span className="ms-soon">Coming soon</span>
+              <span className="ms-brand"><i style={{ background: b.bg }}>{b.brand.slice(0, 1)}</i>{b.brand}</span>
+              <b>{b.title}</b>
+              <small>{b.task}</small>
+              <span className="ms-breward">{b.reward}</span>
+              <small>{b.extra} · {b.ends}</small>
+              <button type="button" className={notify.includes(b.title) ? "btn-outline v2-btn-sm" : "np-btn v2-btn-sm"} onClick={() => { setNotify((n) => (n.includes(b.title) ? n : [...n, b.title])); toast("We'll tell you when branded missions open"); }}>
+                {notify.includes(b.title) ? <><Icon name="check" size={15} width={3} /> We&apos;ll tell you</> : <><Icon name="bell" size={15} /> Notify me</>}
+              </button>
+            </article>
           ))}
         </div>
       </section>
-
-      <Link href="/app/rewards/level" className="v2-card" style={{ textDecoration: "none", color: "var(--text)", flexDirection: "row", alignItems: "center", gap: 14 }}>
-        <span className="v2-medal" style={{ width: 52, height: 52, animation: "none" }}><Icon name="medal" size={26} /></span>
-        <span style={{ flex: 1, display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
-          <b>Badges: {BADGES.filter((b) => b.got).length} of {BADGES.length}</b>
-          <span className="v2-small">Next up: Highly active, 14 more days</span>
-        </span>
-        <Icon name="arrow" size={18} />
-      </Link>
-
-      <p className="cr2-note"><Icon name="shield" size={15} /><span>Sharing never earns credits. Only real posts and successful referrals do.</span></p>
 
       {moment && (
-        <Celebrate
-          title={moment.title}
-          line={moment.line}
-          cheer={moment.cheer}
-          icon={moment.icon}
-          onClose={() => setMoment(null)}
-          onShare={() => { setShare(moment.share); setMoment(null); }}
-        />
+        <Celebrate title={moment.title} line={moment.line} cheer={moment.cheer} icon={moment.icon} onClose={() => setMoment(null)} onShare={() => { setShare(moment.share); setMoment(null); }} />
       )}
-      {share && <ShareSheet onClose={() => setShare(null)} big={share.big} label={share.label} lines={share.lines} />}
+      {share && <ShareSheet onClose={() => setShare(null)} big={share.big} label={share.label} lines={share.lines} kicker="Rewards" />}
     </div>
   );
 }

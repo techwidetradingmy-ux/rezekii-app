@@ -1,0 +1,222 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { Icon, type IconName } from "@/components/icons";
+import { Emblem, type Level } from "@/components/emblems";
+import { Portal, Progress, ShareSheet, Sheet } from "@/components/ui";
+import { Honour } from "@/components/creator2/bits";
+import { BADGES, CREATOR } from "@/lib/mock";
+import { BADGE_INFO, LEVELS, TIERS } from "@/lib/mock-creator2";
+import "@/app/rewards.css";
+
+/** Each badge's sticker: icon, colours, and how far along a locked one is. */
+const STICKER: Record<string, { icon: IconName; from: string; to: string; progress?: [number, number] }> = {
+  "First scan": { icon: "scan", from: "#25f4ee", to: "#00a8a0" },
+  "Link master": { icon: "link", from: "#8b7dff", to: "#5b4ee0" },
+  "7-day streak": { icon: "flame", from: "#ffb35c", to: "#f05a00" },
+  "Sample star": { icon: "gift", from: "#ff7aa8", to: "#e8005a" },
+  "Highly active": { icon: "star", from: "#ffe08a", to: "#e09a1a", progress: [CREATOR.streak, 30] },
+  "First RM 1,000": { icon: "wallet", from: "#22dc95", to: "#00804f" },
+  Silver: { icon: "medal", from: "#e9ecff", to: "#9097c4" },
+  Gold: { icon: "trophy", from: "#ffe08a", to: "#c98510" },
+};
+const SPARK = ["#ffd34d", "#25f4ee", "#ff5ca8", "#22dc95", "#8b7dff", "#ffffff"];
+const KEY: Record<string, Level> = { Bronze: "bronze", Silver: "silver", Gold: "gold" };
+
+type Share = { big: string; label: string; lines: string[]; level?: Level; kicker?: string };
+
+/**
+ * Level & badges (in My account): a collectible creator card that tilts and sparkles, the Bronze → Silver → Gold path with V1's
+ * emblems, the Highly active honour, and a sticker wall of badges. Everything can be shared as a card.
+ */
+export function LevelBadges() {
+  const card = useRef<HTMLDivElement>(null);
+  const [burst, setBurst] = useState(0);
+  const [pick, setPick] = useState(LEVELS.findIndex((l) => l.name === CREATOR.level));
+  const [badge, setBadge] = useState<(typeof BADGES)[number] | null>(null);
+  const [unlock, setUnlock] = useState(false);
+  const [lit, setLit] = useState(false);
+  const [share, setShare] = useState<Share | null>(null);
+  const got = BADGES.filter((b) => b.got).length;
+  const levelAt = LEVELS.findIndex((l) => l.name === CREATOR.level);
+  const tierAt = TIERS.findIndex((t) => t.name === CREATOR.activity);
+  const mine = KEY[CREATOR.level];
+
+  useEffect(() => {
+    if (!unlock) return;
+    setLit(false);
+    const t = window.setTimeout(() => setLit(true), 650);
+    return () => window.clearTimeout(t);
+  }, [unlock]);
+
+  /** The card leans toward the pointer and the holographic sheen follows it. */
+  const tilt = (e: React.PointerEvent<HTMLDivElement>) => {
+    const el = card.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width;
+    const y = (e.clientY - r.top) / r.height;
+    el.style.setProperty("--rx", `${(0.5 - y) * 16}deg`);
+    el.style.setProperty("--ry", `${(x - 0.5) * 18}deg`);
+    el.style.setProperty("--mx", `${x * 100}%`);
+    el.style.setProperty("--my", `${y * 100}%`);
+  };
+  const rest = () => {
+    const el = card.current;
+    if (!el) return;
+    el.style.setProperty("--rx", "0deg");
+    el.style.setProperty("--ry", "0deg");
+  };
+
+  return (
+    <div className="v2-stack" style={{ gap: 20 }}>
+      <section className="lb-hero">
+        <div className="lb-stage">
+          <div
+            ref={card}
+            className={`lb-card ${mine}`}
+            onPointerMove={tilt}
+            onPointerLeave={rest}
+            onClick={() => setBurst((b) => b + 1)}
+            role="img"
+            aria-label={`Creator card: ${CREATOR.handle}, ${CREATOR.level}, TikTok Shop Lv.${CREATOR.tiktokLevel}, ${got} badges`}
+          >
+            <span className="lb-holo" aria-hidden="true" />
+            <span className="lb-glare" aria-hidden="true" />
+            <span className="lb-top">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/master-logo-transparent.png" alt="" />
+              <b>REZEKII CREATOR</b>
+              <em>No. 0428</em>
+            </span>
+            <Emblem level={mine} size={132} animate />
+            <span className="lb-tier">{CREATOR.level.toUpperCase()}</span>
+            <strong className="lb-name">{CREATOR.handle}</strong>
+            <span className="lb-stats">
+              <span><b>Lv.{CREATOR.tiktokLevel}</b>TikTok Shop</span>
+              <span><b>{CREATOR.streak}</b>day streak</span>
+              <span><b>{got}</b>badges</span>
+            </span>
+            <span className="lb-foot">Since Mar 2026 · rezekii.com/c/aisyah.glow</span>
+            <span className="lb-burst" key={burst} aria-hidden="true">
+              {burst > 0 && Array.from({ length: 18 }, (_, i) => (
+                <i key={i} style={{ "--a": `${i * 20}deg`, "--d": `${70 + (i % 4) * 22}px`, background: SPARK[i % SPARK.length] } as React.CSSProperties} />
+              ))}
+            </span>
+          </div>
+          <span className="v2-small">Tap the card · move over it</span>
+        </div>
+
+        <div className="lb-side">
+          <span className="lb-kicker">Your level</span>
+          <h2 className="lb-h">You&apos;re {CREATOR.level}</h2>
+          <p className="v2-muted" style={{ margin: 0 }}>Your level sets your TAP commission rates. Tap a level to see what it gives.</p>
+          <div className="lb-path" role="group" aria-label="Levels">
+            {LEVELS.map((l, i) => (
+              <button key={l.name} type="button" className={`lb-stop ${i === pick ? "on" : ""} ${i <= levelAt ? "got" : ""}`} aria-pressed={i === pick} onClick={() => setPick(i)}>
+                <Emblem level={KEY[l.name]} size={i === levelAt ? 74 : 60} animate={i === levelAt} dim={i > levelAt} />
+                <b>{l.name}</b>
+                {i === levelAt && <span className="badge">You</span>}
+              </button>
+            ))}
+          </div>
+          <div className="lb-perks" key={pick}>
+            <small>{LEVELS[pick].how}</small>
+            <ul>
+              {LEVELS[pick].gives.map((g) => <li key={g}><Icon name="check" size={15} width={2.8} />{g}</li>)}
+            </ul>
+          </div>
+          <div className="v2-row">
+            <button type="button" className="np-btn v2-btn-sm" onClick={() => setShare({ big: `${CREATOR.level} creator`, label: "My creator level on Rezekii", lines: [`TikTok Shop Lv.${CREATOR.tiktokLevel}`, `${got} badges earned`], level: mine, kicker: "Level up" })}>
+              <Icon name="share" size={16} /> Share my card
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="v2-card lb-honour">
+        <Honour state="off" size={92} />
+        <span className="lb-honour-main">
+          <span className="v2-row" style={{ gap: 8 }}>
+            <b>Highly active</b>
+            <span className="badge badge-amber">Honour badge</span>
+          </span>
+          <span className="v2-small">{TIERS[tierAt].name} now · day {CREATOR.streak} of 30 posting every day, every sample delivered. Opens designated samples.</span>
+          <Progress value={CREATOR.streak} max={30} />
+        </span>
+        <button type="button" className="btn-outline v2-btn-sm" onClick={() => setUnlock(true)}><Icon name="eye" size={15} /> Preview</button>
+      </section>
+
+      <section className="v2-card">
+        <div className="v2-card-h">
+          <h2 className="v2-h2">Badges</h2>
+          <span className="badge">{got} of {BADGES.length} collected</span>
+        </div>
+        <div className="lb-stickers">
+          {BADGES.map((b, i) => {
+            const s = STICKER[b.name];
+            return (
+              <button key={b.name} type="button" className={`lb-sticker ${b.got ? "got" : ""}`} style={{ "--r": `${((i * 7) % 9) - 4}deg` } as React.CSSProperties} onClick={() => setBadge(b)}>
+                <span className="lb-sk" style={{ background: b.got ? `linear-gradient(140deg, ${s.from}, ${s.to})` : undefined }}>
+                  <Icon name={b.got ? s.icon : "lock"} size={26} width={2.2} />
+                  {b.got && <span className="lb-shine" aria-hidden="true" />}
+                </span>
+                <b>{b.name}</b>
+                {!b.got && s.progress && <small>{s.progress[0]} / {s.progress[1]} days</small>}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {badge && (
+        <Sheet title={badge.name} onClose={() => setBadge(null)}>
+          <div className="lb-bigsticker">
+            <span className={`lb-sk big ${badge.got ? "" : "off"}`} style={{ background: badge.got ? `linear-gradient(140deg, ${STICKER[badge.name].from}, ${STICKER[badge.name].to})` : undefined }}>
+              <Icon name={badge.got ? STICKER[badge.name].icon : "lock"} size={52} width={2} />
+              {badge.got && <span className="lb-shine" aria-hidden="true" />}
+            </span>
+          </div>
+          <p style={{ margin: 0, textAlign: "center", lineHeight: 1.5 }}>{BADGE_INFO[badge.name]}</p>
+          <span className={`badge ${badge.got ? "" : "badge-gray"}`} style={{ alignSelf: "center" }}>{badge.got ? "Collected" : "Not yet"}</span>
+          {badge.got ? (
+            <button type="button" className="np-btn" onClick={() => { setBadge(null); setShare({ big: badge.name, label: "New badge on Rezekii", lines: [`${CREATOR.level} creator`, `${got} badges so far`], kicker: "New badge" }); }}>
+              <Icon name="share" size={18} /> Share this badge
+            </button>
+          ) : (
+            <button type="button" className="btn-outline" style={{ height: 46 }} onClick={() => setBadge(null)}>Got it</button>
+          )}
+        </Sheet>
+      )}
+
+      {unlock && (
+        <Portal>
+          <div className="v2-celebrate cr2-unlock" onClick={() => setUnlock(false)}>
+            <div className="v2-cele-card" role="dialog" aria-modal="true" aria-label="Highly active unlocked" onClick={(e) => e.stopPropagation()}>
+              {lit && (
+                <div className="v2-confetti" aria-hidden="true">
+                  {Array.from({ length: 32 }, (_, i) => (
+                    <i key={i} style={{ left: `${(i * 31) % 100}%`, background: SPARK[i % SPARK.length], animationDelay: `${(i % 8) * 80}ms`, transform: `rotate(${i * 27}deg)` }} />
+                  ))}
+                </div>
+              )}
+              <span className="badge badge-gray">Preview · what you&apos;ll see on day 30</span>
+              <div className="cr2-unlock-stage"><Honour state={lit ? "lit" : "off"} size={124} /></div>
+              <h2>{lit ? "Highly active!" : "Day 30…"}</h2>
+              <p style={{ fontWeight: 800, color: "var(--gink)" }}>30 days in a row · every sample delivered</p>
+              <p>Your honour badge is lit. Designated samples are open to you now.</p>
+              <div className="v2-stack" style={{ width: "100%", marginTop: 6 }}>
+                <button type="button" className="np-btn" onClick={() => { setUnlock(false); setShare({ big: `Day ${CREATOR.streak} of 30`, label: "On my way to Highly active", lines: ["Posting every day", `${CREATOR.level} creator on Rezekii`], kicker: "Streak" }); }}>
+                  <Icon name="share" size={18} /> Share this moment
+                </button>
+                <button type="button" className="btn-outline" onClick={() => setUnlock(false)}>Continue</button>
+              </div>
+            </div>
+          </div>
+        </Portal>
+      )}
+
+      {share && <ShareSheet onClose={() => setShare(null)} big={share.big} label={share.label} lines={share.lines} level={share.level} kicker={share.kicker} />}
+    </div>
+  );
+}
