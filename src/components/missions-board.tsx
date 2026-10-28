@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { Icon, type IconName } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { Celebrate, ShareSheet, Title } from "@/components/ui";
+import { Celebrate, ShareSheet, Sheet, Title } from "@/components/ui";
 import "@/app/rewards.css";
 
 /** Streak tiers: each one an honour emblem in its own colour, with bonus credits when it's reached. */
@@ -58,6 +58,7 @@ export function MissionsBoard(p: {
   const [share, setShare] = useState<Moment["share"] | null>(null);
   // A share mission waits here until the card really goes out to an app.
   const [sharing, setSharing] = useState<{ list: List; m: Mission } | null>(null);
+  const [streakOpen, setStreakOpen] = useState(false);
 
   const daily = lists.daily, starter = lists.starter;
   // Bonus chests after a third, two thirds and all of today's missions.
@@ -130,41 +131,24 @@ export function MissionsBoard(p: {
         <Link href={p.walletHref} className="ms-pill"><Icon name="wallet" size={15} /> {credits.toLocaleString("en-MY")} credits</Link>
       </Title>
 
-      <section className="mx-streak" style={{ ["--c1" as string]: tier?.c1 ?? "#f8c39b", ["--c2" as string]: tier?.c2 ?? "#b8642f" }} aria-label="Your streak">
-        <div className="mx-streak-top">
-          <span className="mx-big-emblem">{tier ? <Emblem tier={tier} size={74} /> : <Emblem tier={TIERS[0]} size={74} locked />}<b>{streak}</b></span>
-          <span className="mx-streak-txt">
-            <span className="mx-tiername">{tier ? `${tier.name} · ${tier.metal}` : "No tier yet"}</span>
-            <strong>{streak}-day streak</strong>
-            <small>{checkedToday ? "Today counted. See you tomorrow!" : "Do 1 daily mission today to keep it."}</small>
-          </span>
-        </div>
-        <div className="mx-week" aria-label="This week">
-          {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => {
-            const state = i < 2 ? "on" : i === 2 ? (checkedToday ? "on today" : "today") : "";
-            return <span key={i} className={`mx-wd ${state}`}><i>{state.startsWith("on") ? <Icon name="check" size={15} width={3} /> : state === "today" ? <Icon name="flame" size={16} width={2.2} /> : null}</i>{d}</span>;
-          })}
-        </div>
-        <div className="mx-next">
-          <span><b>{Math.max(0, next.days - streak)} days</b> to {next.name} <em>+{next.bonus} bonus credits</em></span>
-          <span className="mx-bar"><i style={{ width: `${Math.min(100, ((streak - prev) / Math.max(1, next.days - prev)) * 100)}%` }} /></span>
-        </div>
-        <ol className="mx-tiers" aria-label="Streak tiers">
-          {TIERS.map((t) => (
-            <li key={t.days} className={streak >= t.days ? (tier?.days === t.days ? "now" : "got") : ""}>
-              <Emblem tier={t} size={30} locked={streak < t.days} />
-              <b>{t.days}d</b>
-              <small>+{t.bonus}</small>
-            </li>
-          ))}
-        </ol>
-      </section>
 
-      <section className="v2-card mx-card">
+      <section className="v2-card mx-card mx-daily">
         <div className="v2-card-h">
           <h2 className="v2-h2">Daily missions</h2>
           <span className="v2-small">Resets at midnight</span>
         </div>
+        {/* The streak sits on top of the missions that keep it; tap for the tiers. */}
+        <button type="button" className="mx-strip" style={{ ["--c1" as string]: tier?.c1 ?? "#f8c39b", ["--c2" as string]: tier?.c2 ?? "#b8642f" }} onClick={() => setStreakOpen(true)} aria-label={`${streak}-day streak. See tiers`}>
+          <span className="mx-strip-em">{tier ? <Emblem tier={tier} size={34} /> : <Emblem tier={TIERS[0]} size={34} locked />}<b>{streak}</b></span>
+          <span className="mx-strip-txt">
+            <b>{streak}-day streak</b>
+            <small>{checkedToday ? "Today counted" : "Do 1 mission today to keep it"} · {Math.max(0, next.days - streak)} days to {next.name} +{next.bonus}</small>
+          </span>
+          <span className="mx-strip-week" aria-hidden="true">
+            {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => <i key={i} className={i < 2 || (i === 2 && checkedToday) ? "on" : i === 2 ? "today" : ""} />)}
+          </span>
+          <Icon name="arrow" size={16} />
+        </button>
         <p className="mx-rule"><Icon name="check" size={14} width={3} /> Credits come only when it really happens: a post that goes live, a request that&apos;s sent, a share that goes out.</p>
         <div className="mx-today">
           <span className="mx-today-h"><b>{earnedToday} / {maxToday} credits today</b><small>{doneToday} of {daily.length} done</small></span>
@@ -200,6 +184,40 @@ export function MissionsBoard(p: {
 
       {p.children}
 
+      {streakOpen && (
+        <Sheet title="Your streak" onClose={() => setStreakOpen(false)}>
+          <section className="mx-streak" style={{ ["--c1" as string]: tier?.c1 ?? "#f8c39b", ["--c2" as string]: tier?.c2 ?? "#b8642f" }} aria-label="Your streak">
+            <div className="mx-streak-top">
+              <span className="mx-big-emblem">{tier ? <Emblem tier={tier} size={74} /> : <Emblem tier={TIERS[0]} size={74} locked />}<b>{streak}</b></span>
+              <span className="mx-streak-txt">
+                <span className="mx-tiername">{tier ? `${tier.name} · ${tier.metal}` : "No tier yet"}</span>
+                <strong>{streak}-day streak</strong>
+                <small>{checkedToday ? "Today counted. See you tomorrow!" : "Do 1 daily mission today to keep it."}</small>
+              </span>
+            </div>
+            <div className="mx-week" aria-label="This week">
+              {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => {
+                const state = i < 2 ? "on" : i === 2 ? (checkedToday ? "on today" : "today") : "";
+                return <span key={i} className={`mx-wd ${state}`}><i>{state.startsWith("on") ? <Icon name="check" size={15} width={3} /> : state === "today" ? <Icon name="flame" size={16} width={2.2} /> : null}</i>{d}</span>;
+              })}
+            </div>
+            <div className="mx-next">
+              <span><b>{Math.max(0, next.days - streak)} days</b> to {next.name} <em>+{next.bonus} bonus credits</em></span>
+              <span className="mx-bar"><i style={{ width: `${Math.min(100, ((streak - prev) / Math.max(1, next.days - prev)) * 100)}%` }} /></span>
+            </div>
+            <ol className="mx-tiers" aria-label="Streak tiers">
+              {TIERS.map((t) => (
+                <li key={t.days} className={streak >= t.days ? (tier?.days === t.days ? "now" : "got") : ""}>
+                  <Emblem tier={t} size={30} locked={streak < t.days} />
+                  <b>{t.days}d</b>
+                  <small>+{t.bonus}</small>
+                </li>
+              ))}
+            </ol>
+          </section>
+          <button type="button" className="btn-outline" onClick={() => { setStreakOpen(false); setShare(streakCard); }}><Icon name="share" size={16} /> Share my streak</button>
+        </Sheet>
+      )}
       {moment && (
         <Celebrate title={moment.title} line={moment.line} cheer={moment.cheer} icon={moment.icon} onClose={() => setMoment(null)} onShare={() => { setShare(moment.share ?? streakCard); setMoment(null); }} />
       )}
