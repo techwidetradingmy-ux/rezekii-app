@@ -176,7 +176,7 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
 
   return (
     <div className="v2-stack v2-in sq-page" style={{ gap: 18 }}>
-      <Title title="Content calendar" sub="Every post and its live status on each app · Malaysia time">
+      <Title title="Content Calendar" sub="Every post and its live status on each app · Malaysia time">
         <CalendarPicker
           label={label}
           sub={`${dayName(from)} – ${dayName(to)}`}
@@ -251,7 +251,7 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
         <section className="v2-card sq-empty">
           <h2 className="v2-h2">Nothing here</h2>
           <p className="v2-small">No posts for these dates. Pick other dates, or make a new post.</p>
-          <a href={newPost} className="np-btn v2-btn-sm">New post</a>
+          <a href={newPost} className="np-btn v2-btn-sm">New Post</a>
         </section>
       )}
       <p className="v2-small" style={{ margin: 0 }}>A post counts as posted only after the app confirms it. You can edit or cancel until it starts sending; after that, change or delete it in the app itself.</p>

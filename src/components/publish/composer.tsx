@@ -258,11 +258,11 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
         <h2>{done.when === "draft" ? "Saved as a draft" : done.when === "now" ? "On its way" : "Scheduled"}</h2>
         <p>
           {done.when === "draft" ? `Saved in Rezekii for ${done.summary}.` : done.when === "now" ? `${done.summary}: posting now.` : `${done.summary}: ${done.at} (Malaysia time).`} Follow each
-          channel&apos;s live status in your content calendar, and edit or cancel it there until it starts sending.
+          channel&apos;s live status in your Content Calendar, and edit or cancel it there until it starts sending.
         </p>
         <div className="np-row">
-          <Link href={setup.calendar} className="np-btn">Open content calendar</Link>
-          <button type="button" className="btn-outline" onClick={onNew}>New post</button>
+          <Link href={setup.calendar} className="np-btn">Open Content Calendar</Link>
+          <button type="button" className="btn-outline" onClick={onNew}>New Post</button>
         </div>
       </section>
     );
@@ -768,7 +768,7 @@ function BrandsSheet({ brands, channels, byKey, connected, onSaved, onDeleted, o
 
   return (
     <Sheet title="Brands" onClose={onClose}>
-      <p className="np-muted" style={{ margin: 0 }}>Group the channels you post to together. Picking a brand in New post switches all of them on.</p>
+      <p className="np-muted" style={{ margin: 0 }}>Group the channels you post to together. Picking a brand in New Post switches all of them on.</p>
       {brands.map((b) => {
         const live = b.channels.filter((k) => connected.has(k));
         const bApps = APPS.filter((p) => live.some((k) => byKey.get(k)?.app === p));

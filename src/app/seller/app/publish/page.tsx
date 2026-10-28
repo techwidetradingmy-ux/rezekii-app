@@ -8,7 +8,7 @@ import { SELLER_SETUP } from "@/lib/mock-publish";
 export default function SellerNewPost() {
   return (
     <div className="v2-stack v2-in" style={{ gap: 16 }}>
-      <Title title="New post" sub="One video to your shop's TikTok, Facebook Pages, Instagram and Threads, written for each app" />
+      <Title title="New Post" sub="One video to your shop's TikTok, Facebook Pages, Instagram and Threads, written for each app" />
       <Composer setup={SELLER_SETUP} />
     </div>
   );
