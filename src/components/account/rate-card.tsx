@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { Qr, Seg, ShareSheet, Sheet, Tip } from "@/components/ui";
+import { Portal, Qr, Seg, ShareSheet, Tip } from "@/components/ui";
 import { PlatformIcon } from "@/components/creator2/bits";
-import { CREATOR } from "@/lib/mock";
+import { CREATOR, SOCIALS } from "@/lib/mock";
 
 type App = "TikTok" | "Instagram" | "Facebook" | "Threads" | "rights";
 type Item = { key: string; app: App; label: string; unit: string };
@@ -31,6 +31,9 @@ const SAMPLE: Record<string, string> = { "tt-video": "350", "tt-live": "250", "i
 /** TikTok sellers usually buy a paid review with at least 180 days of ad rights (owner, 29 Oct 2026), so that's the default. */
 const RIGHTS_TIP = 180;
 const rm = (n: number) => `RM ${n.toLocaleString("en-MY")}`;
+/** The quote on a shared card holds for 7 days from today (owner, 29 Oct 2026). Preview date: 28 Oct 2026. */
+const QUOTE = { from: "28 Oct 2026", until: "4 Nov 2026", days: 7 };
+const ACCOUNTS = SOCIALS.filter((s) => s.linked) as { name: "TikTok" | "Instagram" | "Facebook" | "Threads"; handle: string }[];
 const num = (s: string) => Math.round(Number(s) || 0);
 // In a package, usage rights are counted in days; everything else in pieces.
 const unitOf = (it: Item, q: number) => (it.key === "rights" ? `${q} days` : `${q} ${it.unit.replace("per ", "")}${q === 1 ? "" : "s"}`);
@@ -43,24 +46,50 @@ const SUGGEST: { name: string; qty: Record<string, number>; off: number }[] = [
   { name: "TikTok review", qty: { "tt-video": 1, rights: RIGHTS_TIP }, off: 0.15 },
 ];
 
-/** The ad-rights length: a button like the RM box that opens a short list, with the recommended length tagged. */
+/**
+ * The ad-rights length: a button like the RM box with a small dropdown under it (owner, 29 Oct 2026: not full screen). The list
+ * sits on top of the page, so the card it's in can't clip it; it closes on a tap outside, Escape or scroll.
+ */
 function DaysPick({ value, onChange, none = false, disabled = false }: { value: number; onChange: (d: number) => void; none?: boolean; disabled?: boolean }) {
-  const [open, setOpen] = useState(false);
+  const btn = useRef<HTMLButtonElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
+  const [at, setAt] = useState<{ top?: number; bottom?: number; right: number } | null>(null);
+  useEffect(() => {
+    if (!at) return;
+    const close = () => setAt(null);
+    const away = (e: PointerEvent) => { if (!menu.current?.contains(e.target as Node) && !btn.current?.contains(e.target as Node)) close(); };
+    const key = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
+    document.addEventListener("pointerdown", away);
+    document.addEventListener("keydown", key);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      document.removeEventListener("pointerdown", away);
+      document.removeEventListener("keydown", key);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [at]);
+  const open = () => {
+    const r = btn.current!.getBoundingClientRect();
+    const right = window.innerWidth - r.right;
+    setAt(window.innerHeight - r.bottom > 320 ? { top: r.bottom + 6, right } : { bottom: window.innerHeight - r.top + 6, right });
+  };
   return (
     <>
-      <button type="button" className="rc-dayspick" disabled={disabled} aria-haspopup="dialog" onClick={() => setOpen(true)}>
+      <button ref={btn} type="button" className="rc-dayspick" disabled={disabled} aria-haspopup="listbox" aria-expanded={!!at} onClick={() => (at ? setAt(null) : open())}>
         <span>{value ? `${value} days` : "None"}</span><Icon name="arrow" size={13} />
       </button>
-      {open && (
-        <Sheet title="How long can sellers use it in ads?" onClose={() => setOpen(false)}>
-          <div className="sq-opts" role="radiogroup" aria-label="Ad rights length">
+      {at && (
+        <Portal>
+          <div ref={menu} className="rc-dpmenu" role="listbox" aria-label="Ad rights length" style={at}>
             {[...(none ? [0] : []), ...DAYS].map((d) => (
-              <button key={d} type="button" role="radio" aria-checked={value === d} className={value === d ? "on" : undefined} onClick={() => { onChange(d); setOpen(false); }}>
-                <span>{d ? `${d} days` : "None"}</span>{d === RIGHTS_TIP && <i className="rc-rec">Recommended</i>}{value === d && <Icon name="check" size={16} />}
+              <button key={d} type="button" role="option" aria-selected={value === d} className={value === d ? "on" : undefined} onClick={() => { onChange(d); setAt(null); }}>
+                <span>{d ? `${d} days` : "None"}</span>{d === RIGHTS_TIP && <i className="rc-rec">Best</i>}{value === d && <Icon name="check" size={14} />}
               </button>
             ))}
           </div>
-        </Sheet>
+        </Portal>
       )}
     </>
   );
@@ -78,6 +107,7 @@ export function RateCard() {
   const { toast } = useDemo();
   const [rates, setRates] = useState<Record<string, Rate>>(() => Object.fromEntries(ITEMS.map((it) => [it.key, { on: ["tt-video", "tt-live", "ig-reel", "fb-reel", "rights"].includes(it.key), price: "", ...(it.key === "rights" ? { days: RIGHTS_TIP } : {}) }])));
   const [sharing, setSharing] = useState(false);
+  const [showOn, setShowOn] = useState({ whatsapp: true, email: false, accounts: true });
   const [packs, setPacks] = useState<Pack[]>([]);
   const [show, setShow] = useState<Show>("Both");
   const [tried, setTried] = useState(false);
@@ -256,7 +286,15 @@ export function RateCard() {
           label="Rate card"
           lines={[]}
           caption={`My rate card for TikTok, Instagram and Facebook videos. Book me on Rezekii: rezekii.com/c/${CREATOR.handle.replace(/^@/, "")}`}
-          card={<RateShare packs={show === "À la carte" ? [] : ready} best={best} items={show === "Packages" ? [] : priced} line={packLine} price={(it) => rm(num(rates[it.key].price))} unit={rightsFor} />}
+          card={<RateShare packs={show === "À la carte" ? [] : ready} best={best} items={show === "Packages" ? [] : priced} line={packLine} price={(it) => rm(num(rates[it.key].price))} unit={rightsFor} showOn={showOn} />}
+          extra={
+            <div className="rcs-pick" role="group" aria-label="Show on the card">
+              <b>Show on the card</b>
+              {([["whatsapp", "WhatsApp", CREATOR.whatsapp], ["email", "Email", CREATOR.email], ["accounts", "Social accounts", ACCOUNTS.map((a) => a.name).join(", ")]] as const).map(([k, l, v]) => (
+                <label key={k}><input type="checkbox" checked={showOn[k]} onChange={(e) => setShowOn((s) => ({ ...s, [k]: e.target.checked }))} /><span><b>{l}</b><small>{v}</small></span></label>
+              ))}
+            </div>
+          }
         />
       )}
     </div>
@@ -267,7 +305,8 @@ export function RateCard() {
  * Her rate card as a 9:16 image to send to clients (owner, 29 Oct 2026), with the Rezekii logo and her booking QR. Packages
  * come first; prices only, never sales.
  */
-function RateShare({ packs, best, items, line, price, unit }: { packs: Pack[]; best: Pack | null; items: Item[]; line: (p: Pack) => string; price: (it: Item) => string; unit: (it: Item) => string }) {
+function RateShare({ packs, best, items, line, price, unit, showOn }: { packs: Pack[]; best: Pack | null; items: Item[]; line: (p: Pack) => string; price: (it: Item) => string; unit: (it: Item) => string; showOn: { whatsapp: boolean; email: boolean; accounts: boolean } }) {
+  const contacts = (showOn.whatsapp ? 1 : 0) + (showOn.email ? 1 : 0);
   return (
     <div className="rcs" role="img" aria-label={`Rate card for ${CREATOR.handle}`}>
       <span className="rcs-head">
@@ -282,6 +321,7 @@ function RateShare({ packs, best, items, line, price, unit }: { packs: Pack[]; b
         <img src={CREATOR.photo} alt="" />
         <span><b>{CREATOR.handle}</b><small>{CREATOR.level} creator on Rezekii</small></span>
       </span>
+      {showOn.accounts && <span className="rcs-socials">{ACCOUNTS.map((a) => <PlatformIcon key={a.name} name={a.name} size={18} />)}</span>}
       {packs.slice(0, 3).map((p) => (
         <span key={p.id} className={`rcs-pack${p === best ? " best" : ""}`}>
           {p === best && <i>Best value</i>}
@@ -291,9 +331,16 @@ function RateShare({ packs, best, items, line, price, unit }: { packs: Pack[]; b
       ))}
       {items.length > 0 && (
         <span className="rcs-list">
-          {items.slice(0, packs.length ? 4 : 7).map((it) => <span key={it.key}><span>{it.label}<small> {unit(it)}</small></span><b>{price(it)}</b></span>)}
+          {items.slice(0, (packs.length ? 4 : 7) - contacts).map((it) => <span key={it.key}><span>{it.label}<small> {unit(it)}</small></span><b>{price(it)}</b></span>)}
         </span>
       )}
+      {contacts > 0 && (
+        <span className="rcs-contact">
+          {showOn.whatsapp && <span><Icon name="whatsapp" size={12} />{CREATOR.whatsapp}</span>}
+          {showOn.email && <span><Icon name="inbox" size={12} />{CREATOR.email}</span>}
+        </span>
+      )}
+      <span className="rcs-valid">Quote valid {QUOTE.days} days · until {QUOTE.until}</span>
       <span className="rcs-foot">
         <span><b>Book me on Rezekii</b><small>rezekii.com/c/{CREATOR.handle.replace(/^@/, "")}</small></span>
         <Qr />

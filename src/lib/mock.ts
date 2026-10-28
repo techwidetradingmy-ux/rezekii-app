@@ -60,6 +60,8 @@ export const CREATOR = {
   name: "Aisyah Rahman",
   first: "Aisyah",
   handle: "@aisyah.glow",
+  email: "aisyah.glow@gmail.com",
+  whatsapp: "+60 12-345 6789",
   initials: "AR",
   state: "Selangor",
   level: "Silver" as "Bronze" | "Silver" | "Gold",

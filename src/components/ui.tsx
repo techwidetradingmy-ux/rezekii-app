@@ -355,10 +355,12 @@ const BLESS = [
  * "Share your proud moment" (V1's share window): the card in 3 designs, sized for each platform, as an image or a 5-second
  * video, with a blessing, a caption and the apps to send it to. Shows achievements, never sales.
  */
-export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow", level, kicker = "Proud moment", caption: captionInit, onShared, title = "Share your proud moment", card, moment }: {
+export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow", level, kicker = "Proud moment", caption: captionInit, onShared, title = "Share your proud moment", card, moment, extra }: {
   onClose: () => void; big: string; label: string; lines: string[]; handle?: string; level?: Level; kicker?: string; caption?: string;
   /** Which hero the card shows; without one it keeps the medal. */
   moment?: MomentKind;
+  /** Extra choices shown above the caption, for a ready-made card. */
+  extra?: React.ReactNode;
   title?: string;
   /** A ready-made 9:16 card (like a recap cover) shared as it is, instead of the achievement card and its styles. */
   card?: React.ReactNode;
@@ -432,7 +434,8 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
           </div>
           <Seg value={DESIGNS[design]} options={DESIGNS} onChange={(d) => setDesign(DESIGNS.indexOf(d))} />
           </>}
-          <Seg value={video ? "Video · 5 sec" : "Image"} options={["Image", "Video · 5 sec"] as const} onChange={(v) => setVideo(v !== "Image")} />
+          {extra}
+          {!extra && <Seg value={video ? "Video · 5 sec" : "Image"} options={["Image", "Video · 5 sec"] as const} onChange={(v) => setVideo(v !== "Image")} />}
           {!card && <div className="v2-bless">
             <span aria-hidden="true">✨</span>
             <span><b>Blessing on your card</b><small>{BLESS[bless]}</small></span>
