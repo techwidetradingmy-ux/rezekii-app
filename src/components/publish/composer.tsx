@@ -265,7 +265,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
         <p>
           {done.when === "draft" ? `Saved in Rezekii for ${done.summary}.` : done.when === "now" ? `${done.summary}: posting now.` : `${done.summary}: ${done.at} (Malaysia time).`} Track or edit it in Content Calendar.
         </p>
-        {done.cost > 0 && <p className="pb-sent-cost">{done.cost} credits used. Refunded if a channel fails or is cancelled.</p>}
+        {done.cost > 0 && <p className="pb-sent-cost">{done.cost} credits used <Tip text="Refunded if a channel fails or is cancelled." /></p>}
         <div className="np-row">
           <Link href={setup.calendar} className="np-btn">Open Content Calendar</Link>
           <button type="button" className="btn-outline" onClick={onNew}>New Post</button>
@@ -587,14 +587,13 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
           )}
 
           <section id="pb-s-when" className={`${secClass("when")} pb-when`}>
-            <h2>When <Req /></h2>
+            <h2>When <Req /> <Tip text="Malaysia time. All channels post together. Drafts stay here until you schedule them." /></h2>
             <div className="np-when" role="radiogroup" aria-label="When to post">
               {([["now", "Post now"], ["recommended", `Recommended · ${RECOMMENDED}`], ["pick", "Pick a time"], ["draft", "Save as draft"]] as [When, string][]).map(([v, label]) => (
                 <label key={v} className={when === v ? "np-radio on" : "np-radio"}><input type="radio" name="pb-when" value={v} checked={when === v} onChange={() => setWhen(v)} />{label}</label>
               ))}
             </div>
             {when === "pick" && <input className="np-input" type="datetime-local" value={pickAt} min="2026-10-28T09:15" onChange={(e) => setPickAt(e.target.value)} aria-label="Date and time (Malaysia time)" />}
-            <p className="np-muted">Malaysia time. All channels post together.{when === "draft" ? " Drafts stay here until scheduled." : ""}</p>
             {secErr("when")}
           </section>
           {shown.length > 0 && (
@@ -605,13 +604,13 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
           )}
           {ttKey && mode === "direct" && when !== "draft" && <p className="np-consent">{consentLine(promo.on, promo.branded)}</p>}
           <button type="submit" className="np-btn np-submit" disabled={!!busy}>
-            {busy || `${when === "draft" ? "Save draft" : when === "now" ? "Post now" : "Schedule"} · ${keys.length === 1 ? "1 channel" : `${keys.length} channels`}${cost ? ` · ${cost} credits` : ""}`}
+            {busy || `${when === "draft" ? "Save draft" : when === "now" ? "Post now" : "Schedule"} · ${keys.length === 1 ? "1 channel" : `${keys.length} channels`}${when === "draft" ? "" : ` · ${cost} credits`}`}
           </button>
           <p className="pb-cost">
             <Icon name="wallet" size={14} />
-            <span>
-              {POST_CREDITS} credits per channel{when === "draft" ? ", charged when scheduled" : ""}. You have {setup.credits.toLocaleString("en-MY")}. Refunded if a channel fails or is cancelled. <Link href={setup.earn}>Earn more</Link>
-            </span>
+            <span><b>{setup.credits.toLocaleString("en-MY")}</b> credits</span>
+            <Tip text={`${POST_CREDITS} credits per channel. Drafts are free. Refunded if a channel fails or is cancelled.`} />
+            <Link href={setup.earn}>Earn more</Link>
           </p>
         </aside>
       </form>
@@ -717,8 +716,8 @@ function ChannelsSheet({ channels, connectable, onConnect, onReconnect, onCheck,
                 <Face ch={c} />
                 <span><b>{c.name}</b><small>{c.sub}{c.status === "reconnect" ? " · needs reconnecting" : ""}</small></span>
                 <div className="pb-acts">
-                  {c.status === "reconnect" ? <button type="button" className="np-btn v2-btn-sm" onClick={() => onReconnect(c)}>Reconnect</button> : <button type="button" className="btn-outline v2-btn-sm" onClick={() => onCheck(c)}>Check now</button>}
-                  <button type="button" className="pb-link pb-off" onClick={() => onDisconnect(c)}>Disconnect</button>
+                  {c.status === "reconnect" ? <button type="button" className="np-btn v2-btn-sm" onClick={() => onReconnect(c)}>Reconnect</button> : <button type="button" className="btn-outline v2-btn-sm pb-icobtn" aria-label={`Check ${c.name}`} title="Check now" onClick={() => onCheck(c)}><Icon name="refresh" size={16} /><span>Check now</span></button>}
+                  <button type="button" className="pb-link pb-off pb-icobtn" aria-label={`Disconnect ${c.name}`} title="Disconnect" onClick={() => onDisconnect(c)}><Icon name="x" size={16} /><span>Disconnect</span></button>
                 </div>
               </div>
             ))}
@@ -732,7 +731,6 @@ function ChannelsSheet({ channels, connectable, onConnect, onReconnect, onCheck,
           </div>
         );
       })}
-      <p className="np-muted" style={{ margin: 0 }}>Facebook Groups aren&apos;t supported.</p>
       <button type="button" className="np-btn" onClick={onClose}>Done</button>
     </Sheet>
   );

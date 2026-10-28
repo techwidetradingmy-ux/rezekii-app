@@ -198,6 +198,7 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
     <div className="v2-stack v2-in sq-page" style={{ gap: 18 }}>
       <Title title="Content Calendar" sub="Every post and its status · Malaysia time">
         <CalendarPicker
+          compact
           label={label}
           sub={`${dayName(from)} – ${dayName(to)}`}
           today={TODAY}
@@ -211,6 +212,7 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
           onPreset={(k) => choose(RANGE[k][0], RANGE[k][1], k)}
         />
       </Title>
+      <p className="an-range"><b>{label}</b><span>{dayName(from)} – {dayName(to)}</span></p>
 
       <div className="sq-tiles" role="group" aria-label="Show only">
         {GROUPS.map((g) => (

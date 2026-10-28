@@ -15,6 +15,8 @@ import "@/app/creator2.css";
 export function ProductList() {
   const total = ANALYTICS.commissionEst;
   const [video, setVideo] = useState<VideoRow | null>(null);
+  // A compact list (owner, 28 Oct 2026: long lists were hard to scroll): one row per product, tap to open its details.
+  const [openId, setOpenId] = useState<string | null>(null);
   const rows = [...ANALYTICS.byProduct].sort((a, b) => b.commission - a.commission);
   const top = rows[0];
   const topShare = Math.round((top.commission / total) * 100);
@@ -46,7 +48,7 @@ export function ProductList() {
             {slices.map((s) => {
               const row = <><i style={{ background: s.color }} /><span>{s.label}</span><b>{Math.round((s.value / total) * 100)}%</b></>;
               // Tap a product to jump to its card here (owner, 28 Oct 2026: see it on Rezekii, not TikTok).
-              return <li key={s.id}>{s.id === "other" ? <span className="pd-row">{row}</span> : <a className="pd-row" href={`#pd-${s.id}`} onClick={(e) => { e.preventDefault(); const el = document.getElementById(`pd-${s.id}`); el?.scrollIntoView({ behavior: "smooth", block: "center" }); el?.classList.remove("pd-flash"); void el?.offsetWidth; el?.classList.add("pd-flash"); }}>{row}<Icon name="arrow" size={14} /></a>}</li>;
+              return <li key={s.id}>{s.id === "other" ? <span className="pd-row">{row}</span> : <a className="pd-row" href={`#pd-${s.id}`} onClick={(e) => { e.preventDefault(); const el = document.getElementById(`pd-${s.id}`); setOpenId(s.id); el?.scrollIntoView({ behavior: "smooth", block: "center" }); el?.classList.remove("pd-flash"); void el?.offsetWidth; el?.classList.add("pd-flash"); }}>{row}<Icon name="arrow" size={14} /></a>}</li>;
             })}
           </ul>
           {topShare >= 35 && <Link href="/app/data/ai-picks" className="pd-tip">Too much from one product? See AI Picks <Icon name="arrow" size={14} /></Link>}
@@ -64,25 +66,23 @@ export function ProductList() {
             const highCancel = b.cancel > 15;
             const vids = VIDEOS.filter((v) => v.productId === b.productId).sort((x, y) => y.orders - x.orders);
             return (
-              <article key={b.productId} id={`pd-${b.productId}`} className="v2-card" style={{ gap: 14 }}>
-                <div className="cr2-vhead">
-                  <span className="cr2-thumb sq">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={p.img} alt="" />
-                  </span>
-                  <span>
+              <article key={b.productId} id={`pd-${b.productId}`} className={`pl-row${openId === b.productId ? " open" : ""}`}>
+                <button type="button" className="pl-head" aria-expanded={openId === b.productId} onClick={() => setOpenId(openId === b.productId ? null : b.productId)}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={p.img} alt="" />
+                  <span className="pl-main">
                     <strong>{p.name}</strong>
-                    <span className="cr2-tags">
+                    <span className="pl-tags">
                       {i === 0 && <span className="badge">Top earner</span>}
-                      {dropping && <span className="badge badge-amber">Sales dropping · {change}% orders</span>}
-                      {!dropping && change > 0 && <span className="badge badge-gray">Orders up {change}%</span>}
-                      {lowRated && <span className="badge badge-red">Low rating</span>}
-                      {highCancel && <span className="badge badge-red">High cancel rate</span>}
+                      {dropping && <span className="badge badge-amber">Dropping {change}%</span>}
+                      {!dropping && change > 0 && <span className="badge badge-gray">Up {change}%</span>}
+                      {(lowRated || highCancel) && <span className="badge badge-red">{lowRated ? "Low rating" : "High cancels"}</span>}
                     </span>
                   </span>
-                  <span className="v2-num" style={{ fontWeight: 900, fontSize: 18 }}>{rm(b.commission)}</span>
-                </div>
-
+                  <b className="v2-num">{rm(b.commission, 0)}</b>
+                  <Icon name="arrow" size={16} />
+                </button>
+                {openId === b.productId && <div className="pl-body">
                 <div className="cr2-mini">
                   <span><small>Orders</small><b>{b.orders}</b></span>
                   <span><small>Cancel rate</small><b className={highCancel ? "cr2-red" : undefined}>{b.cancel}%</b></span>
@@ -92,7 +92,7 @@ export function ProductList() {
                 {/* Top video as a button (owner, 28 Oct 2026: less text); it opens here, on Rezekii. */}
                 {vids[0] && <button type="button" className="pd-vid" onClick={() => setVideo(vids[0])}><Icon name="video" size={16} /> Top video</button>}
                 {dropping && <p className="cr2-note"><Icon name="alert" size={15} /><span>Was {prev} orders, now {b.orders}. Try a fresh video.</span></p>}
-
+                </div>}
               </article>
             );
           })}

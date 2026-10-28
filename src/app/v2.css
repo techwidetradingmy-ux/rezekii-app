@@ -699,3 +699,4 @@ body { font-feature-settings: "tnum" 0; }
 .v2-bar-pick { padding: 0; border: 0; background: none; color: var(--text); font: inherit; font-weight: 600; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 3px; cursor: pointer; }
 .v2-bar-pick:hover { text-decoration-color: #00c073; color: var(--gink); }
 .ps-img { width: 100%; max-width: 280px; aspect-ratio: 1; object-fit: cover; border-radius: 18px; margin: 0 auto; }
+.v2-sheet > * { flex-shrink: 0; }

@@ -487,3 +487,21 @@
   .pb-cost { font-size: 13px; }
   .sq-src { font-size: 13px; }
 }
+/* Shorter composer notes (owner, 28 Oct 2026): the balance sits under the button, details in a tooltip. */
+.pb-cost { align-items: center; justify-content: center; gap: 6px; }
+.pb-cost svg { margin-top: 0; }
+.pb-cost b { color: var(--text); font-weight: 800; }
+.pb-cost a { margin-left: 4px; }
+.pb-sent-cost { display: inline-flex; align-items: center; gap: 6px; }
+/* Long channel names cut with "…" instead of running past the row. */
+.pb-ch > span b, .pb-ch > span small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The platform logo in "Add" rows is a span too: keep it at its own size instead of stretching into a wide pill. */
+.pb-ch > .cr2-pi { flex: 0 0 auto; }
+.pb-icobtn { display: inline-flex; align-items: center; gap: 6px; }
+.pb-icobtn svg { display: none; }
+@media (max-width: 560px) {
+  .pb-acts .pb-icobtn { width: 36px; height: 36px; min-width: 36px; padding: 0; justify-content: center; }
+  .pb-icobtn svg { display: block; flex-shrink: 0; }
+  .pb-icobtn span { display: none; }
+  .pb-acts { gap: 6px; }
+}

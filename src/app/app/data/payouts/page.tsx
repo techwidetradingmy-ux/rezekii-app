@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { CalendarPicker, dayName, iso } from "@/components/calendar-picker";
-import { Count, Flow, Lock, Seg, Stat, Title } from "@/components/ui";
+import { Count, Flow, Lock, Seg, Stat, Tip, Title } from "@/components/ui";
 import { rm } from "@/lib/mock";
 import { PAYOUTS, payoutDays, type PayoutDay } from "@/lib/mock-creator2";
 import "@/app/creator2.css";
@@ -68,8 +68,24 @@ export default function DataPayouts() {
   const extraAll = DAYS.reduce((s, d) => s + d.extra, 0);
 
   return (
-    <div className="v2-stack v2-in" style={{ gap: 20 }}>
-      <Title title="Payouts" sub="Your commission, and what you earned extra with us.">
+    <div className="v2-stack v2-in" style={{ gap: 14 }}>
+      <Title title="Payouts" sub="Your commission, and what you earned extra with us." />
+
+      <section className="v2-card flat pay-flow">
+        <h2 className="cr2-h3">How your commission moves <Tip label="About payouts" text="Real earnings only. No forecasts." /></h2>
+        <Flow
+          label="How commission moves from order to payout"
+          steps={[
+            { icon: "bag", title: "Ordered" },
+            { icon: "box", title: "Delivered" },
+            { icon: "wallet", title: "Settled" },
+            { icon: "x", title: "Cancelled or returned", tone: "red" },
+          ]}
+        />
+      </section>
+
+      {/* The month picker sits below how commission moves (owner, 28 Oct 2026). */}
+      <div className="pay-pick">
         <CalendarPicker
           label={label}
           sub={sub}
@@ -82,21 +98,7 @@ export default function DataPayouts() {
           preset={preset}
           onPreset={(k) => choose(RANGE[k][0], RANGE[k][1], k)}
         />
-      </Title>
-
-      <section className="v2-card flat">
-        <h2 className="cr2-h3">How your commission moves</h2>
-        <Flow
-          label="How commission moves from order to payout"
-          steps={[
-            { icon: "bag", title: "Ordered" },
-            { icon: "box", title: "Delivered" },
-            { icon: "wallet", title: "Settled" },
-            { icon: "x", title: "Cancelled or returned", tone: "red" },
-          ]}
-        />
-        <p className="cr2-note"><Icon name="shield" size={15} /><span>Real earnings only. No forecasts.</span></p>
-      </section>
+      </div>
 
       <Lock what="your payouts">
         <section className="v2-card">
