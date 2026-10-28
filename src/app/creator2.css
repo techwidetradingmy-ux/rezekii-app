@@ -915,3 +915,45 @@ span.pd-row { grid-template-columns: 12px minmax(0, 1fr) auto 14px; }
 .cr2-mstats b { font-size: 14px; font-weight: 900; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cr2-mstats small { font-size: 12px; font-weight: 700; color: var(--muted); line-height: 1.2; }
 @media (max-width: 760px) { .cr2-mstats small { font-size: 13px; } }
+/* Rate card (owner, 29 Oct 2026): usage-rights length, Best value tag, share button, and the shareable card. */
+.rc-days { height: 40px; padding: 0 10px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-size: 13px; font-weight: 800; flex-shrink: 0; }
+.rc-days:disabled { opacity: 0.45; }
+.rc-best { margin-left: 8px; padding: 2px 8px; border-radius: 99px; background: #00c073; color: #ffffff; font-style: normal; font-size: 11.5px; font-weight: 900; vertical-align: 1px; }
+.rc-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.rc-acts .btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+@media (max-width: 760px) { .rc-acts > * { flex: 1 1 100%; } }
+.rcs { position: relative; width: 230px; max-width: 100%; aspect-ratio: 9 / 16; border-radius: 22px; padding: 14px; display: flex; flex-direction: column; gap: 9px; color: #0d1117; background: radial-gradient(120% 50% at 50% 0%, #e3fbef, transparent 70%), #ffffff; box-shadow: 0 18px 44px rgba(0, 80, 50, 0.22); overflow: hidden; text-align: left; }
+.rcs-head { display: flex; align-items: center; justify-content: space-between; }
+.rcs-brand { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 900; }
+.rcs-brand img { width: 22px; height: 22px; border-radius: 6px; }
+.rcs-tag { padding: 2px 8px; border-radius: 99px; background: #0d1117; color: #ffffff; font-size: 9px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }
+.rcs-me { display: flex; align-items: center; gap: 8px; }
+.rcs-me img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 2px #00c073; }
+.rcs-me b { display: block; font-size: 12px; font-weight: 900; }
+.rcs-me small { font-size: 9.5px; font-weight: 700; color: #5b6472; }
+.rcs-pack { position: relative; display: grid; gap: 2px; padding: 8px 10px; border-radius: 12px; background: #f3f7f5; }
+.rcs-pack.best { background: #e3fbef; box-shadow: inset 0 0 0 1.5px #00c073; padding-top: 14px; }
+.rcs-pack > i { position: absolute; top: -1px; left: 10px; padding: 1px 7px; border-radius: 0 0 6px 6px; background: #00c073; color: #ffffff; font-style: normal; font-size: 8px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; }
+.rcs-pack-h { display: flex; justify-content: space-between; gap: 6px; font-size: 11.5px; font-weight: 900; }
+.rcs-pack small { font-size: 9px; font-weight: 700; color: #4b5563; line-height: 1.35; }
+.rcs-list { display: grid; gap: 0; }
+.rcs-list > span { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; padding: 4px 0; border-bottom: 1px dashed #d8e3dd; font-size: 10px; font-weight: 700; }
+.rcs-list small { font-size: 8.5px; color: #6b7785; font-weight: 600; }
+.rcs-list b { font-weight: 900; white-space: nowrap; }
+.rcs-foot { margin-top: auto; display: flex; align-items: center; gap: 8px; padding-top: 8px; border-top: 1px solid #e3ece7; }
+.rcs-foot > span { flex: 1; display: grid; min-width: 0; }
+.rcs-foot b { font-size: 11px; font-weight: 900; color: #00804f; }
+.rcs-foot small { font-size: 8.5px; font-weight: 700; color: #6b7785; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rcs-foot .v2-qr { width: 36px; height: 36px; padding: 2px; border-radius: 7px; background: #ffffff; box-shadow: inset 0 0 0 1px #e3ece7; flex-shrink: 0; }
+.rc-tip { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 4px; padding: 10px 12px; border-radius: 14px; background: #e3fbef; color: #00804f; font-size: 13.5px; font-weight: 700; line-height: 1.4; }
+.rc-tip > svg { flex-shrink: 0; margin-top: 2px; }
+.rc-tip > span { flex: 1; }
+/* Rate card on phones (owner, 29 Oct 2026): the RM box and its unit or ad-rights length stack in one column, so names fit. */
+@media (max-width: 760px) {
+  .rc-row .rc-price { flex-direction: column; align-items: flex-end; gap: 4px; }
+  .rc-row .rc-price small { font-size: 13px; }
+  .rc-row .rc-days { height: 32px; padding: 0 8px; border-radius: 10px; width: 112px; }
+  .rc-row .rc-input { width: 112px; }
+  .rc-row .rc-lbl { font-size: 14.5px; }
+}
+.rcs .rcs-foot .v2-qr { width: 40px; height: 40px; flex: 0 0 40px; padding: 3px; }
