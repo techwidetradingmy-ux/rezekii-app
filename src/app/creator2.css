@@ -637,7 +637,7 @@ li.done .cr2-check { background: #00c073; border-color: #00c073; animation: v2Po
 .si-ico.em { background: var(--surface2); color: var(--body); }
 /* Analytics on desktop (owner, 28 Oct 2026: website first): numbers and the AI summary across the top, charts on the left, the action plan on the right. */
 @media (min-width: 1200px) {
-  .v2-stack.an-page { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); grid-template-areas: "title title" "kpi kpi" "ai ai" "chart plan" "split plan" "top plan"; gap: 22px 22px; align-items: start; }
+  .v2-stack.an-page { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); grid-template-areas: "title title" "kpi kpi" "chart ai" "split split" "top plan"; gap: 22px 22px; align-items: start; }
   .an-page > .v2-title { grid-area: title; }
   .an-page > .v2-stack { grid-area: kpi; }
   .an-page > .cr2-aisum { grid-area: ai; }
@@ -701,3 +701,39 @@ li.done .cr2-check.num { background: #00c073; border-color: #00c073; }
   .rc-prev-row small { display: none; }
   .rc-save-btn { align-self: stretch; }
 }
+
+/* AI summary, one line per point (owner, 28 Oct 2026: option A). */
+.an-lines { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 10px; }
+.an-lines li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; align-items: center; font-size: 16px; line-height: 1.35; }
+.an-lines li svg { color: var(--gink); }
+.an-lines li.warn svg { color: var(--red); }
+.an-lines b { font-weight: 900; }
+/* Action plan as a short checklist (owner, 28 Oct 2026: option B): one colour, a few words, Go. */
+.an-plan { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.an-plan li { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 0; }
+.an-plan li + li { border-top: 1px solid var(--line); }
+.an-num { width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-size: 14px; font-weight: 900; display: grid; place-items: center; cursor: pointer; }
+.an-plan li.done .an-num { background: #00c073; border-color: #00c073; color: #ffffff; }
+.an-plan-t { font-size: 15px; font-weight: 800; display: inline-flex; align-items: center; min-width: 0; }
+.an-plan li.done .an-plan-t { text-decoration: line-through; color: var(--muted); }
+.an-go { height: 36px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--gink); font: inherit; font-size: 14px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px; text-decoration: none; cursor: pointer; white-space: nowrap; }
+.an-go:disabled { color: var(--muted); cursor: default; }
+.an-more { align-self: flex-start; font-size: 14px; }
+
+/* Commission chart (owner, 28 Oct 2026): running total by default, drag across to read any point. */
+.cc { display: flex; flex-direction: column; gap: 12px; }
+.cc-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px; }
+.cc-now { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cc-now small { font-size: 13px; font-weight: 700; color: var(--muted); }
+.cc-now b { font-size: 30px; font-weight: 900; letter-spacing: -0.02em; line-height: 1.1; }
+.cc-head .np-seg button { height: 34px; padding: 0 12px; font-size: 13px; }
+.cc-plot { position: relative; height: 170px; touch-action: pan-y; cursor: crosshair; user-select: none; -webkit-user-select: none; }
+.cc-plot svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.cc-line { fill: none; stroke: #00c073; stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.cc-bars { position: absolute; inset: 0; display: flex; align-items: flex-end; gap: 3px; }
+.cc-bars i { flex: 1; min-width: 0; border-radius: 4px 4px 2px 2px; background: #a7ecd0; transition: background-color 0.12s; }
+.cc-bars i.on { background: #00c073; }
+.cc-cursor { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1.5px dashed rgba(0, 135, 79, 0.5); pointer-events: none; }
+.cc-dot { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: #00c073; border: 3px solid var(--surface); box-shadow: 0 2px 8px rgba(0, 120, 70, 0.4); pointer-events: none; }
+.cc-axis { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; color: var(--muted); }
+.an-hv { font-size: 12.5px; font-weight: 800; padding: 4px 10px; border-radius: 99px; background: var(--gsoft); color: var(--gink); white-space: nowrap; }

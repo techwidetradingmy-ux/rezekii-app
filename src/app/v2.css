@@ -648,7 +648,3 @@ body { font-feature-settings: "tnum" 0; }
 .an-dot { display: inline-block; width: 10px; height: 10px; margin-right: 8px; border-radius: 50%; vertical-align: 4px; }
 .an-dot.ok { background: #00c073; box-shadow: 0 0 0 4px rgba(0, 192, 115, 0.18); }
 .an-dot.bad { background: var(--red); box-shadow: 0 0 0 4px rgba(225, 75, 59, 0.18); }
-/* Tab bar Scan button: same raised, pressable look as the big one on Home. */
-.nv-scan-btn { background: radial-gradient(circle at 34% 28%, #5ff0b8 0%, #12cc80 38%, #00a862 72%, #008f53 100%); box-shadow: inset 0 2px 1px rgba(255, 255, 255, 0.55), inset 0 -4px 8px rgba(0, 70, 40, 0.35), 0 5px 0 #007a47, 0 10px 16px -6px rgba(0, 110, 64, 0.55); transition: transform 0.08s ease-out, box-shadow 0.08s ease-out; }
-.nv-bottom a.nv-scan:active .nv-scan-btn { transform: translateY(4px); box-shadow: inset 0 2px 1px rgba(255, 255, 255, 0.45), inset 0 -2px 6px rgba(0, 70, 40, 0.35), 0 1px 0 #007a47, 0 4px 8px -4px rgba(0, 110, 64, 0.55); }
-.nv-bottom a.nv-scan.on .nv-scan-btn { box-shadow: 0 0 0 3px rgba(0, 192, 115, 0.22), inset 0 2px 1px rgba(255, 255, 255, 0.55), inset 0 -4px 8px rgba(0, 70, 40, 0.35), 0 5px 0 #007a47, 0 10px 16px -6px rgba(0, 110, 64, 0.55); }

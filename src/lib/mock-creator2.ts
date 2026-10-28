@@ -115,7 +115,7 @@ export const RANGE_DATA: Record<RangeKey, RangeData> = {
 };
 
 /** ANALYTICS.weekly scaled to commission in RM, oldest first; the last four weeks add up to the 30-day estimate. */
-export const WEEKLY_COMMISSION = ANALYTICS.weekly.map((v) => Math.round(v * 54.6));
+export const WEEKLY_COMMISSION = ANALYTICS.weekly.map((v) => Math.round(v * 58.02));
 export const WEEK_LABELS = ["10 Aug", "17 Aug", "24 Aug", "31 Aug", "7 Sep", "14 Sep", "21 Sep", "28 Sep", "5 Oct", "12 Oct", "19 Oct", "26 Oct"];
 
 /** Commission per day, 29 Sep to today (28 Oct), oldest first. The last 3, 7, 14 and 30 add up to those ranges. */
@@ -148,15 +148,15 @@ export const WATCH = [
 ];
 
 /** The action plan on My data: what to do next, each one written from a number above. */
-export type Action = { id: string; tag: "Shoot today" | "Fix now" | "This week" | "Grow"; icon: IconName; title: string; why: string; cta: string; href?: string; remove?: string };
+export type Action = { id: string; tag: "Shoot today" | "Fix now" | "This week" | "Grow"; icon: IconName; title: string; short: string; why: string; cta: string; href?: string; remove?: string };
 export const ACTIONS: Action[] = [
-  { id: "a0", tag: "Shoot today", icon: "flame", title: "Film 2 more thermos videos today", why: "Your 12 Oct thermos video got 41.2K views in the last 24 hours, 5× your usual. The thermos is rated 4.7★ and sold 23 today.", cta: "Plan videos", href: "/app/publish" },
-  { id: "a1", tag: "Fix now", icon: "alert", title: "Avoid promoting the AirySoft pillowcase", why: "Rated 2.8★, and 21.4% of your orders for it were cancelled in 30 days. Low ratings and cancels can hurt your account.", cta: "Remove from showcase", remove: "p17" },
-  { id: "a2", tag: "Fix now", icon: "star", title: "Check your showcase for low ratings", why: "2 products are under 3★ (danger zone) and 3 are under 4★. Keep posting; pick 4★ products for new videos.", cta: "Run risk check", href: "/app/data/risk" },
-  { id: "a3", tag: "This week", icon: "cal", title: "Post 1 more thermos video by 2 Nov", why: "Your free sample needs 3 of 3 videos. The thermos is also your top earner: 39% of your commission.", cta: "Submit video link", href: "/app/account#samples" },
-  { id: "a4", tag: "This week", icon: "scan", title: "Add 4 products that pay more", why: "Products already in your showcase, paying +1% to +5% more through Techwide.", cta: "See scan results", href: "/app#scan" },
-  { id: "a5", tag: "Grow", icon: "video", title: "Go LIVE with kitchen products", why: "Just 2 LIVE sessions a week bring about a quarter of your commission. Choppers and cookware sell 2.6× better on LIVE than on video.", cta: "See LIVE picks", href: "/app/data/performance#ai" },
-  { id: "a6", tag: "Grow", icon: "send", title: "Post between 8 and 10 pm", why: "Your videos posted 8 to 10 pm got 1.8× the views of daytime posts in the last 30 days.", cta: "Schedule a post", href: "/app/publish" },
+  { id: "a0", tag: "Shoot today", icon: "flame", title: "Film 2 more thermos videos today", short: "Film 2 thermos videos", why: "Your 12 Oct thermos video got 41.2K views in the last 24 hours, 5× your usual. The thermos is rated 4.7★ and sold 23 today.", cta: "Plan videos", href: "/app/publish" },
+  { id: "a1", tag: "Fix now", icon: "alert", title: "Avoid promoting the AirySoft pillowcase", short: "Remove the pillowcase", why: "Rated 2.8★, and 21.4% of your orders for it were cancelled in 30 days. Low ratings and cancels can hurt your account.", cta: "Remove from showcase", remove: "p17" },
+  { id: "a2", tag: "Fix now", icon: "star", title: "Check your showcase for low ratings", short: "Check low ratings", why: "2 products are under 3★ (danger zone) and 3 are under 4★. Keep posting; pick 4★ products for new videos.", cta: "Run risk check", href: "/app/data/risk" },
+  { id: "a3", tag: "This week", icon: "cal", title: "Post 1 more thermos video by 2 Nov", short: "Post 1 thermos video", why: "Your free sample needs 3 of 3 videos. The thermos is also your top earner: 39% of your commission.", cta: "Submit video link", href: "/app/account#samples" },
+  { id: "a4", tag: "This week", icon: "scan", title: "Add 4 products that pay more", short: "Add 4 better rates", why: "Products already in your showcase, paying +1% to +5% more through Techwide.", cta: "See scan results", href: "/app#scan" },
+  { id: "a5", tag: "Grow", icon: "video", title: "Go LIVE with kitchen products", short: "Go LIVE with kitchen items", why: "Just 2 LIVE sessions a week bring about a quarter of your commission. Choppers and cookware sell 2.6× better on LIVE than on video.", cta: "See LIVE picks", href: "/app/data/performance#ai" },
+  { id: "a6", tag: "Grow", icon: "send", title: "Post between 8 and 10 pm", short: "Post at 8–10 pm", why: "Your videos posted 8 to 10 pm got 1.8× the views of daytime posts in the last 30 days.", cta: "Schedule a post", href: "/app/publish" },
 ];
 
 /** The creator's own videos taking off right now (views in the last 24 hours vs usual), for "Shoot today". week = daily views, oldest first. */
@@ -173,8 +173,8 @@ export const TRY_TODAY = [
   { productId: "p07", why: "Fashion is your top category, and polos sell all year.", idea: "Fit check: 3 sizes side by side" },
 ];
 
-/** Views by posting time against the creator's own average (1 = average), last 30 days. */
-export const POST_TIMES: [string, number][] = [["6–9 am", 0.6], ["12–2 pm", 0.9], ["5–7 pm", 1.2], ["8–10 pm", 1.8], ["After 11 pm", 0.7]];
+/** Average views per video by the time she posted it, last 30 days (from her own videos). */
+export const POST_TIMES: [string, number][] = [["6–9 am", 52000], ["12–2 pm", 77000], ["5–7 pm", 103000], ["8–10 pm", 155000], ["After 11 pm", 60000]];
 
 export type VideoRow = {
   id: string;

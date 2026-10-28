@@ -6,13 +6,13 @@ import { Icon } from "@/components/icons";
 import { CalendarPicker, between, dayName, iso } from "@/components/calendar-picker";
 import { useDemo } from "@/components/demo";
 import { AiMark, Bars, Count, Lock, Progress, Seg, Stat, Tip, Title } from "@/components/ui";
-import { product, rm } from "@/lib/mock";
+import { product, rm, short } from "@/lib/mock";
 import { ACTIONS, CHARTS, POST_TIMES, RANGES, RANGE_DATA, SHORT, WATCH, type RangeKey } from "@/lib/mock-creator2";
 import { FLAGGED } from "@/components/creator1/rating-scan";
+import { CommissionChart } from "@/components/creator2/commission-chart";
 import "@/app/creator2.css";
 
 const pct = (n: number, of: number) => Math.round((n / of) * 100);
-const TAG = { "Shoot today": "green", "Fix now": "red", "This week": "amber", Grow: "violet" } as const;
 /** Action plan order (owner, 28 Oct 2026): protect the account first, then today's chance, then this week, then growth. */
 const RANK = { "Fix now": 0, "Shoot today": 1, "This week": 2, Grow: 3 } as const;
 const PLAN = [...ACTIONS].sort((a, b) => RANK[a.tag] - RANK[b.tag]);
@@ -33,6 +33,7 @@ export default function DataOverview() {
   const [split, setSplit] = useState<"By channel" | "By product">("By channel");
   const [removed, setRemoved] = useState<string[]>([]);
   const [ticked, setTicked] = useState<string[]>([]);
+  const [allPlan, setAllPlan] = useState(false);
   const d = RANGE_DATA[range];
   const chart = CHARTS[range];
   const span = range === "Lifetime" ? "since March 2026" : `last ${range}`;
@@ -40,6 +41,8 @@ export default function DataOverview() {
   const ranked = [...d.byProduct].sort((a, b) => b.commission - a.commission);
   const top2 = ranked[0].commission + ranked[1].commission;
   const highCancel = d.cancel > 10;
+  const bestTime = POST_TIMES.reduce((a, b) => (b[1] > a[1] ? b : a));
+  const avgViews = POST_TIMES.reduce((a, [, v]) => a + v, 0) / POST_TIMES.length;
   const change = (n: number | null) => (n === null ? "New" : <><Icon name="trend" size={14} width={2.4} /> {n}%</>);
   const rangeLabel = custom ? `${dayName(from)} – ${dayName(to)}` : PRESETS.find(([k]) => k === range)![1];
 
@@ -61,9 +64,6 @@ export default function DataOverview() {
     ...ranked.map((b) => ({ label: SHORT[b.productId] ?? product(b.productId).name, value: pct(b.commission, d.est), display: `${pct(b.commission, d.est)}%` })),
     { label: "Other products", value: pct(d.other, d.est), display: `${pct(d.other, d.est)}%`, tone: "blue" as const },
   ];
-  const max = Math.max(...chart.points.map(([, v]) => v));
-  const every = Math.ceil(chart.points.length / 6);
-  const gap = chart.points.length > 14 ? 3 : 6;
 
   return (
     <div className="v2-stack v2-in an-page" style={{ gap: 22 }}>
@@ -102,6 +102,15 @@ export default function DataOverview() {
         </div>
       </Lock>
 
+      <section className="v2-card an-chart">
+        <div className="v2-card-h">
+          <h2 className="v2-h2">Commission <Tip label="About this chart" text={`Estimated, by the ${chart.unit} the order was placed. The latest ${chart.unit} is still in progress.`} /></h2>
+        </div>
+        <Lock what="your commission over time">
+          <CommissionChart key={range} points={chart.points} unit={chart.unit} range={rangeLabel.toLowerCase()} />
+        </Lock>
+      </section>
+
       <section className="v2-aicard cr2-aisum" aria-label="AI summary">
         <div className="cr2-aisum-h">
           <AiMark size={44} />
@@ -110,23 +119,21 @@ export default function DataOverview() {
             <small>Based on your TikTok Shop sales</small>
           </span>
         </div>
-        <div className="cr2-aisum-text">
-          <p>
-            {pct(top2, d.est)}% of your commission came from 2 products: the {SHORT[ranked[0].productId].toLowerCase()} and the {SHORT[ranked[1].productId].toLowerCase()}.
-          </p>
-          <p>{d.note}</p>
-        </div>
+        <ul className="an-lines">
+          <li><Icon name="trend" size={18} width={2.2} /><span><b>{pct(top2, d.est)}%</b> from {SHORT[ranked[0].productId]} + {SHORT[ranked[1].productId]}</span></li>
+          <li><Icon name="clock" size={18} /><span><b>{bestTime[0]}</b> best time to post</span></li>
+          <li className={watching.length ? "warn" : undefined}><Icon name={watching.length ? "alert" : "check"} size={18} /><span>{watching.length ? <><b>{watching.length} product{watching.length === 1 ? "" : "s"}</b> to avoid</> : <b>No products to avoid</b>}</span></li>
+        </ul>
 
         <div className="cr2-watch">
           <div className="cr2-watch-h">
             <span>
-              <b><Icon name="alert" size={17} /> {watching.length ? `Avoid promoting ${watching.length === 1 ? "this product" : `these ${watching.length} products`}` : "No low-rated products"}</b>
-              <small>Low ratings and cancels can hurt your account</small>
+              <b><Icon name="alert" size={17} /> {watching.length ? `Avoid ${watching.length === 1 ? "this product" : `these ${watching.length}`}` : "No low-rated products"} <Tip label="Why avoid" text="Low ratings and many cancels can hurt your TikTok account." /></b>
             </span>
             <span className={`cr2-risk ${risk.toLowerCase()}`} title="Rezekii's risk level, from your product ratings and cancelled orders">
               <small>Risk level</small>
               <span className="cr2-risk-bar" aria-hidden="true">{["Low", "Watch", "High"].map((l) => <i key={l} className={l === risk ? "on" : ""} />)}</span>
-              <b>{risk}</b>
+              <b>{risk} <Tip label="About risk level" text={`Rezekii's own check: ${under3} product${under3 === 1 ? "" : "s"} under 3★, ${under4} under 4★, ${d.cancel}% of orders cancelled. TikTok's own account health is in your TikTok Shop app.`} /></b>
             </span>
           </div>
           {WATCH.map((w) => {
@@ -142,7 +149,6 @@ export default function DataOverview() {
                     <i>{w.cancel}% cancelled</i>
                     <i>{w.rating.toFixed(1)} ★</i>
                   </span>
-                  <small>{w.orders} of your orders in 30 days · {Math.round((w.orders * w.cancel) / 100)} cancelled · {w.returned} returned</small>
                 </span>
                 {gone ? (
                   <span className="badge badge-gray"><Icon name="check" size={12} width={3} /> Removed</span>
@@ -152,82 +158,11 @@ export default function DataOverview() {
               </div>
             );
           })}
-          <Link href="/app/data/risk" className="v2-link" style={{ fontSize: 13.5, padding: "4px 2px 0" }}>Check every product&apos;s rating →</Link>
-          <p className="cr2-watch-why">
-            Risk level is Rezekii&apos;s own check, worked out from {under3} product{under3 === 1 ? "" : "s"} under 3★, {under4} under 4★ and {d.cancel}% of your
-            orders cancelled. TikTok doesn&apos;t share its account health score with apps: see it in your TikTok Shop app. Removing a product doesn&apos;t touch
-            commission you&apos;ve already earned.
-          </p>
+          <Link href="/app/data/risk" className="v2-link" style={{ fontSize: 13.5, padding: "4px 2px 0" }}>See all ratings →</Link>
         </div>
       </section>
 
-      <section className="v2-card cr2-plan" aria-label="Your action plan">
-        <div className="v2-card-h">
-          <h2 className="v2-h2">Your action plan</h2>
-          <span className="v2-small">{doneCount} of {ACTIONS.length} done</span>
-        </div>
-        <p className="v2-small" style={{ margin: 0 }}>Tap a number when done.</p>
-        <Progress value={doneCount} max={ACTIONS.length} />
-        <ol className="cr2-plan-list">
-          {PLAN.map((a, n) => {
-            const done = isDone(a);
-            return (
-              <li key={a.id} className={done ? "done" : undefined}>
-                <button
-                  type="button"
-                  role="checkbox"
-                  aria-checked={done}
-                  aria-label={`Mark done: ${a.title}`}
-                  className="cr2-check num"
-                  onClick={() => setTicked((t) => (t.includes(a.id) ? t.filter((x) => x !== a.id) : [...t, a.id]))}
-                >
-                  {done ? <Icon name="check" size={14} width={3.2} /> : n + 1}
-                </button>
-                <span className="cr2-plan-main">
-                  <span className={`cr2-tag ${TAG[a.tag]}`}>{a.tag}</span>
-                  <b>{a.title}</b>
-                  <small>{a.why}</small>
-                </span>
-                {a.remove ? (
-                  <button type="button" className="btn-outline v2-btn-sm" disabled={removed.includes(a.remove)} onClick={() => remove(a.remove!)}>
-                    {removed.includes(a.remove) ? "Removed" : a.cta}
-                  </button>
-                ) : (
-                  <Link href={a.href!} className={a.tag === "Fix now" ? "np-btn v2-btn-sm" : "btn-outline v2-btn-sm"}>{a.cta}</Link>
-                )}
-              </li>
-            );
-          })}
-        </ol>
-      </section>
 
-      <section className="v2-card an-chart">
-        <div className="v2-card-h">
-          <h2 className="v2-h2">Commission per {chart.unit}</h2>
-          <span className="v2-small">{range === "Lifetime" ? "Since March 2026" : `Last ${range}`} · {rm(d.est)}</span>
-        </div>
-        <Lock what="your commission over time">
-          <div>
-            <div className="cr2-cols" style={{ gap }} role="img" aria-label={`Commission per ${chart.unit}, ${span}`} key={range}>
-              {chart.points.map(([l, v], i) => {
-                const last = i === chart.points.length - 1;
-                return (
-                  <span key={l} className={last ? undefined : "soft"} style={{ height: `${(v / max) * 100}%`, animationDelay: `${Math.min(i, 20) * 25}ms` }} title={`${l}: ${rm(v)}`}>
-                    {last && <em>{rm(v, 0)}</em>}
-                  </span>
-                );
-              })}
-            </div>
-            <div className="cr2-axis" style={{ gap }} aria-hidden="true">
-              {chart.points.map(([l], i) => {
-                const last = i === chart.points.length - 1;
-                return <span key={l}>{last ? (chart.unit === "day" ? "Today" : chart.unit === "week" ? "This week" : l) : i % every === 0 ? l : ""}</span>;
-              })}
-            </div>
-          </div>
-        </Lock>
-        <p className="v2-small" style={{ margin: 0 }}>Estimated commission by the {chart.unit} the order was placed. The latest {chart.unit} is still in progress.</p>
-      </section>
 
       <div className="v2-grid2 an-split">
         <section className="v2-card">
@@ -244,10 +179,10 @@ export default function DataOverview() {
 
         <section className="v2-card">
           <div className="v2-card-h">
-            <h2 className="v2-h2">Best time to post</h2>
-            <span className="v2-small">Views vs your average</span>
+            <h2 className="v2-h2">Best time to post <Tip label="About best time" text="Average views per video you posted in each time slot, last 30 days." /></h2>
+            <span className="an-hv">High virality · {bestTime[0]}</span>
           </div>
-          <Bars rows={POST_TIMES.map(([label, x]) => ({ label, value: x, display: `${x}×`, tone: x < 1 ? ("blue" as const) : undefined }))} />
+          <Bars rows={POST_TIMES.map(([label, v]) => ({ label, value: v, display: short(v), tone: v < avgViews ? ("blue" as const) : undefined }))} />
         </section>
       </div>
 
@@ -272,6 +207,34 @@ export default function DataOverview() {
             );
           })}
         </div>
+      </section>
+
+      <section className="v2-card cr2-plan" aria-label="Your action plan">
+        <div className="v2-card-h">
+          <h2 className="v2-h2">Your action plan</h2>
+          <span className="v2-small">{doneCount} of {ACTIONS.length} done</span>
+        </div>
+        <Progress value={doneCount} max={ACTIONS.length} />
+        {/* A short checklist (owner, 28 Oct 2026: option B): the top 3 to do, a few words each, one colour. */}
+        <ol className="an-plan">
+          {(allPlan ? PLAN : PLAN.slice(0, 3)).map((a, n) => {
+            const done = isDone(a);
+            return (
+              <li key={a.id} className={done ? "done" : undefined}>
+                <button type="button" role="checkbox" aria-checked={done} aria-label={`Mark done: ${a.title}`} className="an-num" onClick={() => setTicked((t) => (t.includes(a.id) ? t.filter((x) => x !== a.id) : [...t, a.id]))}>
+                  {done ? <Icon name="check" size={14} width={3.2} /> : n + 1}
+                </button>
+                <span className="an-plan-t">{a.short} <Tip label={`Why: ${a.short}`} text={a.why} /></span>
+                {a.remove ? (
+                  <button type="button" className="an-go" disabled={removed.includes(a.remove)} onClick={() => remove(a.remove!)}>{removed.includes(a.remove) ? "Removed" : "Remove"}</button>
+                ) : (
+                  <Link href={a.href!} className="an-go">Go <Icon name="arrow" size={14} /></Link>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+        {PLAN.length > 3 && <button type="button" className="v2-link an-more" onClick={() => setAllPlan((x) => !x)}>{allPlan ? "Show less" : `+${PLAN.length - 3} more`}</button>}
       </section>
     </div>
   );
