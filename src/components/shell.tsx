@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
 import { useDemo } from "./demo";
-import { Portal, Sheet } from "./ui";
+import { AiMark, Portal, Sheet } from "./ui";
 import { ACCOUNT_TABS, OPEN_ACCOUNT_MENU } from "@/lib/account-tabs";
 import { useSideScroll } from "./side-scroll";
 import { ACCOUNT, HOME, MENUS, pageFor, sectionFor, type AppKind } from "@/lib/menus";
@@ -144,7 +144,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
             <span className="v2-pgpick">
               <button type="button" aria-haspopup="menu" aria-expanded={pgOpen} onClick={() => setPgOpen((o) => !o)}>
                 <small>{section.label}</small>
-                <b>{section.pages.find(([h]) => h === page)?.[1] ?? section.label}<Icon name="arrow" size={13} /></b>
+                <b>{section.pages.find(([h]) => h === page)?.[1] ?? section.label}<Icon name="updown" size={14} width={2.4} /></b>
               </button>
               {pgOpen && (
                 <>
@@ -152,7 +152,8 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
                   <span className="v2-pgmenu" role="menu" aria-label={`${section.label} pages`}>
                     {section.pages.map(([href, label]) => (
                       <Link key={href} href={href} role="menuitem" className={page === href ? "on" : undefined} aria-current={page === href ? "page" : undefined} onClick={() => setPgOpen(false)}>
-                        <span>{label}</span>{page === href && <Icon name="check" size={16} />}
+                        {/* AI pages carry the AI mark so the feature stands out (owner, 29 Oct 2026). */}
+                        <span>{label}</span>{label.startsWith("AI ") && <AiMark size={22} />}{page === href && <Icon name="check" size={16} />}
                       </Link>
                     ))}
                   </span>

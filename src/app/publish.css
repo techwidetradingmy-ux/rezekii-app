@@ -534,3 +534,4 @@
 .sq-opts button.on { background: var(--gsoft); color: var(--gink); }
 .sq-opts button.on b { color: var(--gink); }
 .sq-opts-h { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 800; }
+@media (max-width: 760px) { .sq-drop svg { transform: none; } }

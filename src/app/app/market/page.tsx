@@ -114,7 +114,7 @@ export default function Marketplace() {
   return (
     <div className="v2-stack v2-in mk-page" style={{ gap: 20 }}>
       <Title title="Marketplace" sub="Better rates than TikTok's open plan. Free Samples on many.">
-        <Link href="/app/account#samples" className="btn-outline v2-btn-sm">My samples <span className="badge">{MY_SAMPLES.filter((s) => !["Done", "Not approved"].includes(s.status)).length}</span></Link>
+        <Link href="/app/account#samples" className="mk-mysamples" aria-label={`My samples: ${MY_SAMPLES.filter((s) => !["Done", "Not approved"].includes(s.status)).length} in progress`} title="My samples"><Icon name="box" size={20} /><span className="badge">{MY_SAMPLES.filter((s) => !["Done", "Not approved"].includes(s.status)).length}</span></Link>
       </Title>
 
 

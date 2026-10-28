@@ -233,7 +233,7 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
           </button>
         )}
         <button type="button" className="sq-drop" aria-haspopup="dialog" onClick={() => setFilterOpen(true)}>
-          <span>{filterLabel} · {shown.length}</span><Icon name="arrow" size={15} />
+          <span>{filterLabel} · {shown.length}</span><Icon name="updown" size={16} width={2.4} />
         </button>
       </div>
 

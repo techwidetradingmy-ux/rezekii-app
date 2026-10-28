@@ -58,7 +58,6 @@ export function ShootToday({ bare = false }: { bare?: boolean }) {
     })),
     ...TRY_TODAY.filter((t) => ok(t.productId)).slice(0, 1).map((t) => ({ id: `t-${t.productId}`, productId: t.productId, kind: "sample" as const, idea: t.idea, reason: t.why, stat: `${SAMPLE_LEFT[t.productId] ?? 10} left` })),
   ].slice(0, MAX);
-  const skip = VIRAL.filter((v) => product(v.productId).rating < 4);
   const flip = (id: string) => setPick((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
 
   function plan() {
@@ -124,12 +123,6 @@ export function ShootToday({ bare = false }: { bare?: boolean }) {
           );
         })}
       </div>
-
-      {skip.map((v) => (
-        <p key={v.id} className="st-skip">
-          <Icon name="alert" size={15} /> &ldquo;{v.title}&rdquo; is rising (+{(v.views24 / 1000).toFixed(1)}K), but the product is rated {product(v.productId).rating.toFixed(1)}★.
-        </p>
-      ))}
 
       <div className="td-bar" role="status">
         <span><b>{pick.length}</b> of {ideas.length} picked</span>

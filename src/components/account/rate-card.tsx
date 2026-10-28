@@ -78,7 +78,7 @@ function DaysPick({ value, onChange, none = false, disabled = false }: { value: 
   return (
     <>
       <button ref={btn} type="button" className="rc-dayspick" disabled={disabled} aria-haspopup="listbox" aria-expanded={!!at} onClick={() => (at ? setAt(null) : open())}>
-        <span>{value ? `${value} days` : "None"}</span><Icon name="arrow" size={13} />
+        <span>{value ? `${value} days` : "None"}</span><Icon name="updown" size={15} width={2.4} />
       </button>
       {at && (
         <Portal>

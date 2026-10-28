@@ -1003,3 +1003,4 @@ span.pd-row { grid-template-columns: 12px minmax(0, 1fr) auto 14px; }
   .acc-cur > svg:last-child { color: var(--muted); }
 }
 .rcs-band { gap: 5px; padding: 10px 14px 10px; }
+.rc-dayspick svg { transform: none; }

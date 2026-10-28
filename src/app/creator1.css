@@ -1133,3 +1133,11 @@ a.sh-go { text-decoration: none; }
 /* Story buttons turn green on hover and while pressed (owner, 29 Oct 2026). */
 .ss-btn { transition: background-color 0.15s, color 0.15s, border-color 0.15s; }
 .ss-btn:not(:disabled):hover, .ss-btn:not(:disabled):active { background: #00c073; border-color: #00c073; color: #ffffff; }
+/* My samples on Marketplace stands out (owner, 29 Oct 2026): soft green with a parcel icon. */
+.mk-mysamples { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 12px; background: var(--gsoft); color: var(--gink); border: 1px solid #b8ead2; font-size: 14px; font-weight: 800; text-decoration: none; }
+.mk-mysamples:hover { background: #00c073; border-color: #00c073; color: #ffffff; }
+.mk-mysamples .badge { background: #00c073; color: #ffffff; }
+.mk-mysamples:hover .badge { background: #ffffff; color: #00804f; }
+/* Icon only (owner, 29 Oct 2026): same size as the calendar icon so it lines up with the page title; the count sits on the corner. */
+.mk-mysamples { position: relative; width: 44px; height: 44px; padding: 0; justify-content: center; border-radius: 14px; }
+.mk-mysamples .badge { position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; padding: 0 5px; font-size: 11px; display: grid; place-items: center; border: 2px solid var(--bg); }
