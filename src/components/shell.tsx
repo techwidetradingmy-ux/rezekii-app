@@ -10,10 +10,10 @@ import { Sheet } from "./ui";
 import { ACCOUNT, HOME, MENUS, pageFor, sectionFor, type AppKind } from "@/lib/menus";
 import { CREATOR, SELLER } from "@/lib/mock";
 
-const WHO: Record<AppKind, { name: string; initials: string; label: string; photo?: string }> = {
-  creator: { name: CREATOR.first, initials: CREATOR.initials, label: "Account", photo: CREATOR.photo },
-  seller: { name: SELLER.shop, initials: "SL", label: "Account" },
-  admin: { name: "Aina (Ops)", initials: "AI", label: "Settings" },
+const WHO: Record<AppKind, { name: string; initials: string; label: string; photo?: string; sub: string }> = {
+  creator: { name: CREATOR.first, initials: CREATOR.initials, label: "Account", photo: CREATOR.photo, sub: `${CREATOR.level} creator` },
+  seller: { name: SELLER.shop, initials: "SL", label: "Account", sub: "Seller account" },
+  admin: { name: "Aina (Ops)", initials: "AI", label: "Settings", sub: "Techwide admin" },
 };
 
 /** The preview strip: sample data notice, and quick jumps between the three apps. */
@@ -41,7 +41,10 @@ export function DemoStrip() {
 /** The always-visible Invite button: referral is how Rezekii spreads. */
 const INVITE = { creator: "/app/account#referral", seller: "/seller/app/rewards/referral", admin: "" } as const;
 
-/** Signed-in frame, the rezekii.com skeleton: top menu (sections), sub-menu (a section's pages), footer, phone tab bar. */
+/**
+ * Signed-in frame. Desktop (owner, 28 Oct 2026: website first): a left side bar with every section and the open section's
+ * pages, and a slim top bar. Smaller screens keep the top menu, the sub-menu and the phone tab bar.
+ */
 export function Shell({ app, children, banner }: { app: AppKind; children: React.ReactNode; banner?: React.ReactNode }) {
   const path = usePathname();
   const section = sectionFor(app, path);
@@ -66,6 +69,46 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
   return (
     <>
       <DemoStrip />
+      <div className="v2-app" data-app={app}>
+      <aside className="v2-side" aria-label="Main menu">
+        <Link href={HOME[app]} className="v2-side-brand">
+          <span><Image src="/master-logo-transparent.png" alt="" width={30} height={30} /></span>
+          Rezekii
+          {app !== "creator" && <em>{app === "seller" ? "Seller" : "Admin"}</em>}
+        </Link>
+        <nav className="v2-side-nav nv-noscroll">
+          {menu.map((s) => {
+            const on = section?.href === s.href;
+            return (
+              <div key={s.href} className={`v2-side-sec${on ? " on" : ""}`}>
+                <Link href={s.href} className="v2-side-item" aria-current={on && (!page || page === s.href) ? "page" : undefined}>
+                  <Icon name={s.icon} size={20} />
+                  <span>{s.label}</span>
+                  {s.pages.length > 1 && <i className="v2-side-chev" aria-hidden="true" />}
+                </Link>
+                {on && s.pages.length > 1 && (
+                  <div className="v2-side-sub">
+                    {s.pages.map(([href, label]) => (
+                      <Link key={href} href={href} className={page === href ? "on" : undefined} aria-current={page === href ? "page" : undefined}>{label}</Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </nav>
+        <Link href={ACCOUNT[app]} className="v2-side-me">
+          {who.photo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <span className="v2-av photo"><img src={who.photo} alt="" /></span>
+          ) : (
+            <span className="v2-av">{who.initials}</span>
+          )}
+          <span><b>{who.name}</b><small>{who.sub}</small></span>
+          <Icon name="gear" size={18} />
+        </Link>
+      </aside>
+      <div className="v2-frame">
       <header className="v2-top" data-app={app}>
         <nav className="site-nav site-wrap" aria-label="Main">
           <Link href={HOME[app]} className="site-brand">
@@ -84,6 +127,15 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
               </Link>
             ))}
           </div>
+          {!section && (path.startsWith(ACCOUNT[app]) || path.includes("/notifications")) && (
+            <span className="v2-crumb"><b>{path.includes("/notifications") ? "Notifications" : app === "admin" ? "System" : "My account"}</b></span>
+          )}
+          {section && (
+            <span className="v2-crumb">
+              <b>{section.label}</b>
+              {page && page !== section.href && <><Icon name="arrow" size={14} /><span>{section.pages.find(([h]) => h === page)?.[1]}</span></>}
+            </span>
+          )}
           <span className="site-spacer" />
           {app === "creator" && (
             <span className="lang-switch" role="group" aria-label="Language">
@@ -144,6 +196,8 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
           <a href="mailto:support@rezekii.com">support@rezekii.com</a>
         </div>
       </footer>
+      </div>
+      </div>
       <nav className="nv-bottom" data-app={app} aria-label="Main menu (phone)" style={{ ["--n" as string]: phoneTabs.length + (app === "admin" ? 1 : 0) }}>
         {/* A green pill that slides to the open tab (owner, 28 Oct 2026: make the tab bar easier to see). */}
         {navIndex >= 0 && <span className="nv-ind" aria-hidden="true" style={{ ["--i" as string]: navIndex }} />}
