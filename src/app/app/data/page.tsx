@@ -13,6 +13,9 @@ import "@/app/creator2.css";
 
 const pct = (n: number, of: number) => Math.round((n / of) * 100);
 const TAG = { "Shoot today": "green", "Fix now": "red", "This week": "amber", Grow: "violet" } as const;
+/** Action plan order (owner, 28 Oct 2026): protect the account first, then today's chance, then this week, then growth. */
+const RANK = { "Fix now": 0, "Shoot today": 1, "This week": 2, Grow: 3 } as const;
+const PLAN = [...ACTIONS].sort((a, b) => RANK[a.tag] - RANK[b.tag]);
 const TODAY = "2026-10-28";
 const JOINED = "2026-03-01";
 const back = (n: number) => { const d = new Date(Date.UTC(2026, 9, 28 - n)); return iso(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()); };
@@ -165,10 +168,10 @@ export default function DataOverview() {
           <h2 className="v2-h2">Your action plan</h2>
           <span className="v2-small">{doneCount} of {ACTIONS.length} done</span>
         </div>
-        <p className="v2-small" style={{ margin: 0 }}>What to do next, worked out from your numbers above. Most urgent first.</p>
+        <p className="v2-small" style={{ margin: 0 }}>Do these in order, from your numbers above. Tap a number when it&apos;s done.</p>
         <Progress value={doneCount} max={ACTIONS.length} />
         <ol className="cr2-plan-list">
-          {ACTIONS.map((a) => {
+          {PLAN.map((a, n) => {
             const done = isDone(a);
             return (
               <li key={a.id} className={done ? "done" : undefined}>
@@ -177,10 +180,10 @@ export default function DataOverview() {
                   role="checkbox"
                   aria-checked={done}
                   aria-label={`Mark done: ${a.title}`}
-                  className="cr2-check"
+                  className="cr2-check num"
                   onClick={() => setTicked((t) => (t.includes(a.id) ? t.filter((x) => x !== a.id) : [...t, a.id]))}
                 >
-                  {done && <Icon name="check" size={14} width={3.2} />}
+                  {done ? <Icon name="check" size={14} width={3.2} /> : n + 1}
                 </button>
                 <span className="cr2-plan-main">
                   <span className={`cr2-tag ${TAG[a.tag]}`}>{a.tag}</span>

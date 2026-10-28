@@ -652,3 +652,6 @@ li.done .cr2-check { background: #00c073; border-color: #00c073; animation: v2Po
 }
 .si-acts { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
 @media (max-width: 560px) { .si-m { grid-template-columns: 34px minmax(0, 1fr); } .si-m > :last-child { grid-column: 2; justify-self: start; } .si-m small { white-space: normal; } }
+.cr2-check.num { border-radius: 50%; width: 28px; height: 28px; background: #0d1117; border-color: #0d1117; color: #ffffff; font: inherit; font-size: 13px; font-weight: 900; }
+li:first-child .cr2-check.num { background: #e14b3b; border-color: #e14b3b; }
+li.done .cr2-check.num { background: #00c073; border-color: #00c073; }
