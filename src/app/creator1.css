@@ -893,7 +893,8 @@
 @keyframes ssKen { from { transform: scale(1.15); } to { transform: scale(1); } }
 .ss-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.12) 26%, rgba(0, 0, 0, 0.3) 52%, rgba(0, 0, 0, 0.88) 100%); }
 .ss-found .ss-shade, .ss-money .ss-shade { background: linear-gradient(180deg, rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.78) 40%, rgba(0, 0, 0, 0.9)); }
-.ss-frame:not(.ss-end) .ss-body { justify-content: flex-end; padding-bottom: 6px; }
+/* Keep words and photos clear of the bottom edge (owner, 28 Oct 2026: some phones cut the edges). */
+.ss-frame:not(.ss-end) .ss-body { justify-content: flex-end; padding-bottom: clamp(56px, 10vh, 96px); }
 .ss-body { text-shadow: 0 2px 14px rgba(0, 0, 0, 0.5); }
 .ss-body .ss-btn, .ss-body .ss-sticker, .ss-body .ss-row { text-shadow: none; }
 .ss-best .ss-rate b { color: #5fe3ab; }

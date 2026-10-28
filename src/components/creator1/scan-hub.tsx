@@ -18,8 +18,9 @@ type Pending = { id: string; productId: string; from: number; to: number; state:
 /** Tap-and-swipe through the better rates, one card at a time (owner, 28 Oct 2026). */
 type Deck = { ids: string[]; at: number; kept: string[]; fly: "left" | "right" | null };
 
-/** Where each better rate sits on the radar: angle (deg, clockwise from the top) and distance from the centre (0–1). */
-const BLIPS: [number, number][] = [[38, 0.78], [104, 0.68], [162, 0.86], [228, 0.7], [292, 0.84], [334, 0.7], [70, 0.9]];
+/** After a scan, up to 6 better rates sit evenly on one ring (owner, 28 Oct 2026: tidy, not scattered). */
+const RING_MAX = 6;
+const RING_DIST = 0.8;
 const SWEEP_S = 4;
 const SCAN_MS = 4200;
 const HOLD_MS = 900;
@@ -215,7 +216,7 @@ export function ScanHub() {
               <span><b>{linked && top ? `+${top}%` : "–"}</b><small>best increase</small></span>
               <span><b>{sims.length}</b><small>similar on Rezekii</small></span>
             </div>
-            {linked && same.length > 0 && !scanning && !deck && <p className="sh-tip"><Icon name="spark" size={14} /> Tap a product on the radar to swipe through them</p>}
+            {linked && scanKey > 0 && same.length > 0 && !scanning && !deck && <p className="sh-tip"><Icon name="spark" size={14} /> Tap a product on the radar to swipe through them</p>}
           </div>
           <div className="sh-radar" style={{ "--sweep": `${scanning ? 1.2 : SWEEP_S}s` } as React.CSSProperties}>
             <span className="sh-rings" aria-hidden="true" />
@@ -245,27 +246,28 @@ export function ScanHub() {
                   <img key={`${scanKey}-${i}`} className="sh-fly" src={src} alt="" aria-hidden="true" style={{ "--x0": `${50 + Math.sin(a) * 64}%`, "--y0": `${50 - Math.cos(a) * 64}%`, animationDelay: `${i * 0.25}s` } as React.CSSProperties} />
                 );
               })}
+            {/* The radar stays empty until she scans (owner, 28 Oct 2026). */}
             {linked &&
+              scanKey > 0 &&
               !scanning &&
-              same.slice(0, BLIPS.length).map((it, i) => {
-                const [deg, dist] = BLIPS[i];
+              same.slice(0, RING_MAX).map((it, i, ring) => {
+                const deg = (i * 360) / ring.length;
                 const rad = (deg * Math.PI) / 180;
                 const p = product(it.productId);
                 return (
                   <button
                     key={`${it.id}-${scanKey}`}
                     type="button"
-                    className={`sh-blip${scanKey ? " pop" : ""}`}
-                    style={{ left: `${50 + Math.sin(rad) * dist * 46}%`, top: `${50 - Math.cos(rad) * dist * 46}%`, animationDelay: `${(deg / 360) * SWEEP_S}s`, "--d": `${i * 0.22}s` } as React.CSSProperties}
+                    className="sh-blip pop"
+                    style={{ left: `${50 + Math.sin(rad) * RING_DIST * 46}%`, top: `${50 - Math.cos(rad) * RING_DIST * 46}%`, animationDelay: `${(deg / 360) * SWEEP_S}s`, "--d": `${i * 0.22}s` } as React.CSSProperties}
                     onClick={() => openDeck(it.id)}
                     aria-label={`${p.name}, ${it.from}% to ${it.to}%. Swipe through better rates`}
                   >
                     <span className="sh-bin">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={p.img} alt="" />
-                      <em>{it.from}→<Hidden>{it.to}%</Hidden></em>
                     </span>
-                    {scanKey > 0 && <span className="sh-cf" aria-hidden="true">{Array.from({ length: 8 }, (_, k) => <i key={k} style={{ "--a": `${k * 45}deg` } as React.CSSProperties} />)}</span>}
+                    {<span className="sh-cf" aria-hidden="true">{Array.from({ length: 8 }, (_, k) => <i key={k} style={{ "--a": `${k * 45}deg` } as React.CSSProperties} />)}</span>}
                   </button>
                 );
               })}

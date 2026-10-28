@@ -23,15 +23,19 @@ export function Title({ title, sub, children }: { title: string; sub?: React.Rea
 /** Counts up to `value` once on first paint (skipped when the device asks for reduced motion). */
 export function Count({ value, format = (n: number) => Math.round(n).toLocaleString("en-MY"), ms = 900 }: { value: number; format?: (n: number) => string; ms?: number }) {
   const [n, setN] = useState(value);
-  const started = useRef(false);
+  const rolled = useRef(false);
   useEffect(() => {
-    // After the first roll, follow new values straight away (range switches and the like).
-    if (started.current) {
+    // After the first full roll, follow new values straight away (range switches and the like). A roll that was cut short
+    // (React runs effects twice in development) starts again, so the number always rolls once.
+    if (rolled.current || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      rolled.current = true;
       setN(value);
       return;
     }
-    started.current = true;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const finish = () => {
+      rolled.current = true;
+      setN(value);
+    };
     const t0 = performance.now();
     let raf = 0;
     const tick = (t: number) => {
@@ -39,11 +43,12 @@ export function Count({ value, format = (n: number) => Math.round(n).toLocaleStr
       const p = Math.max(0, Math.min(1, (t - t0) / ms));
       setN(value * (1 - Math.pow(1 - p, 3)));
       if (p < 1) raf = requestAnimationFrame(tick);
+      else finish();
     };
     setN(0);
     raf = requestAnimationFrame(tick);
     // Background tabs pause frames: land on the real number anyway.
-    const done = window.setTimeout(() => setN(value), ms + 300);
+    const done = window.setTimeout(finish, ms + 300);
     return () => {
       cancelAnimationFrame(raf);
       window.clearTimeout(done);
