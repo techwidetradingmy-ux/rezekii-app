@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Seg } from "@/components/ui";
 import { rm } from "@/lib/mock";
 
@@ -27,10 +27,29 @@ export function CommissionChart({ points, unit, range }: { points: [string, numb
   const xOf = (i: number) => (total ? (n === 1 ? 50 : (i / last) * 100) : ((i + 0.5) / n) * 100);
   const yOf = (v: number) => 100 - (v / max) * 88;
 
-  const pick = (e: React.PointerEvent<HTMLDivElement>) => {
+  const pointAt = (e: React.PointerEvent<HTMLDivElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
     const f = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
-    setAt(total ? Math.round(f * last) : Math.min(last, Math.floor(f * n)));
+    return total ? Math.round(f * last) : Math.min(last, Math.floor(f * n));
+  };
+  // A mouse scrubs on hover. A finger scrubs only when it drags sideways, and a tap shows or hides one point, so scrolling the
+  // page past the chart no longer flicks it on and off (owner, 29 Oct 2026).
+  const press = useRef<{ x: number; y: number; moved: boolean } | null>(null);
+  const down = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === "mouse") return setAt(pointAt(e));
+    press.current = { x: e.clientX, y: e.clientY, moved: false };
+  };
+  const move = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === "mouse") return setAt(pointAt(e));
+    const p = press.current;
+    if (!p) return;
+    const dx = Math.abs(e.clientX - p.x);
+    if (p.moved || (dx > 6 && dx > Math.abs(e.clientY - p.y))) { p.moved = true; setAt(pointAt(e)); }
+  };
+  const up = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === "mouse") return;
+    if (press.current && !press.current.moved) setAt(at === null ? pointAt(e) : null);
+    press.current = null;
   };
   const line = values.map((v, i) => `${i ? "L" : "M"}${xOf(i).toFixed(2)},${yOf(v).toFixed(2)}`).join(" ");
   // Best single day/week/month, and up to 3 round totals crossed in this range (the biggest ones, not too close to the start).
@@ -47,7 +66,7 @@ export function CommissionChart({ points, unit, range }: { points: [string, numb
         </span>
         <Seg value={mode} options={["Total", per] as const} onChange={(m) => { setMode(m); setAt(null); }} />
       </div>
-      <div className="cc-plot" role="img" aria-label={`Commission ${total ? "running total" : per.toLowerCase()}, ${range}: ${rm(running[last])}`} onPointerDown={pick} onPointerMove={pick} onPointerLeave={() => setAt(null)}>
+      <div className="cc-plot" role="img" aria-label={`Commission ${total ? "running total" : per.toLowerCase()}, ${range}: ${rm(running[last])}`} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={() => { press.current = null; }} onPointerLeave={(e) => { if (e.pointerType === "mouse") setAt(null); }}>
         {total ? (
           <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
             <defs>
@@ -65,7 +84,7 @@ export function CommissionChart({ points, unit, range }: { points: [string, numb
             {values.map((v, i) => <i key={points[i][0]} className={i === shown ? "on" : undefined} style={{ height: `${(v / max) * 88}%` }} />)}
           </span>
         )}
-        {total && at === null && <span className="cc-best" aria-hidden="true">Best {unit} · {rm(points[bestAt][1], 0)}</span>}
+        {total && <span className={`cc-best${at === null ? "" : " off"}`} aria-hidden="true">Best {unit} · {rm(points[bestAt][1], 0)}</span>}
         {total && marks.map(({ m, i }, k) => (
           <span key={m} className="cc-mark" style={{ left: `${xOf(i)}%`, top: `${yOf(running[i])}%`, animationDelay: `${0.9 + k * 0.25}s` }} aria-hidden="true">
             <em className={xOf(i) > 70 ? "right" : xOf(i) < 30 ? "left" : undefined}>{rm(m, 0)} · {points[i][0]}</em>

@@ -505,3 +505,32 @@
   .pb-icobtn span { display: none; }
   .pb-acts { gap: 6px; }
 }
+/* Content Calendar on phones (owner, 29 Oct 2026): banner + one dropdown instead of tiles; one full line per channel. */
+.sq-phonebar { display: none; }
+@media (max-width: 760px) {
+  .sq-page > .sq-tiles, .sq-page > .sq-srcbar { display: none; }
+  .sq-phonebar { display: grid; gap: 8px; }
+  .sq-alert { display: flex; align-items: center; gap: 8px; width: 100%; padding: 12px 14px; border: 0; border-radius: 14px; background: #fff3f1; color: #c2362a; font: inherit; font-size: 14px; font-weight: 800; text-align: left; cursor: pointer; }
+  .sq-alert span { flex: 1; }
+  .sq-alert b { padding: 4px 12px; border-radius: 99px; background: #c2362a; color: #ffffff; font-size: 13px; }
+  .sq-drop { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 44px; padding: 0 14px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; }
+  .sq-drop svg { transform: rotate(90deg); color: var(--muted); }
+  /* Post row: the cover and caption on top, then one full line per channel. */
+  .sq-post { grid-template-columns: 52px minmax(0, 1fr); column-gap: 12px; row-gap: 8px; align-items: start; }
+  .sq-body { display: contents; }
+  .sq-cover { grid-row: 1 / span 2; width: 52px; height: 72px; }
+  .sq-when, .sq-cap { grid-column: 2; }
+  .sq-targets, .sq-acts, .sq-confirm { grid-column: 1 / -1; }
+  .sq-t { flex-wrap: nowrap; gap: 8px; padding: 8px 10px; }
+  .sq-t-app { flex: 1 1 auto; }
+  .sq-pill { height: 24px; padding: 0 8px; }
+  .sq-views { flex-shrink: 0; }
+  .sq-t.failed, .sq-t.uploading, .sq-t.sending, .sq-t.processing { flex-wrap: wrap; }
+}
+.sq-opts { display: grid; gap: 4px; }
+.sq-opts button { display: flex; align-items: center; gap: 10px; height: 46px; padding: 0 14px; border: 0; border-radius: 12px; background: var(--surface2); color: var(--text); font: inherit; font-size: 15px; font-weight: 700; text-align: left; cursor: pointer; }
+.sq-opts button span { flex: 1; }
+.sq-opts button b { color: var(--muted); font-weight: 800; }
+.sq-opts button.on { background: var(--gsoft); color: var(--gink); }
+.sq-opts button.on b { color: var(--gink); }
+.sq-opts-h { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 800; }

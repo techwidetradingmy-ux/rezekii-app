@@ -758,3 +758,11 @@ body { font-feature-settings: "tnum" 0; }
 .v2-story.mo.square .st-hero, .v2-story.mo.wide .st-hero { zoom: 0.8; }
 .v2-story.ds2 .mo-week i { background: rgba(255, 255, 255, 0.18); }
 .v2-story.ds2 .mo-week i.on { background: #ff8a00; }
+/* Step flows fit the phone screen with no sideways sliding (owner, 29 Oct 2026). */
+@media (max-width: 640px) {
+  .v2-flow { grid-auto-columns: minmax(0, 1fr); gap: 4px; overflow: visible; scroll-snap-type: none; -webkit-mask-image: none; mask-image: none; }
+  .v2-flow li { padding: 2px 0; }
+  .v2-flow .ic { width: 36px; height: 36px; border-radius: 12px; }
+  .v2-flow li:not(:last-child)::after { top: 19px; left: calc(50% + 22px); right: calc(-50% + 22px); }
+  .v2-flow b { font-size: 13px; line-height: 1.2; }
+}

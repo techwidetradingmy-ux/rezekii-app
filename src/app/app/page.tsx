@@ -10,7 +10,6 @@ export default function CreatorHome() {
     <div className="v2-stack v2-in" style={{ gap: 22 }}>
       <div>
         <h1 style={{ margin: 0, fontSize: 30, fontWeight: 800, letterSpacing: "-0.02em" }}>Good morning, {CREATOR.first}</h1>
-        <p className="v2-muted" style={{ margin: "4px 0 0" }}>{CREATOR.activatedThisMonth} better rates active this month.</p>
       </div>
       <ScanHub />
     </div>

@@ -901,3 +901,6 @@ span.pd-row { grid-template-columns: 12px minmax(0, 1fr) auto 14px; }
 .pd-mid { pointer-events: none; }
 .pd-mid em { font-style: normal; font-size: 13px; font-weight: 800; color: var(--text); }
 .pd-legend .pd-on { font-weight: 800; }
+/* The best-day label fades out while scrubbing instead of leaving and popping back in. */
+.cc-best { transition: opacity 0.2s var(--ease); }
+.cc-best.off { opacity: 0; }

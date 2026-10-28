@@ -210,7 +210,7 @@ export function ScanHub() {
             <h2>
               <b><Count key={scanKey} value={linked ? CREATOR.showcaseSize : 0} ms={scanning ? SCAN_MS - 300 : 900} /></b> products checked
             </h2>
-            <p>{linked ? `Last scan ${last}` : "Link TikTok Shop and we check every product you promote"}</p>
+            {!linked && <p>Link TikTok Shop and we check every product you promote</p>}
             <div className="sh-stats">
               <span><b>{linked ? same.length : "–"}</b><small>can pay more</small></span>
               <span><b>{linked && top ? `+${top}%` : "–"}</b><small>best increase</small></span>

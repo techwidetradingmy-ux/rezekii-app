@@ -200,12 +200,12 @@ export const VIDEOS: VideoRow[] = [
  * and which one, so a LIVE is the group of orders that share one LIVE. The time is her first sale in it. TikTok doesn't give
  * creators viewers or watch time, so there are none here.
  */
-export type LiveRow = { id: string; date: string; time: string; orders: number; gmv: number; commission: number; cancel: number; products: [string, number][] };
+export type LiveRow = { id: string; date: string; time: string; orders: number; gmv: number; commission: number; cancel: number; products: [string, number, number, number][] };
 export const LIVES: LiveRow[] = [
-  { id: "l1", date: "Tue 21 Oct", time: "8 PM", orders: 50, gmv: 1580, commission: 168.4, cancel: 6.2, products: [["p13", 110], ["p21", 58.4]] },
-  { id: "l2", date: "Sat 18 Oct", time: "9 PM", orders: 41, gmv: 1210, commission: 132.6, cancel: 4.8, products: [["p21", 101.6], ["p09", 31]] },
-  { id: "l3", date: "Wed 15 Oct", time: "8:30 PM", orders: 44, gmv: 780, commission: 88, cancel: 12.5, products: [["p17", 60], ["p13", 28]] },
-  { id: "l4", date: "Sun 12 Oct", time: "9 PM", orders: 20, gmv: 640, commission: 71, cancel: 3.1, products: [["p13", 51], ["p21", 20]] },
+  { id: "l1", date: "Tue 21 Oct", time: "8 PM", orders: 50, gmv: 1580, commission: 168.4, cancel: 6.2, products: [["p13", 110, 34, 5.9], ["p21", 58.4, 16, 6.9]] },
+  { id: "l2", date: "Sat 18 Oct", time: "9 PM", orders: 41, gmv: 1210, commission: 132.6, cancel: 4.8, products: [["p21", 101.6, 28, 3.6], ["p09", 31, 13, 7.5]] },
+  { id: "l3", date: "Wed 15 Oct", time: "8:30 PM", orders: 44, gmv: 780, commission: 88, cancel: 12.5, products: [["p17", 60, 35, 14.3], ["p13", 28, 9, 5.6]] },
+  { id: "l4", date: "Sun 12 Oct", time: "9 PM", orders: 20, gmv: 640, commission: 71, cancel: 3.1, products: [["p13", 51, 16, 3.9], ["p21", 20, 4, 0]] },
 ];
 
 /** Where a product's commission came from: her videos, her LIVEs, and the rest (showcase and other links). */

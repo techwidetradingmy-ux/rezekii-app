@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { Title } from "@/components/ui";
+import { Seg, Sheet, Tip, Title } from "@/components/ui";
 import { CalendarPicker, dayName } from "@/components/calendar-picker";
 import { PlatformIcon } from "@/components/creator2/bits";
 import { POST_CREDITS, type MyPost, type PostStatus, type PostTarget, type PublishSetup } from "@/lib/mock-publish";
@@ -124,6 +124,10 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
   const inRange = (p: MyPost) => !p.date || (p.date >= from && p.date <= to);
   const shown = posts.filter((p) => srcOk(p) && inRange(p) && (!day || p.date === day) && (!only || groupOf(p) === only));
   const count = (g: Group) => posts.filter((p) => srcOk(p) && inRange(p) && groupOf(p) === g).length;
+  const [filterOpen, setFilterOpen] = useState(false);
+  const SOURCES = [["all", "All"], ["rezekii", "Via Rezekii"], ["phone", "From phone"]] as const;
+  const needs = count("fail");
+  const filterLabel = `${only ? GROUPS.find((g) => g.key === only)!.title : "All posts"}${src === "all" ? "" : ` · ${SOURCES.find(([k]) => k === src)![1]}`}`;
 
   const choose = (a: string, b: string, key: string | null) => { setRange([a, b]); setPreset(key); setDay(null); setMonth(b < TODAY ? b.slice(0, 7) : a > TODAY ? a.slice(0, 7) : TODAY.slice(0, 7)); };
   const label = preset ? PRESETS.find(([k]) => k === preset)![1] : `${dayName(from)} – ${dayName(to)}`;
@@ -222,6 +226,17 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
       </Title>
       <p className="an-range"><b>{label}</b><span>{dayName(from)} – {dayName(to)}</span></p>
 
+      <div className="sq-phonebar">
+        {needs > 0 && only !== "fail" && (
+          <button type="button" className="sq-alert" onClick={() => { setOnly("fail"); setDay(null); }}>
+            <Icon name="alert" size={17} /><span>{needs} post{needs === 1 ? "" : "s"} need{needs === 1 ? "s" : ""} you</span><b>Fix</b>
+          </button>
+        )}
+        <button type="button" className="sq-drop" aria-haspopup="dialog" onClick={() => setFilterOpen(true)}>
+          <span>{filterLabel} · {shown.length}</span><Icon name="arrow" size={15} />
+        </button>
+      </div>
+
       <div className="sq-tiles" role="group" aria-label="Show only">
         {GROUPS.map((g) => (
           <button key={g.key} type="button" className={`sq-tile ${g.tone}`} aria-pressed={only === g.key} onClick={() => setOnly(only === g.key ? null : g.key)}>
@@ -294,6 +309,24 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
         </section>
       )}
       <p className="v2-small" style={{ margin: 0 }}>You can edit or cancel until a post starts sending.</p>
+
+      {filterOpen && (
+        <Sheet title="Show" onClose={() => setFilterOpen(false)}>
+          <div className="sq-opts" role="radiogroup" aria-label="Status">
+            {[{ key: null, title: "All posts" }, ...GROUPS].map((g) => {
+              const n = g.key ? count(g.key) : posts.filter((p) => srcOk(p) && inRange(p)).length;
+              return (
+                <button key={g.title} type="button" role="radio" aria-checked={only === g.key} className={only === g.key ? "on" : undefined} onClick={() => { setOnly(g.key); setDay(null); }}>
+                  <span>{g.title}</span><b>{n}</b>{only === g.key && <Icon name="check" size={16} />}
+                </button>
+              );
+            })}
+          </div>
+          <span className="sq-opts-h">Posted from <Tip text="Posts you make in the TikTok, Instagram or Facebook app show here too. They sync every 30 minutes." /></span>
+          <Seg value={SOURCES.find(([k]) => k === src)![1]} options={SOURCES.map(([, l]) => l)} onChange={(l) => setSrc(SOURCES.find(([, x]) => x === l)![0])} />
+          <button type="button" className="np-btn" onClick={() => setFilterOpen(false)}>Done</button>
+        </Sheet>
+      )}
 
     </div>
   );
