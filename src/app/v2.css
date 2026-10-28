@@ -700,3 +700,9 @@ body { font-feature-settings: "tnum" 0; }
 .v2-bar-pick:hover { text-decoration-color: #00c073; color: var(--gink); }
 .ps-img { width: 100%; max-width: 280px; aspect-ratio: 1; object-fit: cover; border-radius: 18px; margin: 0 auto; }
 .v2-sheet > * { flex-shrink: 0; }
+.ft-short { display: none; }
+@media (max-width: 760px) {
+  .site-foot .site-wrap { flex-wrap: nowrap; gap: 14px; white-space: nowrap; }
+  .site-foot .ft-long { display: none; }
+  .site-foot .ft-short { display: inline; }
+}

@@ -1,15 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { Sheet, Title } from "@/components/ui";
+import { Title } from "@/components/ui";
 import { CalendarPicker, dayName } from "@/components/calendar-picker";
 import { PlatformIcon } from "@/components/creator2/bits";
 import { POST_CREDITS, type MyPost, type PostStatus, type PostTarget, type PublishSetup } from "@/lib/mock-publish";
 import { product } from "@/lib/mock";
 import { IDEA_DRAFTS, type IdeaDraft } from "@/components/creator1/shoot-today";
-import { CAPTION_MAX, ICON, NAMES, type Channel } from "./rules";
+import { openPost, takeEdits } from "./post-edits";
+import { ICON, NAMES, type Channel } from "./rules";
 import "@/app/creator2.css";
 import "@/app/publish.css";
 
@@ -71,7 +73,14 @@ const next = (s: PostStatus): PostStatus => STEPS[Math.min(STEPS.indexOf(s) + 1,
  */
 export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup; posts: MyPost[]; newPost: string }) {
   const { toast } = useDemo();
+  const router = useRouter();
   const [posts, setPosts] = useState(start);
+  // Changes saved on the New Post page replace the old version of each post (owner, 28 Oct 2026).
+  useEffect(() => {
+    const { edits, message } = takeEdits();
+    if (Object.keys(edits).length) setPosts((all) => [...Object.values(edits).filter((e) => !all.some((p) => p.id === e.id)), ...all.map((p) => edits[p.id] ?? p)]);
+    if (message) toast(message);
+  }, [toast]);
   // Drafts made in Today's Ideas (creator only; preview keeps them in this browser tab).
   useEffect(() => {
     try {
@@ -89,7 +98,6 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
   const [only, setOnly] = useState<Group | null>(null);
   const [day, setDay] = useState<string | null>(null);
   const [month, setMonth] = useState(() => TODAY.slice(0, 7));
-  const [editing, setEditing] = useState<MyPost | null>(null);
   const [cancelling, setCancelling] = useState<string | null>(null);
   // Owner, 28 Oct 2026: posts she made from her phone show here too, marked, so the calendar is the whole picture.
   const [src, setSrc] = useState<"all" | "rezekii" | "phone">("all");
@@ -184,7 +192,7 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
             </span>
           ) : (
             <span className="sq-acts">
-              <button type="button" className="btn-outline v2-btn-sm" onClick={() => setEditing(p)}><Icon name="edit" size={15} /> Edit</button>
+              <button type="button" className="btn-outline v2-btn-sm" onClick={() => { openPost(p); router.push(`${newPost}?edit=${encodeURIComponent(p.id)}`); }}><Icon name="edit" size={15} /> Edit</button>
               <button type="button" className="sq-ghost v2-btn-sm" onClick={() => setCancelling(p.id)}>{g === "draft" ? "Delete" : "Cancel"}</button>
             </span>
           ))}
@@ -287,41 +295,8 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
       )}
       <p className="v2-small" style={{ margin: 0 }}>You can edit or cancel until a post starts sending.</p>
 
-      {editing && <EditSheet post={editing} appOf={appOf} chan={chan} onClose={() => setEditing(null)} onSave={(p) => { setPosts((all) => all.map((x) => (x.id === p.id ? p : x))); setEditing(null); toast(p.date ? `Saved. Goes out ${dayLabel(p.date)}, ${clock(p.time)}.` : "Draft saved"); }} />}
     </div>
   );
 }
 
 /** Edit in place: the time, and each app's caption and first comment. Saving a draft with a time schedules it. */
-function EditSheet({ post, appOf, chan, onClose, onSave }: { post: MyPost; appOf: (t: PostTarget) => Channel; chan: (k: string) => PublishSetup["channels"][number] | undefined; onClose: () => void; onSave: (p: MyPost) => void }) {
-  const [at, setAt] = useState(post.date ? `${post.date}T${post.time}` : "");
-  const [caption, setCaption] = useState(post.caption);
-  const [comment, setComment] = useState(post.comment);
-  const [error, setError] = useState("");
-  const apps = [...new Set(post.targets.map(appOf))];
-  const save = () => {
-    if (!caption.trim()) return setError("Write a caption.");
-    if (at && at < "2026-10-28T09:20") return setError("Pick a time from now on.");
-    const [date, time] = at ? at.split("T") : ["", ""];
-    onSave({ ...post, caption: caption.trim(), comment: comment.trim(), date, time, targets: post.targets.map((t) => ({ ...t, status: at ? "scheduled" : "draft", reason: undefined, fix: undefined })) });
-  };
-  return (
-    <Sheet title="Edit post" onClose={onClose}>
-      <div className="sq-edit-top">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={post.cover} alt="" />
-        <span>
-          <b>{post.targets.length} channel{post.targets.length === 1 ? "" : "s"}</b>
-          <span className="sq-edit-apps">{post.targets.map((t) => <span key={t.key}><PlatformIcon name={ICON[appOf(t)]} size={16} />{chan(t.key)?.name}</span>)}</span>
-        </span>
-      </div>
-      <label className="pb-field"><b>When <i className="pb-req">*</i></b><input className="np-input" type="datetime-local" value={at} min="2026-10-28T09:20" onChange={(e) => setAt(e.target.value)} aria-label="Date and time (Malaysia time)" /><small className="np-muted">Malaysia time. Leave empty for a draft.</small></label>
-      <label className="pb-field"><b>Caption <i className="pb-req">*</i></b><textarea className="np-input" rows={4} value={caption} onChange={(e) => setCaption(e.target.value)} aria-label="Caption" /><small className="np-muted">{caption.length.toLocaleString("en-US")} / {Math.min(...apps.map((a) => CAPTION_MAX[a])).toLocaleString("en-US")} · no links here</small></label>
-      {apps.some((a) => a !== "tiktok") && (
-        <label className="pb-field"><span className="pb-row"><b>First comment</b><span className="pb-opt">Optional</span></span><textarea className="np-input" rows={2} value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Your call to action and product link" aria-label="First comment" /><small className="np-muted">TikTok uses the yellow basket.</small></label>
-      )}
-      {error && <p className="pb-secerr" role="alert"><span>{error}</span></p>}
-      <button type="button" className="np-btn" onClick={save}>{at ? "Save changes" : "Save draft"}</button>
-    </Sheet>
-  );
-}

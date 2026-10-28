@@ -196,9 +196,10 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
         <div className="site-wrap">
           <span>© 2026 Rezekii</span>
           <span className="site-spacer" />
-          <a href="https://rezekii.com/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>
-          <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer">Terms of Service</a>
-          <a href="mailto:support@rezekii.com">support@rezekii.com</a>
+          {/* Phones show short labels so the footer fits one line (owner, 28 Oct 2026). */}
+          <a href="https://rezekii.com/privacy" target="_blank" rel="noreferrer">Privacy<span className="ft-long"> Policy</span></a>
+          <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer">Terms<span className="ft-long"> of Service</span></a>
+          <a href="mailto:support@rezekii.com" title="support@rezekii.com"><span className="ft-long">support@rezekii.com</span><span className="ft-short">Support</span></a>
         </div>
       </footer>
       </div>

@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useDemo } from "@/components/demo";
 import { Icon } from "@/components/icons";
 import { Sheet, Tip } from "@/components/ui";
 import { PlatformIcon } from "@/components/creator2/bits";
-import { POST_CREDITS, type PubBrand, type PubChannel, type PublishSetup } from "@/lib/mock-publish";
+import { POST_CREDITS, type MyPost, type PubBrand, type PubChannel, type PublishSetup } from "@/lib/mock-publish";
+import { postToEdit, saveEdit } from "./post-edits";
 import { PhonePreview, type Who } from "./phone-previews";
 import {
   APPS, CAPTION_MAX, COLLABORATORS_MAX, COMMENT_MAX, ICON, NAMES, PRIVACY, REPLY_CONTROLS, TAGS_MAX, UNIT,
@@ -58,6 +60,9 @@ export function Composer({ setup }: { setup: PublishSetup }) {
 
 function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void }) {
   const { toast: say } = useDemo();
+  const router = useRouter();
+  // Edit opens this page with the post filled in (owner, 28 Oct 2026); saving updates that post instead of making a new one.
+  const [editing, setEditing] = useState<MyPost | null>(null);
   const [channels, setChannels] = useState<PubChannel[]>(setup.channels);
   const [brands, setBrands] = useState<PubBrand[]>(setup.brands);
   const [picked, setPicked] = useState<Set<string>>(new Set());
@@ -168,11 +173,14 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
 
   const videoUrl = useMemo(() => (source === "upload" ? (file ? URL.createObjectURL(file) : null) : /^https:\/\/\S+\.(mp4|mov|webm)(\?|$)/i.test(linkUrl) ? linkUrl : null), [source, file, linkUrl]);
   useEffect(() => () => { if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl); }, [videoUrl]);
-  const cover = source === "upload" && sample && !file ? setup.sample.cover : null;
+  const vid = editing ? { cover: editing.cover, file: "Your video", seconds: editing.seconds } : setup.sample;
+  const cover = source === "upload" && sample && !file ? vid.cover : null;
   const hasVideo = source === "upload" ? !!file || sample : /^https:\/\/\S+$/.test(linkUrl);
 
   // Cross-channel posting costs credits per channel (owner, 28 Oct 2026). Drafts are free; failed or cancelled channels get theirs back.
-  const cost = when === "draft" ? 0 : keys.length * POST_CREDITS;
+  // Editing a scheduled post only charges for channels added now.
+  const paid = editing?.date ? editing.targets.map((t) => t.key) : [];
+  const cost = when === "draft" ? 0 : keys.filter((k) => !paid.includes(k)).length * POST_CREDITS;
   const problems = ((): Problem[] => {
     const out: Problem[] = [];
     if (!keys.length) out.push(["Pick at least one channel.", "channels"]);
@@ -245,11 +253,32 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     if (q.has("sample")) fillSample();
     // From Today's Ideas: the idea becomes the start of the caption; she adds the video.
     else if (q.get("idea")) { setMain(q.get("idea")!.slice(0, 200)); say("Idea added. Now add a video and channels."); }
+    else if (q.get("edit")) {
+      const p = postToEdit(q.get("edit")!);
+      if (!p) return;
+      setEditing(p);
+      setSource("upload");
+      setSample(p.seconds > 0);
+      setDurationSec(p.seconds || null);
+      setMain(p.caption);
+      setOwnComment(p.comment);
+      setPicked(new Set(p.targets.map((t) => t.key).filter((k) => connected.has(k))));
+      if (p.date) { setWhen("pick"); setPickAt(`${p.date}T${p.time}`); } else setWhen("draft");
+    }
   }, []);
 
   function submit() {
     setTried(true);
     if (problems.length) return jump(problems[0][1]);
+    if (editing) {
+      const [date, time] = when === "draft" ? ["", ""] : when === "pick" ? pickAt.split("T") : when === "now" ? ["2026-10-28", "09:20"] : ["2026-10-28", "20:00"];
+      const comment = apps.filter((p) => p !== "tiktok").map(commentOf)[0] ?? ownComment.trim();
+      saveEdit(
+        { ...editing, caption: mainFull.trim(), comment, date, time, targets: keys.map((k) => ({ key: k, status: date ? "scheduled" : "draft" })) },
+        !date ? "Draft saved" : `Saved. Goes out ${when === "pick" ? pretty(pickAt) : when === "now" ? "now" : RECOMMENDED}.`,
+      );
+      return router.push(setup.calendar);
+    }
     setBusy(when === "draft" ? "Saving…" : "Scheduling…");
     window.setTimeout(() => {
       setBusy("");
@@ -369,8 +398,8 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
               sample && !file ? (
                 <div className="pb-file">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={setup.sample.cover} alt="" />
-                  <span><b>{setup.sample.file}</b><small>9:16 · {setup.sample.seconds} seconds · sample</small><button type="button" className="pb-link" style={{ justifySelf: "start" }} onClick={() => { setSample(false); setDurationSec(null); }}>Replace video</button></span>
+                  <img src={vid.cover} alt="" />
+                  <span><b>{vid.file}</b><small>9:16 · {vid.seconds} seconds{editing ? "" : " · sample"}</small><button type="button" className="pb-link" style={{ justifySelf: "start" }} onClick={() => { setSample(false); setDurationSec(null); }}>Replace video</button></span>
                 </div>
               ) : (
                 <label className="np-drop"><input type="file" accept="video/mp4,video/quicktime,video/webm" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setDurationSec(null); setSample(false); }} /><span>{file ? `${file.name} · ${(file.size / 1048576).toFixed(1)} MB` : "Choose an MP4, MOV or WebM video (up to 50 MB)"}</span></label>
@@ -604,7 +633,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
           )}
           {ttKey && mode === "direct" && when !== "draft" && <p className="np-consent">{consentLine(promo.on, promo.branded)}</p>}
           <button type="submit" className="np-btn np-submit" disabled={!!busy}>
-            {busy || `${when === "draft" ? "Save draft" : when === "now" ? "Post now" : "Schedule"} · ${keys.length === 1 ? "1 channel" : `${keys.length} channels`}${when === "draft" ? "" : ` · ${cost} credits`}`}
+            {busy || editing ? busy || `Save changes${when === "draft" ? "" : ` · ${cost} credits`}` : `${when === "draft" ? "Save draft" : when === "now" ? "Post now" : "Schedule"} · ${keys.length === 1 ? "1 channel" : `${keys.length} channels`}${when === "draft" ? "" : ` · ${cost} credits`}`}
           </button>
           <p className="pb-cost">
             <Icon name="wallet" size={14} />
