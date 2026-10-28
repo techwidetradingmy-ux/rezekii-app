@@ -24,7 +24,7 @@ export default function DataProducts() {
             {topShare}% of your commission comes from one product, the {product(top.productId).name.toLowerCase()}. If its stock or rate
             changes, your income moves with it. One or two more strong products would spread the risk.
           </span>
-          <Link href="/app/opportunities/picks">See AI picks</Link>
+          <Link href="/app#ai-picks">See AI picks</Link>
         </div>
       )}
 
@@ -83,7 +83,7 @@ export default function DataProducts() {
                 {lowRated && <p className="cr2-note"><Icon name="star" size={15} /><span>Rated below 3.0. Buyers who are let down may trust your next video less.</span></p>}
 
                 {raise && (
-                  <Link href="/app/opportunities" className="cr2-uprate">
+                  <Link href="/app#scan" className="cr2-uprate">
                     <span>Better rate through Techwide for this product</span>
                     <b>{raise.nowRate === null ? "?" : `${raise.nowRate}%`} → {raise.tapRate}%</b>
                     <Icon name="arrow" size={16} />

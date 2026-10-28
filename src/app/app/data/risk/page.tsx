@@ -156,7 +156,7 @@ export default function DataRisk() {
               </div>
             );
           })}
-          <Link href="/app/opportunities/picks" className="v2-link" style={{ alignSelf: "flex-start" }}>Find a better-rated product instead</Link>
+          <Link href="/app#ai-picks" className="v2-link" style={{ alignSelf: "flex-start" }}>Find a better-rated product instead</Link>
         </section>
       </div>
     </div>

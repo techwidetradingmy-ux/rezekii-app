@@ -5,13 +5,15 @@ import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Hidden, Sheet, Title } from "@/components/ui";
-import { PoolTag } from "@/components/creator1/brand";
+import { POOL_ICON, PoolTag } from "@/components/creator1/brand";
 import { CREATOR, MY_SAMPLES, PRODUCTS, product, rm, type Product } from "@/lib/mock";
-import { POOLS, SAMPLE_LEFT, SELLER_CONDS, type Cond, type Pool } from "@/lib/mock-creator1";
-import "../../../creator1.css";
+import { POOLS, SAMPLE_ACCESS as ACCESS, SAMPLE_LEFT, SELLER_CONDS, type Cond, type Pool } from "@/lib/mock-creator1";
+import "@/app/creator1.css";
 
-type Filter = "All" | Pool;
 const WITH_SAMPLES = PRODUCTS.filter((p) => p.samples);
+const CATS = ["All", ...Array.from(new Set(WITH_SAMPLES.map((p) => p.category)))];
+const POOL_KEYS = Object.keys(POOLS) as Pool[];
+
 const unfinished = MY_SAMPLES.find((s) => s.status === "Posting");
 const unfinishedName = unfinished ? product(unfinished.productId).name : "";
 
@@ -31,10 +33,13 @@ function conditionsFor(p: Product): Cond[] {
   return [...base, ...(SELLER_CONDS[p.id] ?? [])];
 }
 
-/** Sample market (blueprint W6b): every product with a free sample, its pool and conditions, and an honest warning before a likely no. */
-export default function SampleMarket() {
+/** Marketplace (blueprint W6b): free samples for the showcase, filtered by access, category or search; conditions and an honest warning before a likely no. */
+export default function Marketplace() {
   const { linked, setLinked, toast } = useDemo();
-  const [filter, setFilter] = useState<Filter>("All");
+  const [q, setQ] = useState("");
+  const [cat, setCat] = useState("All");
+  const [pool, setPool] = useState<Pool | null>(null);
+  const [info, setInfo] = useState(false);
   const [sel, setSel] = useState<Product | null>(null);
   const [step, setStep] = useState<"detail" | "warn" | "sent">("detail");
   const [requested, setRequested] = useState<string[]>([]);
@@ -57,8 +62,8 @@ export default function SampleMarket() {
     setStep("sent");
   }
 
-  const list = WITH_SAMPLES.filter((p) => filter === "All" || p.samples === filter);
-  const n = (f: Filter) => WITH_SAMPLES.filter((p) => f === "All" || p.samples === f).length;
+  const term = q.trim().toLowerCase();
+  const list = WITH_SAMPLES.filter((p) => (!pool || p.samples === pool) && (cat === "All" || p.category === cat) && (!term || `${p.name} ${p.shop}`.toLowerCase().includes(term)));
   const conds = sel ? conditionsFor(sel) : [];
   const unmet = conds.filter((c) => !c.ok);
   // Open samples she doesn't already have, same category first.
@@ -68,65 +73,93 @@ export default function SampleMarket() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 20 }}>
-      <Title title="Sample market" sub="Free samples from sellers in Techwide's TAP campaigns. 1 sample = 3 videos.">
-        <Link href="/app/opportunities/my-samples" className="btn-outline v2-btn-sm">My samples <span className="badge">{MY_SAMPLES.filter((s) => !["Done", "Not approved"].includes(s.status)).length}</span></Link>
+      <Title title="Marketplace" sub="Free samples for your showcase. Get one, post 3 videos, keep it.">
+        <Link href="/app/account#samples" className="btn-outline v2-btn-sm">My samples <span className="badge">{MY_SAMPLES.filter((s) => !["Done", "Not approved"].includes(s.status)).length}</span></Link>
       </Title>
 
-      <section className="v2-card cr1-me">
-        <div className="cr1-me-top">
-          <span className="v2-av" style={{ width: 44, height: 44, fontSize: 15 }}>{CREATOR.initials}</span>
-          <span>
-            <b>Where you stand</b>
-            <small>{CREATOR.activity} · {CREATOR.streak}-day streak · {CREATOR.level} · TikTok Lv.{CREATOR.tiktokLevel}</small>
-          </span>
-          <span className="cr1-flamechip"><Icon name="flame" size={16} /> {CREATOR.streak} days</span>
+      <div className="mk-hero">
+        <label className="mk-search">
+          <Icon name="search" size={18} />
+          <input className="np-input" type="search" placeholder="Search free samples" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search free samples" />
+        </label>
+        <div className="mk-tiers" role="group" aria-label="Sample access: tap to filter">
+          {POOL_KEYS.map((k) => (
+            <button
+              key={k}
+              type="button"
+              className={`mk-tier ${pool === k ? "on" : ""}`}
+              aria-pressed={pool === k}
+              aria-label={`${POOLS[k].label} samples: ${ACCESS[k] ? "you can get these" : `day ${CREATOR.streak} of 30`}`}
+              title={`${POOLS[k].label}: ${ACCESS[k] ? "you can get these" : `day ${CREATOR.streak} of 30`}`}
+              onClick={() => setPool(pool === k ? null : k)}
+            >
+              <span className={`mk-ic ${k}`}><Icon name={POOL_ICON[k]} size={18} width={2.3} /></span>
+              <span className={`mk-st ${ACCESS[k] ? "" : "wait"}`}>{ACCESS[k] ? <Icon name="check" size={10} width={3.6} /> : `${CREATOR.streak}/30`}</span>
+            </button>
+          ))}
+          <button type="button" className="mk-tier info" aria-label="How sample access works" onClick={() => setInfo(true)}><b style={{ fontSize: 18 }}>?</b></button>
         </div>
-        <div className="cr1-pools">
-          {(Object.keys(POOLS) as Pool[]).map((k) => {
-            const ok = k !== "designated";
-            return (
-              <div key={k} className={`cr1-pool ${ok ? "ok" : ""}`}>
-                <span className="v2-row" style={{ justifyContent: "space-between", gap: 6 }}>
-                  <b>{POOLS[k].label}</b>
-                  {ok ? <span className="badge"><Icon name="check" size={12} width={3} />&nbsp;You qualify</span> : <span className="badge badge-amber">Day {CREATOR.streak} of 30</span>}
-                </span>
-                <small>{POOLS[k].line}</small>
-              </div>
-            );
-          })}
-        </div>
-        <p className="cr1-rule">
-          <Icon name="shield" size={16} /> Anyone can request any sample; the Techwide team approves. Requests need a complete basic profile (name, state,
-          WhatsApp). Yours is complete.
+      </div>
+
+      <div className="mk-cats nv-noscroll" role="group" aria-label="Category">
+        {CATS.map((c) => (
+          <button key={c} type="button" className={`v2-chip ${cat === c ? "on" : ""}`} aria-pressed={cat === c} onClick={() => setCat(c)}>
+            {c} <small>{WITH_SAMPLES.filter((p) => (c === "All" || p.category === c) && (!pool || p.samples === pool)).length}</small>
+          </button>
+        ))}
+      </div>
+
+      {pool && (
+        <p className="v2-small" style={{ margin: "-6px 0 0", display: "flex", alignItems: "center", gap: 8 }}>
+          <PoolTag pool={pool} /> {POOLS[pool].who} only.
+          <button type="button" className="v2-link" onClick={() => setPool(null)}>Show all</button>
         </p>
-      </section>
+      )}
 
-      <div className="v2-chips" role="group" aria-label="Filter by sample pool">
-        {(["All", "open", "advanced", "designated"] as Filter[]).map((f) => (
-          <button key={f} type="button" className={`v2-chip ${filter === f ? "on" : ""}`} aria-pressed={filter === f} onClick={() => setFilter(f)}>
-            {f === "All" ? "All" : POOLS[f].label} <small>{n(f)}</small>
-          </button>
-        ))}
+      <div className="mk-grid">
+        {list.map((p, i) => {
+          const left = SAMPLE_LEFT[p.id] ?? 10;
+          return (
+            <button key={p.id} type="button" className="mk-card" style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }} onClick={() => open(p)}>
+              <span className="mk-img">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={p.img} alt="" />
+                <PoolTag pool={p.samples as Pool} label={false} />
+                <span className="mk-free">FREE</span>
+                {requested.includes(p.id) && <span className="cr1-reqd"><Icon name="check" size={13} width={3} /> Requested</span>}
+              </span>
+              <strong>{p.name}</strong>
+              <span className="mk-row"><span>Earn <b><Hidden>{p.tapRate}%</Hidden></b></span><span>{rm(p.price)}</span></span>
+              <span className="mk-left">
+                {left} left
+                <i><span style={{ width: `${Math.min(100, (left / 50) * 100)}%` }} /></i>
+              </span>
+            </button>
+          );
+        })}
       </div>
+      {list.length === 0 && (
+        <div className="v2-card flat" style={{ alignItems: "flex-start" }}>
+          <b>No samples match</b>
+          <span className="v2-muted">Try another category, or clear your search.</span>
+          <button type="button" className="np-btn v2-btn-sm" onClick={() => { setQ(""); setCat("All"); setPool(null); }}>Show all samples</button>
+        </div>
+      )}
 
-      <div className="v2-pgrid">
-        {list.map((p) => (
-          <button key={p.id} type="button" className="v2-pcard cr1-scard" onClick={() => open(p)}>
-            <span className="cr1-scard-img">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={p.img} alt="" />
-              {requested.includes(p.id) && <span className="cr1-reqd"><Icon name="check" size={13} width={3} /> Requested</span>}
-            </span>
-            <PoolTag pool={p.samples as Pool} />
-            <strong>{p.name}</strong>
-            <span className="v2-row" style={{ gap: 6, justifyContent: "space-between" }}>
-              <span className="badge badge-gray">Earn <Hidden>{p.tapRate}%</Hidden></span>
-              <small>{rm(p.price)}</small>
-            </span>
-            <small>{SAMPLE_LEFT[p.id] ?? 10} samples left</small>
-          </button>
-        ))}
-      </div>
+      {info && (
+        <Sheet title="Who can get which samples" onClose={() => setInfo(false)}>
+          <ul className="mk-tierinfo">
+            {POOL_KEYS.map((k) => (
+              <li key={k}>
+                <span className={`mk-ic ${k}`}><Icon name={POOL_ICON[k]} size={20} width={2.3} /></span>
+                <span><b>{POOLS[k].label}</b><small>{POOLS[k].line}</small></span>
+                {ACCESS[k] ? <span className="badge"><Icon name="check" size={12} width={3} /> You</span> : <span className="badge badge-amber">Day {CREATOR.streak} of 30</span>}
+              </li>
+            ))}
+          </ul>
+          <p className="v2-small" style={{ margin: 0 }}>Anyone can request any sample; the Techwide team approves. You need a complete basic profile (name, state, WhatsApp). Yours is complete.</p>
+        </Sheet>
+      )}
 
       {sel && (
         <Sheet title={step === "warn" ? "Before you request" : step === "sent" ? "Request sent" : "Free sample"} onClose={() => setSel(null)}>
@@ -217,10 +250,10 @@ export default function SampleMarket() {
               <span className="v2-medal green" style={{ width: 84, height: 84 }}><Icon name="send" size={34} width={2.2} /></span>
               <b>We opened TikTok&apos;s request for you</b>
               <p className="v2-muted" style={{ margin: 0 }}>
-                The Techwide team reviews it and you&apos;ll hear back in Notifications. Track it in My samples: Applied → Approved → Shipped → Received.
+                The Techwide team reviews it and you&apos;ll hear back in Notifications. Track it in My account, Samples & delivery: Applied → Approved → Shipped → Received.
               </p>
               <div className="v2-row" style={{ justifyContent: "center" }}>
-                <Link href="/app/opportunities/my-samples" className="np-btn v2-btn-sm">Go to My samples</Link>
+                <Link href="/app/account#samples" className="np-btn v2-btn-sm">Go to My samples</Link>
                 <button type="button" className="btn-outline v2-btn-sm" onClick={() => setSel(null)}>Keep browsing</button>
               </div>
             </div>

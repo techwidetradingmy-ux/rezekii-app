@@ -21,17 +21,17 @@ type Feat = { icon: IconName; bg: string; title: string; line: string; demo: Rea
 const FEATS: Feat[] = [
   {
     icon: "scan", bg: "linear-gradient(135deg,#22dc95,#00a862)", title: "Scan & one-tap raise",
-    line: "We check every product you promote. Where Techwide pays more for the same product, switch in one tap.",
-    demo: <span className="cr1-d-rate"><s>12%</s><Icon name="arrow" size={16} /><b>20%</b><span className="badge">+8 pts</span></span>,
+    line: "We check every product you promote. Where Techwide pays more for the same product, add them all in one tap. Often +1%, sometimes more.",
+    demo: <span className="cr1-d-rate"><s>6%</s><Icon name="arrow" size={16} /><b>7%</b><span className="badge">from +1%</span></span>,
   },
   {
     icon: "spark", bg: "linear-gradient(135deg,#b48cff,#6d28d9)", title: "AI picks",
-    line: "What to promote next, with the reason written out. For Silver and Gold creators.",
-    demo: <span className="cr1-d-seq"><span className="cr1-srcchip data">Your data</span><span className="cr1-srcchip tap">Techwide TAP</span><span className="cr1-srcchip trend">TikTok trending</span></span>,
+    line: "The AI reads your sales, compares TikTok Shop's best-sellers and tells you what to sell next, on video or on LIVE.",
+    demo: <span className="cr1-d-seq"><span className="cr1-d-chip"><Icon name="video" size={13} /> Video 3.4%</span><span className="cr1-d-chip live">LIVE 6.3%</span><span className="cr1-d-chip">Match 96</span></span>,
   },
   {
     icon: "gift", bg: "linear-gradient(135deg,#7aa2ff,#1d4ed8)", title: "Free samples",
-    line: "Open, Advanced and Designated samples. Post 3 videos per sample, and post early for a bonus.",
+    line: "A marketplace of free samples for your showcase. Post 3 videos per sample, and post early for a bonus.",
     demo: <span className="cr1-d-vids"><i /><i /><i /><small>3 videos per sample</small></span>,
   },
   {
@@ -109,7 +109,7 @@ export default function Landing() {
             <h1>Your showcase may have <em>higher commission</em> waiting</h1>
             <p>
               Rezekii checks every product you already promote against Techwide&apos;s TikTok Shop campaigns. Where the same product pays more, you
-              switch in one tap.
+              add them all in one tap. Often +1%, sometimes +5% or more, depending on the product, your level and your sales.
             </p>
             <div className="hero-ctas">
               <Link href="/signin" className="np-btn cr1-bigbtn">Check my showcase free <Icon name="arrow" size={20} /></Link>

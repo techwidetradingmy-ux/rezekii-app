@@ -269,3 +269,15 @@ export function Empty({ title, line, href, cta }: { title: string; line: string;
     </div>
   );
 }
+
+/** The AI mark: a turning colour orb with a sparkle, shown wherever the AI speaks. `busy` spins faster while it works. */
+export function AiMark({ size = 44, busy = false }: { size?: number; busy?: boolean }) {
+  return (
+    <span className={`v2-aimark ${busy ? "busy" : ""}`} style={{ width: size, height: size }} aria-hidden="true">
+      <svg viewBox="0 0 24 24" width={Math.round(size * 0.54)} height={Math.round(size * 0.54)}>
+        <path d="M11 3Q12 11 20 12Q12 13 11 21Q10 13 2 12Q10 11 11 3Z" fill="currentColor" />
+        <path className="s2" d="M19 1.5Q19.3 4.7 22.5 5Q19.3 5.3 19 8.5Q18.7 5.3 15.5 5Q18.7 4.7 19 1.5Z" fill="currentColor" />
+      </svg>
+    </span>
+  );
+}

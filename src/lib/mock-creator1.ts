@@ -1,5 +1,5 @@
 /**
- * Extra sample data for the creator site, sign-in and Opportunities screens (cr1). Invented people, shops and numbers;
+ * Extra sample data for the creator site, sign-in, scan results and Marketplace screens (cr1). Invented people, shops and numbers;
  * nothing is read from or sent to TikTok.
  */
 import type { IconName } from "@/components/icons";
@@ -38,7 +38,7 @@ export const STORIES = [
     handle: "@kak.ros.kitchen", name: "Rosnah Ismail", initials: "RI", state: "Johor", level: "Gold", bg: "linear-gradient(135deg,#ffb35c,#f08a00)",
     big: "12", bigLabel: "better rates in her first scan",
     quote: "I had more than 300 kitchen products in my showcase and never checked the rates. The first scan found 12 paying more through Techwide. I added all of them before lunch.",
-    facts: [["RM 6,420", "commission in Sept"], ["RM 4,280", "in Aug, before"]],
+    facts: [["12", "products paying more"], ["+1% to +4%", "more per product"]],
   },
   {
     handle: "@mei.ling.deals", name: "Tan Mei Ling", initials: "TM", state: "Kuala Lumpur", level: "Silver", bg: "linear-gradient(135deg,#7aa2ff,#1d4ed8)",
@@ -55,6 +55,7 @@ export const STORIES = [
 ] as const;
 
 export const FAQS: [string, string][] = [
+  ["How much more commission will I get?", "It depends, and it isn't guaranteed. Many products pay +1% more through Techwide; some pay +5% or +10% more. The rate depends on the product, your level (Bronze, Silver or Gold) and your sales. Some products have no better rate at all. You always see the exact rate before you add."],
   ["Is Rezekii free?", "Yes. Rezekii is free for creators. TikTok Shop pays your commission as usual; we don't take a cut of it."],
   ["What does linking TikTok Shop let you do?", "Read the products in your showcase and their commission, your orders and your sample status, so we can find better rates and show your numbers. We never post, remove or change anything unless you tap the button yourself."],
   ["What is TAP?", "TikTok Shop's Affiliate Partner campaigns. Techwide runs TAP campaigns with sellers, and many of them pay more than the rate open to everyone. Your level (Bronze, Silver or Gold) decides which rate you get."],
@@ -72,23 +73,10 @@ export const NOT_ELIGIBLE: Record<string, string> = {
 };
 
 /** What a fresh scan finds in this preview. */
-export const NEW_ON_RESCAN: Raise = { id: "r7", productId: "p16", nowRate: 6, tapRate: 10, until: "31 Dec", eligible: true };
+export const NEW_ON_RESCAN: Raise = { id: "r7", productId: "p16", nowRate: 6, tapRate: 8, until: "31 Dec", eligible: true };
 
 /** A product TikTok refused to add; it stays hidden from results for 30 days. */
 export const REFUSED = { productId: "p17", tiktok: "Adding product failed. Please contact TikTok.", hiddenUntil: "27 Nov" };
-
-/* ---------------- AI picks ---------------- */
-
-export const SOURCES: Record<"your-data" | "tap" | "trending", { label: string; icon: IconName; cls: string; line: string }> = {
-  "your-data": { label: "Your data", icon: "chart", cls: "data", line: "From your own sales, videos and audience" },
-  tap: { label: "Techwide TAP", icon: "tag", cls: "tap", line: "Better commission through Techwide's campaigns" },
-  trending: { label: "TikTok trending", icon: "flame", cls: "trend", line: "TikTok's public best-seller lists in Malaysia" },
-};
-
-export const NOT_INTERESTED = ["Not my category", "Too pricey for my audience", "I already promote something similar", "Commission is too low", "Poor reviews", "Something else"];
-
-/** A Bronze creator, for the preview of what Bronze sees instead of picks. */
-export const BRONZE_PREVIEW = { tiktokLevel: 3, levelNeeded: 4, sales: 6200, salesNeeded: 10000 };
 
 /* ---------------- Samples ---------------- */
 
@@ -98,6 +86,9 @@ export const POOLS: Record<Pool, { label: string; who: string; line: string; bad
   advanced: { label: "Advanced", who: "Active creators", line: "For Active creators: posting 10 days in a row.", badge: "badge-blue" },
   designated: { label: "Designated", who: "Highly active creators", line: "For Highly active creators: posting 30 days in a row with every sample delivered (3 of 3 videos). The seller's own conditions apply too.", badge: "badge-amber" },
 };
+
+/** Aisyah is Active (16-day streak): Open and Advanced samples are hers; Designated needs Highly active (30 days). */
+export const SAMPLE_ACCESS: Record<Pool, boolean> = { open: true, advanced: true, designated: false };
 
 export type Cond = { label: string; ok: boolean; you: string };
 /** The seller's own conditions on top of the pool rules (by product id). */
@@ -118,10 +109,10 @@ export const SAMPLE_LEFT: Record<string, number> = { p01: 18, p02: 40, p04: 9, p
 
 export type Note = { id: string; day: "Today" | "Earlier"; when: string; icon: IconName; bg: string; title: string; line: string; href?: string; cta: string; action?: "reconnect" };
 export const NOTES: Note[] = [
-  { id: "n1", day: "Today", when: "10:24", icon: "gift", bg: "linear-gradient(135deg,#7aa2ff,#1d4ed8)", title: "Sample approved: High-waist yoga pants", line: "Urban Basics MY will ship it through TikTok. Post your first video within 1 day of receiving it for the biggest bonus.", href: "/app/opportunities/my-samples", cta: "See sample" },
-  { id: "n2", day: "Today", when: "09:12", icon: "scan", bg: "linear-gradient(135deg,#22dc95,#00a862)", title: "New commission chance: Straight-leg casual pants", line: "Already in your showcase. 6% now, 10% through Techwide until 31 Dec.", href: "/app/opportunities", cta: "See scan results" },
+  { id: "n1", day: "Today", when: "10:24", icon: "gift", bg: "linear-gradient(135deg,#7aa2ff,#1d4ed8)", title: "Sample approved: High-waist yoga pants", line: "Urban Basics MY will ship it through TikTok. Post your first video within 1 day of receiving it for the biggest bonus.", href: "/app/account#samples", cta: "See sample" },
+  { id: "n2", day: "Today", when: "09:12", icon: "scan", bg: "linear-gradient(135deg,#22dc95,#00a862)", title: "New commission chance: Straight-leg casual pants", line: "Already in your showcase. 6% now, 10% through Techwide until 31 Dec.", href: "/app#scan", cta: "See scan results" },
   { id: "n3", day: "Today", when: "08:40", icon: "alert", bg: "linear-gradient(135deg,#ffb35c,#f08a00)", title: "Reconnect TikTok Shop in 5 days", line: "TikTok asks you to approve access again every year. Reconnect so scans and commission numbers keep working.", cta: "Reconnect", action: "reconnect" },
   { id: "n4", day: "Earlier", when: "Yesterday 21:40", icon: "trophy", bg: "linear-gradient(135deg,#ffd34d,#e8a400)", title: "Mission done: Post today (tier 3)", line: "+20 credits are in your wallet. 2 more posts today opens the next chest.", href: "/app/rewards", cta: "See missions" },
-  { id: "n5", day: "Earlier", when: "Yesterday 18:05", icon: "video", bg: "linear-gradient(135deg,#ff7aa8,#e8005a)", title: "Video counted: 1.2L 316 stainless thermos", line: "2 of 3 videos done. One more by 2 Nov.", href: "/app/opportunities/my-samples", cta: "See progress" },
-  { id: "n6", day: "Earlier", when: "26 Oct", icon: "x", bg: "linear-gradient(135deg,#9aa8a1,#62716a)", title: "Sample not approved: Granite casserole pot", line: "Designated samples go to Highly active creators. Keep posting daily: 14 more days to get there.", href: "/app/opportunities/my-samples", cta: "What to do" },
+  { id: "n5", day: "Earlier", when: "Yesterday 18:05", icon: "video", bg: "linear-gradient(135deg,#ff7aa8,#e8005a)", title: "Video counted: 1.2L 316 stainless thermos", line: "2 of 3 videos done. One more by 2 Nov.", href: "/app/account#samples", cta: "See progress" },
+  { id: "n6", day: "Earlier", when: "26 Oct", icon: "x", bg: "linear-gradient(135deg,#9aa8a1,#62716a)", title: "Sample not approved: Granite casserole pot", line: "Designated samples go to Highly active creators. Keep posting daily: 14 more days to get there.", href: "/app/account#samples", cta: "What to do" },
 ];

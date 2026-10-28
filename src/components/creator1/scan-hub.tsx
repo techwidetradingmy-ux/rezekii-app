@@ -3,17 +3,23 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { Count, Hidden, Lock, Sheet, Stat, Title } from "@/components/ui";
-import { ScanAnim } from "@/components/creator1/scan";
+import { Count, Hidden, Lock, Sheet } from "@/components/ui";
 import { CREATOR, RAISES, SIMILAR, product, rm, type Raise } from "@/lib/mock";
 import { NEW_ON_RESCAN, NOT_ELIGIBLE, REFUSED } from "@/lib/mock-creator1";
-import "../../creator1.css";
 
 type Bulk = { phase: "working" | "done"; ids: string[]; doneIds: string[]; skipped: Raise[] };
 type Pending = { id: string; productId: string; tapRate: number; state: "checking" | "confirmed" };
 
-/** Scan results (blueprint W4): same products paying more through Techwide, then similar products. One tap to add. */
-export default function ScanResults() {
+/** Where each better rate sits on the radar: angle (deg, clockwise from the top) and distance from the centre (0–1). */
+const BLIPS: [number, number][] = [[38, 0.72], [104, 0.5], [162, 0.8], [228, 0.6], [292, 0.78], [334, 0.42], [70, 0.86]];
+const SWEEP_S = 4;
+const SCAN_MS = 4200;
+
+/**
+ * Home's scanner (blueprint W4): the showcase scan as a live radar, every better rate on the same products, one tap to add
+ * them all, then similar products. Replaces the separate Scan results page.
+ */
+export function ScanHub() {
   const { linked, setLinked, toast } = useDemo();
   const [rows, setRows] = useState<Raise[]>(RAISES);
   const [leaving, setLeaving] = useState<string[]>([]);
@@ -21,6 +27,7 @@ export default function ScanResults() {
   const [pending, setPending] = useState<Pending[]>([]);
   const [simAdded, setSimAdded] = useState<string[]>([]);
   const [scanning, setScanning] = useState(false);
+  const [scanKey, setScanKey] = useState(0);
   const [last, setLast] = useState("today 09:12");
   const [bulk, setBulk] = useState<Bulk | null>(null);
   const [asked, setAsked] = useState<string[]>([]);
@@ -30,6 +37,7 @@ export default function ScanResults() {
   const later = (fn: () => void, ms: number) => timers.current.push(window.setTimeout(fn, ms));
 
   const eligible = rows.filter((r) => r.eligible && !leaving.includes(r.id));
+  const better = rows.length;
 
   /** Animate rows out, then move them to "Added today", where TikTok confirms them a moment later. */
   function leave(ids: string[]) {
@@ -39,12 +47,6 @@ export default function ScanResults() {
       setPending((p) => [...rows.filter((r) => ids.includes(r.id)).map((r) => ({ id: r.id, productId: r.productId, tapRate: r.tapRate, state: "checking" as const })), ...p]);
     }, 430);
     later(() => setPending((p) => p.map((x) => (ids.includes(x.id) ? { ...x, state: "confirmed" } : x))), 3200);
-  }
-
-  function add(r: Raise) {
-    if (!linked) return setLinked(true);
-    leave([r.id]);
-    toast("Added. We re-read your showcase right away; it disappears once it's confirmed under Techwide");
   }
 
   function addAll() {
@@ -64,14 +66,9 @@ export default function ScanResults() {
   }
 
   function scanAgain() {
-    if (!linked) {
-      toast("Link TikTok Shop first, then we can scan your showcase");
-      return;
-    }
+    if (!linked) return setLinked(true);
     setScanning(true);
-  }
-
-  function scanDone() {
+    setScanKey((k) => k + 1);
     later(() => {
       setScanning(false);
       setLast("just now");
@@ -81,50 +78,71 @@ export default function ScanResults() {
         setFresh([NEW_ON_RESCAN.id]);
         toast("Scan finished: 1 new better rate");
       } else toast("Scan finished: nothing new since your last scan");
-    }, 700);
+    }, SCAN_MS);
   }
 
   const refused = product(REFUSED.productId);
-  const better = rows.length;
 
   return (
-    <div className="v2-stack v2-in" style={{ gap: 20 }}>
-      <Title title="Scan results" sub={<>Last scan {last} · {CREATOR.showcaseSize.toLocaleString("en-MY")} products · rates for {CREATOR.level}</>}>
-        <button type="button" className="np-btn v2-btn-sm" onClick={scanAgain} disabled={scanning}>
-          <Icon name="refresh" size={17} /> {scanning ? "Scanning…" : "Scan again"}
-        </button>
-      </Title>
-
-      {scanning && (
-        <section className="v2-card cr1-scanning">
-          <div className="v2-card-h">
-            <h2 className="v2-h2">Scanning your showcase</h2>
-            <span className="cr1-live"><i />Live</span>
+    <div className="v2-stack" style={{ gap: 14 }} id="scan">
+      <section className={`sh-hub ${scanning ? "busy" : ""}`} aria-label="Showcase scanner">
+        <span className="sh-grid" aria-hidden="true" />
+        <div className="sh-left">
+          <span className="sh-kicker"><i />{scanning ? "Scanning your showcase…" : "Showcase scanner"}</span>
+          <h2>
+            <b><Count key={scanKey} value={linked ? CREATOR.showcaseSize : 0} ms={scanning ? SCAN_MS - 300 : 900} /></b> products checked
+          </h2>
+          <p>{linked ? `Last scan ${last} · rates for your level (${CREATOR.level})` : "Link TikTok Shop and we check every product you promote"}</p>
+          <div className="sh-stats">
+            <span><b>{linked ? better : "–"}</b><small>better rates</small></span>
+            <span><b>{linked ? eligible.length : "–"}</b><small>ready to add</small></span>
+            <span><b>{SIMILAR.length}</b><small>similar products</small></span>
           </div>
-          <ScanAnim variant="inline" ms={5200} onDone={scanDone} />
-          <p className="v2-small" style={{ margin: 0 }}>You can leave this page. We&apos;ll tell you in Notifications when it&apos;s done.</p>
-        </section>
-      )}
+          <div className="sh-acts">
+            {!linked ? (
+              <button type="button" className="sh-go" onClick={() => setLinked(true)}>Link TikTok Shop <Icon name="arrow" size={18} /></button>
+            ) : eligible.length > 0 ? (
+              <button type="button" className="sh-go" onClick={addAll} disabled={scanning}><Icon name="plus" size={18} width={2.6} /> Add all {eligible.length} in one tap</button>
+            ) : (
+              <span className="sh-clear"><Icon name="check" size={16} width={3} /> All better rates added</span>
+            )}
+            <button type="button" className="sh-again" onClick={scanAgain} disabled={scanning}>
+              <Icon name="refresh" size={16} /> {scanning ? "Scanning…" : "Scan again"}
+            </button>
+          </div>
+        </div>
 
-      <div className="cr1-stats">
-        <Stat label="Products checked" value={<Count value={CREATOR.showcaseSize} />} note={`Last scan ${last}`} />
-        <Stat label="Better rates" value={better} note="Same product, more through TAP" tone="up" />
-        <Stat label="Ready to add" value={eligible.length} note={eligible.length ? "You meet the conditions" : "All added"} />
-        <Stat label="Similar products" value={SIMILAR.length} note="Different listing, in TAP" />
-      </div>
+        <div className="sh-radar" aria-hidden="true" style={{ "--sweep": `${scanning ? 1.2 : SWEEP_S}s` } as React.CSSProperties}>
+          <span className="sh-rings" />
+          <span className="sh-sweep" />
+          <span className="sh-core"><Icon name="scan" size={22} /></span>
+          {linked &&
+            rows.slice(0, BLIPS.length).map((r, i) => {
+              const [deg, dist] = BLIPS[i];
+              const rad = (deg * Math.PI) / 180;
+              const p = product(r.productId);
+              return (
+                <span
+                  key={r.id}
+                  className={`sh-blip ${leaving.includes(r.id) ? "out" : ""}`}
+                  style={{ left: `${50 + Math.sin(rad) * dist * 46}%`, top: `${50 - Math.cos(rad) * dist * 46}%`, animationDelay: `${(deg / 360) * SWEEP_S}s` }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={p.img} alt="" />
+                  <em>{r.nowRate === null ? "?" : `${r.nowRate}`}→<Hidden>{r.tapRate}%</Hidden></em>
+                </span>
+              );
+            })}
+        </div>
+      </section>
 
       <section className="v2-card">
         <div className="v2-card-h">
-          <h2 className="v2-h2">Better commission on products you already promote <span className="badge">{better}</span></h2>
-          {eligible.length > 0 && (
-            <button type="button" className="np-btn v2-btn-sm" onClick={addAll}>
-              <Icon name="plus" size={17} /> Add all eligible ({eligible.length})
-            </button>
-          )}
+          <h2 className="v2-h2">Same products, better commission <span className="badge">{better}</span></h2>
         </div>
         <p className="v2-small" style={{ margin: 0 }}>
-          The same listing, paying more through Techwide&apos;s TAP campaign. <b>Your rate</b>{" "}is what TikTok gives you in your showcase today;
-          when we can&apos;t read it, we say so instead of guessing.
+          Products already in your showcase, paying more through Techwide&apos;s TAP campaigns. <b>Your rate</b>{" "}is what TikTok gives you today;
+          when we can&apos;t read it, we say so. How much more depends on the product, your level and your sales: often +1%, sometimes more.
         </p>
         <Lock what="your scan results">
           <div className="v2-divide">
@@ -145,11 +163,7 @@ export default function ScanResults() {
                       <span className="cr1-rate"><small>Your rate</small><b className="was">{r.nowRate === null ? "Unknown" : `${r.nowRate}%`}</b></span>
                       <Icon name="arrow" size={16} />
                       <span className="cr1-rate"><small>Through Techwide</small><b className="now"><Hidden>{r.tapRate}%</Hidden></b></span>
-                      {r.nowRate === null ? (
-                        <span className="badge badge-gray">Can&apos;t compare</span>
-                      ) : (
-                        <span className="badge">+<Hidden>{r.tapRate - r.nowRate}</Hidden> pts</span>
-                      )}
+                      {r.nowRate === null && <span className="badge badge-gray">Can&apos;t compare</span>}
                     </div>
                     {r.eligible ? (
                       <small className="cr1-elig"><Icon name="check" size={14} width={3} /> You&apos;re eligible</small>
@@ -158,11 +172,7 @@ export default function ScanResults() {
                     )}
                   </div>
                   <div className="cr1-raise-act">
-                    {r.eligible ? (
-                      <button type="button" className="np-btn v2-btn-sm" onClick={() => add(r)} disabled={out}>
-                        {out ? <><Icon name="check" size={16} /> Added</> : "Add"}
-                      </button>
-                    ) : (
+                    {!r.eligible && (
                       <button
                         type="button"
                         className="btn-outline v2-btn-sm"
@@ -172,6 +182,7 @@ export default function ScanResults() {
                         {asked.includes(r.id) ? "Asked" : "Ask Techwide"}
                       </button>
                     )}
+                    {r.eligible && out && <span className="badge cr1-inline"><Icon name="check" size={13} width={3} /> Added</span>}
                   </div>
                 </div>
               );
@@ -199,47 +210,54 @@ export default function ScanResults() {
             </div>
           </div>
         </Lock>
-      </section>
 
-      {pending.length > 0 && (
-        <section className="v2-card cr1-pending">
-          <div className="v2-card-h">
-            <h2 className="v2-h2">Added today</h2>
-            <span className="v2-small">Counts toward missions and level once it&apos;s live</span>
+        {pending.length > 0 && (
+          <div className="cr1-pending">
+            <h3 className="v2-h2" style={{ fontSize: 16 }}>Added today</h3>
+            <div className="v2-divide">
+              {pending.map((x) => {
+                const p = product(x.productId);
+                return (
+                  <div key={x.id} className="v2-prow">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={p.img} alt="" />
+                    <span>
+                      <strong>{p.name}</strong>
+                      <small>Now <Hidden>{x.tapRate}%</Hidden> through Techwide</small>
+                    </span>
+                    <span className="v2-acts">
+                      {x.state === "checking" ? (
+                        <span className="badge badge-amber cr1-inline"><span className="cr1-spin xs" aria-hidden="true" /> Checking with TikTok</span>
+                      ) : (
+                        <span className="badge cr1-inline cr1-pop"><Icon name="check" size={13} width={3} /> Live under Techwide</span>
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          <div className="v2-divide">
-            {pending.map((x) => {
-              const p = product(x.productId);
-              return (
-                <div key={x.id} className="v2-prow">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p.img} alt="" />
-                  <span>
-                    <strong>{p.name}</strong>
-                    <small>Now <Hidden>{x.tapRate}%</Hidden> through Techwide</small>
-                  </span>
-                  <span className="v2-acts">
-                    {x.state === "checking" ? (
-                      <span className="badge badge-amber cr1-inline"><span className="cr1-spin xs" aria-hidden="true" /> Checking with TikTok</span>
-                    ) : (
-                      <span className="badge cr1-inline cr1-pop"><Icon name="check" size={13} width={3} /> Live under Techwide</span>
-                    )}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
+        )}
+      </section>
 
       <section className="v2-card">
         <div className="v2-card-h">
           <h2 className="v2-h2">Similar products <span className="badge badge-gray">{SIMILAR.length}</span></h2>
+          {simAdded.length < SIMILAR.length && (
+            <button
+              type="button"
+              className="btn-outline v2-btn-sm"
+              onClick={() => {
+                if (!linked) return setLinked(true);
+                setSimAdded([...SIMILAR]);
+                toast(`Added ${SIMILAR.length} similar products to your showcase`);
+              }}
+            >
+              <Icon name="plus" size={16} /> Add all {SIMILAR.length}
+            </button>
+          )}
         </div>
-        <p className="v2-small" style={{ margin: 0 }}>
-          A different listing in the same category at a similar price, in Techwide&apos;s TAP campaigns. These go straight into your showcase, so
-          there&apos;s no rate to compare.
-        </p>
+        <p className="v2-small" style={{ margin: 0 }}>A different listing in the same category at a similar price, in Techwide&apos;s campaigns. No rate to compare.</p>
         <div className="v2-divide">
           {SIMILAR.map((id) => {
             const p = product(id);
@@ -254,33 +272,20 @@ export default function ScanResults() {
                 </span>
                 <span className="v2-acts">
                   <span className="badge">Earn <Hidden>{p.tapRate}%</Hidden></span>
-                  <button
-                    type="button"
-                    className={done ? "btn-outline v2-btn-sm" : "np-btn v2-btn-sm"}
-                    disabled={done}
-                    onClick={() => {
-                      if (!linked) return setLinked(true);
-                      setSimAdded((s) => [...s, id]);
-                      toast(`Added to your showcase: ${p.name}`);
-                    }}
-                  >
-                    {done ? <><Icon name="check" size={16} /> Added</> : "Add to showcase"}
-                  </button>
+                  {done && <span className="badge cr1-inline"><Icon name="check" size={13} width={3} /> Added</span>}
                 </span>
               </div>
             );
           })}
         </div>
-      </section>
-
-      <section className="v2-card flat">
-        <b>How the scan works</b>
-        <ul className="cr1-how">
-          <li>We only compare the same product. Similar products are shown apart and never mixed into the comparison.</li>
-          <li>Rates are for your level ({CREATOR.level}). Bronze sees the rate open to everyone; Silver and Gold see Techwide&apos;s rate.</li>
-          <li>After you add, we re-read your showcase. A product counts once TikTok confirms it&apos;s under Techwide.</li>
-          <li>We re-scan every day and tell you when something new turns up. If TikTok turns a product down, we hide it for 30 days.</li>
-        </ul>
+        <details className="sh-how">
+          <summary>How the scan works</summary>
+          <ul className="cr1-how">
+            <li>We only compare the same product. Similar products are shown apart and never mixed into the comparison.</li>
+            <li>Rates are for your level ({CREATOR.level}). After you add, we re-read your showcase; a product counts once TikTok confirms it&apos;s under Techwide.</li>
+            <li>We re-scan every day and tell you when something new turns up. If TikTok turns a product down, we hide it for 30 days.</li>
+          </ul>
+        </details>
       </section>
 
       {bulk && (

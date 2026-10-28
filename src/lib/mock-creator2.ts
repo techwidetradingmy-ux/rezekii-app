@@ -2,12 +2,13 @@
  * Extra sample data for the creator's My data, Publish, Rewards and Account screens. Invented numbers that line up with
  * ANALYTICS / POSTS / MISSIONS in mock.ts. Nothing is saved or sent anywhere.
  */
+import type { IconName } from "@/components/icons";
 import { ANALYTICS } from "./mock";
 
 /* ---------------- My data ---------------- */
 
-export type RangeKey = "7 days" | "30 days" | "90 days";
-export const RANGES: RangeKey[] = ["7 days", "30 days", "90 days"];
+export type RangeKey = "3 days" | "7 days" | "14 days" | "30 days" | "90 days" | "Lifetime";
+export const RANGES: RangeKey[] = ["3 days", "7 days", "14 days", "30 days", "90 days", "Lifetime"];
 
 /** Short names used in sentences and bars. */
 export const SHORT: Record<string, string> = {
@@ -25,21 +26,32 @@ export type RangeData = {
   est: number;
   paid: number;
   cancel: number;
-  /** Change against the period before, percent (history, not a forecast). */
-  gmvChange: number;
-  ordersChange: number;
+  /** Change against the period before, percent (history, not a forecast); null for Lifetime. */
+  gmvChange: number | null;
+  ordersChange: number | null;
   /** Videos / LIVE / Showcase share of commission, percent. */
   channel: [number, number, number];
   byProduct: { productId: string; commission: number; orders: number }[];
   /** Commission of everything outside the top five products. */
   other: number;
-  /** How many of the 12 weekly columns fall inside this range. */
-  weeks: number;
   /** Second sentence of the AI summary, written from this range's numbers. */
   note: string;
 };
 
 export const RANGE_DATA: Record<RangeKey, RangeData> = {
+  "3 days": {
+    gmv: 2010.6, orders: 66, est: 221.3, paid: 0, cancel: 12.4, gmvChange: 7, ordersChange: 4,
+    channel: [55, 33, 12],
+    byProduct: [
+      { productId: "p21", commission: 88.2, orders: 25 },
+      { productId: "p13", commission: 57.1, orders: 18 },
+      { productId: "p22", commission: 36.0, orders: 13 },
+      { productId: "p17", commission: 21.5, orders: 8 },
+      { productId: "p09", commission: 9.8, orders: 3 },
+    ],
+    other: 8.7,
+    note: "LIVE brought a third of your commission in the last 3 days, more than usual. Cancels are high: 12.4%.",
+  },
   "7 days": {
     gmv: 4612.3, orders: 151, est: 512.4, paid: 86.4, cancel: 11.2, gmvChange: 9, ordersChange: 6,
     channel: [58, 30, 12],
@@ -51,8 +63,20 @@ export const RANGE_DATA: Record<RangeKey, RangeData> = {
       { productId: "p09", commission: 24.6, orders: 7 },
     ],
     other: 35.1,
-    weeks: 1,
     note: "Your cancel rate went up to 11.2% this week, mostly toilet cleaner orders from the 10 Oct video.",
+  },
+  "14 days": {
+    gmv: 9120.4, orders: 298, est: 968.5, paid: 402.1, cancel: 10.6, gmvChange: 12, ordersChange: 9,
+    channel: [60, 28, 12],
+    byProduct: [
+      { productId: "p21", commission: 389.5, orders: 108 },
+      { productId: "p13", commission: 251.8, orders: 80 },
+      { productId: "p22", commission: 140.2, orders: 52 },
+      { productId: "p17", commission: 79.9, orders: 31 },
+      { productId: "p09", commission: 47.3, orders: 14 },
+    ],
+    other: 59.8,
+    note: "Commission is up 12% on the 2 weeks before. The pillowcase and toilet cleaner bring most of your cancels.",
   },
   "30 days": {
     gmv: ANALYTICS.gmv, orders: ANALYTICS.orders, est: ANALYTICS.commissionEst, paid: ANALYTICS.commissionPaid, cancel: ANALYTICS.cancelRate,
@@ -60,7 +84,6 @@ export const RANGE_DATA: Record<RangeKey, RangeData> = {
     channel: [62, 25, 13],
     byProduct: ANALYTICS.byProduct.map((b) => ({ productId: b.productId, commission: b.commission, orders: b.orders })),
     other: 89.2,
-    weeks: 4,
     note: "The toilet cleaner has many cancellations, mostly from the 10 Oct video.",
   },
   "90 days": {
@@ -74,14 +97,70 @@ export const RANGE_DATA: Record<RangeKey, RangeData> = {
       { productId: "p09", commission: 301.9, orders: 126 },
     ],
     other: 301.8,
-    weeks: 12,
     note: "Your weekly commission has tripled since August. The toilet cleaner and pillowcase bring the most cancellations.",
+  },
+  Lifetime: {
+    gmv: 68240.8, orders: 2310, est: 7020.4, paid: 5880.1, cancel: 7.6, gmvChange: null, ordersChange: null,
+    channel: [64, 22, 14],
+    byProduct: [
+      { productId: "p21", commission: 2410.2, orders: 690 },
+      { productId: "p13", commission: 1880.6, orders: 590 },
+      { productId: "p22", commission: 905.3, orders: 360 },
+      { productId: "p17", commission: 590.7, orders: 330 },
+      { productId: "p09", commission: 488.2, orders: 205 },
+    ],
+    other: 745.4,
+    note: "Since March your monthly commission has grown every month. Two products bring 61% of everything you've earned.",
   },
 };
 
 /** ANALYTICS.weekly scaled to commission in RM, oldest first; the last four weeks add up to the 30-day estimate. */
 export const WEEKLY_COMMISSION = ANALYTICS.weekly.map((v) => Math.round(v * 54.6));
 export const WEEK_LABELS = ["10 Aug", "17 Aug", "24 Aug", "31 Aug", "7 Sep", "14 Sep", "21 Sep", "28 Sep", "5 Oct", "12 Oct", "19 Oct", "26 Oct"];
+
+/** Commission per day, 29 Sep to today (28 Oct), oldest first. The last 3, 7, 14 and 30 add up to those ranges. */
+const DAILY = [
+  48.2, 51.0, 49.5, 53.1, 50.4, 55.8, 52.6, 54.0, 57.3, 53.9, 56.2, 58.0, 55.1, 57.7, 59.4, 59.5,
+  61.2, 66.8, 63.0, 70.4, 64.9, 62.3, 67.5, 69.5, 75.2, 71.0, 75.4, 70.1, 78.4, 72.8,
+];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const dayLabel = (back: number) => {
+  const d = new Date(Date.UTC(2026, 9, 28 - back));
+  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+};
+const days = (n: number): Chart => ({ unit: "day", points: DAILY.slice(-n).map((v, i) => [dayLabel(n - 1 - i), v]) });
+
+/** The commission chart for each range: per day up to 30 days, per week for 90 days, per month for lifetime. */
+export type Chart = { unit: "day" | "week" | "month"; points: [string, number][] };
+export const CHARTS: Record<RangeKey, Chart> = {
+  "3 days": days(3),
+  "7 days": days(7),
+  "14 days": days(14),
+  "30 days": days(30),
+  "90 days": { unit: "week", points: WEEK_LABELS.map((l, i) => [l, WEEKLY_COMMISSION[i]]) },
+  Lifetime: { unit: "month", points: [["Mar", 96.4], ["Apr", 268.0], ["May", 455.9], ["Jun", 612.3], ["Jul", 861.0], ["Aug", 1180.4], ["Sep", 1689.3], ["Oct", 1857.1]] },
+};
+
+/** Showcase products hurting account health (TikTok, last 30 days): cancels, complaints, low ratings. */
+export const WATCH = [
+  { productId: "p17", cancel: 21.4, rating: 2.8, complaints: 9, issue: "Buyers say the colours don't match the photos." },
+  { productId: "p22", cancel: 17.7, rating: 2.9, complaints: 6, issue: "Buyers say it still needs scrubbing." },
+];
+export const HEALTH = { score: 86, change: -4 };
+
+/** The action plan on My data: what to do next, each one written from a number above. */
+export type Action = { id: string; tag: "Fix now" | "This week" | "Grow"; icon: IconName; title: string; why: string; cta: string; href?: string; remove?: string };
+export const ACTIONS: Action[] = [
+  { id: "a1", tag: "Fix now", icon: "alert", title: "Stop promoting the AirySoft pillowcase", why: "21.4% cancelled, 2.8 stars and 9 complaints in 30 days. It's costing you account health.", cta: "Remove from showcase", remove: "p17" },
+  { id: "a2", tag: "Fix now", icon: "video", title: "Fix or hide the 10 Oct toilet cleaner video", why: "18.2% of its orders were cancelled. The title promises no scrubbing at all; buyers disagree.", cta: "See the video", href: "/app/data/videos" },
+  { id: "a3", tag: "This week", icon: "cal", title: "Post 1 more thermos video by 2 Nov", why: "Your free sample needs 3 of 3 videos. The thermos is also your top earner: 39% of your commission.", cta: "Submit video link", href: "/app/account#samples" },
+  { id: "a4", tag: "This week", icon: "scan", title: "Add 4 products that pay more", why: "Products already in your showcase, paying +1% to +5% more through Techwide.", cta: "See scan results", href: "/app#scan" },
+  { id: "a5", tag: "Grow", icon: "video", title: "Go LIVE with kitchen products", why: "Just 2 LIVE sessions a week bring about a quarter of your commission. Choppers and cookware sell 2.6× better on LIVE than on video.", cta: "See LIVE picks", href: "/app#ai-picks" },
+  { id: "a6", tag: "Grow", icon: "send", title: "Post between 8 and 10 pm", why: "Your videos posted 8 to 10 pm got 1.8× the views of daytime posts in the last 30 days.", cta: "Schedule a post", href: "/app/publish" },
+];
+
+/** Views by posting time against the creator's own average (1 = average), last 30 days. */
+export const POST_TIMES: [string, number][] = [["6–9 am", 0.6], ["12–2 pm", 0.9], ["5–7 pm", 1.2], ["8–10 pm", 1.8], ["After 11 pm", 0.7]];
 
 export type VideoRow = {
   id: string;
@@ -105,14 +184,50 @@ export const VIDEOS: VideoRow[] = [
 /** Orders in the 30 days before, for the "Sales dropping" tag. */
 export const PREV_ORDERS: Record<string, number> = { p21: 171, p13: 132, p22: 88, p17: 61, p09: 66 };
 
-export type PayoutMonth = { month: string; est: number; paid: number; pending: number; clawed: number; status: "Settling" | "Paid" };
+/**
+ * extra = commission above what TikTok's open plan pays on the same orders, earned through Techwide's TAP campaigns on Rezekii
+ * (each order's TAP rate minus the open rate we saw for that product). An estimate until TikTok settles the order.
+ */
+export type PayoutMonth = { month: string; est: number; paid: number; pending: number; clawed: number; extra: number; status: "Settling" | "Paid" };
 export const PAYOUTS: PayoutMonth[] = [
-  { month: "October 2026", est: 1840.2, paid: 1120.4, pending: 668.3, clawed: 51.5, status: "Settling" },
-  { month: "September 2026", est: 1402.8, paid: 1348.1, pending: 0, clawed: 54.7, status: "Paid" },
-  { month: "August 2026", est: 1066.5, paid: 1021.9, pending: 0, clawed: 44.6, status: "Paid" },
-  { month: "July 2026", est: 812.3, paid: 790.0, pending: 0, clawed: 22.3, status: "Paid" },
-  { month: "June 2026", est: 640.1, paid: 628.4, pending: 0, clawed: 11.7, status: "Paid" },
+  { month: "October 2026", est: 1840.2, paid: 1120.4, pending: 668.3, clawed: 51.5, extra: 318.6, status: "Settling" },
+  { month: "September 2026", est: 1402.8, paid: 1348.1, pending: 0, clawed: 54.7, extra: 221.4, status: "Paid" },
+  { month: "August 2026", est: 1066.5, paid: 1021.9, pending: 0, clawed: 44.6, extra: 152.3, status: "Paid" },
+  { month: "July 2026", est: 812.3, paid: 790.0, pending: 0, clawed: 22.3, extra: 96.8, status: "Paid" },
+  { month: "June 2026", est: 640.1, paid: 628.4, pending: 0, clawed: 11.7, extra: 41.2, status: "Paid" },
 ];
+
+export type PayoutDay = { day: number; est: number; extra: number; clawed: number; state: "paid" | "pending" | "future" };
+const FULL_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const round2 = (n: number) => Math.round(n * 100) / 100;
+/** Commission per day for one month (spread from the month's totals), with each day's payout state. Today is 28 Oct. */
+export function payoutDays(m: PayoutMonth): { year: number; month: number; days: PayoutDay[] } {
+  const [name, y] = m.month.split(" ");
+  const month = FULL_MONTHS.indexOf(name);
+  const year = Number(y);
+  const n = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  const now = year === 2026 && month === 9;
+  const upto = now ? 28 : n;
+  const w = Array.from({ length: upto }, (_, i) => 0.7 + (((i * 37 + month * 11) % 23) / 23) * 0.6 + (i / upto) * 0.35);
+  const sum = w.reduce((a, b) => a + b, 0);
+  const clawDays = [Math.round(upto * 0.3), Math.round(upto * 0.62)];
+  const days = Array.from({ length: n }, (_, i): PayoutDay => {
+    if (i >= upto) return { day: i + 1, est: 0, extra: 0, clawed: 0, state: "future" };
+    return {
+      day: i + 1,
+      est: round2((m.est * w[i]) / sum),
+      extra: round2((m.extra * w[i]) / sum),
+      clawed: clawDays.includes(i) ? round2(m.clawed / 2) : 0,
+      // Roughly the last 10 days are still inside the return window.
+      state: now && i >= 17 ? "pending" : "paid",
+    };
+  });
+  // Put the rounding left-over on the last day, so the days add up to the month exactly.
+  const lastDay = days[upto - 1];
+  lastDay.est = round2(lastDay.est + m.est - days.reduce((t, d) => t + d.est, 0));
+  lastDay.extra = round2(lastDay.extra + m.extra - days.reduce((t, d) => t + d.extra, 0));
+  return { year, month, days };
+}
 
 /* ---------------- Publish ---------------- */
 
@@ -162,7 +277,7 @@ export const LEVELS = [
   },
   {
     name: "Silver", how: "TikTok Shop Lv.4+, or RM 10,000 sales last month",
-    gives: ["Silver TAP rates, higher than open plan", "AI picks for your niche", "Everything in Bronze"],
+    gives: ["Silver TAP rates, higher than open plan", "Advanced samples once you're Active", "Everything in Bronze"],
   },
   {
     name: "Gold", how: "Techwide MCN creators, after 6 months",

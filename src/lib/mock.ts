@@ -75,25 +75,47 @@ export const CREATOR = {
 export type Raise = { id: string; productId: string; nowRate: number | null; tapRate: number; until: string; eligible: boolean };
 /** Same listing in the creator's showcase, better through Techwide's TAP campaign. */
 export const RAISES: Raise[] = [
-  { id: "r1", productId: "p13", nowRate: 12, tapRate: 20, until: "30 Nov", eligible: true },
-  { id: "r2", productId: "p22", nowRate: 10, tapRate: 17, until: "15 Dec", eligible: true },
-  { id: "r3", productId: "p09", nowRate: 8, tapRate: 12, until: "31 Dec", eligible: true },
-  { id: "r4", productId: "p01", nowRate: 6, tapRate: 10, until: "30 Nov", eligible: true },
+  { id: "r1", productId: "p13", nowRate: 12, tapRate: 13, until: "30 Nov", eligible: true },
+  { id: "r2", productId: "p22", nowRate: 10, tapRate: 15, until: "15 Dec", eligible: true },
+  { id: "r3", productId: "p09", nowRate: 8, tapRate: 10, until: "31 Dec", eligible: true },
+  { id: "r4", productId: "p01", nowRate: 6, tapRate: 7, until: "30 Nov", eligible: true },
   { id: "r5", productId: "p21", nowRate: null, tapRate: 10, until: "31 Jan", eligible: true },
-  { id: "r6", productId: "p24", nowRate: 8, tapRate: 12, until: "31 Dec", eligible: false },
+  { id: "r6", productId: "p24", nowRate: 8, tapRate: 9, until: "31 Dec", eligible: false },
 ];
 /** Similar products (different listing) in Techwide's TAP campaigns, added straight to the showcase. */
 export const SIMILAR = ["p14", "p11", "p18", "p05"];
 
-export type Pick = { productId: string; why: string; source: "your-data" | "tap" | "trending" };
-export const AI_PICKS: Pick[] = [
-  { productId: "p20", why: "Your Muslim fashion videos sell 2.3× your average. This jersey is a top seller in that category.", source: "your-data" },
-  { productId: "p13", why: "20% through Techwide, the highest rate in Electronics this week.", source: "tap" },
-  { productId: "p21", why: "Thermos bottles are in TikTok's top 10 for Home & Kitchen in Malaysia this week.", source: "trending" },
-  { productId: "p05", why: "Your audience is 78% women aged 18–34; yoga pants fit that audience.", source: "your-data" },
-  { productId: "p24", why: "12% through Techwide, and RM 54.90 gives a high commission per order.", source: "tap" },
-  { productId: "p03", why: "Rainy season searches for windbreakers are up in Selangor.", source: "trending" },
+/**
+ * AI picks on Home. `from: "tap"` = in a Techwide TAP campaign (TAP rate; free sample if the product has one);
+ * `from: "tiktok"` = from TikTok Shop's best-seller lists in Malaysia (open-plan rate, no sample through us).
+ * video / live = orders per 100 viewers in Malaysia, last 7 days. week = units sold in 7 days. rank = place in its category this week.
+ */
+export type AiPick = { productId: string; from: "tap" | "tiktok"; fit: "video" | "live"; match: number; why: string; video: number; live: number; week: number; rank?: number };
+export const AI_PICKS: AiPick[] = [
+  { productId: "p20", from: "tap", fit: "video", match: 96, why: "Muslim fashion sells 2.3× your average. Try-on videos convert best.", video: 3.4, live: 2.1, week: 18200, rank: 2 },
+  { productId: "p13", from: "tap", fit: "video", match: 91, why: "Best rate in Electronics. A 15-second demo is enough.", video: 4.1, live: 2.6, week: 26400, rank: 1 },
+  { productId: "p21", from: "tap", fit: "video", match: 89, why: "Home & Kitchen is your #2 category; your last thermos video sold 166.", video: 2.9, live: 2.2, week: 15800, rank: 6 },
+  { productId: "p05", from: "tap", fit: "video", match: 87, why: "78% of your viewers are women 18 to 34, the main buyers.", video: 3.1, live: 1.9, week: 21900, rank: 4 },
+  { productId: "p10", from: "tiktok", fit: "video", match: 85, why: "Rising in Fashion, your top category, and inside your price range.", video: 2.7, live: 1.8, week: 24300, rank: 3 },
+  { productId: "p02", from: "tap", fit: "video", match: 83, why: "Cheap basic that fits into outfit videos you already make.", video: 2.4, live: 1.6, week: 31200, rank: 1 },
+  { productId: "p15", from: "tiktok", fit: "video", match: 79, why: "Top 5 in Fashion this week. Similar pants already sell for you.", video: 2.5, live: 1.7, week: 19800, rank: 5 },
+  { productId: "p12", from: "tap", fit: "video", match: 78, why: "Long sleeves sell steadily in the rainy season.", video: 2.2, live: 1.5, week: 12400 },
+  { productId: "p11", from: "tap", fit: "live", match: 88, why: "RM 9.90 add-on that sells fast as a LIVE flash deal.", video: 2.0, live: 6.3, week: 22100, rank: 4 },
+  { productId: "p08", from: "tap", fit: "live", match: 86, why: "Buyers want to see it cook and ask questions before paying RM 159.", video: 1.2, live: 5.8, week: 6900, rank: 8 },
+  { productId: "p14", from: "tap", fit: "live", match: 84, why: "Choppers sell on live demos; Home & Kitchen is your #2 category.", video: 1.9, live: 5.2, week: 11800, rank: 7 },
+  { productId: "p18", from: "tap", fit: "live", match: 82, why: "Needs a demo. LIVE converts 3.5× better than video here.", video: 1.4, live: 4.9, week: 9100, rank: 3 },
+  { productId: "p06", from: "tiktok", fit: "live", match: 81, why: "Buyers ask about sizes, which you can answer on LIVE.", video: 1.6, live: 4.4, week: 14300, rank: 2 },
+  { productId: "p24", from: "tap", fit: "live", match: 80, why: "Bundle it with the thermos on LIVE for a bigger basket.", video: 1.5, live: 4.1, week: 8200 },
 ];
+/** What the AI read from the creator's own data before matching. */
+export const AI_PROFILE = {
+  compared: 3482,
+  categories: [["Fashion", 46], ["Home & Kitchen", 31], ["Muslim Fashion", 14]] as [string, number][],
+  price: "RM 10–40",
+  audience: "Women 18–34",
+  audienceShare: 78,
+  video: 72,
+};
 
 export type SampleStatus = "Applied" | "Approved" | "Shipped" | "Received" | "Posting" | "Done" | "Not approved";
 export type MySample = { id: string; productId: string; status: SampleStatus; videos: number; due?: string; reason?: string; receivedAt?: string };

@@ -4,15 +4,24 @@ import Link from "next/link";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { Celebrate, Progress, Seg, ShareSheet, Sheet, Title } from "@/components/ui";
+import { Celebrate, Progress, Seg, ShareSheet, Sheet } from "@/components/ui";
 import { PoolTag } from "@/components/creator1/brand";
 import { CREATOR, MY_SAMPLES, product, type MySample, type SampleStatus } from "@/lib/mock";
 import type { Pool } from "@/lib/mock-creator1";
-import "../../../creator1.css";
+import "@/app/creator1.css";
 
 const STEPS: SampleStatus[] = ["Applied", "Approved", "Shipped", "Received", "Posting", "Done"];
 const TABS = ["In progress", "Done", "Not approved"] as const;
 type Tab = (typeof TABS)[number];
+/** Where each parcel is, from TikTok's logistics (samples) or the courier (PR kits). */
+const DELIVERY: Record<string, { courier: string; track: string; line: string }> = {
+  s1: { courier: "J&T Express", track: "JT6041 2290 118", line: "Delivered 26 Oct, 14:02" },
+  s2: { courier: "Ninja Van", track: "NVMY 7714 0392", line: "Out for delivery, arrives today" },
+  s5: { courier: "SPX Express", track: "SPXMY 0298 1144", line: "Delivered 2 Oct, 11:40" },
+};
+/** Parcels that don't go through TikTok, sent to the optional shipping address. */
+const PARCELS = [{ id: "k1", name: "Lena Home PR kit", courier: "Pos Laju", track: "EP 4410 2871 MY", line: "In transit, arrives 31 Oct", step: 2 }];
+
 const tabOf = (s: MySample): Tab => (s.status === "Done" ? "Done" : s.status === "Not approved" ? "Not approved" : "In progress");
 /** Today in this preview is 28 Oct. */
 const daysTo = (due?: string) => (due ? Math.max(0, Number(due.split(" ")[0]) + (due.includes("Nov") ? 31 : 0) - 28) : 0);
@@ -41,8 +50,8 @@ function StepBar({ status }: { status: SampleStatus }) {
   );
 }
 
-/** My samples: TikTok's steps, the 3-video progress, due dates, the early-posting bonus, and what to do when one isn't approved. */
-export default function MySamples() {
+/** Samples & delivery (Account): TikTok's steps, parcel tracking, the 3-video progress, due dates, the early bonus, and what to do when one isn't approved. */
+export function MySamples() {
   const { toast } = useDemo();
   const [list, setList] = useState<MySample[]>(MY_SAMPLES);
   const [tab, setTab] = useState<Tab>("In progress");
@@ -78,9 +87,10 @@ export default function MySamples() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 20 }}>
-      <Title title="My samples" sub="Status comes from TikTok · updated today 09:12">
-        <Link href="/app/opportunities/samples" className="btn-outline v2-btn-sm"><Icon name="gift" size={17} /> Sample market</Link>
-      </Title>
+      <div className="v2-row" style={{ justifyContent: "space-between" }}>
+        <span className="v2-small">Status and tracking come from TikTok · updated today 09:12</span>
+        <Link href="/app/market" className="btn-outline v2-btn-sm"><Icon name="bag" size={17} /> Marketplace</Link>
+      </div>
 
       <div className="cr1-segwrap">
         <Seg value={tabLabels[TABS.indexOf(tab)]} options={tabLabels} onChange={(v) => setTab(TABS[tabLabels.indexOf(v)])} />
@@ -104,6 +114,13 @@ export default function MySamples() {
               </div>
 
               <StepBar status={s.status} />
+
+              {DELIVERY[s.id] && (
+                <p className="cr1-track">
+                  <Icon name="box" size={16} />
+                  <span><b>{DELIVERY[s.id].line}</b> · {DELIVERY[s.id].courier} · {DELIVERY[s.id].track}</span>
+                </p>
+              )}
 
               {(s.status === "Posting" || s.status === "Received" || s.status === "Done") && (
                 <div className="cr1-vidrow">
@@ -153,7 +170,7 @@ export default function MySamples() {
                 {s.status === "Done" && <button type="button" className="btn-outline v2-btn-sm" onClick={() => setShare(s)}><Icon name="share" size={16} /> Share</button>}
                 {s.status === "Not approved" && (
                   <>
-                    <Link href="/app/opportunities/samples" className="np-btn v2-btn-sm">Open samples I can get</Link>
+                    <Link href="/app/market" className="np-btn v2-btn-sm">Open samples I can get</Link>
                     <Link href="/app/rewards" className="btn-outline v2-btn-sm">Daily missions</Link>
                   </>
                 )}
@@ -165,10 +182,28 @@ export default function MySamples() {
           <div className="v2-card flat" style={{ alignItems: "flex-start" }}>
             <b>Nothing here</b>
             <span className="v2-muted">{tab === "Not approved" ? "No turned-down requests. Nice." : "Request a sample from the market to get started."}</span>
-            <Link href="/app/opportunities/samples" className="np-btn v2-btn-sm">Browse samples</Link>
+            <Link href="/app/market" className="np-btn v2-btn-sm">Browse samples</Link>
           </div>
         )}
       </div>
+
+      <section className="v2-stack" style={{ gap: 10 }}>
+        <h3 className="v2-h2" style={{ fontSize: 17 }}>Other parcels</h3>
+        {PARCELS.map((k) => (
+          <article key={k.id} className="v2-card cr1-parcel">
+            <span className="cr1-parcel-ico"><Icon name="box" size={20} /></span>
+            <span>
+              <strong>{k.name}</strong>
+              <small>{k.courier} · {k.track}</small>
+              <span className="cr1-parcel-steps" aria-label={`Parcel: ${k.line}`}>
+                {["Packed", "In transit", "Delivered"].map((t, i) => <i key={t} className={i < k.step ? "on" : undefined}>{t}</i>)}
+              </span>
+            </span>
+            <span className="badge badge-blue">{k.line}</span>
+          </article>
+        ))}
+        <p className="v2-small" style={{ margin: 0 }}>PR kits and other parcels go to your shipping address in Profile. TikTok samples use your address in TikTok.</p>
+      </section>
 
       {submit && (
         <Sheet title="Submit video link" onClose={() => setSubmit(null)}>

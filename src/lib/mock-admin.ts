@@ -455,12 +455,12 @@ export const DISPUTES: { id: string; kind: "Sample not received" | "Creator over
 export type FbType = "Idea" | "Bug" | "Complaint";
 export type FbStatus = "New" | "In progress" | "Handled" | "Won't do";
 export const FEEDBACK: { id: string; from: string; role: "Creator" | "Seller"; type: FbType; text: string; page: string; device: string; when: string; status: FbStatus }[] = [
-  { id: "FB-301", from: "@farah.home", role: "Creator", type: "Idea", text: "Can the scan results show which raises are ending soon first?", page: "/app/opportunities", device: "iPhone 13 · Safari", when: "Today 10:12", status: "New" },
+  { id: "FB-301", from: "@farah.home", role: "Creator", type: "Idea", text: "Can the scan results show which raises are ending soon first?", page: "/app#scan", device: "iPhone 13 · Safari", when: "Today 10:12", status: "New" },
   { id: "FB-300", from: "Seri Living MY", role: "Seller", type: "Bug", text: "The chart on TAP performance shows yesterday as zero.", page: "/seller/app/results", device: "Windows · Chrome", when: "Today 09:40", status: "New" },
   { id: "FB-299", from: "@hafiz.tech", role: "Creator", type: "Complaint", text: "I linked TikTok Shop 6 days ago and I'm still waiting for approval.", page: "/app", device: "Android · TikTok in-app", when: "Today 08:55", status: "New" },
   { id: "FB-298", from: "@nurul.beauty", role: "Creator", type: "Idea", text: "Please add Bahasa Melayu to the app.", page: "/app/rewards", device: "Android · Chrome", when: "Yesterday", status: "New" },
   { id: "FB-297", from: "Mawar Wear", role: "Seller", type: "Bug", text: "Upload of the product photo failed twice on Wi-Fi.", page: "/seller/app/submit", device: "iPad · Safari", when: "Yesterday", status: "In progress" },
-  { id: "FB-296", from: "@kak.ros.kitchen", role: "Creator", type: "Idea", text: "A reminder the day before a sample video is due would help.", page: "/app/opportunities/my-samples", device: "iPhone 15 · Safari", when: "26 Oct", status: "New" },
+  { id: "FB-296", from: "@kak.ros.kitchen", role: "Creator", type: "Idea", text: "A reminder the day before a sample video is due would help.", page: "/app/account#samples", device: "iPhone 15 · Safari", when: "26 Oct", status: "New" },
   { id: "FB-295", from: "Bersih Pro", role: "Seller", type: "Complaint", text: "Two creators haven't posted for our samples.", page: "/seller/app/results/samples", device: "Windows · Edge", when: "25 Oct", status: "Handled" },
 ];
 
@@ -468,7 +468,7 @@ export const FEEDBACK: { id: string; from: string; role: "Creator" | "Seller"; t
 
 export const FLAGS = [
   { key: "rewards", label: "Missions, rewards and wallet", note: "Creators and sellers", on: true },
-  { key: "ai_picks", label: "AI picks", note: "Silver and Gold creators only", on: true },
+  { key: "ai_picks", label: "AI picks", note: "On every creator's home", on: true },
   { key: "publish_tiktok", label: "Publish to TikTok (public)", note: "Waiting for TikTok's review; drafts only until then", on: false },
   { key: "competitors", label: "AI competitors for sellers", note: "Reads TikTok's public top lists", on: true },
   { key: "ai_create", label: "AI script and prompt tools", note: "Phase 2", on: false },

@@ -6,11 +6,23 @@ import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Seg, Sheet, Title } from "@/components/ui";
 import { PlatformIcon } from "@/components/creator2/bits";
-import { CREATOR, SOCIALS } from "@/lib/mock";
+import { CREATOR, MY_SAMPLES, SOCIALS } from "@/lib/mock";
+import { MySamples } from "@/components/creator1/my-samples";
+import type { IconName } from "@/components/icons";
 import { MY_STATES, NICHES, NOTIFY } from "@/lib/mock-creator2";
 import "@/app/creator2.css";
 
 const TYPES = ["Affiliate", "UGC", "Artist", "Influencer"] as const;
+/** One account page, five sections; the address bar keeps the section (#samples) so links can open it. */
+const TABS = [
+  ["profile", "Profile", "user"],
+  ["connections", "Connections", "link"],
+  ["samples", "Samples & delivery", "box"],
+  ["rate-card", "Rate card", "tag"],
+  ["settings", "Settings", "gear"],
+] as const satisfies readonly (readonly [string, string, IconName])[];
+type TabKey = (typeof TABS)[number][0];
+const active = MY_SAMPLES.filter((x) => !["Done", "Not approved"].includes(x.status)).length;
 type Theme = "Light" | "Dark" | "Auto";
 
 /** 012-345 6789 → +60123456789; anything that isn't a Malaysian mobile number returns null. */
@@ -21,9 +33,31 @@ function toMsia(raw: string) {
   return /^601\d{8,9}$/.test(d) ? `+${d}` : null;
 }
 
-/** Account settings, grouped like iOS Settings. Every change stays on this screen; nothing is saved. */
+/** My account: profile, connections, samples & delivery, rate card (later) and settings, grouped like iOS Settings. Nothing is saved. */
 export default function Account() {
   const { linked, setLinked, toast } = useDemo();
+  const [tab, setTab] = useState<TabKey>("profile");
+  const [email, setEmail] = useState("aisyah.r@example.com");
+  const [emailSheet, setEmailSheet] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [delSheet, setDelSheet] = useState(false);
+  const [delText, setDelText] = useState("");
+
+  useEffect(() => {
+    const read = () => {
+      const h = window.location.hash.slice(1);
+      const hit = TABS.find(([k]) => k === h);
+      if (hit) setTab(hit[0]);
+    };
+    read();
+    window.addEventListener("hashchange", read);
+    return () => window.removeEventListener("hashchange", read);
+  }, []);
+
+  const go = (k: TabKey) => {
+    setTab(k);
+    window.history.replaceState(null, "", `#${k}`);
+  };
 
   const [name, setName] = useState(CREATOR.name);
   const [state, setState] = useState(CREATOR.state);
@@ -89,7 +123,7 @@ export default function Account() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 22 }}>
-      <Title title="Account" sub="Your profile, connections and settings" />
+      <Title title="My account" sub="Your details, connections, samples and settings in one place" />
 
       <div className="cr2-settings">
         <div className="cr2-cells">
@@ -106,6 +140,17 @@ export default function Account() {
           </div>
         </div>
 
+        <div className="acc-tabs nv-noscroll" role="tablist" aria-label="Account sections">
+          {TABS.map(([k, label, icon]) => (
+            <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? "on" : undefined} onClick={() => go(k)}>
+              <Icon name={icon} size={17} /> {label}
+              {k === "samples" && <span className="badge badge-amber">{active}</span>}
+            </button>
+          ))}
+        </div>
+
+        {tab === "profile" && (
+          <>
         <section className="cr2-group">
           <h2>Profile</h2>
           <div className="cr2-cells">
@@ -222,6 +267,10 @@ export default function Account() {
           <button type="button" className="btn-outline" style={{ alignSelf: "flex-start" }} onClick={() => toast(addr.line ? "Address saved" : "Nothing to save yet. It's optional.")}>Save address</button>
         </section>
 
+          </>
+        )}
+
+        {tab === "connections" && (
         <section className="cr2-group">
           <h2>Connections</h2>
           <div className="cr2-cells">
@@ -253,6 +302,49 @@ export default function Account() {
             ))}
           </div>
           <p>We never see your passwords. You can disconnect any of these in the platform&apos;s own settings.</p>
+        </section>
+        )}
+
+        {tab === "samples" && <MySamples />}
+
+        {tab === "rate-card" && (
+        <section className="cr2-group">
+          <h2>Rate card <span className="badge badge-gray" style={{ textTransform: "none", letterSpacing: 0, marginLeft: 6 }}>Coming later</span></h2>
+          <div className="cr2-cells acc-soon">
+            {[["TikTok video, 30 to 60 s", "per video"], ["TikTok LIVE", "per hour"], ["Instagram Reel", "per Reel"], ["Usage rights for ads", "per 30 days"]].map(([t, u]) => (
+              <div key={t} className="cr2-cell">
+                <span className="lbl">{t}</span>
+                <span className="val v2-row" style={{ gap: 8, flexWrap: "nowrap" }}>
+                  <input className="np-input" disabled placeholder="RM" aria-label={`${t} price`} style={{ maxWidth: 140 }} />
+                  <span className="v2-small">{u}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+          <p>Later you&apos;ll set your prices here for paid reviews and UGC, and sellers see them when they invite you. Nothing to fill in yet.</p>
+        </section>
+        )}
+
+        {tab === "settings" && (
+          <>
+        <section className="cr2-group">
+          <h2>Login & security</h2>
+          <div className="cr2-cells">
+            <div className="cr2-cell">
+              <span className="lbl">Signed in with</span>
+              <span className="val v2-muted">TikTok</span>
+            </div>
+            <button type="button" className="cr2-cell cr2-cellbtn" onClick={() => { setNewEmail(""); setEmailSheet(true); }}>
+              <span className="lbl">Email</span>
+              <span className="chev">{email} <Icon name="arrow" size={16} /></span>
+            </button>
+            <button type="button" className="cr2-cell cr2-cellbtn" onClick={() => setPwSheet(true)}>
+              <span className="lbl">Password</span>
+              <span className="chev">{hasPw ? "Change" : "Set a password"} <Icon name="arrow" size={16} /></span>
+            </button>
+            <Link href="/signin" className="cr2-cell cr2-cellbtn">Sign out</Link>
+            <button type="button" className="cr2-cell cr2-cellbtn danger" onClick={() => { setDelText(""); setDelSheet(true); }}>Delete account</button>
+          </div>
         </section>
 
         <section className="cr2-group">
@@ -292,20 +384,15 @@ export default function Account() {
         </section>
 
         <section className="cr2-group">
-          <h2>Login & security</h2>
+          <h2>Appearance</h2>
           <div className="cr2-cells">
             <div className="cr2-cell">
-              <span className="lbl">Signed in with</span>
-              <span className="val v2-muted">TikTok · aisyah.r@example.com</span>
+              <span className="lbl">Theme</span>
+              <span className="val"><Seg value={theme} options={["Light", "Dark", "Auto"] as const} onChange={applyTheme} /></span>
             </div>
-            <button type="button" className="cr2-cell cr2-cellbtn" onClick={() => setPwSheet(true)}>
-              <span className="lbl">Password</span>
-              <span className="chev">{hasPw ? "Change" : "Set a password"} <Icon name="arrow" size={16} /></span>
-            </button>
-            <Link href="/signin" className="cr2-cell cr2-cellbtn danger">Sign out</Link>
           </div>
+          <p>Auto follows your phone or computer.</p>
         </section>
-
         <section className="cr2-group">
           <h2>Help & feedback</h2>
           <div className="cr2-cells">
@@ -338,18 +425,9 @@ export default function Account() {
           </div>
         </section>
 
-        <section className="cr2-group">
-          <h2>Appearance</h2>
-          <div className="cr2-cells">
-            <div className="cr2-cell">
-              <span className="lbl">Theme</span>
-              <span className="val"><Seg value={theme} options={["Light", "Dark", "Auto"] as const} onChange={applyTheme} /></span>
-            </div>
-          </div>
-          <p>Auto follows your phone or computer.</p>
-        </section>
+          </>
+        )}
       </div>
-
       {waSheet && (
         <Sheet title="Verify with WhatsApp" onClose={() => setWaSheet(false)}>
           <p className="v2-muted" style={{ margin: 0 }}>Takes 10 seconds and it&apos;s free. It proves {intl} really has WhatsApp, so the team can reach you about samples.</p>
@@ -363,6 +441,45 @@ export default function Account() {
             <Icon name="whatsapp" size={18} /> {verifying ? "Waiting for your message…" : "Open WhatsApp"}
           </button>
           <span className="v2-small" style={{ textAlign: "center" }}>You send the message, so it costs you nothing. We never send you a code.</span>
+        </Sheet>
+      )}
+
+      {emailSheet && (
+        <Sheet title="Change email" onClose={() => setEmailSheet(false)}>
+          <p className="v2-muted" style={{ margin: 0 }}>Now: {email}. We send a link to the new address; it changes once you open it.</p>
+          <label className="v2-field">
+            New email
+            <input type="email" className="np-input" autoComplete="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="you@example.com" />
+          </label>
+          <button
+            type="button"
+            className="np-btn"
+            disabled={!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(newEmail)}
+            onClick={() => { setEmail(newEmail); setEmailSheet(false); toast(`Link sent to ${newEmail}. Open it to confirm.`); }}
+          >
+            Send confirmation link
+          </button>
+        </Sheet>
+      )}
+
+      {delSheet && (
+        <Sheet title="Delete account" onClose={() => setDelSheet(false)}>
+          <div className="cr2-danger">
+            <b>This can&apos;t be undone.</b>
+            <ul>
+              <li>Your profile, connections and credits are removed.</li>
+              <li>Samples still in progress ({active}) must be finished first, or the Techwide team marks them undelivered.</li>
+              <li>Commission TikTok already owes you is paid by TikTok as usual.</li>
+            </ul>
+          </div>
+          <label className="v2-field">
+            Type DELETE to confirm
+            <input className="np-input" value={delText} onChange={(e) => setDelText(e.target.value)} autoComplete="off" />
+          </label>
+          <button type="button" className="np-btn cr2-delbtn" disabled={delText !== "DELETE"} onClick={() => { setDelSheet(false); toast("Preview only: nothing was deleted"); }}>
+            Delete my account
+          </button>
+          <button type="button" className="btn-outline" onClick={() => setDelSheet(false)}>Keep my account</button>
         </Sheet>
       )}
 

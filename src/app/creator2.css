@@ -15,14 +15,6 @@
 .v2-stat b.cr2-red { color: var(--red); }
 
 /* AI summary */
-.cr2-ai { position: relative; overflow: hidden; border-radius: 22px; padding: 18px 20px; display: flex; gap: 14px; align-items: flex-start; background: linear-gradient(135deg, var(--gsoft), var(--surface) 70%); border: 1.5px solid #9be8c4; box-shadow: var(--shadow); }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cr2-ai { border-color: #1f5a40; } }
-:root[data-theme="dark"] .cr2-ai { border-color: #1f5a40; }
-.cr2-ai-ico { width: 40px; height: 40px; border-radius: 13px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #ffffff; background: linear-gradient(135deg, #22dc95, #00804f); box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.35), 0 10px 18px -10px rgba(0, 128, 79, 0.7); }
-.cr2-ai-ico svg { animation: cr2Twinkle 2.4s ease-in-out infinite; }
-.cr2-ai small { font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gink); }
-.cr2-ai p { margin: 4px 0 0; font-size: 16px; line-height: 1.5; font-weight: 600; color: var(--text); }
-.cr2-ai p + p { margin-top: 6px; }
 @keyframes cr2Twinkle { 0%, 100% { transform: rotate(0) scale(1); } 50% { transform: rotate(20deg) scale(1.12); } }
 
 /* Needs attention */
@@ -431,7 +423,7 @@
   .cr2-fly-stage.split .cr2-fly-ico, .cr2-fly-ico.done .cr2-fly-tick, .cr2-fly-ico.done .cr2-pi { animation: none !important; }
   .cr2-fly-ico.done .cr2-fly-tick { transform: none; }
   .cr2-fly-stage.split .cr2-fly-video { display: none; }
-  .cr2-honour .halo, .cr2-honour .disc::after, .cr2-rays, .cr2-flame svg, .v2-chest.ready, .cr2-ai-ico svg { animation: none !important; }
+  .cr2-honour .halo, .cr2-honour .disc::after, .cr2-rays, .cr2-flame svg, .v2-chest.ready { animation: none !important; }
   .cr2-honour.lit .cr2-rays { opacity: 1; }
 }
 .cr2-axis span:first-child { text-align: left; }
@@ -453,3 +445,119 @@
 }
 .cr2-honourtag { align-self: flex-start; }
 @media (max-width: 560px) { .cr2-honourtag { align-self: center; } }
+
+/* My account: section tabs, the coming-later rate card, delete */
+.acc-tabs { display: flex; gap: 8px; overflow-x: auto; margin: -6px 0 -4px; padding: 2px; }
+.acc-tabs button { flex-shrink: 0; height: 40px; padding: 0 14px; border-radius: 999px; border: 1.5px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-size: 14px; font-weight: 800; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
+.acc-tabs button.on { background: var(--text); border-color: var(--text); color: var(--bg); }
+.acc-tabs .badge { height: 20px; min-width: 20px; padding: 0 6px; font-size: 11px; }
+.acc-soon { opacity: 0.7; }
+.cr2-danger { padding: 12px 14px; border-radius: 14px; background: var(--rsoft); color: var(--text); font-size: 14px; line-height: 1.5; }
+.cr2-danger ul { margin: 6px 0 0; padding-left: 18px; }
+.cr2-delbtn { background: #d92d20 !important; box-shadow: none !important; color: #ffffff !important; }
+
+/* My data: range picker, AI summary with products to stop promoting, action plan */
+.cr2-range { display: flex; gap: 6px; overflow-x: auto; margin-top: -8px; padding: 4px; border-radius: 16px; background: var(--surface2); width: fit-content; max-width: 100%; }
+.cr2-range button { flex-shrink: 0; height: 36px; padding: 0 14px; border-radius: 12px; border: none; background: transparent; color: var(--body); font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; transition: background 0.2s, color 0.2s; }
+.cr2-range button.on { background: var(--surface); color: var(--text); box-shadow: 0 4px 12px -6px rgba(11, 26, 19, 0.3); }
+.cr2-cols span.soft { opacity: 0.5; }
+.cr2-aisum { display: flex; flex-direction: column; gap: 14px; }
+.cr2-aisum-h { display: flex; align-items: center; gap: 12px; }
+.cr2-aisum-h > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cr2-aisum-h small { font-size: 12.5px; color: var(--muted); }
+.cr2-aisum-text p { margin: 0; font-size: 16px; line-height: 1.55; font-weight: 600; }
+.cr2-aisum-text p + p { margin-top: 6px; }
+.cr2-watch { display: flex; flex-direction: column; gap: 4px; padding: 14px; border-radius: 18px; background: var(--rsoft); }
+.cr2-watch-h { display: flex; align-items: center; gap: 12px; padding-bottom: 6px; }
+.cr2-watch-h > span:first-child { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.cr2-watch-h b { display: flex; align-items: center; gap: 6px; color: var(--red); font-size: 15.5px; }
+.cr2-watch-h small { color: var(--body); font-size: 13px; }
+.cr2-health { flex-shrink: 0; display: grid; grid-template-columns: auto auto; grid-template-areas: "s s" "b e"; align-items: baseline; gap: 0 6px; padding: 8px 12px; border-radius: 14px; background: var(--surface); }
+.cr2-health small { grid-area: s; font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.cr2-health b { grid-area: b; font-size: 22px; font-weight: 900; color: var(--text); }
+.cr2-health em { grid-area: e; font-style: normal; font-size: 12px; font-weight: 800; color: var(--red); display: inline-flex; align-items: center; gap: 2px; }
+.cr2-health em svg { transform: rotate(90deg); }
+.cr2-watch-row { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px; border-radius: 14px; background: var(--surface); transition: opacity 0.3s; }
+.cr2-watch-row.gone { opacity: 0.6; }
+.cr2-watch-row img { width: 52px; height: 52px; border-radius: 12px; object-fit: cover; }
+.cr2-watch-row > span { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.cr2-watch-row strong { font-size: 14.5px; }
+.cr2-watch-row small { color: var(--muted); font-size: 12.5px; }
+.cr2-flags { display: flex; flex-wrap: wrap; gap: 4px; }
+.cr2-flags i { font-style: normal; height: 22px; padding: 0 7px; border-radius: 7px; background: var(--rsoft); color: var(--red); font-size: 11.5px; font-weight: 800; display: inline-flex; align-items: center; }
+.cr2-watch-why { margin: 6px 2px 0; font-size: 13px; line-height: 1.5; color: var(--body); }
+.cr2-plan { gap: 12px; }
+.cr2-plan-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.cr2-plan-list li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 0; animation: v2Rise2 0.4s var(--ease) both; }
+.cr2-plan-list li + li { border-top: 1px solid var(--line); }
+.cr2-plan-list li.done .cr2-plan-main b { text-decoration: line-through; color: var(--muted); }
+.cr2-check { width: 26px; height: 26px; border-radius: 9px; border: 2px solid var(--border); background: var(--surface); color: #03140b; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+li.done .cr2-check { background: #00c073; border-color: #00c073; animation: v2Pop 0.3s var(--spring) both; }
+.cr2-plan-main { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; }
+.cr2-plan-main b { font-size: 15px; }
+.cr2-plan-main small { color: var(--muted); font-size: 13px; line-height: 1.45; }
+.cr2-tag { height: 20px; padding: 0 7px; border-radius: 6px; font-size: 11px; font-weight: 900; letter-spacing: 0.03em; display: inline-flex; align-items: center; }
+.cr2-tag.red { background: var(--rsoft); color: var(--red); }
+.cr2-tag.amber { background: var(--asoft); color: var(--amber); }
+.cr2-tag.violet { background: rgba(109, 94, 252, 0.12); color: #5b4ee0; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cr2-tag.violet { color: #b9b0ff; } }
+:root[data-theme="dark"] .cr2-tag.violet { color: #b9b0ff; }
+@media (max-width: 560px) {
+  .cr2-watch-h { flex-wrap: wrap; }
+  .cr2-watch-row { grid-template-columns: 44px minmax(0, 1fr); }
+  .cr2-watch-row img { width: 44px; height: 44px; }
+  .cr2-watch-row > :last-child { grid-column: 2; justify-self: start; }
+  .cr2-plan-list li { grid-template-columns: 28px minmax(0, 1fr); }
+  .cr2-plan-list li > :last-child { grid-column: 2; justify-self: start; }
+}
+
+/* Payouts: extra through Rezekii, calendar, month table */
+.violet { color: #5b4ee0; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .violet { color: #b9b0ff; } }
+:root[data-theme="dark"] .violet { color: #b9b0ff; }
+.cr2-k-open { background: linear-gradient(90deg, #22dc95, #00b86c); }
+.cr2-k-extra { background: linear-gradient(90deg, #8b7dff, #25c8f4); }
+.cr2-payhead { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 14px; align-items: end; }
+.cr2-amt { font-size: 38px; font-weight: 900; letter-spacing: -0.03em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.cr2-amt.violet { background: linear-gradient(90deg, #6d5efc, #1aa3cf); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.cr2-extra { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 18px; background: linear-gradient(135deg, rgba(109, 94, 252, 0.1), rgba(37, 200, 244, 0.08)); box-shadow: inset 0 0 0 1.5px rgba(139, 125, 255, 0.35); }
+.cr2-extra small { font-size: 12.5px; color: var(--body); line-height: 1.4; }
+.cr2-paycal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.cr2-paycal-wd { font-size: 11.5px; font-weight: 800; color: var(--muted); text-align: center; padding-bottom: 2px; }
+.cr2-payday { position: relative; overflow: hidden; height: 70px; padding: 6px 6px 0; border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface); color: var(--text); font: inherit; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; cursor: pointer; text-align: left; min-width: 0; transition: border-color 0.2s, transform 0.12s var(--ease); }
+.cr2-payday:active { transform: scale(0.95); }
+.cr2-payday b { position: relative; z-index: 1; font-size: 12.5px; font-weight: 800; }
+.cr2-payday small { position: relative; z-index: 1; font-size: 11px; font-weight: 800; color: var(--body); font-variant-numeric: tabular-nums; }
+.cr2-payday > i { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; justify-content: flex-end; opacity: 0.32; transform-origin: bottom; animation: v2Rise 0.6s var(--ease) both; }
+.cr2-payday.paid > i { background: #00c073; }
+.cr2-payday.pending > i { background: #f5a623; }
+.cr2-payday > i em { display: block; background: #6d5efc; }
+.cr2-payday .claw { position: absolute; right: 6px; top: 7px; width: 7px; height: 7px; border-radius: 50%; background: #e14b3b; }
+.cr2-payday.future { background: var(--surface2); border-color: transparent; cursor: default; color: var(--muted); }
+.cr2-payday.on { border-color: var(--text); }
+.cr2-daycard { display: flex; flex-direction: column; gap: 3px; padding: 12px 14px; border-radius: 16px; background: var(--surface2); font-size: 14px; animation: v2Rise2 0.3s var(--ease) both; }
+.cr2-daycard small { color: var(--muted); font-size: 13px; line-height: 1.45; }
+.cr2-paytable { display: flex; flex-direction: column; }
+.cr2-paytable > * { display: grid; grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr)) minmax(0, 1.1fr); gap: 10px; align-items: center; padding: 12px 8px; border-radius: 12px; font-size: 14px; font-variant-numeric: tabular-nums; }
+.cr2-paytable > button { border: none; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.cr2-paytable > button + button, .cr2-paytable .hd + button { border-top: 1px solid var(--line); border-radius: 0; }
+.cr2-paytable > button.on { background: var(--surface2); border-radius: 12px; }
+.cr2-paytable .hd { font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; padding-top: 0; }
+.cr2-paytable span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cr2-paytable small { font-size: 12px; }
+.cr2-paytable .badge { align-self: flex-start; white-space: nowrap; }
+@media (max-width: 640px) {
+  .cr2-payhead { grid-template-columns: 1fr; }
+  .cr2-amt { font-size: 32px; }
+  .cr2-paycal { gap: 4px; }
+  .cr2-payday { height: 56px; padding: 4px 4px 0; border-radius: 10px; }
+  .cr2-payday small { font-size: 10px; }
+  .cr2-paytable > * { grid-template-columns: minmax(0, 1fr) auto; row-gap: 4px; }
+  .cr2-paytable .hd { display: none; }
+  .cr2-paytable span[role="cell"]:nth-child(2) { display: none; }
+  .cr2-paytable span[role="cell"]:nth-child(3) { text-align: right; align-items: flex-end; }
+  .cr2-paytable span[role="cell"]:nth-child(4)::before { content: "Extra with Rezekii"; font-size: 11px; font-weight: 800; color: var(--muted); }
+  .cr2-paytable span[role="cell"]:nth-child(5) { align-items: flex-end; }
+}
+@media (prefers-reduced-motion: reduce) { .cr2-plan-list li, .cr2-payday > i, .cr2-daycard, .cr2-cols span { animation: none !important; } }
+.cr2-payday.out { opacity: 0.35; }

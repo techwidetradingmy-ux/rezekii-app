@@ -14,7 +14,7 @@ const CHESTS = [
   { at: 5, reward: 20 },
 ];
 const WEEK = ["Thu", "Fri", "Sat", "Sun", "Mon", "Tue", "Wed"];
-const GO: Record<string, string> = { m2: "/app/account", m6: "/app/opportunities" };
+const GO: Record<string, string> = { m2: "/app/account", m6: "/app#scan" };
 
 type Moment = { title: string; line: string; cheer: string; icon: "gift" | "trophy"; share: { big: string; label: string; lines: string[] } };
 

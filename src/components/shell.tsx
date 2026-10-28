@@ -111,7 +111,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
         {phoneTabs.map((s) => (
           <Link key={s.href} href={s.href} className={section?.href === s.href ? "on" : ""} aria-current={section?.href === s.href ? "page" : undefined}>
             <Icon name={s.icon} size={24} />
-            {s.label === "Opportunities" ? "Chances" : s.label}
+            {s.label === "Marketplace" ? "Market" : s.label}
           </Link>
         ))}
         {app === "admin" && (
