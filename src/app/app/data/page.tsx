@@ -19,7 +19,7 @@ const DAYS_IN: Record<RangeKey, number> = { "3 days": 3, "7 days": 7, "14 days":
 const SPAN: Record<RangeKey, [string, string]> = Object.fromEntries(RANGES.map((r) => [r, r === "Lifetime" ? [JOINED, TODAY] : [back(DAYS_IN[r] - 1), TODAY]])) as Record<RangeKey, [string, string]>;
 const PRESETS: [string, string][] = RANGES.map((r) => [r, r === "Lifetime" ? "Lifetime" : `Last ${r}`]);
 
-/** My data overview: the numbers for any range, an AI summary with low-rated products to avoid, an action plan, and where the money comes from. */
+/** Analytics overview: the numbers for any range, an AI summary with low-rated products to avoid, an action plan, and where the money comes from. */
 export default function DataOverview() {
   const { toast } = useDemo();
   const [range, setRange] = useState<RangeKey>("30 days");
@@ -57,7 +57,7 @@ export default function DataOverview() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 22 }}>
-      <Title title="My data" sub={<>Updated today 09:12 · from your TikTok Shop orders</>}>
+      <Title title="Analytics" sub={<>Updated today 09:12 · from your TikTok Shop orders</>}>
         <CalendarPicker
           label={custom ? `${dayName(from)} – ${dayName(to)}` : PRESETS.find(([k]) => k === range)![1]}
           sub={`${dayName(from)} – ${dayName(to)} · ${between(from, to)} days`}

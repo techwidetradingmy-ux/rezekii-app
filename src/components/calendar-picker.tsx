@@ -14,8 +14,10 @@ export const between = (a: string, b: string) => Math.round((Date.parse(b) - Dat
 type Props = {
   label: string;
   sub?: string;
-  /** Last day that can be picked (today). */
+  /** Today, marked in the calendar; also the last day that can be picked unless `last` says otherwise. */
   today: string;
+  /** Last day that can be picked, e.g. weeks ahead for scheduled posts. */
+  last?: string;
   /** First day that can be picked, e.g. when the creator joined. */
   first?: string;
   from: string;
@@ -59,7 +61,8 @@ export function CalendarPicker(p: Props) {
   };
 
   const first = p.first ?? "2000-01-01";
-  const atLast = iso(cal.y, cal.m, 1) >= p.today.slice(0, 8) + "01";
+  const last = p.last ?? p.today;
+  const atLast = iso(cal.y, cal.m, 1) >= last.slice(0, 8) + "01";
   const atFirst = iso(cal.y, cal.m, 1) <= first.slice(0, 8) + "01";
   const move = (k: number) => setCal(({ y, m }) => ({ y: y + Math.floor((m + k) / 12), m: (((m + k) % 12) + 12) % 12 }));
   const lead = (new Date(Date.UTC(cal.y, cal.m, 1)).getUTCDay() + 6) % 7;
@@ -98,7 +101,7 @@ export function CalendarPicker(p: Props) {
             {Array.from({ length: lead }, (_, i) => <span key={`b${i}`} />)}
             {Array.from({ length: daysIn }, (_, i) => {
               const s = iso(cal.y, cal.m, i + 1);
-              const off = s > p.today || s < first;
+              const off = s > last || s < first;
               const inBand = s >= lo && s <= hi;
               const edge = s === lo || s === hi;
               const col = (lead + i) % 7;

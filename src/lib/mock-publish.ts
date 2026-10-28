@@ -14,8 +14,11 @@ export type PublishSetup = {
   last: string[];
   /** Apps that can still be connected (the "+ Threads" chips). */
   connectable: PubChannel[];
-  sample: { main: string; tags: string; link: string; cta: string; cover: string; file: string; seconds: number };
+  /** The post Rezekii suggests: no link or call to action in the caption; those go in the first comment. */
+  sample: { main: string; tags: string; link: string; cta: string; comment: string; cover: string; file: string; seconds: number };
   calendar: string;
+  /** TikTok's video pre-check (creator API: violations and quality before posting). */
+  precheck?: boolean;
 };
 
 const ch = (key: string, app: Channel, name: string, sub: string, initials: string, color: string, status: PubChannel["status"] = "active"): PubChannel => ({ key, app, name, sub, initials, color, status });
@@ -30,15 +33,17 @@ export const CREATOR_SETUP: PublishSetup = {
   last: ["tt-aisyah", "ig-aisyah", "fb-aisyah"],
   connectable: [ch("th-aisyah", "threads", "Aisyah Glow", "@aisyah.glow", "AR", "#111111")],
   sample: {
-    main: "Thermos test part 3: is coffee still hot after 12 hours?\nI tried it on a full work day, 7am to 7pm.\nDapatkan di sini 👉 https://vt.tiktok.com/ZSthermos/",
+    main: "Thermos test part 3: is coffee still hot after 12 hours?\nI tried it on a full work day, 7am to 7pm.\nStill hot enough to sip at 7pm ☕",
     tags: "#thermos #kopi #tiktokshopmy",
     link: "https://vt.tiktok.com/ZSthermos/",
     cta: "Dapatkan di sini 👉",
+    comment: "Saya guna yang 1.2L, warna hitam.",
     cover: "/products/tap-21.jpg",
     file: "thermos-part3.mp4",
     seconds: 42,
   },
   calendar: "/app/publish/calendar",
+  precheck: true,
 };
 
 export const SELLER_SETUP: PublishSetup = {
@@ -57,13 +62,60 @@ export const SELLER_SETUP: PublishSetup = {
   last: ["fb-seri", "ig-seri", "th-seri"],
   connectable: [],
   sample: {
-    main: "Chopper vs knife: 1 kg onions in 30 seconds.\nNo more crying in the kitchen.\nDapatkan di sini 👉 https://vt.tiktok.com/ZSchopper/",
+    main: "Chopper vs knife: 1 kg onions in 30 seconds.\nNo more crying in the kitchen 🧅",
     tags: "#dapur #chopper #tiktokshopmy",
     link: "https://vt.tiktok.com/ZSchopper/",
     cta: "Dapatkan di sini 👉",
+    comment: "Ada soalan? Tanya di komen 👇",
     cover: "/products/tap-11.jpg",
     file: "chopper-onions.mp4",
     seconds: 34,
   },
   calendar: "/seller/app/publish/calendar",
 };
+
+/* ---------------- Scheduled & posted ---------------- */
+
+/** One channel's state, V1's live statuses: Draft → Scheduled → Uploading → Sending/Publishing → Processing → Posted. */
+export type PostStatus = "draft" | "scheduled" | "uploading" | "sending" | "processing" | "posted" | "inbox" | "failed";
+export type PostTarget = { key: string; status: PostStatus; reason?: string; fix?: "Retry" | "Reconnect"; views?: number };
+export type MyPost = {
+  id: string;
+  /** ISO date and 24-hour time, Malaysia time; empty for a draft with no time yet. */
+  date: string;
+  time: string;
+  caption: string;
+  comment: string;
+  cover: string;
+  seconds: number;
+  targets: PostTarget[];
+};
+
+const t = (key: string, status: PostStatus, more: Partial<PostTarget> = {}): PostTarget => ({ key, status, ...more });
+const CMT = "Dapatkan di sini 👉 https://vt.tiktok.com/ZS";
+
+export const CREATOR_POSTS: MyPost[] = [
+  { id: "m1", date: "2026-10-28", time: "09:15", caption: "Morning kopi test: thermos vs mug", comment: `${CMT}thermos/`, cover: "/products/tap-21.jpg", seconds: 38, targets: [t("tt-aisyah", "uploading"), t("fb-aisyah", "uploading"), t("ig-aisyah", "scheduled")] },
+  { id: "m2", date: "2026-10-28", time: "20:00", caption: "Thermos test part 2: 48 hours", comment: `${CMT}thermos/`, cover: "/products/tap-21.jpg", seconds: 44, targets: [t("tt-aisyah", "scheduled"), t("ig-aisyah", "scheduled"), t("fb-aisyah", "scheduled")] },
+  { id: "m3", date: "2026-10-29", time: "12:30", caption: "3 cables I actually use", comment: `${CMT}cable/`, cover: "/products/tap-13.jpg", seconds: 29, targets: [t("tt-aisyah", "scheduled"), t("ig-aisyah", "scheduled")] },
+  { id: "m4", date: "2026-10-30", time: "21:00", caption: "Office look part 2", comment: `${CMT}office/`, cover: "/products/tap-09.jpg", seconds: 33, targets: [t("tt-aisyah", "scheduled"), t("ig-aisyah", "scheduled"), t("fb-aisyah", "scheduled")] },
+  { id: "m5", date: "2026-11-01", time: "11:00", caption: "Weekend picnic with the thermos", comment: `${CMT}thermos/`, cover: "/products/tap-21.jpg", seconds: 41, targets: [t("tt-aisyah", "scheduled"), t("fb-aisyah", "scheduled")] },
+  { id: "m6", date: "2026-11-03", time: "20:00", caption: "Windbreaker in real rain", comment: `${CMT}jacket/`, cover: "/products/tap-03.jpg", seconds: 36, targets: [t("tt-aisyah", "scheduled"), t("ig-aisyah", "scheduled")] },
+  { id: "m7", date: "", time: "", caption: "Slim pants: 3 ways to wear them", comment: "", cover: "/products/tap-07.jpg", seconds: 31, targets: [t("tt-aisyah", "draft"), t("ig-aisyah", "draft")] },
+  { id: "m8", date: "2026-10-27", time: "21:10", caption: "Toilet cleaner, honest review", comment: `${CMT}cleaner/`, cover: "/products/tap-22.jpg", seconds: 47, targets: [t("tt-aisyah", "posted", { views: 12300 }), t("fb-aisyah", "posted", { views: 1840 }), t("ig-aisyah", "failed", { reason: "Instagram stopped accepting posts from Rezekii", fix: "Reconnect" })] },
+  { id: "m9", date: "2026-10-26", time: "20:15", caption: "Yoga pants fit check", comment: `${CMT}yoga/`, cover: "/products/tap-05.jpg", seconds: 52, targets: [t("tt-aisyah", "posted", { views: 8400 }), t("fb-aisyah", "failed", { reason: "Facebook was busy and didn't answer", fix: "Retry" })] },
+  { id: "m10", date: "2026-10-25", time: "13:00", caption: "Pillowcase colours ranked", comment: "", cover: "/products/tap-17.jpg", seconds: 27, targets: [t("tt-aisyah", "inbox")] },
+  { id: "m11", date: "2026-10-24", time: "20:30", caption: "Thermos vs a cheap flask", comment: `${CMT}thermos/`, cover: "/products/tap-21.jpg", seconds: 39, targets: [t("tt-aisyah", "posted", { views: 41200 }), t("ig-aisyah", "posted", { views: 5100 }), t("fb-aisyah", "posted", { views: 2300 })] },
+  { id: "m12", date: "2026-10-22", time: "21:00", caption: "One cable, four phones", comment: `${CMT}cable/`, cover: "/products/tap-13.jpg", seconds: 25, targets: [t("tt-aisyah", "posted", { views: 9800 }), t("ig-aisyah", "posted", { views: 1200 })] },
+];
+
+export const SELLER_POSTS_V2: MyPost[] = [
+  { id: "s1", date: "2026-10-28", time: "09:15", caption: "Chopper vs knife, part 2", comment: `${CMT}chopper/`, cover: "/products/tap-11.jpg", seconds: 34, targets: [t("tt-seri", "uploading"), t("fb-seri", "uploading"), t("th-seri", "scheduled")] },
+  { id: "s2", date: "2026-10-28", time: "20:00", caption: "Thermos test: hot kopi at 7 AM, still hot at 3 PM", comment: `${CMT}thermos/`, cover: "/products/tap-21.jpg", seconds: 40, targets: [t("fb-seri", "scheduled"), t("ig-seri", "scheduled")] },
+  { id: "s3", date: "2026-10-30", time: "12:30", caption: "Weekend rendang in the granite pot", comment: `${CMT}pot/`, cover: "/products/tap-08.jpg", seconds: 45, targets: [t("fb-seri", "scheduled"), t("fb-outlet", "scheduled"), t("ig-seri", "scheduled")] },
+  { id: "s4", date: "2026-11-01", time: "09:00", caption: "Tumbler colours for school, 6 to pick", comment: `${CMT}tumbler/`, cover: "/products/tap-24.jpg", seconds: 22, targets: [t("ig-seri", "scheduled"), t("th-seri", "scheduled")] },
+  { id: "s5", date: "", time: "", caption: "Open house set: pot + thermos", comment: "", cover: "/products/tap-08.jpg", seconds: 30, targets: [t("fb-seri", "draft")] },
+  { id: "s6", date: "2026-10-27", time: "20:00", caption: "Chopper vs knife: 1 kg onions", comment: `${CMT}chopper/`, cover: "/products/tap-11.jpg", seconds: 34, targets: [t("fb-seri", "posted", { views: 6300 }), t("ig-seri", "posted", { views: 3900 }), t("ig-deals", "failed", { reason: "Instagram stopped accepting posts from Rezekii", fix: "Reconnect" })] },
+  { id: "s7", date: "2026-10-24", time: "19:45", caption: "Cordless vacuum: pet hair in one pass", comment: `${CMT}vacuum/`, cover: "/products/tap-18.jpg", seconds: 37, targets: [t("tt-seri", "posted", { views: 22100 }), t("fb-seri", "posted", { views: 2700 })] },
+  { id: "s8", date: "2026-10-21", time: "20:00", caption: "Granite pot: first cook", comment: `${CMT}pot/`, cover: "/products/tap-08.jpg", seconds: 42, targets: [t("fb-seri", "posted", { views: 1900 }), t("th-seri", "posted", { views: 640 })] },
+];

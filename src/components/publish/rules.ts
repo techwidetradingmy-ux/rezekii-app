@@ -20,12 +20,15 @@ export const COLLABORATORS_MAX = 3;
 export const TAGS_MAX = 20;
 
 export type Placement = { caption: boolean; comment: boolean };
-/** Where the product link goes by default, from how each channel is used. */
+/**
+ * Where the call to action and product link go (owner, 28 Oct 2026): never in the caption, always in the first comment.
+ * TikTok doesn't let apps comment, so its product goes in the yellow basket.
+ */
 export const DEFAULT_PLACEMENT: Record<Channel, Placement> = {
   tiktok: { caption: false, comment: false },
-  instagram: { caption: false, comment: false },
+  instagram: { caption: false, comment: true },
   threads: { caption: false, comment: true },
-  facebook: { caption: true, comment: true },
+  facebook: { caption: false, comment: true },
 };
 
 export type ReplyControl = "everyone" | "accounts_you_follow" | "followers_only" | "mentioned_only";
@@ -51,37 +54,34 @@ export const lengthFor = (ch: Channel, t: string) => (ch === "threads" ? threads
 
 /** A sentence that carries a link, with its call to action and emoji around it. */
 const CTA_WITH_LINK = /[^.!?\n]*https?:\/\/\S+[^\p{L}\p{N}\n]*/gu;
-const TAG_LINE = /^(?:#[\p{L}\p{N}_]+\s*)+$/u;
 const TAG = /(^|[^\S\n]|\n)#[\p{L}\p{N}_]+/gu;
 const tidy = (s: string) => s.split("\n").map((l) => l.replace(/[ \t]{2,}/g, " ").trim()).join("\n").replace(/\n{3,}/g, "\n\n").trim();
 
 /**
- * Rezekii's version of the main caption for one app: Facebook keeps links where they were typed; elsewhere a link goes with
- * its whole call to action. Hashtags are cut to the app's cap; Threads gets none. TikTok gets a short caption pointing to the
- * yellow basket.
+ * The caption Rezekii suggests for one app, written from the main caption: a link goes out together with its call to action
+ * (both belong in the first comment), hashtags are cut to the app's cap and Threads gets none. TikTok gets the hook and its
+ * hashtags.
  */
-export function autoCaption(ch: Channel, main: string, place: Placement = DEFAULT_PLACEMENT[ch]): string {
-  const keep = ch !== "tiktok" && place.caption;
-  const text = keep ? main : main.replace(CTA_WITH_LINK, "");
+export function autoCaption(ch: Channel, main: string): string {
+  const text = main.replace(CTA_WITH_LINK, "");
   if (!tidy(text)) return "";
   if (ch === "tiktok") {
     const hook = (tidy(text.replace(TAG, "$1")).match(/^[^.!?\n]*[.!?]?/) ?? [""])[0].trim();
-    return [hook, "Produk dekat beg kuning.", hashtags(main).slice(0, HASHTAG_MAX.tiktok).join(" ")].filter(Boolean).join(" ");
+    return [hook, hashtags(main).slice(0, HASHTAG_MAX.tiktok).join(" ")].filter(Boolean).join(" ");
   }
   let n = 0;
-  const capped = tidy(text.replace(TAG, (m, before: string) => (++n <= HASHTAG_MAX[ch] ? m : before)));
-  const line = keep ? null : place.comment ? "Link produk ada dalam komen." : ch === "instagram" ? "Link dekat bio." : "";
-  return line === null ? capped : tidy(capped.replace(/[^.!?\n]*\blink\b[^.!?\n]*[.!?]?/gi, (m) => (m.match(/^[^\p{L}\p{N}]*/u)?.[0] ?? "") + line));
+  return tidy(text.replace(TAG, (m, before: string) => (++n <= HASHTAG_MAX[ch] ? m : before)));
 }
 
-/** An app's first comment: the creator's own one with the link after it, or Rezekii's line with the link. */
-export function autoComment(ch: Platform, link: string, place: Placement = DEFAULT_PLACEMENT[ch], own = "", cta = ""): string {
-  const text = own.trim(), withLink = !!link && place.comment;
-  if (text) return withLink && !text.includes(link) ? `${text}\n${linkLine(link, cta)}` : text;
-  if (!withLink) return "";
-  if (cta.trim()) return linkLine(link, cta);
-  return ch === "threads" ? `Link produk 👇\n${link}` : ch === "facebook" ? `Dapatkan di sini: ${link}` : link;
+/** An app's first comment: any text of the creator's own, then the call to action with the product link. */
+export function autoComment(ch: Platform, link: string, own = "", cta = ""): string {
+  const text = own.trim();
+  const line = link ? linkLine(link, cta.trim() || (ch === "threads" ? "Link produk 👇" : "Dapatkan di sini 👉")) : cta.trim();
+  return [text, line && !text.includes(link || line) ? line : ""].filter(Boolean).join("\n");
 }
+
+/** True when the text carries a link or a call to action that should be in the first comment instead. */
+export const hasLinkOrCta = (text: string, cta = "") => links(text).length > 0 || (!!cta.trim() && text.includes(cta.trim()));
 
 /** Hashtags typed in their own box ("#a, b c"): each once, with a #. */
 export function parseHashtags(input: string): string[] {
@@ -100,16 +100,6 @@ export function withHashtags(main: string, tags: string[]): string {
   return [main.trim(), add.join(" ")].filter(Boolean).join("\n\n");
 }
 
-/** The caption actually posted: the app's text plus the link when it goes in the caption, above closing hashtags. */
-export function postedCaption(ch: Channel, text: string, link: string, place: Placement, cta = ""): string {
-  if (ch === "tiktok" || !link || !place.caption || text.includes(link)) return text;
-  const line = linkLine(link, cta);
-  const lines = text.split("\n");
-  const last = lines[lines.length - 1].trim();
-  if (!TAG_LINE.test(last)) return text ? `${text}\n${line}` : line;
-  const body = lines.slice(0, -1).join("\n").trim();
-  return body ? `${body}\n${line}\n\n${last}` : `${line}\n\n${last}`;
-}
 const linkLine = (link: string, cta = "") => (cta.trim() ? `${cta.trim()} ${link}` : link);
 
 /** Problems that block scheduling this app (empty = OK). */

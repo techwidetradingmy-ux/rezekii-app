@@ -3,20 +3,27 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useDemo } from "@/components/demo";
+import { Icon } from "@/components/icons";
 import { Sheet } from "@/components/ui";
 import { PlatformIcon } from "@/components/creator2/bits";
 import type { PubBrand, PubChannel, PublishSetup } from "@/lib/mock-publish";
 import { PhonePreview, type Who } from "./phone-previews";
 import {
-  APPS, CAPTION_MAX, COLLABORATORS_MAX, COMMENT_MAX, DEFAULT_PLACEMENT, ICON, NAMES, PRIVACY, REPLY_CONTROLS, TAGS_MAX, UNIT,
-  autoCaption, autoComment, channelProblems, channelWarnings, cleanTopic, consentLine, lengthFor, links, parseHashtags,
-  parseUsernames, postedCaption, threadsTopic, tiktokProblems, withHashtags,
-  type Channel, type Placement, type Platform, type Privacy, type ReplyControl, type TrialMode,
+  APPS, CAPTION_MAX, COLLABORATORS_MAX, COMMENT_MAX, ICON, NAMES, PRIVACY, REPLY_CONTROLS, TAGS_MAX, UNIT,
+  autoCaption, autoComment, channelProblems, channelWarnings, cleanTopic, consentLine, hasLinkOrCta, lengthFor, links, parseHashtags,
+  parseUsernames, threadsTopic, tiktokProblems, withHashtags,
+  type Channel, type Platform, type Privacy, type ReplyControl, type TrialMode,
 } from "./rules";
 import "@/app/creator2.css";
 import "@/app/publish.css";
 
 type When = "now" | "recommended" | "pick" | "draft";
+/** The form's sections, so a problem can jump to the one that needs fixing. */
+type Sec = "channels" | "video" | "caption" | "comment" | "tiktok" | "settings" | "when";
+type Problem = [string, Sec];
+/** A red star for a required field, and a grey tag for an optional one. */
+const Req = () => <i className="pb-req" title="Required">*<span className="sr-only"> required</span></i>;
+const Opt = () => <span className="pb-opt">Optional</span>;
 /** The next recommended time for this account, Malaysia time (V1 picks 6 am, 12 pm or 8 pm). */
 const RECOMMENDED = "Today, 8:00 PM";
 const SEARCH_ICON = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>;
@@ -71,7 +78,6 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   const [cta, setCta] = useState("");
   const [capOver, setCapOver] = useState<Partial<Record<Channel, string>>>({});
   const [comOver, setComOver] = useState<Partial<Record<Channel, string>>>({});
-  const [place, setPlace] = useState<Partial<Record<Channel, Placement>>>({});
   const [tab, setTab] = useState<"main" | Channel>("main");
   const [source, setSource] = useState<"upload" | "link">("upload");
   const [file, setFile] = useState<File | null>(null);
@@ -100,7 +106,10 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   // The preview measures text, so it renders in the browser only.
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
   const [busy, setBusy] = useState("");
-  const [errors, setErrors] = useState<string[]>([]);
+  // After the first try, problems show live under each section until they're fixed.
+  const [tried, setTried] = useState(false);
+  const [flash, setFlash] = useState<Sec | "">("");
+  const [check, setCheck] = useState<"" | "busy" | "ok">("");
   const [done, setDone] = useState<{ summary: string; when: When; at: string } | null>(null);
   const [note, setNote] = useState("");
 
@@ -137,12 +146,11 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   const chOf = (key: string): Channel => byKey.get(key)?.app ?? "facebook";
   const apps = APPS.filter((p) => keys.some((k) => chOf(k) === p));
   const inApp = (p: Channel) => keys.filter((k) => chOf(k) === p);
-  const placeOf = (p: Channel) => place[p] ?? DEFAULT_PLACEMENT[p];
-  // The main caption with the Hashtags box at the very bottom: what every app's version is written from.
+  // The main caption with the Hashtags box at the very bottom: what every app's suggested caption is written from.
   const mainFull = withHashtags(main, parseHashtags(tagsText));
-  const textOf = (p: Channel) => capOver[p] ?? autoCaption(p, mainFull, placeOf(p));
-  const captionOf = (p: Channel) => postedCaption(p, textOf(p), link.trim(), placeOf(p), cta);
-  const commentOf = (p: Channel) => (p === "tiktok" ? "" : (comOver[p] ?? autoComment(p, link.trim(), placeOf(p), ownComment, cta)));
+  // Captions never carry the link or call to action; those go in the first comment (TikTok: the yellow basket).
+  const captionOf = (p: Channel) => capOver[p] ?? autoCaption(p, mainFull);
+  const commentOf = (p: Channel) => (p === "tiktok" ? "" : (comOver[p] ?? autoComment(p, link.trim(), ownComment, cta)));
   const appLabel = (p: Channel) => { const n = inApp(p).length; return n > 1 ? `${NAMES[p]} · ${n} ${UNIT[p]}` : NAMES[p]; };
   const summary = () => apps.map((p) => { const n = inApp(p).length; return n > 1 ? `${n} ${NAMES[p]} ${UNIT[p]}` : `${NAMES[p]} ${byKey.get(inApp(p)[0])?.name ?? ""}`.trim(); }).join(", ");
   const who = (key: string): Who => {
@@ -164,22 +172,34 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   const cover = source === "upload" && sample && !file ? setup.sample.cover : null;
   const hasVideo = source === "upload" ? !!file || sample : /^https:\/\/\S+$/.test(linkUrl);
 
-  const problems = (() => {
-    const out: string[] = [];
-    if (!keys.length) out.push("Pick at least one channel.");
-    if (!hasVideo) out.push("Add a video: upload one or paste an https link.");
-    if (ttKey && when !== "draft") out.push(...tiktokProblems({ mode, caption: captionOf("tiktok"), privacy, promo: promo.on, own: promo.own, branded: promo.branded }));
-    for (const p of apps) if (p !== "tiktok") out.push(...channelProblems(p, captionOf(p), commentOf(p), durationSec));
+  const problems = ((): Problem[] => {
+    const out: Problem[] = [];
+    if (!keys.length) out.push(["Pick at least one channel to post to.", "channels"]);
+    if (!hasVideo) out.push(["Add a video: upload one or paste an https link.", "video"]);
+    if (keys.length && !apps.some((p) => captionOf(p).trim())) out.push(["Write a caption.", "caption"]);
+    if (ttKey && when !== "draft")
+      for (const t of tiktokProblems({ mode, caption: captionOf("tiktok"), privacy, promo: promo.on, own: promo.own, branded: promo.branded }))
+        out.push([t.startsWith("The caption") ? `TikTok: ${t}` : t, t.startsWith("The caption") ? "caption" : "tiktok"]);
+    for (const p of apps)
+      if (p !== "tiktok")
+        for (const t of channelProblems(p, captionOf(p), commentOf(p), durationSec))
+          out.push([t, t.includes("first comment") ? "comment" : /videos up to|at least 3 seconds/.test(t) ? "video" : "caption"]);
     if (apps.includes("instagram")) {
       const c = parseUsernames(collabText), g = parseUsernames(tagText);
-      if (c.bad.length) out.push(`Instagram collaborators: "${c.bad[0]}" isn't an Instagram username.`);
-      if (c.list.length > COLLABORATORS_MAX) out.push(`Instagram allows up to ${COLLABORATORS_MAX} collaborators.`);
-      if (g.bad.length) out.push(`Instagram tagged people: "${g.bad[0]}" isn't an Instagram username.`);
+      if (c.bad.length) out.push([`Instagram collaborators: "${c.bad[0]}" isn't an Instagram username.`, "settings"]);
+      if (c.list.length > COLLABORATORS_MAX) out.push([`Instagram allows up to ${COLLABORATORS_MAX} collaborators.`, "settings"]);
+      if (g.bad.length) out.push([`Instagram tagged people: "${g.bad[0]}" isn't an Instagram username.`, "settings"]);
     }
-    if (when === "pick" && !pickAt) out.push("Pick a date and time.");
+    if (when === "pick" && !pickAt) out.push(["Pick a date and time.", "when"]);
     return out;
   })();
-  const warnings = apps.flatMap((p) => channelWarnings(p, captionOf(p)));
+  const shown = tried ? problems : [];
+  const errorsIn = (s: Sec) => shown.filter(([, sec]) => sec === s).map(([t]) => t);
+  const secClass = (s: Sec) => `v2-card pb-card${errorsIn(s).length ? " bad" : ""}${flash === s ? " flash" : ""}`;
+  const warnings = [
+    ...apps.flatMap((p) => channelWarnings(p, captionOf(p))),
+    ...apps.filter((p) => hasLinkOrCta(captionOf(p), cta)).map((p) => `${NAMES[p]} caption has a link or call to action. Move it to the first comment.`),
+  ];
 
   function sameAsLast() {
     const next = new Set(setup.last.filter((k) => connected.has(k)));
@@ -192,7 +212,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     setChannels((list) => [...list, c]);
     setNote(`${NAMES[c.app]} connected.`);
   }
-  /** Preview helper: a sample video and caption, posted to the same channels as last time. */
+  /** Preview helper: the post Rezekii suggests (a sample video, caption and first comment), to the same channels as last time. */
   function fillSample() {
     setSource("upload");
     setSample(true);
@@ -202,8 +222,20 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     setTagsText(setup.sample.tags);
     setLink(setup.sample.link);
     setCta(setup.sample.cta);
+    setOwnComment(setup.sample.comment);
+    setCapOver({});
+    setComOver({});
     setPicked(new Set(setup.last.filter((k) => connected.has(k))));
-    setNote("Filled in with a sample post. Nothing is sent from this preview.");
+    setNote("Filled in with a suggested post: see how each app's caption and first comment are written. Nothing is sent from this preview.");
+  }
+  /** Scroll to a section, light it up for a moment and put the cursor in its first field. */
+  function jump(s: Sec) {
+    const el = document.getElementById(`pb-s-${s}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+    el.querySelector<HTMLElement>("input:not([type=radio]):not([type=checkbox]), textarea, select")?.focus({ preventScroll: true });
+    setFlash(s);
+    window.setTimeout(() => setFlash(""), 1600);
   }
   // Arriving with ?sample opens New post already filled in (for demos).
   useEffect(() => {
@@ -211,8 +243,8 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   }, []);
 
   function submit() {
-    setErrors([]);
-    if (problems.length) return setErrors(problems);
+    setTried(true);
+    if (problems.length) return jump(problems[0][1]);
     setBusy(when === "draft" ? "Saving…" : "Scheduling…");
     window.setTimeout(() => {
       setBusy("");
@@ -226,11 +258,11 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
         <span className="pb-sent-ico" aria-hidden="true">✓</span>
         <h2>{done.when === "draft" ? "Saved as a draft" : done.when === "now" ? "On its way" : "Scheduled"}</h2>
         <p>
-          {done.when === "draft" ? `Saved in Rezekii for ${done.summary}.` : done.when === "now" ? `${done.summary}: posting now.` : `${done.summary}: ${done.at} (Malaysia time).`} You&apos;ll see each
-          channel&apos;s status in Calendar &amp; history.
+          {done.when === "draft" ? `Saved in Rezekii for ${done.summary}.` : done.when === "now" ? `${done.summary}: posting now.` : `${done.summary}: ${done.at} (Malaysia time).`} Follow each
+          channel&apos;s live status in Scheduled &amp; posted, and edit or cancel it there until it starts sending.
         </p>
         <div className="np-row">
-          <Link href={setup.calendar} className="np-btn">See it in Calendar &amp; history</Link>
+          <Link href={setup.calendar} className="np-btn">See it in Scheduled &amp; posted</Link>
           <button type="button" className="btn-outline" onClick={onNew}>New post</button>
         </div>
       </section>
@@ -241,8 +273,14 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     const n = lengthFor(p, captionOf(p));
     return <span key={p} className={n > CAPTION_MAX[p] ? "over" : ""}><PlatformIcon name={ICON[p]} size={14} />{n.toLocaleString("en-US")} / {CAPTION_MAX[p].toLocaleString("en-US")}</span>;
   });
-  const linkWhere = (p: Channel) => { const pl = placeOf(p); return p === "tiktok" ? "not added (the product goes in the yellow basket)" : pl.caption && pl.comment ? "caption and first comment" : pl.caption ? "caption" : pl.comment ? "first comment" : "not added"; };
+  const linkWhere = (p: Channel) =>
+    p === "tiktok" ? "Product in the yellow basket (TikTok doesn't let apps comment)"
+      : p === "facebook" && fbDraft ? "No first comment on a Facebook draft"
+      : p === "instagram" ? "First comment (Instagram links can't be tapped, people copy them)"
+      : "First comment, right after the post";
   const notes = pApp ? previewNotes(pApp, captionOf(pApp), commentOf(pApp), !!link.trim(), fbView, { fbDraft, igFeed, igTrial, replies, tagged }) : [];
+  const secErr = (s: Sec) => errorsIn(s).length > 0 && <ul className="pb-secerr" role="alert">{errorsIn(s).map((t) => <li key={t}>{t}</li>)}</ul>;
+  const pComment = pApp && pApp !== "tiktok" && !(pApp === "facebook" && fbDraft) ? commentOf(pApp) : "";
   const q = query.trim().toLowerCase();
   const results = channels.filter((c) => c.status === "active" && (!q || `${c.name} ${c.sub} ${NAMES[c.app]}`.toLowerCase().includes(q)));
   const missing = setup.connectable.filter((c) => !channels.some((x) => x.key === c.key));
@@ -250,15 +288,20 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
 
   return (
     <>
-      <p className="pb-demo">
-        {note || "Preview: nothing is posted. Fill in a sample to try every step."}
-        <button type="button" className="pb-link" onClick={fillSample}>Fill in a sample post</button>
-      </p>
+      <div className="pb-demo">
+        <span className="pb-demo-ico" aria-hidden="true">✦</span>
+        <span>
+          <b>{note ? "Suggested post filled in" : "Not sure what to write?"}</b>
+          <small>{note || "Fill in the post Rezekii suggests for each app, then change anything. Nothing is posted from this preview."}</small>
+        </span>
+        <button type="button" className="btn-outline v2-btn-sm" onClick={fillSample}>Fill in a sample post</button>
+      </div>
+      <p className="pb-legend"><Req /> Required. Everything else is optional.</p>
       <form className="pb" onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate>
         <div className="pb-col">
-          <section className="v2-card pb-card">
+          <section id="pb-s-channels" className={secClass("channels")}>
             <div className="pb-bar">
-              <h2>Post to</h2>
+              <h2>Post to <Req /></h2>
               <span className="pb-links">
                 <button type="button" className="pb-link" onClick={sameAsLast}>Same as last post</button>
                 <button type="button" className="pb-link" onClick={() => setSheet("brands")}>Manage brands</button>
@@ -313,10 +356,11 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
                 ))}
               </div>
             ) : <p className="np-muted">Nothing picked yet: pick a brand, use Same as last post, or search for a channel.</p>}
+            {secErr("channels")}
           </section>
 
-          <section className="v2-card pb-card">
-            <h2>Video</h2>
+          <section id="pb-s-video" className={secClass("video")}>
+            <h2>Video <Req /></h2>
             <div className="np-seg" role="radiogroup" aria-label="Video source">
               <button type="button" role="radio" aria-checked={source === "upload"} className={source === "upload" ? "on" : ""} onClick={() => setSource("upload")}>Upload</button>
               <button type="button" role="radio" aria-checked={source === "link"} className={source === "link" ? "on" : ""} onClick={() => setSource("link")}>Paste a link</button>
@@ -341,10 +385,22 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
                 {apps.includes("facebook") ? ` · Facebook: ${durationSec >= 3 && durationSec <= 90 ? "goes out as a Reel" : "goes out as a Page video (Reels are 3–90 s)"}` : ""}
               </p>
             )}
+            {setup.precheck && ttKey && hasVideo && (
+              <div className={`pb-check ${check}`}>
+                <span className="pb-check-ico" aria-hidden="true">{check === "ok" ? "✓" : <Icon name="shield" size={18} />}</span>
+                {check === "ok" ? (
+                  <span><b>TikTok found no problems</b><small>No violations · quality looks good. A clean check doesn&apos;t promise views.</small></span>
+                ) : (
+                  <span><b>{check === "busy" ? "TikTok is checking your video…" : "Check my video before posting"}</b><small>TikTok checks it for violations and quality, so it doesn&apos;t get held back after posting.</small></span>
+                )}
+                {check !== "ok" && <button type="button" className="btn-outline v2-btn-sm" disabled={check === "busy"} onClick={() => { setCheck("busy"); window.setTimeout(() => setCheck("ok"), 2200); }}>{check === "busy" ? "Checking…" : "Check"}</button>}
+              </div>
+            )}
+            {secErr("video")}
           </section>
 
-          <section className="v2-card pb-card">
-            <h2>Caption</h2>
+          <section id="pb-s-caption" className={secClass("caption")}>
+            <h2>Caption <Req /></h2>
             {apps.length > 0 && (
               <div className="pb-tabs" role="tablist" aria-label="Caption for">
                 {([["main", "Main"], ...apps.map((p) => [p, appLabel(p)])] as ["main" | Channel, string][]).map(([k, l]) => (
@@ -356,23 +412,17 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
             )}
             {activeTab === "main" ? (
               <>
-                <details className="pb-guide">
-                  <summary>How to write a post that works on every app</summary>
-                  <ol>
-                    <li><b>Caption:</b> start with a hook; the first line is what people see before &ldquo;more&rdquo;. Keep the rest short, on separate lines.</li>
-                    <li><b>Call to action with the link</b> (e.g. &ldquo;Dapatkan di sini 👉 link&rdquo;): Facebook keeps it where you typed it. TikTok, Instagram and Threads drop it together with its emoji, since links can&apos;t be tapped there.</li>
-                    <li><b>Hashtags:</b> type them anywhere in the caption to keep them there, or put them in the Hashtags box to add them at the very bottom. Up to 5 on TikTok and Instagram, all on Facebook. Threads leaves them out (they can&apos;t be tapped) and uses one Topic.</li>
-                    <li><b>Product link:</b> paste it in Product link; Rezekii puts it where each app works best (Facebook post and comment, Threads comment, Instagram &ldquo;Link dekat bio&rdquo;, TikTok yellow basket).</li>
-                    <li><b>First comment:</b> optional; it goes out on Facebook, Instagram and Threads right after the post (TikTok doesn&apos;t let apps comment).</li>
-                    <li><b>Check each app&apos;s tab and the preview:</b> the preview shows exactly what will be posted.</li>
-                  </ol>
-                </details>
-                <label className="pb-field"><b>Caption</b><textarea className="np-input" rows={5} value={main} onChange={(e) => setMain(e.target.value)} placeholder="Hook on the first line, then a few short lines." aria-label="Main caption" /></label>
-                <label className="pb-field"><b>Hashtags</b><input className="np-input" type="text" value={tagsText} onChange={(e) => setTagsText(e.target.value)} placeholder="#thermos #kopi #tiktokshopmy" aria-label="Hashtags" /><small className="np-muted">Added at the very bottom: up to 5 on TikTok and Instagram, all on Facebook, none on Threads.</small></label>
-                <label className="pb-field"><b>First comment</b><textarea className="np-input" rows={2} value={ownComment} onChange={(e) => setOwnComment(e.target.value)} placeholder="Optional, e.g. Ada soalan? Tanya di komen 👇" aria-label="First comment" /><small className="np-muted">Facebook, Instagram and Threads. The product link is added after it where that app puts the link in the comment.</small></label>
+                <ol className="pb-steps" aria-label="How to write a post that works on every app">
+                  <li><b>1</b><span><strong>Hook first</strong><small>The first line is all people see before &ldquo;more&rdquo;.</small></span></li>
+                  <li><b>2</b><span><strong>No links here</strong><small>Links and calls to action go in the first comment.</small></span></li>
+                  <li><b>3</b><span><strong>Check each app</strong><small>Rezekii writes a version for each. The preview shows exactly what goes out.</small></span></li>
+                </ol>
+                <label className="pb-field"><b>Caption <Req /></b><textarea className="np-input" rows={5} value={main} onChange={(e) => setMain(e.target.value)} placeholder="Hook on the first line, then a few short lines." aria-label="Main caption" /></label>
+                {hasLinkOrCta(main, cta) && <p className="pb-warn">Links and calls to action are taken out of every caption. Put them under First comment below.</p>}
+                <label className="pb-field"><span className="pb-row"><b>Hashtags</b><Opt /></span><input className="np-input" type="text" value={tagsText} onChange={(e) => setTagsText(e.target.value)} placeholder="#thermos #kopi #tiktokshopmy" aria-label="Hashtags" /><small className="np-muted">Added at the very bottom: up to 5 on TikTok and Instagram, all on Facebook, none on Threads.</small></label>
                 {apps.includes("threads") && (
                   <label className="pb-field">
-                    <span className="pb-row"><b>Threads topic</b>{topicOver !== null ? <button type="button" className="pb-link" onClick={() => setTopicOver(null)}>Use the first hashtag</button> : <small className="np-muted">From your first hashtag · edit to change</small>}</span>
+                    <span className="pb-row"><b>Threads topic</b>{topicOver !== null ? <button type="button" className="pb-link" onClick={() => setTopicOver(null)}>Use the first hashtag</button> : <Opt />}</span>
                     <input className="np-input" type="text" value={topicOver ?? threadsTopic(mainFull)} maxLength={60} onChange={(e) => setTopicOver(e.target.value)} placeholder="e.g. Dapur" aria-label="Threads topic" />
                     <small className="np-muted">Recommended: Threads shows one topic next to your name, and people find posts by it. No periods or &amp;.</small>
                   </label>
@@ -383,34 +433,37 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
               <ChannelPane
                 ch={activeTab}
                 name={appLabel(activeTab)}
-                text={textOf(activeTab)}
+                text={captionOf(activeTab)}
                 edited={capOver[activeTab] !== undefined}
                 captionLength={lengthFor(activeTab, captionOf(activeTab))}
-                linkAdded={!!link.trim() && placeOf(activeTab).caption && activeTab !== "tiktok"}
-                place={placeOf(activeTab)}
                 comment={commentOf(activeTab)}
                 commentEdited={comOver[activeTab] !== undefined}
                 onText={(v) => setCapOver((o) => ({ ...o, [activeTab]: v }))}
                 onResetText={() => setCapOver((o) => { const n = { ...o }; delete n[activeTab]; return n; })}
-                onPlace={(pl) => setPlace((o) => ({ ...o, [activeTab]: pl }))}
                 onComment={(v) => setComOver((o) => ({ ...o, [activeTab]: v }))}
                 onResetComment={() => setComOver((o) => { const n = { ...o }; delete n[activeTab]; return n; })}
                 extra={activeTab === "threads" ? <p className="np-muted">Topic: <b>{topic || "none"}</b> · set it in Main.</p> : undefined}
               />
             )}
-            {warnings.length > 0 && <p className="pb-warn">{[...new Set(warnings)].join(" ")}</p>}
+            {[...new Set(warnings)].map((w) => <p key={w} className="pb-warn">{w}</p>)}
+            {secErr("caption")}
           </section>
 
-          <section className="v2-card pb-card">
-            <h2>Call to action &amp; product link</h2>
-            <label className="pb-field"><b>Call to action before the link</b><input className="np-input" type="text" value={cta} maxLength={80} onChange={(e) => setCta(e.target.value)} placeholder="e.g. Dapatkan di sini 👉" aria-label="Call to action before the link" /><small className="np-muted">Optional. Goes in front of the link wherever Rezekii adds it (Facebook caption, first comments).</small></label>
-            <label className="pb-field"><b>Product link</b><input className="np-input" type="url" inputMode="url" value={link} onChange={(e) => setLink(e.target.value.trim())} placeholder="https://… (Shopee or TikTok Shop)" aria-label="Product link" /></label>
-            {apps.length > 0 && <ul className="pb-how">{apps.map((p) => <li key={p}><PlatformIcon name={ICON[p]} size={18} /><span><b>{appLabel(p)}:</b> {linkWhere(p)}</span></li>)}</ul>}
-            {apps.length > 0 && <p className="np-muted">Change where it goes in each app&apos;s caption tab.</p>}
+          <section id="pb-s-comment" className={secClass("comment")}>
+            <div className="pb-bar"><h2>First comment</h2><Opt /></div>
+            <p className="np-muted" style={{ margin: 0 }}>Your call to action and product link go here, never in the caption. Rezekii posts it as your first comment right after the post.</p>
+            <div className="pb-two">
+              <label className="pb-field"><span className="pb-row"><b>Call to action</b><Opt /></span><input className="np-input" type="text" value={cta} maxLength={80} onChange={(e) => setCta(e.target.value)} placeholder="e.g. Dapatkan di sini 👉" aria-label="Call to action" /></label>
+              <label className="pb-field"><span className="pb-row"><b>Product link</b><Opt /></span><input className="np-input" type="url" inputMode="url" value={link} onChange={(e) => setLink(e.target.value.trim())} placeholder="https://… (TikTok Shop or Shopee)" aria-label="Product link" /></label>
+            </div>
+            <label className="pb-field"><span className="pb-row"><b>More text</b><Opt /></span><textarea className="np-input" rows={2} value={ownComment} onChange={(e) => setOwnComment(e.target.value)} placeholder="e.g. Ada soalan? Tanya di komen 👇" aria-label="More text in the first comment" /></label>
+            {apps.length > 0 && <ul className="pb-how">{apps.map((p) => <li key={p}><PlatformIcon name={ICON[p]} size={18} /><span><b>{appLabel(p)}</b><small>{linkWhere(p)}</small></span></li>)}</ul>}
+            {apps.some((p) => p !== "tiktok") && <p className="np-muted" style={{ margin: 0 }}>Edit one app&apos;s first comment in its tab under Caption.</p>}
+            {secErr("comment")}
           </section>
 
           {ttKey && (
-            <section className="v2-card pb-card np-sec">
+            <section id="pb-s-tiktok" className={`${secClass("tiktok")} np-sec`}>
               <h2>TikTok settings</h2>
               <div className="np-seg" role="radiogroup" aria-label="Where to send it">
                 <button type="button" role="radio" aria-checked={mode === "direct"} className={mode === "direct" ? "on" : ""} onClick={() => setMode("direct")}>Post to TikTok</button>
@@ -418,7 +471,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
               </div>
               {mode === "direct" && (
                 <>
-                  <label htmlFor="pb-privacy"><b>Who can view this post</b></label>
+                  <label htmlFor="pb-privacy"><b>Who can view this post <Req /></b></label>
                   <select id="pb-privacy" className="np-input" value={privacy} onChange={(e) => setPrivacy(e.target.value as Privacy)} required>
                     <option value="" disabled>Choose who can view</option>
                     {PRIVACY.map(([p, l]) => <option key={p} value={p} disabled={p === "SELF_ONLY" && promo.on && promo.branded}>{l}{p === "SELF_ONLY" && promo.on && promo.branded ? " (not allowed for branded content)" : ""}</option>)}
@@ -444,12 +497,13 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
                   </div>
                 </>
               )}
+              {secErr("tiktok")}
             </section>
           )}
 
           {apps.some((p) => p !== "tiktok") && (
-            <section className="v2-card pb-card np-sec">
-              <h2>Post settings</h2>
+            <section id="pb-s-settings" className={`${secClass("settings")} np-sec`}>
+              <div className="pb-bar"><h2>Post settings</h2><Opt /></div>
               {apps.includes("facebook") && (
                 <div className="pb-set">
                   <span className="pb-gh"><PlatformIcon name="Facebook" size={16} />Facebook</span>
@@ -491,28 +545,13 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
                 </div>
               )}
               <p className="np-muted">Facebook, Instagram and Threads don&apos;t offer &ldquo;Only me&rdquo; posts to apps. Use a Facebook draft to keep a post private until you publish it.</p>
+              {secErr("settings")}
             </section>
           )}
-
-          <section className="v2-card pb-card">
-            <h2>When</h2>
-            <div className="np-when" role="radiogroup" aria-label="When to post">
-              {([["now", "Post now"], ["recommended", `Recommended time · ${RECOMMENDED}`], ["pick", "Pick a time"], ["draft", "Save as draft"]] as [When, string][]).map(([v, label]) => (
-                <label key={v} className={when === v ? "np-radio on" : "np-radio"}><input type="radio" name="pb-when" value={v} checked={when === v} onChange={() => setWhen(v)} />{label}</label>
-              ))}
-            </div>
-            {when === "pick" && <input className="np-input" type="datetime-local" value={pickAt} min="2026-10-28T09:15" onChange={(e) => setPickAt(e.target.value)} aria-label="Date and time (Malaysia time)" />}
-            <p className="np-muted">All channels go out at the same time.{when === "draft" ? " A draft stays in Rezekii until you schedule it." : ""}</p>
-          </section>
-
-          {errors.length > 0 && <ul className="np-errors" role="alert">{errors.map((e) => <li key={e}>{e}</li>)}</ul>}
-          {ttKey && mode === "direct" && when !== "draft" && <p className="np-consent">{consentLine(promo.on, promo.branded)}</p>}
-          <button type="submit" className="np-btn np-submit" disabled={!!busy}>
-            {busy || `${when === "draft" ? "Save draft" : when === "now" ? "Post now" : "Schedule"} · ${keys.length === 1 ? "1 channel" : `${keys.length} channels`}`}
-          </button>
         </div>
 
-        <aside className="pb-side" aria-label="Preview">
+        <aside className="pb-side" aria-label="Preview and post">
+          <span className="pb-side-h">Preview</span>
           {apps.length > 0 && (
             <div className="pb-tabs" role="tablist" aria-label="Preview app">
               {apps.map((p) => <button key={p} type="button" role="tab" aria-selected={pApp === p} onClick={() => setPreviewApp(p)}><PlatformIcon name={ICON[p]} size={16} />{NAMES[p]}</button>)}
@@ -533,7 +572,49 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
           {pApp === "facebook" && <Tabs value={fbView} set={setFbView} items={[["reels", "Reels"], ["feed", "Feed"]]} label="Facebook view" />}
           {(pApp === "threads" || (pApp === "facebook" && fbView === "feed")) && <Tabs value={theme} set={setTheme} items={[["light", "Light"], ["dark", "Dark"]]} label="App theme" />}
           <p className="pb-note">{pApp ? PREVIEW_NOTE[pApp] : "Pick a channel to see its preview."}</p>
-          {notes.map(([text, good]) => <p key={text} className={good ? "pb-good" : "pb-warn"}>{text}</p>)}
+          {pApp && pKey && (
+            <div className="pb-cmt" aria-label="First comment as it will be posted">
+              <span className="pb-cmt-h">{pApp === "tiktok" ? "Yellow basket" : "First comment"}</span>
+              {pApp === "tiktok" ? (
+                <p>TikTok doesn&apos;t let apps post comments. Add your product to the yellow basket (beg kuning) in TikTok.</p>
+              ) : pComment ? (
+                <div className="pb-cmt-row">
+                  <span className="pb-ini" style={{ background: byKey.get(pKey)?.color }}>{byKey.get(pKey)?.initials}</span>
+                  <span><b>{who(pKey).username}</b><span className="pb-cmt-tx">{pComment}</span></span>
+                </div>
+              ) : (
+                <p>{pApp === "facebook" && fbDraft ? "Facebook drafts get no first comment." : "None. Add a call to action and product link under First comment."}</p>
+              )}
+            </div>
+          )}
+          {notes.length > 0 && (
+            <details className="pb-notes">
+              <summary>{notes.length} thing{notes.length === 1 ? "" : "s"} to know about {pApp ? NAMES[pApp] : "this app"}</summary>
+              {notes.map(([text, good]) => <p key={text} className={good ? "pb-good" : "pb-warn"}>{text}</p>)}
+            </details>
+          )}
+
+          <section id="pb-s-when" className={`${secClass("when")} pb-when`}>
+            <h2>When <Req /></h2>
+            <div className="np-when" role="radiogroup" aria-label="When to post">
+              {([["now", "Post now"], ["recommended", `Recommended · ${RECOMMENDED}`], ["pick", "Pick a time"], ["draft", "Save as draft"]] as [When, string][]).map(([v, label]) => (
+                <label key={v} className={when === v ? "np-radio on" : "np-radio"}><input type="radio" name="pb-when" value={v} checked={when === v} onChange={() => setWhen(v)} />{label}</label>
+              ))}
+            </div>
+            {when === "pick" && <input className="np-input" type="datetime-local" value={pickAt} min="2026-10-28T09:15" onChange={(e) => setPickAt(e.target.value)} aria-label="Date and time (Malaysia time)" />}
+            <p className="np-muted">Malaysia time. All channels go out together.{when === "draft" ? " A draft stays in Rezekii until you schedule it." : ""}</p>
+            {secErr("when")}
+          </section>
+          {shown.length > 0 && (
+            <div className="pb-fix" role="alert">
+              <b>{shown.length === 1 ? "1 thing to fix" : `${shown.length} things to fix`}</b>
+              {shown.map(([t, s]) => <button key={t} type="button" onClick={() => jump(s)}><span>{t}</span><Icon name="arrow" size={14} /></button>)}
+            </div>
+          )}
+          {ttKey && mode === "direct" && when !== "draft" && <p className="np-consent">{consentLine(promo.on, promo.branded)}</p>}
+          <button type="submit" className="np-btn np-submit" disabled={!!busy}>
+            {busy || `${when === "draft" ? "Save draft" : when === "now" ? "Post now" : "Schedule"} · ${keys.length === 1 ? "1 channel" : `${keys.length} channels`}`}
+          </button>
         </aside>
       </form>
 
@@ -582,37 +663,31 @@ function previewNotes(ch: Channel, caption: string, comment: string, hasLink: bo
   if (ch === "instagram" && s.tagged.length) out.push([`Tagged: ${s.tagged.map((u) => `@${u}`).join(", ")}.`, true]);
   if (ch === "instagram" && s.igTrial !== "off") out.push([s.igTrial === "manual" ? "Trial reel: shown to people who don't follow you first; you share it with followers yourself." : "Trial reel: shown to people who don't follow you first; Instagram shares it with followers if it does well.", true]);
   if (ch === "threads" && s.replies !== "everyone") out.push([`Who can reply: ${REPLY_CONTROLS.find(([v]) => v === s.replies)?.[1] ?? ""}.`, true]);
-  if (ch === "tiktok" && hasLink) out.push(["The product link isn't added on TikTok: links in TikTok captions can't be tapped. The product goes in the yellow basket (beg kuning).", false]);
-  if (ch === "instagram" && links(caption).length) out.push(["Instagram shows the link as plain text. It can't be tapped.", false]);
+  if (ch === "tiktok" && hasLink) out.push(["The product link isn't added on TikTok. The product goes in the yellow basket (beg kuning).", true]);
+  if (links(caption).length) out.push(["This caption has a link. Links belong in the first comment.", false]);
   if (ch === "instagram" && comment) out.push([`The first comment goes out right after the Reel is published.${links(comment).length ? " Links in Instagram comments can't be tapped either." : ""}`, true]);
-  if (ch === "facebook" && fbView === "reels" && links(caption).length) out.push([`Links in Facebook Reels captions can't be tapped.${s.fbDraft ? "" : " The link in the first comment can."}`, false]);
   if (ch === "facebook" && comment && !s.fbDraft) out.push(["The first comment goes out from the Page right after posting.", true]);
   if (ch === "threads" && comment) out.push(["The first comment goes out as your own reply under the post, right after it's published.", true]);
   return out;
 }
 
-/** One app's tab: Rezekii's version of the caption (editable), where the link goes, and the first comment. */
-function ChannelPane(p: { ch: Channel; name: string; text: string; edited: boolean; captionLength: number; linkAdded: boolean; place: Placement; comment: string; commentEdited: boolean; onText: (v: string) => void; onResetText: () => void; onPlace: (p: Placement) => void; onComment: (v: string) => void; onResetComment: () => void; extra?: ReactNode }) {
+/** One app's tab: the caption Rezekii suggests for it (editable) and its first comment. */
+function ChannelPane(p: { ch: Channel; name: string; text: string; edited: boolean; captionLength: number; comment: string; commentEdited: boolean; onText: (v: string) => void; onResetText: () => void; onComment: (v: string) => void; onResetComment: () => void; extra?: ReactNode }) {
   const tt = p.ch === "tiktok";
   return (
     <>
-      <div className="pb-row"><b>{p.name} caption</b>{p.edited ? <button type="button" className="pb-link" onClick={p.onResetText}>Use Rezekii&apos;s version</button> : <small className="np-muted">Rezekii&apos;s version · edit to change</small>}</div>
+      <div className="pb-row"><b>{p.name} caption</b>{p.edited ? <button type="button" className="pb-link" onClick={p.onResetText}>Use the suggested one</button> : <small className="pb-sug">✦ Suggested for {p.name} · edit to change</small>}</div>
       <textarea className="np-input" rows={5} value={p.text} onChange={(e) => p.onText(e.target.value)} aria-label={`${p.name} caption`} />
-      <span className={`np-count${p.captionLength > CAPTION_MAX[p.ch] ? " over" : ""}`}>{p.captionLength.toLocaleString("en-US")} / {CAPTION_MAX[p.ch].toLocaleString("en-US")}{p.linkAdded ? " · the link is added at the end" : ""}</span>
+      <span className={`np-count${p.captionLength > CAPTION_MAX[p.ch] ? " over" : ""}`}>{p.captionLength.toLocaleString("en-US")} / {CAPTION_MAX[p.ch].toLocaleString("en-US")}</span>
       {p.extra}
-      <div className="pb-row" style={{ justifyContent: "flex-start" }}>
-        <small className="np-muted">Product link</small>
-        <button type="button" className="pb-chip" disabled={tt} aria-pressed={p.place.caption} onClick={() => p.onPlace({ ...p.place, caption: !p.place.caption })}>{p.place.caption ? "✓ " : ""}In the caption</button>
-        <button type="button" className="pb-chip" disabled={tt} aria-pressed={p.place.comment} onClick={() => p.onPlace({ ...p.place, comment: !p.place.comment })}>{p.place.comment ? "✓ " : ""}In the first comment</button>
-      </div>
       {tt ? (
-        <p className="pb-info">TikTok captions can&apos;t hold a link that people can tap, and TikTok doesn&apos;t let apps post comments, so the link stays off. The product goes in the yellow basket (beg kuning).</p>
+        <p className="pb-info">TikTok doesn&apos;t let apps post comments, and links in TikTok captions can&apos;t be tapped. Your product goes in the yellow basket (beg kuning).</p>
       ) : (
         <>
-          <div className="pb-row"><b>First comment</b>{p.commentEdited ? <button type="button" className="pb-link" onClick={p.onResetComment}>Use Rezekii&apos;s version</button> : <small className="np-muted">Optional · posted right after the post</small>}</div>
-          <textarea className="np-input" rows={3} value={p.comment} onChange={(e) => p.onComment(e.target.value)} placeholder="Optional. Posted as your first comment right after the post goes out." aria-label={`${p.name} first comment`} />
+          <div className="pb-row"><b>{p.name} first comment</b>{p.commentEdited ? <button type="button" className="pb-link" onClick={p.onResetComment}>Use the suggested one</button> : <Opt />}</div>
+          <textarea className="np-input" rows={3} value={p.comment} onChange={(e) => p.onComment(e.target.value)} placeholder="Your call to action and product link." aria-label={`${p.name} first comment`} />
           <span className="np-count">{lengthFor(p.ch, p.comment).toLocaleString("en-US")} / {COMMENT_MAX[p.ch as Platform].toLocaleString("en-US")}</span>
-          {p.ch === "instagram" && (p.place.caption || p.place.comment) && <p className="pb-warn">Links can&apos;t be tapped on Instagram, in captions or in comments.</p>}
+          {p.ch === "instagram" && links(p.comment).length > 0 && <p className="pb-warn">Instagram links can&apos;t be tapped, even in comments. People copy them.</p>}
         </>
       )}
     </>

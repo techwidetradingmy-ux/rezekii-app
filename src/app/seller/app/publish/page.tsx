@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { Icon } from "@/components/icons";
 import { Title } from "@/components/ui";
 import { Composer } from "@/components/publish/composer";
 import { SELLER_SETUP } from "@/lib/mock-publish";
@@ -10,9 +8,7 @@ import { SELLER_SETUP } from "@/lib/mock-publish";
 export default function SellerNewPost() {
   return (
     <div className="v2-stack v2-in" style={{ gap: 16 }}>
-      <Title title="New post" sub="One video to your shop's TikTok, Facebook Pages, Instagram and Threads, written for each app">
-        <Link href="/seller/app/publish/calendar" className="btn-outline v2-btn-sm"><Icon name="cal" size={16} /> Calendar &amp; history</Link>
-      </Title>
+      <Title title="New post" sub="One video to your shop's TikTok, Facebook Pages, Instagram and Threads, written for each app" />
       <Composer setup={SELLER_SETUP} />
     </div>
   );
