@@ -232,8 +232,10 @@ const BLESS = [
  * "Share your proud moment" (V1's share window): the card in 3 designs, sized for each platform, as an image or a 5-second
  * video, with a blessing, a caption and the apps to send it to. Shows achievements, never sales.
  */
-export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow", level, kicker = "Proud moment", caption: captionInit }: {
+export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow", level, kicker = "Proud moment", caption: captionInit, onShared }: {
   onClose: () => void; big: string; label: string; lines: string[]; handle?: string; level?: Level; kicker?: string; caption?: string;
+  /** Called once the card has gone out to an app (on a phone: when the share menu reports it was sent). */
+  onShared?: (where: string) => void;
 }) {
   const { toast } = useDemo();
   const [fmt, setFmt] = useState<(typeof FORMATS)[number]["key"]>("story");
@@ -243,7 +245,11 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
   const [caption, setCaption] = useState(captionInit ?? `Alhamdulillah! ${label}: ${big} on Rezekii 🎉 #RezekiiCreator #TikTokShopMY`);
   const f = FORMATS.find((x) => x.key === fmt)!;
   const initials = handle.startsWith("@") ? handle.slice(1, 3).toUpperCase() : handle.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
-  const send = (app: string) => toast(app === "More" ? "Opening your phone's share menu…" : `Opening ${app} with your ${video ? "video" : "image"} and caption…`);
+  const send = (app: string) => {
+    toast(app === "More" ? "Opening your phone's share menu…" : `Opening ${app} with your ${video ? "video" : "image"} and caption…`);
+    // Preview: the share counts a moment later, as if the app confirmed it was posted.
+    if (onShared) window.setTimeout(() => onShared(app), 1200);
+  };
 
   return (
     <Sheet title="Share your proud moment" onClose={onClose} wide>

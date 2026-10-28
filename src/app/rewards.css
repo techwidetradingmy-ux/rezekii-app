@@ -201,3 +201,15 @@
   .mx-page > .v2-title { grid-column: 1 / -1; }
   .mx-page > .mx-streak { grid-column: 1; grid-row: 2 / span 10; position: sticky; top: 84px; }
 }
+.mx-rule { margin: -4px 0 0; display: flex; gap: 6px; align-items: flex-start; font-size: 12.5px; color: var(--gink); font-weight: 700; line-height: 1.45; } .mx-rule svg { flex-shrink: 0; margin-top: 2px; }
+/* Mission rows line up (owner, 28 Oct 2026): the credit and the button each sit in a fixed-width column. */
+.mx-row { grid-template-columns: 36px minmax(0, 1fr) 64px 112px; }
+.mx-row .mx-get { justify-self: end; min-width: 52px; text-align: center; }
+.mx-row > :last-child { justify-self: stretch; }
+.mx-row > .v2-btn-sm, .mx-row > a.v2-btn-sm { width: 100%; min-width: 0; justify-content: center; }
+.mx-row > .mx-done { text-align: center; }
+@media (max-width: 560px) {
+  .mx-row { grid-template-columns: 34px minmax(0, 1fr) 96px; }
+  .mx-row .mx-get { grid-column: 2; grid-row: 2; justify-self: start; margin-top: -4px; }
+  .mx-row > :last-child { grid-column: 3; grid-row: 1 / 3; }
+}

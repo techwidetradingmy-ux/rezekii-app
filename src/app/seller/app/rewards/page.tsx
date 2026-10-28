@@ -8,10 +8,10 @@ import { SELLER_CREDITS, SELLER_MISSIONS, SELLER_STREAK } from "@/lib/mock-selle
 /** Daily missions for sellers: general actions in the seller app, reset at midnight. */
 const DAILY: Mission[] = [
   { id: "d1", icon: "check", title: "Check in", reward: 5, cta: "Check in", state: "ready" },
-  { id: "d2", icon: "video", title: "Post a video for your shop", reward: 20, cta: "Post", href: "/seller/app/publish", state: "done" },
-  { id: "d3", icon: "chart", title: "Check today's results", reward: 5, cta: "Claim", state: "ready" },
-  { id: "d4", icon: "box", title: "Submit or register a product", reward: 20, cta: "Submit", href: "/seller/app/submit", state: "todo" },
-  { id: "d5", icon: "share", title: "Share a proud moment", reward: 5, cta: "Share", share: true, state: "todo" },
+  { id: "d2", icon: "video", title: "Post a video for your shop", reward: 20, cta: "Post", href: "/seller/app/publish", state: "done", counts: "Counts once the app confirms it's live" },
+  { id: "d3", icon: "chart", title: "Check today's results", reward: 5, cta: "Claim", state: "ready", counts: "Results opened today" },
+  { id: "d4", icon: "box", title: "Submit or register a product", reward: 20, cta: "Submit", href: "/seller/app/submit", state: "todo", counts: "Counts when it reaches our review" },
+  { id: "d5", icon: "share", title: "Share a proud moment", reward: 5, cta: "Share", share: true, state: "todo", counts: "Counts when you share it to an app" },
 ];
 const ICONS: Record<string, IconName> = { sm1: "link", sm2: "user", sm3: "box", sm4: "check", sm5: "share", sm6: "users", sm7: "box", sm8: "users", sm9: "shield" };
 /** The seller's setup steps and milestones, as missions with one button each. */

@@ -19,7 +19,7 @@ const TIERS = [
 const tierOf = (d: number) => [...TIERS].reverse().find((t) => d >= t.days) ?? null;
 
 /** One mission: a general action with one button. `share` opens the share card; `ready` can be claimed now. */
-export type Mission = { id: string; icon: IconName; title: string; reward: number; cta: string; href?: string; share?: boolean; progress?: [number, number]; state: "todo" | "ready" | "done"; left?: string };
+export type Mission = { id: string; icon: IconName; title: string; reward: number; cta: string; href?: string; share?: boolean; progress?: [number, number]; state: "todo" | "ready" | "done"; left?: string; counts?: string };
 type List = "daily" | "starter" | "milestone";
 type Moment = { title: string; line: string; cheer: string; icon: "gift" | "trophy" | "flame"; share?: { big: string; label: string; lines: string[] } };
 
@@ -56,6 +56,8 @@ export function MissionsBoard(p: {
   const [checkedToday, setCheckedToday] = useState(false);
   const [moment, setMoment] = useState<Moment | null>(null);
   const [share, setShare] = useState<Moment["share"] | null>(null);
+  // A share mission waits here until the card really goes out to an app.
+  const [sharing, setSharing] = useState<{ list: List; m: Mission } | null>(null);
 
   const daily = lists.daily, starter = lists.starter;
   // Bonus chests after a third, two thirds and all of today's missions.
@@ -106,7 +108,7 @@ export function MissionsBoard(p: {
       <span className="mx-main">
         <b>{m.title}</b>
         {m.progress && m.state !== "done" && <span className="mx-mini"><span><i style={{ width: `${(m.progress[0] / m.progress[1]) * 100}%` }} /></span><small>{m.progress[0]}/{m.progress[1]}</small></span>}
-        {m.left && m.state !== "done" && <small>{m.left}</small>}
+        {m.state !== "done" && (m.counts || m.left) && <small>{[m.counts, m.left].filter(Boolean).join(" · ")}</small>}
       </span>
       <span className="mx-get">+{m.reward}</span>
       {m.state === "done" ? (
@@ -114,7 +116,7 @@ export function MissionsBoard(p: {
       ) : m.state === "ready" ? (
         <button type="button" className="np-btn v2-btn-sm" onClick={() => finish(list, m)}>{m.cta}</button>
       ) : m.share ? (
-        <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setShare(streakCard); finish(list, m); }}>{m.cta}</button>
+        <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setSharing({ list, m }); setShare(streakCard); }}>{m.cta}</button>
       ) : (
         <Link href={m.href!} className="btn-outline v2-btn-sm">{m.cta}</Link>
       )}
@@ -163,6 +165,7 @@ export function MissionsBoard(p: {
           <h2 className="v2-h2">Daily missions</h2>
           <span className="v2-small">Resets at midnight</span>
         </div>
+        <p className="mx-rule"><Icon name="check" size={14} width={3} /> Credits come only when it really happens: a post that goes live, a request that&apos;s sent, a share that goes out.</p>
         <div className="mx-today">
           <span className="mx-today-h"><b>{earnedToday} / {maxToday} credits today</b><small>{doneToday} of {daily.length} done</small></span>
           <span className="mx-track">
@@ -200,7 +203,17 @@ export function MissionsBoard(p: {
       {moment && (
         <Celebrate title={moment.title} line={moment.line} cheer={moment.cheer} icon={moment.icon} onClose={() => setMoment(null)} onShare={() => { setShare(moment.share ?? streakCard); setMoment(null); }} />
       )}
-      {share && <ShareSheet onClose={() => setShare(null)} big={share.big} label={share.label} lines={share.lines} kicker="Missions" handle={p.handle} />}
+      {share && (
+        <ShareSheet
+          onClose={() => { setShare(null); setSharing(null); }}
+          big={share.big}
+          label={share.label}
+          lines={share.lines}
+          kicker="Missions"
+          handle={p.handle}
+          onShared={() => { if (sharing) { finish(sharing.list, sharing.m); setSharing(null); toast(`Shared. +${sharing.m.reward} credits`); } }}
+        />
+      )}
     </div>
   );
 }
