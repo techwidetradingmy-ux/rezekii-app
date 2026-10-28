@@ -112,7 +112,7 @@ export function MissionsBoard(p: {
       </span>
       <span className="mx-get">+{m.reward}</span>
       {m.state === "done" ? (
-        <span className="mx-done">Done</span>
+        <span className="mx-done"><Icon name="check" size={14} width={3} /> Done</span>
       ) : m.state === "ready" ? (
         <button type="button" className="np-btn v2-btn-sm" onClick={() => finish(list, m)}>{m.cta}</button>
       ) : m.share ? (
