@@ -12,7 +12,8 @@ export const MENUS: Record<AppKind, Section[]> = {
       href: "/app/data", label: "Analytics", icon: "chart",
       pages: [["/app/data", "Overview"], ["/app/data/performance", "Performance"], ["/app/data/risk", "Risk Check"], ["/app/data/payouts", "Payouts"]],
     },
-    { href: "/app/publish", label: "Publish", icon: "send", pages: [["/app/publish", "New Post"], ["/app/publish/plan", "Today's Ideas"], ["/app/publish/calendar", "Content Calendar"]] },
+    // Today's Ideas first (owner, 28 Oct 2026): Publish opens on what to film, then New Post, then the calendar.
+    { href: "/app/publish/plan", label: "Publish", icon: "send", pages: [["/app/publish/plan", "Today's Ideas"], ["/app/publish", "New Post"], ["/app/publish/calendar", "Content Calendar"]] },
     { href: "/app/rewards", label: "Missions", icon: "gift", pages: [] },
   ],
   seller: [

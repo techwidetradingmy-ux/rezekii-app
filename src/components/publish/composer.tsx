@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useDemo } from "@/components/demo";
 import { Icon } from "@/components/icons";
-import { Sheet } from "@/components/ui";
+import { Sheet, Tip } from "@/components/ui";
 import { PlatformIcon } from "@/components/creator2/bits";
 import { POST_CREDITS, type PubBrand, type PubChannel, type PublishSetup } from "@/lib/mock-publish";
 import { PhonePreview, type Who } from "./phone-previews";
@@ -400,34 +400,28 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
           </section>
 
           <section id="pb-s-caption" className={secClass("caption")}>
-            <h2>Caption <Req /></h2>
+            <h2>Caption <Req /> <Tip label="Caption tips" text="Hook first: only the first line shows. No links here: put them in the first comment. Each app gets its own version in the tabs." /></h2>
             {apps.length > 0 && (
               <div className="pb-tabs" role="tablist" aria-label="Caption for">
                 {([["main", "Main"], ...apps.map((p) => [p, appLabel(p)])] as ["main" | Channel, string][]).map(([k, l]) => (
-                  <button key={k} type="button" role="tab" aria-selected={activeTab === k} onClick={() => setTab(k)}>
-                    {k !== "main" && <PlatformIcon name={ICON[k]} size={16} />}{l}{k !== "main" && (capOver[k] !== undefined || comOver[k] !== undefined) && <i className="dot" title="Edited" />}
+                  <button key={k} type="button" role="tab" aria-selected={activeTab === k} aria-label={k === "main" ? undefined : l} title={k === "main" ? undefined : l} className={k === "main" ? undefined : "pb-tab-ic"} onClick={() => setTab(k)}>
+                    {k === "main" ? l : <PlatformIcon name={ICON[k]} size={20} />}{k !== "main" && (capOver[k] !== undefined || comOver[k] !== undefined) && <i className="dot" title="Edited" />}
                   </button>
                 ))}
               </div>
             )}
             {activeTab === "main" ? (
               <>
-                <ol className="pb-steps" aria-label="How to write a post that works on every app">
-                  <li><b>1</b><span><strong>Hook first</strong><small>Only the first line shows.</small></span></li>
-                  <li><b>2</b><span><strong>No links here</strong><small>Put them in the first comment.</small></span></li>
-                  <li><b>3</b><span><strong>Check each app</strong><small>Each app gets its own version.</small></span></li>
-                </ol>
-                <label className="pb-field"><b>Caption <Req /></b><textarea className="np-input" rows={5} value={main} onChange={(e) => setMain(e.target.value)} placeholder="Hook first, then a few short lines." aria-label="Main caption" /></label>
+                <label className="pb-field"><textarea className="np-input" rows={5} value={main} onChange={(e) => setMain(e.target.value)} placeholder="Hook first, then a few short lines." aria-label="Main caption" /></label>
+                {counts.length > 0 && <div className="pb-counts" aria-label="Characters per app">{counts}</div>}
                 {hasLinkOrCta(main, cta) && <p className="pb-warn">Links are removed from captions. Use First comment below.</p>}
-                <label className="pb-field"><span className="pb-row"><b>Hashtags</b><Opt /></span><input className="np-input" type="text" value={tagsText} onChange={(e) => setTagsText(e.target.value)} placeholder="#thermos #kopi #tiktokshopmy" aria-label="Hashtags" /><small className="np-muted">Up to 5 on TikTok and Instagram, none on Threads.</small></label>
+                <label className="pb-field"><span className="pb-row"><b>Hashtags <Tip label="Hashtag tips" text="Up to 5 on TikTok and Instagram, none on Threads." /></b><Opt /></span><input className="np-input" type="text" value={tagsText} onChange={(e) => setTagsText(e.target.value)} placeholder="#thermos #kopi #tiktokshopmy" aria-label="Hashtags" /></label>
                 {apps.includes("threads") && (
                   <label className="pb-field">
-                    <span className="pb-row"><b>Threads topic</b>{topicOver !== null ? <button type="button" className="pb-link" onClick={() => setTopicOver(null)}>Use the first hashtag</button> : <Opt />}</span>
+                    <span className="pb-row"><b>Threads topic <Tip label="Topic tips" text="One topic per post. No periods or &." /></b>{topicOver !== null ? <button type="button" className="pb-link" onClick={() => setTopicOver(null)}>Use the first hashtag</button> : <Opt />}</span>
                     <input className="np-input" type="text" value={topicOver ?? threadsTopic(mainFull)} maxLength={60} onChange={(e) => setTopicOver(e.target.value)} placeholder="e.g. Dapur" aria-label="Threads topic" />
-                    <small className="np-muted">One topic per post. No periods or &amp;.</small>
                   </label>
                 )}
-                {counts.length > 0 && <div className="pb-counts" aria-label="Characters per app">{counts}</div>}
               </>
             ) : (
               <ChannelPane
@@ -450,15 +444,13 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
           </section>
 
           <section id="pb-s-comment" className={secClass("comment")}>
-            <div className="pb-bar"><h2>First comment</h2><Opt /></div>
-            <p className="np-muted" style={{ margin: 0 }}>Your call to action and link. Posted right after your post.</p>
+            <div className="pb-bar"><h2>First comment <Tip label="About the first comment" text="Your call to action and link, posted right after your post. Edit it per app under Caption." /></h2><Opt /></div>
             <div className="pb-two">
               <label className="pb-field"><span className="pb-row"><b>Call to action</b><Opt /></span><input className="np-input" type="text" value={cta} maxLength={80} onChange={(e) => setCta(e.target.value)} placeholder="e.g. Dapatkan di sini 👉" aria-label="Call to action" /></label>
               <label className="pb-field"><span className="pb-row"><b>Product link</b><Opt /></span><input className="np-input" type="url" inputMode="url" value={link} onChange={(e) => setLink(e.target.value.trim())} placeholder="https://… (TikTok Shop or Shopee)" aria-label="Product link" /></label>
             </div>
             <label className="pb-field"><span className="pb-row"><b>More text</b><Opt /></span><textarea className="np-input" rows={2} value={ownComment} onChange={(e) => setOwnComment(e.target.value)} placeholder="e.g. Ada soalan? Tanya di komen 👇" aria-label="More text in the first comment" /></label>
             {apps.length > 0 && <ul className="pb-how">{apps.map((p) => <li key={p}><PlatformIcon name={ICON[p]} size={18} /><span><b>{appLabel(p)}</b><small>{linkWhere(p)}</small></span></li>)}</ul>}
-            {apps.some((p) => p !== "tiktok") && <p className="np-muted" style={{ margin: 0 }}>Edit per app under Caption.</p>}
             {secErr("comment")}
           </section>
 
