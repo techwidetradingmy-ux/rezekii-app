@@ -164,47 +164,38 @@ export default function Marketplace() {
         {(cat !== "All" || onlySamples || pool || term) && <button type="button" className="v2-link" onClick={() => { setQ(""); setCat("All"); setPool(null); setOnlySamples(false); }}>Clear</button>}
       </p>
 
+      <p className="mka-legend" aria-label="How to read the cards">
+        <span><s>6%</s><Icon name="arrow" size={12} /><b>10%</b> TikTok open plan → Rezekii rate</span>
+        <span><i className="mka-gift mini"><Icon name="gift" size={12} /></i> Free sample</span>
+      </p>
       <div className="mk-grid">
         {list.map((p, i) => {
           const left = SAMPLE_LEFT[p.id] ?? 10;
-          const extra = (p.price * (p.tapRate - p.publicRate)) / 100;
           const isAdded = added.includes(p.id);
+          const asked = requested.includes(p.id);
+          // Option A, clean grid (owner, 28 Oct 2026): name, open → Rezekii rate, what she earns, Add and a gift button.
           return (
-            <article key={p.id} className="mk-card" style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}>
+            <article key={p.id} className="mk-card mka" style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}>
               <span className="mk-img">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={p.img} alt="" />
                 {p.samples && <PoolTag pool={p.samples as Pool} label={false} />}
-                {p.samples && <span className="mk-free">FREE SAMPLE</span>}
-                {requested.includes(p.id) && <span className="cr1-reqd"><Icon name="check" size={13} width={3} /> Requested</span>}
+                {asked && <span className="cr1-reqd"><Icon name="check" size={13} width={3} /> Requested</span>}
               </span>
               <strong>{p.name}</strong>
               <small className="mk-meta">{rm(p.price)} · {p.sold >= 1e6 ? `${(p.sold / 1e6).toFixed(1)}M` : `${Math.round(p.sold / 1e3)}K`} sold</small>
-              <span className="mk-rates" aria-label={`Open plan ${p.publicRate}%, Rezekii ${p.tapRate}%`}>
-                <span><small>Open plan</small><s>{p.publicRate}%</s></span>
-                <Icon name="arrow" size={14} />
-                <span className="to"><small>Rezekii</small><b><Hidden>{p.tapRate}%</Hidden></b></span>
-              </span>
-              <span className="mk-earn"><span>You earn <b><Hidden>{rm(earn(p))}</Hidden></b> a sale</span><em>+<Hidden>{rm(extra)}</Hidden> vs open plan</em></span>
-              {p.samples && (
-                <span className="mk-left">
-                  {left} samples left
-                  <i><span style={{ width: `${Math.min(100, (left / 50) * 100)}%` }} /></i>
-                </span>
-              )}
-              <span className="mk-acts">
-                <button type="button" className={isAdded ? "ai-btn done" : "ai-btn"} disabled={isAdded} onClick={() => addToShowcase(p)}>
-                  <Icon name={isAdded ? "check" : "plus"} size={14} width={2.6} /> {isAdded ? "In showcase" : "Add to showcase"}
+              <span className="mka-rate" aria-label={`Open plan ${p.publicRate}%, Rezekii ${p.tapRate}%`}><s>{p.publicRate}%</s><Icon name="arrow" size={13} /><b><Hidden>{p.tapRate}%</Hidden></b></span>
+              <span className="mka-earn">Earn <b><Hidden>{rm(earn(p))}</Hidden></b></span>
+              <span className="mka-acts">
+                <button type="button" className={isAdded ? "mka-add done" : "mka-add"} disabled={isAdded} onClick={() => addToShowcase(p)}>
+                  <Icon name={isAdded ? "check" : "plus"} size={15} width={2.6} /> {isAdded ? "Added" : "Add"}
                 </button>
                 {p.samples ? (
-                  <button type="button" className={`ai-btn ghost ${requested.includes(p.id) ? "asked" : ""}`} disabled={requested.includes(p.id)} onClick={() => requireWa(() => open(p))}>
-                    <Icon name={requested.includes(p.id) ? "check" : "gift"} size={14} /> {requested.includes(p.id) ? "Requested" : "Free sample"}
+                  <button type="button" className={`mka-gift ${asked ? "asked" : ""}`} disabled={asked} onClick={() => requireWa(() => open(p))} aria-label={asked ? "Free sample requested" : `Free sample, ${left} left`} title={asked ? "Requested" : `Free sample · ${left} left`}>
+                    <Icon name={asked ? "check" : "gift"} size={16} />
                   </button>
                 ) : (
-                  // Same two buttons on every card so they line up; grey when there's no sample.
-                  <button type="button" className="ai-btn ghost off" disabled>
-                    <Icon name="gift" size={14} /> No free sample
-                  </button>
+                  <button type="button" className="mka-gift off" disabled aria-label="No free sample" title="No free sample"><Icon name="gift" size={16} /></button>
                 )}
               </span>
             </article>
