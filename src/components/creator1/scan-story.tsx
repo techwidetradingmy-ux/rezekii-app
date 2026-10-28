@@ -6,7 +6,7 @@ import { useDemo } from "@/components/demo";
 import { Count, Portal, ShareSheet } from "@/components/ui";
 import { ANALYTICS, CREATOR, REFERRAL_REWARD, product, rm } from "@/lib/mock";
 
-export type StoryItem = { id: string; productId: string; from: number; to: number };
+export type StoryItem = { id: string; productId: string; from: number; to: number; added?: boolean };
 const SLIDE_MS = 4200;
 const LINK = `rezekii.com/c/${CREATOR.handle.replace(/^@/, "")}`;
 
@@ -15,10 +15,16 @@ const LINK = `rezekii.com/c/${CREATOR.handle.replace(/^@/, "")}`;
  * Instagram story. Products checked, how many pay more, the best raise, what they would have earned (from her own orders),
  * then add all, share the story card, or challenge a friend with her invite link.
  */
-export function ScanStory({ checked, items, onAddAll, onClose }: { checked: number; items: StoryItem[]; onAddAll: () => void; onClose: () => void }) {
+export function ScanStory({ checked, items, onAdd, onClose }: { checked: number; items: StoryItem[]; onAdd: (ids: string[]) => void; onClose: () => void }) {
   const { toast } = useDemo();
   const [i, setI] = useState(0);
-  const [share, setShare] = useState(false);
+  // Which share card is open: the scan result, or the money she missed (owner, 28 Oct 2026: make it shareable).
+  const [share, setShare] = useState<"scan" | "money" | null>(null);
+  // Owner, 28 Oct 2026: show which products can pay more, and let her raise one, some or all. All are ticked to start,
+  // except products rated under 4★ (Risk check says avoid them).
+  const open = items.filter((it) => !it.added);
+  const [pick, setPick] = useState<string[]>(() => open.filter((it) => product(it.productId).rating >= 4).map((it) => it.id));
+  const flip = (id: string) => setPick((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   // The best raise on a product rated 4★ or more: never cheer a product Risk check says to avoid.
   const ranked = [...items].sort((a, b) => b.to - b.from - (a.to - a.from));
   const best = ranked.find((it) => product(it.productId).rating >= 4) ?? ranked[0];
@@ -27,7 +33,7 @@ export function ScanStory({ checked, items, onAddAll, onClose }: { checked: numb
     const o = ANALYTICS.byProduct.find((b) => b.productId === it.productId)?.orders ?? 0;
     return sum + (o * product(it.productId).price * (it.to - it.from)) / 100;
   }, 0);
-  const slides = ["intro", "checked", "found", "best", ...(extra > 0 ? ["money"] : []), "end"] as const;
+  const slides = items.length ? (["intro", "checked", "found", "best", ...(extra > 0 ? ["money"] : []), "end"] as const) : (["intro", "checked", "end"] as const);
   const last = slides.length - 1;
   const at = slides[i];
 
@@ -53,8 +59,21 @@ export function ScanStory({ checked, items, onAddAll, onClose }: { checked: numb
   };
   const caption = `Rezekii found ${items.length} better commissions hiding in my TikTok showcase 👀 Up to +${best ? best.to - best.from : 0}%. Check yours free 👉 ${LINK} #RezekiiScan #TikTokShopMY`;
 
+  const missed = rm(extra);
+  if (share === "money") {
+    return (
+      <ShareSheet
+        onClose={() => setShare(null)}
+        big={missed}
+        label="I missed out on this last month"
+        lines={["in TikTok Shop commission", `Rezekii found ${items.length} better rates in my showcase`]}
+        kicker="Money I missed"
+        caption={`I was missing ${missed} a month in TikTok Shop commission 😭 Rezekii found ${items.length} better rates hiding in my showcase. See what you're missing, free 👉 ${LINK} #RezekiiScan #TikTokShopMY`}
+      />
+    );
+  }
   if (share) {
-    return <ShareSheet onClose={() => setShare(false)} big={`${items.length} raises`} label="Found in my showcase" lines={[`Up to +${best ? best.to - best.from : 0}% commission`, `${checked.toLocaleString("en-MY")} products checked`]} kicker="Showcase scan" caption={caption} />;
+    return <ShareSheet onClose={() => setShare(null)} big={`${items.length} raises`} label="Found in my showcase" lines={[`Up to +${best ? best.to - best.from : 0}% commission`, `${checked.toLocaleString("en-MY")} products checked`]} kicker="Showcase scan" caption={caption} />;
   }
 
   return (
@@ -120,20 +139,54 @@ export function ScanStory({ checked, items, onAddAll, onClose }: { checked: numb
             )}
             {at === "money" && (
               <>
-                <span className="ss-kick">Last 30 days</span>
-                <h2>At these rates, your sales would have earned</h2>
+                <span className="ss-kick">You missed out on</span>
                 <strong className="ss-big"><Count value={extra} ms={1400} format={(n) => rm(n)} /></strong>
-                <h2>more</h2>
-                <small className="ss-note">Worked out from your own orders. Only you see this; it&apos;s never on your share card.</small>
+                <h2>in commission last month</h2>
+                <span className="ss-sticker" style={{ ["--r" as string]: "-5deg" }}>If you&apos;d found us earlier 😭</span>
+                <small className="ss-note">Your own sales in the last 30 days, at the better rates we found. An estimate from your orders.</small>
+                <button type="button" className="ss-btn ss-btn-fit" onClick={() => setShare("money")}><Icon name="share" size={18} /> Share this</button>
               </>
             )}
             {at === "end" && (
               <>
                 <span className="ss-kick">Your move</span>
-                <h2>Lock in {items.length} better rates</h2>
-                <button type="button" className="ss-btn main" onClick={() => { onAddAll(); onClose(); }}><Icon name="plus" size={18} width={2.6} /> Add all {items.length} in one tap</button>
-                <button type="button" className="ss-btn" onClick={() => setShare(true)}><Icon name="share" size={18} /> Share my scan</button>
-                <button type="button" className="ss-btn" onClick={() => toast(`Opening WhatsApp with your link: ${LINK}`)}><Icon name="users" size={18} /> Challenge a friend to scan</button>
+                <h2>{!items.length ? "Your rates are already the best we have" : open.length ? "Pick which ones to raise" : "All your raises are added"}</h2>
+                {items.length > 0 && (
+                  <div className="ss-pick">
+                    {open.length > 1 && (
+                      <button type="button" className="ss-pick-all" onClick={() => setPick(pick.length === open.length ? [] : open.map((it) => it.id))}>
+                        {pick.length === open.length ? "Untick all" : "Tick all"}
+                      </button>
+                    )}
+                    <ul>
+                      {items.map((it) => {
+                        const p = product(it.productId);
+                        const on = pick.includes(it.id);
+                        return (
+                          <li key={it.id}>
+                            <button type="button" className={`ss-row${it.added ? " added" : on ? " on" : ""}`} disabled={it.added} aria-pressed={it.added ? undefined : on} onClick={() => flip(it.id)}>
+                              <i className="ss-tick" aria-hidden="true">{(on || it.added) && <Icon name="check" size={13} width={3.4} />}</i>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={p.img} alt="" />
+                              <span>{p.rating < 4 && <i className="ss-low">{p.rating.toFixed(1)}★</i>}{p.name}</span>
+                              <em>{it.added ? "Added" : <>{it.from}% → <b>{it.to}%</b></>}</em>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+                {open.length > 0 && (
+                  <button type="button" className="ss-btn main" disabled={!pick.length} onClick={() => { onAdd(pick); onClose(); }}>
+                    <Icon name="plus" size={18} width={2.6} /> {!pick.length ? "Tick at least one" : pick.length === open.length && open.length > 1 ? `Add all ${pick.length}` : `Add ${pick.length} selected`}
+                  </button>
+                )}
+                {!items.length && <small className="ss-note">We scan your showcase every day and tell you when a better rate comes up.</small>}
+                <span className="ss-two">
+                  <button type="button" className="ss-btn" onClick={() => setShare("scan")}><Icon name="share" size={18} /> Share</button>
+                  <button type="button" className="ss-btn" onClick={() => toast(`Opening WhatsApp with your link: ${LINK}`)}><Icon name="users" size={18} /> Challenge a friend</button>
+                </span>
                 <small className="ss-note">+{REFERRAL_REWARD.inviter} credits for you and +{REFERRAL_REWARD.friend} for your friend when they join with your link and run their first scan.</small>
               </>
             )}

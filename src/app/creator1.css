@@ -852,3 +852,22 @@
 .ss-btn.main { background: #ffffff; color: #00804f; border-color: #ffffff; }
 .ss-hint { align-self: center; font-size: 12px; opacity: 0.7; font-weight: 700; }
 @media (prefers-reduced-motion: reduce) { .ss-ring, .ss-ring img, .ss-body, .ss-sticker, .ss-thumbs img, .ss-grid > span, .ss-hero, .ss-frame { animation: none !important; } .ss-bars i.now { animation: none; width: 100%; } }
+
+/* Recap end slide (owner, 28 Oct 2026): which products can pay more, pick one, some or all. */
+.ss-pick { width: 100%; display: grid; gap: 6px; }
+.ss-pick ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; max-height: 232px; overflow-y: auto; overscroll-behavior: contain; }
+.ss-pick-all { justify-self: end; border: 0; background: none; color: #ffffff; font: inherit; font-size: 13px; font-weight: 800; text-decoration: underline; cursor: pointer; padding: 0; }
+.ss-row { width: 100%; display: grid; grid-template-columns: 22px 36px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 6px 10px 6px 8px; border-radius: 14px; border: 1.5px solid rgba(255, 255, 255, 0.35); background: rgba(255, 255, 255, 0.08); color: #ffffff; font: inherit; text-align: left; cursor: pointer; }
+.ss-row.on { background: rgba(255, 255, 255, 0.2); border-color: #ffffff; }
+.ss-row.added { opacity: 0.7; cursor: default; }
+.ss-row img { width: 36px; height: 36px; border-radius: 9px; object-fit: cover; background: #ffffff; }
+.ss-row span { font-size: 13.5px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ss-row em { font-style: normal; font-size: 13px; font-weight: 700; white-space: nowrap; }
+.ss-row em b { font-weight: 900; color: #b8ffe0; }
+.ss-tick { width: 22px; height: 22px; border-radius: 7px; border: 2px solid rgba(255, 255, 255, 0.7); display: grid; place-items: center; }
+.ss-row.on .ss-tick, .ss-row.added .ss-tick { background: #ffffff; border-color: #ffffff; color: #00804f; }
+.ss-btn:disabled { opacity: 0.6; cursor: default; }
+.ss-two { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ss-two .ss-btn { height: 46px; font-size: 14px; }
+.ss-low { display: inline-block; margin-right: 6px; padding: 1px 6px; border-radius: 6px; background: #ffd9d4; color: #a3271a; font-style: normal; font-size: 11.5px; font-weight: 900; vertical-align: 1px; }
+.ss-btn-fit { width: auto; padding: 0 22px; margin-top: 6px; }

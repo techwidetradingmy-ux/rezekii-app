@@ -12,7 +12,7 @@ type Tab = "same" | "similar";
 /** One product the creator can move to a better rate: the same listing (raise) or a similar one in TAP. */
 type Item = { id: string; productId: string; kind: Tab; from: number; fromLabel: "Yours" | "Open"; to: number; note: string };
 type Bulk = { phase: "working" | "done"; items: Item[]; doneIds: string[] };
-type Pending = { id: string; productId: string; to: number; state: "checking" | "confirmed" };
+type Pending = { id: string; productId: string; from: number; to: number; state: "checking" | "confirmed" };
 
 /** Where each better rate sits on the radar: angle (deg, clockwise from the top) and distance from the centre (0–1). */
 const BLIPS: [number, number][] = [[38, 0.72], [104, 0.5], [162, 0.8], [228, 0.6], [292, 0.78], [334, 0.42], [70, 0.86]];
@@ -81,7 +81,7 @@ export function ScanHub() {
       const ids = bulk.items.map((i) => i.id);
       setRows((rs) => rs.filter((r) => !ids.includes(r.id)));
       setSimilar((s) => s.filter((id) => !ids.includes(`sim-${id}`)));
-      setPending((p) => [...bulk.items.map((i) => ({ id: i.id, productId: i.productId, to: i.to, state: "checking" as const })), ...p]);
+      setPending((p) => [...bulk.items.map((i) => ({ id: i.id, productId: i.productId, from: i.from, to: i.to, state: "checking" as const })), ...p]);
       later(() => setPending((p) => p.map((x) => (ids.includes(x.id) ? { ...x, state: "confirmed" } : x))), 3000);
       if (bulk.phase === "working") toast("Still adding in the background. We'll tell you when it's done.");
     }
@@ -322,8 +322,11 @@ export function ScanHub() {
       {story && (
         <ScanStory
           checked={CREATOR.showcaseSize}
-          items={same.map((it) => ({ id: it.id, productId: it.productId, from: it.from, to: it.to }))}
-          onAddAll={() => add(same)}
+          items={[
+            ...same.map((it) => ({ id: it.id, productId: it.productId, from: it.from, to: it.to })),
+            ...pending.filter((p) => !p.id.startsWith("sim-")).map((p) => ({ id: p.id, productId: p.productId, from: p.from, to: p.to, added: true })),
+          ]}
+          onAdd={(ids) => add(same.filter((it) => ids.includes(it.id)))}
           onClose={() => setStory(false)}
         />
       )}
