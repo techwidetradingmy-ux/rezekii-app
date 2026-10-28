@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Count, Qr } from "@/components/ui";
@@ -11,13 +10,12 @@ import "@/app/creator2.css";
 const LINK = "rezekii.com/r/aisyah";
 const CODE = "AISYAH8";
 
-const statusPill = (s: string) => (s.includes("paid") ? "badge" : s.includes("pending") ? "badge badge-amber" : "badge badge-gray");
-
 /** Referral (in My account, also one tap from the top bar): link, QR, who joined, and credits only for real successes. */
 export function Referral() {
   const { toast } = useDemo();
-  const [reminded, setReminded] = useState<string[]>([]);
-  const successful = INVITES.filter((i) => i.status.startsWith("Successful")).length;
+  // Only people who signed up and linked their account (owner, 28 Oct 2026): username and date.
+  const joined = INVITES.filter((i) => i.status.startsWith("Successful"));
+  const successful = joined.length;
   const paid = INVITES.filter((i) => i.status.includes("paid")).length;
 
   const copy = (text: string, what: string) => {
@@ -76,30 +74,16 @@ export function Referral() {
       <section className="v2-card">
         <div className="v2-card-h">
           <h2 className="v2-h2">People you invited</h2>
-          <span className="v2-small">{INVITES.length} people</span>
+          <span className="v2-small">{joined.length} people</span>
         </div>
         <div className="v2-divide">
-          {INVITES.map((p) => {
-            const seller = p.role === "Seller";
-            const waiting = p.status.startsWith("Signed up");
-            return (
-              <div key={p.name} className="cr2-person">
-                <span className={`v2-av ${seller ? "seller" : ""}`}>{p.name.replace("@", "").slice(0, 2).toUpperCase()}</span>
-                <span>
-                  <b className="cr2-ellip">{p.name}</b>
-                  <small>{p.role} · joined {p.when}</small>
-                </span>
-                <span className="v2-row" style={{ gap: 8 }}>
-                  <span className={statusPill(p.status)}>{p.status}</span>
-                  {waiting && (
-                    reminded.includes(p.name)
-                      ? <span className="v2-small">Reminded</span>
-                      : <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setReminded((r) => [...r, p.name]); toast(`Reminder sent to ${p.name} in Rezekii`); }}>Remind</button>
-                  )}
-                </span>
-              </div>
-            );
-          })}
+          {joined.map((p) => (
+            <div key={p.name} className="cr2-person">
+              <span className={`v2-av ${p.role === "Seller" ? "seller" : ""}`}>{p.name.replace("@", "").slice(0, 2).toUpperCase()}</span>
+              <b className="cr2-ellip">{p.name}</b>
+              <span className="v2-small">{p.when}</span>
+            </div>
+          ))}
         </div>
       </section>
 
