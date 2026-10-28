@@ -306,10 +306,12 @@ export default function SellerLanding() {
 
       <footer className="site-foot">
         <div className="site-wrap">
-          <span>© 2026 Techwide Marketing Sdn Bhd (202001017785) · TikTok Shop Partner</span>
+          <span>© 2026 Rezekii · TikTok Shop Partner</span>
           <span className="site-spacer" />
           <Link href="/">For creators</Link>
           <a href="#faq">FAQ</a>
+          <a href="https://rezekii.com/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>
+          <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer">Terms of Service</a>
           <a href="#" onClick={(e) => { e.preventDefault(); setTalk(true); }}>Talk to us</a>
         </div>
       </footer>

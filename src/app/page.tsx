@@ -286,10 +286,12 @@ export default function Landing() {
 
       <footer className="site-foot">
         <div className="site-wrap">
-          <span>© 2026 Techwide Marketing Sdn Bhd (202001017785)</span>
+          <span>© 2026 Rezekii</span>
           <span className="site-spacer" />
           <Link href="/seller">For sellers</Link>
           <Link href="/signin">Sign in</Link>
+          <a href="https://rezekii.com/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>
+          <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer">Terms of Service</a>
           <a href="mailto:support@rezekii.com">support@rezekii.com</a>
         </div>
       </footer>
