@@ -5,7 +5,7 @@ import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Count, Flow, Hidden, Sheet } from "@/components/ui";
 import { CREATOR, RAISES, SIMILAR, product, type Raise } from "@/lib/mock";
-import { NEW_ON_RESCAN, NOT_ELIGIBLE, REFUSED } from "@/lib/mock-creator1";
+import { NEW_ON_RESCAN } from "@/lib/mock-creator1";
 import { ScanStory } from "@/components/creator1/scan-story";
 
 type Tab = "same" | "similar";
@@ -51,8 +51,6 @@ export function ScanHub() {
   const [scanKey, setScanKey] = useState(0);
   const [last, setLast] = useState("today 09:12");
   const [bulk, setBulk] = useState<Bulk | null>(null);
-  const [why, setWhy] = useState(false);
-  const [asked, setAsked] = useState<string[]>([]);
   const [story, setStory] = useState(false);
   const timers = useRef<number[]>([]);
 
@@ -61,7 +59,6 @@ export function ScanHub() {
 
   const same = rows.filter((r) => r.eligible).map(raiseItem);
   const sims = similar.map(similarItem);
-  const notHere = rows.filter((r) => !r.eligible);
   const list = tab === "same" ? same : sims;
   const picked = list.filter((i) => !unticked.includes(i.id));
   const allPicked = picked.length === list.length;
@@ -108,7 +105,6 @@ export function ScanHub() {
     }, SCAN_MS);
   }
 
-  const refused = product(REFUSED.productId);
 
   return (
     <div className="v2-stack" style={{ gap: 14 }} id="scan">
@@ -118,7 +114,7 @@ export function ScanHub() {
           label="How the scan works"
           steps={[
             { icon: "scan", title: "We scan your showcase", note: "Every day, every product" },
-            { icon: "tag", title: "Same product, better rate", note: `Rates for ${CREATOR.level}` },
+            { icon: "tag", title: "Same product, better rate", note: "Higher commission" },
             { icon: "plus", title: "Add all in one tap", note: "You approve every change" },
             { icon: "check", title: "TikTok confirms", note: "Then it counts" },
           ]}
@@ -140,7 +136,7 @@ export function ScanHub() {
             <h2>
               <b><Count key={scanKey} value={linked ? CREATOR.showcaseSize : 0} ms={scanning ? SCAN_MS - 300 : 900} /></b> products checked
             </h2>
-            <p>{linked ? `Last scan ${last} · rates for your level (${CREATOR.level})` : "Link TikTok Shop and we check every product you promote"}</p>
+            <p>{linked ? `Last scan ${last}` : "Link TikTok Shop and we check every product you promote"}</p>
             <div className="sh-stats">
               <span><b>{linked ? same.length : "–"}</b><small>can pay more</small></span>
               <span><b>{linked && top ? `+${top}%` : "–"}</b><small>best increase</small></span>
@@ -243,46 +239,8 @@ export function ScanHub() {
           <button type="button" className="sh-again" onClick={scanAgain} disabled={scanning}>
             <Icon name="refresh" size={16} /> {scanning ? "Scanning…" : "Scan again"}
           </button>
-          {linked && (notHere.length > 0 || refused) && (
-            <button type="button" className="sh-whylink" onClick={() => setWhy(true)}>
-              {notHere.length + 1}{" "}can&apos;t be upgraded yet · why?
-            </button>
-          )}
         </div>
-        <p className="sh-fine">Often +1%, sometimes more: it depends on the product, your level and your sales. &ldquo;Yours&rdquo; is your rate in TikTok today; &ldquo;Open&rdquo; is TikTok&apos;s open plan.</p>
       </section>
-
-      {why && (
-        <Sheet title="Not available for you yet" onClose={() => setWhy(false)}>
-          <div className="v2-divide">
-            {notHere.map((r) => {
-              const p = product(r.productId);
-              return (
-                <div key={r.id} className="cr1-bulkrow">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p.img} alt="" />
-                  <span>
-                    <strong>{p.name}</strong>
-                    <small className="cr1-noelig">{NOT_ELIGIBLE[r.id] ?? "You don't meet this campaign's conditions yet."}</small>
-                  </span>
-                  <button type="button" className="btn-outline v2-btn-sm" disabled={asked.includes(r.id)} onClick={() => { setAsked((a) => [...a, r.id]); toast("Sent to the Techwide team. We'll reply in Notifications."); }}>
-                    {asked.includes(r.id) ? "Asked" : "Ask Techwide"}
-                  </button>
-                </div>
-              );
-            })}
-            <div className="cr1-bulkrow">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={refused.img} alt="" />
-              <span>
-                <strong>{refused.name}</strong>
-                <small className="cr1-noelig">TikTok didn&apos;t accept it (&lsquo;{REFUSED.tiktok}&rsquo;). Hidden for 30 days.</small>
-              </span>
-              <button type="button" className="btn-outline v2-btn-sm" onClick={() => toast("The Techwide team will follow up with TikTok")}>Follow up</button>
-            </div>
-          </div>
-        </Sheet>
-      )}
 
       {bulk && (
         <Sheet title={bulk.phase === "done" ? "Done" : `Adding ${bulk.items.length} products`} onClose={closeBulk}>
