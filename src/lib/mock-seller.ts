@@ -221,9 +221,9 @@ export const SELLER_MISSIONS: SellerMission[] = [
 export const NEWBIE_LEFT_MS = ((5 * 24 + 12) * 60 + 4) * 60 * 1000;
 
 export const SELLER_INVITES = [
-  { name: "Rumah Rapi MY", role: "Seller", status: "Successful", note: "Connected shop and submitted 3 products", when: "4 Oct", credits: 200 },
-  { name: "@hana.masak", role: "Creator", status: "Successful", note: "Linked TikTok Shop and ran a scan", when: "11 Oct", credits: 200 },
-  { name: "Bayu Sports Gear", role: "Seller", status: "Successful", note: "Connected shop and submitted 1 product", when: "19 Oct", credits: 200 },
+  { name: "Rumah Rapi MY", role: "Seller", status: "Successful", note: "Connected shop and submitted 3 products", when: "4 Oct", credits: 100 },
+  { name: "@hana.masak", role: "Creator", status: "Successful", note: "Linked TikTok Shop and ran a scan", when: "11 Oct", credits: 100 },
+  { name: "Bayu Sports Gear", role: "Seller", status: "Successful", note: "Connected shop and submitted 1 product", when: "19 Oct", credits: 100 },
   { name: "@kemas.dengan.lia", role: "Creator", status: "Signed up", note: "Hasn't linked TikTok Shop yet · 23 days left", when: "22 Oct", credits: 0 },
   { name: "Lembut Baby Co.", role: "Seller", status: "Signed up", note: "Hasn't connected Seller Center yet · 26 days left", when: "26 Oct", credits: 0 },
 ];
@@ -246,7 +246,7 @@ export const SELLER_NOTES = [
   { id: "n3", icon: "alert" as const, title: "@zara.home is 3 days late on a sample", line: "We've reminded them twice. Their sample access is paused until they post.", when: "Yesterday", unread: true, href: "/seller/app/results/samples" },
   { id: "n4", icon: "x" as const, title: "Vacuum spare mop pads wasn't approved", line: "It has 0 samples per SKU. Add samples and we'll resubmit it.", when: "23 Oct", unread: false, href: "/seller/app/progress" },
   { id: "n5", icon: "chart" as const, title: "Your week: RM 25,840 from 30 creators", line: "Up 18% on the week before.", when: "21 Oct", unread: false, href: "/seller/app/results" },
-  { id: "n6", icon: "gift" as const, title: "+200 credits: Bayu Sports Gear joined with your link", line: "They connected their shop and submitted a product.", when: "19 Oct", unread: false, href: "/seller/app/rewards/wallet" },
+  { id: "n6", icon: "gift" as const, title: "+100 credits: Bayu Sports Gear joined with your link", line: "They connected their shop and submitted a product.", when: "19 Oct", unread: false, href: "/seller/app/rewards/wallet" },
 ];
 
 /* ---------------- Landing ---------------- */

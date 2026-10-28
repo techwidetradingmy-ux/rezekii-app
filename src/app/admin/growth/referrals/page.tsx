@@ -7,6 +7,7 @@ import { useDemo } from "@/components/demo";
 import { Bars, Sheet, Title } from "@/components/ui";
 import { Av, Chips, Kv, Meta, Pill, Reasons, Sec, type Tone } from "@/components/admin/bits";
 import { REFERRALS } from "@/lib/mock-admin";
+import { REFERRAL_REWARD } from "@/lib/mock";
 
 type Ref = (typeof REFERRALS)[number];
 type Filter = "All" | "Held for review" | "Qualified" | "Not yet";
@@ -22,6 +23,7 @@ export default function GrowthReferrals() {
   const [mode, setMode] = useState<"Reverse" | "Correct" | null>(null);
   const [reason, setReason] = useState<string | null>(null);
   const [note, setNote] = useState("");
+  const [give, setGive] = useState({ inviter: String(REFERRAL_REWARD.inviter), friend: String(REFERRAL_REWARD.friend) });
 
   const held = list.filter((r) => r.status.startsWith("Held"));
   const qualified = list.filter((r) => r.status.startsWith("Reward paid") || r.status.startsWith("Qualified"));
@@ -36,7 +38,7 @@ export default function GrowthReferrals() {
       <div className="v2-grid4 ad-stats">
         <div className="v2-stat"><small>Referrals in October</small><b>{list.length}</b><em>Signed up with an invite link</em></div>
         <div className="v2-stat"><small>Successful</small><b>{qualified.length}</b><em className="up">{Math.round((qualified.length / list.length) * 100)}% of sign-ups</em></div>
-        <div className="v2-stat"><small>Credits paid</small><b>{qualified.filter((x) => x.status.startsWith("Reward paid")).reduce((a, x) => a + x.reward, 0) * 2}</b><em>Both sides get 100</em></div>
+        <div className="v2-stat"><small>Credits paid</small><b>{qualified.filter((x) => x.status.startsWith("Reward paid")).reduce((a, x) => a + x.reward + REFERRAL_REWARD.friend, 0)}</b><em>Inviter {REFERRAL_REWARD.inviter} · friend {REFERRAL_REWARD.friend}</em></div>
         <div className="v2-stat"><small>Held for review</small><b style={{ color: held.length ? "var(--red)" : undefined }}>{held.length}</b><em>Suspected abuse</em></div>
       </div>
 
@@ -49,6 +51,21 @@ export default function GrowthReferrals() {
       )}
 
       <div className="v2-stack" style={{ gap: 16 }}>
+        <section className="v2-card">
+          <h2 className="v2-h2">Referral rewards</h2>
+          <span className="v2-small">Win-win, the same for creators and sellers. Both are paid together once the new account is set up. Changes apply to new referrals; ones already qualified keep their amount.</span>
+          <form
+            className="rf-admin"
+            onSubmit={(e) => {
+              e.preventDefault();
+              toast(`Saved: inviter ${give.inviter}, friend ${give.friend} credits · applies to new referrals · logged`);
+            }}
+          >
+            <label className="v2-field">Inviter gets<input className="np-input" type="number" min={0} step={10} value={give.inviter} onChange={(e) => setGive({ ...give, inviter: e.target.value })} /></label>
+            <label className="v2-field">Friend gets<input className="np-input" type="number" min={0} step={10} value={give.friend} onChange={(e) => setGive({ ...give, friend: e.target.value })} /></label>
+            <button type="submit" className="np-btn v2-btn-sm">Save</button>
+          </form>
+        </section>
         <section className="v2-card">
           <h2 className="v2-h2">Successful, by role pair</h2>
           <Bars rows={PAIRS.map((p) => ({ label: p, value: qualified.filter((x) => x.pair === p).length, display: String(qualified.filter((x) => x.pair === p).length) }))} tone="blue" />
@@ -69,7 +86,7 @@ export default function GrowthReferrals() {
                     <td><span className="ad-cell"><Av name={x.to} size={28} /><span><b>{x.to}</b>{x.flag && <small className="ad-down">{x.flag}</small>}</span></span></td>
                     <td className="ad-nowrap"><span className="ad-tag gray">{x.pair}</span></td>
                     <td className="ad-nowrap"><Pill tone={tone(x.status)}>{x.status}</Pill></td>
-                    <td className="num">{x.reward ? `${x.reward}` : "—"}</td>
+                    <td className="num">{x.reward ? `${x.reward} + ${REFERRAL_REWARD.friend}` : "—"}</td>
                     <td className="ad-nowrap">{x.when}</td>
                   </tr>
                 ))}
@@ -82,7 +99,7 @@ export default function GrowthReferrals() {
       {r && (
         <Sheet title={`${r.from} → ${r.to}`} onClose={() => setOpen(null)}>
           <Pill tone={tone(r.status)}>{r.status}</Pill>
-          <Kv rows={[["Referral", r.id], ["Role pair", r.pair], ["Signed up", r.when], ["Reward", r.reward ? `${r.reward} credits each side` : "Not earned yet"], ["Referrer", "Locked at sign-up. Only staff can correct it, with a reason."]]} />
+          <Kv rows={[["Referral", r.id], ["Role pair", r.pair], ["Signed up", r.when], ["Reward", r.reward ? `${r.reward} credits to the inviter, ${REFERRAL_REWARD.friend} to the new account` : "Not earned yet"], ["Referrer", "Locked at sign-up. Only staff can correct it, with a reason."]]} />
           {r.flag && (
             <>
               <Sec>Why it&apos;s held</Sec>

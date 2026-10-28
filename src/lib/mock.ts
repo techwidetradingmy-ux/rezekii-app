@@ -196,6 +196,9 @@ export const BADGES = [
   { name: "Gold", got: false },
 ];
 
+/** Referral rewards (owner, 28 Oct 2026): win-win, the same for creators and sellers. Admin can change them. */
+export const REFERRAL_REWARD = { inviter: 100, friend: 50 };
+
 export const INVITES = [
   { name: "@nurul.beauty", role: "Creator", status: "Successful · paid", when: "3 Oct" },
   { name: "Seri Living MY", role: "Seller", status: "Successful · pending", when: "11 Oct" },

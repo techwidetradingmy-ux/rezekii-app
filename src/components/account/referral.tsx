@@ -4,7 +4,8 @@ import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Count, Qr } from "@/components/ui";
 import { ShareButton } from "@/components/creator2/bits";
-import { INVITES } from "@/lib/mock";
+import { ReferralOffer } from "@/components/referral-offer";
+import { INVITES, REFERRAL_REWARD } from "@/lib/mock";
 import "@/app/creator2.css";
 
 const LINK = "rezekii.com/r/aisyah";
@@ -28,8 +29,10 @@ export function Referral() {
   return (
     <div className="v2-stack" style={{ gap: 20 }}>
       <div className="acc-head"><span className="v2-small">Invite creators and sellers. Credits when it's a real success.</span>
-        <ShareButton big="Join me on Rezekii" label="Better commission for your TikTok Shop showcase" lines={[`Invite code ${CODE}`, "Free for creators and sellers"]} />
+        <ShareButton big="Join me on Rezekii" label="Better commission for your TikTok Shop showcase" lines={[`Use my code ${CODE}: +${REFERRAL_REWARD.friend} credits`, "Free for creators and sellers"]} />
       </div>
+
+      <ReferralOffer />
 
       <section className="v2-card">
         <div className="cr2-ref">
@@ -92,7 +95,7 @@ export function Referral() {
         <ol className="cr2-rules">
           <li><span><b>The link they sign up with wins.</b> Whoever&apos;s link or code someone uses to sign up gets the referral. It&apos;s locked for good and can&apos;t be changed later.</span></li>
           <li><span><b>A successful referral</b> means a creator links TikTok Shop and runs a first scan, or a seller connects Seller Center and submits a first product, within 30 days of signing up.</span></li>
-          <li><span><b>Invite anyone.</b> You can invite creators and sellers. The reward is the same either way: +100 credits for each successful referral.</span></li>
+          <li><span><b>Invite anyone.</b> You can invite creators and sellers. Same reward either way: +{REFERRAL_REWARD.inviter} credits for you and +{REFERRAL_REWARD.friend} for them, for each successful referral.</span></li>
           <li><span><b>Sharing alone earns nothing.</b> Only successful referrals do, so share when it actually helps someone.</span></li>
         </ol>
       </section>

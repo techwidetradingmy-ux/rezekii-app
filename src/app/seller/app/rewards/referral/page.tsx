@@ -6,7 +6,8 @@ import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Count, Qr, ShareSheet, Stat, Title } from "@/components/ui";
 import { Ava } from "@/components/seller/seller-ui";
-import { SELLER } from "@/lib/mock";
+import { ReferralOffer } from "@/components/referral-offer";
+import { REFERRAL_REWARD, SELLER } from "@/lib/mock";
 import { SELLER_INVITES } from "@/lib/mock-seller";
 
 const LINK = "rezekii.com/s/seriliving";
@@ -32,6 +33,8 @@ export default function SellerReferral() {
         <button type="button" className="btn-outline" onClick={() => setShare(true)}><Icon name="share" size={18} /> Share</button>
       </Title>
 
+      <ReferralOffer />
+
       <section className="v2-card sl-ref">
         <div>
           <h2 className="v2-h2">Your invite link</h2>
@@ -50,7 +53,7 @@ export default function SellerReferral() {
       </section>
 
       <section className="v2-grid4">
-        <Stat label="Successful this month" value={<Count value={ok.length} />} note="+200 credits each" tone="up" />
+        <Stat label="Successful this month" value={<Count value={ok.length} />} note={`+${REFERRAL_REWARD.inviter} credits each`} tone="up" />
         <Stat label="Signed up, not set up yet" value={<Count value={SELLER_INVITES.length - ok.length} />} note="They have 30 days" />
         <Stat label="Credits earned" value={<Count value={ok.reduce((a, i) => a + i.credits, 0)} />} />
       </section>
@@ -61,7 +64,7 @@ export default function SellerReferral() {
           <li><Icon name="box" size={18} stroke="var(--gink)" /> <span><b style={{ color: "var(--text)" }}>A seller</b> counts when they connect Seller Center and submit their first product within 30 days.</span></li>
           <li><Icon name="user" size={18} stroke="var(--gink)" /> <span><b style={{ color: "var(--text)" }}>A creator</b> counts when they link TikTok Shop and run their first scan within 30 days.</span></li>
           <li><Icon name="lock" size={18} stroke="var(--gink)" /> <span>Whoever&apos;s link someone signs up with is locked in for good. It can&apos;t be changed later.</span></li>
-          <li><Icon name="gift" size={18} stroke="var(--gink)" /> <span>Same reward for sellers and creators: +200 credits. Credits are rewards, not cash.</span></li>
+          <li><Icon name="gift" size={18} stroke="var(--gink)" /> <span>Same for sellers and creators: +{REFERRAL_REWARD.inviter} credits for you, +{REFERRAL_REWARD.friend} for them. Credits are rewards, not cash.</span></li>
         </ul>
       </section>
 
@@ -96,7 +99,7 @@ export default function SellerReferral() {
           handle={SELLER.shop}
           label="Sell with creators on TikTok Shop"
           big="RM 0 a month"
-          lines={["Commission only when you sell", `Use my code ${CODE}`]}
+          lines={["Commission only when you sell", `Use my code ${CODE}: +${REFERRAL_REWARD.friend} credits`]}
         />
       )}
     </div>

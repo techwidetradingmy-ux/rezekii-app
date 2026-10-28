@@ -339,3 +339,7 @@
 .ad-sent { display: grid; justify-items: center; gap: 6px; text-align: center; padding: 8px 0; }
 .ad-sent-ico { width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center; background: #00c073; color: #ffffff; }
 .ad-sent small { color: var(--muted); }
+
+/* Referral rewards setting: two amounts and Save on one row. */
+.rf-admin { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.rf-admin .v2-field { flex: 1 1 140px; max-width: 200px; }

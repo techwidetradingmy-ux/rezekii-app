@@ -11,6 +11,7 @@ import { Seg } from "@/components/ui";
 import { GoogleMark, TikTokMark } from "@/components/creator1/brand";
 import { Otp } from "@/components/creator1/otp";
 import { MY_STATES, isEmail, tidyPhone } from "@/lib/mock-creator1";
+import { REFERRAL_REWARD } from "@/lib/mock";
 import "../creator1.css";
 
 type Step = "start" | "oauth" | "profile" | "email" | "code" | "password" | "forgot" | "newpass" | "welcome";
@@ -56,6 +57,12 @@ export default function SignIn() {
   // Owner, 28 Oct 2026: which kind of affiliate creator they are, picked at sign-up. More than one is fine.
   const [kinds, setKinds] = useState<string[]>([]);
   const [otherKind, setOtherKind] = useState("");
+  // Came from someone's invite link (owner, 28 Oct 2026): show what the friend gets. The code is kept for sign-up.
+  const [refCode, setRefCode] = useState("");
+  useEffect(() => {
+    const r = new URLSearchParams(window.location.search).get("ref");
+    if (r) setRefCode(r.toUpperCase().slice(0, 20));
+  }, []);
   const kindError = !kinds.length ? "Pick at least one" : kinds.includes("Others") && !otherKind.trim() ? "Tell us which one" : "";
 
   const tel = tidyPhone(phone);
@@ -196,6 +203,12 @@ export default function SignIn() {
           <h1>Sign in to Rezekii</h1>
           <p>New or returning, it&apos;s the same buttons. Free for TikTok Shop creators.</p>
         </div>
+        {refCode && (
+          <p className="si-ref">
+            <Icon name="gift" size={18} />
+            <span>You&apos;re invited with code <b>{refCode}</b>. You get <b>+{REFERRAL_REWARD.friend} credits</b> once you&apos;re set up: link TikTok Shop and run your first scan within 30 days.</span>
+          </p>
+        )}
         <button type="button" className={`btn-google cr1-authbtn`} onClick={() => oauth("Google")}><GoogleMark /> Continue with Google</button>
         <button type="button" className="btn-tiktok cr1-authbtn" onClick={() => oauth("TikTok")}><TikTokMark /> Continue with TikTok</button>
         <button type="button" className="btn-email cr1-authbtn" onClick={() => { setMode("New here"); go("email"); }}><Icon name="inbox" size={20} /> Continue with email</button>

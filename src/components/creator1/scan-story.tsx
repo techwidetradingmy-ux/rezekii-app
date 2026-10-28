@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Count, Portal, ShareSheet } from "@/components/ui";
-import { ANALYTICS, CREATOR, product, rm } from "@/lib/mock";
+import { ANALYTICS, CREATOR, REFERRAL_REWARD, product, rm } from "@/lib/mock";
 
 export type StoryItem = { id: string; productId: string; from: number; to: number };
 const SLIDE_MS = 4200;
@@ -134,7 +134,7 @@ export function ScanStory({ checked, items, onAddAll, onClose }: { checked: numb
                 <button type="button" className="ss-btn main" onClick={() => { onAddAll(); onClose(); }}><Icon name="plus" size={18} width={2.6} /> Add all {items.length} in one tap</button>
                 <button type="button" className="ss-btn" onClick={() => setShare(true)}><Icon name="share" size={18} /> Share my scan</button>
                 <button type="button" className="ss-btn" onClick={() => toast(`Opening WhatsApp with your link: ${LINK}`)}><Icon name="users" size={18} /> Challenge a friend to scan</button>
-                <small className="ss-note">+100 credits for every friend who joins with your link and links TikTok Shop.</small>
+                <small className="ss-note">+{REFERRAL_REWARD.inviter} credits for you and +{REFERRAL_REWARD.friend} for your friend when they join with your link and run their first scan.</small>
               </>
             )}
           </div>
