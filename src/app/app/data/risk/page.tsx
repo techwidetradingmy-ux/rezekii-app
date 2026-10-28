@@ -31,8 +31,8 @@ export default function DataRisk() {
   const lowRated = prods.map((b) => product(b.productId)).filter((p) => p.rating < 3).sort((a, b) => a.rating - b.rating);
 
   const ADVICE: Record<string, string[]> = {
-    v4: ["Show each colour in daylight so it matches what arrives.", "Pin a comment with the size of the pillowcase."],
-    v2: ["The title promises no scrubbing at all. A more careful claim brings buyers who keep the order.", "Show the result after a few days, not just the first wipe."],
+    v4: ["Next time, show each colour in daylight so it matches what arrives.", "Low-rated product (2.8★): pick a 4★ one for new videos."],
+    v2: ["Next time, show the result after a few days, not just the first wipe.", "Low-rated product (2.9★): pick a 4★ one for new videos."],
   };
 
   return (
@@ -156,7 +156,7 @@ export default function DataRisk() {
               </div>
             );
           })}
-          <Link href="/app#ai-picks" className="v2-link" style={{ alignSelf: "flex-start" }}>Find a better-rated product instead</Link>
+          <Link href="/app/ratings" className="v2-link" style={{ alignSelf: "flex-start" }}>Run a rating check on your whole showcase</Link>
         </section>
       </div>
     </div>

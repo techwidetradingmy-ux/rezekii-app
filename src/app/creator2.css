@@ -546,3 +546,16 @@ li.done .cr2-check { background: #00c073; border-color: #00c073; animation: v2Po
 .cr2-eq b { font-size: 18px; font-weight: 900; font-variant-numeric: tabular-nums; }
 .cr2-eq i { font-style: normal; font-size: 20px; font-weight: 900; color: var(--muted); }
 .cr2-eq em { flex-basis: 100%; font-style: normal; font-size: 12.5px; color: var(--muted); }
+
+/* Profile header like V1: photo with the TikTok Shop level ring, verified tick by the name, level and activity chips */
+.cr2-profile { gap: 18px; padding: 20px 18px; }
+.cr2-name { display: inline-flex; align-items: center; gap: 8px; font-size: 21px; }
+.cr2-tick { width: 22px; height: 22px; border-radius: 50%; background: #0d1117; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 0 0 2px var(--surface), 0 4px 10px -4px rgba(37, 244, 238, 0.8); }
+.cr2-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.cr2-lvchip, .cr2-actchip, .cr2-wachip { height: 24px; padding: 0 9px; border-radius: 999px; display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.cr2-lvchip { color: #2c2752; background: linear-gradient(135deg, #ffffff, #d9dcf5); box-shadow: inset 0 0 0 1px #b9bde6; }
+.cr2-lvchip.bronze { color: #4a2a14; background: linear-gradient(135deg, #fffaf5, #f2b48a); box-shadow: inset 0 0 0 1px #e3a477; }
+.cr2-lvchip.gold { color: #4a3a14; background: linear-gradient(135deg, #fffdf2, #f5c242); box-shadow: inset 0 0 0 1px #e0b23a; }
+.cr2-actchip { color: #ffffff; background: linear-gradient(135deg, #f5a623, #e8005a); }
+.cr2-wachip { border: 1px dashed var(--border); background: var(--surface); color: var(--amber); font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
+.cr2-tag.green { background: var(--gsoft); color: var(--gink); }

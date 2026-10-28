@@ -11,7 +11,7 @@ import { ACTIONS, CHARTS, HEALTH, POST_TIMES, RANGES, RANGE_DATA, SHORT, WATCH, 
 import "@/app/creator2.css";
 
 const pct = (n: number, of: number) => Math.round((n / of) * 100);
-const TAG = { "Fix now": "red", "This week": "amber", Grow: "violet" } as const;
+const TAG = { "Shoot today": "green", "Fix now": "red", "This week": "amber", Grow: "violet" } as const;
 const TODAY = "2026-10-28";
 const JOINED = "2026-03-01";
 const back = (n: number) => { const d = new Date(Date.UTC(2026, 9, 28 - n)); return iso(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()); };
@@ -19,7 +19,7 @@ const DAYS_IN: Record<RangeKey, number> = { "3 days": 3, "7 days": 7, "14 days":
 const SPAN: Record<RangeKey, [string, string]> = Object.fromEntries(RANGES.map((r) => [r, r === "Lifetime" ? [JOINED, TODAY] : [back(DAYS_IN[r] - 1), TODAY]])) as Record<RangeKey, [string, string]>;
 const PRESETS: [string, string][] = RANGES.map((r) => [r, r === "Lifetime" ? "Lifetime" : `Last ${r}`]);
 
-/** My data overview: the numbers for any range, an AI summary with products to stop promoting, an action plan, and where the money comes from. */
+/** My data overview: the numbers for any range, an AI summary with low-rated products to avoid, an action plan, and where the money comes from. */
 export default function DataOverview() {
   const { toast } = useDemo();
   const [range, setRange] = useState<RangeKey>("30 days");
@@ -113,7 +113,7 @@ export default function DataOverview() {
         <div className="cr2-watch">
           <div className="cr2-watch-h">
             <span>
-              <b><Icon name="alert" size={17} /> {watching.length ? `Stop promoting ${watching.length === 1 ? "this product" : `these ${watching.length} products`}` : "Nothing to stop promoting"}</b>
+              <b><Icon name="alert" size={17} /> {watching.length ? `Avoid promoting ${watching.length === 1 ? "this product" : `these ${watching.length} products`}` : "No low-rated products"}</b>
               <small>They&apos;re lowering your account health</small>
             </span>
             <span className="cr2-health" title="Account health from TikTok, out of 100">
@@ -146,6 +146,7 @@ export default function DataOverview() {
               </div>
             );
           })}
+          <Link href="/app/ratings" className="v2-link" style={{ fontSize: 13.5, padding: "4px 2px 0" }}>Check every product&apos;s rating →</Link>
           <p className="cr2-watch-why">
             Cancels, complaints and low ratings cost you account health. When it drops, TikTok can limit your traffic, and your GMV drops with it. Removing a
             product doesn&apos;t touch commission you&apos;ve already earned.

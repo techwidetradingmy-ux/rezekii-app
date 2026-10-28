@@ -149,14 +149,29 @@ export const WATCH = [
 export const HEALTH = { score: 86, change: -4 };
 
 /** The action plan on My data: what to do next, each one written from a number above. */
-export type Action = { id: string; tag: "Fix now" | "This week" | "Grow"; icon: IconName; title: string; why: string; cta: string; href?: string; remove?: string };
+export type Action = { id: string; tag: "Shoot today" | "Fix now" | "This week" | "Grow"; icon: IconName; title: string; why: string; cta: string; href?: string; remove?: string };
 export const ACTIONS: Action[] = [
-  { id: "a1", tag: "Fix now", icon: "alert", title: "Stop promoting the AirySoft pillowcase", why: "21.4% cancelled, 2.8 stars and 9 complaints in 30 days. It's costing you account health.", cta: "Remove from showcase", remove: "p17" },
-  { id: "a2", tag: "Fix now", icon: "video", title: "Fix or hide the 10 Oct toilet cleaner video", why: "18.2% of its orders were cancelled. The title promises no scrubbing at all; buyers disagree.", cta: "See the video", href: "/app/data/videos" },
+  { id: "a0", tag: "Shoot today", icon: "flame", title: "Film 2 more thermos videos today", why: "Your 12 Oct thermos video got 41.2K views in the last 24 hours, 5× your usual. The thermos is rated 4.7★ and sold 23 today.", cta: "Plan videos", href: "/app/publish" },
+  { id: "a1", tag: "Fix now", icon: "alert", title: "Avoid promoting the AirySoft pillowcase", why: "Rated 2.8★ with 21.4% cancelled and 9 complaints in 30 days. Low-rated products cost you account health.", cta: "Remove from showcase", remove: "p17" },
+  { id: "a2", tag: "Fix now", icon: "star", title: "Check your showcase for low ratings", why: "2 products are under 3★ (danger zone) and 3 are under 4★. Keep posting; pick 4★ products for new videos.", cta: "Run rating check", href: "/app/ratings" },
   { id: "a3", tag: "This week", icon: "cal", title: "Post 1 more thermos video by 2 Nov", why: "Your free sample needs 3 of 3 videos. The thermos is also your top earner: 39% of your commission.", cta: "Submit video link", href: "/app/account#samples" },
   { id: "a4", tag: "This week", icon: "scan", title: "Add 4 products that pay more", why: "Products already in your showcase, paying +1% to +5% more through Techwide.", cta: "See scan results", href: "/app#scan" },
-  { id: "a5", tag: "Grow", icon: "video", title: "Go LIVE with kitchen products", why: "Just 2 LIVE sessions a week bring about a quarter of your commission. Choppers and cookware sell 2.6× better on LIVE than on video.", cta: "See LIVE picks", href: "/app#ai-picks" },
+  { id: "a5", tag: "Grow", icon: "video", title: "Go LIVE with kitchen products", why: "Just 2 LIVE sessions a week bring about a quarter of your commission. Choppers and cookware sell 2.6× better on LIVE than on video.", cta: "See LIVE picks", href: "/app/ai-picks" },
   { id: "a6", tag: "Grow", icon: "send", title: "Post between 8 and 10 pm", why: "Your videos posted 8 to 10 pm got 1.8× the views of daytime posts in the last 30 days.", cta: "Schedule a post", href: "/app/publish" },
+];
+
+/** The creator's own videos taking off right now (views in the last 24 hours vs usual), for "Shoot today". week = daily views, oldest first. */
+export const VIRAL = [
+  { id: "v1", productId: "p21", title: "Thermos test: 24 hours of ice", views24: 41200, times: 5, ordersToday: 23, week: [2.1, 1.8, 2.4, 3.0, 5.6, 14.2, 41.2], ideas: ["Day 2: ice still there?", "Hot coffee test, 12 hours"] },
+  { id: "v3", productId: "p13", title: "One cable for every phone", views24: 18600, times: 3, ordersToday: 11, week: [1.4, 1.2, 1.9, 2.2, 3.8, 7.5, 18.6], ideas: ["Car charging test", "4 phones, 1 cable"] },
+  { id: "v5", productId: "p09", title: "Office look under RM 30", views24: 7400, times: 2, ordersToday: 6, week: [0.9, 1.1, 1.0, 1.6, 2.4, 3.9, 7.4], ideas: ["Office look part 2: 3 ways to style"] },
+  { id: "v2", productId: "p22", title: "Cleaner that works without scrubbing?", views24: 12300, times: 2, ordersToday: 9, week: [3.1, 2.8, 3.3, 4.0, 6.2, 8.9, 12.3], ideas: [] },
+];
+/** New products to try today: marketplace products with a free sample she can get, rated 4★+, matched to her categories. */
+export const TRY_TODAY = [
+  { productId: "p20", why: "Muslim fashion sells 2.3× your average. A try-on video fits." },
+  { productId: "p11", why: "RM 9.90 add-on that sells fast on LIVE with your kitchen products." },
+  { productId: "p07", why: "Fashion is your top category, and polos sell all year." },
 ];
 
 /** Views by posting time against the creator's own average (1 = average), last 30 days. */

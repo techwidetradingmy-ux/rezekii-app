@@ -23,7 +23,7 @@ export const PRODUCTS: Product[] = [
   { id: "p01", name: "Slim-fit track pants (S–XXL)", shop: "Urban Basics MY", img: "/products/tap-01.jpg", price: 30.9, category: "Fashion", publicRate: 6, tapRate: 10, sold: 1119976, rating: 4.8, samples: "open" },
   { id: "p02", name: "Plain cotton tee, unisex", shop: "Urban Basics MY", img: "/products/tap-02.jpg", price: 16.9, category: "Fashion", publicRate: 5, tapRate: 8, sold: 955078, rating: 4.7, samples: "open" },
   { id: "p03", name: "Hooded water-resistant windbreaker", shop: "Urban Basics MY", img: "/products/tap-03.jpg", price: 22.9, category: "Fashion", publicRate: 6, tapRate: 10, sold: 929468, rating: 4.7, samples: "advanced" },
-  { id: "p04", name: "Women's casual wide pants", shop: "Urban Basics MY", img: "/products/tap-04.jpg", price: 23.9, category: "Fashion", publicRate: 6, tapRate: 10, sold: 750806, rating: 4.6, samples: "open" },
+  { id: "p04", name: "Women's casual wide pants", shop: "Urban Basics MY", img: "/products/tap-04.jpg", price: 23.9, category: "Fashion", publicRate: 6, tapRate: 10, sold: 750806, rating: 3.9, samples: "open" },
   { id: "p05", name: "High-waist yoga pants", shop: "Urban Basics MY", img: "/products/tap-05.jpg", price: 16.9, category: "Sports", publicRate: 5, tapRate: 8, sold: 727638, rating: 4.8, samples: "advanced" },
   { id: "p06", name: "Scuba training pants", shop: "Urban Basics MY", img: "/products/tap-06.jpg", price: 24.9, category: "Sports", publicRate: 6, tapRate: 10, sold: 648901, rating: 4.5, samples: null },
   { id: "p07", name: "Microfiber polo shirt", shop: "Urban Basics MY", img: "/products/tap-07.jpg", price: 16.9, category: "Fashion", publicRate: 6, tapRate: 10, sold: 524819, rating: 4.6, samples: "open" },
@@ -38,11 +38,11 @@ export const PRODUCTS: Product[] = [
   { id: "p16", name: "Straight-leg casual pants", shop: "Urban Basics MY", img: "/products/tap-16.jpg", price: 24.9, category: "Fashion", publicRate: 6, tapRate: 10, sold: 416592, rating: 4.6, samples: "open" },
   { id: "p17", name: "AirySoft pillowcase", shop: "Lena Home", img: "/products/tap-17.jpg", price: 6.6, category: "Home & Living", publicRate: 6, tapRate: 10, sold: 416526, rating: 2.8, samples: "open" },
   { id: "p18", name: "Cordless vacuum with mop pad", shop: "Seri Living MY", img: "/products/tap-18.jpg", price: 29.89, category: "Home & Living", publicRate: 6, tapRate: 10, sold: 379286, rating: 4.4, samples: "designated" },
-  { id: "p19", name: "Women's bootcut pants, tall", shop: "Urban Basics MY", img: "/products/tap-19.jpg", price: 21.9, category: "Fashion", publicRate: 5, tapRate: 8, sold: 366964, rating: 4.7, samples: "open" },
+  { id: "p19", name: "Women's bootcut pants, tall", shop: "Urban Basics MY", img: "/products/tap-19.jpg", price: 21.9, category: "Fashion", publicRate: 5, tapRate: 8, sold: 366964, rating: 3.7, samples: "open" },
   { id: "p20", name: "Muslimah microfibre jersey", shop: "Urban Basics MY", img: "/products/tap-20.jpg", price: 16.9, category: "Muslim Fashion", publicRate: 5, tapRate: 8, sold: 361080, rating: 4.8, samples: "advanced" },
   { id: "p21", name: "1.2L 316 stainless thermos", shop: "Seri Living MY", img: "/products/tap-21.jpg", price: 22.9, category: "Home & Kitchen", publicRate: 6, tapRate: 10, sold: 354613, rating: 4.7, samples: "open" },
   { id: "p22", name: "Scrub-free toilet bowl cleaner", shop: "Bersih Pro", img: "/products/tap-22.jpg", price: 15.9, category: "Household", publicRate: 10, tapRate: 17, sold: 339049, rating: 2.9, samples: "open" },
-  { id: "p23", name: "Merdeka 2026 decoration set", shop: "Festa Craft", img: "/products/tap-23.jpg", price: 6.34, category: "Party", publicRate: 12, tapRate: 20, sold: 314642, rating: 4.2, samples: null },
+  { id: "p23", name: "Merdeka 2026 decoration set", shop: "Festa Craft", img: "/products/tap-23.jpg", price: 6.34, category: "Party", publicRate: 12, tapRate: 20, sold: 314642, rating: 3.6, samples: null },
   { id: "p24", name: "Leak-proof tumbler 900ml", shop: "Seri Living MY", img: "/products/tap-24.jpg", price: 54.9, category: "Home & Kitchen", publicRate: 8, tapRate: 12, sold: 303256, rating: 4.8, samples: "designated" },
 ];
 
@@ -56,6 +56,7 @@ export const short = (n: number) => (n >= 1e6 ? `${(n / 1e6).toFixed(1).replace(
 /* ---------------- Creator ---------------- */
 
 export const CREATOR = {
+  photo: "/avatars/aisyah.jpg",
   name: "Aisyah Rahman",
   first: "Aisyah",
   handle: "@aisyah.glow",

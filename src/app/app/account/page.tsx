@@ -9,6 +9,7 @@ import { PlatformIcon } from "@/components/creator2/bits";
 import { CREATOR, MY_SAMPLES, SOCIALS } from "@/lib/mock";
 import { MySamples } from "@/components/creator1/my-samples";
 import { SCOPES } from "@/components/consent";
+import { LevelFace } from "@/components/level-face";
 import { LevelBadges } from "@/components/account/level-badges";
 import { Referral } from "@/components/account/referral";
 import { Wallet } from "@/components/account/wallet";
@@ -136,13 +137,21 @@ export default function Account() {
       <div className="cr2-settings">
         <div className="cr2-cells">
           <div className="cr2-profile">
-            <span className="v2-av">{CREATOR.initials}</span>
+            <LevelFace lv={linked ? CREATOR.tiktokLevel : null} size={76} img={CREATOR.photo} name={CREATOR.name} />
             <span>
-              <strong>{name || CREATOR.name}</strong>
-              <span className="v2-small">{CREATOR.handle} · {CREATOR.level} · {state}</span>
-              <span className="v2-row" style={{ gap: 6 }}>
-                <span className="badge">{CREATOR.activity}</span>
-                {verified ? <span className="badge">WhatsApp verified</span> : <span className="badge badge-amber">WhatsApp not verified</span>}
+              <strong className="cr2-name">
+                {name || CREATOR.name}
+                {linked && (
+                  <span className="cr2-tick" title="TikTok Shop account linked and approved" aria-label="Verified TikTok Shop account">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#25f4ee" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg>
+                  </span>
+                )}
+              </strong>
+              <span className="v2-small">{CREATOR.handle} · TikTok Shop Malaysia · {state}</span>
+              <span className="cr2-chips">
+                <span className={`cr2-lvchip ${CREATOR.level.toLowerCase()}`}>{CREATOR.level} creator</span>
+                <span className="cr2-actchip"><Icon name="flame" size={12} /> {CREATOR.activity} · {CREATOR.streak} days</span>
+                {!verified && <button type="button" className="cr2-wachip" onClick={() => setWaSheet(true)}>Verify WhatsApp</button>}
               </span>
             </span>
           </div>

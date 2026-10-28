@@ -335,15 +335,15 @@ body { font-feature-settings: "tnum" 0; }
 }
 
 /* ---------- AI mark and AI cards (violet + cyan: the AI's own colours, green stays for money) ---------- */
-.v2-aimark { position: relative; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 32%; overflow: hidden; color: #ffffff; isolation: isolate; box-shadow: 0 10px 24px -10px rgba(0, 154, 92, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.4); }
-.v2-aimark::before { content: ""; position: absolute; inset: -40%; z-index: -1; background: conic-gradient(from 0deg, #00c073, #5fe3ab, #009a5c, #0d1117, #00c073); animation: v2Spin 7s linear infinite; }
+.v2-aimark { position: relative; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 32%; overflow: hidden; color: #ffffff; isolation: isolate; box-shadow: 0 10px 26px -10px rgba(109, 94, 252, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.4); }
+.v2-aimark::before { content: ""; position: absolute; inset: -40%; z-index: -1; background: conic-gradient(from 0deg, #6d5efc, #25c8f4, #22dc95, #ff5ca8, #6d5efc); animation: v2Spin 7s linear infinite; }
 .v2-aimark::after { content: ""; position: absolute; inset: 2px; z-index: -1; border-radius: inherit; background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.35), transparent 60%); }
-.v2-aimark svg { filter: drop-shadow(0 1px 2px rgba(0, 60, 36, 0.5)); animation: v2Twinkle 2.6s ease-in-out infinite; }
+.v2-aimark svg { filter: drop-shadow(0 1px 2px rgba(40, 20, 120, 0.45)); animation: v2Twinkle 2.6s ease-in-out infinite; }
 .v2-aimark svg .s2 { transform-origin: 19px 5px; animation: v2Twinkle 2.6s ease-in-out 1.3s infinite; }
 .v2-aimark.busy::before { animation-duration: 1.6s; }
 @keyframes v2Twinkle { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(0.82); opacity: 0.8; } }
-.v2-aicard { position: relative; border-radius: 20px; padding: 20px; border: 1.5px solid transparent; background: linear-gradient(135deg, rgba(0, 192, 115, 0.07), transparent 60%) padding-box, linear-gradient(var(--surface), var(--surface)) padding-box, linear-gradient(135deg, #00c073, #b8ead2 60%, #0d1117) border-box; box-shadow: 0 24px 48px -32px rgba(0, 154, 92, 0.6), var(--shadow); }
-.v2-ailabel { font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gink); }
+.v2-aicard { position: relative; border-radius: 20px; padding: 20px; border: 1.5px solid transparent; background: linear-gradient(135deg, rgba(109, 94, 252, 0.07), rgba(37, 200, 244, 0.05) 45%, transparent 75%) padding-box, linear-gradient(var(--surface), var(--surface)) padding-box, linear-gradient(135deg, #8b7dff, #25c8f4 55%, #22dc95) border-box; box-shadow: 0 24px 48px -30px rgba(109, 94, 252, 0.55), var(--shadow); }
+.v2-ailabel { font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; background: linear-gradient(90deg, #6d5efc, #1aa3cf); -webkit-background-clip: text; background-clip: text; color: transparent; }
 @media (prefers-reduced-motion: reduce) { .v2-aimark::before, .v2-aimark svg, .v2-aimark svg .s2 { animation: none !important; } }
 
 /* ---------- Date picker (ported from V1's calendar-picker.css) ---------- */
@@ -514,3 +514,11 @@ body { font-feature-settings: "tnum" 0; }
   .v2-flow small { align-self: start; }
   .v2-flow li:not(:last-child)::after { top: 54px; bottom: -6px; left: 24px; right: auto; width: 2px; height: auto; background: repeating-linear-gradient(180deg, var(--green) 0 6px, transparent 6px 11px); }
 }
+
+/* Swipe rows: no visible scrollbar, a soft fade hints there's more (owner: scrollbars look cheap) */
+.nv-noscroll, .acc-tabs, .mk-cats, .ai-sort, .cr2-range, .v2-subwrap nav { scrollbar-width: none; -ms-overflow-style: none; }
+.nv-noscroll::-webkit-scrollbar, .acc-tabs::-webkit-scrollbar, .mk-cats::-webkit-scrollbar, .ai-sort::-webkit-scrollbar, .cr2-range::-webkit-scrollbar, .v2-subwrap nav::-webkit-scrollbar { display: none; }
+@media (min-width: 761px) { .acc-tabs, .mk-cats { flex-wrap: wrap; overflow: visible; } }
+@media (max-width: 760px) { .acc-tabs, .mk-cats, .ai-sort { -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); padding-right: 24px; } }
+.v2-av.photo { padding: 0; overflow: hidden; }
+.v2-av.photo img { width: 100%; height: 100%; object-fit: cover; display: block; }

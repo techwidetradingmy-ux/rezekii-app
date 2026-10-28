@@ -10,8 +10,8 @@ import { Sheet } from "./ui";
 import { ACCOUNT, HOME, MENUS, pageFor, sectionFor, type AppKind } from "@/lib/menus";
 import { CREATOR, SELLER } from "@/lib/mock";
 
-const WHO: Record<AppKind, { name: string; initials: string; label: string }> = {
-  creator: { name: CREATOR.first, initials: CREATOR.initials, label: "Account" },
+const WHO: Record<AppKind, { name: string; initials: string; label: string; photo?: string }> = {
+  creator: { name: CREATOR.first, initials: CREATOR.initials, label: "Account", photo: CREATOR.photo },
   seller: { name: SELLER.shop, initials: "SL", label: "Account" },
   admin: { name: "Aina (Ops)", initials: "AI", label: "Settings" },
 };
@@ -95,7 +95,12 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
             <b>3</b>
           </Link>
           <Link href={ACCOUNT[app]} className="v2-acct">
-            <span className="v2-av">{who.initials}</span>
+            {who.photo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <span className="v2-av photo"><img src={who.photo} alt="" /></span>
+            ) : (
+              <span className="v2-av">{who.initials}</span>
+            )}
             <span>{who.label}</span>
           </Link>
         </nav>

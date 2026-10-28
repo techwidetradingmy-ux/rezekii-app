@@ -11,7 +11,17 @@ import { POOLS, SAMPLE_ACCESS as ACCESS, SAMPLE_LEFT, SELLER_CONDS, type Cond, t
 import "@/app/creator1.css";
 
 const WITH_SAMPLES = PRODUCTS.filter((p) => p.samples);
-const CATS = ["All", ...Array.from(new Set(WITH_SAMPLES.map((p) => p.category)))];
+const CATS = Array.from(new Set(PRODUCTS.map((p) => p.category))).sort();
+const SORTS = [
+  ["sold", "Best-selling"],
+  ["rate", "Highest commission"],
+  ["earn", "Most you earn per sale"],
+  ["cheap", "Price: low to high"],
+  ["dear", "Price: high to low"],
+  ["samples", "Most samples left"],
+] as const;
+type SortKey = (typeof SORTS)[number][0];
+const earn = (p: Product) => (p.price * p.tapRate) / 100;
 const POOL_KEYS = Object.keys(POOLS) as Pool[];
 
 const unfinished = MY_SAMPLES.find((s) => s.status === "Posting");
@@ -33,11 +43,17 @@ function conditionsFor(p: Product): Cond[] {
   return [...base, ...(SELLER_CONDS[p.id] ?? [])];
 }
 
-/** Marketplace (blueprint W6b): free samples for the showcase, filtered by access, category or search; conditions and an honest warning before a likely no. */
+/**
+ * Marketplace: every product in Techwide's TAP campaigns, with TikTok's open-plan rate next to the Rezekii rate and what you earn
+ * per sale. Add to showcase in one tap; request a free sample where the product has one. Filter by category, samples and tier, then sort.
+ */
 export default function Marketplace() {
   const { linked, setLinked, toast } = useDemo();
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("All");
+  const [sort, setSort] = useState<SortKey>("sold");
+  const [onlySamples, setOnlySamples] = useState(false);
+  const [added, setAdded] = useState<string[]>([]);
   const [pool, setPool] = useState<Pool | null>(null);
   const [info, setInfo] = useState(false);
   const [sel, setSel] = useState<Product | null>(null);
@@ -63,7 +79,19 @@ export default function Marketplace() {
   }
 
   const term = q.trim().toLowerCase();
-  const list = WITH_SAMPLES.filter((p) => (!pool || p.samples === pool) && (cat === "All" || p.category === cat) && (!term || `${p.name} ${p.shop}`.toLowerCase().includes(term)));
+  const list = PRODUCTS.filter((p) => (!onlySamples || p.samples) && (!pool || p.samples === pool) && (cat === "All" || p.category === cat) && (!term || `${p.name} ${p.shop}`.toLowerCase().includes(term))).sort((a, b) => {
+    if (sort === "rate") return b.tapRate - a.tapRate;
+    if (sort === "earn") return earn(b) - earn(a);
+    if (sort === "cheap") return a.price - b.price;
+    if (sort === "dear") return b.price - a.price;
+    if (sort === "samples") return (b.samples ? SAMPLE_LEFT[b.id] ?? 10 : -1) - (a.samples ? SAMPLE_LEFT[a.id] ?? 10 : -1);
+    return b.sold - a.sold;
+  });
+  const addToShowcase = (p: Product) => {
+    if (!linked) return setLinked(true);
+    setAdded((a) => [...a, p.id]);
+    toast(`Added to your showcase at ${p.tapRate}%: ${p.name}`);
+  };
   const conds = sel ? conditionsFor(sel) : [];
   const unmet = conds.filter((c) => !c.ok);
   // Open samples she doesn't already have, same category first.
@@ -73,16 +101,46 @@ export default function Marketplace() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 20 }}>
-      <Title title="Marketplace" sub="Free samples for your showcase. Get one, post 3 videos, keep it.">
+      <Title title="Marketplace" sub="Every product in Techwide's campaigns: a better rate than TikTok's open plan, and free samples on many.">
         <Link href="/app/account#samples" className="btn-outline v2-btn-sm">My samples <span className="badge">{MY_SAMPLES.filter((s) => !["Done", "Not approved"].includes(s.status)).length}</span></Link>
       </Title>
 
-      <div className="mk-hero">
+      <section className="v2-card tight">
+        <Flow
+          label="How the marketplace works"
+          steps={[
+            { icon: "tag", title: "Better rate than open plan", note: "Through Techwide's TAP" },
+            { icon: "plus", title: "Add to your showcase", note: "One tap, no sample needed" },
+            { icon: "gift", title: "Or get a free sample", note: "Where it says Free sample" },
+            { icon: "video", title: "Post 3 videos", note: "For each sample" },
+            { icon: "wallet", title: "Earn on every sale", note: "Commission from TikTok" },
+          ]}
+        />
+      </section>
+
+      <div className="mk-bar">
         <label className="mk-search">
           <Icon name="search" size={18} />
-          <input className="np-input" type="search" placeholder="Search free samples" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search free samples" />
+          <input className="np-input" type="search" placeholder="Search products or shops" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search products or shops" />
         </label>
-        <div className="mk-tiers" role="group" aria-label="Sample access: tap to filter">
+        <label className="mk-select">
+          <span>Category</span>
+          <select value={cat} onChange={(e) => setCat(e.target.value)}>
+            <option value="All">All categories ({PRODUCTS.length})</option>
+            {CATS.map((c) => <option key={c} value={c}>{c} ({PRODUCTS.filter((p) => p.category === c).length})</option>)}
+          </select>
+        </label>
+        <label className="mk-select">
+          <span>Sort by</span>
+          <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
+            {SORTS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+          </select>
+        </label>
+        <button type="button" role="switch" aria-checked={onlySamples} className={`mk-switch ${onlySamples ? "on" : ""}`} onClick={() => setOnlySamples((o) => !o)}>
+          <span className="np-switch-like" aria-hidden="true"><i /></span>
+          <Icon name="gift" size={16} /> Free samples only <em>{WITH_SAMPLES.length}</em>
+        </button>
+        <div className="mk-tiers" role="group" aria-label="Sample tier: tap to filter">
           {POOL_KEYS.map((k) => (
             <button
               key={k}
@@ -97,65 +155,62 @@ export default function Marketplace() {
               <span className={`mk-st ${ACCESS[k] ? "" : "wait"}`}>{ACCESS[k] ? <Icon name="check" size={10} width={3.6} /> : `${CREATOR.streak}/30`}</span>
             </button>
           ))}
-          <button type="button" className="mk-tier info" aria-label="How sample access works" onClick={() => setInfo(true)}><b style={{ fontSize: 18 }}>?</b></button>
+          <button type="button" className="mk-tier info" aria-label="Who can get which samples" onClick={() => setInfo(true)}><b style={{ fontSize: 18 }}>?</b></button>
         </div>
       </div>
 
-      <section className="v2-card tight">
-        <Flow
-          label="How free samples work"
-          steps={[
-            { icon: "gift", title: "Request", note: "Free, from TAP sellers" },
-            { icon: "shield", title: "Techwide approves", note: "Usually 2 working days" },
-            { icon: "box", title: "Ships via TikTok", note: "Track it in My account" },
-            { icon: "video", title: "Post 3 videos", note: "Bonus if you post in 1 day" },
-            { icon: "wallet", title: "Keep it and earn", note: "Commission on every sale" },
-          ]}
-        />
-      </section>
-
-      <div className="mk-cats nv-noscroll" role="group" aria-label="Category">
-        {CATS.map((c) => (
-          <button key={c} type="button" className={`v2-chip ${cat === c ? "on" : ""}`} aria-pressed={cat === c} onClick={() => setCat(c)}>
-            {c} <small>{WITH_SAMPLES.filter((p) => (c === "All" || p.category === c) && (!pool || p.samples === pool)).length}</small>
-          </button>
-        ))}
-      </div>
-
-      {pool && (
-        <p className="v2-small" style={{ margin: "-6px 0 0", display: "flex", alignItems: "center", gap: 8 }}>
-          <PoolTag pool={pool} /> {POOLS[pool].who} only.
-          <button type="button" className="v2-link" onClick={() => setPool(null)}>Show all</button>
-        </p>
-      )}
+      <p className="mk-count">
+        {list.length} product{list.length === 1 ? "" : "s"}{cat !== "All" ? ` in ${cat}` : ""}{onlySamples ? " with free samples" : ""}{pool ? ` · ${POOLS[pool].label} samples` : ""} · sorted by {SORTS.find(([k]) => k === sort)![1].toLowerCase()}
+        {(cat !== "All" || onlySamples || pool || term) && <button type="button" className="v2-link" onClick={() => { setQ(""); setCat("All"); setPool(null); setOnlySamples(false); }}>Clear</button>}
+      </p>
 
       <div className="mk-grid">
         {list.map((p, i) => {
           const left = SAMPLE_LEFT[p.id] ?? 10;
+          const extra = (p.price * (p.tapRate - p.publicRate)) / 100;
+          const isAdded = added.includes(p.id);
           return (
-            <button key={p.id} type="button" className="mk-card" style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }} onClick={() => open(p)}>
+            <article key={p.id} className="mk-card" style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}>
               <span className="mk-img">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={p.img} alt="" />
-                <PoolTag pool={p.samples as Pool} label={false} />
-                <span className="mk-free">FREE</span>
+                {p.samples && <PoolTag pool={p.samples as Pool} label={false} />}
+                {p.samples && <span className="mk-free">FREE SAMPLE</span>}
                 {requested.includes(p.id) && <span className="cr1-reqd"><Icon name="check" size={13} width={3} /> Requested</span>}
               </span>
               <strong>{p.name}</strong>
-              <span className="mk-row"><span>Earn <b><Hidden>{p.tapRate}%</Hidden></b></span><span>{rm(p.price)}</span></span>
-              <span className="mk-left">
-                {left} left
-                <i><span style={{ width: `${Math.min(100, (left / 50) * 100)}%` }} /></i>
+              <small className="mk-meta">{rm(p.price)} · {p.sold >= 1e6 ? `${(p.sold / 1e6).toFixed(1)}M` : `${Math.round(p.sold / 1e3)}K`} sold · {p.category}</small>
+              <span className="mk-rates" aria-label={`Open plan ${p.publicRate}%, Rezekii ${p.tapRate}%`}>
+                <span><small>Open plan</small><s>{p.publicRate}%</s></span>
+                <Icon name="arrow" size={14} />
+                <span className="to"><small>Rezekii</small><b><Hidden>{p.tapRate}%</Hidden></b></span>
               </span>
-            </button>
+              <span className="mk-earn"><span>You earn <b><Hidden>{rm(earn(p))}</Hidden></b> a sale</span><em>+<Hidden>{rm(extra)}</Hidden> vs open plan</em></span>
+              {p.samples && (
+                <span className="mk-left">
+                  {left} samples left
+                  <i><span style={{ width: `${Math.min(100, (left / 50) * 100)}%` }} /></i>
+                </span>
+              )}
+              <span className="mk-acts">
+                <button type="button" className={isAdded ? "ai-btn done" : "ai-btn"} disabled={isAdded} onClick={() => addToShowcase(p)}>
+                  <Icon name={isAdded ? "check" : "plus"} size={14} width={2.6} /> {isAdded ? "In showcase" : "Add to showcase"}
+                </button>
+                {p.samples && (
+                  <button type="button" className={`ai-btn ghost ${requested.includes(p.id) ? "asked" : ""}`} disabled={requested.includes(p.id)} onClick={() => open(p)}>
+                    <Icon name={requested.includes(p.id) ? "check" : "gift"} size={14} /> {requested.includes(p.id) ? "Requested" : "Free sample"}
+                  </button>
+                )}
+              </span>
+            </article>
           );
         })}
       </div>
       {list.length === 0 && (
         <div className="v2-card flat" style={{ alignItems: "flex-start" }}>
-          <b>No samples match</b>
-          <span className="v2-muted">Try another category, or clear your search.</span>
-          <button type="button" className="np-btn v2-btn-sm" onClick={() => { setQ(""); setCat("All"); setPool(null); }}>Show all samples</button>
+          <b>No products match</b>
+          <span className="v2-muted">Try another category, or clear your filters.</span>
+          <button type="button" className="np-btn v2-btn-sm" onClick={() => { setQ(""); setCat("All"); setPool(null); setOnlySamples(false); }}>Show all products</button>
         </div>
       )}
 
