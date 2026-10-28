@@ -166,6 +166,15 @@ export const VIRAL = [
   { id: "v5", productId: "p09", title: "Office look under RM 30", views24: 7400, times: 2, ordersToday: 6, week: [0.9, 1.1, 1.0, 1.6, 2.4, 3.9, 7.4], ideas: ["Office look part 2: 3 ways to style"] },
   { id: "v2", productId: "p22", title: "Cleaner that works without scrubbing?", views24: 12300, times: 2, ordersToday: 9, week: [3.1, 2.8, 3.3, 4.0, 6.2, 8.9, 12.3], ideas: [] },
 ];
+/**
+ * Best sellers in her niche (owner, 29 Oct 2026): public TikTok Shop products in her top categories, ranked by units sold this
+ * week, rated 4★+ and not in her showcase yet. TikTok's creator product search gives category, units sold and rating; the list
+ * changes daily.
+ */
+export const NICHE_BEST = [
+  { productId: "p24", weekSold: 18400, idea: "Leak test: upside down in my bag" },
+  { productId: "p01", weekSold: 42100, idea: "3 outfits, 1 pair of pants" },
+];
 /** New products to try today: marketplace products with a free sample she can get, rated 4★+, matched to her categories. */
 export const TRY_TODAY = [
   { productId: "p20", why: "Muslim fashion sells 2.3× your average. A try-on video fits.", idea: "Try-on: 3 ways to style it for work" },

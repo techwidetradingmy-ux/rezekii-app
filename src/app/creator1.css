@@ -1095,3 +1095,24 @@ a.sh-go { text-decoration: none; }
   .sh-lockline { font-size: 13px; }
 }
 .rc-name small.rc-bad { color: var(--red); font-weight: 700; }
+/* Today's Ideas (owner, 29 Oct 2026): best sellers in her niche, a daily-by-AI note, and a tighter phone list. */
+.td-from.best { background: #e3edff; color: #1d4ed8; }
+.td-short { display: none; }
+.td-ai { display: inline-flex; align-items: center; gap: 4px; }
+@media (max-width: 560px) {
+  .td-card { grid-template-columns: 60px minmax(0, 1fr); column-gap: 10px; row-gap: 3px; padding: 8px 10px; align-items: center; }
+  .td-card > .td-img { width: 60px; height: 60px; grid-row: 1 / span 3; border-radius: 10px; }
+  .td-card .td-from { display: inline-flex; font-size: 13px; padding: 0; background: none; }
+  .td-card .td-from .td-long { display: none; }
+  .td-card .td-from .td-short { display: inline; }
+  .td-card .td-from.best { color: #1d4ed8; }
+  .td-card .td-from.new { color: #00804f; }
+  .td-card .td-from:not(.best):not(.new) { color: #c2004b; }
+  .td-rank { display: none; }
+  .td-tick { top: 50%; margin-top: -13px; }
+  .td-name { -webkit-line-clamp: 1; font-size: 14.5px; padding-right: 34px; }
+  .td-why { display: none; }
+  .td-idea { display: block; padding: 0; background: none; font-size: 13px; padding-right: 34px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .td-idea svg { vertical-align: -2px; margin-right: 4px; }
+  .td-sample { grid-column: 1 / -1 !important; height: 34px; margin-top: 4px; }
+}

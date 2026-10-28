@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { Qr, Seg, ShareSheet, Tip } from "@/components/ui";
+import { Qr, Seg, ShareSheet, Sheet, Tip } from "@/components/ui";
 import { PlatformIcon } from "@/components/creator2/bits";
 import { CREATOR } from "@/lib/mock";
 
@@ -42,6 +42,29 @@ const SUGGEST: { name: string; qty: Record<string, number>; off: number }[] = [
   { name: "Growth", qty: { "tt-video": 2, "tt-live": 1, rights: RIGHTS_TIP }, off: 0.2 },
   { name: "TikTok review", qty: { "tt-video": 1, rights: RIGHTS_TIP }, off: 0.15 },
 ];
+
+/** The ad-rights length: a button like the RM box that opens a short list, with the recommended length tagged. */
+function DaysPick({ value, onChange, none = false, disabled = false }: { value: number; onChange: (d: number) => void; none?: boolean; disabled?: boolean }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button type="button" className="rc-dayspick" disabled={disabled} aria-haspopup="dialog" onClick={() => setOpen(true)}>
+        <span>{value ? `${value} days` : "None"}</span><Icon name="arrow" size={13} />
+      </button>
+      {open && (
+        <Sheet title="How long can sellers use it in ads?" onClose={() => setOpen(false)}>
+          <div className="sq-opts" role="radiogroup" aria-label="Ad rights length">
+            {[...(none ? [0] : []), ...DAYS].map((d) => (
+              <button key={d} type="button" role="radio" aria-checked={value === d} className={value === d ? "on" : undefined} onClick={() => { onChange(d); setOpen(false); }}>
+                <span>{d ? `${d} days` : "None"}</span>{d === RIGHTS_TIP && <i className="rc-rec">Recommended</i>}{value === d && <Icon name="check" size={16} />}
+              </button>
+            ))}
+          </div>
+        </Sheet>
+      )}
+    </>
+  );
+}
 
 function Icn({ app }: { app: App }) {
   return app === "rights" ? <span className="rc-rights" aria-hidden="true"><Icon name="shield" size={14} /></span> : <PlatformIcon name={app} size={26} />;
@@ -130,9 +153,7 @@ export function RateCard() {
                     <input inputMode="numeric" disabled={!r.on} value={r.price} placeholder="0" aria-label={`${it.label} price in RM`} onChange={(e) => setRate(it.key, { price: e.target.value.replace(/[^\d]/g, "").slice(0, 6) })} />
                   </span>
                   {it.key === "rights" ? (
-                    <select className="rc-days" value={r.days ?? 30} disabled={!r.on} aria-label="How long sellers can use it in ads" onChange={(e) => setRate("rights", { days: Number(e.target.value) })}>
-                      {DAYS.map((d) => <option key={d} value={d}>for {d} days{d === RIGHTS_TIP ? " (recommended)" : ""}</option>)}
-                    </select>
+                    <DaysPick value={r.days ?? RIGHTS_TIP} disabled={!r.on} onChange={(d) => setRate("rights", { days: d })} />
                   ) : <small>{it.unit}</small>}
                 </span>
                 <button type="button" role="switch" aria-checked={r.on} aria-label={`Offer ${it.label}`} className={`np-switch ${r.on ? "on" : ""}`} onClick={() => setRate(it.key, { on: !r.on })}><span /></button>
@@ -163,10 +184,7 @@ export function RateCard() {
                     <Icn app={it.app} />
                     <span className="rc-lbl">{it.label}<small>{q ? unitOf(it, q) : "Not included"}</small></span>
                     {it.key === "rights" ? (
-                      <select className="rc-days" value={q} aria-label="Usage rights in this package" onChange={(e) => setPack(p.id, { qty: { ...p.qty, rights: Number(e.target.value) } })}>
-                        <option value={0}>None</option>
-                        {DAYS.map((d) => <option key={d} value={d}>{d} days{d === RIGHTS_TIP ? " (recommended)" : ""}</option>)}
-                      </select>
+                      <DaysPick value={q} none onChange={(d) => setPack(p.id, { qty: { ...p.qty, rights: d } })} />
                     ) : (
                       <span className="rc-step" role="group" aria-label={`${it.label} in this package`}>
                         <button type="button" aria-label={`Fewer ${it.label}`} onClick={() => setPack(p.id, { qty: { ...p.qty, [it.key]: Math.max(0, q - 1) } })}>−</button>
