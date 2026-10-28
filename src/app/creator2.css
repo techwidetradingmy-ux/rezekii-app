@@ -550,7 +550,7 @@ li.done .cr2-check { background: #00c073; border-color: #00c073; animation: v2Po
 /* Profile header like V1: photo with the TikTok Shop level ring, verified tick by the name, level and activity chips */
 .cr2-profile { gap: 18px; padding: 20px 18px; }
 .cr2-name { display: inline-flex; align-items: center; gap: 8px; font-size: 21px; }
-.cr2-tick { width: 22px; height: 22px; border-radius: 50%; background: #0d1117; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 0 0 2px var(--surface), 0 4px 10px -4px rgba(37, 244, 238, 0.8); }
+.cr2-tick { width: 22px; height: 22px; display: inline-flex; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0, 145, 90, 0.35)); }
 .cr2-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
 .cr2-lvchip, .cr2-actchip, .cr2-wachip { height: 24px; padding: 0 9px; border-radius: 999px; display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 800; white-space: nowrap; }
 .cr2-lvchip { color: #2c2752; background: linear-gradient(135deg, #ffffff, #d9dcf5); box-shadow: inset 0 0 0 1px #b9bde6; }
@@ -621,3 +621,17 @@ li.done .cr2-check { background: #00c073; border-color: #00c073; animation: v2Po
 .cr2-bacts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
 .cr2-bbtn { display: inline-flex; align-items: center; gap: 6px; height: 42px; padding: 0 16px; border-radius: 12px; background: #ffffff; color: #00804f; font-weight: 800; font-size: 14px; text-decoration: none; }
 .cr2-bacts .cr2-sharebtn { height: 42px; background: rgba(255, 255, 255, 0.14); border-color: rgba(255, 255, 255, 0.35); color: #ffffff; }
+
+/* How you sign in (owner, 28 Oct 2026). */
+.si-remind { margin: 2px 0 0; display: flex; gap: 6px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; background: var(--gsoft); color: var(--gink); font-size: 13.5px; line-height: 1.45; }
+.si-remind svg { flex-shrink: 0; margin-top: 2px; }
+.si-methods { display: grid; gap: 6px; }
+.si-m { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 14px; border: 1px solid var(--line); }
+.si-m.on { background: var(--surface); }
+.si-m > span:nth-child(2) { display: grid; min-width: 0; }
+.si-m b { font-size: 14px; }
+.si-m small { font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.si-ico { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; color: #ffffff; font-weight: 900; font-size: 16px; }
+.si-ico.tt { background: #0d1117; color: #25f4ee; }
+.si-ico.gg { background: #ffffff; color: #4285f4; box-shadow: inset 0 0 0 1px var(--border); }
+.si-ico.em { background: var(--surface2); color: var(--body); }

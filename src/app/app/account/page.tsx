@@ -97,8 +97,9 @@ export default function Account() {
   const [conn, setConn] = useState<Record<string, boolean>>(Object.fromEntries(SOCIALS.map((s) => [s.name, s.linked])));
   const [notify, setNotify] = useState<Record<string, [boolean, boolean]>>({ samples: [true, true], chances: [true, true], posts: [true, false], rewards: [true, false] });
   const [pwSheet, setPwSheet] = useState(false);
-  const [hasPw, setHasPw] = useState(false);
-  const [pw, setPw] = useState(["", ""]);
+  const [hasPw, setHasPw] = useState(true);
+  const [googleOn, setGoogleOn] = useState(false);
+  const [pw, setPw] = useState(["", "", ""]);
   const [topic, setTopic] = useState("Idea");
   const [msg, setMsg] = useState("");
   const [theme, setTheme] = useState<Theme>("Auto");
@@ -165,7 +166,11 @@ export default function Account() {
                 {name || CREATOR.name}
                 {linked && (
                   <span className="cr2-tick" title="TikTok Shop account linked and approved" aria-label="Verified TikTok Shop account">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#25f4ee" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg>
+                    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+                      <defs><linearGradient id="cr2-vt" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#22dc95" /><stop offset="1" stopColor="#00915a" /></linearGradient></defs>
+                      <path d="M23 12l-2.44-2.79.34-3.69-3.61-.82-1.89-3.2L12 2.96 8.6 1.5 6.71 4.69 3.1 5.5l.34 3.7L1 12l2.44 2.79-.34 3.7 3.61.82L8.6 22.5l3.4-1.47 3.4 1.46 1.89-3.19 3.61-.82-.34-3.69L23 12z" fill="url(#cr2-vt)" />
+                      <path d="M7.8 12.3l2.8 2.8 5.6-5.8" fill="none" stroke="#ffffff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
                   </span>
                 )}
               </strong>
@@ -411,17 +416,33 @@ export default function Account() {
         <section className="cr2-group">
           <h2>Login & security</h2>
           <div className="cr2-cells">
-            <div className="cr2-cell">
-              <span className="lbl">Signed in with</span>
-              <span className="val v2-muted">TikTok</span>
+            {/* Owner, 28 Oct 2026: remind people which account they sign in with. */}
+            <div className="cr2-cell stack">
+              <span className="lbl">How you sign in</span>
+              <p className="si-remind"><Icon name="check" size={15} width={3} /><span>Last time you signed in with <b>TikTok</b> as <b>{CREATOR.handle}</b>. Use the same next time.</span></p>
+              <div className="si-methods">
+                {([
+                  ["TikTok", CREATOR.handle, true, "tt"],
+                  ["Google", googleOn ? "aisyah.rahman@gmail.com" : "Not linked", googleOn, "gg"],
+                  ["Email and password", hasPw ? email : "No password yet", hasPw, "em"],
+                ] as [string, string, boolean, string][]).map(([label, detail, on, key]) => (
+                  <span key={key} className={`si-m ${on ? "on" : ""}`}>
+                    <span className={`si-ico ${key}`} aria-hidden="true">{key === "tt" ? "♪" : key === "gg" ? "G" : <Icon name="lock" size={15} />}</span>
+                    <span><b>{label}</b><small>{detail}</small></span>
+                    {key === "tt" ? <span className="badge">Last used</span>
+                      : key === "gg" ? <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setGoogleOn(!googleOn); toast(googleOn ? "Google unlinked" : "Google linked: you can sign in with it too"); }}>{googleOn ? "Unlink" : "Link"}</button>
+                      : <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setPw(["", "", ""]); setPwSheet(true); }}>{hasPw ? "Change password" : "Set password"}</button>}
+                  </span>
+                ))}
+              </div>
             </div>
             <button type="button" className="cr2-cell cr2-cellbtn" onClick={() => { setNewEmail(""); setEmailSheet(true); }}>
               <span className="lbl">Email</span>
               <span className="chev">{email} <Icon name="arrow" size={16} /></span>
             </button>
-            <button type="button" className="cr2-cell cr2-cellbtn" onClick={() => setPwSheet(true)}>
+            <button type="button" className="cr2-cell cr2-cellbtn" onClick={() => { setPw(["", "", ""]); setPwSheet(true); }}>
               <span className="lbl">Password</span>
-              <span className="chev">{hasPw ? "Change" : "Set a password"} <Icon name="arrow" size={16} /></span>
+              <span className="chev">{hasPw ? "Changed 3 Mar 2026 · Change" : "Set a password"} <Icon name="arrow" size={16} /></span>
             </button>
             <Link href="/signin" className="cr2-cell cr2-cellbtn">Sign out</Link>
             <button type="button" className="cr2-cell cr2-cellbtn danger" onClick={() => { setDelText(""); setDelSheet(true); }}>Delete account</button>
@@ -624,24 +645,31 @@ export default function Account() {
 
       {pwSheet && (
         <Sheet title={hasPw ? "Change password" : "Set a password"} onClose={() => setPwSheet(false)}>
-          <p className="v2-muted" style={{ margin: 0 }}>You signed in with TikTok. A password also lets you sign in with your email.</p>
+          <p className="v2-muted" style={{ margin: 0 }}>{hasPw ? `For signing in with ${email}.` : `A password lets you sign in with ${email} as well as TikTok.`}</p>
+          {hasPw && (
+            <label className="v2-field">
+              Current password
+              <input type="password" className="np-input" autoComplete="current-password" value={pw[0]} onChange={(e) => setPw([e.target.value, pw[1], pw[2]])} />
+              <button type="button" className="v2-link" style={{ alignSelf: "flex-start", fontSize: 13 }} onClick={() => { setPwSheet(false); toast(`Reset link sent to ${email}`); }}>Forgot it? Email me a reset link</button>
+            </label>
+          )}
           <label className="v2-field">
             New password
-            <input type="password" className="np-input" autoComplete="new-password" value={pw[0]} onChange={(e) => setPw([e.target.value, pw[1]])} />
+            <input type="password" className="np-input" autoComplete="new-password" value={pw[1]} onChange={(e) => setPw([pw[0], e.target.value, pw[2]])} />
             <small>At least 8 characters</small>
           </label>
           <label className="v2-field">
             Type it again
-            <input type="password" className="np-input" autoComplete="new-password" value={pw[1]} onChange={(e) => setPw([pw[0], e.target.value])} />
-            {pw[1] && pw[0] !== pw[1] && <small className="cr2-red">These don&apos;t match yet</small>}
+            <input type="password" className="np-input" autoComplete="new-password" value={pw[2]} onChange={(e) => setPw([pw[0], pw[1], e.target.value])} />
+            {pw[2] && pw[1] !== pw[2] && <small className="cr2-red">These don&apos;t match yet</small>}
           </label>
           <button
             type="button"
             className="np-btn"
-            disabled={pw[0].length < 8 || pw[0] !== pw[1]}
-            onClick={() => { setHasPw(true); setPw(["", ""]); setPwSheet(false); toast(hasPw ? "Password changed" : "Password set"); }}
+            disabled={(hasPw && !pw[0]) || pw[1].length < 8 || pw[1] !== pw[2]}
+            onClick={() => { setHasPw(true); setPw(["", "", ""]); setPwSheet(false); toast(hasPw ? "Password changed. Other devices are signed out." : "Password set"); }}
           >
-            Save password
+            {hasPw ? "Change password" : "Save password"}
           </button>
         </Sheet>
       )}
