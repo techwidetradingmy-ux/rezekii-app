@@ -12,6 +12,7 @@ import { SCOPES } from "@/components/consent";
 import { LevelFace } from "@/components/level-face";
 import { LevelBadges } from "@/components/account/level-badges";
 import { Referral } from "@/components/account/referral";
+import { RateCard } from "@/components/account/rate-card";
 import { Wallet } from "@/components/account/wallet";
 import type { IconName } from "@/components/icons";
 import { MY_STATES, NICHES, NOTIFY } from "@/lib/mock-creator2";
@@ -49,7 +50,7 @@ function prettyNum(cc: string, d: string) {
   return d.replace(/(\d{4})(?=\d)/g, "$1 ");
 }
 
-/** My account: profile, connections, samples & delivery, rate card (later) and settings, grouped like iOS Settings. Nothing is saved. */
+/** My account: profile, connections, samples & delivery, rate card and settings, grouped like iOS Settings. Nothing is saved. */
 export default function Account() {
   const { linked, setLinked, toast, consent, waVerified: verified, setWaVerified: setVerified } = useDemo();
   const [unlink, setUnlink] = useState(false);
@@ -392,23 +393,7 @@ export default function Account() {
         {tab === "referral" && <Referral />}
         {tab === "samples" && <MySamples />}
 
-        {tab === "rate-card" && (
-        <section className="cr2-group">
-          <h2>Rate card <span className="badge badge-gray" style={{ textTransform: "none", letterSpacing: 0, marginLeft: 6 }}>Coming later</span></h2>
-          <div className="cr2-cells acc-soon">
-            {[["TikTok video, 30 to 60 s", "per video"], ["TikTok LIVE", "per hour"], ["Instagram Reel", "per Reel"], ["Usage rights for ads", "per 30 days"]].map(([t, u]) => (
-              <div key={t} className="cr2-cell">
-                <span className="lbl">{t}</span>
-                <span className="val v2-row" style={{ gap: 8, flexWrap: "nowrap" }}>
-                  <input className="np-input" disabled placeholder="RM" aria-label={`${t} price`} style={{ maxWidth: 140 }} />
-                  <span className="v2-small">{u}</span>
-                </span>
-              </div>
-            ))}
-          </div>
-          <p>Later you&apos;ll set your prices here for paid reviews and UGC, and sellers see them when they invite you. Nothing to fill in yet.</p>
-        </section>
-        )}
+        {tab === "rate-card" && <RateCard />}
 
         {tab === "settings" && (
           <>

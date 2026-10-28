@@ -655,3 +655,49 @@ li.done .cr2-check { background: #00c073; border-color: #00c073; animation: v2Po
 .cr2-check.num { border-radius: 50%; width: 28px; height: 28px; background: #0d1117; border-color: #0d1117; color: #ffffff; font: inherit; font-size: 13px; font-weight: 900; }
 li:first-child .cr2-check.num { background: #e14b3b; border-color: #e14b3b; }
 li.done .cr2-check.num { background: #00c073; border-color: #00c073; }
+
+/* Rate card (owner, 28 Oct 2026): à la carte per app, up to 3 packages, and what sellers see. */
+.rc-page .acc-head { flex-wrap: wrap; }
+.rc-row { flex-wrap: nowrap; gap: 12px; }
+.rc-row.off .rc-lbl, .rc-row.off .rc-price { opacity: 0.45; }
+.rc-row > .cr2-pi, .rc-rights { flex-shrink: 0; }
+.rc-rights { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: #eef0ff; color: #3b3fb8; }
+.rc-lbl { flex: 1 1 auto; min-width: 0; display: grid; gap: 1px; font-size: 14.5px; font-weight: 800; }
+.rc-lbl small { font-size: 12px; font-weight: 700; color: var(--muted); }
+.rc-price { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.rc-price small { width: 74px; font-size: 12px; color: var(--muted); }
+.rc-input { display: inline-flex; align-items: center; height: 40px; width: 112px; border-radius: 12px; background: var(--surface2); border: 1.5px solid transparent; padding: 0 10px; gap: 6px; }
+.rc-input:focus-within { border-color: #00c073; background: var(--surface); }
+.rc-input.bad { border-color: #e14b3b; background: #fff1ef; }
+.rc-input i { font-style: normal; font-size: 12.5px; font-weight: 800; color: var(--muted); }
+.rc-input input { width: 100%; min-width: 0; border: 0; background: none; font: inherit; font-size: 15px; font-weight: 800; color: var(--text); outline: none; text-align: right; }
+.rc-count { margin-left: 6px; font-weight: 700; letter-spacing: 0; text-transform: none; }
+.rc-pack-h { display: flex; gap: 8px; align-items: center; }
+.rc-pack-h .np-input { flex: 1; min-width: 0; font-weight: 800; }
+.rc-step { display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0; border-radius: 12px; background: var(--surface2); padding: 3px; }
+.rc-step button { width: 32px; height: 32px; border: 0; border-radius: 9px; background: var(--surface); font: inherit; font-size: 18px; font-weight: 800; cursor: pointer; color: var(--text); }
+.rc-step b { min-width: 26px; text-align: center; font-size: 15px; }
+.rc-total { flex-wrap: wrap; background: var(--surface2); }
+.rc-save { margin-left: auto; padding: 4px 10px; border-radius: 99px; background: #d6f5e6; color: #00804f; font-size: 13px; font-weight: 900; }
+.rc-save.more { background: #fff3d6; color: #a46a00; }
+.rc-add { display: flex; align-items: center; justify-content: center; gap: 6px; height: 48px; border-radius: 16px; border: 1.5px dashed var(--border); background: none; color: var(--gink); font: inherit; font-weight: 800; font-size: 14px; cursor: pointer; }
+.rc-add:disabled { color: var(--muted); cursor: default; }
+.rc-preview { gap: 8px; }
+.rc-prev-h { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.rc-prev-row { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto 74px; gap: 10px; align-items: center; font-size: 14px; font-weight: 700; }
+.rc-prev-row b { font-size: 15px; font-weight: 900; }
+.rc-prev-row small { font-size: 12px; color: var(--muted); }
+.rc-prev-pack { display: grid; gap: 3px; padding: 12px 14px; border-radius: 14px; background: linear-gradient(135deg, #e8fbf2, #f5fff9); border: 1.5px solid #b8ead2; }
+.rc-prev-pack b { font-size: 15px; font-weight: 900; }
+.rc-prev-pack small { font-size: 12.5px; color: var(--body); line-height: 1.4; }
+.rc-prev-pack > span { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 900; color: var(--gink); }
+.rc-prev-pack em { font-style: normal; font-size: 12px; padding: 2px 8px; border-radius: 99px; background: #00c073; color: #ffffff; }
+.rc-fix { display: grid; gap: 4px; padding: 12px 14px; border-radius: 14px; background: #fff1ef; color: #a3271a; font-size: 13.5px; }
+.rc-save-btn { align-self: flex-start; min-width: 200px; }
+@media (max-width: 520px) {
+  .rc-price small { display: none; }
+  .rc-input { width: 96px; }
+  .rc-prev-row { grid-template-columns: 26px minmax(0, 1fr) auto; }
+  .rc-prev-row small { display: none; }
+  .rc-save-btn { align-self: stretch; }
+}
