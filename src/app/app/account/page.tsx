@@ -16,7 +16,7 @@ import { RateCard } from "@/components/account/rate-card";
 import { Wallet } from "@/components/account/wallet";
 import type { IconName } from "@/components/icons";
 import { MY_STATES, NICHES, NOTIFY } from "@/lib/mock-creator2";
-import { ACCOUNT_TABS, OPEN_ACCOUNT_MENU, type AccountTab } from "@/lib/account-tabs";
+import { ACCOUNT_TABS, type AccountTab } from "@/lib/account-tabs";
 import "@/app/creator2.css";
 
 const TYPES = ["Affiliate", "UGC", "Artist", "Influencer"] as const;
@@ -179,10 +179,6 @@ export default function Account() {
           </div>
         </div>
 
-        {/* Phones (owner, 29 Oct 2026, option B): the open section, tap to see them all in the account panel. */}
-        <button type="button" className="acc-cur" aria-haspopup="dialog" onClick={() => window.dispatchEvent(new Event(OPEN_ACCOUNT_MENU))}>
-          <Icon name={TABS.find(([k]) => k === tab)![2]} size={18} /><b>{TABS.find(([k]) => k === tab)![1]}</b><span>All sections</span><Icon name="arrow" size={15} />
-        </button>
         <div ref={tabsRef} className="acc-tabs nv-noscroll" role="tablist" aria-label="Account sections">
           {TABS.map(([k, label, icon]) => (
             <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? "on" : undefined} onClick={() => go(k)}>

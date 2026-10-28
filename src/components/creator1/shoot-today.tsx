@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { Hidden, Tip } from "@/components/ui";
+import { AiMark, Hidden, Seg, Tip } from "@/components/ui";
+import { ProductSheet } from "@/components/creator2/view-sheets";
 import { product, short } from "@/lib/mock";
 import { SAMPLE_LEFT } from "@/lib/mock-creator1";
 import { NICHE_BEST, TRY_TODAY, VIRAL } from "@/lib/mock-creator2";
@@ -52,8 +53,8 @@ export function ShootToday({ bare = false }: { bare?: boolean }) {
       id: v.id, productId: v.productId, kind: "rising" as const, idea: v.ideas[0], week: v.week, stat: `+${(v.views24 / 1000).toFixed(1)}K views today`,
       reason: `+${(v.views24 / 1000).toFixed(1)}K views in 24h on “${v.title}” · ${v.ordersToday} sold today`,
     })),
-    ...NICHE_BEST.filter((b) => ok(b.productId)).slice(0, 2).map((b) => ({
-      id: `b-${b.productId}`, productId: b.productId, kind: "best" as const, idea: b.idea, stat: `${short(b.weekSold)} sold this week`,
+    ...NICHE_BEST.filter((b) => ok(b.productId) && b.idea).slice(0, 2).map((b) => ({
+      id: `b-${b.productId}`, productId: b.productId, kind: "best" as const, idea: b.idea!, stat: `${short(b.weekSold)} sold this week`,
       reason: `Top seller in ${product(b.productId).category} this week · ${short(b.weekSold)} sold`,
     })),
     ...TRY_TODAY.filter((t) => ok(t.productId)).slice(0, 1).map((t) => ({ id: `t-${t.productId}`, productId: t.productId, kind: "sample" as const, idea: t.idea, reason: t.why, stat: `${SAMPLE_LEFT[t.productId] ?? 10} left` })),
@@ -130,6 +131,55 @@ export function ShootToday({ bare = false }: { bare?: boolean }) {
           <Icon name="video" size={16} /> {pick.length ? `Plan ${pick.length} video${pick.length === 1 ? "" : "s"}` : "Pick a product"}
         </button>
       </div>
+    </section>
+  );
+}
+
+/**
+ * Best sellers in her niche (owner, 29 Oct 2026): public TikTok Shop products in her top categories, ranked by units sold this
+ * week, rated 4★+ and not in her showcase yet. Changes daily. Tap a product to see it on Rezekii; + adds it to her showcase.
+ */
+export function NicheBest() {
+  const { linked, setLinked, toast } = useDemo();
+  const rows = NICHE_BEST.filter((b) => product(b.productId).rating >= 4).sort((a, b) => b.weekSold - a.weekSold);
+  const cats = ["All", ...Array.from(new Set(rows.map((b) => product(b.productId).category)))];
+  const [cat, setCat] = useState("All");
+  const [added, setAdded] = useState<string[]>([]);
+  const [view, setView] = useState<string | null>(null);
+  const shown = rows.filter((b) => cat === "All" || product(b.productId).category === cat);
+  return (
+    <section className="v2-card nb-box" aria-label="Best sellers in your niche">
+      <div className="nb-head">
+        <AiMark size={34} />
+        <span>
+          <h2 className="v2-h2">Best sellers in your niche</h2>
+          <span className="td-ai">Updated daily by Rezekii AI <Tip label="How this list is made" text="Public TikTok Shop products in your top categories, ranked by units sold this week. Rated 4★ and up, and not in your showcase yet." /></span>
+        </span>
+      </div>
+      <Seg value={cat} options={cats} onChange={setCat} />
+      <ol className="nb-list">
+        {shown.map((b) => {
+          const p = product(b.productId);
+          const on = added.includes(p.id);
+          return (
+            <li key={p.id}>
+              <span className="nb-rank">{rows.indexOf(b) + 1}</span>
+              <button type="button" className="nb-view" onClick={() => setView(p.id)} aria-label={`View ${p.name}`}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={p.img} alt="" />
+                <span className="nb-main">
+                  <b>{p.name}</b>
+                  <small>{short(b.weekSold)} sold this week · {p.rating.toFixed(1)}★ · Earn <Hidden>{p.publicRate}%</Hidden></small>
+                </span>
+              </button>
+              <button type="button" className={`nb-add${on ? " on" : ""}`} disabled={on} aria-label={on ? `${p.name} is in your showcase` : `Add ${p.name} to your showcase`} onClick={() => { if (!linked) return setLinked(true); setAdded((a) => [...a, p.id]); toast("Added to your showcase"); }}>
+                <Icon name={on ? "check" : "plus"} size={18} />
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+      {view && <ProductSheet productId={view} onClose={() => setView(null)} />}
     </section>
   );
 }

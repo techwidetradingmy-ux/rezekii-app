@@ -171,9 +171,15 @@ export const VIRAL = [
  * week, rated 4★+ and not in her showcase yet. TikTok's creator product search gives category, units sold and rating; the list
  * changes daily.
  */
-export const NICHE_BEST = [
+export const NICHE_BEST: { productId: string; weekSold: number; idea?: string }[] = [
   { productId: "p24", weekSold: 18400, idea: "Leak test: upside down in my bag" },
   { productId: "p01", weekSold: 42100, idea: "3 outfits, 1 pair of pants" },
+  { productId: "p02", weekSold: 38500 },
+  { productId: "p03", weekSold: 15200 },
+  { productId: "p14", weekSold: 12800 },
+  { productId: "p10", weekSold: 11900 },
+  { productId: "p08", weekSold: 9600 },
+  { productId: "p12", weekSold: 9800 },
 ];
 /** New products to try today: marketplace products with a free sample she can get, rated 4★+, matched to her categories. */
 export const TRY_TODAY = [

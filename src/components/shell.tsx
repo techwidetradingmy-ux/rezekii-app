@@ -66,6 +66,22 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
   // Page switcher (owner, 29 Oct 2026, option G): on phones the open page's name sits in the top bar and lists the section's pages.
   const [pgOpen, setPgOpen] = useState(false);
   useLayoutEffect(() => setPgOpen(false), [path]);
+  // My Account uses the same switcher for its sections (owner, 29 Oct 2026); the open one lives in the address (#wallet).
+  const acctPage = app === "creator" && path === ACCOUNT[app];
+  const [acctTab, setAcctTab] = useState("profile");
+  useLayoutEffect(() => {
+    if (!acctPage) return;
+    const read = () => setAcctTab(window.location.hash.slice(1) || "profile");
+    read();
+    window.addEventListener("hashchange", read);
+    return () => window.removeEventListener("hashchange", read);
+  }, [acctPage]);
+  const pick: { title: string; items: { href: string; label: string; on: boolean; hash?: string }[] } | null =
+    section && section.pages.length > 1
+      ? { title: section.label, items: section.pages.map(([href, label]) => ({ href, label, on: page === href })) }
+      : acctPage
+        ? { title: "My Account", items: ACCOUNT_TABS.map(([k, label]) => ({ href: `${ACCOUNT[app]}#${k}`, label, on: acctTab === k, hash: k })) }
+        : null;
   // Account panel (owner, 29 Oct 2026, option B): on phones the avatar opens every account section in a side panel.
   const [acctOpen, setAcctOpen] = useState(false);
   useLayoutEffect(() => {
@@ -140,20 +156,28 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
             Rezekii
           </Link>
           {app !== "creator" && <span className="v2-workspace">{app === "seller" ? "Seller" : "Admin"}</span>}
-          {section && section.pages.length > 1 && (
+          {pick && (
             <span className="v2-pgpick">
               <button type="button" aria-haspopup="menu" aria-expanded={pgOpen} onClick={() => setPgOpen((o) => !o)}>
-                <small>{section.label}</small>
-                <b>{section.pages.find(([h]) => h === page)?.[1] ?? section.label}<Icon name="updown" size={14} width={2.4} /></b>
+                <small>{pick.title}</small>
+                <b>{pick.items.find((x) => x.on)?.label ?? pick.title}<Icon name="updown" size={14} width={2.4} /></b>
               </button>
               {pgOpen && (
                 <>
                   <span className="v2-pgback" onClick={() => setPgOpen(false)} aria-hidden="true" />
-                  <span className="v2-pgmenu" role="menu" aria-label={`${section.label} pages`}>
-                    {section.pages.map(([href, label]) => (
-                      <Link key={href} href={href} role="menuitem" className={page === href ? "on" : undefined} aria-current={page === href ? "page" : undefined} onClick={() => setPgOpen(false)}>
-                        {/* AI pages carry the AI mark so the feature stands out (owner, 29 Oct 2026). */}
-                        <span>{label}</span>{label.startsWith("AI ") && <AiMark size={22} />}{page === href && <Icon name="check" size={16} />}
+                  <span className="v2-pgmenu" role="menu" aria-label={`${pick.title} pages`}>
+                    {pick.items.map((x) => (
+                      <Link
+                        key={x.href}
+                        href={x.href}
+                        role="menuitem"
+                        className={x.on ? "on" : undefined}
+                        aria-current={x.on ? "page" : undefined}
+                        // An account section on the same page changes the address hash, so the page switches section.
+                        onClick={(e) => { if (x.hash) { e.preventDefault(); window.location.hash = x.hash; } setPgOpen(false); }}
+                      >
+                        {/* AI-made pages carry the AI mark so the feature stands out (owner, 29 Oct 2026). */}
+                        <span>{x.label}</span>{AI_PAGES.includes(x.label) && <AiMark size={22} />}{x.on && <Icon name="check" size={16} />}
                       </Link>
                     ))}
                   </span>
@@ -275,6 +299,9 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
   );
 }
 
+/** Pages made by Rezekii AI; they get the AI mark in the page switcher. */
+const AI_PAGES = ["AI Picks", "Today's Ideas", "AI Competitors"];
+
 /** Every account section in a panel from the right (phones), with her photo, level and streak on top. */
 function AccountPanel({ onClose }: { onClose: () => void }) {
   const path = usePathname();
@@ -294,12 +321,18 @@ function AccountPanel({ onClose }: { onClose: () => void }) {
         <div className="ap-me">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={CREATOR.photo} alt="" />
-          <span><b>{CREATOR.name}</b><small>{CREATOR.handle}</small><small>{CREATOR.level} · {CREATOR.streak}-day streak</small></span>
+          <span>
+            <b>{CREATOR.name}</b><small>{CREATOR.handle}</small>
+            <span className="ap-chips">
+              <i className={`lv ${CREATOR.level.toLowerCase()}`} title={`${CREATOR.level} creator`} aria-label={`${CREATOR.level} creator`}><Icon name="gem" size={13} /></i>
+              <i className="st" title={`${CREATOR.streak}-day streak`} aria-label={`${CREATOR.streak}-day streak`}><Icon name="flame" size={13} />{CREATOR.streak}</i>
+            </span>
+          </span>
           <button type="button" className="v2-iconbtn" aria-label="Close" onClick={onClose}><Icon name="x" size={18} /></button>
         </div>
         <nav className="ap-list" aria-label="Account sections">
           {ACCOUNT_TABS.map(([k, label, icon]) => (
-            <Link key={k} href={`/app/account#${k}`} className={here(k) ? "on" : undefined} aria-current={here(k) ? "page" : undefined} onClick={onClose}>
+            <Link key={k} href={`/app/account#${k}`} className={here(k) ? "on" : undefined} aria-current={here(k) ? "page" : undefined} onClick={(e) => { if (path === "/app/account") { e.preventDefault(); window.location.hash = k; } onClose(); }}>
               <span className={`ap-ic ${k}`}><Icon name={icon} size={17} /></span>
               <span>{label}</span>
               {k === "wallet" && <small>{CREATOR.credits.toLocaleString("en-MY")}</small>}

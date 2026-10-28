@@ -1141,3 +1141,44 @@ a.sh-go { text-decoration: none; }
 /* Icon only (owner, 29 Oct 2026): same size as the calendar icon so it lines up with the page title; the count sits on the corner. */
 .mk-mysamples { position: relative; width: 44px; height: 44px; padding: 0; justify-content: center; border-radius: 14px; }
 .mk-mysamples .badge { position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; padding: 0 5px; font-size: 11px; display: grid; place-items: center; border: 2px solid var(--bg); }
+/* Best sellers in her niche (owner, 29 Oct 2026): a ranked list under Today's Ideas. */
+.nb-box { gap: 12px; }
+.nb-head { display: flex; align-items: center; gap: 10px; }
+.nb-head h2 { margin: 0; }
+.nb-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.nb-list li { display: grid; grid-template-columns: 22px minmax(0, 1fr) 40px; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+.nb-list li:first-child { border-top: 0; }
+.nb-rank { font-size: 15px; font-weight: 900; color: var(--muted); text-align: center; }
+.nb-list li:nth-child(-n+3) .nb-rank { color: #00a862; }
+.nb-view { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 10px; align-items: center; padding: 0; border: 0; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; min-width: 0; }
+.nb-view img { width: 52px; height: 52px; border-radius: 12px; object-fit: cover; }
+.nb-main { display: grid; gap: 2px; min-width: 0; }
+.nb-main b { font-size: 14.5px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nb-main small { font-size: 13px; color: var(--muted); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nb-add { width: 40px; height: 40px; border-radius: 12px; border: 1.5px solid #b8ead2; background: var(--gsoft); color: var(--gink); display: grid; place-items: center; cursor: pointer; }
+.nb-add:hover { background: #00c073; border-color: #00c073; color: #ffffff; }
+.nb-add.on { background: #00c073; border-color: #00c073; color: #ffffff; cursor: default; }
+/* Notifications (owner, 29 Oct 2026): the text area is a button; on phones each note is a short row, tap to open it. */
+button.cr1-note-main { padding: 0; border: 0; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+@media (max-width: 760px) {
+  .cr1-note { grid-template-columns: 36px minmax(0, 1fr); gap: 10px; padding: 10px 0; align-items: center; }
+  .cr1-note-ico { position: relative; width: 36px; height: 36px; border-radius: 11px; }
+  .cr1-note-ico svg { width: 18px; height: 18px; }
+  .cr1-note-main { gap: 1px; }
+  .cr1-note-main b { font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cr1-note-main > span { font-size: 13px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cr1-note-main small { font-size: 13px; }
+  .cr1-note.unread .cr1-note-main b::after { display: none; }
+  .cr1-note.unread .cr1-note-ico::after { content: ""; position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 50%; background: #e8005a; border: 2px solid var(--surface); }
+  .cr1-note-act { display: none; grid-column: 2; }
+  .cr1-note.open { align-items: start; }
+  .cr1-note.open .cr1-note-main b, .cr1-note.open .cr1-note-main > span { white-space: normal; }
+  .cr1-note.open .cr1-note-act { display: block; animation: v2Rise2 0.18s var(--ease) both; }
+}
+/* Urgent notifications on top (owner, 29 Oct 2026): red-tinted card, a red tag with the deadline. */
+.cr1-urgent { background: linear-gradient(180deg, #fff1ef, var(--surface) 60%); border-color: #f7c1bb; }
+.cr1-urgent > h2 { display: flex; align-items: center; gap: 8px; color: #c2362a; }
+.cr1-note-tag { align-self: flex-start; padding: 2px 8px; border-radius: 99px; background: #d92d20; color: #ffffff; font-style: normal; font-size: 12px; font-weight: 900; }
+@media (max-width: 760px) { .cr1-note-tag { font-size: 13px; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cr1-urgent { background: linear-gradient(180deg, #3a1714, var(--surface) 60%); border-color: #6b2620; } }
+:root[data-theme="dark"] .cr1-urgent { background: linear-gradient(180deg, #3a1714, var(--surface) 60%); border-color: #6b2620; }
