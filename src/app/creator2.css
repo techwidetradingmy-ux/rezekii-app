@@ -650,3 +650,5 @@ li.done .cr2-check { background: #00c073; border-color: #00c073; animation: v2Po
   .an-page .cr2-plan-list li { grid-template-columns: 28px minmax(0, 1fr); align-items: start; }
   .an-page .cr2-plan-list li > :last-child { grid-column: 2; justify-self: start; }
 }
+.si-acts { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+@media (max-width: 560px) { .si-m { grid-template-columns: 34px minmax(0, 1fr); } .si-m > :last-child { grid-column: 2; justify-self: start; } .si-m small { white-space: normal; } }

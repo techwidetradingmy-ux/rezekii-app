@@ -423,26 +423,23 @@ export default function Account() {
                 {([
                   ["TikTok", CREATOR.handle, true, "tt"],
                   ["Google", googleOn ? "aisyah.rahman@gmail.com" : "Not linked", googleOn, "gg"],
-                  ["Email and password", hasPw ? email : "No password yet", hasPw, "em"],
+                  ["Email and password", hasPw ? `${email} · password changed 3 Mar 2026` : `${email} · no password yet`, hasPw, "em"],
                 ] as [string, string, boolean, string][]).map(([label, detail, on, key]) => (
                   <span key={key} className={`si-m ${on ? "on" : ""}`}>
                     <span className={`si-ico ${key}`} aria-hidden="true">{key === "tt" ? "♪" : key === "gg" ? "G" : <Icon name="lock" size={15} />}</span>
                     <span><b>{label}</b><small>{detail}</small></span>
                     {key === "tt" ? <span className="badge">Last used</span>
                       : key === "gg" ? <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setGoogleOn(!googleOn); toast(googleOn ? "Google unlinked" : "Google linked: you can sign in with it too"); }}>{googleOn ? "Unlink" : "Link"}</button>
-                      : <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setPw(["", "", ""]); setPwSheet(true); }}>{hasPw ? "Change password" : "Set password"}</button>}
+                      : (
+                        <span className="si-acts">
+                          <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setNewEmail(""); setEmailSheet(true); }}>Change email</button>
+                          <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setPw(["", "", ""]); setPwSheet(true); }}>{hasPw ? "Change password" : "Set password"}</button>
+                        </span>
+                      )}
                   </span>
                 ))}
               </div>
             </div>
-            <button type="button" className="cr2-cell cr2-cellbtn" onClick={() => { setNewEmail(""); setEmailSheet(true); }}>
-              <span className="lbl">Email</span>
-              <span className="chev">{email} <Icon name="arrow" size={16} /></span>
-            </button>
-            <button type="button" className="cr2-cell cr2-cellbtn" onClick={() => { setPw(["", "", ""]); setPwSheet(true); }}>
-              <span className="lbl">Password</span>
-              <span className="chev">{hasPw ? "Changed 3 Mar 2026 · Change" : "Set a password"} <Icon name="arrow" size={16} /></span>
-            </button>
             <Link href="/signin" className="cr2-cell cr2-cellbtn">Sign out</Link>
             <button type="button" className="cr2-cell cr2-cellbtn danger" onClick={() => { setDelText(""); setDelSheet(true); }}>Delete account</button>
           </div>
