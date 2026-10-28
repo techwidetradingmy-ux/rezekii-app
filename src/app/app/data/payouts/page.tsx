@@ -243,14 +243,6 @@ export default function DataPayouts() {
             { icon: "x", title: "Cancelled or returned", note: "Clawed back", tone: "red" },
           ]}
         />
-        <div className="cr2-eq" aria-label="Techwide rate minus open rate equals extra through Rezekii">
-          <span><small>Rezekii rate</small><b>10%</b></span>
-          <i>−</i>
-          <span><small>TikTok open rate</small><b>6%</b></span>
-          <i>=</i>
-          <span className="on"><small>Extra through Rezekii</small><b>+4%</b></span>
-          <em>Traced on every Rezekii order</em>
-        </div>
         <p className="cr2-note"><Icon name="shield" size={15} /><span>We only show money that has already happened. We never forecast what you will earn.</span></p>
       </section>
     </div>

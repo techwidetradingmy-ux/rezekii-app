@@ -155,7 +155,7 @@ export const ACTIONS: Action[] = [
   { id: "a2", tag: "Fix now", icon: "star", title: "Check your showcase for low ratings", why: "2 products are under 3★ (danger zone) and 3 are under 4★. Keep posting; pick 4★ products for new videos.", cta: "Run risk check", href: "/app/data/risk" },
   { id: "a3", tag: "This week", icon: "cal", title: "Post 1 more thermos video by 2 Nov", why: "Your free sample needs 3 of 3 videos. The thermos is also your top earner: 39% of your commission.", cta: "Submit video link", href: "/app/account#samples" },
   { id: "a4", tag: "This week", icon: "scan", title: "Add 4 products that pay more", why: "Products already in your showcase, paying +1% to +5% more through Techwide.", cta: "See scan results", href: "/app#scan" },
-  { id: "a5", tag: "Grow", icon: "video", title: "Go LIVE with kitchen products", why: "Just 2 LIVE sessions a week bring about a quarter of your commission. Choppers and cookware sell 2.6× better on LIVE than on video.", cta: "See LIVE picks", href: "/app/data/ai-picks" },
+  { id: "a5", tag: "Grow", icon: "video", title: "Go LIVE with kitchen products", why: "Just 2 LIVE sessions a week bring about a quarter of your commission. Choppers and cookware sell 2.6× better on LIVE than on video.", cta: "See LIVE picks", href: "/app/data/performance#ai" },
   { id: "a6", tag: "Grow", icon: "send", title: "Post between 8 and 10 pm", why: "Your videos posted 8 to 10 pm got 1.8× the views of daytime posts in the last 30 days.", cta: "Schedule a post", href: "/app/publish" },
 ];
 

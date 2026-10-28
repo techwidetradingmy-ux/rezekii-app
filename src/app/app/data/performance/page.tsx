@@ -1,41 +1,46 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Icon } from "@/components/icons";
-import { AiMark, Seg, Title } from "@/components/ui";
-import { AI_PICKS, product } from "@/lib/mock";
-import "@/app/creator1.css";
+import { Flow, Seg, Title } from "@/components/ui";
 import { VideoList } from "@/components/creator2/perf-videos";
 import { ProductList } from "@/components/creator2/perf-products";
+import { AiPicks } from "@/components/creator1/ai-picks";
+import "@/app/creator1.css";
 
-/** Performance (owner, 28 Oct 2026): the old Videos and Products pages in one, switched by video or by product. */
+type View = "By video" | "By product" | "AI picks";
+const HASH: Record<string, View> = { "#product": "By product", "#ai": "AI picks" };
+
+/** Performance (owner, 28 Oct 2026): what each video and product earned, and AI picks to grow with, in one place. */
 export default function DataPerformance() {
-  const [by, setBy] = useState<"By video" | "By product">("By video");
+  const [by, setBy] = useState<View>("By video");
   useEffect(() => {
-    if (window.location.hash === "#product") setBy("By product");
+    const v = HASH[window.location.hash];
+    if (v) setBy(v);
   }, []);
   return (
     <div className="v2-stack v2-in" style={{ gap: 20 }}>
-      <Title title="Performance" sub="What each video and product sold and earned in the last 30 days · updated today 09:12">
-        <Seg value={by} options={["By video", "By product"] as const} onChange={setBy} />
+      <Title title="Performance" sub="What each video and product earned in the last 30 days, and what to sell next · updated today 09:12">
+        <Seg value={by} options={["By video", "By product", "AI picks"] as const} onChange={setBy} />
       </Title>
-      <Link href="/app/data/ai-picks" className="v2-aicard ai-teaser">
-        <AiMark size={44} />
-        <span>
-          <span className="v2-ailabel">Grow from here · AI picks</span>
-          <b>{AI_PICKS.length} products matched to your sales</b>
-          <small>{AI_PICKS.filter((p) => p.fit === "video").length} best for video · {AI_PICKS.filter((p) => p.fit === "live").length} best for LIVE · add them to your showcase</small>
-        </span>
-        <span className="sh-thumbs" aria-hidden="true">
-          {AI_PICKS.slice(0, 4).map((pk) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={pk.productId} src={product(pk.productId).img} alt="" />
-          ))}
-        </span>
-        <Icon name="arrow" size={18} />
-      </Link>
-      {by === "By video" ? <VideoList /> : <ProductList />}
+      {by === "By video" && <VideoList />}
+      {by === "By product" && <ProductList />}
+      {by === "AI picks" && (
+        <>
+          <section className="v2-card tight sh-howcard">
+            <span className="sh-howlbl">How AI picks work</span>
+            <Flow
+              label="How AI picks work"
+              steps={[
+                { icon: "chart", title: "Reads your sales", note: "Last 30 days, your categories" },
+                { icon: "flame", title: "Checks TikTok's best-sellers", note: "Malaysia, this week" },
+                { icon: "tag", title: "Matches Rezekii campaigns", note: "Better rates, free samples" },
+                { icon: "video", title: "Splits video and LIVE", note: "By buy rate" },
+              ]}
+            />
+          </section>
+          <AiPicks />
+        </>
+      )}
     </div>
   );
 }
