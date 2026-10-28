@@ -858,3 +858,4 @@ span.pd-row { grid-template-columns: 12px minmax(0, 1fr) auto 14px; }
 .pl-head > b { font-size: 16px; font-weight: 900; white-space: nowrap; }
 .pl-body { display: flex; flex-direction: column; gap: 10px; padding: 0 12px 12px; animation: v2Rise2 0.2s var(--ease) both; }
 .pl-body .cr2-mini { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cr2-chips .cr2-lvchip.ico { width: 26px; height: 26px; min-height: 0; padding: 0; justify-content: center; align-self: center; flex: 0 0 auto; }

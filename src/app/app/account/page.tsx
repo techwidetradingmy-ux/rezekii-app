@@ -177,8 +177,9 @@ export default function Account() {
               </strong>
               <span className="v2-small">{CREATOR.handle} · TikTok Shop Malaysia · {state}</span>
               <span className="cr2-chips">
-                <span className={`cr2-lvchip ${CREATOR.level.toLowerCase()}`}>{CREATOR.level} creator</span>
-                <span className="cr2-actchip"><Icon name="flame" size={12} /> {CREATOR.activity} · {CREATOR.streak} days</span>
+                {/* Icons instead of words (owner, 28 Oct 2026): a medal in her level's colour and a flame with her streak. */}
+                <span className={`cr2-lvchip ico ${CREATOR.level.toLowerCase()}`} title={`${CREATOR.level} creator`} aria-label={`${CREATOR.level} creator`}><Icon name="medal" size={14} /></span>
+                <span className="cr2-actchip" title={`${CREATOR.activity} · ${CREATOR.streak}-day streak`} aria-label={`${CREATOR.activity}, ${CREATOR.streak}-day streak`}><Icon name="flame" size={12} /> {CREATOR.streak}</span>
                 {!verified && <button type="button" className="cr2-wachip" onClick={() => setWaSheet(true)}>Verify WhatsApp</button>}
               </span>
             </span>
