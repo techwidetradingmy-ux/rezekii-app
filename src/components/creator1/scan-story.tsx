@@ -20,14 +20,12 @@ export function ScanStory({ checked, items, onAdd, onClose }: { checked: number;
   const [i, setI] = useState(0);
   // Which share card is open: the scan result, or the money she missed (owner, 28 Oct 2026: make it shareable).
   const [share, setShare] = useState<"scan" | "money" | null>(null);
-  // Owner, 28 Oct 2026: show which products can pay more, and let her raise one, some or all. All are ticked to start,
-  // except products rated under 4★ (Risk check says avoid them).
+  // Owner, 28 Oct 2026: show which products can pay more, and let her raise one, some or all. All are ticked to start.
+  // Ratings stay out of the recap; Risk Check covers them.
   const open = items.filter((it) => !it.added);
-  const [pick, setPick] = useState<string[]>(() => open.filter((it) => product(it.productId).rating >= 4).map((it) => it.id));
+  const [pick, setPick] = useState<string[]>(() => open.map((it) => it.id));
   const flip = (id: string) => setPick((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
-  // The best raise on a product rated 4★ or more: never cheer a product Risk check says to avoid.
-  const ranked = [...items].sort((a, b) => b.to - b.from - (a.to - a.from));
-  const best = ranked.find((it) => product(it.productId).rating >= 4) ?? ranked[0];
+  const best = [...items].sort((a, b) => b.to - b.from - (a.to - a.from))[0];
   // What these raises would have added last month: her own orders × price × the rate difference. An estimate, said so on screen.
   const extra = items.reduce((sum, it) => {
     const o = ANALYTICS.byProduct.find((b) => b.productId === it.productId)?.orders ?? 0;
@@ -107,7 +105,7 @@ export function ScanStory({ checked, items, onAdd, onClose }: { checked: number;
               <>
                 <span className="ss-kick">Your scan is ready</span>
                 <h2>Let&apos;s see what your showcase is hiding <span aria-hidden="true">👀</span></h2>
-                <span className="ss-sticker" style={{ ["--r" as string]: "-6deg" }}>Tap to see</span>
+                <span className="ss-sticker">Tap to see</span>
               </>
             )}
             {at === "checked" && (
@@ -138,7 +136,7 @@ export function ScanStory({ checked, items, onAdd, onClose }: { checked: number;
                 <span className="ss-kick">Your best raise</span>
                 <h2>{product(best.productId).name}</h2>
                 <span className="ss-rate"><s>{best.from}%</s><Icon name="arrow" size={20} width={2.6} /><b>{best.to}%</b></span>
-                <span className="ss-sticker" style={{ ["--r" as string]: "8deg" }}>+{best.to - best.from}% 🔥</span>
+                <span className="ss-sticker">+{best.to - best.from}% 🔥</span>
               </>
             )}
             {at === "money" && (
@@ -146,7 +144,7 @@ export function ScanStory({ checked, items, onAdd, onClose }: { checked: number;
                 <span className="ss-kick">You missed out on</span>
                 <strong className="ss-big"><Count value={extra} ms={1400} format={(n) => rm(n)} /></strong>
                 <h2>in commission last month</h2>
-                <span className="ss-sticker" style={{ ["--r" as string]: "-5deg" }}>If you&apos;d found us earlier 😭</span>
+                <span className="ss-sticker">If you&apos;d found us earlier 😭</span>
                 <small className="ss-note">Your own sales in the last 30 days, at the better rates we found. An estimate from your orders.</small>
                 <button type="button" className="ss-btn ss-btn-fit" onClick={() => setShare("money")}><Icon name="share" size={18} /> Share this</button>
               </>
@@ -172,7 +170,7 @@ export function ScanStory({ checked, items, onAdd, onClose }: { checked: number;
                               <i className="ss-tick" aria-hidden="true">{(on || it.added) && <Icon name="check" size={13} width={3.4} />}</i>
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img src={p.img} alt="" />
-                              <span>{p.rating < 4 && <i className="ss-low">{p.rating.toFixed(1)}★</i>}{p.name}</span>
+                              <span>{p.name}</span>
                               <em>{it.added ? "Added" : <>{it.from}% → <b>{it.to}%</b></>}</em>
                             </button>
                           </li>
