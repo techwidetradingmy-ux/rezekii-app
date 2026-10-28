@@ -111,7 +111,6 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   const [flash, setFlash] = useState<Sec | "">("");
   const [check, setCheck] = useState<"" | "busy" | "ok">("");
   const [done, setDone] = useState<{ summary: string; when: When; at: string } | null>(null);
-  const [note, setNote] = useState("");
 
   const byKey = useMemo(() => new Map(channels.map((c) => [c.key, c])), [channels]);
   const connected = useMemo(() => new Set(channels.filter((c) => c.status === "active").map((c) => c.key)), [channels]);
@@ -203,14 +202,14 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
 
   function sameAsLast() {
     const next = new Set(setup.last.filter((k) => connected.has(k)));
-    if (!next.size) return setNote("The channels of your last post aren't connected any more.");
+    if (!next.size) return say("The channels of your last post aren't connected any more.");
     setPicked(next);
     const names = [...next].map((k) => byKey.get(k)?.name).filter(Boolean).slice(0, 4).join(", ");
-    setNote(`Same channels as your last post: ${names}.`);
+    say(`Same channels as your last post: ${names}.`);
   }
   function connectApp(c: PubChannel) {
     setChannels((list) => [...list, c]);
-    setNote(`${NAMES[c.app]} connected.`);
+    say(`${NAMES[c.app]} connected.`);
   }
   /** Preview helper: the post Rezekii suggests (a sample video, caption and first comment), to the same channels as last time. */
   function fillSample() {
@@ -226,7 +225,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     setCapOver({});
     setComOver({});
     setPicked(new Set(setup.last.filter((k) => connected.has(k))));
-    setNote("Filled in with a suggested post: see how each app's caption and first comment are written. Nothing is sent from this preview.");
+    say("Sample post filled in. Change anything you like.");
   }
   /** Scroll to a section, light it up for a moment and put the cursor in its first field. */
   function jump(s: Sec) {
@@ -288,15 +287,10 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
 
   return (
     <>
-      <div className="pb-demo">
-        <span className="pb-demo-ico" aria-hidden="true">✦</span>
-        <span>
-          <b>{note ? "Suggested post filled in" : "Not sure what to write?"}</b>
-          <small>{note || "Fill in the post Rezekii suggests for each app, then change anything. Nothing is posted from this preview."}</small>
-        </span>
-        <button type="button" className="btn-outline v2-btn-sm" onClick={fillSample}>Fill in a sample post</button>
+      <div className="pb-top">
+        <p className="pb-legend"><Req /> Required. Everything else is optional.</p>
+        <button type="button" className="btn-outline v2-btn-sm" onClick={fillSample}>✦ Fill in a sample post</button>
       </div>
-      <p className="pb-legend"><Req /> Required. Everything else is optional.</p>
       <form className="pb" onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate>
         <div className="pb-col">
           <section id="pb-s-channels" className={secClass("channels")}>
