@@ -105,18 +105,6 @@ export default function Marketplace() {
         <Link href="/app/account#samples" className="btn-outline v2-btn-sm">My samples <span className="badge">{MY_SAMPLES.filter((s) => !["Done", "Not approved"].includes(s.status)).length}</span></Link>
       </Title>
 
-      <section className="v2-card tight">
-        <Flow
-          label="How the marketplace works"
-          steps={[
-            { icon: "tag", title: "Better rate than open plan", note: "Through Rezekii" },
-            { icon: "plus", title: "Add to your showcase", note: "One tap, no sample needed" },
-            { icon: "gift", title: "Or get a free sample", note: "Where it says Free sample" },
-            { icon: "video", title: "Post 3 videos", note: "For each sample" },
-            { icon: "wallet", title: "Earn on every sale", note: "Commission from TikTok" },
-          ]}
-        />
-      </section>
 
       <div className="mk-bar">
         <span className="mk-bar-h">Filters</span>
@@ -161,15 +149,24 @@ export default function Marketplace() {
         </div>
       </div>
 
+      <section className="v2-card tight">
+        <Flow
+          label="How the marketplace works"
+          steps={[
+            { icon: "tag", title: "Better rate than open plan", note: "Through Rezekii" },
+            { icon: "plus", title: "Add to your showcase", note: "One tap, no sample needed" },
+            { icon: "gift", title: "Or get a free sample", note: "Where it says Free sample" },
+            { icon: "video", title: "Post 3 videos", note: "For each sample" },
+            { icon: "wallet", title: "Earn on every sale", note: "Commission from TikTok" },
+          ]}
+        />
+      </section>
+
       <p className="mk-count">
         {list.length} product{list.length === 1 ? "" : "s"}{cat !== "All" ? ` in ${cat}` : ""}{onlySamples ? " with free samples" : ""}{pool ? ` · ${POOLS[pool].label} samples` : ""} · sorted by {SORTS.find(([k]) => k === sort)![1].toLowerCase()}
         {(cat !== "All" || onlySamples || pool || term) && <button type="button" className="v2-link" onClick={() => { setQ(""); setCat("All"); setPool(null); setOnlySamples(false); }}>Clear</button>}
       </p>
 
-      <p className="mka-legend" aria-label="How to read the cards">
-        <span><s>6%</s><Icon name="arrow" size={12} /><b>10%</b> TikTok open plan → Rezekii rate</span>
-        <span><i className="mka-gift mini"><Icon name="gift" size={12} /></i> Free sample</span>
-      </p>
       <div className="mk-grid">
         {list.map((p, i) => {
           const left = SAMPLE_LEFT[p.id] ?? 10;

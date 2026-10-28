@@ -68,8 +68,11 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
     window.addEventListener("resize", place);
     return () => window.removeEventListener("resize", place);
   }, [section?.href]);
-  const phoneTabs = app === "admin" ? menu.slice(0, 4) : menu;
-  const navIndex = phoneTabs.findIndex((s) => s.href === section?.href) >= 0 ? phoneTabs.findIndex((s) => s.href === section?.href) : app === "admin" && menu.slice(4).some((s) => s.href === section?.href) ? phoneTabs.length : -1;
+  // Creator phone bar (owner, 28 Oct 2026): Home moves to the middle as a TikTok-style Scan button, since the scanner is on Home.
+  const phoneTabs = app === "admin" ? menu.slice(0, 4) : app === "creator" ? [menu[1], menu[2], menu[0], ...menu.slice(3)] : menu;
+  const isScan = (href: string) => app === "creator" && href === menu[0].href;
+  const found = phoneTabs.findIndex((s) => s.href === section?.href);
+  const navIndex = found >= 0 ? (isScan(phoneTabs[found].href) ? -1 : found) : app === "admin" && menu.slice(4).some((s) => s.href === section?.href) ? phoneTabs.length : -1;
   return (
     <>
       <DemoStrip />
@@ -205,12 +208,19 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
       <nav className="nv-bottom" data-app={app} aria-label="Main menu (phone)" style={{ ["--n" as string]: phoneTabs.length + (app === "admin" ? 1 : 0) }}>
         {/* A green pill that slides to the open tab (owner, 28 Oct 2026: make the tab bar easier to see). */}
         {navIndex >= 0 && <span className="nv-ind" aria-hidden="true" style={{ ["--i" as string]: navIndex }} />}
-        {phoneTabs.map((s) => (
-          <Link key={s.href} href={s.href} className={section?.href === s.href ? "on" : ""} aria-current={section?.href === s.href ? "page" : undefined}>
-            <Icon name={s.icon} size={24} />
-            {s.label === "Marketplace" ? "Market" : s.label}
-          </Link>
-        ))}
+        {phoneTabs.map((s) =>
+          isScan(s.href) ? (
+            <Link key={s.href} href={`${s.href}#scan`} className={`nv-scan${section?.href === s.href ? " on" : ""}`} aria-current={section?.href === s.href ? "page" : undefined}>
+              <span className="nv-scan-btn" aria-hidden="true"><Icon name="scan" size={26} /></span>
+              Scan
+            </Link>
+          ) : (
+            <Link key={s.href} href={s.href} className={section?.href === s.href ? "on" : ""} aria-current={section?.href === s.href ? "page" : undefined}>
+              <Icon name={s.icon} size={24} />
+              {s.label === "Marketplace" ? "Market" : s.label}
+            </Link>
+          ),
+        )}
         {app === "admin" && (
           <a href="#" onClick={(e) => { e.preventDefault(); setMore(true); }} className={menu.slice(4).some((s) => s.href === section?.href) ? "on" : ""}>
             <Icon name="gear" size={24} />
