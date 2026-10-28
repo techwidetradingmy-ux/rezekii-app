@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { Count, Flow, Hidden, Sheet } from "@/components/ui";
+import { AiTag, Count, Flow, Hidden, Sheet } from "@/components/ui";
 import { CREATOR, PRODUCTS, RAISES, SIMILAR, product, type Raise } from "@/lib/mock";
 import { NEW_ON_RESCAN, SILVER_UNLOCKS } from "@/lib/mock-creator1";
 import { LEVELS } from "@/lib/mock-creator2";
@@ -206,7 +206,7 @@ export function ScanHub() {
                 <Icon name="arrow" size={16} />
               </button>
             )}
-            <span className="sh-kicker"><i />{scanning ? "Scanning your showcase…" : "Showcase scanner"}</span>
+            <span className="sh-kicker"><i />{scanning ? "Scanning your showcase…" : "Showcase scanner"} <AiTag /></span>
             <h2>
               <b><Count key={scanKey} value={linked ? CREATOR.showcaseSize : 0} ms={scanning ? SCAN_MS - 300 : 900} /></b> products checked
             </h2>

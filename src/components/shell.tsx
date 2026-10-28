@@ -7,6 +7,8 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
 import { useDemo } from "./demo";
 import { Portal, Sheet } from "./ui";
+import { applyTheme, readTheme, type Theme } from "@/lib/theme";
+import { LevelFace } from "./level-face";
 import { ACCOUNT_TABS, OPEN_ACCOUNT_MENU } from "@/lib/account-tabs";
 import { useSideScroll } from "./side-scroll";
 import { ACCOUNT, HOME, MENUS, pageFor, sectionFor, type AppKind } from "@/lib/menus";
@@ -305,6 +307,20 @@ const AI_PAGES = ["AI Picks", "Today's Ideas", "AI Competitors"];
 /** Every account section in a panel from the right (phones), with her photo, level and streak on top. */
 function AccountPanel({ onClose }: { onClose: () => void }) {
   const path = usePathname();
+  const { toast, linked } = useDemo();
+  // Language, theme, support and feedback live here on phones (owner, 29 Oct 2026), not in Settings.
+  // Theme is one icon (owner, 29 Oct 2026): each tap moves Light → Dark → Auto, and the icon shows the current one.
+  const [theme, setTheme] = useState<Theme>("Auto");
+  useLayoutEffect(() => setTheme(readTheme()), []);
+  const nextTheme = () => {
+    const t: Theme = theme === "Light" ? "Dark" : theme === "Dark" ? "Auto" : "Light";
+    applyTheme(t);
+    setTheme(t);
+    toast(t === "Auto" ? "Theme: Auto (follows your phone)" : `Theme: ${t}`);
+  };
+  const [feedback, setFeedback] = useState(false);
+  const [topic, setTopic] = useState("Idea");
+  const [msg, setMsg] = useState("");
   const samples = MY_SAMPLES.filter((x) => !["Done", "Not approved"].includes(x.status)).length;
   const [hash, setHash] = useState("");
   useLayoutEffect(() => {
@@ -319,8 +335,8 @@ function AccountPanel({ onClose }: { onClose: () => void }) {
       <div className="ap-back" onClick={onClose} />
       <aside className="ap-panel" role="dialog" aria-modal="true" aria-label="My Account">
         <div className="ap-me">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={CREATOR.photo} alt="" />
+          {/* Her TikTok level frame, the same as on My Account (owner, 29 Oct 2026). */}
+          <LevelFace lv={linked ? CREATOR.tiktokLevel : null} size={56} img={CREATOR.photo} name={CREATOR.name} />
           <span>
             <b>{CREATOR.name}</b><small>{CREATOR.handle}</small>
             <span className="ap-chips">
@@ -328,7 +344,10 @@ function AccountPanel({ onClose }: { onClose: () => void }) {
               <i className="st" title={`${CREATOR.streak}-day streak`} aria-label={`${CREATOR.streak}-day streak`}><Icon name="flame" size={13} />{CREATOR.streak}</i>
             </span>
           </span>
-          <button type="button" className="v2-iconbtn" aria-label="Close" onClick={onClose}><Icon name="x" size={18} /></button>
+          <span className="ap-tools">
+            <button type="button" className="v2-iconbtn" aria-label={`Theme: ${theme}. Tap to change`} onClick={nextTheme}><Icon name={theme === "Light" ? "sun" : theme === "Dark" ? "moon" : "auto"} size={18} /></button>
+            <button type="button" className="v2-iconbtn" aria-label="Close" onClick={onClose}><Icon name="x" size={18} /></button>
+          </span>
         </div>
         <nav className="ap-list" aria-label="Account sections">
           {ACCOUNT_TABS.map(([k, label, icon]) => (
@@ -341,6 +360,21 @@ function AccountPanel({ onClose }: { onClose: () => void }) {
             </Link>
           ))}
         </nav>
+        <div className="ap-list ap-prefs">
+          <a href="mailto:support@rezekii.com" className="ap-row"><span className="ap-ic support"><Icon name="inbox" size={17} /></span><span>Contact support</span><Icon name="arrow" size={15} /></a>
+          <button type="button" className="ap-row" onClick={() => setFeedback(true)}><span className="ap-ic feedback"><Icon name="edit" size={17} /></span><span>Send feedback</span><Icon name="arrow" size={15} /></button>
+        </div>
+        {feedback && (
+          <Sheet title="Send feedback" onClose={() => setFeedback(false)}>
+            <div className="v2-chips">
+              {["Idea", "Something's broken", "Question"].map((t) => (
+                <button key={t} type="button" className={`v2-chip ${topic === t ? "on" : ""}`} onClick={() => setTopic(t)}>{t}</button>
+              ))}
+            </div>
+            <textarea className="np-input" rows={4} placeholder="What can we improve?" value={msg} onChange={(e) => setMsg(e.target.value)} aria-label="Your feedback" />
+            <button type="button" className="np-btn" disabled={!msg.trim()} onClick={() => { setMsg(""); setFeedback(false); toast("Thanks! Message sent"); }}><Icon name="send" size={17} /> Send</button>
+          </Sheet>
+        )}
         {/* Sign out lives in the panel on phones, not in Settings (owner, 29 Oct 2026). */}
         <Link href="/signin" className="ap-signout" onClick={onClose}><Icon name="back" size={17} /> Sign out</Link>
         {/* Legal and contact sit at the foot of the panel on phones (owner, 29 Oct 2026). */}

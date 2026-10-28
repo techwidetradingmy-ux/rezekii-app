@@ -521,6 +521,19 @@ export function Empty({ title, line, href, cta }: { title: string; line: string;
 }
 
 /** The AI mark: a turning colour orb with a sparkle, shown wherever the AI speaks. `busy` spins faster while it works. */
+/** A small violet "AI" tag for features made by Rezekii AI (owner, 29 Oct 2026). */
+export function AiTag() {
+  return (
+    <span className="v2-aitag" aria-label="AI">
+      <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true">
+        <path d="M11 3Q12 11 20 12Q12 13 11 21Q10 13 2 12Q10 11 11 3Z" fill="currentColor" />
+        <path d="M19 1.5Q19.3 4.7 22.5 5Q19.3 5.3 19 8.5Q18.7 5.3 15.5 5Q18.7 4.7 19 1.5Z" fill="currentColor" />
+      </svg>
+      AI
+    </span>
+  );
+}
+
 export function AiMark({ size = 44, busy = false }: { size?: number; busy?: boolean }) {
   return (
     <span className={`v2-aimark ${busy ? "busy" : ""}`} style={{ width: size, height: size }} aria-hidden="true">

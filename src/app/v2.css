@@ -836,3 +836,25 @@ body { font-feature-settings: "tnum" 0; }
 .ap-foot small { font-size: 13px; color: var(--muted); }
 .ap-signout { display: flex; align-items: center; justify-content: center; gap: 8px; height: 46px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); color: #d92d20; font-size: 15px; font-weight: 800; text-decoration: none; }
 .ap-signout:active { background: #fff1ef; }
+.ap-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 0; border-top: 1px solid var(--line); background: none; color: var(--text); font: inherit; font-size: 15px; font-weight: 700; text-align: left; text-decoration: none; width: 100%; cursor: pointer; }
+.ap-row:first-child { border-top: 0; }
+.ap-row > span:nth-child(2) { flex: 1; }
+.ap-row > svg { color: var(--muted); }
+.ap-row .np-seg button { padding: 0 10px; height: 32px; font-size: 13px; }
+.ap-ic.lang { background: #2f80ed; } .ap-ic.theme { background: #0d1117; } .ap-ic.support { background: #00a862; } .ap-ic.feedback { background: #f5a623; }
+.ap-panel > * { flex-shrink: 0; }
+.ap-tools { display: flex; flex-direction: column; gap: 4px; }
+/* The level-frame photo keeps its own round size; the name stays on one line (owner, 29 Oct 2026). */
+.ap-me > .tr-face { flex: 0 0 auto; }
+.ap-me .tr-face img { width: 100%; height: 100%; box-shadow: none; }
+.ap-me > span:not(.tr-face):not(.ap-tools) { flex: 1; min-width: 0; }
+.ap-me b, .ap-me small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ap-tools { flex: 0 0 auto; }
+/* No visible scrollbars anywhere in the app (owner, 29 Oct 2026); scrolling still works by touch, wheel and keys. */
+html, body, * { scrollbar-width: none; -ms-overflow-style: none; }
+html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { display: none; width: 0; height: 0; }
+.v2-aitag { display: inline-flex; align-items: center; gap: 3px; height: 20px; padding: 0 7px; border-radius: 99px; background: #efeaff; color: #6d4bff; font-size: 11px; font-weight: 900; letter-spacing: 0.04em; text-transform: none; vertical-align: middle; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .v2-aitag { background: #2a2350; color: #b9a8ff; } }
+:root[data-theme="dark"] .v2-aitag { background: #2a2350; color: #b9a8ff; }
+.sh-kicker .v2-aitag { margin-left: 6px; }
+@media (max-width: 760px) { .v2-aitag { font-size: 13px; height: 22px; } }

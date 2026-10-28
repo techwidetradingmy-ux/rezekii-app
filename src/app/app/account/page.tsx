@@ -17,13 +17,13 @@ import { Wallet } from "@/components/account/wallet";
 import type { IconName } from "@/components/icons";
 import { MY_STATES, NICHES, NOTIFY } from "@/lib/mock-creator2";
 import { ACCOUNT_TABS, type AccountTab } from "@/lib/account-tabs";
+import { applyTheme, readTheme, type Theme } from "@/lib/theme";
 import "@/app/creator2.css";
 
 const TYPES = ["Affiliate", "UGC", "Artist", "Influencer"] as const;
 const TABS = ACCOUNT_TABS;
 type TabKey = AccountTab;
 const active = MY_SAMPLES.filter((x) => !["Done", "Not approved"].includes(x.status)).length;
-type Theme = "Light" | "Dark" | "Auto";
 
 /** A red star for a required field. */
 const Req = () => <i className="pf-req" title="Required">*</i>;
@@ -48,7 +48,7 @@ export default function Account() {
   const [tab, setTab] = useState<TabKey>("profile");
   const tabsRef = useRef<HTMLDivElement>(null);
   useSideScroll(tabsRef, tab);
-  const [email, setEmail] = useState("aisyah.r@example.com");
+  const [email, setEmail] = useState(CREATOR.email);
   const [emailSheet, setEmailSheet] = useState(false);
   const [newEmail, setNewEmail] = useState("");
   const [delSheet, setDelSheet] = useState(false);
@@ -91,7 +91,7 @@ export default function Account() {
   const [notify, setNotify] = useState<Record<string, [boolean, boolean]>>({ samples: [true, true], chances: [true, true], posts: [true, false], rewards: [true, false] });
   const [pwSheet, setPwSheet] = useState(false);
   const [hasPw, setHasPw] = useState(true);
-  const [googleOn, setGoogleOn] = useState(false);
+  const [googleOn, setGoogleOn] = useState(true);
   const [pw, setPw] = useState(["", "", ""]);
   const [topic, setTopic] = useState("Idea");
   const [msg, setMsg] = useState("");
@@ -99,25 +99,11 @@ export default function Account() {
   const [lang, setLang] = useState<"English" | "中文">("English");
 
   useEffect(() => {
-    let saved: string | null = null;
-    try {
-      saved = localStorage.getItem("rz2_theme");
-    } catch {}
-    const attr = document.documentElement.getAttribute("data-theme");
-    const t: Theme = saved === "Light" || saved === "Dark" ? saved : attr === "light" ? "Light" : attr === "dark" ? "Dark" : "Auto";
+    const t = readTheme();
     setTheme(t);
-    if (t !== "Auto") document.documentElement.setAttribute("data-theme", t.toLowerCase());
+    if (t !== "Auto") applyTheme(t);
   }, []);
-
-  const applyTheme = (t: Theme) => {
-    setTheme(t);
-    const html = document.documentElement;
-    if (t === "Auto") html.removeAttribute("data-theme");
-    else html.setAttribute("data-theme", t.toLowerCase());
-    try {
-      localStorage.setItem("rz2_theme", t);
-    } catch {}
-  };
+  const pickTheme = (t: Theme) => { setTheme(t); applyTheme(t); };
 
   const local = digitsFor(cc, phone);
   const intl = local ? `${cc}${local}` : null;
@@ -387,16 +373,16 @@ export default function Account() {
             {/* Owner, 28 Oct 2026: remind people which account they sign in with. */}
             <div className="cr2-cell stack">
               <span className="lbl">How you sign in</span>
-              <p className="si-remind"><Icon name="check" size={15} width={3} /><span>Last signed in with <b>TikTok</b> as <b>{CREATOR.handle}</b>.</span></p>
               <div className="si-methods">
                 {([
-                  ["TikTok", CREATOR.handle, true, "tt"],
-                  ["Google", googleOn ? "aisyah.rahman@gmail.com" : "Not linked", googleOn, "gg"],
+                  ["TikTok", `Signed in as ${CREATOR.handle}`, true, "tt"],
+                  ["Google", googleOn ? `Linked to ${CREATOR.email}` : "Not linked", googleOn, "gg"],
                   ["Email and password", hasPw ? `${email} · password changed 3 Mar 2026` : `${email} · no password yet`, hasPw, "em"],
                 ] as [string, string, boolean, string][]).map(([label, detail, on, key]) => (
                   <span key={key} className={`si-m ${on ? "on" : ""}`}>
                     <span className={`si-ico ${key}`} aria-hidden="true">{key === "tt" ? "♪" : key === "gg" ? "G" : <Icon name="lock" size={15} />}</span>
                     <span><b>{label}</b><small>{detail}</small></span>
+                    {/* Each way in names its account (owner, 29 Oct 2026): her TikTok handle and her Gmail. */}
                     {key === "tt" ? <span className="badge">Last used</span>
                       : key === "gg" ? <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setGoogleOn(!googleOn); toast(googleOn ? "Google unlinked" : "Google linked"); }}>{googleOn ? "Unlink" : "Link"}</button>
                       : (
@@ -410,7 +396,6 @@ export default function Account() {
               </div>
             </div>
             <Link href="/signin" className="cr2-cell cr2-cellbtn acc-signout">Sign out</Link>
-            <button type="button" className="cr2-cell cr2-cellbtn danger" onClick={() => { setDelText(""); setDelSheet(true); }}>Delete account</button>
           </div>
         </section>
 
@@ -476,14 +461,15 @@ export default function Account() {
               <span className="lbl">Language</span>
               <span className="val"><Seg value={lang} options={["English", "中文"] as const} onChange={(l) => { setLang(l); toast(l === "中文" ? "已切换为中文" : "Switched to English"); }} /></span>
             </div>
-            <div className="cr2-cell">
+            {/* Phones switch theme from the sun/moon icon in the account panel (owner, 29 Oct 2026). */}
+            <div className="cr2-cell acc-theme-row">
               <span className="lbl">Theme</span>
-              <span className="val"><Seg value={theme} options={["Light", "Dark", "Auto"] as const} onChange={applyTheme} /></span>
+              <span className="val"><Seg value={theme} options={["Light", "Dark", "Auto"] as const} onChange={pickTheme} /></span>
             </div>
           </div>
-          <p>Auto matches your device.</p>
+          <p className="acc-theme-row">Auto matches your device.</p>
         </section>
-        <section className="cr2-group">
+        <section className="cr2-group acc-in-panel">
           <h2>Help & feedback</h2>
           <div className="cr2-cells">
             {/* The page footer is hidden on phones, so its links live here (owner, 29 Oct 2026). */}
@@ -516,6 +502,13 @@ export default function Account() {
               <span className="lbl">How Rezekii works</span>
               <span className="chev">Tour <Icon name="arrow" size={16} /></span>
             </Link>
+          </div>
+        </section>
+
+        <section className="cr2-group">
+          <h2>Account</h2>
+          <div className="cr2-cells">
+            <button type="button" className="cr2-cell cr2-cellbtn danger" onClick={() => { setDelText(""); setDelSheet(true); }}>Delete account</button>
           </div>
         </section>
 
