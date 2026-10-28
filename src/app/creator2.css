@@ -795,3 +795,18 @@ li.done .cr2-check.num { background: #00c073; border-color: #00c073; }
   .an-hv { font-size: 13px; }
 }
 .an-time .v2-bar { grid-template-columns: minmax(80px, 28%) minmax(0, 1fr) 96px; }
+/* Chart, options A + C (owner, 28 Oct 2026): draws in, glows, pulses at today, best period label, gold milestone dots. */
+.cc-plot svg { animation: ccDraw 1.4s cubic-bezier(0.4, 0, 0.2, 1) both; }
+@keyframes ccDraw { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+.cc-glow { fill: none; stroke: #00c073; stroke-width: 10; stroke-opacity: 0.18; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.cc-dot.live { animation: ccPop 0.4s 1.3s var(--spring, ease-out) both; }
+.cc-dot.live::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; border: 2px solid #00c073; animation: ccPulse 1.8s 1.6s ease-out infinite; }
+@keyframes ccPop { from { transform: scale(0); } }
+@keyframes ccPulse { from { transform: scale(1); opacity: 0.8; } to { transform: scale(2.8); opacity: 0; } }
+.cc-best { position: absolute; left: 0; top: 0; padding: 4px 10px; border-radius: 99px; background: #085041; color: #e1f5ee; font-size: 12.5px; font-weight: 800; white-space: nowrap; animation: v2Rise2 0.4s 1.2s var(--ease) both; }
+.cc-mark { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #f5a623; border: 2.5px solid var(--surface); box-shadow: 0 2px 6px rgba(160, 100, 0, 0.35); animation: ccPop 0.4s var(--spring, ease-out) both; pointer-events: none; }
+.cc-mark em { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); padding: 3px 8px; border-radius: 99px; background: #fff3d6; color: #8a5a00; font-style: normal; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.cc-mark em.right { left: auto; right: -6px; transform: none; }
+.cc-mark em.left { left: -6px; transform: none; }
+@media (max-width: 760px) { .cc-best, .cc-mark em { font-size: 13px; } }
+@media (prefers-reduced-motion: reduce) { .cc-plot svg, .cc-dot.live, .cc-dot.live::after, .cc-best, .cc-mark { animation: none !important; } }

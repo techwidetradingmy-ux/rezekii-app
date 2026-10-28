@@ -5,10 +5,13 @@ import { Seg } from "@/components/ui";
 import { rm } from "@/lib/mock";
 
 type Unit = "day" | "week" | "month";
+/** Round totals worth celebrating; the chart marks where she crossed them. */
+const MARKS = [100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000];
 
 /**
  * Commission over the chosen range (owner, 28 Oct 2026): a running total by default, or per day/week/month. Drag or tap across
- * the chart and the big number shows that point.
+ * the chart and the big number shows that point. The total draws itself in with a soft glow, the latest point pulses, her best
+ * day/week/month gets a label, and gold dots mark where her total crossed a round number (options A + C), all from her own sales.
  */
 export function CommissionChart({ points, unit, range }: { points: [string, number][]; unit: Unit; range: string }) {
   const per = `Per ${unit}`;
@@ -30,6 +33,10 @@ export function CommissionChart({ points, unit, range }: { points: [string, numb
     setAt(total ? Math.round(f * last) : Math.min(last, Math.floor(f * n)));
   };
   const line = values.map((v, i) => `${i ? "L" : "M"}${xOf(i).toFixed(2)},${yOf(v).toFixed(2)}`).join(" ");
+  // Best single day/week/month, and up to 3 round totals crossed in this range (the biggest ones, not too close to the start).
+  const bestAt = points.reduce((b, [, v], i) => (v > points[b][1] ? i : b), 0);
+  const end = running[last];
+  const marks = MARKS.filter((m) => m < end && m >= end * 0.15).slice(-3).map((m) => ({ m, i: running.findIndex((v) => v >= m) })).filter((x) => x.i > 0 && x.i < last);
 
   return (
     <div className="cc">
@@ -50,6 +57,7 @@ export function CommissionChart({ points, unit, range }: { points: [string, numb
               </linearGradient>
             </defs>
             <path d={`${line} L100,100 L0,100 Z`} fill="url(#ccFill)" />
+            <path d={line} className="cc-glow" />
             <path d={line} className="cc-line" />
           </svg>
         ) : (
@@ -57,8 +65,14 @@ export function CommissionChart({ points, unit, range }: { points: [string, numb
             {values.map((v, i) => <i key={points[i][0]} className={i === shown ? "on" : undefined} style={{ height: `${(v / max) * 88}%` }} />)}
           </span>
         )}
-        <i className="cc-cursor" style={{ left: `${xOf(shown)}%` }} aria-hidden="true" />
-        {total && <i className="cc-dot" style={{ left: `${xOf(shown)}%`, top: `${yOf(values[shown])}%` }} aria-hidden="true" />}
+        {total && at === null && <span className="cc-best" aria-hidden="true">Best {unit} · {rm(points[bestAt][1], 0)}</span>}
+        {total && marks.map(({ m, i }, k) => (
+          <span key={m} className="cc-mark" style={{ left: `${xOf(i)}%`, top: `${yOf(running[i])}%`, animationDelay: `${0.9 + k * 0.25}s` }} aria-hidden="true">
+            <em className={xOf(i) > 70 ? "right" : xOf(i) < 30 ? "left" : undefined}>{rm(m, 0)} · {points[i][0]}</em>
+          </span>
+        ))}
+        {at !== null && <i className="cc-cursor" style={{ left: `${xOf(shown)}%` }} aria-hidden="true" />}
+        {total && <i className={`cc-dot${at === null ? " live" : ""}`} style={{ left: `${xOf(shown)}%`, top: `${yOf(values[shown])}%` }} aria-hidden="true" />}
       </div>
       <div className="cc-axis" aria-hidden="true"><span>{points[0][0]}</span><span>{unit === "day" ? "Today" : unit === "week" ? "This week" : points[last][0]}</span></div>
     </div>
