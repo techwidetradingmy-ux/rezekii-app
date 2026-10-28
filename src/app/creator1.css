@@ -1197,3 +1197,5 @@ button.cr1-note-main { padding: 0; border: 0; background: none; color: var(--tex
 .sh-core.holding > svg:not(.sh-ring), .sh-core.full > svg:not(.sh-ring) { animation: none; }
 .sh-core.holding .sh-ring circle.track, .sh-core.full .sh-ring circle.track { animation: none; }
 @media (prefers-reduced-motion: reduce) { .sh-core > svg:not(.sh-ring), .sh-ring circle.track { animation: none; } }
+.nb-box .np-seg { width: 100%; }
+.nb-box .np-seg button { flex: 1; min-width: 0; padding: 0 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

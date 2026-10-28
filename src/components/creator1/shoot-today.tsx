@@ -142,11 +142,13 @@ export function ShootToday({ bare = false }: { bare?: boolean }) {
 export function NicheBest() {
   const { linked, setLinked, toast } = useDemo();
   const rows = NICHE_BEST.filter((b) => product(b.productId).rating >= 4).sort((a, b) => b.weekSold - a.weekSold);
-  const cats = ["All", ...Array.from(new Set(rows.map((b) => product(b.productId).category)))];
+  // Short tab names so the row fits a phone: "Home & Kitchen" shows as "Home".
+  const short1 = (c: string) => c.split(" & ")[0];
+  const cats = ["All", ...Array.from(new Set(rows.map((b) => short1(product(b.productId).category))))];
   const [cat, setCat] = useState("All");
   const [added, setAdded] = useState<string[]>([]);
   const [view, setView] = useState<string | null>(null);
-  const shown = rows.filter((b) => cat === "All" || product(b.productId).category === cat);
+  const shown = rows.filter((b) => cat === "All" || short1(product(b.productId).category) === cat);
   return (
     <section className="v2-card nb-box" aria-label="Best sellers in your niche">
       <div className="nb-head">
