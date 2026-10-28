@@ -24,13 +24,13 @@ export default function SellerWallet() {
       <section className="sl-wallet">
         <small>Your credits</small>
         <b><Count value={SELLER_CREDITS} /></b>
-        <p>{earned.toLocaleString("en-MY")} earned · 0 used · none expiring in the next 30 days</p>
-        <p style={{ fontSize: 13, opacity: 0.8 }}>Credits are rewards, not cash. They can&apos;t be withdrawn or swapped for money.</p>
+        <p>{earned.toLocaleString("en-MY")} earned · 0 used · none expiring in 30 days</p>
+        <p style={{ fontSize: 13, opacity: 0.8 }}>Credits are not cash and can&apos;t be withdrawn.</p>
       </section>
 
       <section className="v2-card flat" style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap" }}>
         <span className="sl-ico blue"><Icon name="spark" size={18} /></span>
-        <span style={{ flex: "1 1 220px", minWidth: 0 }}><b>Coming soon: spend credits</b><br /><span className="v2-muted">On AI captions and extra competitor reports. We&apos;ll tell you when it opens.</span></span>
+        <span style={{ flex: "1 1 220px", minWidth: 0 }}><b>Coming soon: spend credits</b><br /><span className="v2-muted">AI captions and extra competitor reports.</span></span>
         <Link href="/seller/app/rewards" className="btn-outline" style={{ height: 40 }}>Earn more</Link>
       </section>
 

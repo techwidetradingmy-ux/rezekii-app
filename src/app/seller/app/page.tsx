@@ -24,7 +24,7 @@ const QUICK: [string | null, string, string, IconName, string][] = [
   ["/seller/app/submit", "Submit products", "AI suggests the commission", "plus", "linear-gradient(135deg,#22dc95,#00a862)"],
   ["/seller/app/results", "See results", "Sales, creators, videos", "chart", "linear-gradient(135deg,#7aa2ff,#1d4ed8)"],
   ["/seller/app/results/samples", "Where samples went", "Who got each one", "box", "linear-gradient(135deg,#ffb35c,#f08a00)"],
-  [null, "Ask our team", "Or let us run it for you", "whatsapp", "linear-gradient(135deg,#ff7aa8,#e8005a)"],
+  [null, "Ask our team", "WhatsApp us", "whatsapp", "linear-gradient(135deg,#ff7aa8,#e8005a)"],
 ];
 
 /** Seller home: one "do this first" card by stage, quick actions, a small results summary, recent activity. */
@@ -52,8 +52,8 @@ export default function SellerHome() {
       {stage === "fix" && broken && !fixed && (
         <section className="v2-next red">
           <small>Do this first</small>
-          <h2>1 product wasn&apos;t approved: it has 0 samples</h2>
-          <p>{broken.name} was registered in Seller Center without samples, so creators can&apos;t apply. Add samples and we&apos;ll resubmit it.</p>
+          <h2>1 product not approved: 0 samples</h2>
+          <p>{broken.name} has no samples, so creators can&apos;t apply.</p>
           <div className="v2-row">
             <button type="button" className="v2-btn-white" style={{ color: "#b42318" }} onClick={() => setFixing(true)}>Add samples</button>
             <Link href="/seller/app/progress" className="v2-btn-ghostw">See progress</Link>
@@ -64,7 +64,7 @@ export default function SellerHome() {
         <section className="v2-next">
           <small>On its way</small>
           <h2>{waiting} products waiting on TikTok</h2>
-          <p>Nothing for you to do. TikTok usually replies in 1–3 working days and we&apos;ll tell you the moment they&apos;re live.{fixed ? " The mop pads you just fixed are with our team first." : ""}</p>
+          <p>Nothing to do. TikTok usually replies in 1–3 working days.{fixed ? " Your fixed mop pads are with our team first." : ""}</p>
           <div className="sl-mini-steps">
             <span className="on"><Icon name="check" size={14} width={2.6} /> Submitted</span>
             <span className="on"><Icon name="check" size={14} width={2.6} /> Our review</span>
@@ -81,7 +81,7 @@ export default function SellerHome() {
         <section className="v2-next">
           <small>Start here</small>
           <h2>Submit your first products</h2>
-          <p>Tick the products you want creators to sell. AI suggests the commission; samples are already set to 40. About a minute.</p>
+          <p>Pick products. AI suggests the commission; samples are set to 40.</p>
           <div className="v2-row">
             <Link href="/seller/app/submit" className="v2-btn-white">Submit products <Icon name="arrow" size={18} /></Link>
             <span style={{ fontSize: 13, opacity: 0.9 }}>Signed in ✓ · Seller Center ✓ · Submit</span>
@@ -92,7 +92,7 @@ export default function SellerHome() {
         <section className="v2-next">
           <small>All good</small>
           <h2>All {live} products are live</h2>
-          <p>Creators sold {SELLER_RESULTS.units.toLocaleString("en-MY")} units for you in the last 30 days. You have {fresh} products not in TAP yet.</p>
+          <p>{SELLER_RESULTS.units.toLocaleString("en-MY")} units sold in 30 days. {fresh} products not in TAP yet.</p>
           <div className="v2-row">
             <Link href="/seller/app/results" className="v2-btn-white">See results</Link>
             <Link href="/seller/app/submit" className="v2-btn-ghostw">Add more products</Link>
@@ -127,7 +127,7 @@ export default function SellerHome() {
           </div>
           <Source />
           <div className="v2-grid4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))" }}>
-            <Stat label="Sales" value={<Count value={SELLER_RESULTS.gmv} format={(n) => rm(n, 0)} />} note="+31% on last month" tone="up" />
+            <Stat label="Sales" value={<Count value={SELLER_RESULTS.gmv} format={(n) => rm(n, 0)} />} note="+31% vs last month" tone="up" />
             <Stat label="Units sold" value={<Count value={SELLER_RESULTS.units} />} />
             <Stat label="Creators selling" value={<Count value={SELLER_RESULTS.creators} />} />
             <Stat label="Videos" value={<Count value={SELLER_RESULTS.videos} />} />
@@ -159,14 +159,14 @@ export default function SellerHome() {
             <img src={broken.img} alt="" />
             <span className="sl-pinfo"><strong>{broken.name}</strong><small>From Seller Center · TAP {broken.tapRate}%</small></span>
           </div>
-          <div className="v2-field">Samples per SKU <small>Creators can only apply when there are samples. Most shops pick 30–50.</small>
+          <div className="v2-field">Samples per SKU <small>Most shops pick 30–50</small>
             <div className="v2-chips">
               {[30, 40, 50].map((n) => (
                 <button key={n} type="button" className={`v2-chip ${samples === n ? "on" : ""}`} onClick={() => setSamples(n)}>{n}</button>
               ))}
             </div>
           </div>
-          <button type="button" className="np-btn" onClick={() => { setFixing(false); setFixed(true); setStage("waiting"); toast(`${samples} samples added · resubmitted to Techwide's TAP pipeline`); }}>Add {samples} samples and resubmit</button>
+          <button type="button" className="np-btn" onClick={() => { setFixing(false); setFixed(true); setStage("waiting"); toast(`${samples} samples added · resubmitted`); }}>Add {samples} samples and resubmit</button>
         </Sheet>
       )}
       {talk && <ContactSheet onClose={() => setTalk(false)} />}

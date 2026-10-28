@@ -115,3 +115,19 @@ export const NOTES: Note[] = [
   { id: "n5", day: "Earlier", when: "Yesterday 18:05", icon: "video", bg: "linear-gradient(135deg,#ff7aa8,#e8005a)", title: "Video counted: 1.2L 316 stainless thermos", line: "2 of 3 videos done. One more by 2 Nov.", href: "/app/account#samples", cta: "See progress" },
   { id: "n6", day: "Earlier", when: "26 Oct", icon: "x", bg: "linear-gradient(135deg,#9aa8a1,#62716a)", title: "Sample not approved: Granite casserole pot", line: "Designated samples go to Highly active creators. Keep posting daily: 14 more days to get there.", href: "/app/account#samples", cta: "What to do" },
 ];
+
+/**
+ * Her own orders per product since she started on TikTok Shop (sample), for the recap's "money left on the table". The real
+ * one reads her order history from TikTok, as far back as TikTok keeps it, and the card says from when.
+ */
+export const ORDER_HISTORY = {
+  since: "Mar 2025",
+  byProduct: [
+    { productId: "p13", orders: 1320 },
+    { productId: "p22", orders: 860 },
+    { productId: "p09", orders: 410 },
+    { productId: "p01", orders: 2150 },
+    { productId: "p21", orders: 640 },
+    { productId: "p16", orders: 380 },
+  ],
+};

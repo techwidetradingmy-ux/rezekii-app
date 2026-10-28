@@ -7,78 +7,78 @@ import { Reveal } from "@/components/creator1/reveal";
 import { FAQS, STORIES } from "@/lib/mock-creator1";
 import "./creator1.css";
 
-export const metadata = { title: "Rezekii · More commission from the showcase you already have" };
+export const metadata = { title: "Rezekii · More commission from your showcase" };
 
 const VS: [string, string][] = [
-  ["Checking hundreds of products one by one", "One scan checks your whole showcase"],
-  ["Never knowing what you're missing", "New chances every day, sent to you"],
-  ["Uploading the same video to every app", "Post once to TikTok, Facebook, Instagram and Threads"],
-  ["Commission is your only income", "Commission, free samples, mission rewards, and soon Branded Mission paid reviews"],
-  ["Working hard and nobody notices", "More reach and a bigger personal brand"],
+  ["Checking products one by one", "One scan checks them all"],
+  ["Missing chances", "New chances daily"],
+  ["Uploading to every app", "Post once, everywhere"],
+  ["Commission only", "Commission, Free Samples, rewards, soon paid reviews"],
+  ["Nobody notices your work", "More reach, bigger brand"],
 ];
 
 type Feat = { icon: IconName; bg: string; title: string; line: string; demo: React.ReactNode; soon?: boolean };
 const FEATS: Feat[] = [
   {
     icon: "scan", bg: "linear-gradient(135deg,#22dc95,#00a862)", title: "Scan & one-tap raise",
-    line: "We check every product you promote. Where Techwide pays more for the same product, add them all in one tap. Often +1%, sometimes more.",
+    line: "Find higher rates for your products. Add them in one tap.",
     demo: <span className="cr1-d-rate"><s>6%</s><Icon name="arrow" size={16} /><b>7%</b><span className="badge">from +1%</span></span>,
   },
   {
     icon: "spark", bg: "linear-gradient(135deg,#b48cff,#6d28d9)", title: "AI picks",
-    line: "The AI reads your sales, compares TikTok Shop's best-sellers and tells you what to sell next, on video or on LIVE.",
+    line: "AI tells you what to sell next, on video or LIVE.",
     demo: <span className="cr1-d-seq"><span className="cr1-d-chip"><Icon name="video" size={13} /> Video 3.4%</span><span className="cr1-d-chip live">LIVE 6.3%</span><span className="cr1-d-chip">Match 96</span></span>,
   },
   {
-    icon: "gift", bg: "linear-gradient(135deg,#7aa2ff,#1d4ed8)", title: "Free samples",
-    line: "A marketplace of free samples for your showcase. Post 3 videos per sample, and post early for a bonus.",
+    icon: "gift", bg: "linear-gradient(135deg,#7aa2ff,#1d4ed8)", title: "Free Samples",
+    line: "Get products free. Post 3 videos each; post early for a bonus.",
     demo: <span className="cr1-d-vids"><i /><i /><i /><small>3 videos per sample</small></span>,
   },
   {
     icon: "send", bg: "linear-gradient(135deg,#ffb35c,#f08a00)", title: "Post everywhere",
-    line: "Upload once. Schedule the same video to TikTok, Facebook, Instagram and Threads.",
+    line: "Upload once, post to every app.",
     demo: <span className="cr1-d-seq light">{["TikTok", "Facebook", "Instagram", "Threads"].map((p) => <span key={p} className="cr1-pchip">{p}</span>)}</span>,
   },
   {
     icon: "trophy", bg: "linear-gradient(135deg,#ffd34d,#e8a400)", title: "Missions & rewards",
-    line: "Daily missions, streaks and chests. Credits for real actions like posting, not for logging in.",
+    line: "Earn credits for posting, not for logging in.",
     demo: <span className="cr1-d-bar"><span className="v2-meter"><i /></span><b>+30</b></span>,
   },
   {
     icon: "medal", bg: "linear-gradient(135deg,#9aa8a1,#43524b)", title: "Levels: Bronze, Silver, Gold",
-    line: "Better rates as you grow. Silver from TikTok Lv.4 or RM 10,000 in monthly sales; Gold in Techwide's agency.",
+    line: "Better rates as you grow. Silver from TikTok Lv.4 or RM 10,000 sales a month. Gold in Techwide's agency.",
     demo: <span className="cr1-d-medals"><i className="b">B</i><i className="s">S</i><i className="g">G</i></span>,
   },
   {
     icon: "users", bg: "linear-gradient(135deg,#ff7aa8,#e8005a)", title: "Invite friends",
-    line: "Share your link or QR. You both get rewards once your friend gets going.",
+    line: "Share your link. You both get rewards when they start.",
     demo: <span className="cr1-d-invite"><span className="v2-av">AR</span><i /><span className="v2-av" style={{ background: "linear-gradient(135deg,#ff7aa8,#e8005a)", color: "#ffffff" }}>NB</span></span>,
   },
   {
     icon: "video", bg: "linear-gradient(135deg,#25f4ee,#0e7490)", title: "Branded Mission paid reviews", soon: true,
-    line: "Brands pay you a fee to review their product, on top of your commission.",
+    line: "Brands pay you to review, plus commission.",
     demo: <span className="cr1-d-soon"><Icon name="cal" size={16} /> Coming soon</span>,
   },
 ];
 
 const PATH: [IconName, string, string, boolean?][] = [
-  ["wallet", "Commission", "What TikTok Shop pays you today"],
-  ["scan", "Better commission", "Same products, a higher rate through Techwide"],
-  ["gift", "Free samples", "Products to review, sent to your door"],
-  ["trophy", "Mission rewards", "Credits for posting and growing"],
-  ["video", "Paid reviews", "Branded Mission, coming soon", true],
+  ["wallet", "Commission", "From TikTok Shop"],
+  ["scan", "Better commission", "Same products, higher rate"],
+  ["gift", "Free Samples", "Sent to your door"],
+  ["trophy", "Mission rewards", "Credits for posting"],
+  ["video", "Paid reviews", "Coming soon", true],
 ];
 
 const READ = [
-  "The products in your showcase and their commission",
-  "Your orders and commission, to show you your own numbers",
-  "Your sample status from TikTok",
-  "Your public TikTok profile and video stats, if you link TikTok",
+  "Your showcase products and rates",
+  "Your orders and commission",
+  "Your sample status",
+  "Your public TikTok stats, if linked",
 ];
 const NEVER = [
-  "Post, add, remove or change anything without you tapping the button",
+  "Change anything without your tap",
   "Ask for your TikTok password",
-  "Show your WhatsApp number or email to sellers. Contact details are only for the Techwide team",
+  "Share your contact details with sellers",
   "Sell your data",
 ];
 
@@ -107,10 +107,7 @@ export default function Landing() {
           <div className="hero-copy">
             <span className="hero-eyebrow"><span className="dot" aria-hidden="true" />FOR TIKTOK SHOP CREATORS IN MALAYSIA</span>
             <h1>Your showcase may have <em>higher commission</em> waiting</h1>
-            <p>
-              Rezekii checks every product you already promote against Techwide&apos;s TikTok Shop campaigns. Where the same product pays more, you
-              add them all in one tap. Often +1%, sometimes +5% or more, depending on the product, your level and your sales.
-            </p>
+            <p>We find higher rates for products you already promote. Add them all in one tap.</p>
             <div className="hero-ctas">
               <Link href="/signin" className="np-btn cr1-bigbtn">Check my showcase free <Icon name="arrow" size={20} /></Link>
               <a href="#how" className="btn-ghost">How it works</a>
@@ -124,7 +121,7 @@ export default function Landing() {
               <span className="cr1-partner-logo">
                 <Image src="/tiktok-shop-partner-logo.png" alt="TikTok Shop Partner" width={103} height={30} />
               </span>
-              <span>Built by Techwide Marketing, a TikTok Shop partner agency in Malaysia</span>
+              <span>By Techwide Marketing, a TikTok Shop partner</span>
             </div>
           </div>
           <div className="hero-card-wrap">
@@ -160,7 +157,6 @@ export default function Landing() {
         <Reveal id="features" className="section" label="Features">
           <span className="eyebrow">EVERYTHING IN ONE APP</span>
           <h2>Every tool a TikTok Shop creator needs</h2>
-          <p className="lead">One feature, one place. Start with the scan; the rest is there when you need it.</p>
           <div className="cr1-feats cr1-stag">
             {FEATS.map((f) => (
               <article key={f.title} className={`cr1-feat ${f.soon ? "soon" : ""}`}>
@@ -179,7 +175,7 @@ export default function Landing() {
         <Reveal id="earn" className="section cr1-earn" label="More ways to earn">
           <span className="eyebrow">MORE WAYS TO EARN</span>
           <h2>From your first better rate to paid reviews</h2>
-          <p className="lead">We walk the whole affiliate journey with you. Each step adds a way to earn on top of the last one.</p>
+          <p className="lead">Each step adds another way to earn.</p>
           <ol className="cr1-path cr1-stag">
             {PATH.map(([icon, t, l, soon], i) => (
               <li key={t} className={soon ? "soon" : undefined}>
@@ -221,7 +217,7 @@ export default function Landing() {
               </article>
             ))}
           </div>
-          <p className="hm-fine">Each creator&apos;s own results, shared with their permission. Results depend on your products, videos and audience; Rezekii doesn&apos;t promise income.</p>
+          <p className="hm-fine">Real results, shared with permission. Results vary; we don&apos;t promise income.</p>
         </Reveal>
 
         <Reveal id="how" className="section" label="Three steps">
@@ -229,9 +225,9 @@ export default function Landing() {
           <h2>Start in about a minute</h2>
           <ol className="grid3 cr1-stag">
             {[
-              ["Link TikTok Shop", "Sign in, then approve read access in TikTok. Signing in alone doesn't link your shop.", "About 1 minute"],
-              ["Scan", "We check every product in your showcase against Techwide's campaigns, at the rate for your level.", "Usually a few minutes"],
-              ["Add in one tap", "Pick the better rates, or add them all. We confirm each one with TikTok.", "Re-checked every day"],
+              ["Link TikTok Shop", "Sign in, then approve access in TikTok.", "About 1 minute"],
+              ["Scan", "We check every product in your showcase.", "A few minutes"],
+              ["Add in one tap", "Pick the better rates, or add all.", "Checked daily"],
             ].map(([t, l, b], i) => (
               <li key={t} className="card hm-step">
                 <span className="step-n">{i + 1}</span>
@@ -260,7 +256,7 @@ export default function Landing() {
               </ul>
             </div>
           </div>
-          <p className="hm-fine">You can disconnect TikTok Shop in Rezekii or in TikTok at any time, and delete your account and data whenever you like.</p>
+          <p className="hm-fine">Disconnect TikTok Shop or delete your account anytime.</p>
         </Reveal>
 
         <Reveal id="faq" className="section" label="Questions">
@@ -278,7 +274,7 @@ export default function Landing() {
 
         <Reveal className="hm-cta cr1-cta" label="Get started">
           <h2>See what your showcase is missing</h2>
-          <p>It&apos;s free, takes about a minute, and nothing changes in your shop unless you tap Add.</p>
+          <p>Free and quick. Nothing changes until you tap Add.</p>
           <Link href="/signin" className="v2-btn-white cr1-bigwhite">Check my showcase free <Icon name="arrow" size={20} /></Link>
           <span className="cr1-cta-note">No follower minimum · Malaysia</span>
         </Reveal>

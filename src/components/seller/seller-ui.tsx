@@ -49,8 +49,8 @@ export function ConnBanner() {
   if (linked) return null;
   return (
     <div className="v2-alert red">
-      <span>Your Seller Center connection has expired. Products, samples and results stop updating until you reconnect.</span>
-      <button type="button" onClick={() => { setLinked(true); toast("Seller Center reconnected · syncing your shop"); }}>Reconnect</button>
+      <span>Seller Center disconnected. Data stops updating until you reconnect.</span>
+      <button type="button" onClick={() => { setLinked(true); toast("Seller Center reconnected"); }}>Reconnect</button>
     </div>
   );
 }
@@ -59,7 +59,7 @@ export function ConnBanner() {
 export function TermsSheet({ onClose }: { onClose: () => void }) {
   return (
     <Sheet title="Sample allocation terms" onClose={onClose}>
-      <p className="v2-small" style={{ margin: 0 }}>{TERMS_VERSION} · These apply to every sample you add to Techwide&apos;s TAP campaign, here or in Seller Center.</p>
+      <p className="v2-small" style={{ margin: 0 }}>{TERMS_VERSION} · For every sample in Techwide&apos;s TAP, here or in Seller Center.</p>
       <ol className="sl-list" style={{ counterReset: "t" }}>
         {TERMS.map(([h, line], i) => (
           <li key={h}>
@@ -86,7 +86,7 @@ export function ContactSheet({ onClose }: { onClose: () => void }) {
   const ok = name.trim().length > 1 && ph.ok;
   return (
     <Sheet title="Talk to our team" onClose={onClose}>
-      <p className="v2-muted" style={{ margin: 0, lineHeight: 1.5 }}>Want us to run it for you? Tell us what you need. Our team replies within 1 working day with a plan and a quote made for your shop.</p>
+      <p className="v2-muted" style={{ margin: 0, lineHeight: 1.5 }}>Tell us what you need. We reply within 1 working day with a quote.</p>
       <div className="v2-field">What do you need?
         <div className="v2-chips">
           {NEEDS.map((n) => (
@@ -102,8 +102,7 @@ export function ContactSheet({ onClose }: { onClose: () => void }) {
         <textarea className="np-input" rows={3} value={msg} onChange={(e) => setMsg(e.target.value)} placeholder="Products, timing, budget range…" />
       </label>
       {tried && !ok && <p className="sl-err"><Icon name="alert" size={16} /> Add your name and a phone number we can reach.</p>}
-      <button type="button" className="np-btn" onClick={() => { setTried(true); if (!ok) return; toast("Sent · our team will WhatsApp you within 1 working day"); onClose(); }}>Send to the team</button>
-      <p className="v2-small" style={{ margin: 0, textAlign: "center" }}>No price list: every shop is different, so we quote after we talk.</p>
+      <button type="button" className="np-btn" onClick={() => { setTried(true); if (!ok) return; toast("Sent · we'll WhatsApp you within 1 working day"); onClose(); }}>Send</button>
     </Sheet>
   );
 }
@@ -124,7 +123,7 @@ export function PhoneField({ dial, raw, onChange, showError, label = "Phone numb
         </select>
         <input className="np-input" inputMode="tel" autoComplete="tel-national" value={raw} placeholder={dial === "60" ? "12-345 6789" : "Number"} onChange={(e) => onChange(dial, e.target.value)} onBlur={() => setBlurred(true)} aria-invalid={!!err} />
       </div>
-      {res.ok ? <p className="sl-ok"><Icon name="check" size={16} width={2.6} /> We&apos;ll save it as {res.pretty}</p> : err ? <p className="sl-err"><Icon name="alert" size={16} /> {err}</p> : <small>{dial === "60" ? "Malaysian mobile, with or without the 0 or +60." : `Any ${COUNTRIES.find((c) => c.dial === dial)?.name ?? ""} number.`}</small>}
+      {res.ok ? <p className="sl-ok"><Icon name="check" size={16} width={2.6} /> We&apos;ll save it as {res.pretty}</p> : err ? <p className="sl-err"><Icon name="alert" size={16} /> {err}</p> : <small>{dial === "60" ? "With or without the 0 or +60" : `Any ${COUNTRIES.find((c) => c.dial === dial)?.name ?? ""} number.`}</small>}
     </div>
   );
 }

@@ -31,7 +31,7 @@ export default function GrowthProgress() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="Progress per Person" sub="Check where someone is, and see which missions people get stuck on.">
+      <Title title="Progress per Person" sub="See where people are and where they get stuck.">
         <button type="button" className="ad-btn-ghost" onClick={() => toast("Exported as CSV")}><Icon name="doc" size={15} /> Export</button>
       </Title>
 
@@ -49,7 +49,7 @@ export default function GrowthProgress() {
                   <span className="ad-tag gray">{p.missions.filter((x) => x.progress >= x.goal).length}/{p.missions.length}</span>
                 </button>
               ))}
-              {matches.length === 0 && <p className="v2-small" style={{ margin: 0 }}>No one found. Try a handle like @farah.home or a shop name.</p>}
+              {matches.length === 0 && <p className="v2-small" style={{ margin: 0 }}>No one found.</p>}
             </div>
           </section>
 
@@ -103,13 +103,13 @@ export default function GrowthProgress() {
           <section className="v2-card">
             <div className="v2-card-h">
               <h2 className="v2-h2">Where people get stuck</h2>
-              <Link href="/admin/growth" className="v2-link">Edit this mission</Link>
+              <Link href="/admin/growth" className="v2-link">Edit mission</Link>
             </div>
             <Funnel steps={steps} />
             <div className="v2-alert" style={{ background: "var(--bsoft)", color: "var(--blue)" }}>
               <Icon name="spark" size={18} />
               <span>
-                Most people stop before “{steps[worstAt][0]}”. Try a clearer instruction on that screen, a reminder after 24 hours, or a shorter deadline nudge.
+                Most people stop before “{steps[worstAt][0]}”. Try a clearer step or a 24-hour reminder.
               </span>
             </div>
             <Meta range="Last 30 days" source="Rezekii events (mission steps)" updated="Today 10:40" />

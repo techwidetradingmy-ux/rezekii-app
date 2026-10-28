@@ -32,22 +32,22 @@ export default function Ledger() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="Ledger" sub="Every credit in and out. Wallet balances are always worked out from these rows.">
+      <Title title="Ledger" sub="Every credit in and out. Balances come from these rows.">
         <button type="button" className="np-btn v2-btn-sm" onClick={() => setAdjust(true)}><Icon name="plus" size={16} /> Adjust credits</button>
       </Title>
 
       <div className="v2-grid4 ad-stats">
-        <div className="v2-stat"><small>In all wallets</small><b>1,218,450</b><em>Credits, from the ledger</em></div>
+        <div className="v2-stat"><small>In all wallets</small><b>1,218,450</b><em>From the ledger</em></div>
         <div className="v2-stat"><small>Issued today</small><b>4,120</b><em className="up">Missions and referrals</em></div>
         <div className="v2-stat"><small>Used today</small><b>1,830</b><em>AI tools and boosts</em></div>
-        <div className="v2-stat"><small>Waiting for approval</small><b style={{ color: pending.length ? "var(--amber)" : undefined }}>{pending.length}</b><em>Manual adjustments</em></div>
+        <div className="v2-stat"><small>Pending approval</small><b style={{ color: pending.length ? "var(--amber)" : undefined }}>{pending.length}</b><em>Manual adjustments</em></div>
       </div>
 
       {pending.length > 0 && (
         <section className="v2-card" style={{ borderLeft: "4px solid #f5a623" }}>
           <div className="v2-card-h">
             <h2 className="v2-h2">Waiting for approval</h2>
-            <span className="v2-small">A second person approves every manual adjustment</span>
+            <span className="v2-small">Needs a second approver</span>
           </div>
           <div className="ad-list">
             {pending.map((p) => {
@@ -63,7 +63,7 @@ export default function Ledger() {
                     <Pill tone="warn">Waiting for approval{p.approver ? ` · ${p.approver}` : ""}</Pill>
                   ) : (
                     <span className="acts">
-                      <button type="button" className="ad-btn-ghost danger" onClick={() => { setPending((l) => l.filter((x) => x.id !== p.id)); toast(`Declined · ${p.by} is told why · logged`); }}>Decline</button>
+                      <button type="button" className="ad-btn-ghost danger" onClick={() => { setPending((l) => l.filter((x) => x.id !== p.id)); toast(`Declined · ${p.by} notified · logged`); }}>Decline</button>
                       <button type="button" className="np-btn v2-btn-sm" onClick={() => approve(p)}><Icon name="check" size={16} /> Approve</button>
                     </span>
                   )}
@@ -105,7 +105,7 @@ export default function Ledger() {
       {adjust && (
         <AdjustSheet
           onClose={() => setAdjust(false)}
-          onSubmit={(p) => { setPending((l) => [p, ...l]); setAdjust(false); toast(`Sent to ${p.approver} for approval · nothing changes until they approve`); }}
+          onSubmit={(p) => { setPending((l) => [p, ...l]); setAdjust(false); toast(`Sent to ${p.approver} for approval`); }}
         />
       )}
     </div>
@@ -132,10 +132,10 @@ function AdjustSheet({ onClose, onSubmit }: { onClose: () => void; onSubmit: (p:
       </label>
       <div className="ad-form">
         <div className="v2-field">Direction<Seg value={dir} options={["Add", "Remove"] as const} onChange={setDir} /></div>
-        <label className="v2-field">Credits<input className="np-input" inputMode="numeric" value={amount} placeholder="e.g. 200" onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ""))} /><small>Up to 5,000 per adjustment</small></label>
+        <label className="v2-field">Credits<input className="np-input" inputMode="numeric" value={amount} placeholder="e.g. 200" onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ""))} /><small>Max 5,000</small></label>
       </div>
       <Sec>Reason</Sec>
-      <Reasons options={["Make-good for an outage", "Correction", "Goodwill", "Other"]} value={reason} onChange={setReason} note={note} onNote={setNote} notePlaceholder="Required: what happened, ticket or case number" />
+      <Reasons options={["Make-good for an outage", "Correction", "Goodwill", "Other"]} value={reason} onChange={setReason} note={note} onNote={setNote} notePlaceholder="Required: what happened + case number" />
       <label className="v2-field">
         Second approver
         <select className="np-input" value={approver} onChange={(e) => setApprover(e.target.value)}>
@@ -151,7 +151,7 @@ function AdjustSheet({ onClose, onSubmit }: { onClose: () => void; onSubmit: (p:
       >
         Send for approval
       </button>
-      <span className="v2-small" style={{ textAlign: "center" }}>The wallet changes only after {approver} approves. Both names go in the ledger and the audit log.</span>
+      <span className="v2-small" style={{ textAlign: "center" }}>Applies after {approver} approves. Both names are logged.</span>
     </Sheet>
   );
 }

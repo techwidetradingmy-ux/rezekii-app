@@ -33,10 +33,10 @@ export default function GrowthReferrals() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="Referrals" sub="Creators and sellers can invite both. Same reward either way; we count each role pair separately." />
+      <Title title="Referrals" sub="Anyone can invite anyone. Same reward for every pair." />
 
       <div className="v2-grid4 ad-stats">
-        <div className="v2-stat"><small>Referrals in October</small><b>{list.length}</b><em>Signed up with an invite link</em></div>
+        <div className="v2-stat"><small>Referrals in October</small><b>{list.length}</b><em>Via invite link</em></div>
         <div className="v2-stat"><small>Successful</small><b>{qualified.length}</b><em className="up">{Math.round((qualified.length / list.length) * 100)}% of sign-ups</em></div>
         <div className="v2-stat"><small>Credits paid</small><b>{qualified.filter((x) => x.status.startsWith("Reward paid")).reduce((a, x) => a + x.reward + REFERRAL_REWARD.friend, 0)}</b><em>Inviter {REFERRAL_REWARD.inviter} · friend {REFERRAL_REWARD.friend}</em></div>
         <div className="v2-stat"><small>Held for review</small><b style={{ color: held.length ? "var(--red)" : undefined }}>{held.length}</b><em>Suspected abuse</em></div>
@@ -53,12 +53,12 @@ export default function GrowthReferrals() {
       <div className="v2-stack" style={{ gap: 16 }}>
         <section className="v2-card">
           <h2 className="v2-h2">Referral rewards</h2>
-          <span className="v2-small">Win-win, the same for creators and sellers. Both are paid together once the new account is set up. Changes apply to new referrals; ones already qualified keep their amount.</span>
+          <span className="v2-small">Both sides paid on setup. Changes apply to new referrals only.</span>
           <form
             className="rf-admin"
             onSubmit={(e) => {
               e.preventDefault();
-              toast(`Saved: inviter ${give.inviter}, friend ${give.friend} credits · applies to new referrals · logged`);
+              toast(`Saved: inviter ${give.inviter}, friend ${give.friend} credits · logged`);
             }}
           >
             <label className="v2-field">Inviter gets<input className="np-input" type="number" min={0} step={10} value={give.inviter} onChange={(e) => setGive({ ...give, inviter: e.target.value })} /></label>
@@ -67,10 +67,10 @@ export default function GrowthReferrals() {
           </form>
         </section>
         <section className="v2-card">
-          <h2 className="v2-h2">Successful, by role pair</h2>
+          <h2 className="v2-h2">Successful by pair</h2>
           <Bars rows={PAIRS.map((p) => ({ label: p, value: qualified.filter((x) => x.pair === p).length, display: String(qualified.filter((x) => x.pair === p).length) }))} tone="blue" />
           <Meta range="October (Malaysia time)" source="Rezekii referrals" updated="Today 10:40" />
-          <span className="v2-small">Successful = creator linked TikTok Shop and ran a first scan, or seller connected a shop and submitted a product, within 30 days of sign-up.</span>
+          <span className="v2-small">Successful = first scan (creator) or first product (seller) within 30 days.</span>
         </section>
         <section className="v2-card" style={{ padding: "8px 12px" }}>
           <div style={{ padding: "8px 8px 0" }}>
@@ -99,13 +99,13 @@ export default function GrowthReferrals() {
       {r && (
         <Sheet title={`${r.from} → ${r.to}`} onClose={() => setOpen(null)}>
           <Pill tone={tone(r.status)}>{r.status}</Pill>
-          <Kv rows={[["Referral", r.id], ["Role pair", r.pair], ["Signed up", r.when], ["Reward", r.reward ? `${r.reward} credits to the inviter, ${REFERRAL_REWARD.friend} to the new account` : "Not earned yet"], ["Referrer", "Locked at sign-up. Only staff can correct it, with a reason."]]} />
+          <Kv rows={[["Referral", r.id], ["Role pair", r.pair], ["Signed up", r.when], ["Reward", r.reward ? `Inviter ${r.reward} · new account ${REFERRAL_REWARD.friend}` : "Not earned yet"], ["Referrer", "Locked. Staff can correct with a reason."]]} />
           {r.flag && (
             <>
               <Sec>Why it&apos;s held</Sec>
               <div className="ad-facts">
-                <div className={`ad-fact ${r.flag === "Same device" ? "no" : ""}`}><small>Device</small><b><Icon name={r.flag === "Same device" ? "x" : "check"} size={15} />{r.flag === "Same device" ? "Same as the inviter" : "Different"}</b></div>
-                <div className={`ad-fact ${r.flag === "Same TikTok account" ? "no" : ""}`}><small>TikTok account</small><b><Icon name={r.flag === "Same TikTok account" ? "x" : "check"} size={15} />{r.flag === "Same TikTok account" ? "Same as the inviter" : "Different"}</b></div>
+                <div className={`ad-fact ${r.flag === "Same device" ? "no" : ""}`}><small>Device</small><b><Icon name={r.flag === "Same device" ? "x" : "check"} size={15} />{r.flag === "Same device" ? "Same as inviter" : "Different"}</b></div>
+                <div className={`ad-fact ${r.flag === "Same TikTok account" ? "no" : ""}`}><small>TikTok account</small><b><Icon name={r.flag === "Same TikTok account" ? "x" : "check"} size={15} />{r.flag === "Same TikTok account" ? "Same as inviter" : "Different"}</b></div>
                 <div className="ad-fact"><small>Payment method</small><b><Icon name="check" size={15} />Different</b></div>
               </div>
             </>
@@ -114,18 +114,18 @@ export default function GrowthReferrals() {
             <div className="v2-row">
               {r.status.startsWith("Held") && <button type="button" className="np-btn v2-btn-sm" onClick={() => { set({ status: "Reward paid", flag: "" }); toast("Reward released to both sides · logged"); setOpen(null); }}>Release reward</button>}
               {r.reward > 0 && !r.status.startsWith("Reversed") && <button type="button" className="ad-btn-ghost danger" onClick={() => setMode("Reverse")}>Reverse reward</button>}
-              <button type="button" className="ad-btn-ghost" onClick={() => setMode("Correct")}>Correct the referrer</button>
+              <button type="button" className="ad-btn-ghost" onClick={() => setMode("Correct")}>Correct referrer</button>
             </div>
           ) : (
             <>
-              <Sec>{mode === "Reverse" ? "Why reverse it?" : "Why change the referrer?"}</Sec>
+              <Sec>{mode === "Reverse" ? "Why reverse?" : "Why change?"}</Sec>
               <Reasons
                 options={mode === "Reverse" ? ["Duplicate account", "Self-referral", "Fake sign-ups", "Other"] : ["Wrong link used by mistake", "Seller asked", "Other"]}
                 value={reason}
                 onChange={setReason}
                 note={note}
                 onNote={setNote}
-                notePlaceholder={mode === "Correct" ? "Correct referrer (handle or shop) and why" : "Note for the audit log"}
+                notePlaceholder={mode === "Correct" ? "Correct referrer and why" : "Note for audit log"}
               />
               <div className="v2-row">
                 <button
@@ -133,8 +133,8 @@ export default function GrowthReferrals() {
                   className={`np-btn v2-btn-sm ${mode === "Reverse" ? "ad-btn-danger" : ""}`}
                   disabled={!reason || (mode === "Correct" && !note.trim())}
                   onClick={() => {
-                    if (mode === "Reverse") { set({ status: "Reversed", reward: 0 }); toast("Reward reversed on both sides · ledger updated · logged"); }
-                    else toast("Referrer corrected · both people notified · logged");
+                    if (mode === "Reverse") { set({ status: "Reversed", reward: 0 }); toast("Reward reversed · ledger updated · logged"); }
+                    else toast("Referrer corrected · both notified · logged");
                     setOpen(null);
                   }}
                 >

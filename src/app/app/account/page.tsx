@@ -145,8 +145,8 @@ export default function Account() {
   };
 
   const socials: { key: string; label: string; icon: React.ReactNode; detail: string; on: boolean }[] = [
-    { key: "TikTok Shop", label: "TikTok Shop", icon: <span className="cr2-cico" style={{ background: "#111111" }}><Icon name="bag" size={18} /></span>, detail: linked ? "Linked · commission, scans and one-tap add" : "Not linked", on: linked },
-    { key: "TikTok", label: "TikTok account", icon: <PlatformIcon name="TikTok" size={34} />, detail: conn.TikTok ? `${SOCIALS[0].handle} · video data and posting` : "Not connected", on: conn.TikTok },
+    { key: "TikTok Shop", label: "TikTok Shop", icon: <span className="cr2-cico" style={{ background: "#111111" }}><Icon name="bag" size={18} /></span>, detail: linked ? "Linked" : "Not linked", on: linked },
+    { key: "TikTok", label: "TikTok account", icon: <PlatformIcon name="TikTok" size={34} />, detail: conn.TikTok ? SOCIALS[0].handle : "Not connected", on: conn.TikTok },
     { key: "Facebook", label: "Facebook Page", icon: <PlatformIcon name="Facebook" size={34} />, detail: conn.Facebook ? SOCIALS[2].handle : "Not connected", on: conn.Facebook },
     { key: "Instagram", label: "Instagram", icon: <PlatformIcon name="Instagram" size={34} />, detail: conn.Instagram ? `${SOCIALS[1].handle} · Reels` : "Not connected", on: conn.Instagram },
     { key: "Threads", label: "Threads", icon: <PlatformIcon name="Threads" size={34} />, detail: conn.Threads ? "@aisyah.glow" : "Not connected", on: conn.Threads },
@@ -154,7 +154,7 @@ export default function Account() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 22 }}>
-      <Title title="My Account" sub="Your details, level, wallet, referrals, samples and settings in one place" />
+      <Title title="My Account" sub="Your details, wallet, samples and settings" />
 
       <div className="cr2-settings acc-layout">
         {/* Owner, 28 Oct 2026: on a wide screen the profile and the sections sit in a side bar. */}
@@ -232,7 +232,7 @@ export default function Account() {
                   </span>
                 )}
                 <span className="pf-sub">
-                  {!local && !locked ? <span className="cr2-red" style={{ fontWeight: 700 }}>{cc === "+60" ? "Enter a Malaysian mobile number, e.g. 12-345 6789" : "Enter a mobile number"}</span> : <span>Only the Techwide team sees it, for samples and parcels.</span>}
+                  {!local && !locked ? <span className="cr2-red" style={{ fontWeight: 700 }}>{cc === "+60" ? "Enter a Malaysian mobile number, e.g. 12-345 6789" : "Enter a mobile number"}</span> : <span>Only Techwide sees it.</span>}
                   {verified ? (
                     <span className="badge"><Icon name="check" size={13} width={3} /> Verified</span>
                   ) : (
@@ -264,7 +264,7 @@ export default function Account() {
               </div>
 
               <div className="pf-f wide">
-                <span className="pf-l">Niches {!locked && <Req />} <small>Same categories as TikTok Shop. Sellers match samples by them.</small></span>
+                <span className="pf-l">Niches {!locked && <Req />}</span>
                 {locked ? (
                   <b className="pf-v">{[niche, sub1, sub2].filter(Boolean).join(" · ")}</b>
                 ) : (
@@ -289,12 +289,12 @@ export default function Account() {
             <div className="pf-foot">
               {locked ? (
                 <>
-                  <span>Need to change something? Our support team updates it for you.</span>
+                  <span>Need a change? Ask support.</span>
                   <button type="button" className="btn-outline v2-btn-sm" onClick={() => setChangeSheet(true)}><Icon name="whatsapp" size={15} /> Contact support</button>
                 </>
               ) : (
                 <>
-                  <span>Check it carefully: once saved, only support can change it.</span>
+                  <span>Once saved, only support can change it.</span>
                   <button type="button" className="np-btn" onClick={() => { setTried(true); if (!profileErrors.length) setConfirmSave(true); }}>Save profile</button>
                 </>
               )}
@@ -305,7 +305,7 @@ export default function Account() {
         <section className="cr2-group">
           <h2>Shipping address <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 600 }}>· optional</span></h2>
           <p style={{ color: "var(--body)" }}>
-            Only for PR kits and other parcels that don&apos;t go through TikTok. Free samples from Rezekii use your address in TikTok. Only the Techwide team sees it.
+            For parcels outside TikTok. Free Samples use your TikTok address.
           </p>
           <div className="cr2-cells">
             <div className="cr2-cell">
@@ -336,7 +336,7 @@ export default function Account() {
               </select>
             </div>
           </div>
-          <button type="button" className="btn-outline" style={{ alignSelf: "flex-start" }} onClick={() => toast(addr.line ? "Address saved" : "Nothing to save yet. It's optional.")}>Save address</button>
+          <button type="button" className="btn-outline" style={{ alignSelf: "flex-start" }} onClick={() => toast(addr.line ? "Address saved" : "Nothing to save")}>Save address</button>
         </section>
 
           </>
@@ -380,12 +380,12 @@ export default function Account() {
               <Icon name="shield" size={16} />
               <span>
                 {consent.unlinkedAt
-                  ? <>TikTok Shop unlinked on {consent.unlinkedAt}. We stopped reading it then, and delete its data within 30 days.</>
-                  : <>You agreed to the Terms v{consent.terms} and Privacy Policy v{consent.privacy} on {consent.at}, letting Rezekii read: {SCOPES.creator.join(", ").toLowerCase()}.</>}
+                  ? <>TikTok Shop unlinked on {consent.unlinkedAt}. We stopped reading it and delete its data within 30 days.</>
+                  : <>Agreed to Terms v{consent.terms} and Privacy Policy v{consent.privacy} on {consent.at}. We read: {SCOPES.creator.join(", ").toLowerCase()}.</>}
               </span>
             </div>
           )}
-          <p>We never see your passwords. You can disconnect any of these in the platform&apos;s own settings.</p>
+          <p>We never see your passwords. Disconnect anytime in each app.</p>
         </section>
         )}
 
@@ -404,7 +404,7 @@ export default function Account() {
             {/* Owner, 28 Oct 2026: remind people which account they sign in with. */}
             <div className="cr2-cell stack">
               <span className="lbl">How you sign in</span>
-              <p className="si-remind"><Icon name="check" size={15} width={3} /><span>Last time you signed in with <b>TikTok</b> as <b>{CREATOR.handle}</b>. Use the same next time.</span></p>
+              <p className="si-remind"><Icon name="check" size={15} width={3} /><span>Last signed in with <b>TikTok</b> as <b>{CREATOR.handle}</b>.</span></p>
               <div className="si-methods">
                 {([
                   ["TikTok", CREATOR.handle, true, "tt"],
@@ -415,7 +415,7 @@ export default function Account() {
                     <span className={`si-ico ${key}`} aria-hidden="true">{key === "tt" ? "♪" : key === "gg" ? "G" : <Icon name="lock" size={15} />}</span>
                     <span><b>{label}</b><small>{detail}</small></span>
                     {key === "tt" ? <span className="badge">Last used</span>
-                      : key === "gg" ? <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setGoogleOn(!googleOn); toast(googleOn ? "Google unlinked" : "Google linked: you can sign in with it too"); }}>{googleOn ? "Unlink" : "Link"}</button>
+                      : key === "gg" ? <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setGoogleOn(!googleOn); toast(googleOn ? "Google unlinked" : "Google linked"); }}>{googleOn ? "Unlink" : "Link"}</button>
                       : (
                         <span className="si-acts">
                           <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setNewEmail(""); setEmailSheet(true); }}>Change email</button>
@@ -447,7 +447,7 @@ export default function Account() {
               <span className="chev">v1.0 · 28 Oct 2026 <Icon name="arrow" size={16} /></span>
             </a>
           </div>
-          <p>We only show your earnings to you. Sellers see your public profile, never your sales, unless you choose to share them.</p>
+          <p>Your earnings are private. Sellers never see your sales unless you share.</p>
         </section>
 
         <section className="cr2-group">
@@ -483,7 +483,7 @@ export default function Account() {
               </div>
             ))}
           </div>
-          <p>No marketing messages unless you ask for them.</p>
+          <p>No marketing messages unless you ask.</p>
         </section>
 
         <section className="cr2-group">
@@ -498,7 +498,7 @@ export default function Account() {
               <span className="val"><Seg value={theme} options={["Light", "Dark", "Auto"] as const} onChange={applyTheme} /></span>
             </div>
           </div>
-          <p>Auto follows your phone or computer.</p>
+          <p>Auto matches your device.</p>
         </section>
         <section className="cr2-group">
           <h2>Help & feedback</h2>
@@ -510,13 +510,13 @@ export default function Account() {
                   <button key={t} type="button" className={`v2-chip ${topic === t ? "on" : ""}`} onClick={() => setTopic(t)}>{t}</button>
                 ))}
               </div>
-              <textarea className="np-input" rows={4} placeholder="What would make Rezekii better for you?" value={msg} onChange={(e) => setMsg(e.target.value)} aria-label="Your feedback" />
+              <textarea className="np-input" rows={4} placeholder="What can we improve?" value={msg} onChange={(e) => setMsg(e.target.value)} aria-label="Your feedback" />
               <button
                 type="button"
                 className="np-btn"
                 style={{ alignSelf: "flex-start" }}
                 disabled={!msg.trim()}
-                onClick={() => { setMsg(""); toast("Thanks, the team reads every message"); }}
+                onClick={() => { setMsg(""); toast("Thanks! Message sent"); }}
               >
                 <Icon name="send" size={17} /> Send
               </button>
@@ -537,7 +537,7 @@ export default function Account() {
       </div>
       {confirmSave && (
         <Sheet title="Save your profile?" onClose={() => setConfirmSave(false)}>
-          <p className="v2-muted" style={{ margin: 0 }}>After saving, you can&apos;t change it yourself. If something needs changing later, our support team does it for you.</p>
+          <p className="v2-muted" style={{ margin: 0 }}>After saving, only support can change it.</p>
           <dl className="pf-sum">
             <div><dt>Name</dt><dd>{name}</dd></div>
             <div><dt>State</dt><dd>{state}</dd></div>
@@ -547,52 +547,52 @@ export default function Account() {
             <div><dt>Niches</dt><dd>{[niche, sub1, sub2].filter(Boolean).join(" · ")}</dd></div>
           </dl>
           <button type="button" className="np-btn" onClick={() => { setLocked(true); setConfirmSave(false); toast("Profile saved"); }}>Save profile</button>
-          <button type="button" className="btn-outline" style={{ height: 48 }} onClick={() => setConfirmSave(false)}>Go back and edit</button>
+          <button type="button" className="btn-outline" style={{ height: 48 }} onClick={() => setConfirmSave(false)}>Keep editing</button>
         </Sheet>
       )}
       {changeSheet && (
-        <Sheet title="Ask support to change your profile" onClose={() => setChangeSheet(false)}>
+        <Sheet title="Request a change" onClose={() => setChangeSheet(false)}>
           <label className="v2-field">What to change
             <select className="np-input" value={change.what} onChange={(e) => setChange({ ...change, what: e.target.value })}>
               {["Name", "State", "WhatsApp number", "Gender", "Creator type", "Niches"].map((x) => <option key={x}>{x}</option>)}
             </select>
           </label>
-          <label className="v2-field">Change it to<input className="np-input" value={change.to} onChange={(e) => setChange({ ...change, to: e.target.value })} placeholder="The new value" /></label>
+          <label className="v2-field">Change it to<input className="np-input" value={change.to} onChange={(e) => setChange({ ...change, to: e.target.value })} placeholder="New value" /></label>
           <label className="v2-field">Why <span className="pf-opt">Optional</span><textarea className="np-input" rows={2} value={change.why} onChange={(e) => setChange({ ...change, why: e.target.value })} placeholder="e.g. I changed my number" /></label>
-          <button type="button" className="np-btn" disabled={!change.to.trim()} onClick={() => { setChangeSheet(false); setChange({ what: "WhatsApp number", to: "", why: "" }); toast("Sent to support. We'll reply on WhatsApp within 1 working day."); }}>Send to support</button>
+          <button type="button" className="np-btn" disabled={!change.to.trim()} onClick={() => { setChangeSheet(false); setChange({ what: "WhatsApp number", to: "", why: "" }); toast("Sent. We'll WhatsApp you within 1 working day."); }}>Send to support</button>
         </Sheet>
       )}
       {waSheet && (
         <Sheet title="Verify with WhatsApp" onClose={() => setWaSheet(false)}>
-          <p className="v2-muted" style={{ margin: 0 }}>Takes 10 seconds and it&apos;s free. It proves {cc} {local && prettyNum(cc, local)} really has WhatsApp, so the team can reach you about samples.</p>
+          <p className="v2-muted" style={{ margin: 0 }}>Free and takes 10 seconds. Confirms {cc} {local && prettyNum(cc, local)} has WhatsApp.</p>
           <ol className="cr2-steps">
-            <li><i>1</i><span><b>Tap Open WhatsApp.</b> WhatsApp opens with a message already written, with your code in it.</span></li>
-            <li><i>2</i><span><b>Send it</b> without changing anything.</span></li>
-            <li><i>3</i><span><b>Done.</b> Come back here; your number shows as verified.</span></li>
+            <li><i>1</i><span><b>Tap Open WhatsApp.</b> The message is ready.</span></li>
+            <li><i>2</i><span><b>Send it</b> without changes.</span></li>
+            <li><i>3</i><span><b>Done.</b> Come back here.</span></li>
           </ol>
           <div className="cr2-wamsg">REZEKII verify 482 913<br />Please send this message as it is.</div>
           <button type="button" className="np-btn cr2-wabtn" disabled={verifying} onClick={verifyNow}>
             <Icon name="whatsapp" size={18} /> {verifying ? "Waiting for your message…" : "Open WhatsApp"}
           </button>
-          <span className="v2-small" style={{ textAlign: "center" }}>You send the message, so it costs you nothing. We never send you a code.</span>
+          <span className="v2-small" style={{ textAlign: "center" }}>We never send you a code.</span>
         </Sheet>
       )}
 
       {unlink && (
         <Sheet title="Unlink TikTok Shop?" onClose={() => setUnlink(false)}>
           <ul className="cr2-danger" style={{ margin: 0, paddingLeft: 30 }}>
-            <li>We stop reading your TikTok Shop data straight away.</li>
-            <li>Your scan results, earnings and payouts disappear from Rezekii, and we delete that data within 30 days.</li>
-            <li>Products already added through Techwide keep their rate in TikTok until the campaign ends.</li>
+            <li>We stop reading your TikTok Shop data now.</li>
+            <li>Scans, earnings and payouts are removed. Data deleted within 30 days.</li>
+            <li>Added products keep their rate until the campaign ends.</li>
           </ul>
-          <button type="button" className="np-btn cr2-delbtn" onClick={() => { setLinked(false); setUnlink(false); toast("Unlinked. We stopped reading your TikTok Shop data."); }}>Unlink TikTok Shop</button>
+          <button type="button" className="np-btn cr2-delbtn" onClick={() => { setLinked(false); setUnlink(false); toast("TikTok Shop unlinked"); }}>Unlink TikTok Shop</button>
           <button type="button" className="btn-outline" onClick={() => setUnlink(false)}>Keep it linked</button>
         </Sheet>
       )}
 
       {emailSheet && (
         <Sheet title="Change email" onClose={() => setEmailSheet(false)}>
-          <p className="v2-muted" style={{ margin: 0 }}>Now: {email}. We send a link to the new address; it changes once you open it.</p>
+          <p className="v2-muted" style={{ margin: 0 }}>Now: {email}. Confirm with the link we send.</p>
           <label className="v2-field">
             New email
             <input type="email" className="np-input" autoComplete="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="you@example.com" />
@@ -601,9 +601,9 @@ export default function Account() {
             type="button"
             className="np-btn"
             disabled={!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(newEmail)}
-            onClick={() => { setEmail(newEmail); setEmailSheet(false); toast(`Link sent to ${newEmail}. Open it to confirm.`); }}
+            onClick={() => { setEmail(newEmail); setEmailSheet(false); toast(`Link sent to ${newEmail}`); }}
           >
-            Send confirmation link
+            Send link
           </button>
         </Sheet>
       )}
@@ -614,8 +614,8 @@ export default function Account() {
             <b>This can&apos;t be undone.</b>
             <ul>
               <li>Your profile, connections and credits are removed.</li>
-              <li>Samples still in progress ({active}) must be finished first, or the Techwide team marks them undelivered.</li>
-              <li>Commission TikTok already owes you is paid by TikTok as usual.</li>
+              <li>Finish samples in progress ({active}) first, or they&apos;re marked undelivered.</li>
+              <li>TikTok still pays commission it owes you.</li>
             </ul>
           </div>
           <label className="v2-field">
@@ -631,12 +631,12 @@ export default function Account() {
 
       {pwSheet && (
         <Sheet title={hasPw ? "Change password" : "Set a password"} onClose={() => setPwSheet(false)}>
-          <p className="v2-muted" style={{ margin: 0 }}>{hasPw ? `For signing in with ${email}.` : `A password lets you sign in with ${email} as well as TikTok.`}</p>
+          <p className="v2-muted" style={{ margin: 0 }}>{hasPw ? `For signing in with ${email}.` : `Sign in with ${email} too.`}</p>
           {hasPw && (
             <label className="v2-field">
               Current password
               <input type="password" className="np-input" autoComplete="current-password" value={pw[0]} onChange={(e) => setPw([e.target.value, pw[1], pw[2]])} />
-              <button type="button" className="v2-link" style={{ alignSelf: "flex-start", fontSize: 13 }} onClick={() => { setPwSheet(false); toast(`Reset link sent to ${email}`); }}>Forgot it? Email me a reset link</button>
+              <button type="button" className="v2-link" style={{ alignSelf: "flex-start", fontSize: 13 }} onClick={() => { setPwSheet(false); toast(`Reset link sent to ${email}`); }}>Email me a reset link</button>
             </label>
           )}
           <label className="v2-field">
@@ -647,7 +647,7 @@ export default function Account() {
           <label className="v2-field">
             Type it again
             <input type="password" className="np-input" autoComplete="new-password" value={pw[2]} onChange={(e) => setPw([pw[0], pw[1], e.target.value])} />
-            {pw[2] && pw[1] !== pw[2] && <small className="cr2-red">These don&apos;t match yet</small>}
+            {pw[2] && pw[1] !== pw[2] && <small className="cr2-red">Doesn&apos;t match</small>}
           </label>
           <button
             type="button"

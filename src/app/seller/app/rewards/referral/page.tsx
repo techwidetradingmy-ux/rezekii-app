@@ -29,7 +29,7 @@ export default function SellerReferral() {
 
   return (
     <div className="v2-stack v2-in">
-      <Title title="Referral" sub="Invite other sellers and creators. You get credits when they're set up.">
+      <Title title="Referral" sub="Invite sellers and creators. Earn credits when they're set up.">
         <button type="button" className="btn-outline" onClick={() => setShare(true)}><Icon name="share" size={18} /> Share</button>
       </Title>
 
@@ -42,7 +42,7 @@ export default function SellerReferral() {
             <code>{LINK}</code>
             <button type="button" className="np-btn v2-btn-sm" onClick={copy}>Copy</button>
           </div>
-          <span className="v2-small">Or they can type your code when they sign up: <b style={{ color: "var(--text)", letterSpacing: "0.05em" }}>{CODE}</b></span>
+          <span className="v2-small">Or use code: <b style={{ color: "var(--text)", letterSpacing: "0.05em" }}>{CODE}</b></span>
           <div className="v2-chips">
             <button type="button" className="v2-chip" onClick={() => toast("Opening WhatsApp…")}><Icon name="whatsapp" size={16} /> WhatsApp</button>
             <button type="button" className="v2-chip" onClick={() => toast("Opening Facebook…")}>Facebook</button>
@@ -54,17 +54,17 @@ export default function SellerReferral() {
 
       <section className="v2-grid4">
         <Stat label="Successful this month" value={<Count value={ok.length} />} note={`+${REFERRAL_REWARD.inviter} credits each`} tone="up" />
-        <Stat label="Signed up, not set up yet" value={<Count value={SELLER_INVITES.length - ok.length} />} note="They have 30 days" />
+        <Stat label="Not set up yet" value={<Count value={SELLER_INVITES.length - ok.length} />} note="They have 30 days" />
         <Stat label="Credits earned" value={<Count value={ok.reduce((a, i) => a + i.credits, 0)} />} />
       </section>
 
       <section className="v2-card">
         <h2 className="v2-h2">How it counts</h2>
         <ul className="sl-list">
-          <li><Icon name="box" size={18} stroke="var(--gink)" /> <span><b style={{ color: "var(--text)" }}>A seller</b> counts when they connect Seller Center and submit their first product within 30 days.</span></li>
-          <li><Icon name="user" size={18} stroke="var(--gink)" /> <span><b style={{ color: "var(--text)" }}>A creator</b> counts when they link TikTok Shop and run their first scan within 30 days.</span></li>
-          <li><Icon name="lock" size={18} stroke="var(--gink)" /> <span>Whoever&apos;s link someone signs up with is locked in for good. It can&apos;t be changed later.</span></li>
-          <li><Icon name="gift" size={18} stroke="var(--gink)" /> <span>Same for sellers and creators: +{REFERRAL_REWARD.inviter} credits for you, +{REFERRAL_REWARD.friend} for them. Credits are rewards, not cash.</span></li>
+          <li><Icon name="box" size={18} stroke="var(--gink)" /> <span><b style={{ color: "var(--text)" }}>Seller:</b> connects Seller Center and submits a product within 30 days.</span></li>
+          <li><Icon name="user" size={18} stroke="var(--gink)" /> <span><b style={{ color: "var(--text)" }}>Creator:</b> links TikTok Shop and runs a first scan within 30 days.</span></li>
+          <li><Icon name="lock" size={18} stroke="var(--gink)" /> <span>The signup link is locked in for good.</span></li>
+          <li><Icon name="gift" size={18} stroke="var(--gink)" /> <span>+{REFERRAL_REWARD.inviter} credits for you, +{REFERRAL_REWARD.friend} for them. Credits are not cash.</span></li>
         </ul>
       </section>
 

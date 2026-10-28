@@ -143,7 +143,7 @@ export function Sec({ children, right }: { children: React.ReactNode; right?: Re
 }
 
 /** Reason picker used for reject / freeze / disagree. Returns null until a reason is chosen. */
-export function Reasons({ options, value, onChange, note, onNote, notePlaceholder = "Add a short note (optional)" }: {
+export function Reasons({ options, value, onChange, note, onNote, notePlaceholder = "Note (optional)" }: {
   options: string[]; value: string | null; onChange: (v: string) => void; note: string; onNote: (v: string) => void; notePlaceholder?: string;
 }) {
   return (

@@ -175,8 +175,8 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   const cost = when === "draft" ? 0 : keys.length * POST_CREDITS;
   const problems = ((): Problem[] => {
     const out: Problem[] = [];
-    if (!keys.length) out.push(["Pick at least one channel to post to.", "channels"]);
-    if (!hasVideo) out.push(["Add a video: upload one or paste an https link.", "video"]);
+    if (!keys.length) out.push(["Pick at least one channel.", "channels"]);
+    if (!hasVideo) out.push(["Add a video: upload or paste a link.", "video"]);
     if (keys.length && !apps.some((p) => captionOf(p).trim())) out.push(["Write a caption.", "caption"]);
     if (ttKey && when !== "draft")
       for (const t of tiktokProblems({ mode, caption: captionOf("tiktok"), privacy, promo: promo.on, own: promo.own, branded: promo.branded }))
@@ -192,7 +192,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
       if (g.bad.length) out.push([`Instagram tagged people: "${g.bad[0]}" isn't an Instagram username.`, "settings"]);
     }
     if (when === "pick" && !pickAt) out.push(["Pick a date and time.", "when"]);
-    if (cost > setup.credits) out.push([`Not enough credits: this needs ${cost}, you have ${setup.credits.toLocaleString("en-MY")}. Earn more in Missions, or save it as a draft.`, "when"]);
+    if (cost > setup.credits) out.push([`Not enough credits: needs ${cost}, you have ${setup.credits.toLocaleString("en-MY")}. Earn more or save as draft.`, "when"]);
     return out;
   })();
   const shown = tried ? problems : [];
@@ -205,10 +205,10 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
 
   function sameAsLast() {
     const next = new Set(setup.last.filter((k) => connected.has(k)));
-    if (!next.size) return say("The channels of your last post aren't connected any more.");
+    if (!next.size) return say("Last post's channels aren't connected.");
     setPicked(next);
     const names = [...next].map((k) => byKey.get(k)?.name).filter(Boolean).slice(0, 4).join(", ");
-    say(`Same channels as your last post: ${names}.`);
+    say(`Same as last post: ${names}.`);
   }
   function connectApp(c: PubChannel) {
     setChannels((list) => [...list, c]);
@@ -228,7 +228,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     setCapOver({});
     setComOver({});
     setPicked(new Set(setup.last.filter((k) => connected.has(k))));
-    say("Sample post filled in. Change anything you like.");
+    say("Sample post filled in.");
   }
   /** Scroll to a section, light it up for a moment and put the cursor in its first field. */
   function jump(s: Sec) {
@@ -244,7 +244,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     const q = new URLSearchParams(window.location.search);
     if (q.has("sample")) fillSample();
     // From Today's Ideas: the idea becomes the start of the caption; she adds the video.
-    else if (q.get("idea")) { setMain(q.get("idea")!.slice(0, 200)); say("Idea from Today's Ideas filled in. Add your video and pick your channels."); }
+    else if (q.get("idea")) { setMain(q.get("idea")!.slice(0, 200)); say("Idea added. Now add a video and channels."); }
   }, []);
 
   function submit() {
@@ -263,10 +263,9 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
         <span className="pb-sent-ico" aria-hidden="true">✓</span>
         <h2>{done.when === "draft" ? "Saved as a draft" : done.when === "now" ? "On its way" : "Scheduled"}</h2>
         <p>
-          {done.when === "draft" ? `Saved in Rezekii for ${done.summary}.` : done.when === "now" ? `${done.summary}: posting now.` : `${done.summary}: ${done.at} (Malaysia time).`} Follow each
-          channel&apos;s live status in your Content Calendar, and edit or cancel it there until it starts sending.
+          {done.when === "draft" ? `Saved in Rezekii for ${done.summary}.` : done.when === "now" ? `${done.summary}: posting now.` : `${done.summary}: ${done.at} (Malaysia time).`} Track or edit it in Content Calendar.
         </p>
-        {done.cost > 0 && <p className="pb-sent-cost">{done.cost} credits used. If a channel fails or you cancel it, its credits come back.</p>}
+        {done.cost > 0 && <p className="pb-sent-cost">{done.cost} credits used. Refunded if a channel fails or is cancelled.</p>}
         <div className="np-row">
           <Link href={setup.calendar} className="np-btn">Open Content Calendar</Link>
           <button type="button" className="btn-outline" onClick={onNew}>New Post</button>
@@ -280,10 +279,10 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     return <span key={p} className={n > CAPTION_MAX[p] ? "over" : ""}><PlatformIcon name={ICON[p]} size={14} />{n.toLocaleString("en-US")} / {CAPTION_MAX[p].toLocaleString("en-US")}</span>;
   });
   const linkWhere = (p: Channel) =>
-    p === "tiktok" ? "Product in the yellow basket (TikTok doesn't let apps comment)"
-      : p === "facebook" && fbDraft ? "No first comment on a Facebook draft"
-      : p === "instagram" ? "First comment (Instagram links can't be tapped, people copy them)"
-      : "First comment, right after the post";
+    p === "tiktok" ? "Yellow basket"
+      : p === "facebook" && fbDraft ? "No comment on drafts"
+      : p === "instagram" ? "First comment (links not tappable)"
+      : "First comment";
   const notes = pApp ? previewNotes(pApp, captionOf(pApp), commentOf(pApp), !!link.trim(), fbView, { fbDraft, igFeed, igTrial, replies, tagged }) : [];
   const secErr = (s: Sec) => errorsIn(s).length > 0 && <ul className="pb-secerr" role="alert">{errorsIn(s).map((t) => <li key={t}>{t}</li>)}</ul>;
   const pComment = pApp && pApp !== "tiktok" && !(pApp === "facebook" && fbDraft) ? commentOf(pApp) : "";
@@ -295,8 +294,8 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   return (
     <>
       <div className="pb-top">
-        <p className="pb-legend"><Req /> Required. Everything else is optional.</p>
-        <button type="button" className="btn-outline v2-btn-sm" onClick={fillSample}>✦ Fill in a sample post</button>
+        <p className="pb-legend"><Req /> Required</p>
+        <button type="button" className="btn-outline v2-btn-sm" onClick={fillSample}>✦ Use a sample</button>
       </div>
       <form className="pb" onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate>
         <div className="pb-col">
@@ -316,7 +315,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
                   const on = live(b);
                   const bApps = APPS.filter((p) => on.some((k) => byKey.get(k)?.app === p));
                   return (
-                    <button key={b.id} type="button" className="pb-chip pb-brand" aria-pressed={brandOn(b)} disabled={!on.length} onClick={() => toggleBrand(b)} title={on.length ? undefined : "None of this brand's channels are connected"}>
+                    <button key={b.id} type="button" className="pb-chip pb-brand" aria-pressed={brandOn(b)} disabled={!on.length} onClick={() => toggleBrand(b)} title={on.length ? undefined : "No channels connected"}>
                       <span className="pb-faces">{on.slice(0, 3).map((k) => { const c = byKey.get(k); return c ? <Face key={k} ch={c} badge={false} /> : null; })}</span>
                       <span className="pb-blabel"><span>{b.name}</span><small>{on.length} · {bApps.map((p) => NAMES[p]).join(", ") || "not connected"}</small></span>
                     </button>
@@ -324,7 +323,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
                 })}
                 {missing.map((c) => <button key={c.key} type="button" className="pb-chip add" onClick={() => connectApp(c)}>+ {NAMES[c.app]}</button>)}
               </div>
-              {!brands.length && <p className="np-muted">Group the channels you post to together, like a brand&apos;s Facebook Page, Instagram and TikTok. Then one tap picks them all. <button type="button" className="pb-link" onClick={() => setSheet("brands")}>Create a brand</button></p>}
+              {!brands.length && <p className="np-muted">Group channels to pick them in one tap. <button type="button" className="pb-link" onClick={() => setSheet("brands")}>Create a brand</button></p>}
             </div>
             <div className="pb-finder" ref={finder}>
               <label className="pb-search">
@@ -356,7 +355,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
                   </div>
                 ))}
               </div>
-            ) : <p className="np-muted">Nothing picked yet: pick a brand, use Same as last post, or search for a channel.</p>}
+            ) : <p className="np-muted">No channels picked yet.</p>}
             {secErr("channels")}
           </section>
 
@@ -377,22 +376,22 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
                 <label className="np-drop"><input type="file" accept="video/mp4,video/quicktime,video/webm" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setDurationSec(null); setSample(false); }} /><span>{file ? `${file.name} · ${(file.size / 1048576).toFixed(1)} MB` : "Choose an MP4, MOV or WebM video (up to 50 MB)"}</span></label>
               )
             ) : (
-              <input className="np-input" type="url" inputMode="url" placeholder="https://… (Google Drive, Dropbox or a direct file link)" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value.trim())} aria-label="Video link" />
+              <input className="np-input" type="url" inputMode="url" placeholder="https://… (Drive, Dropbox or file link)" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value.trim())} aria-label="Video link" />
             )}
             {videoUrl && <video src={videoUrl} muted playsInline preload="metadata" hidden onLoadedMetadata={(e) => setDurationSec(Math.round(e.currentTarget.duration))} />}
             {durationSec !== null && (
               <p className="np-muted">
                 Length {Math.floor(durationSec / 60)}:{String(durationSec % 60).padStart(2, "0")}
-                {apps.includes("facebook") ? ` · Facebook: ${durationSec >= 3 && durationSec <= 90 ? "goes out as a Reel" : "goes out as a Page video (Reels are 3–90 s)"}` : ""}
+                {apps.includes("facebook") ? ` · Facebook: ${durationSec >= 3 && durationSec <= 90 ? "posts as a Reel" : "posts as a video (Reels are 3–90 s)"}` : ""}
               </p>
             )}
             {setup.precheck && ttKey && hasVideo && (
               <div className={`pb-check ${check}`}>
                 <span className="pb-check-ico" aria-hidden="true">{check === "ok" ? "✓" : <Icon name="shield" size={18} />}</span>
                 {check === "ok" ? (
-                  <span><b>TikTok found no problems</b><small>No violations · quality looks good. A clean check doesn&apos;t promise views.</small></span>
+                  <span><b>TikTok found no problems</b><small>No violations. Views aren&apos;t guaranteed.</small></span>
                 ) : (
-                  <span><b>{check === "busy" ? "TikTok is checking your video…" : "Check my video before posting"}</b><small>TikTok checks it for violations and quality, so it doesn&apos;t get held back after posting.</small></span>
+                  <span><b>{check === "busy" ? "TikTok is checking your video…" : "Check video first"}</b><small>Checks for violations before you post.</small></span>
                 )}
                 {check !== "ok" && <button type="button" className="btn-outline v2-btn-sm" disabled={check === "busy"} onClick={() => { setCheck("busy"); window.setTimeout(() => setCheck("ok"), 2200); }}>{check === "busy" ? "Checking…" : "Check"}</button>}
               </div>
@@ -414,18 +413,18 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
             {activeTab === "main" ? (
               <>
                 <ol className="pb-steps" aria-label="How to write a post that works on every app">
-                  <li><b>1</b><span><strong>Hook first</strong><small>The first line is all people see before &ldquo;more&rdquo;.</small></span></li>
-                  <li><b>2</b><span><strong>No links here</strong><small>Links and calls to action go in the first comment.</small></span></li>
-                  <li><b>3</b><span><strong>Check each app</strong><small>Rezekii writes a version for each. The preview shows exactly what goes out.</small></span></li>
+                  <li><b>1</b><span><strong>Hook first</strong><small>Only the first line shows.</small></span></li>
+                  <li><b>2</b><span><strong>No links here</strong><small>Put them in the first comment.</small></span></li>
+                  <li><b>3</b><span><strong>Check each app</strong><small>Each app gets its own version.</small></span></li>
                 </ol>
-                <label className="pb-field"><b>Caption <Req /></b><textarea className="np-input" rows={5} value={main} onChange={(e) => setMain(e.target.value)} placeholder="Hook on the first line, then a few short lines." aria-label="Main caption" /></label>
-                {hasLinkOrCta(main, cta) && <p className="pb-warn">Links and calls to action are taken out of every caption. Put them under First comment below.</p>}
-                <label className="pb-field"><span className="pb-row"><b>Hashtags</b><Opt /></span><input className="np-input" type="text" value={tagsText} onChange={(e) => setTagsText(e.target.value)} placeholder="#thermos #kopi #tiktokshopmy" aria-label="Hashtags" /><small className="np-muted">Added at the very bottom: up to 5 on TikTok and Instagram, all on Facebook, none on Threads.</small></label>
+                <label className="pb-field"><b>Caption <Req /></b><textarea className="np-input" rows={5} value={main} onChange={(e) => setMain(e.target.value)} placeholder="Hook first, then a few short lines." aria-label="Main caption" /></label>
+                {hasLinkOrCta(main, cta) && <p className="pb-warn">Links are removed from captions. Use First comment below.</p>}
+                <label className="pb-field"><span className="pb-row"><b>Hashtags</b><Opt /></span><input className="np-input" type="text" value={tagsText} onChange={(e) => setTagsText(e.target.value)} placeholder="#thermos #kopi #tiktokshopmy" aria-label="Hashtags" /><small className="np-muted">Up to 5 on TikTok and Instagram, none on Threads.</small></label>
                 {apps.includes("threads") && (
                   <label className="pb-field">
                     <span className="pb-row"><b>Threads topic</b>{topicOver !== null ? <button type="button" className="pb-link" onClick={() => setTopicOver(null)}>Use the first hashtag</button> : <Opt />}</span>
                     <input className="np-input" type="text" value={topicOver ?? threadsTopic(mainFull)} maxLength={60} onChange={(e) => setTopicOver(e.target.value)} placeholder="e.g. Dapur" aria-label="Threads topic" />
-                    <small className="np-muted">Recommended: Threads shows one topic next to your name, and people find posts by it. No periods or &amp;.</small>
+                    <small className="np-muted">One topic per post. No periods or &amp;.</small>
                   </label>
                 )}
                 {counts.length > 0 && <div className="pb-counts" aria-label="Characters per app">{counts}</div>}
@@ -452,14 +451,14 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
 
           <section id="pb-s-comment" className={secClass("comment")}>
             <div className="pb-bar"><h2>First comment</h2><Opt /></div>
-            <p className="np-muted" style={{ margin: 0 }}>Your call to action and product link go here, never in the caption. Rezekii posts it as your first comment right after the post.</p>
+            <p className="np-muted" style={{ margin: 0 }}>Your call to action and link. Posted right after your post.</p>
             <div className="pb-two">
               <label className="pb-field"><span className="pb-row"><b>Call to action</b><Opt /></span><input className="np-input" type="text" value={cta} maxLength={80} onChange={(e) => setCta(e.target.value)} placeholder="e.g. Dapatkan di sini 👉" aria-label="Call to action" /></label>
               <label className="pb-field"><span className="pb-row"><b>Product link</b><Opt /></span><input className="np-input" type="url" inputMode="url" value={link} onChange={(e) => setLink(e.target.value.trim())} placeholder="https://… (TikTok Shop or Shopee)" aria-label="Product link" /></label>
             </div>
             <label className="pb-field"><span className="pb-row"><b>More text</b><Opt /></span><textarea className="np-input" rows={2} value={ownComment} onChange={(e) => setOwnComment(e.target.value)} placeholder="e.g. Ada soalan? Tanya di komen 👇" aria-label="More text in the first comment" /></label>
             {apps.length > 0 && <ul className="pb-how">{apps.map((p) => <li key={p}><PlatformIcon name={ICON[p]} size={18} /><span><b>{appLabel(p)}</b><small>{linkWhere(p)}</small></span></li>)}</ul>}
-            {apps.some((p) => p !== "tiktok") && <p className="np-muted" style={{ margin: 0 }}>Edit one app&apos;s first comment in its tab under Caption.</p>}
+            {apps.some((p) => p !== "tiktok") && <p className="np-muted" style={{ margin: 0 }}>Edit per app under Caption.</p>}
             {secErr("comment")}
           </section>
 
@@ -510,29 +509,29 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
                   <span className="pb-gh"><PlatformIcon name="Facebook" size={16} />Facebook</span>
                   <div className="np-seg" role="radiogroup" aria-label="Facebook">
                     <button type="button" role="radio" aria-checked={!fbDraft} className={!fbDraft ? "on" : ""} onClick={() => setFbDraft(false)}>Publish</button>
-                    <button type="button" role="radio" aria-checked={fbDraft} className={fbDraft ? "on" : ""} onClick={() => setFbDraft(true)}>Save as draft in Facebook</button>
+                    <button type="button" role="radio" aria-checked={fbDraft} className={fbDraft ? "on" : ""} onClick={() => setFbDraft(true)}>Save as draft</button>
                   </div>
-                  <p className="np-muted">On Facebook, @names stay plain text: Facebook doesn&apos;t turn them into mentions for posts made by apps. Instagram and Threads link @usernames.</p>
-                  {fbDraft && <p className="np-muted">The Reel is saved in the Page&apos;s drafts. Nobody sees it until you publish it from Facebook or Meta Business Suite. Drafts get no first comment, and work for Reels (3–90 seconds) only.</p>}
+                  <p className="np-muted">@names don&apos;t link on Facebook.</p>
+                  {fbDraft && <p className="np-muted">Hidden until you publish it in Facebook. No first comment. Reels (3–90 s) only.</p>}
                 </div>
               )}
               {apps.includes("instagram") && (
                 <div className="pb-set">
                   <span className="pb-gh"><PlatformIcon name="Instagram" size={16} />Instagram</span>
                   <div className="np-switchrow">
-                    <span><b>Also show in the main feed</b><small>Off: the Reel shows in the Reels tab only.</small></span>
+                    <span><b>Also show in the main feed</b><small>Off: Reels tab only.</small></span>
                     <button type="button" role="switch" aria-checked={igFeed} className={igFeed ? "np-switch on" : "np-switch"} onClick={() => setIgFeed(!igFeed)} aria-label="Also show in the main feed"><span /></button>
                   </div>
                   <details className="pb-guide pb-adv">
-                    <summary>Advanced: collaborators, tag people, trial reel{igAdvanced ? ` · ${igAdvanced} in use` : ""}</summary>
+                    <summary>Advanced: collaborators, tags, trial reel{igAdvanced ? ` · ${igAdvanced} in use` : ""}</summary>
                     <div className="pb-adv-in">
-                      <label className="pb-field"><b>Collaborators</b><input className="np-input" type="text" value={collabText} onChange={(e) => setCollabText(e.target.value)} placeholder="Up to 3 Instagram usernames, e.g. @brand" aria-label="Instagram collaborators" /><small className="np-muted">They get an invite in Instagram; once they accept, the Reel shows on their profile too.</small></label>
-                      <label className="pb-field"><b>Tag people</b><input className="np-input" type="text" value={tagText} onChange={(e) => setTagText(e.target.value)} placeholder="Instagram usernames, e.g. @shopee_my" aria-label="Instagram tagged people" /><small className="np-muted">Up to {TAGS_MAX}. They get a notification and the Reel shows in their Tagged tab. Facebook and Threads don&apos;t let apps tag people in videos.</small></label>
+                      <label className="pb-field"><b>Collaborators</b><input className="np-input" type="text" value={collabText} onChange={(e) => setCollabText(e.target.value)} placeholder="Up to 3 Instagram usernames, e.g. @brand" aria-label="Instagram collaborators" /><small className="np-muted">Shows on their profile once they accept.</small></label>
+                      <label className="pb-field"><b>Tag people</b><input className="np-input" type="text" value={tagText} onChange={(e) => setTagText(e.target.value)} placeholder="Instagram usernames, e.g. @shopee_my" aria-label="Instagram tagged people" /><small className="np-muted">Up to {TAGS_MAX}. Instagram only.</small></label>
                       <b className="pb-sub">Trial reel</b>
                       <div className="np-seg" role="radiogroup" aria-label="Trial reel">
                         {([["off", "Off"], ["manual", "I'll share with followers"], ["auto", "Instagram decides"]] as [TrialMode, string][]).map(([v, l]) => <button key={v} type="button" role="radio" aria-checked={igTrial === v} className={igTrial === v ? "on" : ""} onClick={() => setIgTrial(v)}>{l}</button>)}
                       </div>
-                      {igTrial !== "off" && <p className="np-muted">A trial reel is shown to people who don&apos;t follow you first. {igTrial === "manual" ? "You share it with your followers yourself in Instagram." : "Instagram shares it with your followers if it does well."}</p>}
+                      {igTrial !== "off" && <p className="np-muted">Shown to non-followers first. {igTrial === "manual" ? "You share it with followers later." : "Instagram shares it if it does well."}</p>}
                     </div>
                   </details>
                 </div>
@@ -545,7 +544,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
                   </label>
                 </div>
               )}
-              <p className="np-muted">Facebook, Instagram and Threads don&apos;t offer &ldquo;Only me&rdquo; posts to apps. Use a Facebook draft to keep a post private until you publish it.</p>
+              <p className="np-muted">Need it private? Use a Facebook draft.</p>
               {secErr("settings")}
             </section>
           )}
@@ -572,25 +571,25 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
           </div>
           {pApp === "facebook" && <Tabs value={fbView} set={setFbView} items={[["reels", "Reels"], ["feed", "Feed"]]} label="Facebook view" />}
           {(pApp === "threads" || (pApp === "facebook" && fbView === "feed")) && <Tabs value={theme} set={setTheme} items={[["light", "Light"], ["dark", "Dark"]]} label="App theme" />}
-          <p className="pb-note">{pApp ? PREVIEW_NOTE[pApp] : "Pick a channel to see its preview."}</p>
+          <p className="pb-note">{pApp ? PREVIEW_NOTE[pApp] : "Pick a channel to preview."}</p>
           {pApp && pKey && (
             <div className="pb-cmt" aria-label="First comment as it will be posted">
               <span className="pb-cmt-h">{pApp === "tiktok" ? "Yellow basket" : "First comment"}</span>
               {pApp === "tiktok" ? (
-                <p>TikTok doesn&apos;t let apps post comments. Add your product to the yellow basket (beg kuning) in TikTok.</p>
+                <p>Add your product to the yellow basket (beg kuning) in TikTok.</p>
               ) : pComment ? (
                 <div className="pb-cmt-row">
                   <span className="pb-ini" style={{ background: byKey.get(pKey)?.color }}>{byKey.get(pKey)?.initials}</span>
                   <span><b>{who(pKey).username}</b><span className="pb-cmt-tx">{pComment}</span></span>
                 </div>
               ) : (
-                <p>{pApp === "facebook" && fbDraft ? "Facebook drafts get no first comment." : "None. Add a call to action and product link under First comment."}</p>
+                <p>{pApp === "facebook" && fbDraft ? "Facebook drafts get no first comment." : "None. Add one under First comment."}</p>
               )}
             </div>
           )}
           {notes.length > 0 && (
             <details className="pb-notes">
-              <summary>{notes.length} thing{notes.length === 1 ? "" : "s"} to know about {pApp ? NAMES[pApp] : "this app"}</summary>
+              <summary>{notes.length} note{notes.length === 1 ? "" : "s"} for {pApp ? NAMES[pApp] : "this app"}</summary>
               {notes.map(([text, good]) => <p key={text} className={good ? "pb-good" : "pb-warn"}>{text}</p>)}
             </details>
           )}
@@ -603,7 +602,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
               ))}
             </div>
             {when === "pick" && <input className="np-input" type="datetime-local" value={pickAt} min="2026-10-28T09:15" onChange={(e) => setPickAt(e.target.value)} aria-label="Date and time (Malaysia time)" />}
-            <p className="np-muted">Malaysia time. All channels go out together.{when === "draft" ? " A draft stays in Rezekii until you schedule it." : ""}</p>
+            <p className="np-muted">Malaysia time. All channels post together.{when === "draft" ? " Drafts stay here until scheduled." : ""}</p>
             {secErr("when")}
           </section>
           {shown.length > 0 && (
@@ -619,7 +618,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
           <p className="pb-cost">
             <Icon name="wallet" size={14} />
             <span>
-              {POST_CREDITS} credits per channel{when === "draft" ? ", charged when you schedule it" : ""}. You have {setup.credits.toLocaleString("en-MY")}. A channel that fails or is cancelled gets its credits back. <Link href={setup.earn}>Earn more</Link>
+              {POST_CREDITS} credits per channel{when === "draft" ? ", charged when scheduled" : ""}. You have {setup.credits.toLocaleString("en-MY")}. Refunded if a channel fails or is cancelled. <Link href={setup.earn}>Earn more</Link>
             </span>
           </p>
         </aside>
@@ -631,7 +630,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
           connectable={missing}
           onConnect={connectApp}
           onReconnect={(c) => { setChannels((l) => l.map((x) => (x.key === c.key ? { ...x, status: "active" } : x))); say(`${c.name} reconnected`); }}
-          onCheck={(c) => say(c.status === "active" ? `${c.name} is connected and working.` : `${c.name} needs reconnecting. Press Reconnect to sign in again.`)}
+          onCheck={(c) => say(c.status === "active" ? `${c.name} is working.` : `${c.name} needs reconnecting.`)}
           onDisconnect={(c) => {
             setChannels((l) => l.filter((x) => x.key !== c.key));
             setPicked((s) => new Set([...s].filter((k) => k !== c.key)));
@@ -656,25 +655,25 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
 }
 
 const PREVIEW_NOTE: Record<Channel, string> = {
-  tiktok: "As it appears on the For You feed.",
-  instagram: "As it appears in the Reels viewer. Follow shows for people who don't follow you yet.",
-  facebook: "Facebook shares videos as Reels. Switch to Feed to see the same post in the News Feed.",
-  threads: "As it appears in the Threads feed. The video lines up with the text.",
+  tiktok: "For You feed.",
+  instagram: "Reels viewer.",
+  facebook: "Shown as a Reel. Switch to Feed to compare.",
+  threads: "Threads feed.",
 };
 
 /** Notes under the phone where an app treats the post differently. [text, informational] */
 function previewNotes(ch: Channel, caption: string, comment: string, hasLink: boolean, fbView: "reels" | "feed", s: { fbDraft: boolean; igFeed: boolean; igTrial: TrialMode; replies: ReplyControl; tagged: string[] }): [string, boolean][] {
   const out: [string, boolean][] = [];
-  if (ch === "facebook" && s.fbDraft) out.push(["Saved as a draft on the Page: nobody sees it until you publish it in Facebook. It shows like this once published.", true]);
-  if (ch === "instagram" && !s.igFeed) out.push(["Shows in the Reels tab only, not in the main feed.", true]);
+  if (ch === "facebook" && s.fbDraft) out.push(["Draft: hidden until you publish it in Facebook.", true]);
+  if (ch === "instagram" && !s.igFeed) out.push(["Reels tab only.", true]);
   if (ch === "instagram" && s.tagged.length) out.push([`Tagged: ${s.tagged.map((u) => `@${u}`).join(", ")}.`, true]);
-  if (ch === "instagram" && s.igTrial !== "off") out.push([s.igTrial === "manual" ? "Trial reel: shown to people who don't follow you first; you share it with followers yourself." : "Trial reel: shown to people who don't follow you first; Instagram shares it with followers if it does well.", true]);
+  if (ch === "instagram" && s.igTrial !== "off") out.push([s.igTrial === "manual" ? "Trial reel: non-followers first; you share it with followers." : "Trial reel: non-followers first; Instagram shares it if it does well.", true]);
   if (ch === "threads" && s.replies !== "everyone") out.push([`Who can reply: ${REPLY_CONTROLS.find(([v]) => v === s.replies)?.[1] ?? ""}.`, true]);
-  if (ch === "tiktok" && hasLink) out.push(["The product link isn't added on TikTok. The product goes in the yellow basket (beg kuning).", true]);
-  if (links(caption).length) out.push(["This caption has a link. Links belong in the first comment.", false]);
-  if (ch === "instagram" && comment) out.push([`The first comment goes out right after the Reel is published.${links(comment).length ? " Links in Instagram comments can't be tapped either." : ""}`, true]);
-  if (ch === "facebook" && comment && !s.fbDraft) out.push(["The first comment goes out from the Page right after posting.", true]);
-  if (ch === "threads" && comment) out.push(["The first comment goes out as your own reply under the post, right after it's published.", true]);
+  if (ch === "tiktok" && hasLink) out.push(["No link on TikTok. Use the yellow basket (beg kuning).", true]);
+  if (links(caption).length) out.push(["Caption has a link. Move it to the first comment.", false]);
+  if (ch === "instagram" && comment) out.push([`First comment posts right after the Reel.${links(comment).length ? " Links can't be tapped." : ""}`, true]);
+  if (ch === "facebook" && comment && !s.fbDraft) out.push(["First comment posts from the Page right after.", true]);
+  if (ch === "threads" && comment) out.push(["First comment posts as your reply.", true]);
   return out;
 }
 
@@ -683,18 +682,18 @@ function ChannelPane(p: { ch: Channel; name: string; text: string; edited: boole
   const tt = p.ch === "tiktok";
   return (
     <>
-      <div className="pb-row"><b>{p.name} caption</b>{p.edited ? <button type="button" className="pb-link" onClick={p.onResetText}>Use the suggested one</button> : <small className="pb-sug">✦ Suggested for {p.name} · edit to change</small>}</div>
+      <div className="pb-row"><b>{p.name} caption</b>{p.edited ? <button type="button" className="pb-link" onClick={p.onResetText}>Use suggested</button> : <small className="pb-sug">✦ Suggested for {p.name}</small>}</div>
       <textarea className="np-input" rows={5} value={p.text} onChange={(e) => p.onText(e.target.value)} aria-label={`${p.name} caption`} />
       <span className={`np-count${p.captionLength > CAPTION_MAX[p.ch] ? " over" : ""}`}>{p.captionLength.toLocaleString("en-US")} / {CAPTION_MAX[p.ch].toLocaleString("en-US")}</span>
       {p.extra}
       {tt ? (
-        <p className="pb-info">TikTok doesn&apos;t let apps post comments, and links in TikTok captions can&apos;t be tapped. Your product goes in the yellow basket (beg kuning).</p>
+        <p className="pb-info">No comments or links on TikTok. Use the yellow basket (beg kuning).</p>
       ) : (
         <>
-          <div className="pb-row"><b>{p.name} first comment</b>{p.commentEdited ? <button type="button" className="pb-link" onClick={p.onResetComment}>Use the suggested one</button> : <Opt />}</div>
+          <div className="pb-row"><b>{p.name} first comment</b>{p.commentEdited ? <button type="button" className="pb-link" onClick={p.onResetComment}>Use suggested</button> : <Opt />}</div>
           <textarea className="np-input" rows={3} value={p.comment} onChange={(e) => p.onComment(e.target.value)} placeholder="Your call to action and product link." aria-label={`${p.name} first comment`} />
           <span className="np-count">{lengthFor(p.ch, p.comment).toLocaleString("en-US")} / {COMMENT_MAX[p.ch as Platform].toLocaleString("en-US")}</span>
-          {p.ch === "instagram" && links(p.comment).length > 0 && <p className="pb-warn">Instagram links can&apos;t be tapped, even in comments. People copy them.</p>}
+          {p.ch === "instagram" && links(p.comment).length > 0 && <p className="pb-warn">Instagram links can&apos;t be tapped.</p>}
         </>
       )}
     </>
@@ -712,7 +711,7 @@ function ChannelsSheet({ channels, connectable, onConnect, onReconnect, onCheck,
   const s = q.trim().toLowerCase();
   return (
     <Sheet title="Channels" onClose={onClose}>
-      <p className="np-muted" style={{ margin: 0 }}>Connect once, then pick the channel whenever you post. You sign in on each app&apos;s own page; Rezekii never sees your password.</p>
+      <p className="np-muted" style={{ margin: 0 }}>Connect once. Rezekii never sees your password.</p>
       {channels.length > 8 && <label className="pb-search">{SEARCH_ICON}<input className="np-input" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search ${channels.length} channels`} aria-label="Search channels" /></label>}
       {APPS.map((p) => {
         const list = channels.filter((c) => c.app === p && (!s || `${c.name} ${c.sub}`.toLowerCase().includes(s)));
@@ -734,14 +733,14 @@ function ChannelsSheet({ channels, connectable, onConnect, onReconnect, onCheck,
             {!s && (
               <div className="pb-ch">
                 <PlatformIcon name={ICON[p]} size={34} />
-                <span><b>{list.length ? `Add ${UNIT[p]}` : `Connect ${NAMES[p]}`}</b><small>{p === "facebook" ? "Pick which Pages after signing in" : p === "instagram" ? "Business or Creator account" : p === "threads" ? "Your Threads profile" : "Your TikTok account"}</small></span>
+                <span><b>{list.length ? `Add ${UNIT[p]}` : `Connect ${NAMES[p]}`}</b><small>{p === "facebook" ? "Pick Pages after sign-in" : p === "instagram" ? "Business or Creator account" : p === "threads" ? "Your Threads profile" : "Your TikTok account"}</small></span>
                 <button type="button" className="np-btn v2-btn-sm" onClick={() => (add ? onConnect(add) : toast(`Preview: ${NAMES[p]} sign-in opens here`))}>Connect</button>
               </div>
             )}
           </div>
         );
       })}
-      <p className="np-muted" style={{ margin: 0 }}>Facebook Groups can&apos;t be added: Meta closed posting to Groups for all apps in 2024.</p>
+      <p className="np-muted" style={{ margin: 0 }}>Facebook Groups aren&apos;t supported.</p>
       <button type="button" className="np-btn" onClick={onClose}>Done</button>
     </Sheet>
   );
@@ -759,7 +758,7 @@ function BrandsSheet({ brands, channels, byKey, connected, onSaved, onDeleted, o
       <Sheet title={edit.id ? "Edit brand" : "New brand"} onClose={onClose}>
         <button type="button" className="pb-link" style={{ justifySelf: "start" }} onClick={() => setEdit(null)}>← Back</button>
         <label className="pb-field"><b>Brand name</b><input className="np-input" type="text" value={edit.name} maxLength={60} onChange={(e) => setEdit({ ...edit, name: e.target.value })} placeholder="e.g. Seri Living" /></label>
-        <p className="np-muted" style={{ margin: 0 }}>{edit.channels.length} channel{edit.channels.length === 1 ? "" : "s"} in this brand. A channel can be in more than one brand.</p>
+        <p className="np-muted" style={{ margin: 0 }}>{edit.channels.length} channel{edit.channels.length === 1 ? "" : "s"} in this brand.</p>
         {APPS.map((p) => {
           const list = channels.filter((c) => c.app === p);
           return list.length ? (
@@ -781,7 +780,7 @@ function BrandsSheet({ brands, channels, byKey, connected, onSaved, onDeleted, o
 
   return (
     <Sheet title="Brands" onClose={onClose}>
-      <p className="np-muted" style={{ margin: 0 }}>Group the channels you post to together. Picking a brand in New Post switches all of them on.</p>
+      <p className="np-muted" style={{ margin: 0 }}>Group channels to pick them in one tap.</p>
       {brands.map((b) => {
         const live = b.channels.filter((k) => connected.has(k));
         const bApps = APPS.filter((p) => live.some((k) => byKey.get(k)?.app === p));
@@ -793,7 +792,7 @@ function BrandsSheet({ brands, channels, byKey, connected, onSaved, onDeleted, o
           </div>
         );
       })}
-      {!brands.length && <p className="np-muted" style={{ margin: 0 }}>No brands yet. Tap &ldquo;+ New brand&rdquo; to make your first one.</p>}
+      {!brands.length && <p className="np-muted" style={{ margin: 0 }}>No brands yet.</p>}
       <button type="button" className="btn-outline" onClick={() => open({ name: "", channels: [] })}>+ New brand</button>
       <button type="button" className="np-btn" onClick={onClose}>Done</button>
     </Sheet>

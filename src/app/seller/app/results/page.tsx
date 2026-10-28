@@ -24,12 +24,12 @@ export default function Results() {
       <Seg value={range} options={RANGES} onChange={setRange} />
 
       <section className="v2-grid4" key={range} style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
-        <Stat label="Sales (GMV)" value={<Count value={r.gmv} format={(n) => rm(n, 0)} />} note={r.prev ? `+${r.prev}% on the ${range} before` : "Since your first product went live"} tone={r.prev ? "up" : undefined} />
+        <Stat label="Sales (GMV)" value={<Count value={r.gmv} format={(n) => rm(n, 0)} />} note={r.prev ? `+${r.prev}% on the ${range} before` : "Since first product went live"} tone={r.prev ? "up" : undefined} />
         <Stat label="Units sold" value={<Count value={r.units} />} />
         <Stat label="Creators selling" value={<Count value={r.creators} />} />
         <Stat label="Videos" value={<Count value={r.videos} />} />
         <Stat label="LIVEs" value={<Count value={r.lives} />} />
-        <Stat label="Commission paid" value={<Count value={r.paid} format={(n) => rm(n, 0)} />} note="Earned by creators on your sales" />
+        <Stat label="Commission paid" value={<Count value={r.paid} format={(n) => rm(n, 0)} />} note="Earned by creators" />
       </section>
 
       <section className="v2-card">
@@ -81,7 +81,7 @@ export default function Results() {
         </section>
       </div>
 
-      <p className="v2-small" style={{ margin: 0 }}>Only sales through Techwide&apos;s TAP campaigns. TikTok&apos;s numbers can change for up to 14 days as orders are cancelled or returned. Commission paid is what creators earned on your orders; TikTok takes it from each sale.</p>
+      <p className="v2-small" style={{ margin: 0 }}>TAP sales only. Numbers can change for up to 14 days (cancellations, returns).</p>
     </div>
   );
 }

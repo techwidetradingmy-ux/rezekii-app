@@ -20,12 +20,12 @@ export default function AuditLog() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="Audit Log" sub="Every staff action and system change, with before and after. Nobody can edit or delete entries.">
+      <Title title="Audit Log" sub="Every change, before and after. Entries can't be edited or deleted.">
         <button type="button" className="ad-btn-ghost" onClick={() => toast(`Exported ${shown.length} entries as CSV`)}><Icon name="doc" size={15} /> Export</button>
       </Title>
 
       <div className="ad-bar">
-        <Search value={q} onChange={setQ} placeholder="Search person, action, account or value" />
+        <Search value={q} onChange={setQ} placeholder="Search log" />
       </div>
       <Chips<Who> label="Role" value={who} onChange={setWho} options={roles.map((r) => [r, r === "Everyone" ? AUDIT.length : AUDIT.filter((a) => a.role === r).length] as [Who, number])} />
 

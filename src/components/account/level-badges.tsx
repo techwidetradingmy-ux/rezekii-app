@@ -139,13 +139,13 @@ export function LevelBadges() {
               ))}
             </span>
           </div>
-          <span className="v2-small">Tap the card · move over it</span>
+          <span className="v2-small">Tap the card</span>
         </div>
 
         <div className="lb-side">
           <span className="lb-kicker">Your level</span>
           <h2 className="lb-h">You&apos;re {CREATOR.level}</h2>
-          <p className="v2-muted" style={{ margin: 0 }}>Your level sets your Rezekii commission rates. Tap a level to see what it gives.</p>
+          <p className="v2-muted" style={{ margin: 0 }}>Your level sets your commission rates.</p>
           <div className="lb-path" role="group" aria-label="Levels">
             {LEVELS.map((l, i) => (
               <button key={l.name} type="button" className={`lb-stop ${i === pick ? "on" : ""} ${i <= levelAt ? "got" : ""}`} aria-pressed={i === pick} onClick={() => setPick(i)}>
@@ -176,7 +176,7 @@ export function LevelBadges() {
             <b>Highly active</b>
             <span className="badge badge-amber">Honour badge</span>
           </span>
-          <span className="v2-small">{TIERS[tierAt].name} now · day {CREATOR.streak} of 30 posting every day, every sample delivered. Opens designated samples.</span>
+          <span className="v2-small">{TIERS[tierAt].name} now · day {CREATOR.streak} of 30. Post daily, deliver every sample.</span>
           <Progress value={CREATOR.streak} max={30} />
         </span>
         <button type="button" className="btn-outline v2-btn-sm" onClick={() => setUnlock(true)}><Icon name="eye" size={15} /> Preview</button>
@@ -229,11 +229,11 @@ export function LevelBadges() {
                   ))}
                 </div>
               )}
-              <span className="badge badge-gray">Preview · what you&apos;ll see on day 30</span>
+              <span className="badge badge-gray">Preview · day 30</span>
               <div className="cr2-unlock-stage"><Honour state={lit ? "lit" : "off"} size={124} /></div>
               <h2>{lit ? "Highly active!" : "Day 30…"}</h2>
               <p style={{ fontWeight: 800, color: "var(--gink)" }}>30 days in a row · every sample delivered</p>
-              <p>Your honour badge is lit. Every free sample is open to you now.</p>
+              <p>Every free sample is open to you now.</p>
               <div className="v2-stack" style={{ width: "100%", marginTop: 6 }}>
                 <button type="button" className="np-btn" onClick={() => { setUnlock(false); setShare({ big: `Day ${CREATOR.streak} of 30`, label: "On my way to Highly active", lines: ["Posting every day", `${CREATOR.level} creator on Rezekii`], kicker: "Streak" }); }}>
                   <Icon name="share" size={18} /> Share this moment

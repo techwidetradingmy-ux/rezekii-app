@@ -30,17 +30,17 @@ export default function AdminAccess() {
     if (!account || !role) return;
     setStaff((s) => [...s, { name: account.name, short: account.name.split(" ")[0], email: account.email, role, since: "Today", last: "Not signed in yet" }]);
     addLog(`${ME} granted ${role} to ${account.email}`);
-    toast(`${account.name} now has ${role} access · they see Admin next time they open Rezekii`);
+    toast(`${account.name} now has ${role} access`);
     setPick(null); setRole(null); setQ("");
   };
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="Admin Access" sub="Staff use their normal Rezekii sign-in. Give an account access here and pick what it can do." />
+      <Title title="Admin Access" sub="Staff use normal sign-in. Grant access and pick a role." />
 
       <section className="v2-card">
         <h2 className="v2-h2">Give access</h2>
-        <Search value={q} onChange={(v) => { setQ(v); setPick(null); }} placeholder="Search an account by name or email" />
+        <Search value={q} onChange={(v) => { setQ(v); setPick(null); }} placeholder="Search name or email" />
         {q.trim().length >= 2 && !account && (
           <div className="ad-list">
             {found.map((a) => (
@@ -50,7 +50,7 @@ export default function AdminAccess() {
                 <Icon name="arrow" size={18} />
               </button>
             ))}
-            {found.length === 0 && <p className="v2-small" style={{ margin: 0 }}>No account found. They need to sign up on Rezekii first, with the email they&apos;ll use at work.</p>}
+            {found.length === 0 && <p className="v2-small" style={{ margin: 0 }}>No account found. They must sign up first.</p>}
           </div>
         )}
         {account && (
@@ -106,7 +106,7 @@ export default function AdminAccess() {
                 </select>
                 {revoking === s.email ? (
                   <span className="acts">
-                    <button type="button" className="np-btn v2-btn-sm ad-btn-danger" onClick={() => { setStaff((l) => l.filter((x) => x.email !== s.email)); addLog(`${ME} removed access for ${s.email}`); setRevoking(null); toast(`Access removed now · ${s.short} is signed out of Admin`); }}>Revoke now</button>
+                    <button type="button" className="np-btn v2-btn-sm ad-btn-danger" onClick={() => { setStaff((l) => l.filter((x) => x.email !== s.email)); addLog(`${ME} removed access for ${s.email}`); setRevoking(null); toast(`Access removed · ${s.short} signed out`); }}>Revoke now</button>
                     <button type="button" className="ad-btn-ghost" onClick={() => setRevoking(null)}>Keep</button>
                   </span>
                 ) : (
@@ -116,13 +116,13 @@ export default function AdminAccess() {
             );
           })}
         </div>
-        <p className="v2-small" style={{ margin: 0 }}>Revoking works right away: their open Admin pages stop working on the next click. You can&apos;t remove yourself or the last Super Admin.</p>
+        <p className="v2-small" style={{ margin: 0 }}>Revoking is instant. You can&apos;t remove yourself or the last Super Admin.</p>
       </section>
 
       <section className="v2-card flat">
         <div className="v2-card-h">
           <b>Access changes</b>
-          <Link href="/admin/system/audit">Full audit log</Link>
+          <Link href="/admin/system/audit">Audit log</Link>
         </div>
         <ul className="ad-tl">
           {log.map((l, i) => (
@@ -132,7 +132,7 @@ export default function AdminAccess() {
       </section>
 
       <p className="v2-small" style={{ margin: 0 }}>
-        <Pill tone="info">Note</Pill> Staff roles: Super Admin, Ops, Business, Growth and Finance. Support comes in phase 2.
+        <Pill tone="info">Note</Pill> Support role comes in phase 2.
       </p>
     </div>
   );

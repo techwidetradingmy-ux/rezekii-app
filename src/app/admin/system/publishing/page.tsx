@@ -34,16 +34,16 @@ export default function PublishingOps() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="Publishing Ops" sub="Posts that failed for any creator or seller. Retry what we can; tell the user when they need to act.">
+      <Title title="Publishing Ops" sub="Failed posts. Retry, or tell the user to act.">
         <button type="button" className="np-btn v2-btn-sm" disabled={retryable.length === 0} onClick={() => retry(retryable.map((p) => p.id))}>
-          <Icon name="refresh" size={16} /> Retry all that can be retried ({retryable.length})
+          <Icon name="refresh" size={16} /> Retry all ({retryable.length})
         </button>
       </Title>
 
       <div className="v2-grid4 ad-stats">
-        <div className="v2-stat"><small>Posts published today</small><b>640</b><em className="up">98.1% succeeded</em></div>
+        <div className="v2-stat"><small>Published today</small><b>640</b><em className="up">98.1% succeeded</em></div>
         <div className="v2-stat"><small>Still failed</small><b style={{ color: left.length ? "var(--red)" : undefined }}>{left.length}</b><em>Last 48 hours</em></div>
-        <div className="v2-stat"><small>Need the user to act</small><b>{list.filter((p) => !p.retry && !p.state).length}</b><em>Reconnect or fix the video</em></div>
+        <div className="v2-stat"><small>Need user action</small><b>{list.filter((p) => !p.retry && !p.state).length}</b><em>Reconnect or fix video</em></div>
       </div>
 
       {sum && (
@@ -72,14 +72,14 @@ export default function PublishingOps() {
               ) : p.retry ? (
                 <button type="button" className="np-btn v2-btn-sm" onClick={() => retry([p.id])}><Icon name="refresh" size={15} /> Retry</button>
               ) : (
-                <button type="button" className="ad-btn-ghost" onClick={() => { set(p.id, { state: "User notified" }); toast(`${p.who} told how to fix it (in app and by email)`); }}><Icon name="bell" size={15} /> Tell the user</button>
+                <button type="button" className="ad-btn-ghost" onClick={() => { set(p.id, { state: "User notified" }); toast(`${p.who} notified (app and email)`); }}><Icon name="bell" size={15} /> Notify user</button>
               )}
             </div>
           ))}
           {shown.length === 0 && <p className="v2-muted" style={{ padding: "14px 0", margin: 0 }}>Nothing failed on {pf}.</p>}
         </div>
       </section>
-      <Meta range="Last 48 hours" source="Rezekii publishing engine (TikTok, Instagram, Facebook, Threads)" />
+      <Meta range="Last 48 hours" source="Rezekii publishing engine" />
     </div>
   );
 }

@@ -28,7 +28,7 @@ export function Referral() {
 
   return (
     <div className="v2-stack" style={{ gap: 20 }}>
-      <div className="acc-head"><span className="v2-small">Invite creators and sellers. Credits when it's a real success.</span>
+      <div className="acc-head"><span className="v2-small">Invite creators and sellers to earn credits.</span>
         <ShareButton big="Join me on Rezekii" label="Better commission for your TikTok Shop showcase" lines={[`Use my code ${CODE}: +${REFERRAL_REWARD.friend} credits`, "Free for creators and sellers"]} />
       </div>
 
@@ -51,7 +51,7 @@ export function Referral() {
                 <button type="button" className="btn-outline v2-btn-sm" onClick={() => copy(CODE, "Code")}>Copy</button>
               </span>
             </div>
-            <span className="v2-small">Whoever signs up with your link or code is yours for good. They get the code filled in for them.</span>
+            <span className="v2-small">Sign-ups with your link or code are yours for good.</span>
           </div>
           <div className="cr2-qrwrap">
             <Qr />
@@ -93,10 +93,10 @@ export function Referral() {
       <section className="v2-card flat">
         <h2 className="cr2-h3">How referral works</h2>
         <ol className="cr2-rules">
-          <li><span><b>The link they sign up with wins.</b> Whoever&apos;s link or code someone uses to sign up gets the referral. It&apos;s locked for good and can&apos;t be changed later.</span></li>
-          <li><span><b>A successful referral</b> means a creator links TikTok Shop and runs a first scan, or a seller connects Seller Center and submits a first product, within 30 days of signing up.</span></li>
-          <li><span><b>Invite anyone.</b> You can invite creators and sellers. Same reward either way: +{REFERRAL_REWARD.inviter} credits for you and +{REFERRAL_REWARD.friend} for them, for each successful referral.</span></li>
-          <li><span><b>Sharing alone earns nothing.</b> Only successful referrals do, so share when it actually helps someone.</span></li>
+          <li><span><b>Sign-up link wins.</b> The link or code used at sign-up gets the referral. It can&apos;t change.</span></li>
+          <li><span><b>Successful</b> means, within 30 days: a creator links TikTok Shop and scans, or a seller connects Seller Center and submits a product.</span></li>
+          <li><span><b>Same reward for both.</b> +{REFERRAL_REWARD.inviter} credits for you, +{REFERRAL_REWARD.friend} for them.</span></li>
+          <li><span><b>Sharing alone earns nothing.</b></span></li>
         </ol>
       </section>
     </div>

@@ -51,7 +51,7 @@ export default function Progress() {
 
   return (
     <div className="v2-stack v2-in">
-      <Title title="Progress" sub="Submitted → our review → TikTok → live. We tell you at every step.">
+      <Title title="Progress" sub="Submitted → our review → TikTok → live.">
         <Link href="/seller/app/submit" className="np-btn v2-btn-sm" style={{ height: 42 }}>Submit products</Link>
       </Title>
 
@@ -93,7 +93,7 @@ export default function Progress() {
         })}
       </div>
 
-      <p className="v2-small" style={{ margin: 0 }}>The two most common reasons TikTok or our team say no: <b>0 samples</b>, or a commission that isn&apos;t <b>at least 2% above the public rate</b>. Both are checked before you can submit here; products added straight in Seller Center can still hit them.</p>
+      <p className="v2-small" style={{ margin: 0 }}>Most rejections: <b>0 samples</b>, or commission <b>less than +2%</b> above the public rate.</p>
 
       {fix && (
         <Sheet title="Fix and resubmit" onClose={() => setFix(null)}>
@@ -108,7 +108,7 @@ export default function Progress() {
           <button type="button" className="np-btn" onClick={() => {
             setItems((all) => all.map((i) => (i.id === fix.id ? { ...i, stage: "Under review", samples, reason: undefined, dates: { Submitted: "Today", "Under review": "Today" } } : i)));
             setFix(null);
-            toast("Resubmitted · our team will review it within 1 working day");
+            toast("Resubmitted · review within 1 working day");
           }}>Resubmit with {samples} samples</button>
         </Sheet>
       )}

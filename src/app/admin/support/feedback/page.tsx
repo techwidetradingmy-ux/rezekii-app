@@ -31,7 +31,7 @@ export default function FeedbackInbox() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="Feedback Inbox" sub="What creators and sellers tell us. Page, device and account are attached automatically." />
+      <Title title="Feedback Inbox" sub="From creators and sellers. Page and device attached." />
 
       <div className="ad-bar">
         <Seg value={show} options={["To do", "Done"] as const} onChange={setShow} />
@@ -54,7 +54,7 @@ export default function FeedbackInbox() {
               {open(x) && <button type="button" className="ad-btn-ghost" onClick={() => { set(x.id, { status: "Handled" }); toast("Marked handled"); }}><Icon name="check" size={15} /> Handled</button>}
             </div>
           ))}
-          {shown.length === 0 && <p className="v2-muted" style={{ padding: "14px 0", margin: 0 }}>{show === "To do" ? "Inbox zero. Nice." : "Nothing handled yet."}</p>}
+          {shown.length === 0 && <p className="v2-muted" style={{ padding: "14px 0", margin: 0 }}>{show === "To do" ? "All done." : "Nothing handled yet."}</p>}
         </div>
       </section>
 
@@ -70,10 +70,10 @@ export default function FeedbackInbox() {
           </div>
           <Sec>Reply</Sec>
           {f.reply && <div className="ad-note"><small>{ME} replied</small>{f.reply}</div>}
-          <textarea className="np-input" rows={3} value={reply} placeholder={`They get it in the app and by email`} onChange={(e) => setReply(e.target.value)} />
+          <textarea className="np-input" rows={3} value={reply} placeholder={`Goes to app and email`} onChange={(e) => setReply(e.target.value)} />
           <div className="v2-row">
             <button type="button" className="np-btn v2-btn-sm" disabled={!reply.trim()} onClick={() => { set(f.id, { reply: reply.trim(), status: f.status === "New" ? "In progress" : f.status }); setReply(""); toast(`Reply sent to ${f.from}`); }}><Icon name="send" size={15} /> Send reply</button>
-            <button type="button" className="ad-btn-ghost" onClick={() => { set(f.id, { status: "Handled" }); toast(`Handled · ${f.from} is told`); setSel(null); }}><Icon name="check" size={15} /> Mark handled</button>
+            <button type="button" className="ad-btn-ghost" onClick={() => { set(f.id, { status: "Handled" }); toast(`Handled · ${f.from} notified`); setSel(null); }}><Icon name="check" size={15} /> Mark handled</button>
           </div>
         </Sheet>
       )}

@@ -33,7 +33,7 @@ export default function BusinessHome() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 20 }}>
-      <Title title="My Merchants & Creators" sub="Bring people in with your QR or link. Everyone who joins through it is yours to follow up.">
+      <Title title="My Merchants & Creators" sub="Everyone who joins via your QR or link is yours.">
         <label className="v2-small" style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700 }}>
           Workbench of
           <select className="np-input ad-select" value={who} onChange={(e) => setWho(e.target.value)}>
@@ -50,14 +50,14 @@ export default function BusinessHome() {
               <b>{short.toUpperCase()} · {event.toUpperCase()}</b>
             </div>
             <div className="v2-stack" style={{ gap: 10, minWidth: 0, width: "100%" }}>
-              <h2 className="v2-h2">Your QR code and links</h2>
-              <span className="v2-small">Sellers who scan land on the seller sign-up with you as their contact. Tag the event so you know where they came from.</span>
+              <h2 className="v2-h2">Your QR and links</h2>
+              <span className="v2-small">Tag the event to see where people came from.</span>
               <Seg value={event} options={EVENTS} onChange={setEvent} />
               <div className="ad-linkrow"><Icon name="briefcase" size={16} /><code>{shopLink}</code><button type="button" className="ad-btn-ghost" onClick={() => copy(shopLink)}>Copy</button></div>
               <div className="ad-linkrow"><Icon name="user" size={16} /><code>{creatorLink}</code><button type="button" className="ad-btn-ghost" onClick={() => copy(creatorLink)}>Copy</button></div>
               <div className="v2-row">
                 <button type="button" className="np-btn v2-btn-sm" onClick={() => setExpo(true)}><Icon name="qr" size={16} /> Show full screen</button>
-                <button type="button" className="ad-btn-ghost" onClick={() => toast("A4 poster with your QR saved as PDF")}>Print poster</button>
+                <button type="button" className="ad-btn-ghost" onClick={() => toast("Poster saved as PDF")}>Print poster</button>
               </div>
             </div>
           </div>
@@ -88,7 +88,7 @@ export default function BusinessHome() {
                   <Pill tone={f.late ? "bad" : f.due === "Today" ? "warn" : "mute"}>{f.late ? `Late · ${f.due}` : f.due}</Pill>
                 </div>
               ))}
-              {due.length === 0 && <p className="v2-muted" style={{ margin: "8px 0 0" }}>All followed up. Nice.</p>}
+              {due.length === 0 && <p className="v2-muted" style={{ margin: "8px 0 0" }}>All done.</p>}
             </div>
           </section>
         </div>
@@ -96,7 +96,7 @@ export default function BusinessHome() {
 
       <section className="v2-card">
         <div className="v2-card-h">
-          <h2 className="v2-h2">People you brought in</h2>
+          <h2 className="v2-h2">Your sign-ups</h2>
           <Seg value={tab} options={["Merchants", "Creators"] as const} onChange={setTab} />
         </div>
         <div className="ad-list">
@@ -113,7 +113,7 @@ export default function BusinessHome() {
                     <small>{MERCHANT_STAGES[m.stage - 1]} · step {m.stage} of {MERCHANT_STAGES.length}</small>
                     <span className="v2-steps">{MERCHANT_STAGES.map((s, i) => <i key={s} className={i < m.stage ? "on" : ""} />)}</span>
                   </span>
-                  {m.stage === 5 ? <Link href="/admin/business/performance" className="ad-btn-ghost">Performance</Link> : <button type="button" className="ad-btn-ghost" onClick={() => toast(`Reminder sent to ${m.shop} in their app`)}>Nudge</button>}
+                  {m.stage === 5 ? <Link href="/admin/business/performance" className="ad-btn-ghost">Performance</Link> : <button type="button" className="ad-btn-ghost" onClick={() => toast(`Reminder sent to ${m.shop}`)}>Nudge</button>}
                 </div>
               ))
             : BD.creators.map((c) => (
@@ -140,8 +140,8 @@ export default function BusinessHome() {
               <Qr />
               <b>{short.toUpperCase()} · {event.toUpperCase()}</b>
             </div>
-            <b style={{ fontSize: 20 }}>Sellers: get creators selling your products</b>
-            <span className="v2-muted">Scan with your phone camera. Takes about 3 minutes. Your contact: {short} · {event}</span>
+            <b style={{ fontSize: 20 }}>Get creators selling your products</b>
+            <span className="v2-muted">Scan with your camera. Takes 3 minutes.</span>
           </div>
           <button type="button" className="btn-outline" onClick={() => setExpo(false)}>Close</button>
         </Sheet>

@@ -107,7 +107,7 @@ export default function SellerConnect() {
           {step === 0 && (
             <>
               <h1>Create your seller account</h1>
-              <p>Sign in first, then connect your TikTok Shop. About 3 minutes in all.</p>
+              <p>Sign in, then connect your TikTok Shop. About 3 minutes.</p>
               <div className="sl-from"><Icon name="qr" size={18} /> You came from: KL Seller Expo · Aina from Techwide</div>
               <button type="button" className="btn-tiktok sl-ob-btn" style={{ border: 0, font: "inherit", fontWeight: 800, cursor: "pointer" }} onClick={() => signIn("TikTok")} disabled={!!busy}>
                 {busy === "TikTok" ? <span className="sl-spin" /> : <TikTokGlyph />} Continue with TikTok
@@ -129,7 +129,7 @@ export default function SellerConnect() {
                     </>
                   ) : (
                     <>
-                      <label>Code from your email <small>Sent to {email.trim()} · any 6 digits work in this preview</small>
+                      <label>Code from your email <small>Sent to {email.trim()} · preview: any 6 digits</small>
                         <input className="np-input sl-code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} placeholder="000000" onKeyDown={(e) => e.key === "Enter" && verify()} autoFocus />
                       </label>
                       <button type="button" className="np-btn" onClick={verify} disabled={!!busy}>{busy === "verify" ? <span className="sl-spin" /> : null} Verify and continue</button>
@@ -142,7 +142,7 @@ export default function SellerConnect() {
                   {mailErr && <p className="sl-err"><Icon name="alert" size={16} /> {mailErr}</p>}
                 </div>
               )}
-              <p className="v2-small" style={{ margin: 0 }}>Already have an account? Sign in the same way and you&apos;ll come back to this step.</p>
+              <p className="v2-small" style={{ margin: 0 }}>Have an account? Sign in the same way.</p>
             </>
           )}
 
@@ -150,20 +150,20 @@ export default function SellerConnect() {
             <>
               <span className="badge badge-amber" style={{ alignSelf: "flex-start" }}>Required</span>
               <h1>Connect your Seller Center</h1>
-              <p>You need this to enter the seller dashboard. It lets us read your products, and it keeps Rezekii for real TikTok Shop sellers.</p>
+              <p>Needed to open your seller dashboard.</p>
               {cancelled && (
                 <div className="v2-alert">
-                  <span>You cancelled, so your shop isn&apos;t connected yet. Your progress is saved; try again when you&apos;re ready.</span>
+                  <span>Not connected yet. Your progress is saved.</span>
                   <button type="button" onClick={() => setAuth(true)}>Try again</button>
                 </div>
               )}
               <ul className="sl-list">
-                <li><Icon name="check" size={18} width={2.6} stroke="#00a862" /> We read your shop, products, prices and sales, so you never type them in.</li>
+                <li><Icon name="check" size={18} width={2.6} stroke="#00a862" /> We import your products, prices and sales.</li>
                 <li><Icon name="check" size={18} width={2.6} stroke="#00a862" /> We only add a product to TAP when you submit it.</li>
                 <li><Icon name="shield" size={18} stroke="#00a862" /> We never change your prices or handle your orders.</li>
               </ul>
               <button type="button" className="btn-tiktok sl-ob-btn" style={{ border: 0, font: "inherit", fontWeight: 800, cursor: "pointer" }} onClick={() => setConsent(true)}>
-                <TikTokGlyph /> Connect TikTok Shop Seller Center
+                <TikTokGlyph /> Connect Seller Center
               </button>
               <p className="v2-small" style={{ margin: 0 }}>Signed in with {via} · Malaysian TikTok Shops only</p>
             </>
@@ -172,7 +172,7 @@ export default function SellerConnect() {
           {step === 2 && (
             <>
               <h1>Is this your shop?</h1>
-              <p>We found this shop on the Seller Center account you connected.</p>
+              <p>Found on your connected Seller Center.</p>
               <div className="sl-shop">
                 <span className="sl-shop-ico">SL</span>
                 <span>
@@ -182,23 +182,23 @@ export default function SellerConnect() {
                 </span>
                 <span className="v2-ok" style={{ width: 26, height: 26 }}><Icon name="check" size={15} width={3} /></span>
               </div>
-              <p className="v2-small" style={{ margin: 0, display: "flex", gap: 8 }}><Icon name="lock" size={16} /> One account = one shop. To manage another shop, sign up again with a different login.</p>
+              <p className="v2-small" style={{ margin: 0, display: "flex", gap: 8 }}><Icon name="lock" size={16} /> One account = one shop. Use another login for another shop.</p>
               <button type="button" className="np-btn sl-ob-btn" onClick={() => go(3)}>Yes, this is my shop</button>
-              <button type="button" className="btn-outline" style={{ height: 48 }} onClick={() => { go(1); toast("Sign in to the right Seller Center account, then connect again"); }}>No, connect a different shop</button>
+              <button type="button" className="btn-outline" style={{ height: 48 }} onClick={() => { go(1); toast("Sign in to the right Seller Center, then reconnect"); }}>No, connect another shop</button>
             </>
           )}
 
           {step === 3 && (
             <>
               <h1>Who should we talk to?</h1>
-              <p>Our team uses this to reach you about your products and samples. We never share it with creators.</p>
+              <p>Only our team uses this. Never shared with creators.</p>
               <label className="v2-field">Contact name
                 <input className="np-input" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" placeholder="e.g. Mei Ling Tan" />
                 {tried && name.trim().length < 2 && <span className="sl-err"><Icon name="alert" size={16} /> Enter a contact name</span>}
               </label>
               <PhoneField dial={phone.dial} raw={phone.raw} onChange={(dial, raw) => setPhone({ dial, raw })} showError={tried} />
               <div className="np-switchrow">
-                <span><b>Updates on WhatsApp</b><small>Product approvals and late samples. You can change this later.</small></span>
+                <span><b>Updates on WhatsApp</b><small>Product approvals and late samples</small></span>
                 <button type="button" className={`np-switch ${wa ? "on" : ""}`} aria-pressed={wa} aria-label="Updates on WhatsApp" onClick={() => setWa(!wa)}><span /></button>
               </div>
               <button type="button" className="np-btn sl-ob-btn" onClick={() => { setTried(true); if (contactOk) go(4); }}>Continue</button>
@@ -207,8 +207,8 @@ export default function SellerConnect() {
 
           {step === 4 && (
             <>
-              <h1>Last step: how samples work</h1>
-              <p>Agree to the sample allocation terms once. If they ever change, we&apos;ll ask you again.</p>
+              <h1>Last step: sample terms</h1>
+              <p>Agree once. We&apos;ll ask again if they change.</p>
               <ul className="sl-list sl-terms-sum">
                 <li><Icon name="users" size={18} stroke="var(--gink)" /> Techwide decides who gets each sample. Your creator conditions are a reference.</li>
                 <li><Icon name="box" size={18} stroke="var(--gink)" /> Samples can&apos;t be taken back once they&apos;re sent.</li>
@@ -220,7 +220,7 @@ export default function SellerConnect() {
                 <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
                 <span>I agree to the sample allocation terms ({TERMS_VERSION})</span>
               </label>
-              <button type="button" className="np-btn sl-ob-btn" disabled={!agreed} onClick={() => setDone(true)}>Agree and open my dashboard</button>
+              <button type="button" className="np-btn sl-ob-btn" disabled={!agreed} onClick={() => setDone(true)}>Agree and open dashboard</button>
             </>
           )}
         </section>
@@ -264,7 +264,7 @@ export default function SellerConnect() {
         <Celebrate
           title="You're in"
           line={`${SELLER.shop} is connected`}
-          cheer="Next: pick products and submit. It takes about a minute."
+          cheer="Next: pick products and submit."
           icon="check"
           tone="green"
           onClose={() => router.push("/seller/app")}

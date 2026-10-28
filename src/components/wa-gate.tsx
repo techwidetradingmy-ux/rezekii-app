@@ -26,11 +26,11 @@ export function WaGate() {
   };
   return (
     <Sheet title="Verify your WhatsApp first" onClose={waCancel}>
-      <p className="v2-muted" style={{ margin: 0 }}>Free samples need a verified WhatsApp, so the team can reach you about your parcel. It&apos;s free and takes 10 seconds.</p>
+      <p className="v2-muted" style={{ margin: 0 }}>Free Samples need a verified WhatsApp. Takes 10 seconds.</p>
       <ol className="cr2-steps">
-        <li><i>1</i><span><b>Tap Open WhatsApp.</b> It opens a chat with Rezekii Support, message already written.</span></li>
-        <li><i>2</i><span><b>Send it as it is.</b> The code in it links the number to your account.</span></li>
-        <li><i>3</i><span><b>Come back here.</b> You&apos;re verified in a few seconds and your request continues.</span></li>
+        <li><i>1</i><span><b>Tap Open WhatsApp.</b></span></li>
+        <li><i>2</i><span><b>Send the message as it is.</b></span></li>
+        <li><i>3</i><span><b>Come back here.</b></span></li>
       </ol>
       <div className="cr2-wamsg">REZEKII verify 482 913<br />Please send this message as it is.</div>
       <button type="button" className="np-btn cr2-wabtn" disabled={waiting} onClick={send}>

@@ -8,7 +8,7 @@ import "@/app/creator1.css";
 export default function PublishPlan() {
   return (
     <div className="v2-stack v2-in" style={{ gap: 16 }}>
-      <Title title="Today's Ideas" sub="Worked out this morning from your videos, sales, ratings and the marketplace" />
+      <Title title="Today's Ideas" sub="Made this morning from your videos and sales" />
       <ShootToday bare />
     </div>
   );

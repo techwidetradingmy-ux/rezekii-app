@@ -27,7 +27,7 @@ export default function CustomService() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="Custom Service" sub="Sellers who'd rather have our team run it for them." />
+      <Title title="Custom Service" sub="Sellers who want our team to run it." />
 
       <Chips<Filter> label="Filter" value={filter} onChange={setFilter} options={[["Open", list.filter(isOpen).length], ["Done or declined", list.filter((x) => !isOpen(x)).length]]} />
 
@@ -55,7 +55,7 @@ export default function CustomService() {
           <Sec>Status</Sec>
           <div className="v2-chips">
             {STATUSES.map((s) => (
-              <button key={s} type="button" className={`v2-chip ${r.status === s ? "on" : ""}`} style={{ height: 34, fontSize: 13 }} onClick={() => { set({ status: s }); toast(`Status: ${s} · seller sees it in their app`); }}>{s}</button>
+              <button key={s} type="button" className={`v2-chip ${r.status === s ? "on" : ""}`} style={{ height: 34, fontSize: 13 }} onClick={() => { set({ status: s }); toast(`Status: ${s} · visible to seller`); }}>{s}</button>
             ))}
           </div>
           <Sec>Owner</Sec>
@@ -64,8 +64,8 @@ export default function CustomService() {
               <button key={n} type="button" className={`v2-chip ${r.owner === n ? "on" : ""}`} style={{ height: 34, fontSize: 13 }} onClick={() => { set({ owner: n }); toast(`Assigned to ${n}`); }}>{n === ME ? "Me" : n}</button>
             ))}
           </div>
-          <Sec>Reply to the seller</Sec>
-          <textarea className="np-input" rows={3} value={reply} placeholder="They get it in the seller app and by email" onChange={(e) => setReply(e.target.value)} />
+          <Sec>Reply to seller</Sec>
+          <textarea className="np-input" rows={3} value={reply} placeholder="Goes to seller app and email" onChange={(e) => setReply(e.target.value)} />
           <button type="button" className="np-btn" disabled={!reply.trim()} onClick={() => { toast(`Reply sent to ${r.shop}`); setReply(""); }}>
             <Icon name="send" size={17} /> Send reply
           </button>

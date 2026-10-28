@@ -102,7 +102,7 @@ export default function CreatorDirectory() {
             </tbody>
           </table>
         </div>
-        {shown.length === 0 && <p className="v2-muted" style={{ padding: 12 }}>No creators match these filters.</p>}
+        {shown.length === 0 && <p className="v2-muted" style={{ padding: 12 }}>No creators match.</p>}
       </section>
 
       {p && <Profile p={p} onClose={() => setOpen(null)} set={(patch) => set(p.handle, patch)} />}
@@ -137,7 +137,7 @@ function Profile({ p, onClose, set }: { p: Person; onClose: () => void; set: (pa
       <div className="v2-grid4 ad-stats" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
         <div className="v2-stat"><small>GMV 30 days</small><b>{rm(p.gmv30, 0)}</b></div>
         <div className="v2-stat"><small>Days in a row</small><b>{p.streak}</b><em>{p.activity}</em></div>
-        <div className="v2-stat"><small>Delivery rate</small><b>{p.delivery}%</b><em className={p.delivery < 100 ? "down" : "up"}>{p.delivery < 100 ? "Below 100%" : "Every sample delivered"}</em></div>
+        <div className="v2-stat"><small>Delivery rate</small><b>{p.delivery}%</b><em className={p.delivery < 100 ? "down" : "up"}>{p.delivery < 100 ? "Below 100%" : "All delivered"}</em></div>
         <div className="v2-stat"><small>Samples</small><b>{p.samples}</b><em>All time</em></div>
       </div>
 
@@ -163,12 +163,12 @@ function Profile({ p, onClose, set }: { p: Person; onClose: () => void; set: (pa
         </div>
       ) : (
         <div className="v2-card flat">
-          <span className="v2-small">Gold gets the Gold commission rate on TAP products, for example for creators bound to an MCN deal. Both dates are needed.</span>
+          <span className="v2-small">Gold gets the Gold rate on TAP products. Set both dates.</span>
           <div className="ad-form">
             <label className="v2-field">Starts<input className="np-input" type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></label>
             <label className="v2-field">Ends<input className="np-input" type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} /></label>
           </div>
-          {to && !datesOk && <span className="ad-down" style={{ fontSize: 13 }}>The end date must be after the start date.</span>}
+          {to && !datesOk && <span className="ad-down" style={{ fontSize: 13 }}>End date must be after start.</span>}
           <div className="v2-row">
             <button type="button" className="np-btn v2-btn-sm" disabled={!datesOk} onClick={() => { set({ level: "Gold", gold: `${day(from)} – ${day(to)}` }); setGold(false); toast(`${p.handle} is Gold from ${day(from)} to ${day(to)} · logged`); }}>Save Gold</button>
             <button type="button" className="ad-btn-ghost" onClick={() => setGold(false)}>Cancel</button>
@@ -179,7 +179,7 @@ function Profile({ p, onClose, set }: { p: Person; onClose: () => void; set: (pa
       <div className="np-switchrow">
         <span>
           <b>In another MCN</b>
-          <small>They&apos;re signed with another network. We won&apos;t offer them designated samples or MCN deals.</small>
+          <small>No designated samples or MCN deals.</small>
         </span>
         <Switch label="In another MCN" on={p.mcn} onChange={(v) => { set({ mcn: v }); toast(v ? "Flagged: in another MCN · logged" : "MCN flag removed · logged"); }} />
       </div>
@@ -188,7 +188,7 @@ function Profile({ p, onClose, set }: { p: Person; onClose: () => void; set: (pa
       {blocked ? (
         <div className="v2-row">
           <Pill tone="bad">{p.status}</Pill>
-          <button type="button" className="ad-btn-ghost" onClick={() => { set({ status: "Approved" }); toast(`${p.handle} restored · logged`); }}>Restore account</button>
+          <button type="button" className="ad-btn-ghost" onClick={() => { set({ status: "Approved" }); toast(`${p.handle} restored · logged`); }}>Restore</button>
         </div>
       ) : !action ? (
         <div className="v2-row">
@@ -197,8 +197,8 @@ function Profile({ p, onClose, set }: { p: Person; onClose: () => void; set: (pa
       ) : (
         <div className="v2-card flat">
           <Seg value={action} options={["Freeze", "Ban"] as const} onChange={setAction} />
-          <span className="v2-small">{action === "Freeze" ? "Freeze pauses samples and missions until you restore it." : "Ban closes the account for good. A note is required."}</span>
-          <Reasons options={["Overdue samples", "Fake or duplicate account", "Broke the sample terms", "Other"]} value={reason} onChange={setReason} note={note} onNote={setNote} notePlaceholder={action === "Ban" ? "Required: what happened?" : "Note (optional). The creator sees the reason."} />
+          <span className="v2-small">{action === "Freeze" ? "Pauses samples and missions until restored." : "Closes the account for good. Note required."}</span>
+          <Reasons options={["Overdue samples", "Fake or duplicate account", "Broke the sample terms", "Other"]} value={reason} onChange={setReason} note={note} onNote={setNote} notePlaceholder={action === "Ban" ? "Required: what happened?" : "Note (optional). Creator sees the reason."} />
           <div className="v2-row">
             <button type="button" className="np-btn v2-btn-sm ad-btn-danger" disabled={!reason || (action === "Ban" && !note.trim())} onClick={() => { set({ status: action === "Freeze" ? "Frozen" : "Banned" }); setAction(null); toast(`${p.handle} ${action === "Freeze" ? "frozen" : "banned"} · reason sent · logged`); }}>{action} now</button>
             <button type="button" className="ad-btn-ghost" onClick={() => setAction(null)}>Cancel</button>

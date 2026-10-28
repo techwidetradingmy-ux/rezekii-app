@@ -88,7 +88,7 @@ export function VideoList() {
 
       <p className="cr2-note">
         <Icon name="eye" size={15} />
-        <span>Private videos have no view count, so we can&apos;t work out commission per 1,000 views for them. Commission is your income, not the product&apos;s profit.</span>
+        <span>Private videos show no views, so no per-1,000 figure.</span>
       </p>
     </div>
   );

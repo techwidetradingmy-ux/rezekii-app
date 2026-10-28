@@ -31,9 +31,9 @@ export default function SystemSettings() {
   const [uplift, setUplift] = useState([2, 5, 8]);
   const [newUp, setNewUp] = useState("");
   const [heat, setHeat] = useState<Heat[]>([
-    { label: "New product", note: "Listed in the last 30 days, few sales", lo: 10, hi: null },
-    { label: "Early", note: "Starting to sell, under 1,000 orders", lo: 8, hi: 10 },
-    { label: "Best-seller", note: "Already selling well", lo: 3, hi: 5 },
+    { label: "New product", note: "Under 30 days, few sales", lo: 10, hi: null },
+    { label: "Early", note: "Under 1,000 orders", lo: 8, hi: 10 },
+    { label: "Best-seller", note: "Selling well", lo: 3, hi: 5 },
   ]);
   const [qty, setQty] = useState([30, 40, 50]);
   const [newQty, setNewQty] = useState("");
@@ -57,14 +57,14 @@ export default function SystemSettings() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="Settings & Presets" sub="What sellers and creators see as defaults. Every change is logged with before and after.">
+      <Title title="Settings & Presets" sub="Defaults for sellers and creators. Every change is logged.">
         <Link href="/admin/system/audit" className="ad-btn-ghost"><Icon name="doc" size={15} /> Audit log</Link>
       </Title>
 
       <div className="v2-grid2">
         <section className="v2-card">
-          <h2 className="v2-h2">Commission uplift presets</h2>
-          <span className="v2-small">Buttons sellers tap when submitting: how much above the public rate. The minimum is +2%; anything lower can&apos;t be submitted.</span>
+          <h2 className="v2-h2">Uplift presets</h2>
+          <span className="v2-small">Above the public rate. Minimum +2%.</span>
           <div className="v2-chips">
             {uplift.map((u) => (
               <span key={u} className="v2-chip on" style={{ cursor: "default" }}>
@@ -80,8 +80,8 @@ export default function SystemSettings() {
         </section>
 
         <section className="v2-card">
-          <h2 className="v2-h2">Sample quantity presets</h2>
-          <span className="v2-small">Per SKU. We suggest 30–50. At least 1; a request with 0 samples can&apos;t be submitted.</span>
+          <h2 className="v2-h2">Sample presets</h2>
+          <span className="v2-small">Per SKU. Suggest 30–50. Minimum 1.</span>
           <div className="v2-chips">
             {qty.map((n) => (
               <span key={n} className="v2-chip" style={{ cursor: "default" }}>
@@ -99,10 +99,10 @@ export default function SystemSettings() {
 
       <section className="v2-card">
         <div className="v2-card-h">
-          <h2 className="v2-h2">AI suggestion by product heat</h2>
-          <span className="ad-tag"><Icon name="spark" size={13} /> Shown to sellers as a suggestion</span>
+          <h2 className="v2-h2">AI uplift by heat</h2>
+          <span className="ad-tag"><Icon name="spark" size={13} /> Suggestion only</span>
         </div>
-        <span className="v2-small">When a seller picks a product, the AI suggests an uplift by how hot it is. New products need more to get creators interested.</span>
+        <span className="v2-small">Newer products need a higher uplift.</span>
         <div className="ad-heat">
           {heat.map((h, i) => (
             <div key={h.label}>
@@ -119,11 +119,11 @@ export default function SystemSettings() {
       </section>
 
       <section className="v2-card">
-        <h2 className="v2-h2">Cross-channel posting price</h2>
-        <span className="v2-small">Credits per channel, for creators and sellers. Drafts are free; a channel that fails or is cancelled gets its credits back. A new price applies to posts scheduled after it&apos;s saved.</span>
+        <h2 className="v2-h2">Posting price</h2>
+        <span className="v2-small">Drafts free. Failed or cancelled channels refunded. Applies to new posts.</span>
         <div className="v2-row" style={{ gap: 10 }}>
           <Stepper label="credits per channel" value={perChannel} min={0} max={50} onChange={touch(setPerChannel)} />
-          <span className="v2-small">credits per channel · a post to 4 channels costs {perChannel * 4}</span>
+          <span className="v2-small">credits per channel · 4 channels = {perChannel * 4}</span>
         </div>
       </section>
 
@@ -133,14 +133,14 @@ export default function SystemSettings() {
           <div className="ad-set">
             <b>Active</b>
             <small>Unlocks advanced samples.</small>
-            <div className="v2-row"><Stepper label="Active days" value={active} min={3} max={high - 1} onChange={touch(setActive)} /><span className="v2-muted">days in a row with a video</span></div>
+            <div className="v2-row"><Stepper label="Active days" value={active} min={3} max={high - 1} onChange={touch(setActive)} /><span className="v2-muted">video days in a row</span></div>
           </div>
           <div className="ad-set">
             <b>Highly active</b>
-            <small>Unlocks designated samples and the Highly active badge.</small>
+            <small>Unlocks designated samples + badge.</small>
             <div className="v2-row"><Stepper label="Highly active days" value={high} min={active + 1} max={90} onChange={touch(setHigh)} /><span className="v2-muted">days in a row, and</span><Pill tone="ok">100% delivery</Pill></div>
           </div>
-          <span className="v2-small">Any video counts toward days in a row for now. Missing a day or an overdue sample drops a creator one tier.</span>
+          <span className="v2-small">Any video counts. A missed day or overdue sample drops one tier.</span>
         </section>
 
         <section className="v2-card">
@@ -149,10 +149,10 @@ export default function SystemSettings() {
             <span className="ad-tag green">Version {terms.v}</span>
             <span className="v2-small">Live since {terms.since} · {terms.agreed} sellers agreed</span>
           </div>
-          <span className="v2-small">Sellers agree once when they first connect Seller Center. A new version asks every seller to agree again the next time they submit.</span>
+          <span className="v2-small">Sellers agree on first connect, and again for each new version.</span>
           <div className="v2-row">
             <button type="button" className="ad-btn-ghost" onClick={() => toast("Terms v2 opened for reading")}><Icon name="doc" size={15} /> Read v{terms.v}</button>
-            <button type="button" className="ad-btn-ghost" onClick={() => { setTerms({ v: terms.v + 1, since: "Today", agreed: 0 }); toast(`Terms v${terms.v + 1} published · sellers agree on their next submission · logged`); }}>Publish a new version</button>
+            <button type="button" className="ad-btn-ghost" onClick={() => { setTerms({ v: terms.v + 1, since: "Today", agreed: 0 }); toast(`Terms v${terms.v + 1} published · logged`); }}>Publish new version</button>
           </div>
         </section>
       </div>
@@ -160,11 +160,11 @@ export default function SystemSettings() {
       <div className="v2-grid2">
         <section className="v2-card">
           <h2 className="v2-h2">WhatsApp</h2>
-          <span className="v2-small">Free uses only. Paid business notifications stay off.</span>
+          <span className="v2-small">Free uses only.</span>
           {([
-            ["verify", "Verify numbers by user message", "The user sends us a code from WhatsApp. Free."],
-            ["replies", "Reply within 24 hours", "Answer messages users send us. Free inside 24 hours."],
-            ["link", "Support link", "A chat link on Help pages."],
+            ["verify", "Verify numbers", "User sends us a code."],
+            ["replies", "24-hour replies", "Free within 24 hours."],
+            ["link", "Support link", "Chat link on Help pages."],
           ] as const).map(([k, label, note]) => (
             <div key={k} className="np-switchrow">
               <span><b>{label}</b><small>{note}</small></span>
@@ -172,7 +172,7 @@ export default function SystemSettings() {
             </div>
           ))}
           <div className="np-switchrow" style={{ opacity: 0.55 }}>
-            <span><b>Paid notifications</b><small>Sample approvals, reminders. Costs per message; off until the founders decide.</small></span>
+            <span><b>Paid notifications</b><small>Costs per message. Off until founders decide.</small></span>
             <button type="button" role="switch" aria-checked="false" aria-label="Paid notifications" className="np-switch" disabled style={{ cursor: "not-allowed" }}><span /></button>
           </div>
         </section>
@@ -191,9 +191,9 @@ export default function SystemSettings() {
       {dirty && <div className="ad-spacer" />}
       {dirty && (
         <div className="ad-batch" role="region" aria-label="Unsaved changes">
-          <span>You have unsaved changes</span>
+          <span>Unsaved changes</span>
           <button type="button" className="ad-btn-ghost" onClick={() => window.location.reload()}>Discard</button>
-          <button type="button" className="np-btn v2-btn-sm" onClick={() => { setDirty(false); toast("Saved · before and after are in the audit log"); }}><Icon name="check" size={16} /> Save changes</button>
+          <button type="button" className="np-btn v2-btn-sm" onClick={() => { setDirty(false); toast("Saved · logged"); }}><Icon name="check" size={16} /> Save changes</button>
         </div>
       )}
     </div>

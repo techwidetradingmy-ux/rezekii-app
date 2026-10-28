@@ -84,7 +84,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     recordConsent(asking ?? "creator");
     setAsking(null);
     store(true);
-    toast("TikTok Shop linked. Your consent is saved in My account.");
+    toast("TikTok Shop linked. Consent saved.");
   };
 
   return (

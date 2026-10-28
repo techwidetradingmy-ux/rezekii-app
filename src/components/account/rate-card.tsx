@@ -70,14 +70,14 @@ export function RateCard() {
     setTried(true);
     if (problems.length) return;
     setTried(false);
-    toast("Rate card saved. Sellers see it when they invite you.");
+    toast("Rate card saved");
   }
 
   return (
     <div className="v2-stack rc-page" style={{ gap: 18 }}>
       <div className="acc-head">
-        <span className="v2-small">Your prices for paid videos, by app or as a package. Sellers see them when they invite you. Change them any time.</span>
-        <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setRates((r) => Object.fromEntries(ITEMS.map((it) => [it.key, { ...r[it.key], price: SAMPLE[it.key] }]))); toast("Sample prices filled in. Change anything you like."); }}>✦ Fill in sample prices</button>
+        <span className="v2-small">Your prices for paid videos. Sellers see them when inviting you.</span>
+        <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setRates((r) => Object.fromEntries(ITEMS.map((it) => [it.key, { ...r[it.key], price: SAMPLE[it.key] }]))); toast("Sample prices filled in"); }}>✦ Fill in sample prices</button>
       </div>
 
       <section className="cr2-group">
@@ -133,7 +133,7 @@ export function RateCard() {
                 );
               })}
               <div className="cr2-cell rc-total">
-                <span className="rc-lbl">Package price<small>{sum ? `À la carte it comes to ${rm(sum)}` : "Add prices above to compare"}</small></span>
+                <span className="rc-lbl">Package price<small>{sum ? `À la carte: ${rm(sum)}` : "Add prices above"}</small></span>
                 <span className="rc-price">
                   <span className={`rc-input${tried && price < 1 ? " bad" : ""}`}><i>RM</i><input inputMode="numeric" value={p.price} placeholder="0" aria-label={`Package ${n + 1} price in RM`} onChange={(e) => setPack(p.id, { price: e.target.value.replace(/[^\d]/g, "").slice(0, 6) })} /></span>
                 </span>
@@ -144,10 +144,10 @@ export function RateCard() {
         })}
         {packs.length < MAX_PACKS && (
           <button type="button" className="rc-add" onClick={addPack} disabled={live.length < 2}>
-            <Icon name="plus" size={16} /> {live.length < 2 ? "Switch on at least 2 things above to make a package" : "Add a package"}
+            <Icon name="plus" size={16} /> {live.length < 2 ? "Turn on 2+ items to make a package" : "Add a package"}
           </button>
         )}
-        <p>Bundle apps and usage rights into one price, like &ldquo;TikTok + Instagram + Facebook + 30 days of ads&rdquo;.</p>
+        <p>Bundle apps and ad rights into one price.</p>
       </section>
 
       <section className="cr2-group">
@@ -157,7 +157,7 @@ export function RateCard() {
             <Seg value={show} options={["À la carte", "Packages", "Both"] as const} onChange={setShow} />
           </div>
           <div className="cr2-cell stack rc-preview">
-            <span className="rc-prev-h"><Icon name="eye" size={14} /> How sellers see it</span>
+            <span className="rc-prev-h"><Icon name="eye" size={14} /> Preview</span>
             {show !== "Packages" && live.filter((it) => num(rates[it.key].price) > 0).map((it) => (
               <span key={it.key} className="rc-prev-row"><Icn app={it.app} /><span>{it.label}</span><b>{rm(num(rates[it.key].price))}</b><small>{it.unit}</small></span>
             ))}
@@ -169,7 +169,7 @@ export function RateCard() {
               </span>
             ))}
             {((show !== "Packages" && !live.some((it) => num(rates[it.key].price) > 0)) && (show !== "À la carte" ? !packs.some((p) => p.name.trim() && num(p.price) > 0) : true)) && (
-              <span className="v2-small">Nothing to show yet. Add your prices above.</span>
+              <span className="v2-small">Add prices to preview.</span>
             )}
           </div>
         </div>

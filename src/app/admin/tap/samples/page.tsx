@@ -43,21 +43,21 @@ export default function SampleReview() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="Sample Review" sub="The system checks each request against the rules first. You make the call.">
+      <Title title="Sample Review" sub="System pre-checks each request. You decide.">
         <button type="button" className="np-btn v2-btn-sm" disabled={toApprove.length === 0} onClick={() => setWalk(true)}>
-          <Icon name="check" size={16} /> Handle all suggested approvals ({toApprove.length})
+          <Icon name="check" size={16} /> Approve suggested ({toApprove.length})
         </button>
       </Title>
 
       <div className="v2-grid4 ad-stats">
         <div className="v2-stat"><small>Waiting</small><b>{SAMPLES.length - Object.values(done).filter((d) => d.result === "Approved" || d.result === "Rejected").length}</b><em>Oldest 6 h ago</em></div>
-        <div className="v2-stat"><small>Handled today</small><b>{handled}</b><em className="up">Read back from TikTok</em></div>
-        <div className="v2-stat"><small>You disagreed with the system</small><b>{overruled}</b><em>Used to tune the rules</em></div>
+        <div className="v2-stat"><small>Handled today</small><b>{handled}</b><em className="up">From TikTok</em></div>
+        <div className="v2-stat"><small>Overruled</small><b>{overruled}</b><em>Tunes the rules</em></div>
       </div>
 
       <div className="v2-alert" style={{ background: "var(--bsoft)", color: "var(--blue)" }}>
         <Icon name="shield" size={20} />
-        <span>TikTok has no API to approve samples, so you approve or reject in Partner Center. We read the result back and tell the creator in the app and by email.</span>
+        <span>Decide in Partner Center. We read it back and notify the creator.</span>
       </div>
 
       <Chips<Filter> label="Filter by system verdict" value={filter} onChange={setFilter} options={[["Suggest approve", count("Suggest approve")], ["Needs a look", count("Needs a look")], ["Suggest reject", count("Suggest reject")]]} />
@@ -76,7 +76,7 @@ export default function SampleReview() {
             setDone((d) => ({ ...d, [disagree.id]: { ...d[disagree.id], overruled: { reason, note, to } } }));
             setOverruled((n) => n + 1);
             setDisagree(null);
-            toast("Your decision and reason are in the audit log");
+            toast("Decision logged");
           }}
         />
       )}
@@ -134,8 +134,8 @@ function RequestCard({ s, state, onAct, onDisagree }: { s: SampleReq; state?: Do
           <p className="ad-summary">{s.summary}</p>
           {(call === "Reject" || state?.result === "Rejected") && (
             <div className="ad-sees">
-              <b>The creator will see</b>
-              {state?.overruled?.to === "Reject" ? `${state.overruled.reason}${state.overruled.note ? `: ${state.overruled.note}` : ""}` : s.creatorSees ?? "Not approved this time. Keep posting and delivering on time to unlock more samples."}
+              <b>Creator sees</b>
+              {state?.overruled?.to === "Reject" ? `${state.overruled.reason}${state.overruled.note ? `: ${state.overruled.note}` : ""}` : s.creatorSees ?? "Not approved this time. Keep posting to unlock more samples."}
             </div>
           )}
           {state?.overruled && (
@@ -153,21 +153,21 @@ function RequestCard({ s, state, onAct, onDisagree }: { s: SampleReq; state?: Do
           {finished ? (
             <span className="ad-okmark"><Icon name="check" size={16} /> {state?.result} in Partner Center · read back {state?.at}</span>
           ) : state?.result === "Waiting" ? (
-            <span className="v2-small"><span className="ad-spin"><Icon name="refresh" size={14} /></span> Waiting for the result from TikTok…</span>
+            <span className="v2-small"><span className="ad-spin"><Icon name="refresh" size={14} /></span> Waiting for TikTok…</span>
           ) : (
             <>
               {call !== "Reject" && (
                 <button type="button" className="np-btn v2-btn-sm" onClick={() => onAct("Approve")}>
-                  <Icon name="link" size={15} /> Open in Partner Center to approve
+                  <Icon name="link" size={15} /> Approve in Partner Center
                 </button>
               )}
               {call !== "Approve" && (
                 <button type="button" className={call === "Reject" ? "np-btn v2-btn-sm ad-btn-danger" : "ad-btn-ghost"} onClick={() => onAct("Reject")}>
-                  <Icon name="link" size={15} /> Open in Partner Center to reject
+                  <Icon name="link" size={15} /> Reject in Partner Center
                 </button>
               )}
               {!state?.overruled && s.verdict !== "Look" && (
-                <button type="button" className="v2-link" style={{ fontSize: 14 }} onClick={onDisagree}>Disagree with the system</button>
+                <button type="button" className="v2-link" style={{ fontSize: 14 }} onClick={onDisagree}>Disagree</button>
               )}
             </>
           )}
@@ -182,16 +182,15 @@ function DisagreeSheet({ s, onClose, onSave }: { s: SampleReq; onClose: () => vo
   const [note, setNote] = useState("");
   const to = s.verdict === "Approve" ? "Reject" : "Approve";
   return (
-    <Sheet title="Disagree with the system" onClose={onClose}>
+    <Sheet title="Disagree" onClose={onClose}>
       <p className="v2-muted" style={{ margin: 0 }}>
-        The system suggests <b>{s.verdict === "Approve" ? "approving" : "rejecting"}</b> {s.handle}. You want to <b>{to === "Approve" ? "approve" : "reject"}</b>. Pick why; we use these reasons to tune the rules.
+        System says <b>{s.verdict === "Approve" ? "approve" : "reject"}</b> {s.handle}. You want to <b>{to === "Approve" ? "approve" : "reject"}</b>. Pick a reason.
       </p>
-      <Reasons options={["Seller asked", "Data wrong", "Other"]} value={reason} onChange={setReason} note={note} onNote={setNote} notePlaceholder={to === "Reject" ? "The creator will see this reason" : "What's different about this one?"} />
-      {to === "Reject" && <p className="v2-small" style={{ margin: 0 }}>When you reject, the creator sees your reason in the app and by email.</p>}
+      <Reasons options={["Seller asked", "Data wrong", "Other"]} value={reason} onChange={setReason} note={note} onNote={setNote} notePlaceholder={to === "Reject" ? "Creator sees this" : "What's different?"} />
       <button type="button" className="np-btn" disabled={!reason || (reason === "Other" && !note.trim())} onClick={() => reason && onSave(reason, note.trim(), to)}>
-        Save my decision
+        Save decision
       </button>
-      <span className="v2-small" style={{ textAlign: "center" }}>Recorded in the audit log with your name.</span>
+      <span className="v2-small" style={{ textAlign: "center" }}>Logged with your name.</span>
     </Sheet>
   );
 }
@@ -221,7 +220,7 @@ function Walkthrough({ items, onClose, onDone }: { items: SampleReq[]; onClose: 
   };
 
   if (cele) {
-    return <Celebrate tone="green" icon="check" title={`${approved} approved`} line="All results read back from TikTok" cheer={approved < list.length ? `${list.length - approved} skipped, still in the list. Creators who were approved have been told.` : "Creators have been told in the app and by email. Nice work."} onClose={onClose} />;
+    return <Celebrate tone="green" icon="check" title={`${approved} approved`} line="Read back from TikTok" cheer={approved < list.length ? `${list.length - approved} skipped. Approved creators notified.` : "Creators notified."} onClose={onClose} />;
   }
   if (!s || !p) return null;
   return (
@@ -244,15 +243,15 @@ function Walkthrough({ items, onClose, onDone }: { items: SampleReq[]; onClose: 
           <span><b>{p.name}</b><small className="v2-small">{s.pool} sample · {p.shop}</small></span>
         </div>
         <p className="ad-summary">{s.summary}</p>
-        {state === "ready" && <button type="button" className="np-btn" onClick={open}><Icon name="link" size={17} /> Open in Partner Center to approve</button>}
-        {state === "waiting" && <div className="v2-alert" style={{ background: "var(--bsoft)", color: "var(--blue)" }}><span className="ad-spin"><Icon name="refresh" size={16} /></span><span>Approve it in the Partner Center tab. Waiting for the result…</span></div>}
+        {state === "ready" && <button type="button" className="np-btn" onClick={open}><Icon name="link" size={17} /> Approve in Partner Center</button>}
+        {state === "waiting" && <div className="v2-alert" style={{ background: "var(--bsoft)", color: "var(--blue)" }}><span className="ad-spin"><Icon name="refresh" size={16} /></span><span>Approve in Partner Center. Waiting…</span></div>}
         {state === "back" && (
           <>
             <div className="v2-alert green"><Icon name="check" size={18} /><span>Approved · read back from TikTok · creator notified</span></div>
-            <button type="button" className="np-btn" onClick={next}>{i + 1 >= list.length ? "Finish" : "Next request"} <Icon name="arrow" size={17} /></button>
+            <button type="button" className="np-btn" onClick={next}>{i + 1 >= list.length ? "Finish" : "Next"} <Icon name="arrow" size={17} /></button>
           </>
         )}
-        <button type="button" className="ad-btn-ghost" style={{ alignSelf: "center" }} onClick={next} disabled={state === "waiting"}>Skip this one</button>
+        <button type="button" className="ad-btn-ghost" style={{ alignSelf: "center" }} onClick={next} disabled={state === "waiting"}>Skip</button>
       </div>
     </Sheet>
   );

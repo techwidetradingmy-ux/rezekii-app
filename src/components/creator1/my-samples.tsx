@@ -82,13 +82,13 @@ export function MySamples() {
     setSubmit(null);
     setLink("");
     if (finished) setParty(next);
-    else toast(`Video added: ${n} of 3. We check it against TikTok's data.`);
+    else toast(`Video added: ${n} of 3`);
   }
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 20 }}>
       <div className="v2-row" style={{ justifyContent: "space-between" }}>
-        <span className="v2-small">Status and tracking come from TikTok · updated today 09:12</span>
+        <span className="v2-small">From TikTok · updated today 09:12</span>
         <Link href="/app/market" className="btn-outline v2-btn-sm"><Icon name="bag" size={17} /> Marketplace</Link>
       </div>
 
@@ -130,7 +130,7 @@ export function MySamples() {
                   <span className="cr1-vidtext">
                     <b>{s.videos} of 3 videos</b>
                     <small>
-                      {s.status === "Done" ? "Delivered on time. This keeps your delivery record at 100%." : `Due ${s.due} · ${left} day${left === 1 ? "" : "s"} left`}
+                      {s.status === "Done" ? "Delivered on time." : `Due ${s.due} · ${left} day${left === 1 ? "" : "s"} left`}
                       {extended.includes(s.id) && " · more time requested"}
                     </small>
                   </span>
@@ -139,20 +139,20 @@ export function MySamples() {
               {s.status === "Posting" && <Progress value={s.videos} max={3} />}
 
               {s.status === "Posting" && s.receivedAt && (
-                <p className="cr1-bonus"><Icon name="flame" size={16} /> First video posted on {s.receivedAt}, the day it arrived: early bonus of +30 credits earned.</p>
+                <p className="cr1-bonus"><Icon name="flame" size={16} /> Posted on {s.receivedAt}, the day it arrived. +30 credits early bonus.</p>
               )}
               {(s.status === "Approved" || s.status === "Shipped") && (
-                <p className="cr1-bonus"><Icon name="flame" size={16} /> Post your first video within 1 day of receiving it for the biggest bonus. Within 3 or 7 days still earns a smaller one.</p>
+                <p className="cr1-bonus"><Icon name="flame" size={16} /> Post within 1 day of arrival for the biggest bonus.</p>
               )}
-              {s.status === "Approved" && <p className="v2-small" style={{ margin: 0 }}>The seller ships it through TikTok, usually within 3 to 5 days. You&apos;ll get a notification when it&apos;s on the way.</p>}
-              {s.status === "Shipped" && <p className="v2-small" style={{ margin: 0 }}>On the way. TikTok marks it received when the courier delivers it; then your 3 videos are due within 7 days.</p>}
+              {s.status === "Approved" && <p className="v2-small" style={{ margin: 0 }}>Ships via TikTok, usually within 3 to 5 days.</p>}
+              {s.status === "Shipped" && <p className="v2-small" style={{ margin: 0 }}>On the way. 3 videos due within 7 days of delivery.</p>}
 
               {s.status === "Not approved" && (
                 <div className="cr1-why-no">
                   <b>Why</b>
                   <p>{s.reason}</p>
                   <b>What to do</b>
-                  <p>Keep posting every day: {30 - CREATOR.streak} more days to a 30-day streak, which unlocks more free samples. Meanwhile, Open and Advanced samples are yours to request.</p>
+                  <p>Post daily for {30 - CREATOR.streak} more days to unlock more samples. Open and Advanced samples are available now.</p>
                 </div>
               )}
 
@@ -170,7 +170,7 @@ export function MySamples() {
                 {s.status === "Done" && <button type="button" className="btn-outline v2-btn-sm" onClick={() => setShare(s)}><Icon name="share" size={16} /> Share</button>}
                 {s.status === "Not approved" && (
                   <>
-                    <Link href="/app/market" className="np-btn v2-btn-sm">Free samples I can get</Link>
+                    <Link href="/app/market" className="np-btn v2-btn-sm">See Free Samples</Link>
                     <Link href="/app/rewards" className="btn-outline v2-btn-sm">Daily missions</Link>
                   </>
                 )}
@@ -181,7 +181,7 @@ export function MySamples() {
         {shown.length === 0 && (
           <div className="v2-card flat" style={{ alignItems: "flex-start" }}>
             <b>Nothing here</b>
-            <span className="v2-muted">{tab === "Not approved" ? "No turned-down requests. Nice." : "Request a sample from the market to get started."}</span>
+            <span className="v2-muted">{tab === "Not approved" ? "No rejected requests." : "Request a sample to start."}</span>
             <Link href="/app/market" className="np-btn v2-btn-sm">Browse samples</Link>
           </div>
         )}
@@ -202,13 +202,13 @@ export function MySamples() {
             <span className="badge badge-blue">{k.line}</span>
           </article>
         ))}
-        <p className="v2-small" style={{ margin: 0 }}>PR kits and other parcels go to your shipping address in Profile. TikTok samples use your address in TikTok.</p>
+        <p className="v2-small" style={{ margin: 0 }}>Sent to your shipping address in Profile.</p>
       </section>
 
       {submit && (
         <Sheet title="Submit video link" onClose={() => setSubmit(null)}>
           <p className="v2-small" style={{ margin: 0 }}>
-            Video {submit.videos + 1} of 3 for <b>{product(submit.productId).name}</b>. It needs this product in your yellow cart to count.
+            Video {submit.videos + 1} of 3 for <b>{product(submit.productId).name}</b>. Must have it in your yellow cart.
           </p>
           <label className="v2-field">
             TikTok video link
@@ -220,7 +220,7 @@ export function MySamples() {
               onChange={(e) => { setLink(e.target.value); setLinkErr(false); }}
               aria-invalid={linkErr}
             />
-            {linkErr ? <small className="cr1-err">Paste a TikTok video link, e.g. https://www.tiktok.com/@you/video/123</small> : <small>Tip: in TikTok, tap Share, then Copy link.</small>}
+            {linkErr ? <small className="cr1-err">Paste a TikTok video link, e.g. https://www.tiktok.com/@you/video/123</small> : <small>In TikTok: Share, then Copy link.</small>}
           </label>
           <button type="button" className="np-btn" onClick={addVideo}>Add video</button>
           <button type="button" className="v2-link" onClick={() => setLink("https://www.tiktok.com/@aisyah.glow/video/7431190024")}>Use a sample link (preview)</button>
@@ -229,7 +229,7 @@ export function MySamples() {
 
       {extend && (
         <Sheet title="Ask for more time" onClose={() => setExtend(null)}>
-          <p className="v2-small" style={{ margin: 0 }}>Due {extend.due} for {product(extend.productId).name}. The Techwide team decides; one late sample gets a reminder first, not a ban.</p>
+          <p className="v2-small" style={{ margin: 0 }}>Due {extend.due} for {product(extend.productId).name}. Techwide decides. A first late sample gets a reminder, not a ban.</p>
           <div className="cr1-sec">
             <h3>How much more?</h3>
             <div className="v2-chips">
@@ -253,7 +253,7 @@ export function MySamples() {
             onClick={() => {
               setExtended((x) => [...x, extend.id]);
               setExtend(null);
-              toast(`Asked for ${days} more. We'll reply in Notifications.`);
+              toast(`Asked for ${days} more`);
             }}
           >
             Send request
@@ -267,7 +267,7 @@ export function MySamples() {
           icon="check"
           title="Sample done"
           line={`3 of 3 videos for ${product(party.productId).name}`}
-          cheer="Delivered on time. Keep it up: a 30-day streak unlocks more free samples."
+          cheer="Delivered on time."
           onShare={() => { setShare(party); setParty(null); setTab("Done"); }}
           onClose={() => { setParty(null); setTab("Done"); }}
         />

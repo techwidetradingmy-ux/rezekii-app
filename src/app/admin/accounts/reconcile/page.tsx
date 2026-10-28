@@ -30,14 +30,14 @@ export default function Reconcile() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="Reconciliation" sub="Every night at 02:00 we check that credits and commission add up.">
-        <button type="button" className="ad-btn-ghost" onClick={() => toast("Check re-run for today · all matching so far")}><Icon name="refresh" size={15} /> Run today&apos;s check</button>
+      <Title title="Reconciliation" sub="Credits and commission checked nightly at 02:00.">
+        <button type="button" className="ad-btn-ghost" onClick={() => toast("Check done · all matching so far")}><Icon name="refresh" size={15} /> Run today&apos;s check</button>
       </Title>
 
       {issues.length > 0 ? (
         <div className="v2-alert red" role="alert">
           <Icon name="alert" size={20} />
-          <span>{issues.length} {issues.length === 1 ? "day doesn't" : "days don't"} match: {issues.map((x) => x.day).join(", ")}. Finance is notified until each one is fixed or explained.</span>
+          <span>{issues.length} {issues.length === 1 ? "day doesn't" : "days don't"} match: {issues.map((x) => x.day).join(", ")}. Finance alerted until fixed or explained.</span>
         </div>
       ) : (
         <div className="v2-alert green"><Icon name="check" size={20} /><span>Everything matches for the last 7 days.</span></div>
@@ -82,7 +82,7 @@ export default function Reconcile() {
           </table>
         </div>
         <div style={{ padding: "4px 8px 8px" }}>
-          <Meta range="22–28 Oct" source="Rezekii ledger and wallets, TikTok Partner settlement data (re-read daily for 30 days)" updated="Today 02:00" />
+          <Meta range="22–28 Oct" source="Rezekii ledger, TikTok Partner settlement (re-read daily, 30 days)" updated="Today 02:00" />
         </div>
       </section>
 
@@ -108,7 +108,7 @@ export default function Reconcile() {
                     {busy ? <span className="ad-spin"><Icon name="refresh" size={16} /></span> : <Icon name="refresh" size={16} />} Re-read TikTok orders
                   </button>
                 )}
-                {creditDiff(d) !== 0 && <Link href="/admin/accounts" className="np-btn v2-btn-sm">Open the ledger to correct</Link>}
+                {creditDiff(d) !== 0 && <Link href="/admin/accounts" className="np-btn v2-btn-sm">Correct in ledger</Link>}
               </div>
               <label className="v2-field">
                 Or explain it

@@ -30,12 +30,12 @@ export default function UsersReview() {
 
   const approve = (id: string, kind: Tab) => {
     setHandled((h) => ({ ...h, [id]: "Approved" }));
-    toast(kind === "Creators" ? `${id} approved · they can scan and request samples now` : `${id} approved · they can submit products now`);
+    toast(kind === "Creators" ? `${id} approved · can request samples` : `${id} approved · can submit products`);
   };
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="Review" sub="New accounts waiting for a yes. They get an email either way." />
+      <Title title="Review" sub="New accounts waiting for approval. Emailed either way." />
 
       <Chips<Tab> label="Account type" value={tab} onChange={setTab} options={[["Creators", creators.length], ["Sellers", sellers.length]]} />
 
@@ -63,7 +63,7 @@ export default function UsersReview() {
                 <Av name={s.shop} size={40} />
                 <span className="main">
                   <b>{s.shop}</b>
-                  <small>{s.country}{s.state !== "—" ? ` · ${s.state}` : ""} · {s.type} · {s.products} products in the shop</small>
+                  <small>{s.country}{s.state !== "—" ? ` · ${s.state}` : ""} · {s.type} · {s.products} products</small>
                   <small>Came from: {s.via}</small>
                 </span>
                 {s.flag && <span className="ad-tag amber"><Icon name="alert" size={13} /> {s.flag}</span>}
@@ -74,7 +74,7 @@ export default function UsersReview() {
               </div>
             ))}
           {((tab === "Creators" && creators.length === 0) || (tab === "Sellers" && sellers.length === 0)) && (
-            <p className="v2-muted" style={{ padding: "16px 0", margin: 0 }}>All reviewed. New sign-ups show up here.</p>
+            <p className="v2-muted" style={{ padding: "16px 0", margin: 0 }}>All reviewed.</p>
           )}
         </div>
       </section>
@@ -87,14 +87,14 @@ export default function UsersReview() {
               <span key={id} className={`ad-pill ${r === "Approved" ? "ok" : "bad"}`}>{id} · {r}</span>
             ))}
           </div>
-          <span className="v2-small">Each decision is in the audit log with your name.</span>
+          <span className="v2-small">Logged with your name.</span>
         </section>
       )}
 
       {rejecting && (
         <Sheet title={`Reject ${rejecting.label}`} onClose={() => setRejecting(null)}>
-          <p className="v2-muted" style={{ margin: 0 }}>Pick a reason. They see it in the email, with what to do next.</p>
-          <Reasons options={REASONS[rejecting.kind]} value={reason} onChange={setReason} note={note} onNote={setNote} notePlaceholder="What can they do to get approved?" />
+          <p className="v2-muted" style={{ margin: 0 }}>They see this reason by email.</p>
+          <Reasons options={REASONS[rejecting.kind]} value={reason} onChange={setReason} note={note} onNote={setNote} notePlaceholder="How to get approved" />
           <button
             type="button"
             className="np-btn ad-btn-danger"
@@ -105,7 +105,7 @@ export default function UsersReview() {
               setRejecting(null);
             }}
           >
-            Reject with this reason
+            Reject
           </button>
         </Sheet>
       )}

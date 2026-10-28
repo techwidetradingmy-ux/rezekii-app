@@ -74,10 +74,10 @@ export function RatingScan() {
         <Flow
           label="How the rating check works"
           steps={[
-            { icon: "scan", title: "We read every product's rating", note: "Your whole showcase, from TikTok" },
-            { icon: "star", title: "Under 4★ is low", note: "Buyers trust it less" },
-            { icon: "alert", title: "Under 3★ is the danger zone", note: "Can hurt your account", tone: "red" },
-            { icon: "check", title: "Avoid promoting them", note: "Keep posting with 4★ and up" },
+            { icon: "scan", title: "We scan ratings" },
+            { icon: "star", title: "Under 4★: low" },
+            { icon: "alert", title: "Under 3★: danger", tone: "red" },
+            { icon: "check", title: "Avoid them" },
           ]}
         />
       </section>
@@ -118,7 +118,7 @@ export function RatingScan() {
             <h2 className="v2-h2"><span className="rc-dot bad" /> Danger zone · under 3★</h2>
             <span className="badge badge-red">{danger.length}</span>
           </div>
-          <p className="v2-small" style={{ margin: 0 }}>Avoid promoting these. Low ratings, cancels and returns can lower your account health on TikTok, and TikTok can then limit your traffic.</p>
+          <p className="v2-small" style={{ margin: 0 }}>Avoid these. They can lower your TikTok account health.</p>
           <ul>{danger.map(row)}</ul>
         </section>
       )}
@@ -128,11 +128,11 @@ export function RatingScan() {
             <h2 className="v2-h2"><span className="rc-dot low" /> Low · 3 to 3.9★</h2>
             <span className="badge badge-amber">{low.length}</span>
           </div>
-          <p className="v2-small" style={{ margin: 0 }}>Not dangerous yet. Pick a 4★ product instead when you can.</p>
+          <p className="v2-small" style={{ margin: 0 }}>Pick a 4★ product instead when you can.</p>
           <ul>{low.map(row)}</ul>
         </section>
       )}
-      <p className="cr2-note"><Icon name="shield" size={15} /><span>You don&apos;t need to delete old videos. Keep posting every day, and choose products rated 4★ or above for new ones. Removing a product doesn&apos;t touch commission you&apos;ve already earned.</span></p>
+      <p className="cr2-note"><Icon name="shield" size={15} /><span>No need to delete old videos. Removing a product keeps earned commission.</span></p>
     </>
   );
 }

@@ -17,7 +17,7 @@ const CATS = Array.from(new Set(PRODUCTS.map((p) => p.category))).sort();
 const SORTS = [
   ["sold", "Best-selling"],
   ["rate", "Highest commission"],
-  ["earn", "Most you earn per sale"],
+  ["earn", "Earn per sale"],
   ["cheap", "Price: low to high"],
   ["dear", "Price: high to low"],
   ["samples", "Most samples left"],
@@ -39,7 +39,7 @@ function conditionsFor(p: Product): Cond[] {
   if (pool === "advanced") base.push({ label: "Posting 10 days in a row", ok: true, you: `You're on day ${CREATOR.streak}` });
   if (pool === "designated") {
     base.push({ label: "Posting 30 days in a row", ok: false, you: `You're on day ${CREATOR.streak} (${30 - CREATOR.streak} to go)` });
-    base.push({ label: "Every sample delivered, none still posting", ok: !unfinished, you: unfinished ? `${unfinishedName} needs ${3 - unfinished.videos} more video` : "All delivered" });
+    base.push({ label: "All samples delivered", ok: !unfinished, you: unfinished ? `${unfinishedName} needs ${3 - unfinished.videos} more video` : "All delivered" });
   }
   return [...base, ...(SELLER_CONDS[p.id] ?? [])];
 }
@@ -102,7 +102,7 @@ export default function Marketplace() {
   const addToShowcase = (p: Product) => {
     if (!linked) return setLinked(true);
     setAdded((a) => [...a, p.id]);
-    toast(`Added to your showcase at ${p.tapRate}%: ${p.name}`);
+    toast(`Added at ${p.tapRate}%: ${p.name}`);
   };
   const conds = sel ? conditionsFor(sel) : [];
   const unmet = conds.filter((c) => !c.ok);
@@ -113,7 +113,7 @@ export default function Marketplace() {
 
   return (
     <div className="v2-stack v2-in mk-page" style={{ gap: 20 }}>
-      <Title title="Marketplace" sub="Every product in Techwide's campaigns: a better rate than TikTok's open plan, and free samples on many.">
+      <Title title="Marketplace" sub="Better rates than TikTok's open plan. Free Samples on many.">
         <Link href="/app/account#samples" className="btn-outline v2-btn-sm">My samples <span className="badge">{MY_SAMPLES.filter((s) => !["Done", "Not approved"].includes(s.status)).length}</span></Link>
       </Title>
 
@@ -139,7 +139,7 @@ export default function Marketplace() {
         </label>
         <button type="button" role="switch" aria-checked={onlySamples} className={`mk-switch ${onlySamples ? "on" : ""}`} onClick={() => setOnlySamples((o) => !o)}>
           <span className="np-switch-like" aria-hidden="true"><i /></span>
-          <Icon name="gift" size={16} /> Free samples I can get <em>{CAN_GET.length}</em>
+          <Icon name="gift" size={16} /> Free Samples <em>{CAN_GET.length}</em>
         </button>
       </div>
 
@@ -147,11 +147,11 @@ export default function Marketplace() {
         <Flow
           label="How the marketplace works"
           steps={[
-            { icon: "tag", title: "Better rate than open plan", note: "Through Rezekii" },
-            { icon: "plus", title: "Add to your showcase", note: "One tap, no sample needed" },
-            { icon: "gift", title: "Or get a free sample", note: "Where it says Free sample" },
-            { icon: "video", title: "Post 3 videos", note: "For each sample" },
-            { icon: "wallet", title: "Earn on every sale", note: "Commission from TikTok" },
+            { icon: "tag", title: "Better rate" },
+            { icon: "plus", title: "Add to showcase" },
+            { icon: "gift", title: "Or Free Samples" },
+            { icon: "video", title: "Post 3 videos" },
+            { icon: "wallet", title: "Earn per sale" },
           ]}
         />
       </section>
@@ -202,8 +202,8 @@ export default function Marketplace() {
       {list.length === 0 && (
         <div className="v2-card flat" style={{ alignItems: "flex-start" }}>
           <b>No products match</b>
-          <span className="v2-muted">Try another category, or clear your filters.</span>
-          <button type="button" className="np-btn v2-btn-sm" onClick={() => { setQ(""); setCat("All"); setOnlySamples(false); }}>Show all products</button>
+          <span className="v2-muted">Try other filters.</span>
+          <button type="button" className="np-btn v2-btn-sm" onClick={() => { setQ(""); setCat("All"); setOnlySamples(false); }}>Show all</button>
         </div>
       )}
 
@@ -221,7 +221,7 @@ export default function Marketplace() {
 
           {step === "detail" && (
             <>
-              <p className="v2-small" style={{ margin: 0 }}>{ACCESS[sel.samples as Pool] ? "You can request this one now." : `Unlocks at a ${SAMPLE_STREAK[sel.samples as Pool]}-day streak. You're on day ${CREATOR.streak}.`}</p>
+              <p className="v2-small" style={{ margin: 0 }}>{ACCESS[sel.samples as Pool] ? "You can request now." : `Unlocks at a ${SAMPLE_STREAK[sel.samples as Pool]}-day streak. You're on day ${CREATOR.streak}.`}</p>
               <div className="cr1-sec">
                 <h3>Conditions <span className="v2-small">{conds.length - unmet.length} of {conds.length} met</span></h3>
                 <ul className="cr1-conds">
@@ -234,11 +234,11 @@ export default function Marketplace() {
                 </ul>
               </div>
               <div className="cr1-sec">
-                <h3>What you do after</h3>
+                <h3>After you get it</h3>
                 <ul className="cr1-after">
-                  <li><Icon name="video" size={18} /> Post 3 videos with this product in your yellow cart.</li>
-                  <li><Icon name="flame" size={18} /> Bonus if your first video goes up within 1 day of receiving it (smaller within 3 or 7 days).</li>
-                  <li><Icon name="cal" size={18} /> We count your videos from TikTok&apos;s data, so there&apos;s nothing to upload here.</li>
+                  <li><Icon name="video" size={18} /> Post 3 videos with it in your yellow cart.</li>
+                  <li><Icon name="flame" size={18} /> Bonus if you post within 1 day (smaller within 3 or 7).</li>
+                  <li><Icon name="cal" size={18} /> We count videos from TikTok. Nothing to upload.</li>
                 </ul>
               </div>
               {!linked ? (
@@ -250,7 +250,7 @@ export default function Marketplace() {
                   Request sample {unmet.length === 0 && "(opens TikTok)"}
                 </button>
               )}
-              <p className="v2-small" style={{ margin: 0, textAlign: "center" }}>Requests are open to everyone. The Techwide team approves them, usually within 2 working days.</p>
+              <p className="v2-small" style={{ margin: 0, textAlign: "center" }}>Techwide approves requests, usually within 2 working days.</p>
             </>
           )}
 
@@ -259,7 +259,7 @@ export default function Marketplace() {
               <div className="cr1-warn">
                 <span className="cr1-warn-ico"><Icon name="alert" size={22} /></span>
                 <div>
-                  <b>This request will probably be rejected:</b>
+                  <b>Likely to be rejected:</b>
                   <ul>
                     {unmet.map((c) => (
                       <li key={c.label}>{c.label}. <span>{c.you}.</span></li>
@@ -294,9 +294,9 @@ export default function Marketplace() {
           {step === "sent" && (
             <div className="cr1-sent">
               <span className="v2-medal green" style={{ width: 84, height: 84 }}><Icon name="send" size={34} width={2.2} /></span>
-              <b>We opened TikTok&apos;s request for you</b>
+              <b>TikTok request opened</b>
               <p className="v2-muted" style={{ margin: 0 }}>
-                The Techwide team reviews it and you&apos;ll hear back in Notifications. Track it in My account, Samples & delivery: Applied → Approved → Shipped → Received.
+                Techwide reviews it. We&apos;ll tell you in Notifications.
               </p>
               <div className="v2-row" style={{ justifyContent: "center" }}>
                 <Link href="/app/account#samples" className="np-btn v2-btn-sm">Go to My samples</Link>

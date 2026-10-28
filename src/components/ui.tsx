@@ -7,13 +7,37 @@ import { Icon } from "./icons";
 import { Emblem, SHARE_APPS, type Level } from "./emblems";
 import { useDemo } from "./demo";
 
-/** Page title row: large title, one line under it, optional actions on the right. */
+/** A small ⓘ beside a word; tap it to read the explanation (owner, 28 Oct 2026: tooltips instead of text on the page). */
+export function Tip({ text, label = "What's this?" }: { text: React.ReactNode; label?: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span className="v2-tipwrap">
+      <button type="button" className="v2-tipbtn sm" aria-label={label} aria-expanded={open} onClick={() => setOpen((o) => !o)} onBlur={() => setOpen(false)}>
+        <Icon name="info" size={15} />
+      </button>
+      {open && <span className="v2-tip" role="note">{text}</span>}
+    </span>
+  );
+}
+
+/**
+ * Page title row: large title, optional actions on the right. The explanation (`sub`) hides behind a small ⓘ next to the
+ * title and shows on tap (owner, 28 Oct 2026: no explaining on the page itself).
+ */
 export function Title({ title, sub, children }: { title: string; sub?: React.ReactNode; children?: React.ReactNode }) {
+  const [tip, setTip] = useState(false);
   return (
     <div className="v2-title">
-      <div>
-        <h1>{title}</h1>
-        {sub && <p>{sub}</p>}
+      <div className="v2-title-main">
+        <h1>
+          {title}
+          {sub && (
+            <button type="button" className="v2-tipbtn" aria-label={`About ${title}`} aria-expanded={tip} onClick={() => setTip((t) => !t)} onBlur={() => setTip(false)}>
+              <Icon name="info" size={18} />
+            </button>
+          )}
+        </h1>
+        {sub && tip && <p className="v2-tip" role="note">{sub}</p>}
       </div>
       {children && <div className="v2-row">{children}</div>}
     </div>
@@ -57,7 +81,7 @@ export function Count({ value, format = (n: number) => Math.round(n).toLocaleStr
   return <span className="v2-num">{format(n)}</span>;
 }
 
-export function Stat({ label, value, note, tone }: { label: string; value: React.ReactNode; note?: string; tone?: "up" | "down" }) {
+export function Stat({ label, value, note, tone }: { label: React.ReactNode; value: React.ReactNode; note?: React.ReactNode; tone?: "up" | "down" }) {
   return (
     <div className="v2-stat">
       <small>{label}</small>
@@ -237,8 +261,11 @@ const BLESS = [
  * "Share your proud moment" (V1's share window): the card in 3 designs, sized for each platform, as an image or a 5-second
  * video, with a blessing, a caption and the apps to send it to. Shows achievements, never sales.
  */
-export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow", level, kicker = "Proud moment", caption: captionInit, onShared }: {
+export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow", level, kicker = "Proud moment", caption: captionInit, onShared, title = "Share your proud moment", card }: {
   onClose: () => void; big: string; label: string; lines: string[]; handle?: string; level?: Level; kicker?: string; caption?: string;
+  title?: string;
+  /** A ready-made 9:16 card (like a recap cover) shared as it is, instead of the achievement card and its styles. */
+  card?: React.ReactNode;
   /** Called once the card has gone out to an app (on a phone: when the share menu reports it was sent). */
   onShared?: (where: string) => void;
 }) {
@@ -257,9 +284,10 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
   };
 
   return (
-    <Sheet title="Share your proud moment" onClose={onClose} wide>
+    <Sheet title={title} onClose={onClose} wide>
       <div className="v2-shgrid">
         <div className="v2-shleft">
+          {card ? <div className="v2-shcover">{card}</div> : (
           <div className={`v2-story ds${design} ${fmt} ${video ? "vid" : ""}`} style={{ aspectRatio: f.ratio }} role="img" aria-label={`${label}: ${big}. ${BLESS[bless]}`}>
             {video && <span className="v2-vbar" aria-hidden="true"><span /></span>}
             <span className="st-head">
@@ -291,10 +319,12 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
               <Qr />
             </span>
           </div>
-          <span className="v2-small" style={{ textAlign: "center" }}>{f.size} px · {f.where}</span>
+          )}
+          <span className="v2-small" style={{ textAlign: "center" }}>{card ? "1080 × 1920 px · stories" : `${f.size} px · ${f.where}`}</span>
         </div>
 
         <div className="v2-shright">
+          {!card && <>
           <div className="v2-shfmt" role="group" aria-label="Size">
             {FORMATS.map((x) => (
               <button key={x.key} type="button" className={fmt === x.key ? "on" : undefined} aria-pressed={fmt === x.key} onClick={() => setFmt(x.key)}>
@@ -305,12 +335,13 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
             ))}
           </div>
           <Seg value={DESIGNS[design]} options={DESIGNS} onChange={(d) => setDesign(DESIGNS.indexOf(d))} />
+          </>}
           <Seg value={video ? "Video · 5 sec" : "Image"} options={["Image", "Video · 5 sec"] as const} onChange={(v) => setVideo(v !== "Image")} />
-          <div className="v2-bless">
+          {!card && <div className="v2-bless">
             <span aria-hidden="true">✨</span>
             <span><b>Blessing on your card</b><small>{BLESS[bless]}</small></span>
             <button type="button" className="btn-outline v2-btn-sm" onClick={() => setBless((b) => (b + 1) % BLESS.length)}>Another</button>
-          </div>
+          </div>}
           <label className="v2-field">
             Caption
             <textarea className="np-input v2-caption" rows={5} value={caption} onChange={(e) => setCaption(e.target.value.slice(0, 300))} />
@@ -329,7 +360,7 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
             <button type="button" className="btn-outline" style={{ flex: 1 }} onClick={() => toast("Link copied: rezekii.com/c/aisyah.glow")}><Icon name="link" size={17} /> Copy link</button>
             <button type="button" className="np-btn" style={{ flex: 1 }} onClick={() => toast(video ? "Video saved" : "Image saved")}><Icon name="arrow" size={17} /> Save {video ? "video" : "image"}</button>
           </div>
-          <p className="v2-small" style={{ margin: 0 }}>On a phone, Share opens your phone&apos;s own share menu with the {video ? "video" : "image"} attached. The card shows your achievement and invite QR, never your sales.</p>
+          {!card && <p className="v2-small" style={{ margin: 0 }}>Shows your achievement and invite QR, never your sales.</p>}
         </div>
       </div>
     </Sheet>
@@ -390,7 +421,6 @@ export function Flow({ steps, label }: { steps: FlowStep[]; label: string }) {
         <li key={s.title} className={s.tone}>
           <span className="ic"><Icon name={s.icon} size={20} /></span>
           <b>{s.title}</b>
-          {s.note && <small>{s.note}</small>}
         </li>
       ))}
     </ol>

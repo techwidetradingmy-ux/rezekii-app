@@ -143,7 +143,7 @@ export default function SignIn() {
       ) : !tel.error ? (
         <small className="cr1-okline"><Icon name="check" size={14} width={3} /> Saved as {tel.e164}</small>
       ) : (
-        <small>Malaysian mobile, e.g. 012-345 6789. Only the Techwide team sees it.</small>
+        <small>e.g. 012-345 6789. Only Techwide sees it.</small>
       )}
     </label>
   );
@@ -159,13 +159,13 @@ export default function SignIn() {
           </optgroup>
         ))}
       </select>
-      {tried && !state ? <small className="cr1-err">Choose your state</small> : <small>Malaysia only for now. Sellers see your state, never your address.</small>}
+      {tried && !state ? <small className="cr1-err">Choose your state</small> : <small>Malaysia only. Sellers never see your address.</small>}
     </label>
   );
 
   const kindField = (
     <div className="v2-field">
-      What kind of creator are you?
+      Creator type
       <div className="v2-chips cr1-kinds" role="group" aria-label="Kind of creator">
         {["TikTok Affiliate", "Shopee Affiliate", "Threads Affiliate", "Others"].map((k) => {
           const on = kinds.includes(k);
@@ -201,12 +201,12 @@ export default function SignIn() {
       <>
         <div className="cr1-center">
           <h1>Sign in to Rezekii</h1>
-          <p>New or returning, it&apos;s the same buttons. Free for TikTok Shop creators.</p>
+          <p>New or returning, use the same buttons.</p>
         </div>
         {refCode && (
           <p className="si-ref">
             <Icon name="gift" size={18} />
-            <span>You&apos;re invited with code <b>{refCode}</b>. You get <b>+{REFERRAL_REWARD.friend} credits</b> once you&apos;re set up: link TikTok Shop and run your first scan within 30 days.</span>
+            <span>Invited with code <b>{refCode}</b>. Get <b>+{REFERRAL_REWARD.friend} credits</b>: link TikTok Shop and scan within 30 days.</span>
           </p>
         )}
         <button type="button" className={`btn-google cr1-authbtn`} onClick={() => oauth("Google")}><GoogleMark /> Continue with Google</button>
@@ -224,7 +224,7 @@ export default function SignIn() {
         <span className="cr1-provider">{provider === "Google" ? <GoogleMark /> : <TikTokMark size={26} />}</span>
         <span className="cr1-spin" aria-hidden="true" />
         <b>Signing in with {provider}…</b>
-        <p>You approve it in {provider}&apos;s own window.</p>
+        <p>Approve in {provider}&apos;s window.</p>
       </div>
     );
   } else if (step === "profile") {
@@ -249,7 +249,6 @@ export default function SignIn() {
         </div>
         <div>
           <h1>One more thing</h1>
-          <p>Three quick details and you&apos;re in.</p>
         </div>
         {kindField}
         {stateField}
@@ -277,17 +276,17 @@ export default function SignIn() {
           <label className="v2-field">
             Your name
             <input className="np-input" autoComplete="name" placeholder="e.g. Aisyah Rahman" value={name} onChange={(e) => setName(e.target.value)} aria-invalid={tried && name.trim().length < 2} />
-            {tried && name.trim().length < 2 ? <small className="cr1-err">Enter your name</small> : <small>Shown in the app and on invites. You can change it later.</small>}
+            {tried && name.trim().length < 2 ? <small className="cr1-err">Enter your name</small> : <small>You can change it later.</small>}
           </label>
         )}
         {emailField}
         {isNew && kindField}
         {isNew && stateField}
         {isNew && phoneField}
-        <button type="submit" className="np-btn np-submit">Send me a code</button>
+        <button type="submit" className="np-btn np-submit">Send code</button>
         {!isNew && (
           <p className="cr1-center cr1-small">
-            <button type="button" className="v2-link" onClick={() => go("password")}>Use my password instead</button>
+            <button type="button" className="v2-link" onClick={() => go("password")}>Use password</button>
           </p>
         )}
       </form>
@@ -300,7 +299,7 @@ export default function SignIn() {
         <div className="cr1-center">
           <h1>{purpose === "reset" ? "Check your email" : "Enter the code"}</h1>
           {purpose === "reset" ? (
-            <p>If <b>{email.trim()}</b> has an account, we&apos;ve sent a 6-digit code to it.</p>
+            <p>If <b>{email.trim()}</b> has an account, we sent a code.</p>
           ) : (
             <p>We sent a code to <b>{email.trim()}</b>.</p>
           )}
@@ -313,7 +312,7 @@ export default function SignIn() {
             <span className="cr1-inline cr1-okline"><Icon name="check" size={16} width={3} /> Code accepted</span>
           ) : (
             <>
-              The code works for 10 minutes.{" "}
+              Valid for 10 minutes.{" "}
               {wait > 0 ? (
                 <span>Resend in {wait}s</span>
               ) : (
@@ -367,7 +366,7 @@ export default function SignIn() {
       >
         {back("password")}
         <h1>Reset your password</h1>
-        <p>Enter your email and we&apos;ll send a 6-digit code. This also works if you signed up with Google or TikTok and never set a password.</p>
+        <p>We&apos;ll email you a 6-digit code. Works for Google and TikTok sign-ups too.</p>
         {emailField}
         <button type="submit" className="np-btn np-submit">Send code</button>
       </form>
@@ -398,12 +397,12 @@ export default function SignIn() {
           </small>
         </label>
         <label className="v2-field">
-          Type it again
+          Confirm password
           <input className="np-input" type={showPw ? "text" : "password"} autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} aria-invalid={tried && !same} />
           {tried && !same && <small className="cr1-err">The two passwords don&apos;t match</small>}
         </label>
         <button type="submit" className="np-btn np-submit">Save and sign in</button>
-        <p className="cr1-small">We&apos;ll sign you out on other devices and email you that your password changed.</p>
+        <p className="cr1-small">Other devices will be signed out.</p>
       </form>
     );
   } else {
@@ -442,7 +441,7 @@ export default function SignIn() {
         <div key={step} className="rz-card cr1-auth">{card}</div>
         <div className="cr1-authnote">
           <Icon name="link" size={18} />
-          <span>TikTok Shop is linked inside the app, after you sign in. Signing in with TikTok is not the same as linking TikTok Shop.</span>
+          <span>You link TikTok Shop after you sign in.</span>
         </div>
         <p className="rz-foot">
           <Link href="/">Back to home</Link> · <a href="mailto:support@rezekii.com">support@rezekii.com</a>

@@ -91,7 +91,7 @@ export function MissionsBoard(p: {
       setMoment({
         title: reached ? `${reached.name} unlocked!` : `${days}-day streak!`,
         line: `+${gain + (reached?.bonus ?? 0)} credits`,
-        cheer: reached ? `${reached.metal} emblem earned: ${reached.bonus} bonus credits for showing up ${days} days in a row.` : `${next.days - days} more days to ${next.name}: +${next.bonus} bonus credits.`,
+        cheer: reached ? `${reached.metal} emblem. +${reached.bonus} bonus credits.` : `${next.days - days} days to ${next.name}: +${next.bonus} credits.`,
         icon: "flame",
         share: { big: `${days} days`, label: "My streak on Rezekii", lines: [`${t?.name ?? "Spark"} tier`, `${t?.metal ?? "Bronze"} emblem`] },
       });
@@ -99,7 +99,7 @@ export function MissionsBoard(p: {
     }
     if (m.share) return;
     if (chest) setMoment({ title: "Bonus chest opened", line: `+${gain} credits`, cheer: `${chest.at} daily missions done today.`, icon: "gift", share: { big: `${chest.at} missions`, label: "Done today", lines: [`${streak}-day streak`] } });
-    else if (list === "starter" || list === "milestone") setMoment({ title: `+${m.reward} credits`, line: m.title, cheer: "Nice. One more step done.", icon: "trophy" });
+    else if (list === "starter" || list === "milestone") setMoment({ title: `+${m.reward} credits`, line: m.title, cheer: "Nice work.", icon: "trophy" });
     else toast(`+${m.reward} credits`);
   };
 
@@ -149,7 +149,7 @@ export function MissionsBoard(p: {
           </span>
           <Icon name="arrow" size={16} />
         </button>
-        <p className="mx-rule"><Icon name="check" size={14} width={3} /> Credits come only when it really happens: a post that goes live, a request that&apos;s sent, a share that goes out.</p>
+        <p className="mx-rule"><Icon name="check" size={14} width={3} /> Credits come only once the action is done.</p>
         <div className="mx-today">
           <span className="mx-today-h"><b>{earnedToday} / {maxToday} credits today</b><small>{doneToday} of {daily.length} done</small></span>
           <span className="mx-track">
@@ -166,7 +166,7 @@ export function MissionsBoard(p: {
           <span className="badge badge-amber">Once only · {p.starterNote}</span>
         </div>
         <div className="mx-today">
-          <span className="mx-today-h"><b>{starterDone} of {starter.length} done</b><small>{starterLeft} credits left to earn</small></span>
+          <span className="mx-today-h"><b>{starterDone} of {starter.length} done</b><small>{starterLeft} credits left</small></span>
           <span className="mx-track starter"><i style={{ width: `${(starterDone / starter.length) * 100}%` }} /></span>
         </div>
         <ul className="mx-list">{ordered(starter).map(row("starter"))}</ul>
@@ -192,7 +192,7 @@ export function MissionsBoard(p: {
               <span className="mx-streak-txt">
                 <span className="mx-tiername">{tier ? `${tier.name} · ${tier.metal}` : "No tier yet"}</span>
                 <strong>{streak}-day streak</strong>
-                <small>{checkedToday ? "Today counted. See you tomorrow!" : "Do 1 daily mission today to keep it."}</small>
+                <small>{checkedToday ? "Today counted." : "Do 1 daily mission today to keep it."}</small>
               </span>
             </div>
             <div className="mx-week" aria-label="This week">

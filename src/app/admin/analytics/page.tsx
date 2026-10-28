@@ -27,16 +27,16 @@ export default function Analytics() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="Analytics" sub="Is Rezekii creating value? Only actions on our own platform are tracked.">
+      <Title title="Analytics" sub="Tracks actions on Rezekii only.">
         <button type="button" className="ad-btn-ghost" onClick={() => toast(`Exported ${range.toLowerCase()} as CSV`)}><Icon name="doc" size={15} /> Export</button>
       </Title>
 
       <Seg value={range} options={["Last 7 days", "Last 30 days", "Last 90 days"] as const} onChange={setRange} />
 
       <div className="v2-grid4 ad-stats" key={range}>
-        <div className="v2-stat"><small>Raises confirmed per week</small><b>{Math.round(330 * Math.min(1, s * 1.2 + 0.2))}</b><em className="up">Creators&apos; north star</em></div>
-        <div className="v2-stat"><small>Collaborations done per week</small><b>{Math.round(28 * Math.min(1, s + 0.3))}</b><em className="up">Sellers&apos; north star</em></div>
-        <div className="v2-stat"><small>Partner commission settled</small><b>{rm(Math.round(61840 * s), 0)}</b><em>Company north star · settled only</em></div>
+        <div className="v2-stat"><small>Raises per week</small><b>{Math.round(330 * Math.min(1, s * 1.2 + 0.2))}</b><em className="up">Creators&apos; north star</em></div>
+        <div className="v2-stat"><small>Collabs per week</small><b>{Math.round(28 * Math.min(1, s + 0.3))}</b><em className="up">Sellers&apos; north star</em></div>
+        <div className="v2-stat"><small>Commission settled</small><b>{rm(Math.round(61840 * s), 0)}</b><em>Company north star</em></div>
       </div>
 
       <section className="v2-card">
@@ -45,7 +45,7 @@ export default function Analytics() {
           <Seg value={who} options={["Creators", "Sellers"] as const} onChange={setWho} />
         </div>
         <Funnel key={`${who}-${range}`} steps={steps} tone={who === "Sellers" ? "blue" : undefined} />
-        <Meta range={range} source={who === "Creators" ? "Rezekii events, TikTok Shop link and raise status from TikTok" : "Rezekii events, Seller Center connection, TAP pipeline"} />
+        <Meta range={range} source={who === "Creators" ? "Rezekii events, TikTok link and raise status" : "Rezekii events, Seller Center connection, TAP pipeline"} />
       </section>
 
       <div className="v2-split">
@@ -60,7 +60,7 @@ export default function Analytics() {
         </section>
 
         <section className="v2-card">
-          <h2 className="v2-h2">One person&apos;s activity</h2>
+          <h2 className="v2-h2">Activity timeline</h2>
           <Search value={q} onChange={setQ} placeholder="Search a creator or seller" />
           <div className="v2-chips">
             {Object.keys(TIMELINES).map((k) => (
@@ -77,7 +77,7 @@ export default function Analytics() {
               </ul>
             </>
           ) : (
-            <p className="v2-small" style={{ margin: 0 }}>No one found. Try @farah.home, @zara.home or Seri Living MY.</p>
+            <p className="v2-small" style={{ margin: 0 }}>No one found.</p>
           )}
           <Meta range="Since sign-up" source="Rezekii events (PDPA notice covers this)" />
         </section>

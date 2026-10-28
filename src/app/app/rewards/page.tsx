@@ -6,11 +6,11 @@ import { CREATOR } from "@/lib/mock";
 /** Daily missions: general actions anywhere in Rezekii, reset at midnight. */
 const DAILY: Mission[] = [
   { id: "d1", icon: "check", title: "Check in", reward: 5, cta: "Check in", state: "ready" },
-  { id: "d2", icon: "video", title: "Post a video", reward: 20, cta: "Post", href: "/app/publish", state: "done", counts: "Live posts count, from Rezekii or your phone" },
-  { id: "d3", icon: "video", title: "Post 3 videos", reward: 30, cta: "Post", href: "/app/publish", progress: [2, 3], state: "todo", counts: "Live posts, from Rezekii or your phone" },
+  { id: "d2", icon: "video", title: "Post a video", reward: 20, cta: "Post", href: "/app/publish", state: "done", counts: "Posts from Rezekii or your phone" },
+  { id: "d3", icon: "video", title: "Post 3 videos", reward: 30, cta: "Post", href: "/app/publish", progress: [2, 3], state: "todo", counts: "Posts from Rezekii or your phone" },
   { id: "d4", icon: "scan", title: "Run a scan", reward: 10, cta: "Claim", state: "ready", counts: "Scan finished today" },
-  { id: "d5", icon: "gift", title: "Request a free sample", reward: 15, cta: "Find one", href: "/app/market", state: "todo", counts: "Counts when your request is sent" },
-  { id: "d6", icon: "share", title: "Share a proud moment", reward: 5, cta: "Share", share: true, state: "todo", counts: "Counts when you share it to an app" },
+  { id: "d5", icon: "gift", title: "Request a free sample", reward: 15, cta: "Find one", href: "/app/market", state: "todo", counts: "Counts when sent" },
+  { id: "d6", icon: "share", title: "Share a proud moment", reward: 5, cta: "Share", share: true, state: "todo", counts: "Counts when shared" },
 ];
 /** Starter missions: once only, for the first 7 days after joining. */
 const STARTER: Mission[] = [

@@ -37,7 +37,7 @@ export default function Notifications() {
                   </span>
                   <span className="cr1-note-main">
                     <b>{done ? "TikTok Shop reconnected" : n.title}</b>
-                    <span>{done ? "Thanks. Scans and commission numbers keep working for another year." : n.line}</span>
+                    <span>{done ? "Access renewed for another year." : n.line}</span>
                     <small>{n.when}</small>
                   </span>
                   <span className="cr1-note-act">
@@ -50,7 +50,7 @@ export default function Notifications() {
                           read(n.id);
                           setReconnected(true);
                           setLinked(true);
-                          toast("Reconnected. TikTok approved access for another year.");
+                          toast("Reconnected for another year");
                         }}
                       >
                         {done ? "Done" : n.cta}
@@ -69,7 +69,7 @@ export default function Notifications() {
       ))}
 
       <p className="hm-fine">
-        We also email you about samples and anything that needs action. We don&apos;t send WhatsApp messages for now.
+        We also email you. No WhatsApp messages for now.
       </p>
     </div>
   );

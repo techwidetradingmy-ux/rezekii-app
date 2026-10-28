@@ -95,7 +95,7 @@ export default function SubmitProducts() {
         <section className="v2-card sl-done">
           <span className="sl-check"><Icon name="check" size={38} width={2.8} /></span>
           <h2>{done.length} product{done.length > 1 ? "s" : ""} submitted</h2>
-          <p className="v2-muted" style={{ margin: 0, maxWidth: 460, lineHeight: 1.55 }}>They&apos;re now in Techwide&apos;s TAP pipeline. Our team checks them within 1 working day, then submits them to TikTok. We&apos;ll tell you on WhatsApp and here when they&apos;re live.</p>
+          <p className="v2-muted" style={{ margin: 0, maxWidth: 460, lineHeight: 1.55 }}>We&apos;ll WhatsApp you when they&apos;re live.</p>
           <div className="sl-done-list v2-divide">
             {done.map(({ item, plus }) => (
               <div key={item.id} className="sl-prow">
@@ -125,11 +125,11 @@ export default function SubmitProducts() {
 
   return (
     <div className="v2-stack v2-in">
-      <Title title="Submit Products" sub="Pick products and submit. We've set everything else for you." />
+      <Title title="Submit Products" sub="Pick products and submit. The rest is preset." />
       <ConnBanner />
       <Link href="/seller/app/invite" className="si-banner">
         <span className="si-banner-ico"><Icon name="send" size={18} /></span>
-        <span><b>{TAP_INVITE.from} invited you: {TAP_INVITE.name}</b><small>Public +{TAP_INVITE.raise}% · {TAP_INVITE.samples} samples · {TAP_INVITE.products.length} products picked for you · open until {TAP_INVITE.expires}</small></span>
+        <span><b>{TAP_INVITE.from} invited you: {TAP_INVITE.name}</b><small>Public +{TAP_INVITE.raise}% · {TAP_INVITE.samples} samples · {TAP_INVITE.products.length} products · until {TAP_INVITE.expires}</small></span>
         <span className="si-banner-go">Review <Icon name="arrow" size={15} /></span>
       </Link>
 
@@ -151,7 +151,7 @@ export default function SubmitProducts() {
                 </span>
                 <span className="sl-pick-rate">
                   <span className="sl-rate">{p.publicRate === null ? "Public ?" : `${p.publicRate}%`} <Icon name="arrow" size={12} /> <b>{r === null ? `+${plusFor(p) || 0}%` : `${Number.isFinite(r) ? r : "–"}%`}</b></span>
-                  <small>{p.publicRate === null ? "Public rate unknown, we'll check it" : `Public ${p.publicRate}% now`}</small>
+                  <small>{p.publicRate === null ? "Public rate unknown" : `Public ${p.publicRate}% now`}</small>
                 </span>
               </label>
             );
@@ -167,7 +167,7 @@ export default function SubmitProducts() {
                 <input type="checkbox" disabled checked={false} readOnly aria-label="Already submitted" />
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={p.img} alt="" />
-                <span className="sl-pinfo"><strong>{p.name}</strong><small>{short(p.sold)} sold · can&apos;t submit twice</small></span>
+                <span className="sl-pinfo"><strong>{p.name}</strong><small>{short(p.sold)} sold · already submitted</small></span>
                 <span className="sl-pick-rate"><span className={`badge ${listStatus(p.stage) === "Live" ? "" : listStatus(p.stage) === "Not approved" ? "badge-red" : "badge-amber"}`}>{listStatus(p.stage)}</span></span>
               </div>
             ))}
@@ -177,7 +177,7 @@ export default function SubmitProducts() {
       </section>
 
       <section className="v2-card">
-        <div className="sl-step-h"><span className="n">2</span><h2>Commission above the public rate</h2><span className="v2-small">At least +2%</span></div>
+        <div className="sl-step-h"><span className="n">2</span><h2>Extra commission</h2><span className="v2-small">At least +2%</span></div>
         <div className="v2-chips">
           <button type="button" className={`v2-chip ${raise === "2" ? "on" : ""}`} onClick={() => setRaise("2")}>+2% <small>minimum</small></button>
           <button type="button" className={`v2-chip ${raise === "ai" ? "on" : ""}`} onClick={() => setRaise("ai")}><Icon name="spark" size={15} /> {aiLabel} <small>AI pick</small></button>
@@ -191,7 +191,7 @@ export default function SubmitProducts() {
               <input className="np-input" inputMode="decimal" value={custom} onChange={(e) => setCustom(e.target.value)} aria-label="Custom raise above the public rate, percent" aria-invalid={customBad} />
               <span style={{ fontWeight: 800 }}>% above the public rate</span>
             </label>
-            {customBad && <p className="sl-err"><Icon name="alert" size={16} /> Must be at least +2% above the public rate, or creators won&apos;t get a better deal through TAP.</p>}
+            {customBad && <p className="sl-err"><Icon name="alert" size={16} /> Must be at least +2% above the public rate.</p>}
           </div>
         )}
         {sel.length > 0 && (
@@ -213,7 +213,7 @@ export default function SubmitProducts() {
       </section>
 
       <section className="v2-card">
-        <div className="sl-step-h"><span className="n">3</span><h2>Samples per SKU</h2><span className="v2-small">Must be more than 0 · most shops pick 30–50</span></div>
+        <div className="sl-step-h"><span className="n">3</span><h2>Samples per SKU</h2><span className="v2-small">Most shops pick 30–50</span></div>
         <div className="v2-chips">
           {(["30", "40", "50"] as const).map((n) => (
             <button key={n} type="button" className={`v2-chip ${samples === n ? "on" : ""}`} onClick={() => setSamples(n)}>{n}{n === "40" && <small>usual</small>}</button>
@@ -226,30 +226,30 @@ export default function SubmitProducts() {
               <input className="np-input" inputMode="numeric" value={samplesCustom} onChange={(e) => setSamplesCustom(e.target.value.replace(/[^\d]/g, ""))} aria-label="Samples per SKU" aria-invalid={samplesBad} />
               <span style={{ fontWeight: 800 }}>samples per SKU</span>
             </label>
-            {samplesBad && <p className="sl-err"><Icon name="alert" size={16} /> Must be more than 0. With 0 samples, creators can&apos;t apply and TikTok won&apos;t approve it.</p>}
+            {samplesBad && <p className="sl-err"><Icon name="alert" size={16} /> Must be more than 0, or TikTok won&apos;t approve it.</p>}
           </div>
         )}
-        <p className="v2-small" style={{ margin: 0 }}>Each creator who gets a sample posts 3 videos. Samples are your own marketing cost, sent through TikTok.</p>
+        <p className="v2-small" style={{ margin: 0 }}>1 sample = 3 videos. You pay for samples, sent through TikTok.</p>
       </section>
 
       <section className="sl-preset">
         <span>
-          <b>We&apos;ve set these for you</b>
-          <span>Campaign: starts today, ends {presets.end}{presets.extend ? ", auto-extends before it ends" : ""}</span>
-          <span>Creators: {conditions}{allAny ? " · everything else Any" : ""}</span>
+          <b>Preset for you</b>
+          <span>Campaign: today to {presets.end}{presets.extend ? ", auto-extends" : ""}</span>
+          <span>Creators: {conditions}{allAny ? " · rest Any" : ""}</span>
         </span>
         <button type="button" className="btn-outline" onClick={() => setDraft(presets)}>Change</button>
       </section>
 
       <p className="v2-small" style={{ margin: 0 }}>
         By submitting you agree to the sample allocation terms (<button type="button" className="v2-link" style={{ fontSize: 13 }} onClick={() => setTerms(true)}>read</button>).
-        {" "}Want our team to run it for you? <button type="button" className="v2-link" style={{ fontSize: 13 }} onClick={() => setTalk(true)}>Talk to us</button>
+        {" "}Need help? <button type="button" className="v2-link" style={{ fontSize: 13 }} onClick={() => setTalk(true)}>Talk to us</button>
       </p>
 
       <div className="sl-sticky">
         <span>
           <b>{sel.length} product{sel.length === 1 ? "" : "s"} · {raise === "ai" ? "AI pick" : raise === "custom" ? `+${custom || 0}%` : `+${raise}%`} · {samplesBad ? "?" : nSamples} samples</b>
-          {errors.length > 0 ? <span className="sl-err" style={{ fontSize: 12.5 }}>{errors[0]}</span> : <span>Goes to Techwide&apos;s TAP pipeline</span>}
+          {errors.length > 0 ? <span className="sl-err" style={{ fontSize: 12.5 }}>{errors[0]}</span> : <span>Goes to Techwide&apos;s TAP</span>}
         </span>
         <button type="button" className="np-btn" onClick={submit} disabled={errors.length > 0}>
           Submit {sel.length || ""} product{sel.length === 1 ? "" : "s"}
@@ -257,18 +257,18 @@ export default function SubmitProducts() {
       </div>
 
       {draft && (
-        <Sheet title="We've set these for you" onClose={() => setDraft(null)}>
+        <Sheet title="Campaign settings" onClose={() => setDraft(null)}>
           <h3 className="v2-h2" style={{ fontSize: 16 }}>Campaign time</h3>
           <p className="v2-small" style={{ margin: 0 }}>Starts today ({TODAY}).</p>
           <ChipRow label="Ends" options={OPTIONS.end} value={draft.end} onPick={(v) => setDraft({ ...draft, end: v })} />
           <div className="np-switchrow">
-            <span><b>Auto-extend before it ends</b><small>So creators can keep selling without a gap.</small></span>
+            <span><b>Auto-extend before it ends</b></span>
             <button type="button" className={`np-switch ${draft.extend ? "on" : ""}`} aria-pressed={draft.extend} aria-label="Auto-extend" onClick={() => setDraft({ ...draft, extend: !draft.extend })}><span /></button>
           </div>
           <h3 className="v2-h2" style={{ fontSize: 16, marginTop: 6 }}>Creator conditions</h3>
-          <p className="v2-small" style={{ margin: 0 }}>A reference for our team. Techwide decides who gets each sample, picking the creators most likely to sell.</p>
+          <p className="v2-small" style={{ margin: 0 }}>A guide only. Techwide decides who gets each sample.</p>
           <ChipRow label="Main niche" note="From your product's category" options={OPTIONS.niche} value={draft.niche} onPick={(v) => setDraft({ ...draft, niche: v })} />
-          <ChipRow label="Sub-niches" note="Optional, pick any" multi options={OPTIONS.subs} value={draft.subs} onPick={(v) => setDraft({ ...draft, subs: draft.subs.includes(v) ? draft.subs.filter((s) => s !== v) : [...draft.subs, v] })} />
+          <ChipRow label="Sub-niches" note="Optional" multi options={OPTIONS.subs} value={draft.subs} onPick={(v) => setDraft({ ...draft, subs: draft.subs.includes(v) ? draft.subs.filter((s) => s !== v) : [...draft.subs, v] })} />
           <ChipRow label="TikTok level" options={OPTIONS.level} value={draft.level} onPick={(v) => setDraft({ ...draft, level: v })} />
           <ChipRow label="Monthly GMV" options={OPTIONS.gmv} value={draft.gmv} onPick={(v) => setDraft({ ...draft, gmv: v })} />
           <ChipRow label="Videos or LIVE" options={OPTIONS.format} value={draft.format} onPick={(v) => setDraft({ ...draft, format: v })} />

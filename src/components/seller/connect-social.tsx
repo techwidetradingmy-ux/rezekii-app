@@ -42,8 +42,8 @@ export function ConnectSocialSheet({ platform, onClose, onDone }: { platform: Pl
             ))}
           </div>
           <ul className="sl-list">
-            <li><Icon name="send" size={18} /> Publish posts{platform === "Threads" ? "" : " and reels"} for you, only when you schedule them</li>
-            <li><Icon name="eye" size={18} /> See basic {platform === "Facebook" ? "Page" : "account"} info and post status</li>
+            <li><Icon name="send" size={18} /> Publish posts{platform === "Threads" ? "" : " and reels"} you schedule</li>
+            <li><Icon name="eye" size={18} /> See {platform === "Facebook" ? "Page" : "account"} info and post status</li>
           </ul>
           <div className="sl-tt-acts">
             <button type="button" className="sl-tt-no" onClick={onClose}>Cancel</button>

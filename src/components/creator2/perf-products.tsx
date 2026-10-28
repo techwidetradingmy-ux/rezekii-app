@@ -20,8 +20,8 @@ export function ProductList() {
       {topShare >= 35 && (
         <div className="v2-alert">
           <span>
-            {topShare}% of your commission comes from one product, the {product(top.productId).name.toLowerCase()}. If its stock or rate
-            changes, your income moves with it. One or two more strong products would spread the risk.
+            {topShare}% of your commission comes from the {product(top.productId).name.toLowerCase()}. Add 1–2 strong products to
+            spread the risk.
           </span>
           <Link href="/app/data/performance#ai">See AI picks</Link>
         </div>
@@ -75,15 +75,15 @@ export function ProductList() {
                 {vids[0] && (
                   <p className="cr2-note" style={{ color: "var(--body)" }}>
                     <Icon name="video" size={15} />
-                    <span>Sold most through <b>&ldquo;{vids[0].title}&rdquo;</b> ({vids[0].date}): {vids[0].orders} of {b.orders} orders.</span>
+                    <span>Top video: <b>&ldquo;{vids[0].title}&rdquo;</b> ({vids[0].date}), {vids[0].orders} of {b.orders} orders.</span>
                   </p>
                 )}
-                {dropping && <p className="cr2-note"><Icon name="alert" size={15} /><span>{prev} orders in the 30 days before, {b.orders} now. A fresh video or a different product may do better.</span></p>}
-                {lowRated && <p className="cr2-note"><Icon name="star" size={15} /><span>Rated below 3.0. Buyers who are let down may trust your next video less.</span></p>}
+                {dropping && <p className="cr2-note"><Icon name="alert" size={15} /><span>{prev} orders the 30 days before, {b.orders} now. Try a fresh video.</span></p>}
+                {lowRated && <p className="cr2-note"><Icon name="star" size={15} /><span>Rated below 3.0. This can hurt buyer trust.</span></p>}
 
                 {raise && (
                   <Link href="/app#scan" className="cr2-uprate">
-                    <span>Better rate through Techwide for this product</span>
+                    <span>Better rate available</span>
                     <b>{raise.nowRate === null ? "?" : `${raise.nowRate}%`} → {raise.tapRate}%</b>
                     <Icon name="arrow" size={16} />
                   </Link>
@@ -96,7 +96,7 @@ export function ProductList() {
 
       <p className="cr2-note">
         <Icon name="wallet" size={15} />
-        <span>Commission is your income from TikTok Shop, not the product&apos;s profit. Estimated until each order settles.</span>
+        <span>Commission is estimated until each order settles.</span>
       </p>
     </div>
   );

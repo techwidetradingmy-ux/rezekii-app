@@ -25,7 +25,7 @@ export default function Tour() {
           </span>
           <div>
             <h1 style={{ margin: 0, fontSize: 32, fontWeight: 800, letterSpacing: "-0.02em" }}>Rezekii 2.0 · all pages</h1>
-            <p className="v2-muted" style={{ margin: "4px 0 0" }}>Sample data only. Use the strip at the top to switch apps, or to see a creator who hasn&apos;t linked TikTok Shop yet.</p>
+            <p className="v2-muted" style={{ margin: "4px 0 0" }}>Sample data only. Switch apps from the top strip.</p>
           </div>
         </div>
         <div className="v2-grid3 v2-in">

@@ -14,11 +14,11 @@ type Sort = (typeof SORTS)[number];
 
 /** What the AI does, in order, with what it found at each step. */
 const STEPS: [string, string][] = [
-  ["Reading your last 30 days of sales", AI_PROFILE.categories.map(([c, v]) => `${c} ${v}%`).slice(0, 2).join(" · ")],
-  ["Finding what sells best for you", `Video ${AI_PROFILE.video}% · LIVE ${100 - AI_PROFILE.video}%`],
-  ["Checking TikTok Shop's best-sellers in Malaysia", `${AI_PROFILE.compared.toLocaleString("en-MY")} products`],
-  ["Matching Techwide campaigns and free samples", "Rezekii rates and samples found"],
-  ["Ranking everything by fit with you", `${AI_PICKS.length} picks`],
+  ["Reading your sales", AI_PROFILE.categories.map(([c, v]) => `${c} ${v}%`).slice(0, 2).join(" · ")],
+  ["Finding what sells for you", `Video ${AI_PROFILE.video}% · LIVE ${100 - AI_PROFILE.video}%`],
+  ["Checking TikTok best-sellers", `${AI_PROFILE.compared.toLocaleString("en-MY")} products`],
+  ["Matching campaigns", "Rezekii rates and samples found"],
+  ["Ranking picks", `${AI_PICKS.length} picks`],
 ];
 const STEP_MS = 650;
 const COUNTED = [0, 380, 1460, AI_PROFILE.compared, AI_PROFILE.compared, AI_PROFILE.compared];
@@ -66,7 +66,7 @@ export function AiPicks() {
           <span>
             <span className="v2-ailabel">AI picks</span>
             <h2>What should you sell next?</h2>
-            <small>Link TikTok Shop and the AI reads your sales, compares TikTok&apos;s best-sellers and picks what fits you.</small>
+            <small>Link TikTok Shop to get AI picks.</small>
           </span>
         </div>
         <button type="button" className="np-btn" style={{ alignSelf: "flex-start" }} onClick={() => setLinked(true)}>Link TikTok Shop</button>
@@ -81,7 +81,7 @@ export function AiPicks() {
         <span>
           <span className="v2-ailabel">AI picks for you</span>
           <h2>{done ? "What to sell next" : "Analysing your account…"}</h2>
-          <small>{done ? `Today 09:12 · ${AI_PROFILE.compared.toLocaleString("en-MY")} best-sellers compared with your sales` : "Takes a few seconds"}</small>
+          <small>{done ? `Today 09:12 · ${AI_PROFILE.compared.toLocaleString("en-MY")} best-sellers compared` : "Takes a few seconds"}</small>
         </span>
         {done && (
           <button type="button" className="btn-outline v2-btn-sm" onClick={() => setRun((r) => r + 1)}>
@@ -138,18 +138,18 @@ export function AiPicks() {
             <div>
               <small>Your average order</small>
               <b>RM {AI_PROFILE.aov.toFixed(2)}</b>
-              <em>From your orders, last 30 days</em>
+              <em>Last 30 days</em>
             </div>
           </div>
 
           <div className="ai-fit" role="group" aria-label="Video or LIVE">
             <button type="button" className={fit === "video" ? "on" : undefined} aria-pressed={fit === "video"} onClick={() => setFit("video")}>
               <span className="ai-fico"><Icon name="video" size={18} /></span>
-              <span><b>Best for video <em>{count("video")}</em></b><small>More orders per viewer on video</small></span>
+              <span><b>Best for video <em>{count("video")}</em></b><small>Sells more on video</small></span>
             </button>
             <button type="button" className={fit === "live" ? "on live" : "live"} aria-pressed={fit === "live"} onClick={() => setFit("live")}>
               <span className="ai-fico"><span className="ai-dot" />LIVE</span>
-              <span><b>Best for LIVE <em>{count("live")}</em></b><small>Buyers want a demo and to ask first</small></span>
+              <span><b>Best for LIVE <em>{count("live")}</em></b><small>Needs a demo</small></span>
             </button>
           </div>
 
@@ -196,7 +196,7 @@ export function AiPicks() {
                         type="button"
                         className={`ai-btn ${isAdded ? "done" : ""}`}
                         disabled={isAdded}
-                        onClick={() => { setAdded((a) => [...a, p.id]); toast(`Added to your showcase: ${p.name}`); }}
+                        onClick={() => { setAdded((a) => [...a, p.id]); toast(`Added to showcase: ${p.name}`); }}
                       >
                         <Icon name={isAdded ? "check" : "plus"} size={14} width={2.6} /> {isAdded ? "Added" : "Add"}
                       </button>
@@ -219,9 +219,9 @@ export function AiPicks() {
                 </span>
               </div>
               <ul className="cr1-after">
-                <li><Icon name="check" size={18} /> You meet the conditions for this sample.</li>
-                <li><Icon name="video" size={18} /> After it arrives, post 3 videos with it in your yellow cart. Post within 1 day for a bonus.</li>
-                <li><Icon name="shield" size={18} /> The Techwide team approves it, usually within 2 working days. Track it in My account.</li>
+                <li><Icon name="check" size={18} /> You meet the conditions.</li>
+                <li><Icon name="video" size={18} /> Post 3 videos with it in your yellow cart. Bonus within 1 day.</li>
+                <li><Icon name="shield" size={18} /> Techwide approves it, usually within 2 working days.</li>
               </ul>
               <button
                 type="button"
@@ -229,7 +229,7 @@ export function AiPicks() {
                 onClick={() => {
                   setRequested((r) => [...r, sampleFor.id]);
                   setSampleFor(null);
-                  toast(`Sample requested: ${sampleFor.name}. We'll tell you when it's approved.`);
+                  toast(`Sample requested: ${sampleFor.name}`);
                 }}
               >
                 <Icon name="gift" size={18} /> Request free sample
@@ -238,9 +238,8 @@ export function AiPicks() {
           )}
 
           <p className="ai-fine">
-            <b>Match</b> is how well a product fits your categories, prices and how you sell, out of 100; it isn&apos;t a sales forecast. <b>Video / LIVE</b>{" "}
-            is orders per 100 viewers in Malaysia, last 7 days. <b>#</b> is its rank in its category on TikTok Shop this week. <b>Earn</b>{" "}is
-            Techwide&apos;s rate where we run a campaign, otherwise TikTok&apos;s open rate. Free samples are only for products in Techwide&apos;s campaigns, and show when your level opens them.
+            <b>Match</b>: fit with you, out of 100. Not a forecast. <b>Video / LIVE</b>: orders per 100 viewers, last 7 days.{" "}
+            <b>Earn</b>: Techwide&apos;s rate, or TikTok&apos;s open rate.
           </p>
         </>
       )}

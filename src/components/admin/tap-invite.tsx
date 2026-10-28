@@ -31,10 +31,10 @@ export function TapInvites() {
       <Flow
         label="Two ways a TAP campaign starts"
         steps={[
-          { icon: "send", title: "Techwide invites", note: "We set it up, the seller registers" },
-          { icon: "box", title: "Or the seller submits", note: "From Submit products in their app" },
-          { icon: "kanban", title: "Same TAP pipeline", note: "Review, TikTok, live" },
-          { icon: "refresh", title: "Always in sync", note: "Admin, seller app and TikTok" },
+          { icon: "send", title: "Techwide invites" },
+          { icon: "box", title: "Or seller submits" },
+          { icon: "kanban", title: "TAP pipeline" },
+          { icon: "refresh", title: "Stays in sync" },
         ]}
       />
       <div className="ad-list">
@@ -80,7 +80,7 @@ function InviteSheet({ onClose, onSent }: { onClose: () => void; onSent: (shop: 
   // Only Seri Living's shop is connected in the preview, so its products can be suggested; others pick their own.
   const connected = shop === "Seri Living MY";
   const items = SHOP_ITEMS.filter((p) => p.stage === "Not submitted");
-  const errors = [!name.trim() && "Give the campaign a name.", raise < 2 && "Commission must be at least +2% above the public rate."].filter(Boolean) as string[];
+  const errors = [!name.trim() && "Add a campaign name.", raise < 2 && "Commission must be at least +2% above public."].filter(Boolean) as string[];
 
   if (sent) {
     return (
@@ -90,20 +90,20 @@ function InviteSheet({ onClose, onSent }: { onClose: () => void; onSent: (shop: 
           <b>{shop} has the invite{via === "Link only" ? " link" : ` on ${via}`}</b>
           <small>rezekii.com/i/{TAP_INVITE.code} · expires {TAP_INVITE.expires}</small>
         </div>
-        <p className="v2-small" style={{ margin: 0 }}>When they register, the products show up in the TAP pipeline as New, marked &ldquo;Invited by Techwide&rdquo;, and in their own Progress page.</p>
-        <Link href="/seller/app/invite" className="np-btn" target="_blank">See what the seller sees <Icon name="arrow" size={16} /></Link>
+        <p className="v2-small" style={{ margin: 0 }}>Once registered, products show as New in the TAP pipeline.</p>
+        <Link href="/seller/app/invite" className="np-btn" target="_blank">Preview seller view <Icon name="arrow" size={16} /></Link>
         <button type="button" className="btn-outline" style={{ height: 48 }} onClick={onClose}>Done</button>
       </Sheet>
     );
   }
 
   return (
-    <Sheet title="Invite a seller to a TAP campaign" onClose={onClose} wide>
-      <p className="v2-small" style={{ margin: 0 }}>Set it up for them. They open the link, check it, and register in one tap. <i className="pb-req">*</i> required.</p>
+    <Sheet title="Invite a seller" onClose={onClose} wide>
+      <p className="v2-small" style={{ margin: 0 }}>They open the link and register. <i className="pb-req">*</i> required.</p>
       <label className="v2-field"><span>Seller <i className="pb-req">*</i></span>
         <select className="np-input" value={shop} onChange={(e) => { setShop(e.target.value); setPicked(e.target.value === "Seri Living MY" ? TAP_INVITE.products : []); }}>
           {SELLERS.filter((s) => s.status === "Active").map((s) => <option key={s.shop} value={s.shop}>{s.shop} · {s.state === "—" ? s.country : s.state}</option>)}
-          <option value="New seller">New seller: send a sign-up link</option>
+          <option value="New seller">New seller (sign-up link)</option>
         </select>
       </label>
       <label className="v2-field"><span>Campaign name <i className="pb-req">*</i></span><input className="np-input" value={name} maxLength={60} onChange={(e) => setName(e.target.value)} /></label>
@@ -122,11 +122,11 @@ function InviteSheet({ onClose, onSent }: { onClose: () => void; onSent: (shop: 
             ))}
           </div>
         ) : (
-          <small className="v2-small">{shop === "New seller" ? "They link their shop after signing up, then pick products." : `${shop}'s shop isn't shared with us yet, so they pick products themselves.`}</small>
+          <small className="v2-small">{shop === "New seller" ? "They pick products after linking their shop." : "Shop not linked yet. Seller picks products."}</small>
         )}
       </div>
 
-      <div className="v2-field"><span>Commission above the public rate <i className="pb-req">*</i></span>
+      <div className="v2-field"><span>Above public rate <i className="pb-req">*</i></span>
         <div className="v2-chips">{[2, 4, 6, 8].map((n) => <button key={n} type="button" className={`v2-chip ${raise === n ? "on" : ""}`} onClick={() => setRaise(n)}>+{n}%{n === 2 && <small>minimum</small>}</button>)}</div>
       </div>
       <div className="v2-field"><span>Samples per SKU <i className="pb-req">*</i></span>
@@ -135,8 +135,8 @@ function InviteSheet({ onClose, onSent }: { onClose: () => void; onSent: (shop: 
       <div className="v2-field"><span>Ends <i className="pb-req">*</i></span>
         <div className="v2-chips">{ENDS.map((d) => <button key={d} type="button" className={`v2-chip ${end === d ? "on" : ""}`} onClick={() => setEnd(d)}>{d}</button>)}</div>
       </div>
-      <div className="np-switchrow"><span><b>Auto-extend before it ends</b><small>Moves the end date to the longest TikTok allows, 3 days before.</small></span><Switch label="Auto-extend" on={extend} onChange={setExtend} /></div>
-      <label className="v2-field"><span>Note to the seller <span className="pb-opt">Optional</span></span><textarea className="np-input" rows={2} value={note} onChange={(e) => setNote(e.target.value)} /></label>
+      <div className="np-switchrow"><span><b>Auto-extend</b><small>Extends to TikTok's max, 3 days before end.</small></span><Switch label="Auto-extend" on={extend} onChange={setExtend} /></div>
+      <label className="v2-field"><span>Note to seller <span className="pb-opt">Optional</span></span><textarea className="np-input" rows={2} value={note} onChange={(e) => setNote(e.target.value)} /></label>
       <div className="v2-field">Send by
         <div className="v2-chips">{(["WhatsApp", "Email", "Link only"] as const).map((v) => <button key={v} type="button" className={`v2-chip ${via === v ? "on" : ""}`} onClick={() => setVia(v)}>{v}</button>)}</div>
       </div>

@@ -37,7 +37,7 @@ export default function Disputes() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="Disputes" sub="When a sample, a video or a seller goes wrong. Each one has an owner and a due date." />
+      <Title title="Disputes" sub="Sample, video or seller problems. Each has an owner and due date." />
 
       <div className="ad-bar">
         <Seg value={show} options={["Open", "Resolved"] as const} onChange={setShow} />
@@ -74,7 +74,7 @@ export default function Disputes() {
               <button key={s} type="button" className={`v2-chip ${d.status === s ? "on" : ""}`} style={{ height: 34, fontSize: 13 }} onClick={() => { set({ status: s }); toast(`Status: ${s}`); }}>{s}</button>
             ))}
           </div>
-          {!d.owner && <button type="button" className="ad-btn-ghost" onClick={() => { set({ owner: ME }); toast("Assigned to you"); }}><Icon name="user" size={15} /> Take it</button>}
+          {!d.owner && <button type="button" className="ad-btn-ghost" onClick={() => { set({ owner: ME }); toast("Assigned to you"); }}><Icon name="user" size={15} /> Assign to me</button>}
 
           <Sec>What happened</Sec>
           <ul className="ad-tl">
@@ -95,7 +95,7 @@ export default function Disputes() {
                 <button type="button" className="np-btn v2-btn-sm" onClick={() => { set({ status: "Resolved", log: [...d.log, { when: "28 Oct 10:52", who: ME, text: "Decided for the creator. Closed." }] }); toast("Closed · added to both reliability records"); }}>Creator is right</button>
                 <button type="button" className="np-btn v2-btn-sm" onClick={() => { set({ status: "Resolved", log: [...d.log, { when: "28 Oct 10:52", who: ME, text: "Decided for the seller. Closed." }] }); toast("Closed · added to both reliability records"); }}>Seller is right</button>
               </div>
-              <span className="v2-small">The decision goes on the creator&apos;s delivery record and the seller&apos;s history. Both are told.</span>
+              <span className="v2-small">Goes on both records. Both are notified.</span>
             </>
           )}
         </Sheet>

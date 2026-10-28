@@ -69,7 +69,7 @@ export default function DataPayouts() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 20 }}>
-      <Title title="Payouts" sub="TikTok Shop pays your commission. Rezekii shows it, and what you earned extra with us.">
+      <Title title="Payouts" sub="Your commission, and what you earned extra with us.">
         <CalendarPicker
           label={label}
           sub={sub}
@@ -98,7 +98,7 @@ export default function DataPayouts() {
             <div className="cr2-extra">
               <span className="v2-small">Extra through Rezekii</span>
               <div className="cr2-amt violet">+<Count key={`x${from}${to}`} value={total.extra} format={(n) => rm(n)} /></div>
-              <small>{Math.round((total.extra / Math.max(total.est, 1)) * 100)}% of your commission, traced from your orders through Rezekii campaigns. TikTok&apos;s open plan wouldn&apos;t have paid this.</small>
+              <small>{Math.round((total.extra / Math.max(total.est, 1)) * 100)}% of your commission. Not paid on the open plan.</small>
             </div>
           </div>
           <div className="cr2-stack" role="img" aria-label={`Open-plan commission ${rm(open)}, extra through Rezekii ${rm(total.extra)}`}>
@@ -113,7 +113,7 @@ export default function DataPayouts() {
       </Lock>
 
       <div className="cr2-stats">
-        <Stat label="Paid" value={rm(total.paid)} note="Already in your TikTok Shop balance" tone="up" />
+        <Stat label="Paid" value={rm(total.paid)} note="In your TikTok Shop balance" tone="up" />
         <Stat label="Pending" value={rm(total.pending)} note={total.pending ? "Next release about 4 Nov" : "Nothing waiting"} />
         <Stat label="Clawed back" value={rm(total.clawed)} note="Orders cancelled or returned" tone="down" />
       </div>
@@ -172,12 +172,12 @@ export default function DataPayouts() {
                   <b>{dayName(picked.date)}</b>
                   <span>Estimated <b>{rm(picked.est)}</b> · of which <b className="violet">{rm(picked.extra)}</b> extra through Rezekii</span>
                   <small>
-                    {picked.state === "paid" ? "Paid into your TikTok Shop balance." : "Pending: TikTok releases it after the return window, about 4 Nov."}
-                    {picked.clawed > 0 && ` ${rm(picked.clawed)} was clawed back after a cancel or return.`}
+                    {picked.state === "paid" ? "Paid into your TikTok Shop balance." : "Pending. Released about 4 Nov."}
+                    {picked.clawed > 0 && ` ${rm(picked.clawed)} clawed back (cancel or return).`}
                   </small>
                 </div>
               ) : (
-                <p className="v2-small" style={{ margin: 0 }}>Tap a day to see its commission and payout status. Days outside your dates are faded.</p>
+                <p className="v2-small" style={{ margin: 0 }}>Tap a day for details.</p>
               )}
             </div>
           ) : (
@@ -194,7 +194,7 @@ export default function DataPayouts() {
                   </span>
                 </div>
               ))}
-              {inRange.length > 31 && <p className="v2-small" style={{ margin: "12px 0 0" }}>Showing the latest 31 days. Month by month below covers the rest.</p>}
+              {inRange.length > 31 && <p className="v2-small" style={{ margin: "12px 0 0" }}>Latest 31 days shown.</p>}
             </div>
           )}
         </Lock>
@@ -237,13 +237,13 @@ export default function DataPayouts() {
         <Flow
           label="How commission moves from order to payout"
           steps={[
-            { icon: "bag", title: "Ordered", note: "Estimated" },
-            { icon: "box", title: "Delivered", note: "Pending: return window" },
-            { icon: "wallet", title: "Settled", note: "Paid to your TikTok Shop balance" },
-            { icon: "x", title: "Cancelled or returned", note: "Clawed back", tone: "red" },
+            { icon: "bag", title: "Ordered" },
+            { icon: "box", title: "Delivered" },
+            { icon: "wallet", title: "Settled" },
+            { icon: "x", title: "Cancelled or returned", tone: "red" },
           ]}
         />
-        <p className="cr2-note"><Icon name="shield" size={15} /><span>We only show money that has already happened. We never forecast what you will earn.</span></p>
+        <p className="cr2-note"><Icon name="shield" size={15} /><span>Real earnings only. No forecasts.</span></p>
       </section>
     </div>
   );

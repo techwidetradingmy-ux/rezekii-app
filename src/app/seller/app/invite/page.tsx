@@ -27,7 +27,7 @@ export default function TapInvite() {
       <div className="v2-stack v2-in">
         <section className="v2-card sl-done">
           <h2>No problem</h2>
-          <p className="v2-muted" style={{ margin: 0, maxWidth: 440 }}>We&apos;ve told {I.from}. You can still register from this link until {I.expires}, or submit other products any time.</p>
+          <p className="v2-muted" style={{ margin: 0, maxWidth: 440 }}>We&apos;ve told {I.from}. This link works until {I.expires}.</p>
           <div className="v2-row" style={{ justifyContent: "center" }}>
             <button type="button" className="np-btn" onClick={() => setDeclined(false)}>Look again</button>
             <Link href="/seller/app/submit" className="btn-outline" style={{ height: 48 }}>Submit other products</Link>
@@ -43,7 +43,7 @@ export default function TapInvite() {
         <section className="v2-card sl-done">
           <span className="sl-check"><Icon name="check" size={38} width={2.8} /></span>
           <h2>{sel.length} product{sel.length === 1 ? "" : "s"} registered</h2>
-          <p className="v2-muted" style={{ margin: 0, maxWidth: 460, lineHeight: 1.55 }}>{I.from} sees them now in Techwide&apos;s TAP pipeline. Same steps as products you submit yourself; we&apos;ll tell you on WhatsApp and here when they&apos;re live.</p>
+          <p className="v2-muted" style={{ margin: 0, maxWidth: 460, lineHeight: 1.55 }}>We&apos;ll WhatsApp you when they&apos;re live.</p>
           <div className="sl-track" style={{ width: "100%", maxWidth: 520, marginTop: 6 }}>
             <div className="done"><i><Icon name="check" size={14} width={3} /></i><b>Registered</b><small>Now</small></div>
             <div className="now"><i /><b>Our review</b><small>Within 1 working day</small></div>
@@ -66,10 +66,10 @@ export default function TapInvite() {
         <p className="si-note">&ldquo;{I.note}&rdquo;</p>
         <h2 className="si-name">{I.name}</h2>
         <div className="si-terms">
-          <span><Icon name="tag" size={18} /><b>Public rate +{I.raise}%</b><small>For creators in this campaign</small></span>
-          <span><Icon name="gift" size={18} /><b>{I.samples} samples</b><small>Per SKU, sent through TikTok</small></span>
+          <span><Icon name="tag" size={18} /><b>Public rate +{I.raise}%</b><small>For creators</small></span>
+          <span><Icon name="gift" size={18} /><b>{I.samples} samples</b><small>Per SKU</small></span>
           <span><Icon name="cal" size={18} /><b>Until {I.end}</b><small>{I.extend ? "Auto-extends before it ends" : "Ends on this date"}</small></span>
-          <span><Icon name="users" size={18} /><b>{I.niche}</b><small>Creators Techwide picks</small></span>
+          <span><Icon name="users" size={18} /><b>{I.niche}</b><small>Picked by Techwide</small></span>
         </div>
       </section>
 
@@ -85,25 +85,25 @@ export default function TapInvite() {
                 <img src={p.img} alt="" />
                 <span className="sl-pinfo">
                   <strong>{p.name}</strong>
-                  <small>{rm(p.price)}{I.products.includes(p.id) ? ` · suggested by ${I.from}` : ""}</small>
+                  <small>{rm(p.price)}{I.products.includes(p.id) ? " · suggested" : ""}</small>
                 </span>
                 <span className="sl-pick-rate">
                   <span className="sl-rate">{p.publicRate === null ? "Public ?" : `${p.publicRate}%`} <Icon name="arrow" size={12} /> <b>{p.publicRate === null ? `+${I.raise}%` : `${p.publicRate + I.raise}%`}</b></span>
-                  <small>{p.publicRate === null ? "We'll check the public rate" : `Public ${p.publicRate}% now`}</small>
+                  <small>{p.publicRate === null ? "Public rate unknown" : `Public ${p.publicRate}% now`}</small>
                 </span>
               </label>
             );
           })}
         </div>
-        <p className="v2-small" style={{ margin: 0 }}>Uncheck any you don&apos;t want. Want to change the rate or samples? <button type="button" className="v2-link" style={{ fontSize: 13 }} onClick={() => toast(`Opening WhatsApp with ${I.from}…`)}>Ask {I.from}</button></p>
+        <p className="v2-small" style={{ margin: 0 }}>Change rate or samples? <button type="button" className="v2-link" style={{ fontSize: 13 }} onClick={() => toast(`Opening WhatsApp with ${I.from}…`)}>Ask {I.from}</button></p>
       </section>
 
       <section className="v2-card">
-        <div className="sl-step-h"><span className="n">2</span><h2>How it stays in sync</h2></div>
+        <div className="sl-step-h"><span className="n">2</span><h2>How it works</h2></div>
         <ul className="si-sync">
-          <li><Icon name="refresh" size={16} /><span>Your products, rates and samples update in your app, for {I.from}, and on TikTok together.</span></li>
-          <li><Icon name="kanban" size={16} /><span>Same steps as products you submit yourself: our review, TikTok, then live.</span></li>
-          <li><Icon name="shield" size={16} /><span>You can change or end it later from Change or end.</span></li>
+          <li><Icon name="refresh" size={16} /><span>Changes sync to {I.from} and TikTok.</span></li>
+          <li><Icon name="kanban" size={16} /><span>Our review, then TikTok, then live.</span></li>
+          <li><Icon name="shield" size={16} /><span>Change it later in Change or End.</span></li>
         </ul>
       </section>
 

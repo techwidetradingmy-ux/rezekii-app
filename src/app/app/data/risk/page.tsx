@@ -31,13 +31,13 @@ export default function DataRisk() {
   const highRisk = vids.filter((v) => v.cancel > 15).sort((a, b) => b.cancel - a.cancel);
 
   const ADVICE: Record<string, string[]> = {
-    v4: ["Next time, show each colour in daylight so it matches what arrives.", "Low-rated product (2.8★): pick a 4★ one for new videos."],
-    v2: ["Next time, show the result after a few days, not just the first wipe.", "Low-rated product (2.9★): pick a 4★ one for new videos."],
+    v4: ["Show each colour in daylight next time.", "Low rating (2.8★). Pick a 4★ product next."],
+    v2: ["Show the result after a few days next time.", "Low rating (2.9★). Pick a 4★ product next."],
   };
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 20 }}>
-      <Title title="Risk Check" sub="Low ratings, cancellations and returns that could hurt your account · updated today 09:12" />
+      <Title title="Risk Check" sub="Ratings, cancels and returns · updated today 09:12" />
       <RatingScan />
       <h2 className="v2-h2" style={{ marginTop: 8 }}>Cancellations and returns · last 30 days</h2>
 
@@ -61,12 +61,11 @@ export default function DataRisk() {
           <span>
             <strong>{worstP.name}</strong>
             <small>
-              {worst.cancelled} of its {worst.orders} orders were cancelled ({worst.cancel}%).{" "}
-              {worstVid && <><b>{worstVid.cancelled}</b> of them came from your {worstVid.date} video &ldquo;{worstVid.title}&rdquo;.</>}
+              {worst.cancelled} of {worst.orders} orders cancelled ({worst.cancel}%).{" "}
+              {worstVid && <><b>{worstVid.cancelled}</b> from your {worstVid.date} video &ldquo;{worstVid.title}&rdquo;.</>}
             </small>
           </span>
         </div>
-        <p className="v2-small" style={{ margin: 0 }}>So the problem is mostly that one video, not every video of this product.</p>
       </section>
 
       <section className="v2-card">
@@ -118,7 +117,7 @@ export default function DataRisk() {
 
         <section className="v2-card cr2-attn">
           <h2 className="v2-h2"><Icon name="video" size={20} /> High-risk videos</h2>
-          <p className="v2-small" style={{ margin: 0 }}>Over 15% of orders cancelled. Your average is {ANALYTICS.cancelRate}%.</p>
+          <p className="v2-small" style={{ margin: 0 }}>Over 15% cancelled. Your average: {ANALYTICS.cancelRate}%.</p>
           {highRisk.map((v) => (
             <div key={v.id} className="v2-stack" style={{ gap: 8, paddingTop: 12, borderTop: "1px solid var(--line)" }}>
               <div className="v2-row" style={{ justifyContent: "space-between" }}>

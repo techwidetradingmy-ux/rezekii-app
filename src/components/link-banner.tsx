@@ -8,7 +8,7 @@ export function LinkBanner() {
   if (linked) return null;
   return (
     <div className="v2-alert">
-      <span>Link TikTok Shop to see commission numbers, scan your showcase and add products in one tap.</span>
+      <span>Link TikTok Shop to see commission and scan your showcase.</span>
       <button type="button" onClick={() => setLinked(true)}>Link TikTok Shop</button>
     </div>
   );

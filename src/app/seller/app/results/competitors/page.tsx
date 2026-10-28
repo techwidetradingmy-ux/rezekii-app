@@ -8,7 +8,7 @@ import { Seg, Title } from "@/components/ui";
 import { Ava } from "@/components/seller/seller-ui";
 import { COMP_AI, COMP_CATEGORIES, COMP_CREATORS, COMP_PRODUCTS, COMP_VIDEOS, PERIODS, type CompCategory, type Period } from "@/lib/mock-seller";
 
-const SOON = "Creator invitations open when our creator pool is bigger";
+const SOON = "Invites coming soon";
 /** Rough scale so the three periods don't show identical ranges. */
 const TREND_K: Record<Period, number> = { "1 day": 0.4, "7 days": 1, "30 days": 1.6 };
 
@@ -31,7 +31,7 @@ export default function Competitors() {
 
   return (
     <div className="v2-stack v2-in">
-      <Title title="AI Competitors" sub="What's selling in your categories on TikTok Shop Malaysia, and who's selling it." />
+      <Title title="AI Competitors" sub="What's selling in your categories, and who's selling it." />
 
       <div className="v2-stack" style={{ gap: 10 }}>
         <div className="sl-chipline" role="group" aria-label="Category">
@@ -39,7 +39,7 @@ export default function Competitors() {
             <button key={c} type="button" className={`v2-chip ${cat === c ? "on" : ""}`} onClick={() => setCat(c)}>{c}</button>
           ))}
         </div>
-        <span className="v2-small">Categories picked from your shop&apos;s products.</span>
+        <span className="v2-small">From your products</span>
         <Seg value={period} options={PERIODS} onChange={setPeriod} />
       </div>
 
@@ -51,14 +51,14 @@ export default function Competitors() {
               <i style={{ left: "66%", top: "44%", animationDelay: "0.6s" }} />
               <i style={{ left: "44%", top: "70%", animationDelay: "0.85s" }} />
             </div>
-            Reading TikTok&apos;s best-seller lists for {cat} · {period}…
+            Scanning {cat} · {period}…
           </div>
         </section>
       ) : (
         <div className="v2-stack sl-reveal" key={`${cat}-${period}`}>
           <section className="sl-ai">
             <Icon name="spark" size={20} />
-            <span><b>What the AI sees · </b>{COMP_AI[cat]}</span>
+            <span><b>AI insight · </b>{COMP_AI[cat]}</span>
           </section>
 
           <section className="v2-card">
@@ -86,7 +86,7 @@ export default function Competitors() {
           </section>
 
           <section className="v2-card">
-            <div className="v2-card-h"><h2 className="v2-h2">Top videos</h2><span className="v2-small">Most sales from one video</span></div>
+            <div className="v2-card-h"><h2 className="v2-h2">Top videos</h2><span className="v2-small">By sales</span></div>
             <div className="sl-vgrid sl-reveal">
               {vids.map((v) => (
                 <button key={v.title} type="button" className="sl-vid" onClick={() => toast(`Opening ${v.handle}'s video on TikTok`)}>
@@ -106,7 +106,7 @@ export default function Competitors() {
           <section className="v2-card">
             <div className="v2-card-h">
               <h2 className="v2-h2">Top creators in {cat}</h2>
-              <button type="button" className="np-btn v2-btn-sm" onClick={() => toast(SOON)}><Icon name="users" size={16} /> Invite these creators</button>
+              <button type="button" className="np-btn v2-btn-sm" onClick={() => toast(SOON)}><Icon name="users" size={16} /> Invite creators</button>
             </div>
             <div className="sl-reveal">
               {creators.map((c) => (
@@ -125,7 +125,7 @@ export default function Competitors() {
             </div>
           </section>
 
-          <p className="v2-small" style={{ margin: 0 }}>From TikTok&apos;s public best-seller lists, updated daily, last at 06:00 today. TikTok only shows the top 100, and sales and GMV as ranges.</p>
+          <p className="v2-small" style={{ margin: 0 }}>TikTok best-seller lists (top 100) · updated 06:00 today. Sales and GMV are ranges.</p>
         </div>
       )}
     </div>

@@ -15,8 +15,8 @@ const NOTIFY: [string, string, boolean][] = [
   ["Product status", "Approved, live or not approved", true],
   ["Late samples", "When a creator is overdue", true],
   ["Weekly results", "Every Monday morning", true],
-  ["WhatsApp", "Get the important ones on WhatsApp too", false],
-  ["Email", "A copy of every notification", true],
+  ["WhatsApp", "Important ones only", false],
+  ["Email", "A copy of every alert", true],
 ];
 
 /** Shop authorisation, contact, social accounts, notifications, security, help and billing. */
@@ -49,7 +49,7 @@ export default function SellerAccount() {
         <div className="sl-set">
           <span>
             <b>TikTok Shop Seller Center</b>
-            <small>{linked ? "Connected since 12 Sep 2026 · reading products, orders and TAP campaigns" : "Expired on 27 Oct · reconnect to keep things updating"}</small>
+            <small>{linked ? "Connected since 12 Sep 2026" : "Expired on 27 Oct"}</small>
             <small>One account = one shop.</small>
           </span>
           <span className={`badge ${linked ? "" : "badge-red"}`}>{linked ? "Connected" : "Expired"}</span>
@@ -67,7 +67,7 @@ export default function SellerAccount() {
 
       <section className="v2-card">
         <h2 className="v2-h2">Social accounts</h2>
-        <p className="v2-small" style={{ margin: 0 }}>Used by Publish to post to your shop&apos;s own accounts.</p>
+        <p className="v2-small" style={{ margin: 0 }}>For posting from Publish.</p>
         <div>
           {socials.map((s) => (
             <div key={s.name} className="sl-acct">
@@ -116,16 +116,16 @@ export default function SellerAccount() {
             <button key={k} type="button" className={`v2-chip ${kind === k ? "on" : ""}`} style={{ height: 36, fontSize: 13.5 }} onClick={() => setKind(k)}>{k}</button>
           ))}
         </div>
-        <textarea className="np-input" rows={3} value={msg} onChange={(e) => setMsg(e.target.value)} placeholder={kind === "Idea" ? "What would make Rezekii better for your shop?" : "Tell us what happened"} aria-label="Message" />
+        <textarea className="np-input" rows={3} value={msg} onChange={(e) => setMsg(e.target.value)} placeholder={kind === "Idea" ? "What would make Rezekii better?" : "Tell us what happened"} aria-label="Message" />
         <div className="v2-row">
-          <button type="button" className="np-btn" disabled={!msg.trim()} onClick={() => { setMsg(""); toast("Sent · we read every message and reply within 1 working day"); }}>Send</button>
+          <button type="button" className="np-btn" disabled={!msg.trim()} onClick={() => { setMsg(""); toast("Sent · we reply within 1 working day"); }}>Send</button>
           <span className="v2-small">Or WhatsApp +60 3-2789 4410</span>
         </div>
       </section>
 
       <section className="v2-card">
         <div className="v2-card-h"><h2 className="v2-h2">Billing</h2><span className="badge badge-gray">Later</span></div>
-        <p className="v2-muted" style={{ margin: 0 }}>No monthly fee. If you use our custom service, its quote and invoices will show here.</p>
+        <p className="v2-muted" style={{ margin: 0 }}>No monthly fee. Custom service invoices show here.</p>
       </section>
 
       {edit && (

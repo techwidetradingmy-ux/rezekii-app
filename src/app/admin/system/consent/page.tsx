@@ -22,12 +22,12 @@ export default function ConsentLog() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="Consent Log" sub="Who agreed to which Terms and Privacy Policy before linking TikTok Shop, and what happened since. Nobody can edit or delete entries.">
+      <Title title="Consent Log" sub="Terms and Privacy consent before linking TikTok Shop. Read-only.">
         <button type="button" className="ad-btn-ghost" onClick={() => toast(`Exported ${shown.length} records as CSV`)}><Icon name="doc" size={15} /> Export</button>
       </Title>
 
       <div className="ad-bar">
-        <Search value={q} onChange={setQ} placeholder="Search account, record ID or TikTok grant" />
+        <Search value={q} onChange={setQ} placeholder="Search records" />
       </div>
       <Chips<Show> label="Status" value={show} onChange={setShow} options={(["All", "Active", "Unlinked", "Deleted"] as Show[]).map((s) => [s, count(s)] as [Show, number])} />
 
@@ -51,7 +51,7 @@ export default function ConsentLog() {
         </div>
         {shown.length === 0 && <p className="v2-muted" style={{ padding: 12 }}>No records match.</p>}
       </section>
-      <p className="v2-small" style={{ margin: 0 }}>Records are kept for 7 years, even after the account&apos;s TikTok Shop data is deleted. Times are Asia/Kuala_Lumpur.</p>
+      <p className="v2-small" style={{ margin: 0 }}>Kept 7 years, even after TikTok Shop data is deleted. Times are Asia/Kuala_Lumpur.</p>
 
       {open && (
         <Sheet title={`Consent ${open.id}`} onClose={() => setOpen(null)}>
@@ -67,7 +67,7 @@ export default function ConsentLog() {
           <ol className="ad-timeline">
             {open.events.map(([when, what]) => <li key={when + what}><b>{when}</b><span>{what}</span></li>)}
           </ol>
-          <button type="button" className="np-btn" onClick={() => toast(`Evidence for ${open.id} saved as PDF`)}><Icon name="doc" size={17} /> Save as evidence (PDF)</button>
+          <button type="button" className="np-btn" onClick={() => toast(`Evidence for ${open.id} saved as PDF`)}><Icon name="doc" size={17} /> Save as PDF</button>
         </Sheet>
       )}
     </div>

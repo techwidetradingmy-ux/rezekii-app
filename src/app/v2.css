@@ -46,7 +46,10 @@ body { font-feature-settings: "tnum" 0; }
 /* Type */
 .v2-title { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
 .v2-title h1 { margin: 0; font-size: clamp(26px, 4vw, 34px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
-.v2-title p { margin: 4px 0 0; color: var(--muted); font-size: 15px; }
+.v2-title-main { position: relative; min-width: 0; }
+.v2-tipbtn { display: inline-grid; place-items: center; width: 28px; height: 28px; margin-left: 6px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--muted); vertical-align: middle; cursor: pointer; }
+.v2-tipbtn:hover, .v2-tipbtn[aria-expanded="true"] { color: var(--gink); background: var(--gsoft); }
+.v2-title .v2-tip { position: absolute; z-index: 40; top: calc(100% + 8px); left: 0; width: max-content; max-width: min(340px, calc(100vw - 32px)); margin: 0; padding: 10px 12px; border-radius: 12px; background: var(--text); color: var(--bg); font-size: 14px; font-weight: 600; line-height: 1.45; box-shadow: 0 12px 28px -12px rgba(0, 0, 0, 0.45); animation: v2Rise2 0.15s var(--ease) both; }
 .v2-h2 { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: -0.01em; }
 .v2-muted { color: var(--muted); font-size: 14px; }
 .v2-small { font-size: 13px; color: var(--muted); }
@@ -630,3 +633,22 @@ body { font-feature-settings: "tnum" 0; }
 }
 :root[data-theme="dark"] :is(.mka-add:not(.done), .td-rank, .td-bar, li:not(:first-child):not(.done) .cr2-check.num, .v2-side-brand em) { background: #eef3f1; border-color: #eef3f1; color: #0d1117; }
 :root[data-theme="dark"] :is(.v2-flow li.dark .ic, .si-ico.tt) { background: #24332c; box-shadow: inset 0 0 0 1px #3a4a42; }
+
+/* Date choice as a small calendar icon (owner, 28 Oct 2026). */
+.cp-btn.icon { width: 44px; height: 44px; padding: 0; justify-content: center; border-radius: 14px; }
+/* What the numbers cover and what they're compared with, said once above them. */
+.an-range { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; font-size: 14px; color: var(--muted); }
+.an-range b { color: var(--text); font-size: 15px; }
+.v2-stat em svg { vertical-align: -2px; }
+.v2-tipwrap { position: relative; display: inline-flex; vertical-align: middle; }
+.v2-tipbtn.sm { width: 22px; height: 22px; margin-left: 2px; }
+.v2-tipwrap .v2-tip { position: absolute; z-index: 40; top: calc(100% + 6px); left: -8px; width: max-content; max-width: min(280px, calc(100vw - 48px)); padding: 10px 12px; border-radius: 12px; background: var(--text); color: var(--bg); font-size: 13.5px; font-weight: 600; line-height: 1.45; text-transform: none; letter-spacing: 0; white-space: normal; box-shadow: 0 12px 28px -12px rgba(0, 0, 0, 0.45); animation: v2Rise2 0.15s var(--ease) both; }
+.v2-stat small { display: inline-flex; align-items: center; }
+.v2-stat b.cr2-green-v { color: #00874f; }
+.an-dot { display: inline-block; width: 10px; height: 10px; margin-right: 8px; border-radius: 50%; vertical-align: 4px; }
+.an-dot.ok { background: #00c073; box-shadow: 0 0 0 4px rgba(0, 192, 115, 0.18); }
+.an-dot.bad { background: var(--red); box-shadow: 0 0 0 4px rgba(225, 75, 59, 0.18); }
+/* Tab bar Scan button: same raised, pressable look as the big one on Home. */
+.nv-scan-btn { background: radial-gradient(circle at 34% 28%, #5ff0b8 0%, #12cc80 38%, #00a862 72%, #008f53 100%); box-shadow: inset 0 2px 1px rgba(255, 255, 255, 0.55), inset 0 -4px 8px rgba(0, 70, 40, 0.35), 0 5px 0 #007a47, 0 10px 16px -6px rgba(0, 110, 64, 0.55); transition: transform 0.08s ease-out, box-shadow 0.08s ease-out; }
+.nv-bottom a.nv-scan:active .nv-scan-btn { transform: translateY(4px); box-shadow: inset 0 2px 1px rgba(255, 255, 255, 0.45), inset 0 -2px 6px rgba(0, 70, 40, 0.35), 0 1px 0 #007a47, 0 4px 8px -4px rgba(0, 110, 64, 0.55); }
+.nv-bottom a.nv-scan.on .nv-scan-btn { box-shadow: 0 0 0 3px rgba(0, 192, 115, 0.22), inset 0 2px 1px rgba(255, 255, 255, 0.55), inset 0 -4px 8px rgba(0, 70, 40, 0.35), 0 5px 0 #007a47, 0 10px 16px -6px rgba(0, 110, 64, 0.55); }

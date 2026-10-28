@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { CalendarPicker, between, dayName, iso } from "@/components/calendar-picker";
 import { useDemo } from "@/components/demo";
-import { AiMark, Bars, Count, Lock, Progress, Seg, Stat, Title } from "@/components/ui";
+import { AiMark, Bars, Count, Lock, Progress, Seg, Stat, Tip, Title } from "@/components/ui";
 import { product, rm } from "@/lib/mock";
 import { ACTIONS, CHARTS, POST_TIMES, RANGES, RANGE_DATA, SHORT, WATCH, type RangeKey } from "@/lib/mock-creator2";
 import { FLAGGED } from "@/components/creator1/rating-scan";
@@ -40,7 +40,8 @@ export default function DataOverview() {
   const ranked = [...d.byProduct].sort((a, b) => b.commission - a.commission);
   const top2 = ranked[0].commission + ranked[1].commission;
   const highCancel = d.cancel > 10;
-  const change = (n: number | null) => (n === null ? "Since you joined in March" : `Up ${n}% on the ${range} before`);
+  const change = (n: number | null) => (n === null ? "New" : <><Icon name="trend" size={14} width={2.4} /> {n}%</>);
+  const rangeLabel = custom ? `${dayName(from)} – ${dayName(to)}` : PRESETS.find(([k]) => k === range)![1];
 
   const remove = (id: string) => {
     setRemoved((r) => [...r, id]);
@@ -66,9 +67,10 @@ export default function DataOverview() {
 
   return (
     <div className="v2-stack v2-in an-page" style={{ gap: 22 }}>
-      <Title title="Analytics" sub={<>Updated today 09:12 · from your TikTok Shop orders</>}>
+      <Title title="Analytics" sub="Updated today 09:12">
         <CalendarPicker
-          label={custom ? `${dayName(from)} – ${dayName(to)}` : PRESETS.find(([k]) => k === range)![1]}
+          compact
+          label={rangeLabel}
           sub={`${dayName(from)} – ${dayName(to)} · ${between(from, to)} days`}
           today={TODAY}
           first={JOINED}
@@ -87,20 +89,16 @@ export default function DataOverview() {
 
       <Lock what="your sales and commission">
         <div className="v2-stack" style={{ gap: 10 }}>
+          <p className="an-range"><b>{rangeLabel}</b>{range !== "Lifetime" && <span>vs the {custom ? `${between(from, to)} days` : range} before</span>}</p>
           <div className="cr2-stats">
             <Stat label="GMV" value={<Count key={`g${range}`} value={d.gmv} format={(n) => rm(n, 0)} />} note={change(d.gmvChange)} tone="up" />
             <Stat label="Orders" value={<Count key={`o${range}`} value={d.orders} />} note={change(d.ordersChange)} tone="up" />
-            <Stat label="Commission (estimated)" value={<Count key={`c${range}`} value={d.est} format={(n) => rm(n)} />} note={`Paid ${rm(d.paid)}`} />
+            <Stat label={<>Est. commission <Tip label="About commission" text="Your income from TikTok Shop, not the product's profit. It stays estimated until TikTok settles each order." /></>} value={<Count key={`c${range}`} value={d.est} format={(n) => rm(n)} />} note={`Paid ${rm(d.paid)}`} />
             <div className="v2-stat">
-              <small>Cancel rate</small>
-              <b className={highCancel ? "cr2-red" : undefined}>{d.cancel.toFixed(1)}%</b>
-              <em className={highCancel ? "down" : "up"}>{highCancel ? "High: above 10%" : "Healthy: under 10%"}</em>
+              <small>Cancel rate <Tip label="About cancel rate" text="Green is under 10%. Red means too many cancelled orders." /></small>
+              <b className={highCancel ? "cr2-red" : "cr2-green-v"}><i className={`an-dot ${highCancel ? "bad" : "ok"}`} aria-hidden="true" />{d.cancel.toFixed(1)}%</b>
             </div>
           </div>
-          <p className="cr2-note">
-            <Icon name="wallet" size={15} />
-            <span>Commission is your income from TikTok Shop, not the product&apos;s profit. It stays estimated until TikTok settles each order.</span>
-          </p>
         </div>
       </Lock>
 
@@ -109,7 +107,7 @@ export default function DataOverview() {
           <AiMark size={44} />
           <span>
             <span className="v2-ailabel">AI summary · {span}</span>
-            <small>Written only from your real numbers. It doesn&apos;t predict what you will earn.</small>
+            <small>Based on your TikTok Shop sales</small>
           </span>
         </div>
         <div className="cr2-aisum-text">
@@ -168,7 +166,7 @@ export default function DataOverview() {
           <h2 className="v2-h2">Your action plan</h2>
           <span className="v2-small">{doneCount} of {ACTIONS.length} done</span>
         </div>
-        <p className="v2-small" style={{ margin: 0 }}>Do these in order, from your numbers above. Tap a number when it&apos;s done.</p>
+        <p className="v2-small" style={{ margin: 0 }}>Tap a number when done.</p>
         <Progress value={doneCount} max={ACTIONS.length} />
         <ol className="cr2-plan-list">
           {PLAN.map((a, n) => {
@@ -242,20 +240,14 @@ export default function DataOverview() {
               {split === "By channel" ? <Bars key="ch" rows={channelRows} /> : <Bars key="pr" rows={productRows} />}
             </div>
           </Lock>
-          <p className="v2-small" style={{ margin: 0 }}>
-            {split === "By channel"
-              ? `Videos bring ${d.channel[0]}% of your commission. LIVE brings ${d.channel[1]}%.`
-              : `Share of your ${rm(d.est)} estimated commission, ${span}.`}
-          </p>
         </section>
 
         <section className="v2-card">
           <div className="v2-card-h">
             <h2 className="v2-h2">Best time to post</h2>
-            <span className="v2-small">Views against your average</span>
+            <span className="v2-small">Views vs your average</span>
           </div>
           <Bars rows={POST_TIMES.map(([label, x]) => ({ label, value: x, display: `${x}×`, tone: x < 1 ? ("blue" as const) : undefined }))} />
-          <p className="v2-small" style={{ margin: 0 }}>Your videos posted 8 to 10 pm get the most views. From your last 30 days of videos.</p>
         </section>
       </div>
 

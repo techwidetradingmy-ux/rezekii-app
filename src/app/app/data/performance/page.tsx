@@ -19,7 +19,7 @@ export default function DataPerformance() {
   }, []);
   return (
     <div className="v2-stack v2-in" style={{ gap: 20 }}>
-      <Title title="Performance" sub="What each video and product earned in the last 30 days, and what to sell next · updated today 09:12">
+      <Title title="Performance" sub="Last 30 days · updated today 09:12">
         <Seg value={by} options={["By video", "By product", "AI picks"] as const} onChange={setBy} />
       </Title>
       {by === "By video" && <VideoList />}
@@ -31,10 +31,10 @@ export default function DataPerformance() {
             <Flow
               label="How AI picks work"
               steps={[
-                { icon: "chart", title: "Reads your sales", note: "Last 30 days, your categories" },
-                { icon: "flame", title: "Checks TikTok's best-sellers", note: "Malaysia, this week" },
-                { icon: "tag", title: "Matches Rezekii campaigns", note: "Better rates, free samples" },
-                { icon: "video", title: "Splits video and LIVE", note: "By buy rate" },
+                { icon: "chart", title: "Your sales" },
+                { icon: "flame", title: "Top sellers" },
+                { icon: "tag", title: "Rezekii campaigns" },
+                { icon: "video", title: "Video or LIVE" },
               ]}
             />
           </section>

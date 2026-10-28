@@ -28,7 +28,7 @@ export default function SamplesWent() {
       <section className="v2-card">
         <div className="v2-card-h">
           <h2 className="v2-h2">{s.sent} samples sent</h2>
-          <span className="v2-small">Each light is one sample</span>
+          <span className="v2-small">1 dot = 1 sample</span>
         </div>
         <div className="sl-dots" aria-hidden="true">
           {dots.map((t, i) => <i key={i} className={t} style={{ animationDelay: `${120 + i * 35}ms` }} />)}
@@ -69,25 +69,25 @@ export default function SamplesWent() {
                     <Pips n={d.videos} /> {d.videos} / 3 videos
                     {d.live && <span className="badge badge-blue">+ LIVE</span>}
                   </span>
-                  {d.reminded && <small style={{ color: "var(--red)", fontWeight: 600 }}>{d.reminded} · sample access paused until they post</small>}
+                  {d.reminded && <small style={{ color: "var(--red)", fontWeight: 600 }}>{d.reminded} · samples paused</small>}
                 </span>
                 <span className="sl-pside">
                   <span className={`badge ${d.state === "Overdue" ? "badge-red" : d.state === "On time" ? "badge-amber" : ""}`}>{label(d)}</span>
                   {d.videos > 0 ? (
                     <button type="button" className="v2-link" style={{ fontSize: 13.5 }} onClick={() => toast(`Opening ${d.handle}'s videos on TikTok`)}>Watch videos</button>
                   ) : d.state === "Overdue" ? (
-                    <button type="button" className="v2-link" style={{ fontSize: 13.5 }} onClick={() => toast("Our team will follow up and tell you within 1 working day")}>Ask our team</button>
+                    <button type="button" className="v2-link" style={{ fontSize: 13.5 }} onClick={() => toast("We'll follow up within 1 working day")}>Ask our team</button>
                   ) : null}
                 </span>
               </div>
             );
           })}
         </div>
-        <p className="v2-small" style={{ margin: 0 }}>Showing the latest 12 of {s.sent}. </p>
+        <p className="v2-small" style={{ margin: 0 }}>Latest 12 of {s.sent}</p>
       </section>
 
       <p className="v2-small" style={{ margin: 0, display: "flex", gap: 8 }}>
-        <Icon name="shield" size={16} /> Every sample is approved by Techwide. Creators who don&apos;t deliver are reminded, then frozen or banned from samples. Samples already sent can&apos;t be taken back.
+        <Icon name="shield" size={16} /> Techwide approves every sample. Late creators get frozen or banned. Sent samples can&apos;t be taken back.
       </p>
     </div>
   );

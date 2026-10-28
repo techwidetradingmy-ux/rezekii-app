@@ -60,7 +60,7 @@ export default function GrowthMissions() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="Missions" sub="Add or change missions and rewards any time. No code, no release.">
+      <Title title="Missions" sub="Change missions and rewards any time, no code.">
         <button type="button" className="np-btn v2-btn-sm" onClick={() => setEdit(blank(who === "Creators" ? "Creator" : "Seller"))}><Icon name="plus" size={16} /> New mission</button>
       </Title>
 
@@ -68,7 +68,7 @@ export default function GrowthMissions() {
 
       <div className="v2-grid4 ad-stats">
         <div className="v2-stat"><small>Live missions</small><b>{shown.filter((m) => m.status === "Live").length}</b><em>{shown.filter((m) => m.status !== "Live").length} draft or paused</em></div>
-        <div className="v2-stat"><small>Credits a month (estimate)</small><b>{issued.toLocaleString("en-MY")}</b><em>From live missions, last 30 days</em></div>
+        <div className="v2-stat"><small>Credits/month (est.)</small><b>{issued.toLocaleString("en-MY")}</b><em>Live missions, last 30 days</em></div>
         <div className="v2-stat"><small>Completed in 30 days</small><b>{shown.reduce((a, m) => a + m.done30, 0).toLocaleString("en-MY")}</b><em>All live missions</em></div>
       </div>
 
@@ -88,7 +88,7 @@ export default function GrowthMissions() {
               <span className="acts">
                 {m.status !== "Live" && m.next?.includes("starts") ? <Pill tone="info">Scheduled</Pill> : <Pill tone={STATUS_TONE[m.status]}>{m.status}</Pill>}
                 {m.status !== "Draft" && (
-                  <Switch label={`${m.title} live`} on={m.status === "Live"} onChange={(v) => { setList((l) => l.map((x) => (x.id === m.id ? { ...x, status: v ? "Live" : "Paused" } : x))); toast(v ? `${m.title} is live again` : `${m.title} paused · nobody new can start it`); }} />
+                  <Switch label={`${m.title} live`} on={m.status === "Live"} onChange={(v) => { setList((l) => l.map((x) => (x.id === m.id ? { ...x, status: v ? "Live" : "Paused" } : x))); toast(v ? `${m.title} is live again` : `${m.title} paused · no new starts`); }} />
                 )}
                 <button type="button" className="ad-btn-ghost" onClick={() => setEdit(m)}>Edit</button>
               </span>
@@ -112,7 +112,7 @@ function Editor({ m: init, onClose, onSave }: { m: Def; onClose: () => void; onS
 
   return (
     <Sheet title={isNew ? "New mission" : `Edit: ${init.title}`} onClose={onClose}>
-      {!isNew && <span className="v2-small" style={{ marginTop: -8 }}>Saving makes {`v${Number(init.version.slice(1)) + 1}`}. {init.version} stays {init.status.toLowerCase()} until the new one starts.</span>}
+      {!isNew && <span className="v2-small" style={{ marginTop: -8 }}>Saves as {`v${Number(init.version.slice(1)) + 1}`}. {init.version} stays {init.status.toLowerCase()} until then.</span>}
 
       <Sec>Who and when</Sec>
       <Seg value={m.who} options={["Creator", "Seller"] as const} onChange={(v) => set({ who: v })} />
@@ -129,13 +129,13 @@ function Editor({ m: init, onClose, onSave }: { m: Def; onClose: () => void; onS
 
       <Sec>Reward</Sec>
       <div className="ad-form">
-        <label className="v2-field">Reward tiers (credits)<input className="np-input" value={m.tiers} placeholder="10 / 30 / 60" onChange={(e) => set({ tiers: e.target.value })} /><small>Use / for tiers. People get the difference as they climb.</small></label>
+        <label className="v2-field">Reward tiers (credits)<input className="np-input" value={m.tiers} placeholder="10 / 30 / 60" onChange={(e) => set({ tiers: e.target.value })} /><small>Use / between tiers.</small></label>
         <label className="v2-field">Caps<input className="np-input" value={m.cap} placeholder="60 a day · 1,200 a month" onChange={(e) => set({ cap: e.target.value })} /></label>
       </div>
 
       <Sec>Deadline</Sec>
       <div className="np-switchrow">
-        <span><b>Has a deadline</b><small>The countdown starts at sign-up.</small></span>
+        <span><b>Has a deadline</b></span>
         <Switch label="Has a deadline" on={m.deadline !== null} onChange={(v) => set({ deadline: v ? 7 : null })} />
       </div>
       {m.deadline !== null && (
@@ -148,7 +148,7 @@ function Editor({ m: init, onClose, onSave }: { m: Def; onClose: () => void; onS
             </span>
             <span className="v2-muted">days after sign-up</span>
           </div>
-          <div className="v2-field">If they finish late<Seg value={m.late} options={["Halve the reward", "Void it"] as const} onChange={(v) => set({ late: v })} /></div>
+          <div className="v2-field">If late<Seg value={m.late} options={["Halve the reward", "Void it"] as const} onChange={(v) => set({ late: v })} /></div>
         </>
       )}
 
@@ -156,8 +156,8 @@ function Editor({ m: init, onClose, onSave }: { m: Def; onClose: () => void; onS
       <div className="ad-form">
         <div className="v2-stack" style={{ gap: 10 }}>
           <div className="v2-field">Template<Seg value={m.template} options={["Story", "Square"] as const} onChange={(v) => set({ template: v })} /></div>
-          <label className="v2-field">Message<input className="np-input" value={m.message} onChange={(e) => set({ message: e.target.value })} /><small>{"{n}"} = their number, e.g. days in a row</small></label>
-          <label className="v2-field">Encouragement line<input className="np-input" value={m.cheer} onChange={(e) => set({ cheer: e.target.value })} /></label>
+          <label className="v2-field">Message<input className="np-input" value={m.message} onChange={(e) => set({ message: e.target.value })} /><small>{"{n}"} = their number</small></label>
+          <label className="v2-field">Encouragement<input className="np-input" value={m.cheer} onChange={(e) => set({ cheer: e.target.value })} /></label>
         </div>
         <div className={`ad-cele ${m.template === "Square" ? "square" : ""}`} aria-label="Card preview" style={m.template === "Story" ? { minHeight: 260 } : { aspectRatio: "1 / 1" }}>
           {Array.from({ length: 10 }, (_, i) => (
@@ -178,14 +178,14 @@ function Editor({ m: init, onClose, onSave }: { m: Def; onClose: () => void; onS
         <Icon name="chart" size={22} />
         <span>
           <b>About {est.toLocaleString("en-MY")} credits a month</b>
-          Based on the last 30 days of {m.trigger} events. An estimate from current settings, not a forecast.
+          Based on last 30 days of {m.trigger} events.
         </span>
       </div>
-      {est > BUDGET && <div className="v2-alert"><Icon name="alert" size={18} /><span>Above the {BUDGET.toLocaleString("en-MY")}-credit monthly budget for one mission. Lower the reward or add a cap.</span></div>}
+      {est > BUDGET && <div className="v2-alert"><Icon name="alert" size={18} /><span>Over the {BUDGET.toLocaleString("en-MY")}-credit monthly budget. Lower the reward or add a cap.</span></div>}
 
       <div className="v2-alert" style={{ background: "var(--surface2)", color: "var(--body)" }}>
         <Icon name="shield" size={18} />
-        <span>Changes only apply to people who start after the change. Anyone already counting down keeps the old rule, and rewards already earned never change.</span>
+        <span>Changes apply to new starts only. Earned rewards never change.</span>
       </div>
 
       <div className="v2-row">

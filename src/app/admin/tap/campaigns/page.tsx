@@ -65,7 +65,7 @@ export default function TapCampaigns() {
       {ending.length > 0 && !out && (
         <div className="v2-alert">
           <Icon name="alert" size={20} />
-          <span>{ending.length} campaigns end in the next 14 days. {ending.filter((c) => c.auto).length} have auto-extend on and will extend by themselves 3 days before they end.</span>
+          <span>{ending.length} campaigns end within 14 days. {ending.filter((c) => c.auto).length} will auto-extend.</span>
         </div>
       )}
 
@@ -81,7 +81,7 @@ export default function TapCampaigns() {
             <span className="ok"><Icon name="check" size={14} /> {out.ok.length} extended to {LONGEST_END}</span>
             {out.failed.length > 0 && <span className="bad"><Icon name="x" size={14} /> {out.failed.length} failed</span>}
           </div>
-          <p className="v2-small" style={{ margin: 0 }}>{LONGEST_END} is the longest end date TikTok allows today (90 days). Sellers get a note in their app.</p>
+          <p className="v2-small" style={{ margin: 0 }}>{LONGEST_END} is TikTok's max (90 days). Sellers are notified.</p>
           {out.failed.map(([who, why]) => (
             <div key={who} className="v2-alert red" style={{ padding: "10px 14px" }}><span>{who} · {why}</span></div>
           ))}
@@ -125,19 +125,19 @@ export default function TapCampaigns() {
                   <Switch
                     label={`Auto-extend ${c.name}`}
                     on={c.auto}
-                    onChange={(v) => { setList((l) => l.map((x) => (x.id === c.id ? { ...x, auto: v } : x))); toast(v ? `Auto-extend on: extends to the longest allowed date 3 days before ${c.end}` : "Auto-extend off · logged"); }}
+                    onChange={(v) => { setList((l) => l.map((x) => (x.id === c.id ? { ...x, auto: v } : x))); toast(v ? `Auto-extend on · runs 3 days before ${c.end}` : "Auto-extend off · logged"); }}
                   />
                 </span>
               )}
               {c.status === "Ended" && (
-                <button type="button" className="ad-btn-ghost" onClick={() => toast("New campaign drafted from this one · in TAP pipeline as New")}>Run again</button>
+                <button type="button" className="ad-btn-ghost" onClick={() => toast("Draft added to TAP pipeline")}>Run again</button>
               )}
             </div>
           ))}
           {shown.length === 0 && <p className="v2-muted" style={{ padding: "14px 0" }}>Nothing to show.</p>}
         </div>
       </section>
-      <p className="v2-small" style={{ margin: 0 }}>Auto-extend moves the end date to the longest TikTok allows, 3 days before the campaign ends. Every change is in the audit log.</p>
+      <p className="v2-small" style={{ margin: 0 }}>Auto-extend runs 3 days before the end. All changes are logged.</p>
     </div>
   );
 }

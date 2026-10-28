@@ -12,10 +12,10 @@ import { SAMPLE_DESTINATIONS, SELLER_RESULTS, product, rm } from "@/lib/mock";
 import { AGENCY, SELLER_FAQ, TESTIMONIALS } from "@/lib/mock-seller";
 
 const PAIN: [string, string][] = [
-  ["Creators don't reply, or disappear once they have your sample.", "Samples only go to active creators who deliver on time. Those who don't are frozen or banned."],
-  ["Samples get wasted on people who never post.", "Our system reviews every request. 1 sample = 3 videos, and you can see where every sample went."],
-  ["You hire someone at RM 3,000–3,500 a month just to chase creators. It's slow, stressful, and the sales don't come.", "We do the chasing for you. No extra hire, no one to train."],
-  ["You pay upfront, before a single order.", "We only earn commission when you sell."],
+  ["Creators vanish after getting your sample.", "Samples only go to creators who deliver on time."],
+  ["Samples go to people who never post.", "We review every request. 1 sample = 3 videos."],
+  ["You pay RM 3,000–3,500 a month for staff to chase creators.", "We chase creators for you. No hire needed."],
+  ["You pay upfront, before any orders.", "We only earn commission when you sell."],
 ];
 
 const ORDERS = [
@@ -111,9 +111,9 @@ export default function SellerLanding() {
           <div className="hero-copy v2-in">
             <span className="hero-eyebrow"><span className="dot" /> FOR TIKTOK SHOP SELLERS IN MALAYSIA</span>
             <h1>Let creators sell for you, <em>without hiring anyone</em></h1>
-            <p><b style={{ color: "var(--text)" }}>No sales, you pay us nothing.</b> Submit your products once. Techwide&apos;s creators make the videos and LIVEs, and you see every sale and every sample.</p>
+            <p><b style={{ color: "var(--text)" }}>No sales, you pay us nothing.</b> Submit products once. Techwide&apos;s creators make the videos and LIVEs.</p>
             <div className="hero-ctas">
-              <Link href="/seller/connect" className="btn-tiktok">Connect Seller Center, start free <Icon name="arrow" size={18} /></Link>
+              <Link href="/seller/connect" className="btn-tiktok">Connect Seller Center <Icon name="arrow" size={18} /></Link>
               <button type="button" className="btn-ghost" style={{ font: "inherit", fontWeight: 800, cursor: "pointer" }} onClick={() => setTalk(true)}>Talk to our team</button>
             </div>
             <ul className="hero-checks">
@@ -129,14 +129,14 @@ export default function SellerLanding() {
       <main className="site-wrap site-main">
         <section className="section" id="results">
           <span className="eyebrow">THE NUMBERS</span>
-          <h2>Sellers love numbers. Here are ours.</h2>
+          <h2>Our numbers</h2>
           <div className="hm-stats sl-wall">
             <div className="hm-stat"><b><InViewCount value={AGENCY.gmv / 1e6} format={(n) => `RM ${n.toFixed(2)}M`} /></b><span>GMV through Techwide in {AGENCY.month}</span></div>
             <div className="hm-stat"><b><InViewCount value={AGENCY.orders} /></b><span>Orders in {AGENCY.month}</span></div>
             <div className="hm-stat"><b><InViewCount value={AGENCY.campaigns} /></b><span>TAP campaigns running now</span></div>
             <div className="hm-stat"><b><InViewCount value={AGENCY.products} /></b><span>Products creators can promote</span></div>
           </div>
-          <p className="sl-fine"><Icon name="shield" size={14} /> Techwide&apos;s agency results. We update these numbers before launch.</p>
+          <p className="sl-fine"><Icon name="shield" size={14} /> Techwide agency results. Updated before launch.</p>
         </section>
 
         <section className="section">
@@ -192,7 +192,7 @@ export default function SellerLanding() {
             <div className="sl-year-row"><span>Hire someone</span><span className="v2-meter"><i className="red" style={{ width: "100%" }} /></span><b>RM 36,000+</b></div>
             <div className="sl-year-row" style={{ color: "var(--gink)" }}><span>Rezekii</span><span className="v2-meter"><i style={{ width: "3%" }} /></span><b>RM 0</b></div>
           </div>
-          <p className="hm-fine">Samples are still your own marketing cost: you send them to creators through TikTok, the same as today. Commission comes out of orders that actually happen.</p>
+          <p className="hm-fine">You still pay for samples, sent through TikTok as usual.</p>
         </section>
 
         <section className="section">
@@ -223,7 +223,7 @@ export default function SellerLanding() {
             <div className="card hm-step">
               <span className="step-n">1</span>
               <strong>Connect Seller Center</strong>
-              <span>Sign in and connect your TikTok Shop. We read your products, prices and sales, so you never type them in.</span>
+              <span>Connect your TikTok Shop. We import your products, prices and sales.</span>
               <div className="v2-row" style={{ marginTop: 6 }}>
                 <span className="badge" style={{ background: "#000000", color: "#ffffff", boxShadow: "none" }}>TikTok Seller Center</span>
                 <Icon name="link" size={18} stroke="#00a862" />
@@ -233,7 +233,7 @@ export default function SellerLanding() {
             <div className="card hm-step">
               <span className="step-n">2</span>
               <strong>Pick products and submit</strong>
-              <span>Tick your products and choose how much above your public commission to pay. AI suggests the amount from how well each one sells.</span>
+              <span>Pick products and set your extra commission. AI suggests an amount.</span>
               <div className="v2-chips" style={{ marginTop: 6 }}>
                 <span className="v2-chip" style={{ height: 34, cursor: "default" }}>+2%</span>
                 <span className="v2-chip on" style={{ height: 34, cursor: "default" }}>+5% <small>AI pick</small></span>
@@ -241,7 +241,7 @@ export default function SellerLanding() {
               </div>
             </div>
           </div>
-          <p className="lead">Then we do the rest: review your products, submit them to TikTok, approve the right creators for your samples, and chase every video.</p>
+          <p className="lead">We do the rest: TikTok submission, sample approvals and video follow-ups.</p>
         </section>
 
         <section className="section">
@@ -257,7 +257,7 @@ export default function SellerLanding() {
                   <span><b>{SELLER_RESULTS.creators}</b><small>Creators</small></span>
                 </div>
                 <Columns values={SELLER_RESULTS.daily} />
-                <small className="v2-small">Charts of sales, creators, videos and LIVEs. Data from TikTok, updated daily.</small>
+                <small className="v2-small">TikTok data, updated daily.</small>
               </div>
             </div>
             <div className="v2-card sl-window">
@@ -279,7 +279,7 @@ export default function SellerLanding() {
           <div>
             <span className="eyebrow">CUSTOM SERVICE</span>
             <h2>Want our team to run it for you?</h2>
-            <p>For a launch, a big catalogue or paid content, our team can find the creators, plan the videos and manage it all. Tell us what you need and we&apos;ll quote for your shop.</p>
+            <p>For launches, big catalogues or paid content. Tell us what you need and we&apos;ll quote.</p>
           </div>
           <button type="button" className="np-btn" onClick={() => setTalk(true)}>Talk to us <Icon name="arrow" size={18} /></button>
         </section>
@@ -299,8 +299,8 @@ export default function SellerLanding() {
 
         <section className="hm-cta">
           <h2>Let creators sell for you</h2>
-          <p>Connect Seller Center and submit your first products in about 3 minutes. No sales, you pay us nothing.</p>
-          <Link href="/seller/connect" className="v2-btn-white" style={{ height: 54, padding: "0 26px", fontSize: 16 }}>Connect Seller Center, start free <Icon name="arrow" size={18} /></Link>
+          <p>Set up in about 3 minutes. No sales, you pay us nothing.</p>
+          <Link href="/seller/connect" className="v2-btn-white" style={{ height: 54, padding: "0 26px", fontSize: 16 }}>Connect Seller Center <Icon name="arrow" size={18} /></Link>
         </section>
       </main>
 

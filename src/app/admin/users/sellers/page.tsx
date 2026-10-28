@@ -62,14 +62,14 @@ export default function SellersList() {
             </tbody>
           </table>
         </div>
-        {shown.length === 0 && <p className="v2-muted" style={{ padding: 12 }}>No sellers match. Try fewer filters.</p>}
+        {shown.length === 0 && <p className="v2-muted" style={{ padding: 12 }}>No sellers match.</p>}
       </section>
 
       {s && (
         <Sheet title={s.shop} onClose={() => setOpen(null)}>
           <Pill tone={TONE[s.status]}>{s.status}</Pill>
-          <Kv rows={[["Country", s.country], ["State", s.state], ["Type", s.type], ["Products live", String(s.live)], ["Joined", `${s.joined} 2026`], ["BD contact", s.bd], ["Sample terms", "v2 agreed on first connect"]]} />
-          {s.status === "Reconnect needed" && <div className="v2-alert"><span>Their Seller Center authorisation expired. Requests to TikTok are on hold until they reconnect.</span><button type="button" onClick={() => toast("Reconnect reminder sent in app and by email")}>Remind them</button></div>}
+          <Kv rows={[["Country", s.country], ["State", s.state], ["Type", s.type], ["Products live", String(s.live)], ["Joined", `${s.joined} 2026`], ["BD contact", s.bd], ["Sample terms", "v2 agreed"]]} />
+          {s.status === "Reconnect needed" && <div className="v2-alert"><span>Seller Center access expired. TikTok requests on hold.</span><button type="button" onClick={() => toast("Reminder sent")}>Remind</button></div>}
           {!freezing ? (
             <div className="v2-row">
               {s.status === "Frozen" ? (
@@ -77,12 +77,12 @@ export default function SellersList() {
               ) : (
                 <button type="button" className="ad-btn-ghost danger" onClick={() => { setFreezing(true); setReason(null); setNote(""); }}>Freeze account</button>
               )}
-              <button type="button" className="ad-btn-ghost" onClick={() => toast(`Message sent to ${s.shop} in their seller app`)}>Message seller</button>
+              <button type="button" className="ad-btn-ghost" onClick={() => toast(`Message sent to ${s.shop}`)}>Message seller</button>
             </div>
           ) : (
             <>
               <Sec>Why freeze?</Sec>
-              <Reasons options={["Fake or unsafe products", "Didn't ship samples", "Payment or fraud concern", "Other"]} value={reason} onChange={setReason} note={note} onNote={setNote} notePlaceholder="Note for the team (the seller sees the reason)" />
+              <Reasons options={["Fake or unsafe products", "Didn't ship samples", "Payment or fraud concern", "Other"]} value={reason} onChange={setReason} note={note} onNote={setNote} notePlaceholder="Note (seller sees the reason)" />
               <div className="v2-row">
                 <button type="button" className="np-btn v2-btn-sm ad-btn-danger" disabled={!reason} onClick={() => { setList((l) => l.map((x) => (x.shop === s.shop ? { ...x, status: "Frozen" } : x))); setFreezing(false); toast(`${s.shop} frozen · TAP requests paused · logged`); }}>Freeze now</button>
                 <button type="button" className="ad-btn-ghost" onClick={() => setFreezing(false)}>Cancel</button>

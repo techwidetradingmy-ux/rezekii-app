@@ -29,12 +29,12 @@ export default function ShopProducts() {
 
   const sync = () => {
     setSyncing(true);
-    window.setTimeout(() => { setSyncing(false); toast(`Synced · ${items.length} products, nothing new since 09:12`); }, 1000);
+    window.setTimeout(() => { setSyncing(false); toast(`Synced · ${items.length} products, nothing new`); }, 1000);
   };
 
   return (
     <div className="v2-stack v2-in">
-      <Title title="Shop Products" sub={<>Read from {SELLER.shop} on Seller Center · synced {UPDATED}</>}>
+      <Title title="Shop Products" sub={<>{SELLER.shop} · synced {UPDATED}</>}>
         <button type="button" className="btn-outline" onClick={sync} disabled={syncing}>
           {syncing ? <span className="sl-spin" /> : <Icon name="refresh" size={18} />} Sync now
         </button>
@@ -62,7 +62,7 @@ export default function ShopProducts() {
                 <img src={p.img} alt="" />
                 <span className="sl-pinfo">
                   <strong>{p.name}</strong>
-                  <small>{rm(p.price)} · {p.sold ? `${short(p.sold)} sold` : "No sales yet"} · Public commission {p.publicRate === null ? "unknown" : `${p.publicRate}%`}</small>
+                  <small>{rm(p.price)} · {p.sold ? `${short(p.sold)} sold` : "No sales yet"} · Public {p.publicRate === null ? "unknown" : `${p.publicRate}%`}</small>
                   {(p.fromSellerCenter || p.note) && (
                     <span className="v2-row">
                       {p.fromSellerCenter && <span className="badge badge-blue">From Seller Center</span>}
@@ -77,7 +77,7 @@ export default function ShopProducts() {
                     <span className="sl-rate">{p.publicRate}% <Icon name="arrow" size={12} /> <b>{p.tapRate}%</b> in TAP</span>
                   )}
                   {st === "Under review" && (
-                    <small className="v2-small">{p.stage === "Submitted to TikTok" ? `With TikTok since ${p.dates?.["Submitted to TikTok"]}` : p.stage === "Under review" ? "Our team is checking it" : "Submitted"}</small>
+                    <small className="v2-small">{p.stage === "Submitted to TikTok" ? `With TikTok since ${p.dates?.["Submitted to TikTok"]}` : p.stage === "Under review" ? "Our review" : "Submitted"}</small>
                   )}
                   {st === "Not submitted" && <Link href="/seller/app/submit" className="np-btn v2-btn-sm">Submit</Link>}
                   {st === "Not approved" && <button type="button" className="np-btn v2-btn-sm" onClick={() => setFix(p)}>Fix</button>}
@@ -87,12 +87,12 @@ export default function ShopProducts() {
               </div>
             );
           })}
-          {shown.length === 0 && <p className="v2-muted" style={{ margin: "8px 0" }}>No products match. Try another filter.</p>}
+          {shown.length === 0 && <p className="v2-muted" style={{ margin: "8px 0" }}>No products match.</p>}
         </div>
       </section>
 
       <p className="v2-small" style={{ margin: 0, display: "flex", gap: 8 }}>
-        <Icon name="link" size={16} /> Products you add to Techwide&apos;s TAP campaign directly in Seller Center show up here too, tagged From Seller Center.
+        <Icon name="link" size={16} /> Products added in Seller Center show here too.
       </p>
 
       {fix && (
@@ -102,7 +102,7 @@ export default function ShopProducts() {
             <img src={fix.img} alt="" />
             <span className="sl-pinfo"><strong>{fix.name}</strong><span className="sl-reason">{fix.reason}</span></span>
           </div>
-          <div className="v2-field">Samples per SKU <small>Must be more than 0. Most shops pick 30–50.</small>
+          <div className="v2-field">Samples per SKU <small>Most shops pick 30–50</small>
             <div className="v2-chips">
               {[30, 40, 50].map((n) => (
                 <button key={n} type="button" className={`v2-chip ${samples === n ? "on" : ""}`} onClick={() => setSamples(n)}>{n}</button>
@@ -112,7 +112,7 @@ export default function ShopProducts() {
           <button type="button" className="np-btn" onClick={() => {
             setItems((all) => all.map((i) => (i.id === fix.id ? { ...i, stage: "Under review", samples, reason: undefined } : i)));
             setFix(null);
-            toast(`${samples} samples added · back with our team for review`);
+            toast(`${samples} samples added · resubmitted`);
           }}>Resubmit with {samples} samples</button>
         </Sheet>
       )}

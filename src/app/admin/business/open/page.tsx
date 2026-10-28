@@ -33,7 +33,7 @@ export default function OpenCampaigns() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="Open Campaigns" sub="Techwide TAP campaigns taking registrations right now. Recommend them to your merchants." />
+      <Title title="Open Campaigns" sub="TAP campaigns open now. Recommend them to merchants." />
 
       <Chips label="Category" value={cat} onChange={setCat} options={cats.map((c) => [c, c === "All" ? OPEN_CAMPAIGNS.length : OPEN_CAMPAIGNS.filter((x) => x.category === c).length] as [string, number])} />
 
@@ -54,11 +54,11 @@ export default function OpenCampaigns() {
                 <div className="ad-fact"><small>Starts</small><b>{c.starts}</b></div>
               </div>
               <div className="v2-stack" style={{ gap: 6 }}>
-                <span className="v2-small"><b style={{ color: "var(--text)" }}>{c.joined}</b> of {c.spots} merchant spots taken · {left} left</span>
+                <span className="v2-small"><b style={{ color: "var(--text)" }}>{c.joined}</b> of {c.spots} spots taken · {left} left</span>
                 <Progress value={c.joined} max={c.spots} />
               </div>
               <div className="v2-row">
-                <button type="button" className="np-btn v2-btn-sm" onClick={() => openInvite(c)}><Icon name="doc" size={16} /> Copy invite message</button>
+                <button type="button" className="np-btn v2-btn-sm" onClick={() => openInvite(c)}><Icon name="doc" size={16} /> Copy invite</button>
                 <button type="button" className="ad-btn-ghost" onClick={() => toast("Campaign link copied")}><Icon name="link" size={15} /> Copy link</button>
               </div>
             </section>
@@ -68,7 +68,7 @@ export default function OpenCampaigns() {
 
       {invite && (
         <Sheet title="Invite message" onClose={() => setInvite(null)}>
-          <span className="v2-small">{invite.name}. Edit it if you like, then paste it into WhatsApp or email.</span>
+          <span className="v2-small">{invite.name}. Edit, then paste into WhatsApp or email.</span>
           <label className="v2-field">
             Merchant name
             <input className="np-input" value={shop} placeholder="e.g. Kraf Rotan" onChange={(e) => { setShop(e.target.value); setText(message(invite, e.target.value)); }} />
@@ -85,7 +85,7 @@ export default function OpenCampaigns() {
           >
             <Icon name="doc" size={17} /> Copy message
           </button>
-          <span className="v2-small" style={{ textAlign: "center" }}>No prices or sales promises in the message. Results depend on creators.</span>
+          <span className="v2-small" style={{ textAlign: "center" }}>No prices or sales promises.</span>
         </Sheet>
       )}
     </div>

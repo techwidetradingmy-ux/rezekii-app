@@ -42,7 +42,7 @@ const groupOf = (p: MyPost): Group =>
     : "done";
 const GROUPS: { key: Group; title: string; tone: string; icon: "alert" | "send" | "clock" | "edit" | "check" }[] = [
   { key: "fail", title: "Needs you", tone: "red", icon: "alert" },
-  { key: "live", title: "Going out now", tone: "blue", icon: "send" },
+  { key: "live", title: "Posting now", tone: "blue", icon: "send" },
   { key: "sched", title: "Scheduled", tone: "violet", icon: "clock" },
   { key: "draft", title: "Drafts", tone: "gray", icon: "edit" },
   { key: "done", title: "Posted", tone: "green", icon: "check" },
@@ -130,7 +130,7 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
   const cancel = (p: MyPost) => {
     setPosts((all) => all.map((x) => (x.id !== p.id ? x : { ...x, date: "", time: "", targets: x.targets.map((t) => ({ ...t, status: "draft" as const })) })));
     setCancelling(null);
-    toast(`Cancelled. ${p.targets.length * POST_CREDITS} credits are back in your wallet; the post is kept in your drafts.`);
+    toast(`Cancelled. ${p.targets.length * POST_CREDITS} credits refunded; moved to drafts.`);
   };
 
   // The month map: each day shows a dot per post, in its group's colour.
@@ -196,7 +196,7 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
 
   return (
     <div className="v2-stack v2-in sq-page" style={{ gap: 18 }}>
-      <Title title="Content Calendar" sub="Every post and its live status on each app · Malaysia time">
+      <Title title="Content Calendar" sub="Every post and its status · Malaysia time">
         <CalendarPicker
           label={label}
           sub={`${dayName(from)} – ${dayName(to)}`}
@@ -228,7 +228,7 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
             <button key={k} type="button" className={`v2-chip${src === k ? " on" : ""}`} aria-pressed={src === k} onClick={() => setSrc(k)}>{k === "phone" && <Icon name="phone" size={15} />}{l}</button>
           ))}
         </div>
-        <span className="v2-small">From phone = posts you made in the apps yourself. Rezekii checks your connected accounts every 30 minutes.</span>
+        <span className="v2-small">Phone posts sync every 30 minutes.</span>
       </div>
 
       <section className="v2-card sq-map">
@@ -279,11 +279,11 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
       {shown.length === 0 && (
         <section className="v2-card sq-empty">
           <h2 className="v2-h2">Nothing here</h2>
-          <p className="v2-small">No posts for these dates. Pick other dates, or make a new post.</p>
+          <p className="v2-small">No posts for these dates.</p>
           <a href={newPost} className="np-btn v2-btn-sm">New Post</a>
         </section>
       )}
-      <p className="v2-small" style={{ margin: 0 }}>A post counts as posted only after the app confirms it. You can edit or cancel until it starts sending; after that, change or delete it in the app itself. Posts you make from your phone show up here too, once they&apos;re live.</p>
+      <p className="v2-small" style={{ margin: 0 }}>You can edit or cancel until a post starts sending.</p>
 
       {editing && <EditSheet post={editing} appOf={appOf} chan={chan} onClose={() => setEditing(null)} onSave={(p) => { setPosts((all) => all.map((x) => (x.id === p.id ? p : x))); setEditing(null); toast(p.date ? `Saved. Goes out ${dayLabel(p.date)}, ${clock(p.time)}.` : "Draft saved"); }} />}
     </div>
@@ -313,10 +313,10 @@ function EditSheet({ post, appOf, chan, onClose, onSave }: { post: MyPost; appOf
           <span className="sq-edit-apps">{post.targets.map((t) => <span key={t.key}><PlatformIcon name={ICON[appOf(t)]} size={16} />{chan(t.key)?.name}</span>)}</span>
         </span>
       </div>
-      <label className="pb-field"><b>When <i className="pb-req">*</i></b><input className="np-input" type="datetime-local" value={at} min="2026-10-28T09:20" onChange={(e) => setAt(e.target.value)} aria-label="Date and time (Malaysia time)" /><small className="np-muted">Malaysia time. Leave empty to keep it as a draft.</small></label>
-      <label className="pb-field"><b>Caption <i className="pb-req">*</i></b><textarea className="np-input" rows={4} value={caption} onChange={(e) => setCaption(e.target.value)} aria-label="Caption" /><small className="np-muted">{caption.length.toLocaleString("en-US")} / {Math.min(...apps.map((a) => CAPTION_MAX[a])).toLocaleString("en-US")} · no links or calls to action here</small></label>
+      <label className="pb-field"><b>When <i className="pb-req">*</i></b><input className="np-input" type="datetime-local" value={at} min="2026-10-28T09:20" onChange={(e) => setAt(e.target.value)} aria-label="Date and time (Malaysia time)" /><small className="np-muted">Malaysia time. Leave empty for a draft.</small></label>
+      <label className="pb-field"><b>Caption <i className="pb-req">*</i></b><textarea className="np-input" rows={4} value={caption} onChange={(e) => setCaption(e.target.value)} aria-label="Caption" /><small className="np-muted">{caption.length.toLocaleString("en-US")} / {Math.min(...apps.map((a) => CAPTION_MAX[a])).toLocaleString("en-US")} · no links here</small></label>
       {apps.some((a) => a !== "tiktok") && (
-        <label className="pb-field"><span className="pb-row"><b>First comment</b><span className="pb-opt">Optional</span></span><textarea className="np-input" rows={2} value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Your call to action and product link" aria-label="First comment" /><small className="np-muted">Facebook, Instagram and Threads. TikTok uses the yellow basket.</small></label>
+        <label className="pb-field"><span className="pb-row"><b>First comment</b><span className="pb-opt">Optional</span></span><textarea className="np-input" rows={2} value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Your call to action and product link" aria-label="First comment" /><small className="np-muted">TikTok uses the yellow basket.</small></label>
       )}
       {error && <p className="pb-secerr" role="alert"><span>{error}</span></p>}
       <button type="button" className="np-btn" onClick={save}>{at ? "Save changes" : "Save draft"}</button>

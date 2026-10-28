@@ -92,7 +92,7 @@ export default function TapPipeline() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="TAP Pipeline" sub="Every request from sellers, by where it is now. Cards also show how the TikTok side is doing.">
+      <Title title="TAP Pipeline" sub="Seller requests by stage, with TikTok status.">
         <button type="button" className={`ad-btn-ghost ${mine ? "on" : ""}`} aria-pressed={mine} onClick={() => setMine(!mine)}>
           <Icon name="user" size={16} /> Mine only
         </button>
@@ -102,7 +102,7 @@ export default function TapPipeline() {
       </Title>
 
       <p className="v2-small" style={{ margin: "-6px 0 0" }}>
-        Products registered directly in Seller Center sync in by themselves (tagged <span className="ad-tag">Seller Center sync</span>). Requests with 0 samples, or commission less than 2% above the public rate, go straight to Not approved with the reason, and the seller is told.
+        Requests with 0 samples or under +2% go straight to Not approved.
       </p>
 
       {result && (
@@ -130,7 +130,7 @@ export default function TapPipeline() {
               <button type="button" onClick={() => setOpen(id)}>Open</button>
             </div>
           ))}
-          {result.retried && <p className="v2-small" style={{ margin: 0 }}>Retried the failed one. Succeeded requests are now in Waiting on TikTok.</p>}
+          {result.retried && <p className="v2-small" style={{ margin: 0 }}>Retried. Successful requests are now in Waiting on TikTok.</p>}
           {result.failed.length > 0 && (
             <div className="v2-row">
               <button type="button" className="np-btn v2-btn-sm" disabled={running} onClick={retryFailed}>
@@ -255,7 +255,7 @@ function TicketSheet({ t, onClose, update, submit, extId }: { t: Ticket; onClose
       <div className="v2-row" style={{ gap: 8, marginTop: -6 }}>
         <Pill tone={COL_TONE[t.col]}>{t.col}</Pill>
         {t.synced && <span className="ad-tag">Seller Center sync</span>}
-        {t.late && <span className="ad-tag red">Review 2 days over</span>}
+        {t.late && <span className="ad-tag red">2 days overdue</span>}
         {t.block && <span className="ad-tag amber">Reconnect needed</span>}
       </div>
 
@@ -270,27 +270,27 @@ function TicketSheet({ t, onClose, update, submit, extId }: { t: Ticket; onClose
         {t.col === "In review" && !rejecting && (
           <>
             <button type="button" className="np-btn v2-btn-sm" onClick={() => { update((x) => ({ ...x, col: "To submit", late: false, what: `${products} products · ready`, history: [...x.history, log("Review passed")] })); toast("Review passed · moved to To submit"); }}>Pass review</button>
-            <button type="button" className="ad-btn-ghost" onClick={() => toast("Seller asked to change · they see your note in their app")}>Ask seller to change</button>
+            <button type="button" className="ad-btn-ghost" onClick={() => toast("Change requested · seller notified")}>Ask seller to change</button>
             <button type="button" className="ad-btn-ghost danger" onClick={() => setRejecting(true)}>Not approve</button>
           </>
         )}
         {t.col === "To submit" && needsPerson(t) && !hasFail(t) && (
-          <span className="v2-small">TikTok&apos;s API steps are done. Finish the step waiting for a person below and it moves to Waiting on TikTok.</span>
+          <span className="v2-small">API steps done. Finish the manual step below.</span>
         )}
         {t.col === "To submit" && (!needsPerson(t) || hasFail(t)) && (
           <button type="button" className="np-btn v2-btn-sm" disabled={!!t.block} onClick={() => { submit(); toast(t.batchFail ? "TikTok returned an error" : "Sent to TikTok"); }}>
             <Icon name="send" size={16} /> Submit to TikTok
           </button>
         )}
-        {t.col === "Waiting on TikTok" && <button type="button" className="ad-btn-ghost" onClick={() => toast("Checked TikTok: still waiting · next automatic check 11:00")}><Icon name="refresh" size={16} /> Check now</button>}
-        {t.col === "Not approved" && <button type="button" className="ad-btn-ghost" onClick={() => toast("Seller reminded in app and by email")}>Remind seller how to fix</button>}
-        {t.col === "Live" && <Link href="/admin/tap/campaigns" className="ad-btn-ghost">Campaign end date and auto-extend</Link>}
+        {t.col === "Waiting on TikTok" && <button type="button" className="ad-btn-ghost" onClick={() => toast("Still waiting · next check 11:00")}><Icon name="refresh" size={16} /> Check now</button>}
+        {t.col === "Not approved" && <button type="button" className="ad-btn-ghost" onClick={() => toast("Seller reminded in app and by email")}>Remind seller</button>}
+        {t.col === "Live" && <Link href="/admin/tap/campaigns" className="ad-btn-ghost">End date & auto-extend</Link>}
       </div>
 
       {rejecting && (
         <div className="v2-card flat">
-          <b>Why isn&apos;t this approved?</b>
-          <span className="v2-small">The seller sees this reason.</span>
+          <b>Why not approved?</b>
+          <span className="v2-small">Seller sees this.</span>
           <Reasons options={["Samples are 0", "Commission under +2%", "Product not allowed in TAP", "Other"]} value={why} onChange={setWhy} note={whyNote} onNote={setWhyNote} notePlaceholder="What should the seller change?" />
           <div className="v2-row">
             <button type="button" className="np-btn v2-btn-sm ad-btn-danger" disabled={!why} onClick={() => { update((x) => ({ ...x, col: "Not approved", late: false, reason: `${why}${whyNote ? `: ${whyNote}` : ""}. Seller notified.`, what: why ?? "", history: [...x.history, log(`Not approved: ${why}`)] })); setRejecting(false); toast("Not approved · seller notified · logged"); }}>Confirm not approved</button>
@@ -325,7 +325,7 @@ function TicketSheet({ t, onClose, update, submit, extId }: { t: Ticket; onClose
 
       <Sec>External tasks</Sec>
       {t.tasks.length === 0 ? (
-        <p className="v2-small" style={{ margin: 0 }}>{t.col === "Not approved" ? "Nothing was sent to TikTok." : "Tasks are created when you submit to TikTok."}</p>
+        <p className="v2-small" style={{ margin: 0 }}>{t.col === "Not approved" ? "Nothing was sent to TikTok." : "Created when you submit."}</p>
       ) : (
         <div className="ad-tasks">
           {t.tasks.map((k, i) => (
@@ -342,7 +342,7 @@ function TicketSheet({ t, onClose, update, submit, extId }: { t: Ticket; onClose
               {k.state === "Waiting" && <p>{k.why}</p>}
               {k.state === "Failed" && (
                 <>
-                  <p>TikTok said: <b>{k.message}</b> · tried {k.retry?.[0]} of {k.retry?.[1]} · next automatic retry {k.nextRetry}</p>
+                  <p>TikTok said: <b>{k.message}</b> · tried {k.retry?.[0]} of {k.retry?.[1]} · next retry {k.nextRetry}</p>
                   <div className="v2-row">
                     <button type="button" className="np-btn v2-btn-sm" disabled={busy === k.id} onClick={() => retry(k)}>Retry now</button>
                     <button type="button" className="ad-btn-ghost" onClick={() => { setTask(k.id, { state: "Person", why: "Handed to a person after TikTok kept refusing." }, `${k.name}: handed to a person`); toast("Handed to a person"); }}>Hand to a person</button>
@@ -351,15 +351,15 @@ function TicketSheet({ t, onClose, update, submit, extId }: { t: Ticket; onClose
               )}
               {k.state === "Person" && (
                 <>
-                  <p>{k.why} Opening Partner Center doesn&apos;t change anything here; mark it done with proof when it&apos;s finished.</p>
+                  <p>{k.why} Mark done with proof when finished.</p>
                   {marking !== k.id ? (
                     <div className="v2-row">
-                      <button type="button" className="ad-btn-ghost" onClick={() => toast("Partner Center opened in a new tab · nothing changed here")}><Icon name="link" size={15} /> Open Partner Center</button>
+                      <button type="button" className="ad-btn-ghost" onClick={() => toast("Partner Center opened")}><Icon name="link" size={15} /> Open Partner Center</button>
                       <button type="button" className="np-btn v2-btn-sm" onClick={() => setMarking(k.id)}>Mark done</button>
                     </div>
                   ) : (
                     <div className="v2-stack" style={{ gap: 8, marginTop: 4 }}>
-                      <input className="np-input" value={record} placeholder="External record ID from Partner Center" onChange={(e) => setRecord(e.target.value)} />
+                      <input className="np-input" value={record} placeholder="Partner Center record ID" onChange={(e) => setRecord(e.target.value)} />
                       <label className="ad-btn-ghost" style={{ alignSelf: "flex-start", cursor: "pointer" }}>
                         <Icon name="plus" size={15} /> {shot ? shot : "Or attach a screenshot"}
                         <input type="file" accept="image/*" hidden onChange={(e) => setShot(e.target.files?.[0]?.name ?? "")} />
@@ -380,7 +380,7 @@ function TicketSheet({ t, onClose, update, submit, extId }: { t: Ticket; onClose
                         </button>
                         <button type="button" className="ad-btn-ghost" onClick={() => setMarking(null)}>Cancel</button>
                       </div>
-                      <span className="v2-small">An ID or a screenshot is needed so the next person can check it.</span>
+                      <span className="v2-small">ID or screenshot required.</span>
                     </div>
                   )}
                 </>

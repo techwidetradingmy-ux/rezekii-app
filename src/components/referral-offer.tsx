@@ -11,16 +11,16 @@ export function ReferralOffer() {
         <span className="rf-side">
           <small>You get</small>
           <b>+{REFERRAL_REWARD.inviter} credits</b>
-          <span>for each friend who&apos;s set up</span>
+          <span>per friend set up</span>
         </span>
         <span className="rf-plus" aria-hidden="true"><Icon name="plus" size={16} width={2.6} /></span>
         <span className="rf-side friend">
           <small>Your friend gets</small>
           <b>+{REFERRAL_REWARD.friend} credits</b>
-          <span>for joining with your link or code</span>
+          <span>for joining with your link</span>
         </span>
       </div>
-      <p className="rf-note">Both are paid together, once your friend is set up within 30 days.</p>
+      <p className="rf-note">Paid when your friend is set up within 30 days.</p>
     </section>
   );
 }

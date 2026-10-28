@@ -58,7 +58,7 @@ export function ShootToday({ bare = false }: { bare?: boolean }) {
       sessionStorage.setItem(IDEA_DRAFTS, JSON.stringify([...drafts, ...had.filter((h) => !drafts.some((d) => d.id === h.id))]));
     } catch {}
     const added = chosen.filter((i) => i.market).length;
-    toast(`${chosen.length} draft${chosen.length === 1 ? "" : "s"} saved in your Content Calendar${added ? `, ${added} product${added === 1 ? "" : "s"} added to your showcase` : ""}. Opening the first one.`);
+    toast(`${chosen.length} draft${chosen.length === 1 ? "" : "s"} saved${added ? `, ${added} product${added === 1 ? "" : "s"} added to showcase` : ""}`);
     router.push(`/app/publish?idea=${encodeURIComponent(chosen[0].idea)}`);
   }
 
@@ -67,7 +67,7 @@ export function ShootToday({ bare = false }: { bare?: boolean }) {
       {!bare && <h2 className="v2-h2">Today&apos;s Ideas</h2>}
       <p className="td-lead">
         <b>{ideas.length} products to film today</b>
-        <span>Pick the ones you like. Each becomes a draft, ready for your video.</span>
+        <span>Each pick becomes a draft.</span>
       </p>
 
       <div className="td-grid">
@@ -83,7 +83,7 @@ export function ShootToday({ bare = false }: { bare?: boolean }) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img className="td-img" src={p.img} alt="" />
               <span className={`td-from${it.market ? " new" : ""}`}>
-                <Icon name={it.market ? "gift" : "flame"} size={12} /> {it.market ? "New · free sample" : "Taking off in your showcase"}
+                <Icon name={it.market ? "gift" : "flame"} size={12} /> {it.market ? "New · free sample" : "Rising in your showcase"}
               </span>
               <b className="td-name">{p.name}</b>
               <span className="td-why">{it.reason}</span>
@@ -99,9 +99,9 @@ export function ShootToday({ bare = false }: { bare?: boolean }) {
                   type="button"
                   className={isAsked ? "ai-btn ghost asked td-sample" : "ai-btn ghost td-sample"}
                   disabled={isAsked}
-                  onClick={() => { if (!linked) return setLinked(true); requireWa(() => { setAsked((a) => [...a, p.id]); toast("Sample requested. The Techwide team approves it, usually within 2 working days."); }); }}
+                  onClick={() => { if (!linked) return setLinked(true); requireWa(() => { setAsked((a) => [...a, p.id]); toast("Sample requested. Approval usually within 2 working days."); }); }}
                 >
-                  <Icon name={isAsked ? "check" : "gift"} size={14} /> {isAsked ? "Sample requested" : "Get a free sample"}
+                  <Icon name={isAsked ? "check" : "gift"} size={14} /> {isAsked ? "Sample requested" : "Request sample"}
                 </button>
               )}
             </article>
@@ -111,7 +111,7 @@ export function ShootToday({ bare = false }: { bare?: boolean }) {
 
       {skip.map((v) => (
         <p key={v.id} className="st-skip">
-          <Icon name="alert" size={15} /> &ldquo;{v.title}&rdquo; is rising too (+{(v.views24 / 1000).toFixed(1)}K), but we don&apos;t suggest more: the product is rated {product(v.productId).rating.toFixed(1)}★.
+          <Icon name="alert" size={15} /> &ldquo;{v.title}&rdquo; is rising (+{(v.views24 / 1000).toFixed(1)}K), but the product is rated {product(v.productId).rating.toFixed(1)}★.
         </p>
       ))}
 

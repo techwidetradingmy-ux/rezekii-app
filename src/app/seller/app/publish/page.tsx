@@ -8,7 +8,7 @@ import { SELLER_SETUP } from "@/lib/mock-publish";
 export default function SellerNewPost() {
   return (
     <div className="v2-stack v2-in" style={{ gap: 16 }}>
-      <Title title="Cross-Channel Posting" sub="One video to your shop's TikTok, Facebook Pages, Instagram and Threads, written for each app" />
+      <Title title="Cross-Channel Posting" sub="Post one video to TikTok, Facebook, Instagram and Threads." />
       <Composer setup={SELLER_SETUP} />
     </div>
   );

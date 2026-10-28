@@ -19,7 +19,7 @@ export default function BusinessPerformance() {
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
       <Title title="Live Performance" sub="How each merchant's products are doing with our creators.">
-        <button type="button" className="ad-btn-ghost" onClick={() => toast(`Report for ${shop} sent to their seller app`)}><Icon name="share" size={16} /> Send report to merchant</button>
+        <button type="button" className="ad-btn-ghost" onClick={() => toast(`Report sent to ${shop}`)}><Icon name="share" size={16} /> Send report</button>
       </Title>
 
       <Chips label="Merchant" value={shop} onChange={setShop} options={MERCHANT_PERF.map((x) => [x.shop] as [string])} />
@@ -74,7 +74,7 @@ export default function BusinessPerformance() {
             </tbody>
           </table>
         </div>
-        <Meta range="Last 30 days" source="TikTok Partner data (GMV is what buyers paid, not our revenue)" updated="Today 06:00" />
+        <Meta range="Last 30 days" source="TikTok Partner data · GMV is not our revenue" updated="Today 06:00" />
       </section>
     </div>
   );

@@ -37,7 +37,7 @@ export default function SellerNotifications() {
         <h3 className="sl-group-h">Earlier</h3>
         <div>{list(earlier)}</div>
       </section>
-      <p className="v2-small" style={{ margin: 0 }}>Choose what we send you in <Link href="/seller/app/account">Account</Link>.</p>
+      <p className="v2-small" style={{ margin: 0 }}>Change alerts in <Link href="/seller/app/account">Account</Link>.</p>
     </div>
   );
 }
