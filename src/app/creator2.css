@@ -96,10 +96,6 @@
 .cr2-month .amt b { font-size: 17px; font-variant-numeric: tabular-nums; }
 
 /* Publish: upload */
-.cr2-upload { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 180px; padding: 20px; border-radius: 22px; border: 2px dashed var(--border); background: var(--surface2); color: var(--body); text-align: center; font: inherit; cursor: pointer; width: 100%; transition: border-color 0.2s, background-color 0.2s; }
-.cr2-upload:hover { border-color: var(--green); background: var(--gsoft); }
-.cr2-upload b { font-size: 16px; color: var(--text); }
-.cr2-upload-ico { width: 56px; height: 56px; border-radius: 18px; display: flex; align-items: center; justify-content: center; color: #ffffff; background: linear-gradient(135deg, #ffb35c, #f08a00); box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.35), 0 12px 20px -10px rgba(240, 138, 0, 0.7); }
 .cr2-asset { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 14px; align-items: center; }
 .cr2-asset .cr2-cover { position: relative; width: 84px; aspect-ratio: 9 / 16; border-radius: 14px; overflow: hidden; background: #000000; }
 .cr2-asset .cr2-cover img { width: 100%; height: 100%; object-fit: cover; opacity: 0.92; }
@@ -116,8 +112,6 @@
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cr2-pi-tiktok, :root:not([data-theme="light"]) .cr2-pi-threads { box-shadow: inset 0 0 0 1px #3a4a42; } }
 :root[data-theme="dark"] .cr2-pi-tiktok, :root[data-theme="dark"] .cr2-pi-threads { box-shadow: inset 0 0 0 1px #3a4a42; }
 
-.cr2-plats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
-@media (max-width: 420px) { .cr2-plats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .cr2-plat { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 14px; border-radius: 18px; border: 2px solid var(--border); background: var(--surface); color: var(--text); font: inherit; text-align: left; cursor: pointer; transition: border-color 0.2s, background-color 0.2s, transform 0.12s var(--ease); min-width: 0; }
 .cr2-plat:active { transform: scale(0.98); }
 .cr2-plat.on { border-color: #00c073; background: var(--gsoft); }
@@ -136,7 +130,6 @@
 .cr2-tabs button i { width: 6px; height: 6px; border-radius: 50%; background: #f5a623; }
 
 /* Spec checks */
-.cr2-checks { display: flex; flex-direction: column; gap: 10px; }
 .cr2-checkrow { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.45; color: var(--body); }
 .cr2-checkrow b { color: var(--text); }
 .cr2-dot { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; color: #ffffff; }
@@ -146,41 +139,12 @@
 .cr2-dot.sched { background: #1d4ed8; }
 
 /* The publish moment: one card splits into the platform icons, each ticks, then a summary */
-.cr2-fly { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; padding: 20px 16px; overflow-y: auto; background: radial-gradient(circle at 50% 35%, rgba(0, 192, 115, 0.32), rgba(6, 14, 10, 0.82) 62%); animation: v2Fade 0.25s var(--ease) both; }
-.cr2-fly-card { width: 100%; max-width: 440px; margin: auto; border-radius: 30px; background: var(--surface); color: var(--text); padding: 22px 20px 20px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 40px 80px -30px rgba(0, 0, 0, 0.6); animation: v2Pop 0.45s var(--spring) both; }
-.cr2-fly-card h2 { margin: 0; font-size: 22px; font-weight: 900; letter-spacing: -0.02em; text-align: center; }
-.cr2-fly-stage { position: relative; height: 190px; transition: height 0.45s var(--ease); }
-.cr2-fly-stage.compact { height: 130px; }
-.cr2-fly-video { position: absolute; left: 50%; top: 50%; width: 92px; height: 156px; margin: -78px 0 0 -46px; border-radius: 16px; overflow: hidden; background: #000000; box-shadow: 0 20px 40px -16px rgba(0, 0, 0, 0.6); animation: cr2VidIn 0.55s var(--spring) both; }
-.cr2-fly-video img { width: 100%; height: 100%; object-fit: cover; }
-.cr2-fly-video::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4); }
-.cr2-fly-stage.split .cr2-fly-video { animation: cr2VidOut 0.45s var(--ease) both; }
-.cr2-fly-ico { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -40px 0 0 -28px; opacity: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.cr2-fly-ico .cr2-pi { border-radius: 17px; }
-.cr2-fly-ico small { font-size: 12px; font-weight: 800; color: var(--body); white-space: nowrap; }
-.cr2-fly-stage.split .cr2-fly-ico { animation: cr2Fly 0.7s var(--spring) both; animation-delay: calc(var(--i) * 90ms + 120ms); }
-.cr2-fly-tick { position: absolute; top: -6px; right: -6px; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ffffff; border: 2.5px solid var(--surface); transform: scale(0); }
-.cr2-fly-ico.done .cr2-fly-tick { animation: cr2Tick 0.45s var(--spring) both; }
-.cr2-fly-ico.done .cr2-pi { animation: cr2Bump 0.45s var(--spring) both; }
-.cr2-fly-ico::before { content: ""; position: absolute; top: 0; left: 0; width: 56px; height: 56px; border-radius: 17px; opacity: 0; }
-.cr2-fly-ico.done::before { animation: cr2Ring 0.8s var(--ease) both; box-shadow: 0 0 0 3px rgba(0, 192, 115, 0.6); }
 @keyframes cr2VidIn { from { transform: scale(0.6) translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes cr2VidOut { 0% { transform: none; opacity: 1; } 60% { transform: scale(1.08); opacity: 0.9; } 100% { transform: scale(0.2); opacity: 0; } }
 @keyframes cr2Fly { from { opacity: 0; transform: translate(0, 0) scale(0.3) rotate(-20deg); } to { opacity: 1; transform: translate(var(--tx), var(--ty)) scale(1) rotate(0); } }
 @keyframes cr2Tick { from { transform: scale(0); } to { transform: scale(1); } }
 @keyframes cr2Bump { 0% { transform: scale(1); } 40% { transform: scale(1.15); } 100% { transform: scale(1); } }
 @keyframes cr2Ring { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.6); } }
-.cr2-fly-sum { display: flex; flex-direction: column; gap: 12px; animation: v2Rise2 0.45s var(--ease) both; }
-.cr2-fly-counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.cr2-fly-counts span { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 6px; border-radius: 14px; background: var(--surface2); font-size: 12px; font-weight: 700; color: var(--muted); text-align: center; }
-.cr2-fly-counts b { font-size: 22px; font-weight: 900; color: var(--text); }
-.cr2-fly-counts span.warn b { color: var(--amber); }
-.cr2-fly-row { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 0; }
-.cr2-fly-row + .cr2-fly-row { border-top: 1px solid var(--line); }
-.cr2-fly-row > span:nth-child(2) { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.cr2-fly-row strong { font-size: 14px; }
-.cr2-fly-row small { font-size: 12.5px; color: var(--muted); line-height: 1.35; }
-@media (max-width: 400px) { .cr2-fly-row.act { grid-template-columns: 36px minmax(0, 1fr); } .cr2-fly-row.act > :last-child { grid-column: 2; justify-self: start; } }
 
 /* Calendar */
 .cr2-weekbar { display: flex; align-items: center; gap: 8px; }
@@ -419,10 +383,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cr2-fly-ico { opacity: 1; transform: translate(var(--tx), var(--ty)); }
-  .cr2-fly-stage.split .cr2-fly-ico, .cr2-fly-ico.done .cr2-fly-tick, .cr2-fly-ico.done .cr2-pi { animation: none !important; }
-  .cr2-fly-ico.done .cr2-fly-tick { transform: none; }
-  .cr2-fly-stage.split .cr2-fly-video { display: none; }
   .cr2-honour .halo, .cr2-honour .disc::after, .cr2-rays, .cr2-flame svg, .v2-chest.ready { animation: none !important; }
   .cr2-honour.lit .cr2-rays { opacity: 1; }
 }
