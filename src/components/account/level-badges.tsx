@@ -233,7 +233,7 @@ export function LevelBadges() {
               <div className="cr2-unlock-stage"><Honour state={lit ? "lit" : "off"} size={124} /></div>
               <h2>{lit ? "Highly active!" : "Day 30…"}</h2>
               <p style={{ fontWeight: 800, color: "var(--gink)" }}>30 days in a row · every sample delivered</p>
-              <p>Your honour badge is lit. Designated samples are open to you now.</p>
+              <p>Your honour badge is lit. Every free sample is open to you now.</p>
               <div className="v2-stack" style={{ width: "100%", marginTop: 6 }}>
                 <button type="button" className="np-btn" onClick={() => { setUnlock(false); setShare({ big: `Day ${CREATOR.streak} of 30`, label: "On my way to Highly active", lines: ["Posting every day", `${CREATOR.level} creator on Rezekii`], kicker: "Streak" }); }}>
                   <Icon name="share" size={18} /> Share this moment

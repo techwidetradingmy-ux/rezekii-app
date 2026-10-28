@@ -152,7 +152,7 @@ export function MySamples() {
                   <b>Why</b>
                   <p>{s.reason}</p>
                   <b>What to do</b>
-                  <p>Keep posting every day: {30 - CREATOR.streak} more days to Highly active, which opens Designated samples. Meanwhile, Open and Advanced samples are yours to request.</p>
+                  <p>Keep posting every day: {30 - CREATOR.streak} more days to a 30-day streak, which unlocks more free samples. Meanwhile, Open and Advanced samples are yours to request.</p>
                 </div>
               )}
 
@@ -170,7 +170,7 @@ export function MySamples() {
                 {s.status === "Done" && <button type="button" className="btn-outline v2-btn-sm" onClick={() => setShare(s)}><Icon name="share" size={16} /> Share</button>}
                 {s.status === "Not approved" && (
                   <>
-                    <Link href="/app/market" className="np-btn v2-btn-sm">Open samples I can get</Link>
+                    <Link href="/app/market" className="np-btn v2-btn-sm">Free samples I can get</Link>
                     <Link href="/app/rewards" className="btn-outline v2-btn-sm">Daily missions</Link>
                   </>
                 )}
@@ -267,7 +267,7 @@ export function MySamples() {
           icon="check"
           title="Sample done"
           line={`3 of 3 videos for ${product(party.productId).name}`}
-          cheer="Delivered on time. Keep it up and Designated samples open once you're Highly active."
+          cheer="Delivered on time. Keep it up: a 30-day streak unlocks more free samples."
           onShare={() => { setShare(party); setParty(null); setTab("Done"); }}
           onClose={() => { setParty(null); setTab("Done"); }}
         />

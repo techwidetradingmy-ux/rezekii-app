@@ -5,12 +5,14 @@ import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Flow, Hidden, Sheet, Title } from "@/components/ui";
-import { POOL_ICON, PoolTag } from "@/components/creator1/brand";
+import { PoolTag } from "@/components/creator1/brand";
 import { CREATOR, MY_SAMPLES, PRODUCTS, product, rm, type Product } from "@/lib/mock";
-import { POOLS, SAMPLE_ACCESS as ACCESS, SAMPLE_LEFT, SELLER_CONDS, type Cond, type Pool } from "@/lib/mock-creator1";
+import { SAMPLE_ACCESS as ACCESS, SAMPLE_LEFT, SAMPLE_STREAK, SELLER_CONDS, type Cond, type Pool } from "@/lib/mock-creator1";
 import "@/app/creator1.css";
 
 const WITH_SAMPLES = PRODUCTS.filter((p) => p.samples);
+/** Free samples she can request right now (her streak is long enough). */
+const CAN_GET = WITH_SAMPLES.filter((p) => ACCESS[p.samples as Pool]);
 const CATS = Array.from(new Set(PRODUCTS.map((p) => p.category))).sort();
 const SORTS = [
   ["sold", "Best-selling"],
@@ -22,7 +24,6 @@ const SORTS = [
 ] as const;
 type SortKey = (typeof SORTS)[number][0];
 const earn = (p: Product) => (p.price * p.tapRate) / 100;
-const POOL_KEYS = Object.keys(POOLS) as Pool[];
 
 const unfinished = MY_SAMPLES.find((s) => s.status === "Posting");
 const unfinishedName = unfinished ? product(unfinished.productId).name : "";
@@ -35,9 +36,9 @@ function conditionsFor(p: Product): Cond[] {
     { label: "Basic profile complete (name, state, WhatsApp)", ok: true, you: "Complete" },
     { label: "No overdue samples", ok: true, you: unfinished ? `${unfinishedName}: ${unfinished.videos} of 3 videos, due ${unfinished.due}. On time.` : "None" },
   ];
-  if (pool === "advanced") base.push({ label: "Active: posting 10 days in a row", ok: true, you: `You're ${CREATOR.activity}` });
+  if (pool === "advanced") base.push({ label: "Posting 10 days in a row", ok: true, you: `You're on day ${CREATOR.streak}` });
   if (pool === "designated") {
-    base.push({ label: "Highly active: posting 30 days in a row", ok: false, you: `You're on day ${CREATOR.streak} (${30 - CREATOR.streak} to go)` });
+    base.push({ label: "Posting 30 days in a row", ok: false, you: `You're on day ${CREATOR.streak} (${30 - CREATOR.streak} to go)` });
     base.push({ label: "Every sample delivered, none still posting", ok: !unfinished, you: unfinished ? `${unfinishedName} needs ${3 - unfinished.videos} more video` : "All delivered" });
   }
   return [...base, ...(SELLER_CONDS[p.id] ?? [])];
@@ -54,8 +55,19 @@ export default function Marketplace() {
   const [sort, setSort] = useState<SortKey>("sold");
   const [onlySamples, setOnlySamples] = useState(false);
   const [added, setAdded] = useState<string[]>([]);
-  const [pool, setPool] = useState<Pool | null>(null);
-  const [info, setInfo] = useState(false);
+  // Grid or list (owner, 28 Oct 2026: a list is easier to browse), remembered on this device.
+  const [view, setView] = useState<"grid" | "list">("grid");
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("rz2_market_view") === "list") setView("list");
+    } catch {}
+  }, []);
+  const pickView = (v: "grid" | "list") => {
+    setView(v);
+    try {
+      localStorage.setItem("rz2_market_view", v);
+    } catch {}
+  };
   const [sel, setSel] = useState<Product | null>(null);
   const [step, setStep] = useState<"detail" | "warn" | "sent">("detail");
   const [requested, setRequested] = useState<string[]>([]);
@@ -79,7 +91,7 @@ export default function Marketplace() {
   }
 
   const term = q.trim().toLowerCase();
-  const list = PRODUCTS.filter((p) => (!onlySamples || p.samples) && (!pool || p.samples === pool) && (cat === "All" || p.category === cat) && (!term || `${p.name} ${p.shop}`.toLowerCase().includes(term))).sort((a, b) => {
+  const list = PRODUCTS.filter((p) => (!onlySamples || CAN_GET.includes(p)) && (cat === "All" || p.category === cat) && (!term || `${p.name} ${p.shop}`.toLowerCase().includes(term))).sort((a, b) => {
     if (sort === "rate") return b.tapRate - a.tapRate;
     if (sort === "earn") return earn(b) - earn(a);
     if (sort === "cheap") return a.price - b.price;
@@ -127,26 +139,8 @@ export default function Marketplace() {
         </label>
         <button type="button" role="switch" aria-checked={onlySamples} className={`mk-switch ${onlySamples ? "on" : ""}`} onClick={() => setOnlySamples((o) => !o)}>
           <span className="np-switch-like" aria-hidden="true"><i /></span>
-          <Icon name="gift" size={16} /> Free samples only <em>{WITH_SAMPLES.length}</em>
+          <Icon name="gift" size={16} /> Free samples I can get <em>{CAN_GET.length}</em>
         </button>
-        <span className="mk-bar-l">Free sample tiers</span>
-        <div className="mk-tiers" role="group" aria-label="Sample tier: tap to filter">
-          {POOL_KEYS.map((k) => (
-            <button
-              key={k}
-              type="button"
-              className={`mk-tier ${pool === k ? "on" : ""}`}
-              aria-pressed={pool === k}
-              aria-label={`${POOLS[k].label} samples: ${ACCESS[k] ? "you can get these" : `day ${CREATOR.streak} of 30`}`}
-              title={`${POOLS[k].label}: ${ACCESS[k] ? "you can get these" : `day ${CREATOR.streak} of 30`}`}
-              onClick={() => setPool(pool === k ? null : k)}
-            >
-              <span className={`mk-ic ${k}`}><Icon name={POOL_ICON[k]} size={18} width={2.3} /></span>
-              <span className={`mk-st ${ACCESS[k] ? "" : "wait"}`}>{ACCESS[k] ? <Icon name="check" size={10} width={3.6} /> : `${CREATOR.streak}/30`}</span>
-            </button>
-          ))}
-          <button type="button" className="mk-tier info" aria-label="Who can get which samples" onClick={() => setInfo(true)}><b style={{ fontSize: 18 }}>?</b></button>
-        </div>
       </div>
 
       <section className="v2-card tight">
@@ -163,11 +157,15 @@ export default function Marketplace() {
       </section>
 
       <p className="mk-count">
-        {list.length} product{list.length === 1 ? "" : "s"}{cat !== "All" ? ` in ${cat}` : ""}{onlySamples ? " with free samples" : ""}{pool ? ` · ${POOLS[pool].label} samples` : ""} · sorted by {SORTS.find(([k]) => k === sort)![1].toLowerCase()}
-        {(cat !== "All" || onlySamples || pool || term) && <button type="button" className="v2-link" onClick={() => { setQ(""); setCat("All"); setPool(null); setOnlySamples(false); }}>Clear</button>}
+        {list.length} product{list.length === 1 ? "" : "s"}{cat !== "All" ? ` in ${cat}` : ""}{onlySamples ? " with free samples you can get" : ""} · sorted by {SORTS.find(([k]) => k === sort)![1].toLowerCase()}
+        {(cat !== "All" || onlySamples || term) && <button type="button" className="v2-link" onClick={() => { setQ(""); setCat("All"); setOnlySamples(false); }}>Clear</button>}
+        <span className="mk-view" role="group" aria-label="View">
+          <button type="button" aria-pressed={view === "grid"} aria-label="Grid view" onClick={() => pickView("grid")}><Icon name="grid" size={16} /></button>
+          <button type="button" aria-pressed={view === "list"} aria-label="List view" onClick={() => pickView("list")}><Icon name="list" size={16} /></button>
+        </span>
       </p>
 
-      <div className="mk-grid">
+      <div className={`mk-grid${view === "list" ? " list" : ""}`}>
         {list.map((p, i) => {
           const left = SAMPLE_LEFT[p.id] ?? 10;
           const isAdded = added.includes(p.id);
@@ -205,23 +203,8 @@ export default function Marketplace() {
         <div className="v2-card flat" style={{ alignItems: "flex-start" }}>
           <b>No products match</b>
           <span className="v2-muted">Try another category, or clear your filters.</span>
-          <button type="button" className="np-btn v2-btn-sm" onClick={() => { setQ(""); setCat("All"); setPool(null); setOnlySamples(false); }}>Show all products</button>
+          <button type="button" className="np-btn v2-btn-sm" onClick={() => { setQ(""); setCat("All"); setOnlySamples(false); }}>Show all products</button>
         </div>
-      )}
-
-      {info && (
-        <Sheet title="Who can get which samples" onClose={() => setInfo(false)}>
-          <ul className="mk-tierinfo">
-            {POOL_KEYS.map((k) => (
-              <li key={k}>
-                <span className={`mk-ic ${k}`}><Icon name={POOL_ICON[k]} size={20} width={2.3} /></span>
-                <span><b>{POOLS[k].label}</b><small>{POOLS[k].line}</small></span>
-                {ACCESS[k] ? <span className="badge"><Icon name="check" size={12} width={3} /> You</span> : <span className="badge badge-amber">Day {CREATOR.streak} of 30</span>}
-              </li>
-            ))}
-          </ul>
-          <p className="v2-small" style={{ margin: 0 }}>Anyone can request any sample; the Techwide team approves. You need a complete basic profile (name, state, WhatsApp). Yours is complete.</p>
-        </Sheet>
       )}
 
       {sel && (
@@ -238,7 +221,7 @@ export default function Marketplace() {
 
           {step === "detail" && (
             <>
-              <p className="v2-small" style={{ margin: 0 }}>{POOLS[sel.samples as Pool].line}</p>
+              <p className="v2-small" style={{ margin: 0 }}>{ACCESS[sel.samples as Pool] ? "You can request this one now." : `Unlocks at a ${SAMPLE_STREAK[sel.samples as Pool]}-day streak. You're on day ${CREATOR.streak}.`}</p>
               <div className="cr1-sec">
                 <h3>Conditions <span className="v2-small">{conds.length - unmet.length} of {conds.length} met</span></h3>
                 <ul className="cr1-conds">
@@ -298,7 +281,7 @@ export default function Marketplace() {
                       <img src={p.img} alt="" />
                       <span>
                         <strong>{p.name}</strong>
-                        <small>Open sample · {rm(p.price)}</small>
+                        <small>Free sample · {rm(p.price)}</small>
                       </span>
                       <Icon name="arrow" size={18} />
                     </button>

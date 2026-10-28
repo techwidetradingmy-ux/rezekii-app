@@ -32,6 +32,8 @@ const P = {
   inbox: "M4 13h4l2 3h4l2-3h4M5 5h14l1 8v6H4v-6z",
   doc: "M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6",
   kanban: "M4 4h4v16H4zM10 4h4v10h-4zM16 4h4v13h-4z",
+  grid: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
+  list: "M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01",
   briefcase: "M4 8h16v11H4zM9 8V5h6v3M4 13h16",
   search: "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4",
   whatsapp: "M5 19l1.3-3.8A8 8 0 1 1 9 18.6zM9.5 9.5c0 3 2 5 5 5l1-1.5-2-1-1 1c-1 0-2.5-1.5-2.5-2.5l1-1-1-2z",

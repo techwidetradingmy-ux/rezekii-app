@@ -1,4 +1,5 @@
 import { Icon } from "@/components/icons";
+import { SAMPLE_ACCESS, SAMPLE_STREAK, type Pool } from "@/lib/mock-creator1";
 
 /** TikTok's note and Google's G for the sign-in buttons (same marks as V1). */
 const NOTE =
@@ -25,16 +26,17 @@ export function GoogleMark() {
   );
 }
 
-/** Each sample pool's icon: open to everyone, Active creators (10-day streak), Highly active creators (30 days). */
-export const POOL_ICON = { open: "gift", advanced: "flame", designated: "medal" } as const;
-const POOL_NAME = { open: "Open", advanced: "Advanced", designated: "Designated" } as const;
-
-/** The sample-pool tag: an icon in the pool's colour, with the name only where there's room for it. */
-export function PoolTag({ pool, label = true }: { pool: "open" | "advanced" | "designated"; label?: boolean }) {
+/**
+ * A product's free-sample tag for creators (owner, 28 Oct 2026): no pool names (Open, Advanced, Designated) since Bronze/Silver/Gold
+ * and the streak are enough to learn. It says "Free sample", or the streak it unlocks at when she isn't there yet.
+ */
+export function PoolTag({ pool, label = true }: { pool: Pool; label?: boolean }) {
+  const can = SAMPLE_ACCESS[pool];
+  const text = can ? "Free sample" : `Free sample at a ${SAMPLE_STREAK[pool]}-day streak`;
   return (
-    <span className={`cr1-tier ${pool} ${label ? "" : "icon"}`} title={`${POOL_NAME[pool]} sample`} aria-label={label ? undefined : `${POOL_NAME[pool]} sample`}>
-      <Icon name={POOL_ICON[pool]} size={label ? 13 : 15} width={2.4} />
-      {label && POOL_NAME[pool]}
+    <span className={`cr1-tier ${can ? "open" : "locked"} ${label ? "" : "icon"}`} title={text} aria-label={label ? undefined : text}>
+      <Icon name={can ? "gift" : "lock"} size={label ? 13 : 15} width={2.4} />
+      {label && text}
     </span>
   );
 }

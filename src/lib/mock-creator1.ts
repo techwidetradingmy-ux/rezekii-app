@@ -84,14 +84,10 @@ export const REFUSED = { productId: "p17", tiktok: "Adding product failed. Pleas
 /* ---------------- Samples ---------------- */
 
 export type Pool = "open" | "advanced" | "designated";
-export const POOLS: Record<Pool, { label: string; who: string; line: string; badge: string }> = {
-  open: { label: "Open", who: "Everyone", line: "Sellers send these freely. New creators can get them too.", badge: "" },
-  advanced: { label: "Advanced", who: "Active creators", line: "For Active creators: posting 10 days in a row.", badge: "badge-blue" },
-  designated: { label: "Designated", who: "Highly active creators", line: "For Highly active creators: posting 30 days in a row with every sample delivered (3 of 3 videos). The seller's own conditions apply too.", badge: "badge-amber" },
-};
-
 /** Aisyah is Active (16-day streak): Open and Advanced samples are hers; Designated needs Highly active (30 days). */
 export const SAMPLE_ACCESS: Record<Pool, boolean> = { open: true, advanced: true, designated: false };
+/** Creators never see the pool names (owner, 28 Oct 2026: too many ladders). They see the streak a sample unlocks at. */
+export const SAMPLE_STREAK: Record<Pool, number> = { open: 0, advanced: 10, designated: 30 };
 
 export type Cond = { label: string; ok: boolean; you: string };
 /** The seller's own conditions on top of the pool rules (by product id). */
