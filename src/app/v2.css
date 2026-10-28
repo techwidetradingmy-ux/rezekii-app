@@ -437,7 +437,12 @@ body { font-feature-settings: "tnum" 0; }
 .v2-app { display: flex; flex-direction: column; align-items: center; gap: 4px; border: 0; background: none; color: var(--body); font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; padding: 0; }
 .v2-app .ic { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; transition: transform 0.12s var(--ease); }
 .v2-app:active .ic { transform: scale(0.92); }
-@media (max-width: 420px) { .v2-apps { grid-template-columns: repeat(4, minmax(0, 1fr)); row-gap: 10px; } }
+/* Share apps in one row you swipe on phones (owner, 28 Oct 2026), not two rows. */
+@media (max-width: 420px) { .v2-apps { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 64px; gap: 8px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent); } .v2-apps::-webkit-scrollbar { display: none; } .v2-app { scroll-snap-align: start; } }
+/* Caption: room to write, no visible scrollbar in the sheet or the box (owner, 28 Oct 2026). */
+.v2-caption { min-height: 132px; }
+.v2-sheet, .v2-sheet textarea, .ss-pick ul { scrollbar-width: none; }
+.v2-sheet::-webkit-scrollbar, .v2-sheet textarea::-webkit-scrollbar, .ss-pick ul::-webkit-scrollbar { display: none; }
 
 /* ---------- V1 level emblems ---------- */
 .rz-emblem { display: inline-block; flex-shrink: 0; filter: drop-shadow(0 14px 18px rgba(0, 0, 0, 0.14)); transition: filter 0.3s; }

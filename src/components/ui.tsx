@@ -308,7 +308,7 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
           </div>
           <label className="v2-field">
             Caption
-            <textarea className="np-input" rows={2} value={caption} onChange={(e) => setCaption(e.target.value.slice(0, 300))} />
+            <textarea className="np-input v2-caption" rows={5} value={caption} onChange={(e) => setCaption(e.target.value.slice(0, 300))} />
           </label>
           <div className="v2-apps" role="group" aria-label="Share to">
             {SHARE_APPS.map(([name, bg, d, fill, stroke, sw]) => (
