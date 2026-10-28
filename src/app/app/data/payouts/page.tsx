@@ -65,7 +65,6 @@ export default function DataPayouts() {
   const lead = (new Date(Date.UTC(cal.year, cal.month, 1)).getUTCDay() + 6) % 7;
   const maxDay = Math.max(...cal.days.map((d) => d.est));
   const inRange = DAYS.filter((d) => d.date >= from && d.date <= to);
-  const extraAll = DAYS.reduce((s, d) => s + d.extra, 0);
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 14 }}>
@@ -215,39 +214,6 @@ export default function DataPayouts() {
           )}
         </Lock>
       </section>
-
-      <section className="v2-card">
-        <div className="v2-card-h">
-          <h2 className="v2-h2">Month by month</h2>
-          <span className="v2-small">Extra through Rezekii since June: <b className="violet">{rm(extraAll)}</b></span>
-        </div>
-        <Lock what="your monthly payouts">
-          <div className="cr2-paytable" role="table" aria-label="Payouts by month">
-            <div role="row" className="hd">
-              <span role="columnheader">Month</span>
-              <span role="columnheader">Estimated</span>
-              <span role="columnheader">Paid</span>
-              <span role="columnheader" className="violet">Extra with Rezekii</span>
-              <span role="columnheader">Status</span>
-            </div>
-            {[...MONTHS].reverse().map((m) => {
-              const a = iso(m.year, m.month, 1);
-              const b = iso(m.year, m.month, m.days.length) > TODAY ? TODAY : iso(m.year, m.month, m.days.length);
-              const t = sum(a, b);
-              return (
-                <button key={m.name} type="button" role="row" className={from === a && to === b ? "on" : undefined} onClick={() => choose(a, b, a === RANGE.month[0] ? "month" : a === RANGE.lastmonth[0] ? "lastmonth" : null)}>
-                  <span role="cell"><b>{m.name}</b>{t.clawed > 0 && <small className="cr2-red">−{rm(t.clawed)} clawed back</small>}</span>
-                  <span role="cell">{rm(t.est)}</span>
-                  <span role="cell"><b>{rm(t.paid)}</b></span>
-                  <span role="cell" className="violet"><b>+{rm(t.extra)}</b></span>
-                  <span role="cell">{t.pending > 0 ? <span className="badge badge-amber">{rm(t.pending)} pending</span> : <span className="badge">Paid</span>}</span>
-                </button>
-              );
-            })}
-          </div>
-        </Lock>
-      </section>
-
     </div>
   );
 }
