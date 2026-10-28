@@ -98,7 +98,7 @@ export default function DataPayouts() {
             <div className="cr2-extra">
               <span className="v2-small">Extra through Rezekii</span>
               <div className="cr2-amt violet">+<Count key={`x${from}${to}`} value={total.extra} format={(n) => rm(n)} /></div>
-              <small>{Math.round((total.extra / Math.max(total.est, 1)) * 100)}% of your commission, traced from your orders through Techwide&apos;s TAP campaigns. TikTok&apos;s open plan wouldn&apos;t have paid this.</small>
+              <small>{Math.round((total.extra / Math.max(total.est, 1)) * 100)}% of your commission, traced from your orders through Rezekii campaigns. TikTok&apos;s open plan wouldn&apos;t have paid this.</small>
             </div>
           </div>
           <div className="cr2-stack" role="img" aria-label={`Open-plan commission ${rm(open)}, extra through Rezekii ${rm(total.extra)}`}>
@@ -244,12 +244,12 @@ export default function DataPayouts() {
           ]}
         />
         <div className="cr2-eq" aria-label="Techwide rate minus open rate equals extra through Rezekii">
-          <span><small>Techwide TAP rate</small><b>10%</b></span>
+          <span><small>Rezekii rate</small><b>10%</b></span>
           <i>−</i>
           <span><small>TikTok open rate</small><b>6%</b></span>
           <i>=</i>
           <span className="on"><small>Extra through Rezekii</small><b>+4%</b></span>
-          <em>Traced on every TAP order</em>
+          <em>Traced on every Rezekii order</em>
         </div>
         <p className="cr2-note"><Icon name="shield" size={15} /><span>We only show money that has already happened. We never forecast what you will earn.</span></p>
       </section>

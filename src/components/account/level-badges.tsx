@@ -110,7 +110,7 @@ export function LevelBadges() {
         <div className="lb-side">
           <span className="lb-kicker">Your level</span>
           <h2 className="lb-h">You&apos;re {CREATOR.level}</h2>
-          <p className="v2-muted" style={{ margin: 0 }}>Your level sets your TAP commission rates. Tap a level to see what it gives.</p>
+          <p className="v2-muted" style={{ margin: 0 }}>Your level sets your Rezekii commission rates. Tap a level to see what it gives.</p>
           <div className="lb-path" role="group" aria-label="Levels">
             {LEVELS.map((l, i) => (
               <button key={l.name} type="button" className={`lb-stop ${i === pick ? "on" : ""} ${i <= levelAt ? "got" : ""}`} aria-pressed={i === pick} onClick={() => setPick(i)}>

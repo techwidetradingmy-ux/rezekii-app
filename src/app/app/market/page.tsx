@@ -109,7 +109,7 @@ export default function Marketplace() {
         <Flow
           label="How the marketplace works"
           steps={[
-            { icon: "tag", title: "Better rate than open plan", note: "Through Techwide's TAP" },
+            { icon: "tag", title: "Better rate than open plan", note: "Through Rezekii" },
             { icon: "plus", title: "Add to your showcase", note: "One tap, no sample needed" },
             { icon: "gift", title: "Or get a free sample", note: "Where it says Free sample" },
             { icon: "video", title: "Post 3 videos", note: "For each sample" },

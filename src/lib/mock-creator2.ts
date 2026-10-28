@@ -291,7 +291,7 @@ export const LEVELS = [
   },
   {
     name: "Silver", how: "TikTok Shop Lv.4+, or RM 10,000 sales last month",
-    gives: ["Silver TAP rates, higher than open plan", "Advanced samples once you're Active", "Everything in Bronze"],
+    gives: ["Silver Rezekii rates, higher than open plan", "Advanced samples once you're Active", "Everything in Bronze"],
   },
   {
     name: "Gold", how: "Techwide MCN creators, after 6 months",

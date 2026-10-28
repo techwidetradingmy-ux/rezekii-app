@@ -250,7 +250,7 @@ export default function Account() {
         <section className="cr2-group">
           <h2>Shipping address <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 600 }}>· optional</span></h2>
           <p style={{ color: "var(--body)" }}>
-            Only for PR kits and other parcels that don&apos;t go through TikTok. TAP samples use your address in TikTok. Only the Techwide team sees it.
+            Only for PR kits and other parcels that don&apos;t go through TikTok. Free samples from Rezekii use your address in TikTok. Only the Techwide team sees it.
           </p>
           <div className="cr2-cells">
             <div className="cr2-cell">

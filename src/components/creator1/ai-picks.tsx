@@ -17,7 +17,7 @@ const STEPS: [string, string][] = [
   ["Reading your last 30 days of sales", AI_PROFILE.categories.map(([c, v]) => `${c} ${v}%`).slice(0, 2).join(" · ")],
   ["Finding what sells best for you", `Video ${AI_PROFILE.video}% · LIVE ${100 - AI_PROFILE.video}%`],
   ["Checking TikTok Shop's best-sellers in Malaysia", `${AI_PROFILE.compared.toLocaleString("en-MY")} products`],
-  ["Matching Techwide campaigns and free samples", "TAP rates and samples found"],
+  ["Matching Techwide campaigns and free samples", "Rezekii rates and samples found"],
   ["Ranking everything by fit with you", `${AI_PICKS.length} picks`],
 ];
 const STEP_MS = 650;

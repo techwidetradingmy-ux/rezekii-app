@@ -129,7 +129,7 @@ export function ScanHub() {
             <div className="sh-stats">
               <span><b>{linked ? same.length : "–"}</b><small>can pay more</small></span>
               <span><b>{linked && top ? `+${top}%` : "–"}</b><small>best increase</small></span>
-              <span><b>{sims.length}</b><small>similar in TAP</small></span>
+              <span><b>{sims.length}</b><small>similar on Rezekii</small></span>
             </div>
           </div>
           <div className="sh-radar" aria-hidden="true" style={{ "--sweep": `${scanning ? 1.2 : SWEEP_S}s` } as React.CSSProperties}>
@@ -190,7 +190,7 @@ export function ScanHub() {
                         <span className="sh-rate" aria-label={`${it.fromLabel} ${it.from}%, through Techwide ${it.to}%`}>
                           <span><small>{it.fromLabel}</small>{it.from}%</span>
                           <Icon name="arrow" size={13} />
-                          <span className="to"><small>TAP</small><Hidden>{it.to}%</Hidden></span>
+                          <span className="to"><small>Rezekii</small><Hidden>{it.to}%</Hidden></span>
                         </span>
                       </label>
                     </li>
@@ -287,7 +287,7 @@ export function ScanHub() {
                   <img src={p.img} alt="" />
                   <span>
                     <strong>{p.name}</strong>
-                    <small>{it.fromLabel} {it.from}% → TAP <Hidden>{it.to}%</Hidden></small>
+                    <small>{it.fromLabel} {it.from}% → Rezekii <Hidden>{it.to}%</Hidden></small>
                   </span>
                   {ok ? <span className="cr1-st ok cr1-pop"><Icon name="check" size={16} width={3} /></span> : <span className="cr1-spin" aria-label="Adding" />}
                 </div>
