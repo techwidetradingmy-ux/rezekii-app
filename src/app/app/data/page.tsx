@@ -146,7 +146,7 @@ export default function DataOverview() {
               </div>
             );
           })}
-          <Link href="/app/ratings" className="v2-link" style={{ fontSize: 13.5, padding: "4px 2px 0" }}>Check every product&apos;s rating →</Link>
+          <Link href="/app/data/risk" className="v2-link" style={{ fontSize: 13.5, padding: "4px 2px 0" }}>Check every product&apos;s rating →</Link>
           <p className="cr2-watch-why">
             Cancels, complaints and low ratings cost you account health. When it drops, TikTok can limit your traffic, and your GMV drops with it. Removing a
             product doesn&apos;t touch commission you&apos;ve already earned.
@@ -253,7 +253,7 @@ export default function DataOverview() {
       <section className="v2-card">
         <div className="v2-card-h">
           <h2 className="v2-h2">Top earning products</h2>
-          <Link href="/app/data/products">All products</Link>
+          <Link href="/app/data/performance#product">All products</Link>
         </div>
         <div className="v2-divide">
           {ranked.slice(0, 3).map((b, i) => {

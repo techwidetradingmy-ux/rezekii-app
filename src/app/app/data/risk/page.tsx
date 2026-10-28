@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
-import { useDemo } from "@/components/demo";
 import { Bars, Lock, Seg, Stat, Title } from "@/components/ui";
+import { RatingScan } from "@/components/creator1/rating-scan";
 import { ANALYTICS, product, rm } from "@/lib/mock";
 import { SHORT, VIDEOS } from "@/lib/mock-creator2";
 import "@/app/creator2.css";
@@ -12,11 +12,12 @@ import "@/app/creator2.css";
 const cancelled = (orders: number, rate: number) => Math.round((orders * rate) / 100);
 const tone = (rate: number) => (rate > 15 ? "red" : rate > 10 ? "amber" : undefined);
 
-/** Cancellations and refunds: which videos and products they come from, and what to do next. */
+/**
+ * Risk check (owner, 28 Oct 2026): the rating check and returns & risk in one place. Low-rated products in the showcase, then
+ * cancellations and refunds: which videos and products they come from, and what to do next.
+ */
 export default function DataRisk() {
-  const { toast } = useDemo();
   const [by, setBy] = useState<"By video" | "By product">("By video");
-  const [removed, setRemoved] = useState<string[]>([]);
 
   const vids = VIDEOS.map((v) => ({ ...v, cancelled: cancelled(v.orders, v.cancel) }));
   const prods = ANALYTICS.byProduct.map((b) => ({ ...b, cancelled: cancelled(b.orders, b.cancel) }));
@@ -28,7 +29,6 @@ export default function DataRisk() {
   const worstVid = [...vids].filter((v) => v.productId === worst.productId).sort((a, b) => b.cancelled - a.cancelled)[0];
 
   const highRisk = vids.filter((v) => v.cancel > 15).sort((a, b) => b.cancel - a.cancel);
-  const lowRated = prods.map((b) => product(b.productId)).filter((p) => p.rating < 3).sort((a, b) => a.rating - b.rating);
 
   const ADVICE: Record<string, string[]> = {
     v4: ["Next time, show each colour in daylight so it matches what arrives.", "Low-rated product (2.8★): pick a 4★ one for new videos."],
@@ -37,7 +37,9 @@ export default function DataRisk() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 20 }}>
-      <Title title="Returns & risk" sub="Cancellations and refunds in the last 30 days · updated today 09:12" />
+      <Title title="Risk check" sub="Low ratings, cancellations and returns that could hurt your account · updated today 09:12" />
+      <RatingScan />
+      <h2 className="v2-h2" style={{ marginTop: 8 }}>Cancellations and returns · last 30 days</h2>
 
       <Lock what="your cancellations and refunds">
         <div className="cr2-stats">
@@ -114,7 +116,6 @@ export default function DataRisk() {
         </div>
       </section>
 
-      <div className="v2-grid2">
         <section className="v2-card cr2-attn">
           <h2 className="v2-h2"><Icon name="video" size={20} /> High-risk videos</h2>
           <p className="v2-small" style={{ margin: 0 }}>Over 15% of orders cancelled. Your average is {ANALYTICS.cancelRate}%.</p>
@@ -126,39 +127,11 @@ export default function DataRisk() {
               </div>
               <span className="v2-small">{v.date} · {v.cancelled} cancelled, {v.refunds} refunded</span>
               <ul className="cr2-do">{(ADVICE[v.id] ?? []).map((a) => <li key={a}>{a}</li>)}</ul>
-              <Link href="/app/data/videos" className="btn-outline v2-btn-sm" style={{ alignSelf: "flex-start" }}>See video</Link>
+              <Link href="/app/data/performance" className="btn-outline v2-btn-sm" style={{ alignSelf: "flex-start" }}>See video</Link>
             </div>
           ))}
         </section>
 
-        <section className="v2-card cr2-attn">
-          <h2 className="v2-h2"><Icon name="star" size={20} /> Low-rated products</h2>
-          <p className="v2-small" style={{ margin: 0 }}>Rated below 3.0 by buyers. These can pull down how buyers see you, even when your video is good.</p>
-          {lowRated.map((p) => {
-            const gone = removed.includes(p.id);
-            return (
-              <div key={p.id} className="v2-prow" style={{ borderTop: "1px solid var(--line)" }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.img} alt="" />
-                <span>
-                  <strong>{p.name}</strong>
-                  <small className="cr2-red" style={{ fontWeight: 800 }}>{p.rating.toFixed(1)} stars</small>
-                </span>
-                <span className="v2-acts">
-                  {gone ? (
-                    <span className="badge badge-gray">Removed</span>
-                  ) : (
-                    <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setRemoved((r) => [...r, p.id]); toast(`${SHORT[p.id] ?? "Product"} removed from your showcase`); }}>
-                      Remove from showcase
-                    </button>
-                  )}
-                </span>
-              </div>
-            );
-          })}
-          <Link href="/app/ratings" className="v2-link" style={{ alignSelf: "flex-start" }}>Run a rating check on your whole showcase</Link>
-        </section>
-      </div>
     </div>
   );
 }
