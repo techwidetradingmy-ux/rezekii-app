@@ -346,7 +346,6 @@ function AccountPanel({ onClose }: { onClose: () => void }) {
           </span>
           <span className="ap-tools">
             <button type="button" className="v2-iconbtn" aria-label={`Theme: ${theme}. Tap to change`} onClick={nextTheme}><Icon name={theme === "Light" ? "sun" : theme === "Dark" ? "moon" : "auto"} size={18} /></button>
-            <button type="button" className="v2-iconbtn" aria-label="Close" onClick={onClose}><Icon name="x" size={18} /></button>
           </span>
         </div>
         <nav className="ap-list" aria-label="Account sections">

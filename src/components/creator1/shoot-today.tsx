@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSideScroll } from "@/components/side-scroll";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { AiMark, Hidden, Seg, Tip } from "@/components/ui";
@@ -45,6 +46,25 @@ export function ShootToday({ bare = false }: { bare?: boolean }) {
   const router = useRouter();
   const { linked, setLinked, toast, requireWa } = useDemo();
   const [pick, setPick] = useState<string[]>([]);
+  // Phones: big swipe cards by default, or a list; the choice is remembered on this device.
+  const [view, setView] = useState<"cards" | "list">("cards");
+  useEffect(() => {
+    try { if (localStorage.getItem("rz2_ideas_view") === "list") setView("list"); } catch {}
+  }, []);
+  const pickView = (v: "cards" | "list") => { setView(v); try { localStorage.setItem("rz2_ideas_view", v); } catch {} };
+  const rail = useRef<HTMLDivElement>(null);
+  useSideScroll(rail, view, ".none");
+  const [at, setAt] = useState(0);
+  useEffect(() => {
+    const el = rail.current;
+    if (!el || view !== "cards") return;
+    const onScroll = () => {
+      const first = el.firstElementChild as HTMLElement | null;
+      if (first) setAt(Math.round(el.scrollLeft / (first.offsetWidth + 10)));
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [view]);
   const [asked, setAsked] = useState<string[]>([]);
   // 2 rising in her showcase, 2 of today's best sellers in her niche, 1 free sample (owner, 29 Oct 2026). All rated 4★+.
   const ok = (id: string) => product(id).rating >= 4;
@@ -81,9 +101,13 @@ export function ShootToday({ bare = false }: { bare?: boolean }) {
       <p className="td-lead">
         <b>{ideas.length} products to film today</b>
         <span className="td-ai">Updated daily by Rezekii AI <Tip label="How these are picked" text="Picked for you from your showcase, your sales and your niche. Best sellers come from TikTok Shop's public products and change every day. Each pick becomes a draft." /></span>
+        <span className="td-views" role="group" aria-label="View">
+          <button type="button" aria-label="Cards" aria-pressed={view === "cards"} className={view === "cards" ? "on" : undefined} onClick={() => pickView("cards")}><Icon name="grid" size={16} /></button>
+          <button type="button" aria-label="List" aria-pressed={view === "list"} className={view === "list" ? "on" : undefined} onClick={() => pickView("list")}><Icon name="list" size={16} /></button>
+        </span>
       </p>
 
-      <div className="td-grid">
+      <div ref={rail} className={`td-grid ${view}`}>
         {ideas.map((it, n) => {
           const p = product(it.productId);
           const on = pick.includes(it.id);
@@ -124,6 +148,8 @@ export function ShootToday({ bare = false }: { bare?: boolean }) {
           );
         })}
       </div>
+
+      {view === "cards" && <span className="td-dots" aria-hidden="true">{ideas.map((it, n) => <i key={it.id} className={n === at ? "on" : undefined} />)}</span>}
 
       <div className="td-bar" role="status">
         <span><b>{pick.length}</b> of {ideas.length} picked</span>

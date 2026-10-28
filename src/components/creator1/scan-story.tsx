@@ -140,7 +140,7 @@ export function ScanStory({ checked, items, onAdd, onClose }: { checked: number;
   if (invite) {
     return (
       <ShareSheet
-        title="Invite friends to scan free"
+        title="Invite Friends for Free Scan"
         onClose={() => setInvite(false)}
         moment="invite"
         big="Scan your showcase free"
@@ -214,7 +214,7 @@ export function ScanStory({ checked, items, onAdd, onClose }: { checked: number;
                   <Icon name="plus" size={18} width={2.6} /> {!pick.length ? "Tick at least one" : pick.length === open.length && open.length > 1 ? `Add all ${pick.length}` : `Add ${pick.length}`}
                 </button>
               )}
-              <button type="button" className="ss-btn" onClick={() => setInvite(true)}><Icon name="users" size={18} /> Invite friends to scan free</button>
+              <button type="button" className="ss-btn" onClick={() => setInvite(true)}><Icon name="users" size={18} /> Invite Friends for Free Scan</button>
             </div>
           )}
         </div>
