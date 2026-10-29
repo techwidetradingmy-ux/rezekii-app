@@ -60,7 +60,7 @@ export const FAQS: [string, string][] = [
   ["How much more commission will I get?", "It depends on the product and your account. Many products pay more through Rezekii, some don't. You always see the rate before you add anything."],
   ["Can Rezekii lower my commission?", "No. We only show products where Rezekii can pay you more. If you already have a better rate, we leave it as it is."],
   ["Will my old videos be affected?", "No. Your videos and links keep working. The better rate counts for sales from your new videos."],
-  ["How do free samples work?", "Request a sample in the app. Our team works it out with the seller and keeps you updated."],
+  ["How do free samples work?", "Request one in the app and the Rezekii team reviews it. Each seller sets their own requirements, and some are strict, so we negotiate the best we can for you and keep you updated."],
   ["Is my TikTok account safe?", "Yes. Linking TikTok Shop lets us read your showcase, orders and samples to find better rates. We never post or change anything unless you tap to do it."],
   ["Why can Rezekii pay more?", "Rezekii is an agency. Sellers hire us to manage their affiliates, and they pay us for it, not you. That's how creators on Rezekii get better rates."],
   ["Is signing in with TikTok the same as linking TikTok Shop?", "No. Signing in only logs you in. You link TikTok Shop separately, and you can disconnect it at any time."],
