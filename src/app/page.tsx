@@ -179,7 +179,7 @@ export default function Landing() {
         <Reveal className="lp-final" label="Join us">
           <span className="eyebrow">OUR VISION</span>
           <h2>Let&apos;s Build Malaysia&apos;s Largest Affiliate Community</h2>
-          <p>Better rates, free samples and AI tools for every creator, big or small. Join us today.</p>
+          <p>Big or small, every creator deserves more.</p>
           <Link href="/signin" className="np-btn lp-bigbtn">Join Us Today <Icon name="arrow" size={20} /></Link>
           <span className="lp-final-note">Join for Free Now. No Minimum Follower Required.</span>
           <PartnerLine center />
