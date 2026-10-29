@@ -84,7 +84,7 @@ export function ShowcaseCheck() {
         </div>
         {tried && err && <span className="sc-err" role="alert">{err}</span>}
         {/* Price is just "free to join", by the button (owner, 29 Oct 2026). */}
-        <p className="sc-free"><b>Everything free during Beta</b> · <a href="#how" className="sc-how">How it works</a></p>
+        <p className="sc-free"><b>Beta open now. Join now for free.</b> · <a href="#how" className="sc-how">How it works</a></p>
       </form>
     );
   }

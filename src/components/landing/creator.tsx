@@ -50,7 +50,7 @@ const HERO_NOTES: Note[] = [
 const HERO_ROWS = ["p08", "p13", "p24", "p21"].map(example);
 export function CreatorHeroScan() {
   const ref = useRef<HTMLDivElement>(null);
-  const on = useOnScreen(ref, 0.3);
+  const on = useOnScreen(ref, 0.12);
   const still = useReducedMotion();
   const [count, setCount] = useState(0);
   const [money, setMoney] = useState(0);
@@ -69,8 +69,9 @@ export function CreatorHeroScan() {
     const tick = (t: number) => {
       const ms = t - t0;
       setCount(Math.round(to * ease(ms / 1600)));
-      setMoney(Math.round(extra * ease((ms - 1400) / 2200)));
-      if (ms < 3700) raf = requestAnimationFrame(tick);
+      setMoney(Math.round(extra * ease((ms - 500) / 2000)));
+      if (ms < 2600) raf = requestAnimationFrame(tick);
+      else setMoney(extra);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
@@ -210,19 +211,19 @@ function PicksScreen() {
 
 /** Free Samples: a shop of free samples scrolling past, open to new creators (the open pool needs no streak). */
 const OPEN = PRODUCTS.filter((p) => p.samples === "open");
-const SHOP = [...OPEN].sort((a, b) => b.rating - a.rating).slice(0, 12);
+const SHOP = [...OPEN].sort((a, b) => b.sold - a.sold).slice(0, 12);
 function SamplesScreen() {
   return (
     <App title="Free Samples">
       <p className="lp-s-open"><Icon name="gift" size={16} width={2.2} /><b>{OPEN.length} free samples</b> open now</p>
-      <p className="lp-s-free"><span><Icon name="check" size={11} width={3.2} /> Open to new creators</span><span><Icon name="check" size={11} width={3.2} /> No streak needed</span></p>
+      <p className="lp-s-free"><span><Icon name="check" size={11} width={3.2} /> Open to new creators</span><span><Icon name="check" size={11} width={3.2} /> Best sellers included</span></p>
       <div className="lp-s-shop">
         <div>
           {[...SHOP, ...SHOP].map((p, i) => (
             <span key={i}>
               <Thumb src={p.img} size={72} />
               <em>Free</em>
-              <small>{p.name}</small>
+              <small>{short(p.sold)} sold</small>
             </span>
           ))}
         </div>
@@ -296,7 +297,7 @@ function RewardsScreen() {
 const DAY: DayStep[] = [
   { id: "scan", time: "9:00", title: "Showcase Scan", ai: true, problem: "Checking 500 products one by one.", fix: "One scan shows where Rezekii pays more. Add All in one tap.", note: { title: "Scan done: 3 better rates", line: "Tap to see them and add all" }, screen: <ScanScreen /> },
   { id: "picks", time: "10:00", title: "AI Picks", ai: true, problem: "Scrolling TikTok for hours to find products.", fix: "Rezekii AI picks trending best sellers that suit you.", note: HERO_NOTES[1], screen: <PicksScreen /> },
-  { id: "samples", time: "13:00", title: "Free Samples", problem: "Strict seller rules shut new creators out.", fix: "Free samples, open to new creators. Sent to your door.", note: { title: `${OPEN.length} free samples open now`, line: "Open to new creators" }, screen: <SamplesScreen /> },
+  { id: "samples", time: "13:00", title: "Free Samples", problem: "Best sellers rarely give samples. Others turn new creators down.", fix: "Free samples, even on best sellers. Each one is tracked to your video, so sellers trust you.", note: { title: `${OPEN.length} free samples open now`, line: "Open to new creators" }, screen: <SamplesScreen /> },
   { id: "time", time: "19:00", title: "Viral Time Frame", ai: true, problem: "Posting when your followers aren't watching.", fix: "Rezekii AI learns when YOUR followers watch.", note: HERO_NOTES[2], screen: <BestTimeScreen /> },
   { id: "rewards", time: "21:00", title: "Rewards & Levels", problem: "Doing well, with nothing extra for it.", fix: "Credits for posting. Better rates as you level up.", note: HERO_NOTES[4], screen: <RewardsScreen /> },
 ];
@@ -441,16 +442,18 @@ const USPS: Usp[] = [
   },
   {
     // TikTok samples are free too; sellers there often set strict rules (owner, 29 Oct 2026). The difference is who gets in.
-    title: "Free Samples, Open to New Creators", tint: "#1d4ed8",
-    line: "No strict follower rules to get your first samples.",
+    // TikTok has free samples too, but best sellers rarely offer them and sellers fear no-shows (owner, 29 Oct 2026). Rezekii
+    // tracks every sample to a posted video, so sellers can trust the creator.
+    title: "Free Samples, Even on Best Sellers", tint: "#1d4ed8",
+    line: "Sellers worry samples never become videos. Rezekii tracks each one to your post, so they can trust you.",
     demo: (
       <div className="lp-u-col">
         <div className="lp-u-track">
           <span className="lp-u-line"><i /></span>
           <span className="lp-u-parcel"><Icon name="box" size={16} width={2.2} /></span>
-          <ol>{["Applied", "Shipped", "Received"].map((t, i) => <li key={t} style={v({ i })}><i />{t}</li>)}</ol>
+          <ol>{["Approved", "Received", "Video posted"].map((t, i) => <li key={t} style={v({ i })}><i />{t}</li>)}</ol>
         </div>
-        <span className="lp-u-spent"><s><Icon name="lock" size={13} width={2.2} /> Strict requirements</s><b>Open to new creators</b></span>
+        <span className="lp-u-spent"><s><Icon name="lock" size={13} width={2.2} /> No sample</s><b>Free sample · {short(TRACK.sold)} sold</b></span>
       </div>
     ),
   },
@@ -494,7 +497,7 @@ const ROWS: CompareRow[] = [
   { label: "Finding viral products", without: "Hours a day scrolling TikTok, then guessing", with: "Rezekii AI shows what's trending for you" },
   { label: "Captions", without: "A new caption for every app, every post", with: "Write once, fitted to each app" },
   { label: "Posting", without: "Same video uploaded 4 times", with: <span className="lp-cmp-apps">Post once to<span>{PLATS.map((p) => <PlatIcon key={p} name={p} size={26} />)}</span><span className="lp-sr">TikTok, Facebook, Instagram and Threads</span></span> },
-  { label: "Free samples", without: "Free, but sellers set strict requirements", with: "Open to new creators, sent to your door" },
+  { label: "Free samples", without: "Best sellers rarely offer them; others fear no-shows", with: "Even on best sellers, tracked to your video" },
   { label: "When to post", without: "Post anytime and hope for FYP", with: "Rezekii AI finds your Viral Time Frame" },
 ];
 export function CreatorCompare() {

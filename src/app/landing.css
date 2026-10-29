@@ -284,7 +284,8 @@ i.gold { background: radial-gradient(circle at 35% 30%, #fff3bf, #f5b81e 55%, #b
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) :is(.lp-s-hit.ai, .lp-tag-ai, .lp-s-chips .ai) { background: #221d45; color: #c9c2ff; } }
 
 /* ================= Section heads, cards, rhythm ================= */
-.lp-main { gap: 72px; padding-top: 56px; }
+/* Tighter between sections (owner, 29 Oct 2026: not so much empty space). */
+.lp-main { gap: 52px; padding-top: 32px; }
 .lp-main .section { gap: 18px; }
 .lp-head { display: flex; flex-direction: column; gap: 8px; }
 .lp-head .v2-aihead { gap: 10px; }
@@ -779,7 +780,7 @@ button.lp-shotf { cursor: zoom-in; }
   .lp-hero-cta .sc-free, .lp-hero-cta .pc-row { align-self: center; justify-self: center; text-align: center; }
 }
 @media (max-width: 720px) {
-  .hs { padding: 18px 0 16px; }
+  .hs { padding: 10px 0 6px; }
   .hs-card { padding: 13px; border-radius: 20px; }
   .hs-total b { font-size: 46px; }
 }
@@ -847,7 +848,7 @@ button.lp-shotf { cursor: zoom-in; }
 @media (max-width: 960px) {
   .lp-hero-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; padding-bottom: 0; }
   /* No phone frame here (owner, 29 Oct 2026, option A): just the first two notifications. */
-  .lp-hero-vis { padding-bottom: 20px; }
+  .lp-hero-vis { padding-bottom: 4px; }
   .lp-hero-vis::before, .lp-hero-vis .lp-lockwrap { display: none; }
   .lp-hero-alerts { display: grid; gap: 8px; width: 100%; max-width: 440px; }
   .lp-hero-alerts .lp-note { animation: lpRowIn 0.55s calc(0.4s + var(--i) * 0.3s) var(--lp-spring) both; }
@@ -868,7 +869,7 @@ button.lp-shotf { cursor: zoom-in; }
   .lp-hero .sc-row { gap: 8px; }
   .lp-chips li { font-size: 11.5px; padding: 7px 4px; }
   .lp-ctas > * { flex: 1 1 100%; }
-  .lp-main { gap: 36px; padding-top: 48px; }
+  .lp-main { gap: 28px; padding-top: 20px; }
   .lp-head .v2-aihead small { display: none; }
   .lp-faqs { gap: 8px; }
   .lp-faqs .hm-faq summary { padding: 12px 14px; font-size: 15px; }
