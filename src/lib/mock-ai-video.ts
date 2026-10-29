@@ -2,10 +2,20 @@
  * AI Video waitlist (owner, 29 Oct 2026): the tool isn't launched. Creators join a waitlist; the people on it become the first
  * trial batch at launch. Sample data only.
  */
-export const VIDEO_TYPES = ["Product demos", "Try-ons", "Unboxings", "Reviews", "Before & after"] as const;
+export const VIDEO_TYPES = ["Product demos", "Try-ons", "Reviews", "Expert advice", "Mini dramas", "Unboxings", "Before & after"] as const;
 export const PLATFORMS = ["TikTok", "Instagram", "Facebook", "Threads"] as const;
 export type VideoType = (typeof VIDEO_TYPES)[number];
 export type Platform = (typeof PLATFORMS)[number];
+
+/** Videos our team already made with AI, cut to 15 seconds (owner, 29 Oct 2026), so she sees what to expect before it launches. */
+export const AI_EXAMPLES: { id: string; type: VideoType; product: string }[] = [
+  { id: "try-on", type: "Try-ons", product: "Loose-cut denim pants" },
+  { id: "pov-demo", type: "Product demos", product: "Car floor mat" },
+  { id: "review", type: "Reviews", product: "Face ampoule" },
+  { id: "expert", type: "Expert advice", product: "Daily supplement" },
+  { id: "drama", type: "Mini dramas", product: "Krill oil" },
+  { id: "home-demo", type: "Product demos", product: "Walking pad" },
+];
 
 /** Her answers on the creator page. */
 export type WaitlistAnswers = { types: VideoType[]; videos: number; platforms: Platform[]; note?: string };

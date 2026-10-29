@@ -1,12 +1,15 @@
 "use client";
 
 import "@/app/seller.css";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Seg, Title } from "@/components/ui";
 import { Ava } from "@/components/seller/seller-ui";
-import { COMP_AI, COMP_CATEGORIES, COMP_CREATORS, COMP_PRODUCTS, COMP_VIDEOS, PERIODS, type CompCategory, type Period } from "@/lib/mock-seller";
+import { COMP_AI, COMP_CATEGORIES, COMP_CREATORS, COMP_PRODUCTS, COMP_VIDEOS, PERIODS, SHOP_ITEMS, type CompCategory, type Period } from "@/lib/mock-seller";
+import { sellerProductHref } from "@/lib/product-pages";
 
 const SOON = "Invites coming soon";
 /** Rough scale so the three periods don't show identical ranges. */
@@ -14,6 +17,7 @@ const TREND_K: Record<Period, number> = { "1 day": 0.4, "7 days": 1, "30 days": 
 
 /** AI competitor analysis from TikTok's public best-seller lists, for the categories this shop sells in. */
 export default function Competitors() {
+  const router = useRouter();
   const { toast } = useDemo();
   const [cat, setCat] = useState<CompCategory>("Home & Kitchen");
   const [period, setPeriod] = useState<Period>("7 days");
@@ -66,13 +70,15 @@ export default function Competitors() {
             <div className="sl-reveal">
               {prods.map((p, i) => {
                 const t = Math.round(p.trend * TREND_K[period]);
+                // Her own products open their page; other shops' products have no page here.
+                const own = p.yours ? SHOP_ITEMS.find((s) => s.name === p.name)?.id : undefined;
                 return (
                   <div key={p.name} className="sl-rank">
                     <b>{i + 1}</b>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={p.img} alt="" />
+                    {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
+                    <img className={own ? "pv-open" : undefined} src={p.img} alt="" onClick={own ? () => router.push(sellerProductHref(own)) : undefined} />
                     <span className="sl-pinfo">
-                      <strong>{p.name}</strong>
+                      <strong>{own ? <Link href={sellerProductHref(own)} className="pv-open">{p.name}</Link> : p.name}</strong>
                       <small>{p.shop} · sold {p.sold} · GMV {p.gmv}</small>
                       {p.yours && <span className="v2-row"><span className="badge">Yours</span></span>}
                     </span>

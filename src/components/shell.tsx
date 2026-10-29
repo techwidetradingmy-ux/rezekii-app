@@ -11,6 +11,7 @@ import { applyTheme, readTheme, type Theme } from "@/lib/theme";
 import { LevelFace } from "./level-face";
 import { ACCOUNT_TABS, OPEN_ACCOUNT_MENU } from "@/lib/account-tabs";
 import { useSideScroll } from "./side-scroll";
+import { useScrollMemory } from "@/lib/keep";
 import { ACCOUNT, HOME, MENUS, pageFor, sectionFor, type AppKind } from "@/lib/menus";
 import { CREATOR, MY_SAMPLES, REFERRAL_REWARD, SELLER } from "@/lib/mock";
 
@@ -69,6 +70,8 @@ function Chest() {
 
 export function Shell({ app, children, banner }: { app: AppKind; children: React.ReactNode; banner?: React.ReactNode }) {
   const path = usePathname();
+  // Back returns to the same scroll on every page (owner, 29 Oct 2026); open sections come back through useKept.
+  useScrollMemory(path);
   const section = sectionFor(app, path);
   const page = section ? pageFor(section, path) : null;
   const who = WHO[app];
@@ -227,7 +230,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
               aria-label="Invite friends and earn credits"
               onClick={(e) => {
                 // Already on My account: switch to the Referral section without leaving the page.
-                if (app === "creator" && path === "/app/account") { e.preventDefault(); window.location.hash = "referral"; }
+                if (app === "creator" && path === "/app/account") { e.preventDefault(); window.location.hash = "referral"; window.scrollTo({ top: 0, behavior: "smooth" }); }
               }}
             >
               {/* Option D (owner, 29 Oct 2026): the pill shows what an invite earns, on phones too. */}

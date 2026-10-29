@@ -3,6 +3,7 @@
 import "@/app/admin.css";
 import "@/app/product-page.css";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -21,6 +22,7 @@ const n = (v: number) => v.toLocaleString("en-MY");
  * the seller's reply. Joining takes it off the public Most Wanted board and tells every creator who committed.
  */
 export default function WishListAdmin() {
+  const router = useRouter();
   const { toast } = useDemo();
   const [list, setList] = useState<Wanted[]>(WANTED);
   const [filter, setFilter] = useState<Filter>("All");
@@ -80,11 +82,13 @@ export default function WishListAdmin() {
       <section className="v2-card" style={{ padding: "8px 20px" }}>
         <div className="ad-list">
           {shown.map((w) => (
-            <button key={w.id} type="button" className="ad-row click ad-rowbtn" onClick={() => { setOpenId(w.id); setReply(null); setRaise(1); }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="ad-reqimg" src={w.img} alt="" />
+            // The photo and name open the product; the rest of the row opens it in the wish list.
+            <div key={w.id} className="ad-row click ad-rowbtn">
+              <button type="button" className="pv-hit" aria-label={`Wish list details for ${w.name}`} onClick={() => { setOpenId(w.id); setReply(null); setRaise(1); }} />
+              {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
+              <img className="ad-reqimg pv-open" src={w.img} alt="" onClick={() => router.push(adminProductHref(w.id))} />
               <span className="main">
-                <b>{w.name}</b>
+                <b><Link href={adminProductHref(w.id)} className="pv-open">{w.name}</Link></b>
                 <small>{w.shop} · {w.category}</small>
               </span>
               <span className="main" style={{ flex: "0 1 230px" }}>
@@ -93,7 +97,7 @@ export default function WishListAdmin() {
               </span>
               {status(w)}
               <Icon name="arrow" size={16} />
-            </button>
+            </div>
           ))}
           {shown.length === 0 && <p className="v2-muted" style={{ padding: "14px 0" }}>Nothing here.</p>}
         </div>

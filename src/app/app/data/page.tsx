@@ -1,16 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { CalendarPicker, between, dayName, iso } from "@/components/calendar-picker";
 import { useDemo } from "@/components/demo";
 import { AiMark, Bars, Count, Lock, Progress, RemoveWarn, Seg, Stat, Tip, Title } from "@/components/ui";
 import { product, rm, short } from "@/lib/mock";
+import { productHref } from "@/lib/product-view";
 import { ACTIONS, CHARTS, POST_TIMES, RANGES, RANGE_DATA, SHORT, WATCH, type RangeKey } from "@/lib/mock-creator2";
 import { FLAGGED } from "@/components/creator1/rating-scan";
 import { CommissionChart } from "@/components/creator2/commission-chart";
 import "@/app/creator2.css";
+import { useKept } from "@/lib/keep";
 
 const pct = (n: number, of: number) => Math.round((n / of) * 100);
 /** Action plan order (owner, 28 Oct 2026): protect the account first, then today's chance, then this week, then growth. */
@@ -25,12 +28,13 @@ const PRESETS: [string, string][] = RANGES.map((r) => [r, r === "Lifetime" ? "Li
 
 /** Analytics overview: the numbers for any range, an AI summary with low-rated products to avoid, an action plan, and where the money comes from. */
 export default function DataOverview() {
+  const router = useRouter();
   const { toast } = useDemo();
-  const [range, setRange] = useState<RangeKey>("30 days");
+  const [range, setRange] = useKept<RangeKey>("data-range", "30 days");
   // Own dates from the calendar; this preview shows the sample data of the closest preset.
   const [custom, setCustom] = useState<[string, string] | null>(null);
   const [from, to] = custom ?? SPAN[range];
-  const [split, setSplit] = useState<"By channel" | "By product">("By channel");
+  const [split, setSplit] = useKept<"By channel" | "By product">("data-split", "By channel");
   const [removed, setRemoved] = useState<string[]>([]);
   const [ticked, setTicked] = useState<string[]>([]);
   const [allPlan, setAllPlan] = useState(false);
@@ -66,7 +70,7 @@ export default function DataOverview() {
 
   const channelRows = (["Videos", "LIVE", "Showcase"] as const).map((label, i) => ({ label, value: d.channel[i], display: `${d.channel[i]}%` }));
   const productRows = [
-    ...ranked.map((b) => ({ label: SHORT[b.productId] ?? product(b.productId).name, value: pct(b.commission, d.est), display: `${pct(b.commission, d.est)}%` })),
+    ...ranked.map((b) => ({ label: SHORT[b.productId] ?? product(b.productId).name, value: pct(b.commission, d.est), display: `${pct(b.commission, d.est)}%`, href: productHref(b.productId) })),
     { label: "Other products", value: pct(d.other, d.est), display: `${pct(d.other, d.est)}%`, tone: "blue" as const },
   ];
 
@@ -146,10 +150,10 @@ export default function DataOverview() {
             const gone = removed.includes(w.productId);
             return (
               <div key={w.productId} className={`cr2-watch-row ${gone ? "gone" : ""}`}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.img} alt="" />
+                {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
+                <img className="pv-open" src={p.img} alt="" onClick={() => router.push(productHref(p.id))} />
                 <span>
-                  <strong>{p.name}</strong>
+                  <strong><Link href={productHref(p.id)} className="pv-open">{p.name}</Link></strong>
                   <span className="cr2-flags">
                     <i>{w.cancel}% cancelled</i>
                     <i>{w.rating.toFixed(1)} ★</i>
@@ -208,10 +212,10 @@ export default function DataOverview() {
             const p = product(b.productId);
             return (
               <div key={b.productId} className="v2-prow">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.img} alt="" />
+                {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
+                <img className="pv-open" src={p.img} alt="" onClick={() => router.push(productHref(p.id))} />
                 <span>
-                  <strong>{p.name}</strong>
+                  <strong><Link href={productHref(p.id)} className="pv-open">{p.name}</Link></strong>
                   <small>#{i + 1} · {b.orders} orders · {pct(b.commission, d.est)}% of commission</small>
                 </span>
                 <span className="v2-acts"><b className="v2-num">{rm(b.commission)}</b></span>

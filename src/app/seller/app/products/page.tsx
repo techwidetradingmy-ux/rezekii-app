@@ -11,6 +11,7 @@ import { ConnBanner } from "@/components/seller/seller-ui";
 import { SELLER, rm, short } from "@/lib/mock";
 import { SHOP_ITEMS, UPDATED, listStatus, type ShopItem } from "@/lib/mock-seller";
 import { sellerProductHref } from "@/lib/product-pages";
+import { useKept } from "@/lib/keep";
 
 const FILTERS = ["All", "Not submitted", "Under review", "Live", "Not approved"] as const;
 type Filter = (typeof FILTERS)[number];
@@ -20,8 +21,8 @@ const BADGE: Record<Exclude<Filter, "All">, string> = { "Not submitted": "badge-
 export default function ShopProducts() {
   const { toast } = useDemo();
   const [items, setItems] = useState<ShopItem[]>(SHOP_ITEMS);
-  const [filter, setFilter] = useState<Filter>("All");
-  const [q, setQ] = useState("");
+  const [filter, setFilter] = useKept<Filter>("sp-filter", "All");
+  const [q, setQ] = useKept("sp-q", "");
   const [syncing, setSyncing] = useState(false);
   const [fix, setFix] = useState<ShopItem | null>(null);
   const [samples, setSamples] = useState(40);

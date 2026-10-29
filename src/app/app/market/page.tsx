@@ -11,6 +11,7 @@ import { MY_SAMPLES, PRODUCTS, rateFor, rm, type Product } from "@/lib/mock";
 import { SAMPLE_ACCESS as ACCESS, SAMPLE_LEFT, type Pool } from "@/lib/mock-creator1";
 import { productHref, requestedSamples } from "@/lib/product-view";
 import "@/app/creator1.css";
+import { useKept } from "@/lib/keep";
 
 const WITH_SAMPLES = PRODUCTS.filter((p) => p.samples);
 /** Free samples she can request right now (her streak is long enough). */
@@ -35,13 +36,13 @@ const earn = (p: Product) => (p.price * mine(p)) / 100;
  */
 export default function Marketplace() {
   const { linked, setLinked, toast, requireWa } = useDemo();
-  const [q, setQ] = useState("");
-  const [cat, setCat] = useState("All");
-  const [sort, setSort] = useState<SortKey>("sold");
-  const [onlySamples, setOnlySamples] = useState(false);
+  const [q, setQ] = useKept("mk-q", "");
+  const [cat, setCat] = useKept("mk-cat", "All");
+  const [sort, setSort] = useKept<SortKey>("mk-sort", "sold");
+  const [onlySamples, setOnlySamples] = useKept("mk-samples", false);
   const [added, setAdded] = useState<string[]>([]);
   // Grid or list (owner, 28 Oct 2026: a list is easier to browse), remembered on this device.
-  const [view, setView] = useState<"grid" | "list">("grid");
+  const [view, setView] = useKept<"grid" | "list">("mk-view", "grid");
   useEffect(() => {
     try {
       if (localStorage.getItem("rz2_market_view") === "list") setView("list");

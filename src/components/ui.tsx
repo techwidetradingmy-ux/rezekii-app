@@ -108,13 +108,14 @@ export function Stat({ label, value, note, tone }: { label: React.ReactNode; val
 }
 
 /** Horizontal bars: label, meter, value. */
-export function Bars({ rows, tone }: { rows: { label: string; value: number; display?: string; tone?: "red" | "amber" | "blue"; onPick?: () => void }[]; tone?: "red" | "amber" | "blue" }) {
+export function Bars({ rows, tone }: { rows: { label: string; value: number; display?: string; tone?: "red" | "amber" | "blue"; onPick?: () => void; href?: string }[]; tone?: "red" | "amber" | "blue" }) {
   const max = Math.max(...rows.map((r) => r.value), 1);
   return (
     <div className="v2-bars">
       {rows.map((r, i) => (
         <div className="v2-bar" key={r.label}>
-          {r.onPick ? <button type="button" className="v2-bar-pick" title={r.label} onClick={r.onPick}>{r.label}</button> : <span title={r.label}>{r.label}</span>}
+          {/* A product row opens the product: a link, so no underline (owner, 29 Oct 2026). */}
+          {r.href ? <Link href={r.href} className="v2-bar-pick" title={r.label}>{r.label}</Link> : r.onPick ? <button type="button" className="v2-bar-pick" title={r.label} onClick={r.onPick}>{r.label}</button> : <span title={r.label}>{r.label}</span>}
           <span className="v2-meter"><i className={r.tone ?? tone} style={{ width: `${(r.value / max) * 100}%`, animationDelay: `${i * 60}ms` }} /></span>
           <b>{r.display ?? r.value}</b>
         </div>

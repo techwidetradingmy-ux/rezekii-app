@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -9,6 +10,8 @@ import { CREATOR, PRODUCTS, RAISES, SIMILAR, product, type Raise, rateFor } from
 import { NEW_ON_RESCAN, SILVER_UNLOCKS } from "@/lib/mock-creator1";
 import { LEVELS } from "@/lib/mock-creator2";
 import { ScanStory } from "@/components/creator1/scan-story";
+import { productHref } from "@/lib/product-view";
+import { useKept } from "@/lib/keep";
 
 type Tab = "same" | "similar" | "silver";
 /** One product the creator can move to a better rate: the same listing (raise) or a similar one in TAP. */
@@ -46,11 +49,12 @@ const similarItem = (id: string): Item => {
  * one opens a card deck to swipe through. Bronze creators also see a quiet "Unlock at Silver" tab.
  */
 export function ScanHub() {
+  const router = useRouter();
   const { linked, setLinked, toast, bronze } = useDemo();
   const [rows, setRows] = useState<Raise[]>(RAISES);
   const [similar, setSimilar] = useState<string[]>(SIMILAR);
-  const [tab, setTab] = useState<Tab>("same");
-  const [open, setOpen] = useState(false);
+  const [tab, setTab] = useKept<Tab>("scan-tab", "same");
+  const [open, setOpen] = useKept("scan-open", false);
   // Desktop (owner, 28 Oct 2026: website first): the list sits open beside the scanner.
   useEffect(() => {
     if (window.matchMedia("(min-width: 1200px)").matches) setOpen(true);
@@ -286,7 +290,7 @@ export function ScanHub() {
                       key={card.id}
                       className={`sh-card${deck.fly ? ` ${deck.fly}` : ""}${drag ? " drag" : ""}`}
                       style={drag ? { transform: `translateX(${drag}px) rotate(${drag / 14}deg)` } : undefined}
-                      onPointerDown={(e) => { if ((e.target as HTMLElement).closest("button")) return; e.currentTarget.setPointerCapture(e.pointerId); dragFrom.current = e.clientX; setDrag(0.01); }}
+                      onPointerDown={(e) => { if ((e.target as HTMLElement).closest("button, a")) return; e.currentTarget.setPointerCapture(e.pointerId); dragFrom.current = e.clientX; setDrag(0.01); }}
                       onPointerMove={(e) => { if (dragFrom.current !== null) setDrag(e.clientX - dragFrom.current || 0.01); }}
                       onPointerUp={() => { const d = drag; dragFrom.current = null; if (Math.abs(d) > SWIPE_PX) decide(d > 0); else setDrag(0); }}
                       onPointerCancel={() => { dragFrom.current = null; setDrag(0); }}
@@ -295,7 +299,8 @@ export function ScanHub() {
                       <span className="sh-stamp skip" style={{ opacity: Math.max(0, Math.min(1, -drag / SWIPE_PX)) }}>Skip</span>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={product(card.productId).img} alt="" draggable={false} />
-                      <b>{product(card.productId).name}</b>
+                      {/* The name opens the product; the rest of the card swipes. */}
+                      <b><Link href={productHref(card.productId)} className="pv-open">{product(card.productId).name}</Link></b>
                       <span className="sh-rate">
                         <span><small>{card.fromLabel}</small>{card.from}%</span>
                         <Icon name="arrow" size={13} />
@@ -357,10 +362,11 @@ export function ScanHub() {
                     <li key={it.id} className={fresh.includes(it.id) ? "fresh" : undefined}>
                       <label>
                         <input type="checkbox" checked={on} onChange={() => setUnticked((u) => (on ? [...u, it.id] : u.filter((x) => x !== it.id)))} aria-label={`Add ${p.name}`} />
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={p.img} alt="" />
+                        {/* The photo and name open the product; the rest of the row ticks it. */}
+                        {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
+                        <img className="pv-open" src={p.img} alt="" onClick={(e) => { e.preventDefault(); router.push(productHref(p.id)); }} />
                         <span className="sh-name">
-                          <b>{fresh.includes(it.id) && <span className="badge badge-blue">New</span>} {p.name}</b>
+                          <b>{fresh.includes(it.id) && <span className="badge badge-blue">New</span>} <Link href={productHref(p.id)} className="pv-open">{p.name}</Link></b>
                           {it.note && <small>{it.note}</small>}
                         </span>
                         <span className="sh-rate" aria-label={`${it.fromLabel} ${it.from}%, through Techwide ${it.to}%`}>
@@ -381,13 +387,14 @@ export function ScanHub() {
                 {unlocks.map((p) => (
                   <li key={p.id}>
                     <div className="sh-lockrow">
-                      <span className="sh-lockimg">
+                      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
+                      <span className="sh-lockimg pv-open" onClick={() => router.push(productHref(p.id))}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={p.img} alt="" />
                         <i><Icon name="lock" size={13} width={2.6} /></i>
                       </span>
                       <span className="sh-name">
-                        <b>{p.name}</b>
+                        <b><Link href={productHref(p.id)} className="pv-open">{p.name}</Link></b>
                         {p.samples === "advanced" && <small>Free sample at Silver</small>}
                       </span>
                       <span className="sh-rate" aria-label={`Now ${p.publicRate}%, on Rezekii ${rateFor(p).rate}%`}>
@@ -407,8 +414,8 @@ export function ScanHub() {
                 <b>Added today</b>
                 {pending.map((x) => (
                   <span key={x.id} className={x.state}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={product(x.productId).img} alt="" />
+                    {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
+                    <img className="pv-open" src={product(x.productId).img} alt="" onClick={() => router.push(productHref(x.productId))} />
                     {x.state === "checking" ? <><span className="cr1-spin xs" aria-hidden="true" /> Checking with TikTok</> : <><Icon name="check" size={13} width={3} /> Live at {x.to}%</>}
                   </span>
                 ))}

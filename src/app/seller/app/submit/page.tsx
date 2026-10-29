@@ -2,6 +2,7 @@
 
 import "@/app/seller.css";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -10,6 +11,7 @@ import { ConnBanner, ContactSheet, TermsSheet } from "@/components/seller/seller
 import { rm, short } from "@/lib/mock";
 import { SHOP_ITEMS, TAP_INVITE, TODAY, heat, listStatus, type ShopItem } from "@/lib/mock-seller";
 import { HOT_RAISE, MIN_RAISE, hotFor } from "@/lib/mock-showcase";
+import { sellerProductHref } from "@/lib/product-pages";
 
 type Raise = "2" | "ai" | "8" | "custom";
 type Presets = { end: string; extend: boolean; niche: string; subs: string[]; level: string; gmv: string; format: string; gender: string };
@@ -41,6 +43,7 @@ function ChipRow({ label, note, options, value, onPick, multi }: { label: string
 
 /** Submit products to Techwide's TAP: pick products, then Submit. Commission and samples are preset; everything else is pre-filled. */
 export default function SubmitProducts() {
+  const router = useRouter();
   const { toast } = useDemo();
   const open = SHOP_ITEMS.filter((p) => p.stage === "Not submitted");
   const taken = SHOP_ITEMS.filter((p) => p.stage !== "Not submitted");
@@ -108,9 +111,9 @@ export default function SubmitProducts() {
           <div className="sl-done-list v2-divide">
             {done.map(({ item, plus }) => (
               <div key={item.id} className="sl-prow">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={item.img} alt="" />
-                <span className="sl-pinfo"><strong>{item.name}</strong><small>{nSamples} samples per SKU · submitted {TODAY}</small></span>
+                {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
+                <img className="pv-open" src={item.img} alt="" onClick={() => router.push(sellerProductHref(item.id))} />
+                <span className="sl-pinfo"><strong><Link href={sellerProductHref(item.id)} className="pv-open">{item.name}</Link></strong><small>{nSamples} samples per SKU · submitted {TODAY}</small></span>
                 <span className="sl-pside">
                   <span className="sl-rate">{item.publicRate === null ? "Public ?" : `${item.publicRate}%`} <Icon name="arrow" size={12} /> <b>{item.publicRate === null ? `+${plus}%` : `${item.publicRate + plus}%`}</b></span>
                 </span>
@@ -152,10 +155,11 @@ export default function SubmitProducts() {
             return (
               <label key={p.id} className={`sl-pick ${on ? "on" : ""}`}>
                 <input type="checkbox" checked={on} onChange={() => toggle(p.id)} />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.img} alt="" />
+                {/* The photo and name open the product; the rest of the row ticks it. */}
+                {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
+                <img className="pv-open" src={p.img} alt="" onClick={(e) => { e.preventDefault(); router.push(sellerProductHref(p.id)); }} />
                 <span className="sl-pinfo">
-                  <strong>{p.name}</strong>
+                  <strong><Link href={sellerProductHref(p.id)} className="pv-open">{p.name}</Link></strong>
                   <small>{rm(p.price)} · {h.label}</small>
                   {hotFor(p.id) && <span className="sl-hot"><Icon name="flame" size={12} /> {hotFor(p.id)!.creators} creators want it</span>}
                 </span>
@@ -175,9 +179,9 @@ export default function SubmitProducts() {
             {taken.map((p) => (
               <div key={p.id} className="sl-pick off" aria-disabled="true">
                 <input type="checkbox" disabled checked={false} readOnly aria-label="Already submitted" />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.img} alt="" />
-                <span className="sl-pinfo"><strong>{p.name}</strong><small>{short(p.sold)} sold · already submitted</small></span>
+                {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
+                <img className="pv-open" src={p.img} alt="" onClick={() => router.push(sellerProductHref(p.id))} />
+                <span className="sl-pinfo"><strong><Link href={sellerProductHref(p.id)} className="pv-open">{p.name}</Link></strong><small>{short(p.sold)} sold · already submitted</small></span>
                 <span className="sl-pick-rate"><span className={`badge ${listStatus(p.stage) === "Live" ? "" : listStatus(p.stage) === "Not approved" ? "badge-red" : "badge-amber"}`}>{listStatus(p.stage)}</span></span>
               </div>
             ))}

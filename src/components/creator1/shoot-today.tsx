@@ -11,6 +11,7 @@ import { productHref } from "@/lib/product-view";
 import { product, short, rateFor } from "@/lib/mock";
 import { SAMPLE_LEFT } from "@/lib/mock-creator1";
 import { NICHE_BEST, TRY_TODAY, VIRAL, daily } from "@/lib/mock-creator2";
+import { useKept } from "@/lib/keep";
 
 /** Drafts made from Today's Ideas wait here until the Content Calendar picks them up (preview only: this browser tab). */
 export const IDEA_DRAFTS = "rz-idea-drafts";
@@ -160,14 +161,15 @@ export function ShootToday({ bare = false, view = "cards", inFrame = false }: { 
               <button type="button" className="td-hit" aria-pressed={on} aria-label={`${on ? "Unpick" : "Pick"} ${p.name}`} onClick={() => flip(it.id)} />
               <span className="td-rank">{n + 1}</span>
               <i className="td-tick" aria-hidden="true">{on && <Icon name="check" size={14} width={3.4} />}</i>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="td-img" src={p.img} alt="" />
+              {/* The photo and name open the product (owner, 29 Oct 2026); the rest of the card picks it. */}
+              {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
+              <img className="td-img td-open" src={p.img} alt="" onClick={() => router.push(productHref(p.id))} />
               <span className={`td-from${FROM[it.kind].cls}`}>
                 <Icon name={FROM[it.kind].icon} size={12} />
                 <span className="td-long">{it.kind === "rising" ? "Rising in your showcase" : it.kind === "best" ? `Best seller in ${p.category}` : "New · free sample"}</span>
                 <span className="td-short">{FROM[it.kind].short} · {it.stat}</span>
               </span>
-              <b className="td-name">{p.name}</b>
+              <Link href={productHref(p.id)} className="td-name td-open">{p.name}</Link>
               <span className="td-why">{it.reason}</span>
               {it.week && <Trend points={it.week} label="Views, 7 days" sales={false} />}
               {it.sales && <Trend points={it.sales} label="Sales, 7 days" />}
@@ -215,7 +217,7 @@ export function NicheBest({ view: shape = "list", inFrame = false }: { view?: Id
   // Short tab names so the row fits a phone: "Home & Kitchen" shows as "Home".
   const short1 = (c: string) => c.split(" & ")[0];
   const cats = ["All", ...Array.from(new Set(rows.map((b) => short1(product(b.productId).category))))];
-  const [cat, setCat] = useState("All");
+  const [cat, setCat] = useKept("best-cat", "All");
   const [added, setAdded] = useState<string[]>([]);
   const shown = rows.filter((b) => cat === "All" || short1(product(b.productId).category) === cat);
   const { rail, at } = useRail<HTMLOListElement>(shape);

@@ -70,6 +70,8 @@ export default function Account() {
   const go = (k: TabKey) => {
     setTab(k);
     window.history.replaceState(null, "", `#${k}`);
+    // replaceState fires no hashchange; tell the top bar's page switcher too.
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
   };
 
   const [name, setName] = useState(CREATOR.name);
@@ -199,11 +201,11 @@ export default function Account() {
                 <span className="pf-l">Name {!locked && <Req />}</span>
                 {locked ? <b className="pf-v">{name}</b> : <input className="np-input" value={name} onChange={(e) => setName(e.target.value)} />}
               </label>
-              <label className="pf-f">
+              <label className="pf-f pair">
                 <span className="pf-l">Birthday {!locked && <Req />}</span>
                 {locked ? <b className="pf-v">{new Date(birthday).toLocaleDateString("en-MY", { day: "numeric", month: "long", year: "numeric" })}</b> : <input className="np-input" type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} />}
               </label>
-              <label className="pf-f">
+              <label className="pf-f pair">
                 <span className="pf-l">State {!locked && <Req />}</span>
                 {locked ? <b className="pf-v">{state}</b> : (
                   <select className="np-input" value={state} onChange={(e) => setState(e.target.value)}>
@@ -225,7 +227,7 @@ export default function Account() {
                   </span>
                 )}
                 <span className="pf-sub">
-                  {!local && !locked ? <span className="cr2-red" style={{ fontWeight: 700 }}>{cc === "+60" ? "Enter a Malaysian mobile number, e.g. 12-345 6789" : "Enter a mobile number"}</span> : <span>Only Techwide sees it.</span>}
+                  {!local && !locked ? <span className="cr2-red" style={{ fontWeight: 700 }}>{cc === "+60" ? "Enter a Malaysian mobile number, e.g. 12-345 6789" : "Enter a mobile number"}</span> : null}
                   {verified ? (
                     <span className="badge"><Icon name="check" size={13} width={3} /> Verified</span>
                   ) : (

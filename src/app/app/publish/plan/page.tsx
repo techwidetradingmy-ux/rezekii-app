@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { Seg, Title } from "@/components/ui";
 import { NicheBest, ShootToday, ViewSwitch, useIdeasView } from "@/components/creator1/shoot-today";
 import "@/app/creator1.css";
+import { useKept } from "@/lib/keep";
 
 type Tab = "Best Sellers" | "To Film Today";
 
@@ -13,7 +13,7 @@ type Tab = "Best Sellers" | "To Film Today";
  */
 export default function PublishPlan() {
   const [view, setView] = useIdeasView();
-  const [tab, setTab] = useState<Tab>("Best Sellers");
+  const [tab, setTab] = useKept<Tab>("ideas-tab", "Best Sellers");
   return (
     <div className="v2-stack v2-in" style={{ gap: 16 }}>
       <Title title="Today's Ideas" sub="Made this morning from your videos and sales">

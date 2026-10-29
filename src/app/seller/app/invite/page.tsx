@@ -2,6 +2,7 @@
 
 import "@/app/seller.css";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -9,12 +10,14 @@ import { Title } from "@/components/ui";
 import { ConnBanner } from "@/components/seller/seller-ui";
 import { rm } from "@/lib/mock";
 import { SHOP_ITEMS, TAP_INVITE as I, TODAY } from "@/lib/mock-seller";
+import { sellerProductHref } from "@/lib/product-pages";
 
 /**
  * The page a seller opens from Techwide's invite (owner, 28 Oct 2026): the campaign Techwide set up, the products it suggests,
  * and one button to register. Registering puts the products in the same TAP pipeline as Submit products, in sync both ways.
  */
 export default function TapInvite() {
+  const router = useRouter();
   const { toast } = useDemo();
   const open = SHOP_ITEMS.filter((p) => p.stage === "Not submitted");
   const [picked, setPicked] = useState<string[]>(I.products);
@@ -81,10 +84,11 @@ export default function TapInvite() {
             return (
               <label key={p.id} className={`sl-pick ${on ? "on" : ""}`}>
                 <input type="checkbox" checked={on} onChange={() => setPicked((x) => (x.includes(p.id) ? x.filter((y) => y !== p.id) : [...x, p.id]))} />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.img} alt="" />
+                {/* The photo and name open the product; the rest of the row ticks it. */}
+                {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
+                <img className="pv-open" src={p.img} alt="" onClick={(e) => { e.preventDefault(); router.push(sellerProductHref(p.id)); }} />
                 <span className="sl-pinfo">
-                  <strong>{p.name}</strong>
+                  <strong><Link href={sellerProductHref(p.id)} className="pv-open">{p.name}</Link></strong>
                   <small>{rm(p.price)}{I.products.includes(p.id) ? " · suggested" : ""}</small>
                 </span>
                 <span className="sl-pick-rate">

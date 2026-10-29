@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { Lock, Seg } from "@/components/ui";
 import { VideoSheet } from "@/components/creator2/view-sheets";
+import { productHref } from "@/lib/product-view";
 import { ANALYTICS, product, rm } from "@/lib/mock";
 import { LIVES, PREV_ORDERS, SHORT, VIDEOS, channelSplit, type VideoRow } from "@/lib/mock-creator2";
 
@@ -19,6 +21,7 @@ type Source = "All" | "Video" | "LIVE";
  * in one of them.
  */
 export function ProductList() {
+  const router = useRouter();
   const [source, setSource] = useState<Source>("All");
   const videoTotal = Math.round(ANALYTICS.commissionEst * (ANALYTICS.byChannel.find((c) => c.label === "Videos")?.share ?? 0)) / 100;
   const liveTotal = LIVES.reduce((a, l) => a + l.commission, 0);
@@ -90,11 +93,13 @@ export function ProductList() {
             const vids = VIDEOS.filter((v) => v.productId === b.productId).sort((x, y) => y.orders - x.orders);
             return (
               <article key={b.productId} id={`pd-${b.productId}`} className={`pl-row${openId === b.productId ? " open" : ""}`}>
-                <button type="button" className="pl-head" aria-expanded={openId === b.productId} onClick={() => setOpenId(openId === b.productId ? null : b.productId)}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p.img} alt="" />
+                {/* The photo and name open the product; the rest of the row shows its details here. */}
+                <div className="pl-head">
+                  <button type="button" className="pv-hit" aria-expanded={openId === b.productId} aria-label={`${p.name} details`} onClick={() => setOpenId(openId === b.productId ? null : b.productId)} />
+                  {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
+                  <img className="pv-open" src={p.img} alt="" onClick={() => router.push(productHref(p.id))} />
                   <span className="pl-main">
-                    <strong>{p.name}</strong>
+                    <strong><Link href={productHref(p.id)} className="pv-open">{p.name}</Link></strong>
                     <span className="pl-tags">
                       {i === 0 && <span className="badge">Top earner</span>}
                       {dropping && <span className="badge badge-amber">Dropping {change}%</span>}
@@ -104,7 +109,7 @@ export function ProductList() {
                   </span>
                   <b className="v2-num">{rm(b.value, 0)}</b>
                   <Icon name="arrow" size={16} />
-                </button>
+                </div>
                 {openId === b.productId && <div className="pl-body">
                 <Split productId={b.productId} commission={b.commission} />
                 <div className="cr2-mini">

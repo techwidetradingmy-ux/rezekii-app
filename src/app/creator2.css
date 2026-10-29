@@ -598,7 +598,20 @@ li.done .cr2-check { background: #00c073; border-color: #00c073; animation: v2Po
 .pf-sum > div:first-child { border-top: 0; }
 .pf-sum dt { color: var(--muted); font-weight: 700; }
 .pf-sum dd { margin: 0; font-weight: 700; }
-@media (max-width: 640px) { .pf-grid { grid-template-columns: 1fr; } .pf-niches { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .pf-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pf-f:not(.pair) { grid-column: 1 / -1; } .pf-niches { grid-template-columns: 1fr; } }
+/* Compact forms (owner, 29 Oct 2026): less space between fields. Read-only, the profile sits in rows: label left, value right. */
+.pf-card { gap: 12px; padding: 14px 16px; }
+.pf-grid { gap: 10px 12px; }
+.pf-f { gap: 4px; }
+.pf-card .np-input, .ad-fields .np-input { min-height: 42px; padding-block: 9px; }
+.ad-fields .v2-field { gap: 4px; }
+.pf-card.locked .pf-grid { grid-template-columns: 1fr; gap: 0; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); overflow: hidden; }
+.pf-card.locked .pf-f { grid-column: auto; grid-template-columns: minmax(90px, auto) minmax(0, 1fr); align-items: center; gap: 2px 12px; padding: 10px 12px; border-top: 1px solid var(--line); }
+.pf-card.locked .pf-f:first-child { border-top: 0; }
+.pf-card.locked .pf-l { font-size: 13px; font-weight: 700; text-transform: none; letter-spacing: 0; }
+.pf-card.locked .pf-v { min-height: 0; padding: 0; background: none; justify-content: flex-end; text-align: right; font-size: 14.5px; }
+.pf-card.locked .pf-sub { grid-column: 1 / -1; justify-content: flex-end; }
+.pf-card.locked .pf-sub:empty { display: none; }
 /* My account side bar (owner, 28 Oct 2026): profile and sections on the left, the open section on the right. */
 .acc-side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 @media (min-width: 900px) {

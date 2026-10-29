@@ -159,7 +159,7 @@ export default function SignIn() {
       ) : !tel.error ? (
         <small className="cr1-okline"><Icon name="check" size={14} width={3} /> Saved as {tel.e164}</small>
       ) : (
-        <small>e.g. 012-345 6789. Only Techwide sees it.</small>
+        <small>e.g. 012-345 6789</small>
       )}
     </label>
   );
@@ -215,7 +215,7 @@ export default function SignIn() {
     <label className="v2-field">
       Birthday
       <input className="np-input" type="date" min="1920-01-01" max={maxBirth} value={birthday} onChange={(e) => setBirthday(e.target.value)} aria-invalid={tried && !!bErr} />
-      {tried && bErr ? <small className="cr1-err">{bErr}</small> : <small>Only Techwide sees it. For birthday rewards and the 18+ check.</small>}
+      {tried && bErr ? <small className="cr1-err">{bErr}</small> : <small>For birthday rewards and the 18+ check.</small>}
     </label>
   );
 
@@ -339,8 +339,10 @@ export default function SignIn() {
           <p className="cr1-sub">Once only. You won&apos;t need to fill this in again.</p>
         </div>
         {nameField}
-        {birthdayField}
-        {genderField}
+        <div className="cr1-pair">
+          {birthdayField}
+          {genderField}
+        </div>
         {stateField}
         {phoneField}
         {kindField}

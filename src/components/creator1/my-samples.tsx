@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -8,7 +9,9 @@ import { Celebrate, Progress, Seg, ShareSheet, Sheet } from "@/components/ui";
 import { PoolTag } from "@/components/creator1/brand";
 import { CREATOR, MY_SAMPLES, product, type MySample, type SampleStatus } from "@/lib/mock";
 import type { Pool } from "@/lib/mock-creator1";
+import { productHref } from "@/lib/product-view";
 import "@/app/creator1.css";
+import { useKept } from "@/lib/keep";
 
 /** The steps she sees (owner, 29 Oct 2026): no separate "Posting" step; the first video posted is the last step. */
 const STEPS = ["Applied", "Approved", "Shipped", "Received", "Posted"] as const;
@@ -55,9 +58,10 @@ function StepBar({ status, videos }: { status: SampleStatus; videos: number }) {
 
 /** Samples & delivery (Account): TikTok's steps, parcel tracking, the 3-video progress, due dates, the early bonus, and what to do when one isn't approved. */
 export function MySamples() {
+  const router = useRouter();
   const { toast } = useDemo();
   const [list, setList] = useState<MySample[]>(MY_SAMPLES);
-  const [tab, setTab] = useState<Tab>("In progress");
+  const [tab, setTab] = useKept<Tab>("samples-tab", "In progress");
   const [submit, setSubmit] = useState<MySample | null>(null);
   const [link, setLink] = useState("");
   const [linkErr, setLinkErr] = useState(false);
@@ -103,11 +107,11 @@ export function MySamples() {
           return (
             <article key={`${s.id}-${s.status}`} className={`v2-card cr1-sample ${s.status === "Not approved" ? "bad" : ""}`}>
               <div className="cr1-sample-top">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.img} alt="" />
+                {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
+                <img className="pv-open" src={p.img} alt="" onClick={() => router.push(productHref(p.id))} />
                 {/* No status badge: the steps below show it (owner, 29 Oct 2026). */}
                 <span>
-                  <strong>{p.name}</strong>
+                  <strong><Link href={productHref(p.id)} className="pv-open">{p.name}</Link></strong>
                   <span className="cr1-shopline"><small>{p.shop}</small>{p.samples && <PoolTag pool={p.samples as Pool} />}</span>
                 </span>
               </div>

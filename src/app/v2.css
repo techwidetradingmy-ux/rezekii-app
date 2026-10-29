@@ -14,6 +14,14 @@ body { font-feature-settings: "tnum" 0; }
 .v2-demo { background: var(--text); color: var(--bg); font-size: 12.5px; font-weight: 700; }
 .v2-demo .site-wrap { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; padding-block: 7px; }
 .v2-demo a { color: inherit; opacity: 0.85; text-decoration: underline; }
+/* Products are tappable everywhere, never underlined (owner, 29 Oct 2026). */
+a[href*="/product/"] { text-decoration: none; }
+/* A product photo or name that opens the product, looking like the text around it. In a row that does something else on tap,
+   .pv-hit covers the row and the photo and name sit above it. */
+.pv-open { position: relative; z-index: 2; color: inherit; text-decoration: none; cursor: pointer; }
+.pv-hit { position: absolute; inset: 0; z-index: 1; border: 0; background: none; border-radius: inherit; cursor: pointer; }
+.pv-hit:focus-visible { outline: 3px solid #00c073; outline-offset: 2px; }
+:has(> .pv-hit) { position: relative; }
 .v2-top { position: sticky; top: 0; z-index: 40; background: var(--glass); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%); border-bottom: 1px solid var(--border); }
 .v2-top .site-nav { padding-block: 14px; }
 .v2-menu { display: flex; gap: 4px; }

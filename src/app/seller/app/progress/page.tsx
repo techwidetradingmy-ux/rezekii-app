@@ -2,11 +2,13 @@
 
 import "@/app/seller.css";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Sheet, Title } from "@/components/ui";
 import { SHOP_ITEMS, type ShopItem, type Stage } from "@/lib/mock-seller";
+import { sellerProductHref } from "@/lib/product-pages";
 
 const STEPS: [Exclude<Stage, "Not submitted" | "Not approved">, string, string][] = [
   ["Submitted", "Submitted", ""],
@@ -42,6 +44,7 @@ function Tracker({ item }: { item: ShopItem }) {
 
 /** Every product submitted to Techwide's TAP, and where it is now. */
 export default function Progress() {
+  const router = useRouter();
   const { toast } = useDemo();
   const [items, setItems] = useState(SHOP_ITEMS.filter((s) => s.stage !== "Not submitted"));
   const [filter, setFilter] = useState<Filter>("All");
@@ -69,10 +72,10 @@ export default function Progress() {
           return (
             <section key={p.id} className="v2-card">
               <div className="sl-prow" style={{ padding: 0 }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.img} alt="" />
+                {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
+                <img className="pv-open" src={p.img} alt="" onClick={() => router.push(sellerProductHref(p.id))} />
                 <span className="sl-pinfo">
-                  <strong>{p.name}</strong>
+                  <strong><Link href={sellerProductHref(p.id)} className="pv-open">{p.name}</Link></strong>
                   <small>Public {p.publicRate ?? "?"}% → TAP {p.tapRate}% · {p.samples} samples per SKU</small>
                   {p.fromSellerCenter && <span className="v2-row"><span className="badge badge-blue">From Seller Center</span></span>}
                 </span>

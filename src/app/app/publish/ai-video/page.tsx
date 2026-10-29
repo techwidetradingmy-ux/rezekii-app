@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { AiMark, Stepper, Tip, Title } from "@/components/ui";
-import { MY_SPOT, PLATFORMS, VIDEO_TYPES, type WaitlistAnswers } from "@/lib/mock-ai-video";
+import { AI_EXAMPLES, MY_SPOT, PLATFORMS, VIDEO_TYPES, type WaitlistAnswers } from "@/lib/mock-ai-video";
 import "@/app/ai-video.css";
 
 /** Her waitlist spot, remembered for this browser tab (the preview has no server). */
@@ -20,6 +20,29 @@ function readSaved(): Saved | null {
 }
 
 const toggle = <T,>(list: T[], v: T) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
+
+/** One example: plays muted while it's on screen; a tap turns the sound on or off. */
+function Example({ id, type, product }: (typeof AI_EXAMPLES)[number]) {
+  const ref = useRef<HTMLVideoElement>(null);
+  const [sound, setSound] = useState(false);
+  useEffect(() => {
+    const v = ref.current;
+    if (!v) return;
+    const io = new IntersectionObserver(([e]) => (e.isIntersecting ? v.play().catch(() => {}) : v.pause()), { threshold: 0.6 });
+    io.observe(v);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <li className="av-ex">
+      <button type="button" className="av-ex-vid" aria-label={`${type}: ${product}. ${sound ? "Mute" : "Play with sound"}`} onClick={() => { const v = ref.current; if (!v) return; v.muted = sound; setSound(!sound); v.play().catch(() => {}); }}>
+        <video ref={ref} src={`/ai-videos/${id}.mp4`} poster={`/ai-videos/${id}.jpg`} muted loop playsInline preload="none" />
+        <span className="av-ex-sound">{sound ? "Sound On" : "Tap for Sound"}</span>
+      </button>
+      <b>{type}</b>
+      <small>{product}</small>
+    </li>
+  );
+}
 
 /**
  * AI Video (owner, 29 Oct 2026): not launched yet. We collect interest first: she joins the waitlist by saying what she'd make,
@@ -80,6 +103,15 @@ export default function AiVideo() {
             <Tip text="We're still building it. Paste a TikTok Shop product link, pick a type of video, and it makes a few short ones. You check each video and post it yourself. People on the waitlist try it first." />
           </b>
         </span>
+      </section>
+
+      <section className="v2-card av-examples">
+        <div className="v2-card-h">
+          <h2 className="v2-h2">See What It Makes <Tip text="Real videos our team made with AI for TikTok Shop products, cut to 15 seconds. Yours are made from your product link." /></h2>
+        </div>
+        <ul className="av-rail">
+          {AI_EXAMPLES.map((x) => <Example key={x.id} {...x} />)}
+        </ul>
       </section>
 
       {!loaded ? null : saved && !editing ? (

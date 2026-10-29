@@ -1,10 +1,5 @@
 import { Shell } from "@/components/shell";
 
-export default function AdminLayout({ children, modal }: { children: React.ReactNode; modal: React.ReactNode }) {
-  return (
-    <Shell app="admin">
-      {children}
-      {modal}
-    </Shell>
-  );
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return <Shell app="admin">{children}</Shell>;
 }

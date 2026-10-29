@@ -1,6 +1,8 @@
 "use client";
 
 import "@/app/seller.css";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -8,9 +10,11 @@ import { Bars, Columns, Count, Seg, Stat, Title } from "@/components/ui";
 import { Ava, Source } from "@/components/seller/seller-ui";
 import { product, rm } from "@/lib/mock";
 import { BY_PRODUCT, RANGES, RESULTS, TOP_CREATORS, type Range } from "@/lib/mock-seller";
+import { sellerProductHref } from "@/lib/product-pages";
 
 /** How the shop's products are doing in Techwide's TAP campaigns: charts, top creators, per product. */
 export default function Results() {
+  const router = useRouter();
   const { toast } = useDemo();
   const [range, setRange] = useState<Range>("30 days");
   const r = RESULTS[range];
@@ -65,15 +69,15 @@ export default function Results() {
 
         <section className="v2-card">
           <div className="v2-card-h"><h2 className="v2-h2">By Product</h2><span className="v2-small">Sales</span></div>
-          <Bars key={range} rows={BY_PRODUCT.map((b) => ({ label: product(b.id).name, value: b.gmv * k, display: rm(b.gmv * k, 0) }))} />
+          <Bars key={range} rows={BY_PRODUCT.map((b) => ({ label: product(b.id).name, value: b.gmv * k, display: rm(b.gmv * k, 0), href: sellerProductHref(b.id) }))} />
           <div className="v2-divide">
             {BY_PRODUCT.map((b) => {
               const p = product(b.id);
               return (
                 <div key={b.id} className="sl-act" style={{ gridTemplateColumns: "36px minmax(0,1fr)" }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p.img} alt="" style={{ width: 36, height: 36, borderRadius: 10, objectFit: "cover" }} />
-                  <span><b style={{ fontSize: 14 }}>{p.name}</b><small>{Math.round(b.units * k).toLocaleString("en-MY")} units · {Math.max(1, Math.round(b.creators * Math.min(1.4, Math.max(0.6, k))))} creators · {Math.round(b.videos * k)} videos</small></span>
+                  {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
+                  <img className="pv-open" src={p.img} alt="" style={{ width: 36, height: 36, borderRadius: 10, objectFit: "cover" }} onClick={() => router.push(sellerProductHref(b.id))} />
+                  <span><b style={{ fontSize: 14 }}><Link href={sellerProductHref(b.id)} className="pv-open">{p.name}</Link></b><small>{Math.round(b.units * k).toLocaleString("en-MY")} units · {Math.max(1, Math.round(b.creators * Math.min(1.4, Math.max(0.6, k))))} creators · {Math.round(b.videos * k)} videos</small></span>
                 </div>
               );
             })}

@@ -61,10 +61,10 @@ export default function DataRisk() {
           <span className="badge badge-red">{worst.cancelled} cancelled</span>
         </div>
         <div className="cr2-spot">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={worstP.img} alt="" />
+          {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
+          <img className="pv-open" src={worstP.img} alt="" onClick={() => router.push(productHref(worstP.id))} />
           <span>
-            <strong>{worstP.name}</strong>
+            <strong><Link href={productHref(worstP.id)} className="pv-open">{worstP.name}</Link></strong>
             <small>
               {worst.cancelled} of {worst.orders} orders cancelled ({worst.cancel}%).{" "}
               {worstVid && <><b>{worstVid.cancelled}</b> from your {worstVid.date} video &ldquo;{worstVid.title}&rdquo;.</>}
@@ -82,7 +82,7 @@ export default function DataRisk() {
           {by === "By video" ? (
             <Bars key="v" rows={[...vids].sort((a, b) => b.cancel - a.cancel).map((v) => ({ label: v.title, value: v.cancel, display: `${v.cancel}%`, tone: tone(v.cancel), onPick: () => setOpenVideo(VIDEOS.find((x) => x.id === v.id) ?? null) }))} />
           ) : (
-            <Bars key="p" rows={[...prods].sort((a, b) => b.cancel - a.cancel).map((b) => ({ label: SHORT[b.productId] ?? product(b.productId).name, value: b.cancel, display: `${b.cancel}%`, tone: tone(b.cancel), onPick: () => router.push(productHref(b.productId)) }))} />
+            <Bars key="p" rows={[...prods].sort((a, b) => b.cancel - a.cancel).map((b) => ({ label: SHORT[b.productId] ?? product(b.productId).name, value: b.cancel, display: `${b.cancel}%`, tone: tone(b.cancel), href: productHref(b.productId) }))} />
           )}
         </Lock>
         <div className="v2-tablewrap">
@@ -109,7 +109,7 @@ export default function DataRisk() {
                   ))
                 : prods.map((b) => (
                     <tr key={b.productId}>
-                      <td style={{ minWidth: 180 }}>{product(b.productId).name}</td>
+                      <td style={{ minWidth: 180 }}><Link href={productHref(b.productId)} className="pv-open">{product(b.productId).name}</Link></td>
                       <td className="v2-num">{b.orders}</td>
                       <td className="v2-num">{b.cancelled}</td>
                       <td className={b.cancel > 15 ? "cr2-red" : undefined} style={{ fontWeight: 800 }}>{b.cancel}%</td>

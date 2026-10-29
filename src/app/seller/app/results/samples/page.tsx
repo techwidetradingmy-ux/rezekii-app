@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/seller.css";
+import Link from "next/link";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -8,6 +9,7 @@ import { Count, Stat, Title } from "@/components/ui";
 import { Ava, Pips, Source } from "@/components/seller/seller-ui";
 import { product } from "@/lib/mock";
 import { DESTINATIONS, SAMPLE_SUMMARY, type Dest } from "@/lib/mock-seller";
+import { sellerProductHref } from "@/lib/product-pages";
 
 const FILTERS = ["All", "Delivered", "On time", "Overdue"] as const;
 type Filter = (typeof FILTERS)[number];
@@ -68,7 +70,7 @@ export default function SamplesWent() {
                 <Ava name={d.handle} lg />
                 <span>
                   <b>{d.handle} <span className="v2-small" style={{ fontWeight: 600 }}>· {d.activity}</span></b>
-                  <small>{p.name} · sent {d.sentOn}</small>
+                  <small><Link href={sellerProductHref(d.item)} className="pv-open">{p.name}</Link> · sent {d.sentOn}</small>
                   <span className="v2-row" style={{ gap: 8, fontSize: 13, fontWeight: 700 }}>
                     <Pips n={d.videos} /> {vids(d.videos)} <span className="v2-small" style={{ fontWeight: 600 }}>(1 promised)</span>
                     {d.live && <span className="badge badge-blue">+ LIVE</span>}

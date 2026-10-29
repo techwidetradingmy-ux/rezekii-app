@@ -1,10 +1,13 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Count, Flow, Lock, RemoveWarn } from "@/components/ui";
 import { CREATOR, PRODUCTS, rm } from "@/lib/mock";
+import { productHref } from "@/lib/product-view";
 import "@/app/creator1.css";
 
 /** Under 4 stars is low; under 3 is the danger zone. */
@@ -26,6 +29,7 @@ const SCAN_MS = 2600;
  * costs account health; danger products can leave the showcase in one tap. Old videos stay as they are.
  */
 export function RatingScan() {
+  const router = useRouter();
   const { linked, setLinked, toast } = useDemo();
   const [run, setRun] = useState(0);
   const [scanning, setScanning] = useState(true);
@@ -59,10 +63,10 @@ export function RatingScan() {
     const bad = p.rating < DANGER;
     return (
       <li key={p.id} className={bad ? "danger" : "low"}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={p.img} alt="" />
+        {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
+        <img className="pv-open" src={p.img} alt="" onClick={() => router.push(productHref(p.id))} />
         <span className="rc-name">
-          <b>{p.name}</b>
+          <b><Link href={productHref(p.id)} className="pv-open">{p.name}</Link></b>
           <small className={s.cancel > 10 ? "rc-bad" : undefined}>{s.cancel}% cancelled</small>
         </span>
         <span className="rc-stars" aria-label={`${p.rating.toFixed(1)} stars`}>

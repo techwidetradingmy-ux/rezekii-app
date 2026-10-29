@@ -1,11 +1,13 @@
 "use client";
 
 import "@/app/seller.css";
+import Link from "next/link";
 import { useState } from "react";
 import { Icon, type IconName } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Title } from "@/components/ui";
 import { CHANGE_REQUESTS, SHOP_ITEMS, type ChangeReq, type ReqStatus } from "@/lib/mock-seller";
+import { sellerProductHref } from "@/lib/product-pages";
 
 const KINDS: [ChangeReq["kind"], string, IconName][] = [
   ["Raise commission", "Pay creators more", "tag"],
@@ -99,7 +101,7 @@ export default function Changes() {
                 <div key={r.id} className="sl-req">
                   <span>
                     <b>{r.kind}: {r.detail}</b>
-                    <small>{p?.name}</small>
+                    {p && <small><Link href={sellerProductHref(p.id)} className="pv-open">{p.name}</Link></small>}
                     <small>{r.id} · {r.when}{r.note ? ` · ${r.note}` : ""}</small>
                   </span>
                   <span className={`badge ${STATUS[r.status]}`} style={{ alignSelf: "flex-start" }}>{r.status}</span>

@@ -8,6 +8,7 @@ import { LinkFinder, WishSteps, useWishes } from "@/components/creator1/wish";
 import { product, rateFor } from "@/lib/mock";
 import { NOT_YET, ON_IDS, ON_REZEKII, SHOWCASE_TOTAL, commitText } from "@/lib/mock-showcase";
 import { productHref } from "@/lib/product-view";
+import { useKept } from "@/lib/keep";
 
 const pct = (n: number) => Math.round((n / SHOWCASE_TOTAL) * 100);
 
@@ -34,9 +35,9 @@ type Tab = "On Rezekii" | "Not yet" | "Wish List";
  */
 export function CoverageCard() {
   const { wishes, mine } = useWishes();
-  const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<Tab>("Not yet");
-  const [limit, setLimit] = useState(5);
+  const [open, setOpen] = useKept("cov-open", false);
+  const [tab, setTab] = useKept<Tab>("cov-tab", "Not yet");
+  const [limit, setLimit] = useKept("cov-limit", 5);
   const [paste, setPaste] = useState(false);
   const pickTab = (t: Tab) => { setTab(t); setLimit(5); };
   const all = tab === "On Rezekii" ? ON_IDS.length : tab === "Not yet" ? NOT_YET.length : wishes.length;

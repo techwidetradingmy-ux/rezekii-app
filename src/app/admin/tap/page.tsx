@@ -10,6 +10,7 @@ import { Sheet, Title } from "@/components/ui";
 import { Av, Kv, Pill, Reasons, Sec, type Tone } from "@/components/admin/bits";
 import { COLS, ME, TICKETS, type Col, type ExtTask, type Ticket } from "@/lib/mock-admin";
 import { adminProductHref, productIdByName } from "@/lib/product-pages";
+import { useKept } from "@/lib/keep";
 
 const NOW = "28 Oct 10:45";
 const COL_TONE: Record<Col, Tone> = { New: "info", "In review": "warn", "To submit": "warn", "Waiting on TikTok": "info", "Not approved": "bad", Live: "ok" };
@@ -27,8 +28,8 @@ const whyNot = (t: Ticket) =>
 export default function TapPipeline() {
   const { toast } = useDemo();
   const [tickets, setTickets] = useState<Ticket[]>(TICKETS);
-  const [mine, setMine] = useState(false);
-  const [overdue, setOverdue] = useState(false);
+  const [mine, setMine] = useKept("tap-mine", false);
+  const [overdue, setOverdue] = useKept("tap-overdue", false);
   const [sel, setSel] = useState<string[]>([]);
   const [open, setOpen] = useState<string | null>(null);
   const [running, setRunning] = useState(false);

@@ -3,30 +3,49 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
-import { PRODUCTS } from "@/lib/mock";
-import { AGENCY } from "@/lib/mock-seller";
+import { PRODUCTS, short } from "@/lib/mock";
 
 /** TikTok usernames: 2–24 letters, numbers, dots or underscores. */
 const tidy = (s: string) => s.trim().replace(/^@+/, "").toLowerCase();
 const VALID = /^[a-z0-9._]{2,24}$/;
-const EXAMPLE: [string, string, string][] = [[PRODUCTS[0].img, "6%", "10%"], [PRODUCTS[1].img, "8%", "12%"], [PRODUCTS[2].img, "5%", "9%"]];
+
+type Found = { handle: string; img: string; followers: number; cats: string[] };
 
 /**
- * Landing showcase checker (owner, 29 Oct 2026): she types her TikTok username, watches a short check, and the results stay
- * locked until she signs up. Nothing is read from TikTok here, so the steps never claim to have seen her showcase and the
- * blurred list is labelled an example. The real scan runs once she links TikTok Shop.
+ * Her public TikTok Shop creator profile: photo, followers and the categories she sells in. The real app gets these from TikTok
+ * Shop's Creator Marketplace (our saved daily creator list first, the API only when she isn't in it). The preview has no TikTok
+ * connection, so every username finds the same sample photo; "nobody.here" shows the not-found path.
+ */
+function lookup(handle: string): Found | null {
+  if (handle === "nobody.here") return null;
+  const h = [...handle].reduce((n, c) => n * 31 + c.charCodeAt(0), 7) >>> 0;
+  return { handle, img: "/avatars/aisyah.jpg", followers: 1200 + (h % 84000), cats: ["Fashion", "Home & Kitchen"] };
+}
+
+const STEPS = (f: Found | null, n: number) => [
+  f ? `Found @${f.handle} on TikTok Shop` : "Looking on TikTok Shop",
+  f ? `You sell in ${f.cats.join(" and ")}` : "Reading your categories",
+  `${n} products on Rezekii to compare`,
+];
+
+/**
+ * Landing showcase checker (owner, 29 Oct 2026). She types her TikTok username and we find her public creator profile: photo,
+ * followers and the categories she sells in. Then real Rezekii products in those categories show blurred until she signs up.
+ * We never claim to have seen her showcase: that needs her OK in TikTok Shop, and the real scan runs once she links it. When
+ * the username isn't found, the blurred list is a labelled example instead.
  */
 export function ShowcaseCheck() {
   const [raw, setRaw] = useState("");
   const [tried, setTried] = useState(false);
   const [stage, setStage] = useState<"type" | "check" | "locked">("type");
   const [step, setStep] = useState(0);
+  const [found, setFound] = useState<Found | null>(null);
   const handle = tidy(raw);
   const err = !handle ? "Type your TikTok username" : VALID.test(handle) ? "" : "Use letters, numbers, dots or underscores";
 
   useEffect(() => {
     if (stage !== "check") return;
-    const ts = [700, 1500, 2700].map((ms, i) => window.setTimeout(() => (i < 2 ? setStep(i + 1) : setStage("locked")), ms));
+    const ts = [900, 1800, 3000].map((ms, i) => window.setTimeout(() => (i < 2 ? setStep(i + 1) : setStage("locked")), ms));
     return () => ts.forEach((t) => window.clearTimeout(t));
   }, [stage]);
 
@@ -39,6 +58,7 @@ export function ShowcaseCheck() {
           e.preventDefault();
           setTried(true);
           if (err) return;
+          setFound(lookup(handle));
           setStep(0);
           setStage("check");
         }}
@@ -67,52 +87,64 @@ export function ShowcaseCheck() {
     );
   }
 
-  const top = (
-    <div className="sc-who">
-      <span className="v2-av">{handle.replace(/[._]/g, "").slice(0, 2).toUpperCase()}</span>
+  const inCats = found ? PRODUCTS.filter((p) => found.cats.includes(p.category)) : PRODUCTS;
+  const shown = inCats.filter((p) => p.tapRate > p.publicRate).slice(0, 3);
+  const who = (
+    <div className={`sc-who ${found && step > 0 ? "found" : ""}`}>
+      {found && step > 0 ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img className="sc-av" src={found.img} alt="" />
+      ) : (
+        <span className="v2-av">{handle.replace(/[._]/g, "").slice(0, 2).toUpperCase()}</span>
+      )}
       <span>
         <b>@{handle}</b>
-        <small>{stage === "check" ? "Getting ready…" : "One step left"}</small>
+        <small>{found && step > 0 ? `${short(found.followers)} followers` : stage === "check" ? "Looking you up…" : "Not found on TikTok Shop yet"}</small>
       </span>
+      {found && step > 0 && <span className="sc-found"><Icon name="check" size={12} width={3.2} /> Found You</span>}
     </div>
   );
 
   if (stage === "check") {
-    const lines = ["Username looks good", `${AGENCY.products.toLocaleString()} products on Rezekii to compare`, "Getting your scan ready"];
     return (
       <div className="sc-card" aria-live="polite">
-        {top}
+        {who}
         <ul className="sc-steps">
-          {lines.map((l, i) => (
-            <li key={l} className={i < step ? "ok" : i === step ? "now" : ""}>
+          {STEPS(found, inCats.length).map((l, i) => (
+            <li key={i} className={i < step ? "ok" : i === step ? "now" : ""}>
               {i < step ? <Icon name="check" size={16} width={3} /> : <span className="sc-spin" aria-hidden="true" />}
               {l}
             </li>
           ))}
         </ul>
-        <small className="sc-note">We read your showcase only after you link TikTok Shop. Nothing is checked without your OK.</small>
       </div>
     );
   }
 
   return (
     <div className="sc-card" aria-live="polite">
-      {top}
-      <h3>Sign Up to See Your Better Rates</h3>
+      {who}
+      {found && (
+        <div className="sc-cats">
+          <small>You sell in</small>
+          {found.cats.map((c) => <span key={c}>{c}</span>)}
+        </div>
+      )}
+      <h3>{found ? `${inCats.length} Products on Rezekii in Your Categories` : "Sign Up to See Your Better Rates"}</h3>
       <div className="sc-lock">
         <div className="sc-blur" aria-hidden="true">
-          {EXAMPLE.map(([img, from, to]) => (
-            <div key={img} className="sc-ex">
+          {shown.map((p) => (
+            <div key={p.id} className="sc-ex">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={img} alt="" />
-              <span><i /><i /></span>
-              <b><s>{from}</s> {to}</b>
+              <img src={p.img} alt="" />
+              <span>{p.name}<small>{p.shop}</small></span>
+              <b><s>{p.publicRate}%</s> {p.tapRate}%</b>
             </div>
           ))}
         </div>
-        <span className="sc-tag"><Icon name="lock" size={14} /> Example only</span>
+        <span className="sc-tag"><Icon name="lock" size={14} /> {found ? "Which ones are in your showcase?" : "Example only"}</span>
       </div>
-      <small className="sc-note">Link TikTok Shop to see your real rates. Free, and you can unlink anytime.</small>
+      <small className="sc-note">Free during Beta. Link TikTok Shop to see your real rates; you can unlink anytime.</small>
       <Link href={`/signin?u=${encodeURIComponent(handle)}`} className="np-btn cr1-bigbtn">Sign Up to Reveal <Icon name="arrow" size={20} /></Link>
       <button type="button" className="v2-link sc-again" onClick={() => { setStage("type"); setTried(false); }}>Use another username</button>
     </div>

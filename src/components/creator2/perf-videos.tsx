@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { Icon } from "@/components/icons";
 import { Lock, Seg } from "@/components/ui";
 import { product, rm, short } from "@/lib/mock";
+import { productHref } from "@/lib/product-view";
 import { VIDEOS, type VideoRow } from "@/lib/mock-creator2";
 import "@/app/creator2.css";
 
@@ -46,7 +47,7 @@ export function VideoList() {
                   </span>
                   <span>
                     <strong>{v.title}</strong>
-                    <small>Posted {v.date} · {p.name}</small>
+                    <small>Posted {v.date} · <Link href={productHref(p.id)} className="pv-open">{p.name}</Link></small>
                     <span className="cr2-tags">
                       {i === 0 && <span className="badge">{TOP[sort]}</span>}
                       {high && <span className="badge badge-red">High risk · {v.cancel}% cancelled</span>}
