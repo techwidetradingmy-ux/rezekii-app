@@ -460,24 +460,28 @@ const USPS: Usp[] = [
   {
     // One video, four apps, one tap (owner, 29 Oct 2026): each app's own icon so it reads at a glance.
     // Four apps means four places to earn (owner, 29 Oct 2026), not a promise of 4× the commission.
-    title: "Post Once, Earn on 4 Platforms", tint: "#f08a00",
-    line: "One tap posts to TikTok, Facebook, Instagram and Threads: 4 places to earn, not 1.",
+    // Before: one app to earn on. Now: the same video and caption, 3 more apps to earn on (owner, 29 Oct 2026).
+    title: "Same Video, 4 Places to Earn", tint: "#f08a00",
+    line: "Same videos, same captions. Rezekii posts them to 3 more apps where you can earn too.",
     demo: (
       <div className="lp-u-hub">
         <span className="lp-u-src">
           <Thumb src="/ai-videos/try-on.jpg" size={52} />
           <b>1 video</b>
-          <small>4 places to earn</small>
+          <small>1 → 4 places</small>
         </span>
-        <svg className="lp-u-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          {[12.5, 37.5, 62.5, 87.5].map((y, i) => <path key={y} d={`M0 50 C50 50 50 ${y} 100 ${y}`} pathLength={100} style={v({ i })} />)}
-        </svg>
+        <span className="lp-u-mid">
+          <svg className="lp-u-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+            {[12.5, 37.5, 62.5, 87.5].map((y, i) => <path key={y} d={`M0 50 C50 50 50 ${y} 100 ${y}`} pathLength={100} style={v({ i })} />)}
+          </svg>
+          {[12.5, 37.5, 62.5, 87.5].map((y, i) => <i key={y} className="lp-u-dollar" style={v({ y: `${y}%`, i })}>$</i>)}
+        </span>
         <ul>
           {PLATS.map((p, i) => (
-            <li key={p} style={v({ i })}>
+            <li key={p} className={i === 0 ? "" : "new"} style={v({ i })}>
               <PlatIcon name={p} size={28} />
               <span>{p}</span>
-              <em>RM</em>
+              <em>{i === 0 ? "Today" : "+ New"}</em>
             </li>
           ))}
         </ul>
