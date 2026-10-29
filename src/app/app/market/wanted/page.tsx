@@ -48,7 +48,6 @@ export default function MostWanted() {
                 <small className="mw-stat">
                   <Icon name="users" size={13} /> {w.creators} committed
                   {sort === "This week" && w.week > 0 && <em> · +{w.week} this week</em>}
-                  {w.status === "Contacting" && <em className="mw-contact"> · Seller contacted</em>}
                 </small>
               </span>
               {joined ? (

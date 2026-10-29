@@ -40,16 +40,13 @@ export function useWishes() {
   return { wishes, add, mine: (id: string) => wishes.find((w) => w.id === id) };
 }
 
-const STEPS = ["On wish list", "Seller contacted", "On Rezekii"] as const;
-/** Where one of her wishes is, as 3 small bars plus a line. */
+/**
+ * Where one of her wishes is: on her wish list, on Rezekii, or the seller said no. Our talks with the seller stay behind the
+ * scenes (owner, 29 Oct 2026: no "Seller contacted" for creators).
+ */
 export function WishSteps({ w }: { w: Wish }) {
-  const step = w.status === "Seller said no" ? 1 : STEPS.indexOf(w.status as (typeof STEPS)[number]);
-  return (
-    <>
-      <span className={`sc-steps${w.status === "Seller said no" ? " no" : ""}`} aria-label={`Status: ${w.status}`}>{STEPS.map((x, k) => <i key={x} className={k <= step ? "on" : undefined} />)}</span>
-      <small>{w.status === "On Rezekii" ? `On Rezekii · +${w.raise ?? 1}% for you` : w.status} · {w.when}</small>
-    </>
-  );
+  const live = w.status === "On Rezekii";
+  return <small className={`wf-st${live ? " live" : w.status === "Seller said no" ? " no" : ""}`}>{live ? `On Rezekii · +${w.raise ?? 1}% for you` : w.status} · {w.when}</small>;
 }
 
 const RIGHTS: Commit["rights"][] = [0, 90, 180];

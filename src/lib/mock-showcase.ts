@@ -46,11 +46,11 @@ const fromProduct = (id: string): WishItem => {
 };
 
 /** Where one of her wishes is. "On Rezekii" carries the raise she got (at least +1%). */
-export type WishStatus = "On wish list" | "Seller contacted" | "On Rezekii" | "Seller said no";
+export type WishStatus = "On wish list" | "On Rezekii" | "Seller said no";
 export type Wish = WishItem & { status: WishStatus; when: string; commit: Commit; raise?: number };
 export const MY_WISHES: Wish[] = [
   { ...off("s4"), status: "On wish list", when: "Yesterday", commit: { videos: 2, lives: 1, rights: 0, months: 1 } },
-  { ...off("s2"), status: "Seller contacted", when: "24 Oct", commit: { videos: 4, lives: 0, rights: 90, months: 3 } },
+  { ...off("s2"), status: "On wish list", when: "24 Oct", commit: { videos: 4, lives: 0, rights: 90, months: 3 } },
   { ...fromProduct("p17"), status: "On Rezekii", when: "20 Oct", commit: { videos: 4, lives: 0, rights: 0, months: 3 }, raise: 4 },
 ];
 
