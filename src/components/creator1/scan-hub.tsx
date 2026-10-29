@@ -9,7 +9,6 @@ import { AiMark, AiTag, Count, Flow, Hidden, Sheet } from "@/components/ui";
 import { CREATOR, PRODUCTS, RAISES, SIMILAR, product, type Raise, rateFor } from "@/lib/mock";
 import { NEW_ON_RESCAN, SILVER_UNLOCKS } from "@/lib/mock-creator1";
 import { LEVELS } from "@/lib/mock-creator2";
-import { ScanStory } from "@/components/creator1/scan-story";
 import { productHref } from "@/lib/product-view";
 import { useKept } from "@/lib/keep";
 
@@ -66,7 +65,6 @@ export function ScanHub() {
   const [scanKey, setScanKey] = useState(0);
   const [last, setLast] = useState("today 09:12");
   const [bulk, setBulk] = useState<Bulk | null>(null);
-  const [story, setStory] = useState(false);
   const [hold, setHold] = useState(0);
   const [deck, setDeck] = useState<Deck | null>(null);
   const [drag, setDrag] = useState(0);
@@ -74,10 +72,8 @@ export function ScanHub() {
   const holdRaf = useRef(0);
   const holdFrom = useRef(0);
   const dragFrom = useRef<number | null>(null);
-  const deckOpen = useRef(false);
 
   useEffect(() => () => { timers.current.forEach((t) => window.clearTimeout(t)); cancelAnimationFrame(holdRaf.current); }, []);
-  useEffect(() => { deckOpen.current = !!deck; }, [deck]);
   const later = (fn: () => void, ms: number) => timers.current.push(window.setTimeout(fn, ms));
 
   const view: Tab = tab === "silver" && !bronze ? "same" : tab;
@@ -127,8 +123,6 @@ export function ScanHub() {
         setOpen(true);
         toast("Scan finished: 1 new better rate");
       } else toast("Scan finished: nothing new since your last scan");
-      // The recap plays after every scan (owner, 28 Oct 2026: social media vibes, made to share), once the rates have popped out.
-      later(() => { if (!deckOpen.current) setStory(true); }, 1800);
     }, SCAN_MS);
   }
 
@@ -204,13 +198,6 @@ export function ScanHub() {
         <span className="sh-grid" aria-hidden="true" />
         <div className="sh-top">
           <div className="sh-left">
-            {linked && same.length > 0 && !scanning && (
-              <button type="button" className="ss-entry" onClick={() => setStory(true)}>
-                <span className="ss-ring">{/* eslint-disable-next-line @next/next/no-img-element */}<img src={CREATOR.photo} alt="" /></span>
-                <span><b>Your scan recap</b><small>{same.length} better rates found · watch</small></span>
-                <Icon name="arrow" size={16} />
-              </button>
-            )}
             <span className="sh-kicker"><AiMark size={22} busy={scanning} />{scanning ? "Scanning Your Showcase…" : "Showcase Scanner"} <AiTag label="Rezekii AI" bare /></span>
             <h2>
               <b><Count key={scanKey} value={linked ? CREATOR.showcaseSize : 0} ms={scanning ? SCAN_MS - 300 : 900} /></b> products checked
@@ -479,17 +466,6 @@ export function ScanHub() {
             <p className="v2-small" style={{ margin: 0 }}>Adding through Techwide, up to 5 at a time. Keep this open or close it; it carries on either way.</p>
           )}
         </Sheet>
-      )}
-      {story && (
-        <ScanStory
-          checked={CREATOR.showcaseSize}
-          items={[
-            ...same.map((it) => ({ id: it.id, productId: it.productId, from: it.from, to: it.to })),
-            ...pending.filter((p) => !p.id.startsWith("sim-")).map((p) => ({ id: p.id, productId: p.productId, from: p.from, to: p.to, added: true })),
-          ]}
-          onAdd={(ids) => add(same.filter((it) => ids.includes(it.id)))}
-          onClose={() => setStory(false)}
-        />
       )}
     </div>
   );

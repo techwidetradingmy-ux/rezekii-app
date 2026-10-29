@@ -1,4 +1,4 @@
-import { ANALYTICS, CREATOR, PRODUCTS, REFERRAL_REWARD, product } from "@/lib/mock";
+import { ANALYTICS, CREATOR, PRODUCTS, RAISES, REFERRAL_REWARD, product } from "@/lib/mock";
 
 /**
  * Daily Story (owner, 30 Oct 2026). Every morning at 8 AM (Malaysia time) each creator gets a story of yesterday, told by
@@ -89,6 +89,14 @@ export function storyFor(day: SampleDay = "good"): StoryPage[] {
   const low = [...PRODUCTS].sort((a, b) => a.rating - b.rating)[0];
   const change = Math.round(((y.gmv - y.avg) / y.avg) * 100);
   const invite = ` Try it free with my link: ${LINK}`;
+  // The showcase scan, in the story (owner, 30 Oct 2026): how many products can pay more, and the best raise.
+  const raises = RAISES.filter((r) => r.eligible);
+  const best = [...raises].sort((a, b) => b.tapRate - (b.nowRate ?? b.tapRate) - (a.tapRate - (a.nowRate ?? a.tapRate)))[0];
+  const bestP = product(best.productId);
+  const scan: StoryPage[] = [
+    { id: "scan", tone: "good", pose: "found", motion: "wiggle", kick: "Showcase scan", big: String(raises.length), head: "products can pay you more", sub: `Rimau checked all ${CREATOR.showcaseSize.toLocaleString("en-MY")} products you promote`, cta: { label: "Add them", href: "/app" }, caption: `Rezekii found ${raises.length} products in my showcase that can pay me more 👀 ${tags}${invite}` },
+    { id: "best", tone: "good", pose: "love", motion: "pop", kick: "Best raise", big: `${best.nowRate}% → ${best.tapRate}%`, head: bestP.name, sub: "Same product, more commission", img: bestP.img, cta: { label: "See raises", href: "/app" }, caption: `${bestP.name}: ${best.nowRate}% → ${best.tapRate}% commission with Rezekii 🙌 ${tags}${invite}` },
+  ];
 
   const intro: StoryPage = {
     id: "intro", tone: "intro", pose: "wave", motion: "bounce",
@@ -102,11 +110,12 @@ export function storyFor(day: SampleDay = "good"): StoryPage[] {
   const good: StoryPage[] = day === "good" ? [
     { id: "gmv", tone: "good", pose: "dance", motion: "bounce", kick: "GMV spike", big: `+${change}%`, head: "GMV jumped yesterday", sub: `${rm(y.gmv)} vs your usual ${rm(y.avg)}`, money: true, cta: { label: "See what sold", href: "/app/data" }, caption: `My TikTok Shop GMV jumped ${change}% yesterday 🕺 ${tags}${invite}` },
     { id: "viral", tone: "good", pose: "viral", motion: "pop", kick: "Gone viral", big: `${Math.round(top.views / 1000)}K`, head: `views on "${top.title}"`, sub: "5× your usual views", img: topP.img, cta: { label: "Post it again", href: "/app/publish" }, caption: `My video hit ${Math.round(top.views / 1000)}K views 🔥 ${tags}${invite}` },
-    { id: "raises", tone: "good", pose: "found", motion: "wiggle", kick: "Better rates", big: "3", head: "products now pay you more", sub: "Same products, higher commission", cta: { label: "See raises", href: "/app" }, caption: `Rezekii found 3 products in my showcase that pay me more 💸 ${tags}${invite}` },
+    ...scan,
     { id: "sample", tone: "good", pose: "parcel", motion: "pop", kick: "Free sample", big: "Approved", head: product("p13").name, sub: "Arriving in 3–5 days", img: product("p13").img, cta: { label: "See sample", href: "/app/account#samples" }, caption: `Got a free sample approved through Rezekii 📦 ${tags}${invite}` },
     { id: "posted", tone: "good", pose: "posted", motion: "wiggle", kick: "Posted everywhere", big: "4 apps", head: "got your new video in one click", sub: "TikTok, Facebook, Instagram and Threads", cta: { label: "See posts", href: "/app/publish/calendar" }, caption: `One video, 4 apps, one click 📲 ${tags}${invite}` },
     { id: "commission", tone: "good", pose: "money", motion: "bounce", kick: "Commission", big: rm(y.commission, 2), head: "earned yesterday", sub: "From your TikTok Shop sales", money: true, cta: { label: "See payouts", href: "/app/data/payouts" }, caption: `Earned ${rm(y.commission, 2)} commission yesterday 💰 ${tags}${invite}` },
   ] : [
+    ...scan,
     { id: "streak", tone: "good", pose: "party", motion: "bounce", kick: "Streak", big: `${CREATOR.streak} days`, head: "in a row, and counting", sub: "Check in today to keep it", cta: { label: "Missions", href: "/app/rewards" }, caption: `${CREATOR.streak}-day streak on Rezekii 👑 ${tags}${invite}` },
   ];
 
@@ -124,11 +133,12 @@ export function storyFor(day: SampleDay = "good"): StoryPage[] {
 
   const trend: StoryPage = { id: "trend", tone: "trend", pose: "think", motion: "float", kick: "Rising in Home & Living", big: "+68%", head: `${product("p24").name} is selling fast this week`, sub: "Picked for your account by Rezekii AI", img: product("p24").img, cta: { label: "Today's Ideas", href: "/app/publish/plan" }, caption: `Rezekii AI told me what's rising in my niche 💡 ${tags}${invite}` };
 
+  const cleaned: StoryPage = { id: "cleaned", tone: "total", pose: "cheeky", motion: "wiggle", kick: "Shop cleaned up", big: "6", head: "low-rated products removed this month", sub: "Fewer refunds, a safer account", cta: { label: "Risk Check", href: "/app/data/risk" }, caption: `Rimau helped me clear 6 low-rated products. My account is safer now 🛡️ ${tags}${invite}` };
   const total: StoryPage = { id: "total", tone: "total", pose: "cheeky", motion: "bounce", kick: "Since you joined", big: "128 posts", head: "made with Rezekii", sub: `${rm(3480)} earned through Rezekii · 14 products raised`, money: true, cta: { label: "My stats", href: "/app/data" }, caption: `128 posts and ${rm(3480)} earned through Rezekii 🏆 ${tags}${invite}` };
 
   const end: StoryPage = { id: "end", tone: "end", pose: "love", motion: "pop", kick: "That's your day", big: "See you tomorrow", head: "Share Rezekii with a friend", sub: `You each get ${REFERRAL_REWARD.inviter} credits when they join`, caption: `My daily story on Rezekii 🐯 Join me, we both get ${REFERRAL_REWARD.friend} credits: ${LINK} ${tags}` };
 
-  return [intro, ...good, ...heads, ...steady, trend, total, end];
+  return [intro, ...good, ...heads, ...steady, trend, cleaned, total, end];
 }
 
 /** Story day key: a new story at 8 AM Malaysia time (UTC+8), so 00:00 UTC. */
