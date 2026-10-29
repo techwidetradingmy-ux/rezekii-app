@@ -100,7 +100,7 @@ export function CreatorHeroScan() {
         <div className="hs-total">
           <small>Extra commission on Rezekii</small>
           <b><span>RM</span>{n(money)}</b>
-          <span className="hs-sum">RM {earn(POT, POT.publicRate).toFixed(2)} → RM {earn(POT, POT.tapRate).toFixed(2)} a sale <i>×</i> 1,000 sales</span>
+          <span className="hs-sum">+RM {PER_SALE.toFixed(2)} extra a sale <i>×</i> 1,000 orders</span>
         </div>
       </div>
     </div>
@@ -402,7 +402,8 @@ export function CreatorBento() {
 
 /* ---------------- Why Rezekii (USP banners) ---------------- */
 
-const PER_SALE = (POT.price * (POT.tapRate - POT.publicRate)) / 100;
+/** The extra on one sale, in sen as it's paid (RM 1.60), so 1,000 orders add up to exactly RM 1,600 (owner, 29 Oct 2026). */
+const PER_SALE = Math.round(POT.price * (POT.tapRate - POT.publicRate)) / 100;
 const rmn = (x: number) => x.toLocaleString("en-MY", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 const AI_PICK = product("p20");
 const FEED = ["p02", "p11", "p23", "p04", "p18", "p12"].map(product);
@@ -497,7 +498,7 @@ export function CreatorUsps() {
 /* ---------------- Without vs With ---------------- */
 
 const ROWS: CompareRow[] = [
-  { label: `Commission on a RM ${POT.price.toFixed(2)} product`, without: `${POT.publicRate}% open plan, RM ${earn(POT, POT.publicRate).toFixed(2)} a sale`, with: <span className="lp-cmp-money"><span>{POT.tapRate}% on Rezekii</span><b>RM {earn(POT, POT.tapRate).toFixed(2)} a sale</b><small>+RM {PER_SALE.toFixed(2)} more each sale, RM {rmn(PER_SALE * 1000)} per 1,000 sales</small></span> },
+  { label: `Commission on a RM ${POT.price.toFixed(2)} product`, without: `${POT.publicRate}% open plan, RM ${earn(POT, POT.publicRate).toFixed(2)} a sale`, with: <span className="lp-cmp-money"><span>{POT.tapRate}% on Rezekii, RM {earn(POT, POT.tapRate).toFixed(2)} a sale</span><b>+RM {PER_SALE.toFixed(2)} extra a sale</b><small>+RM {PER_SALE.toFixed(2)} × 1,000 orders = +RM {rmn(PER_SALE * 1000)} extra</small></span> },
   { label: "Finding viral products", without: "Hours a day scrolling TikTok, then guessing", with: "Rezekii AI shows what's trending for you" },
   { label: "Captions", without: "A new caption for every app, every post", with: "Write once, fitted to each app" },
   { label: "Posting", without: "Same video uploaded 4 times", with: <span className="lp-cmp-apps">Post once to<span>{PLATS.map((p) => <PlatIcon key={p} name={p} size={26} />)}</span><span className="lp-sr">TikTok, Facebook, Instagram and Threads</span></span> },
