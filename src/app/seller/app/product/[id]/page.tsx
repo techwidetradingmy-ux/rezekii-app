@@ -151,7 +151,7 @@ function SellerProduct({ item }: { item: ShopItem }) {
           <section className="v2-card pp-card" id="samples">
             <h2 className="v2-h2">Free Samples <span className="v2-small">{p.samplesLeft ?? p.samples} of {p.samples} left</span></h2>
             <Progress value={p.samplesLeft ?? p.samples} max={p.samples} />
-            {low && <p className="pg-warn">Running low. Add samples so creators can keep asking.</p>}
+            {low && <p className="pg-warn">Running low. Our team will check with you before they run out.</p>}
             {dests.length > 0 && (
               <p className="pg-line">
                 {dests.length} creators got one · {dests.reduce((a, d) => a + d.videos, 0)} videos posted ·{" "}

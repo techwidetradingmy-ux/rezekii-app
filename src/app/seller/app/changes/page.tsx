@@ -9,26 +9,27 @@ import { CHANGE_REQUESTS, SHOP_ITEMS, type ChangeReq, type ReqStatus } from "@/l
 
 const KINDS: [ChangeReq["kind"], string, IconName][] = [
   ["Raise commission", "Pay creators more", "tag"],
-  ["Add samples", "Top up samples per SKU", "box"],
   ["End early", "Stop before the end date", "x"],
 ];
 const STATUS: Record<ReqStatus, string> = { Sent: "badge-blue", "In progress": "badge-amber", Done: "", "Not possible": "badge-gray" };
 
-/** Ask the Techwide team to raise commission, add samples or end a product early. They make the change in TAP. */
+/**
+ * Ask the Techwide team to raise commission or end a product early. They make the change in TAP. Samples are set when a product is
+ * submitted to our TAP, not added here (owner, 29 Oct 2026).
+ */
 export default function Changes() {
   const { toast } = useDemo();
   const live = SHOP_ITEMS.filter((s) => s.stage === "Live");
   const [kind, setKind] = useState<ChangeReq["kind"]>("Raise commission");
   const [itemId, setItemId] = useState(live[0].id);
   const [raiseBy, setRaiseBy] = useState(2);
-  const [addN, setAddN] = useState(20);
   const [endWhen, setEndWhen] = useState("In 7 days");
   const [note, setNote] = useState("");
   const [reqs, setReqs] = useState<ChangeReq[]>(CHANGE_REQUESTS);
   const item = live.find((l) => l.id === itemId) ?? live[0];
   const tap = item.tapRate ?? 0;
 
-  const detail = kind === "Raise commission" ? `${tap}% → ${tap + raiseBy}%` : kind === "Add samples" ? `+${addN} samples per SKU` : `End ${endWhen.toLowerCase()}`;
+  const detail = kind === "Raise commission" ? `${tap}% → ${tap + raiseBy}%` : `End ${endWhen.toLowerCase()}`;
 
   const send = () => {
     const id = `REQ-${1049 + reqs.length - CHANGE_REQUESTS.length}`;
@@ -70,16 +71,6 @@ export default function Changes() {
                 ))}
               </div>
               <small>{tap}% now → <b style={{ color: "var(--gink)" }}>{tap + raiseBy}%</b>. TikTok usually approves in 1–3 working days.</small>
-            </div>
-          )}
-          {kind === "Add samples" && (
-            <div className="v2-field">Add per SKU
-              <div className="v2-chips">
-                {[10, 20, 30, 50].map((n) => (
-                  <button key={n} type="button" className={`v2-chip ${addN === n ? "on" : ""}`} onClick={() => setAddN(n)}>+{n}</button>
-                ))}
-              </div>
-              <small>{item.samplesLeft} of {item.samples} left. You pay for added samples.</small>
             </div>
           )}
           {kind === "End early" && (

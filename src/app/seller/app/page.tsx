@@ -5,8 +5,7 @@ import "@/app/custom-service.css";
 import Link from "next/link";
 import { useState } from "react";
 import { Icon, type IconName } from "@/components/icons";
-import { useDemo } from "@/components/demo";
-import { Columns, Count, Sheet, Stat } from "@/components/ui";
+import { Columns, Count, Stat } from "@/components/ui";
 import { ConnBanner, ContactSheet, Source } from "@/components/seller/seller-ui";
 import { JoinBoard } from "@/components/join-board";
 import { SELLER, SELLER_RESULTS, rm } from "@/lib/mock";
@@ -31,10 +30,7 @@ const QUICK: [string | null, string, string, IconName, string][] = [
 
 /** Seller home: one "do this first" card by stage, quick actions, a small results summary, recent activity. */
 export default function SellerHome() {
-  const { toast } = useDemo();
   const [stage, setStage] = useState<StageKey>("fix");
-  const [fixing, setFixing] = useState(false);
-  const [samples, setSamples] = useState(40);
   const [talk, setTalk] = useState(false);
   const [fixed, setFixed] = useState(false);
   const live = SHOP_ITEMS.filter((s) => s.stage === "Live").length;
@@ -57,7 +53,7 @@ export default function SellerHome() {
           <h2>1 Product Not Approved: 0 Samples</h2>
           <p>{broken.name} has no samples, so creators can&apos;t apply.</p>
           <div className="v2-row">
-            <button type="button" className="v2-btn-white" style={{ color: "#b42318" }} onClick={() => setFixing(true)}>Add samples</button>
+            <Link href={`/seller/app/product/${broken.id}`} className="v2-btn-white" style={{ color: "#b42318" }}>Fix and Resubmit</Link>
             <Link href="/seller/app/progress" className="v2-btn-ghostw">See progress</Link>
           </div>
         </section>
@@ -169,23 +165,6 @@ export default function SellerHome() {
         </section>
       </div>
 
-      {fixing && broken && (
-        <Sheet title="Add Samples" onClose={() => setFixing(false)}>
-          <div className="sl-prow" style={{ paddingTop: 0 }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={broken.img} alt="" />
-            <span className="sl-pinfo"><strong>{broken.name}</strong><small>From Seller Center · TAP {broken.tapRate}%</small></span>
-          </div>
-          <div className="v2-field">Samples per SKU <small>Most shops pick 30–50</small>
-            <div className="v2-chips">
-              {[30, 40, 50].map((n) => (
-                <button key={n} type="button" className={`v2-chip ${samples === n ? "on" : ""}`} onClick={() => setSamples(n)}>{n}</button>
-              ))}
-            </div>
-          </div>
-          <button type="button" className="np-btn" onClick={() => { setFixing(false); setFixed(true); setStage("waiting"); toast(`${samples} samples added · resubmitted`); }}>Add {samples} samples and resubmit</button>
-        </Sheet>
-      )}
       {talk && <ContactSheet onClose={() => setTalk(false)} />}
     </div>
   );
