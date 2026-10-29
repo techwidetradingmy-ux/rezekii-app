@@ -1,5 +1,6 @@
 "use client";
 
+import { SUPPORT } from "@/lib/support";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -263,6 +264,8 @@ export function SellerLanding() {
           <a href="https://rezekii.com/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>
           <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer">Terms of Service</a>
           <a href="#" onClick={(e) => { e.preventDefault(); setTalk(true); }}>Talk to us</a>
+          <a href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a>
+          <a href={SUPPORT.waLink} target="_blank" rel="noreferrer">WhatsApp {SUPPORT.wa}</a>
         </div>
       </footer>
       {talk && <ContactSheet onClose={() => setTalk(false)} />}

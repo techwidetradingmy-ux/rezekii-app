@@ -25,8 +25,32 @@ a[href*="/product/"] { text-decoration: none; }
 .bl-facebook { background: transparent; }
 .bl-shopee { background: #ee4d2d; }
 .bl-whatsapp { background: #25d366; }
-:root[data-theme="dark"] :is(.bl-tiktok, .bl-threads) { box-shadow: inset 0 0 0 1px #3a4a42; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) :is(.bl-tiktok, .bl-threads) { box-shadow: inset 0 0 0 1px #3a4a42; } }
+.bl-telegram { background: #26a5e4; }
+.bl-x { background: #000000; }
+:root[data-theme="dark"] :is(.bl-tiktok, .bl-threads, .bl-x) { box-shadow: inset 0 0 0 1px #3a4a42; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) :is(.bl-tiktok, .bl-threads, .bl-x) { box-shadow: inset 0 0 0 1px #3a4a42; } }
+/* Feedback form (owner, 30 Oct 2026) */
+.fb-form, .fb-sec { display: grid; gap: 10px; }
+.fb-form { gap: 16px; }
+.fb-sec > b { font-size: 14px; font-weight: 800; }
+.fb-types { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.fb-types button { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 10px 12px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--surface); color: var(--text); font: inherit; font-size: 14px; font-weight: 700; text-align: left; cursor: pointer; }
+.fb-types button svg { flex-shrink: 0; color: var(--muted); }
+.fb-types button.on { border-color: #00c073; background: color-mix(in srgb, #00c073 10%, var(--surface)); }
+.fb-types button.on svg { color: #00a862; }
+.fb-meta { display: flex; justify-content: space-between; gap: 8px; }
+.fb-meta small { font-size: 12px; color: var(--muted); }
+.fb-err { font-size: 13px; font-style: normal; font-weight: 700; color: #d93025; }
+.fb-add { justify-self: start; cursor: pointer; }
+.fb-file { display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; border-radius: 12px; background: var(--surface2); font-size: 14px; }
+.fb-file > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fb-faces { display: flex; gap: 8px; }
+.fb-faces button { flex: 1; height: 46px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--surface); font-size: 22px; cursor: pointer; filter: grayscale(0.6); transition: transform 0.12s var(--ease); }
+.fb-faces button.on { border-color: #00c073; filter: none; transform: scale(1.06); }
+.fb-note { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
+.fb-done { display: grid; justify-items: center; gap: 10px; padding: 12px 0 4px; text-align: center; }
+.fb-done b { font-size: 18px; }
+.fb-done .np-btn { width: 100%; }
 .pv-open { position: relative; z-index: 2; color: inherit; text-decoration: none; cursor: pointer; }
 .rk-vopen { display: inline-flex; align-items: flex-start; gap: 6px; padding: 0; border: 0; background: none; font: inherit; font-weight: 700; color: var(--text); text-align: left; cursor: pointer; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
 .rk-vopen svg { flex-shrink: 0; margin-top: 3px; color: #00a862; }
@@ -163,7 +187,7 @@ a[href*="/product/"] { text-decoration: none; }
 .v2-lock-cover b { font-size: 16px; }
 
 /* Bottom sheet / modal */
-.v2-backdrop { position: fixed; inset: 0; z-index: 80; background: rgba(6, 14, 10, 0.45); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); display: flex; align-items: flex-end; justify-content: center; animation: v2Fade 0.2s var(--ease) both; }
+.v2-backdrop { position: fixed; inset: 0; z-index: 85; background: rgba(6, 14, 10, 0.45); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); display: flex; align-items: flex-end; justify-content: center; animation: v2Fade 0.2s var(--ease) both; }
 @media (min-width: 761px) { .v2-backdrop { align-items: center; padding: 24px; } }
 .v2-sheet { width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto; background: var(--surface); color: var(--text); border-radius: 28px 28px 0 0; padding: 10px 20px calc(24px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 14px; animation: v2Up 0.32s var(--ease) both; box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.25); }
 @media (min-width: 761px) { .v2-sheet { border-radius: 28px; padding-bottom: 24px; } }
@@ -456,8 +480,10 @@ a[href*="/product/"] { text-decoration: none; }
 .v2-app { display: flex; flex-direction: column; align-items: center; gap: 4px; border: 0; background: none; color: var(--body); font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; padding: 0; }
 .v2-app .ic { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; transition: transform 0.12s var(--ease); }
 .v2-app:active .ic { transform: scale(0.92); }
-/* Share apps in one row you swipe on phones (owner, 28 Oct 2026), not two rows. */
-@media (max-width: 420px) { .v2-apps { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 64px; gap: 8px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent); } .v2-apps::-webkit-scrollbar { display: none; } .v2-app { scroll-snap-align: start; } }
+/* Logos only, no names, all in one row (owner, 30 Oct 2026: names crowded together on small phones). */
+.v2-app .ic .bl { width: 100% !important; height: 100% !important; border-radius: inherit !important; }
+.v2-app .ic .bl-facebook { border-radius: 50% !important; }
+.v2-app .ic.more { background: var(--surface2); color: var(--text); }
 /* Caption: room to write, no visible scrollbar in the sheet or the box (owner, 28 Oct 2026). */
 .v2-caption { min-height: 132px; }
 .v2-sheet, .v2-sheet textarea, .ss-pick ul { scrollbar-width: none; }

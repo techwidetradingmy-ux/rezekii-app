@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { SUPPORT } from "@/lib/support";
 import Link from "next/link";
 import { DemoStrip } from "@/components/shell";
 import { Icon } from "@/components/icons";
@@ -194,7 +195,8 @@ export default function Landing() {
           <Link href="/signin">Sign in</Link>
           <a href="https://rezekii.com/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>
           <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer">Terms of Service</a>
-          <a href="mailto:support@rezekii.com">support@rezekii.com</a>
+          <a href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a>
+          <a href={SUPPORT.waLink} target="_blank" rel="noreferrer">WhatsApp {SUPPORT.wa}</a>
         </div>
       </footer>
     </>

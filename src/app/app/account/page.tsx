@@ -1,5 +1,7 @@
 "use client";
 
+import { FeedbackForm } from "@/components/feedback-form";
+import { SUPPORT } from "@/lib/support";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
@@ -106,8 +108,7 @@ export default function Account() {
   const [hasPw, setHasPw] = useState(true);
   const [googleOn, setGoogleOn] = useState(true);
   const [pw, setPw] = useState(["", "", ""]);
-  const [topic, setTopic] = useState("Idea");
-  const [msg, setMsg] = useState("");
+  const [feedback, setFeedback] = useState(false);
   const [theme, setTheme] = useState<Theme>("Auto");
   const [lang, setLang] = useState<"English" | "中文">("English");
 
@@ -471,27 +472,12 @@ export default function Account() {
           <h2>Help & Feedback</h2>
           <div className="cr2-cells">
             {/* The page footer is hidden on phones, so its links live here (owner, 29 Oct 2026). */}
-            <a className="cr2-cell acc-link" href="mailto:support@rezekii.com"><span className="lbl">Contact support</span><span className="v2-small">support@rezekii.com</span><Icon name="arrow" size={16} /></a>
+            <a className="cr2-cell acc-link" href={`mailto:${SUPPORT.email}`}><span className="lbl">Contact support</span><span className="v2-small">{SUPPORT.email}</span><Icon name="arrow" size={16} /></a>
+            <a className="cr2-cell acc-link" href={SUPPORT.waLink} target="_blank" rel="noreferrer"><span className="lbl">WhatsApp us</span><span className="v2-small">{SUPPORT.wa}</span><Icon name="arrow" size={16} /></a>
             <a className="cr2-cell acc-link" href="https://rezekii.com/privacy" target="_blank" rel="noreferrer"><span className="lbl">Privacy Policy</span><Icon name="arrow" size={16} /></a>
             <a className="cr2-cell acc-link" href="https://rezekii.com/terms" target="_blank" rel="noreferrer"><span className="lbl">Terms of Service</span><Icon name="arrow" size={16} /></a>
-            <div className="cr2-cell stack">
-              <span className="lbl">Tell the team</span>
-              <div className="v2-chips">
-                {["Idea", "Something's broken", "Question"].map((t) => (
-                  <button key={t} type="button" className={`v2-chip ${topic === t ? "on" : ""}`} onClick={() => setTopic(t)}>{t}</button>
-                ))}
-              </div>
-              <textarea className="np-input" rows={4} placeholder="What can we improve?" value={msg} onChange={(e) => setMsg(e.target.value)} aria-label="Your feedback" />
-              <button
-                type="button"
-                className="np-btn"
-                style={{ alignSelf: "flex-start" }}
-                disabled={!msg.trim()}
-                onClick={() => { setMsg(""); toast("Thanks! Message sent"); }}
-              >
-                <Icon name="send" size={17} /> Send
-              </button>
-            </div>
+            {/* The same full feedback form as the account panel (owner, 30 Oct 2026). */}
+            <button type="button" className="cr2-cell cr2-cellbtn acc-link" onClick={() => setFeedback(true)}><span className="lbl">Send feedback</span><span className="v2-small">Ideas, bugs, questions</span><Icon name="arrow" size={16} /></button>
             <a href="mailto:support@rezekii.com" className="cr2-cell cr2-cellbtn" onClick={(e) => { e.preventDefault(); toast("support@rezekii.com · we reply within 1 working day"); }}>
               <span className="lbl">Email support</span>
               <span className="chev">support@rezekii.com <Icon name="arrow" size={16} /></span>
@@ -528,11 +514,16 @@ export default function Account() {
           <button type="button" className="btn-outline" style={{ height: 48 }} onClick={() => setConfirmSave(false)}>Keep editing</button>
         </Sheet>
       )}
+      {feedback && (
+        <Sheet title="Send Feedback" onClose={() => setFeedback(false)}>
+          <FeedbackForm onDone={() => setFeedback(false)} />
+        </Sheet>
+      )}
       {changeSheet && (
         <Sheet title="Request a Change" onClose={() => setChangeSheet(false)}>
           <label className="v2-field">What to change
             <select className="np-input" value={change.what} onChange={(e) => setChange({ ...change, what: e.target.value })}>
-              {["Name", "State", "WhatsApp number", "Gender", "Creator type", "Niches"].map((x) => <option key={x}>{x}</option>)}
+              {["Name", "State", "WhatsApp number", "Gender", "Creator type", "Niches", "Other"].map((x) => <option key={x}>{x}</option>)}
             </select>
           </label>
           <label className="v2-field">Change it to<input className="np-input" value={change.to} onChange={(e) => setChange({ ...change, to: e.target.value })} placeholder="New value" /></label>

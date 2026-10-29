@@ -1,5 +1,6 @@
 "use client";
 
+import { SUPPORT } from "@/lib/support";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -538,7 +539,7 @@ export default function SignIn() {
           <span>You link TikTok Shop after you sign in.</span>
         </div>
         <p className="rz-foot">
-          <Link href="/">Back to home</Link> · <a href="mailto:support@rezekii.com">support@rezekii.com</a>
+          <Link href="/">Back to home</Link> · <a href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a> · <a href={SUPPORT.waLink} target="_blank" rel="noreferrer">WhatsApp {SUPPORT.wa}</a>
         </p>
       </main>
     </>

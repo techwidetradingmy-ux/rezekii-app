@@ -1,5 +1,7 @@
 "use client";
 
+import { FeedbackForm } from "@/components/feedback-form";
+import { SUPPORT } from "@/lib/support";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -276,7 +278,8 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
           {/* Phones show short labels so the footer fits one line (owner, 28 Oct 2026). */}
           <a href="https://rezekii.com/privacy" target="_blank" rel="noreferrer">Privacy<span className="ft-long"> Policy</span></a>
           <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer">Terms<span className="ft-long"> of Service</span></a>
-          <a href="mailto:support@rezekii.com" title="support@rezekii.com"><span className="ft-long">support@rezekii.com</span><span className="ft-short">Support</span></a>
+          <a href={`mailto:${SUPPORT.email}`} title={SUPPORT.email}><span className="ft-long">{SUPPORT.email}</span><span className="ft-short">Email</span></a>
+          <a href={SUPPORT.waLink} target="_blank" rel="noreferrer" title={`WhatsApp ${SUPPORT.wa}`}><span className="ft-long">WhatsApp {SUPPORT.wa}</span><span className="ft-short">WhatsApp</span></a>
         </div>
       </footer>
       </div>
@@ -337,8 +340,6 @@ function AccountPanel({ onClose }: { onClose: () => void }) {
     toast(t === "Auto" ? "Theme: Auto (follows your phone)" : `Theme: ${t}`);
   };
   const [feedback, setFeedback] = useState(false);
-  const [topic, setTopic] = useState("Idea");
-  const [msg, setMsg] = useState("");
   const samples = MY_SAMPLES.filter((x) => !["Done", "Not approved"].includes(x.status)).length;
   const [hash, setHash] = useState("");
   useLayoutEffect(() => {
@@ -383,13 +384,7 @@ function AccountPanel({ onClose }: { onClose: () => void }) {
         </div>
         {feedback && (
           <Sheet title="Send Feedback" onClose={() => setFeedback(false)}>
-            <div className="v2-chips">
-              {["Idea", "Something's broken", "Question"].map((t) => (
-                <button key={t} type="button" className={`v2-chip ${topic === t ? "on" : ""}`} onClick={() => setTopic(t)}>{t}</button>
-              ))}
-            </div>
-            <textarea className="np-input" rows={4} placeholder="What can we improve?" value={msg} onChange={(e) => setMsg(e.target.value)} aria-label="Your feedback" />
-            <button type="button" className="np-btn" disabled={!msg.trim()} onClick={() => { setMsg(""); setFeedback(false); toast("Thanks! Message sent"); }}><Icon name="send" size={17} /> Send</button>
+            <FeedbackForm onDone={() => setFeedback(false)} />
           </Sheet>
         )}
         {/* Sign out lives in the panel on phones, not in Settings (owner, 29 Oct 2026). */}
@@ -399,7 +394,8 @@ function AccountPanel({ onClose }: { onClose: () => void }) {
           <span className="ap-links">
             <a href="https://rezekii.com/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>
             <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer">Terms of Service</a>
-            <a href="mailto:support@rezekii.com">Support</a>
+            <a href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a>
+            <a href={SUPPORT.waLink} target="_blank" rel="noreferrer">WhatsApp {SUPPORT.wa}</a>
           </span>
           <small>© 2026 Rezekii · Built by Techwide</small>
         </footer>

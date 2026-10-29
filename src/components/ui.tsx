@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./icons";
-import { Emblem, SHARE_APPS, type Level } from "./emblems";
+import { Emblem, type Level } from "./emblems";
+import { BrandLogo, type Brand } from "./brand-logos";
 import { useDemo } from "./demo";
 
 /** A small ⓘ beside a word; tap it to read the explanation (owner, 28 Oct 2026: tooltips instead of text on the page). */
@@ -303,6 +304,8 @@ export function Celebrate({ title, line, cheer, onShare, onClose, tone = "gold",
   );
 }
 
+const SHARE_TO: (Brand | "More")[] = ["TikTok", "WhatsApp", "Instagram", "Facebook", "Telegram", "X", "More"];
+
 /** Where a card goes, and its real size there. Portrait or landscape only (owner, 30 Oct 2026): more sizes squeezed the words. */
 const FORMATS = [
   { key: "story", label: "Portrait", ratio: "9 / 16", size: "1080 × 1920", where: "TikTok, Instagram and WhatsApp" },
@@ -472,12 +475,12 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
             <textarea className="np-input v2-caption" rows={5} value={caption} onChange={(e) => setCaption(e.target.value.slice(0, 300))} />
           </label>
           <div className="v2-apps" role="group" aria-label="Share to">
-            {SHARE_APPS.map(([name, bg, d, fill, stroke, sw]) => (
-              <button key={name} type="button" className="v2-app" onClick={() => send(name)}>
-                <span className="ic" style={{ background: bg }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d={d} fill={fill} stroke={stroke} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" /></svg>
+            {/* Real logos only, no names (owner, 30 Oct 2026); the name is still read out and shown on hover. */}
+            {SHARE_TO.map((name) => (
+              <button key={name} type="button" className="v2-app" onClick={() => send(name)} aria-label={`Share to ${name}`} title={name}>
+                <span className={name === "More" ? "ic more" : "ic"}>
+                  {name === "More" ? <Icon name="share" size={20} /> : <BrandLogo name={name} size={42} />}
                 </span>
-                {name}
               </button>
             ))}
           </div>
