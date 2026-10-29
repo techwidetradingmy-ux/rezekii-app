@@ -26,17 +26,24 @@
 .lp-ghost:active { transform: scale(0.97); }
 .lp-ctas .lp-ghost { height: 56px; padding: 0 22px; font-size: 16px; border-radius: 16px; }
 /* Three equal columns, always one tidy row (owner, 29 Oct 2026, option A). */
-.lp-chips { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; max-width: 540px; }
+.lp-chips { margin: 0; padding: 0; list-style: none; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; max-width: 540px; }
+.lp-promo { margin: 0; align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; border: 1px solid #f5c76a; background: var(--asoft); color: var(--amber); font-size: 13.5px; font-weight: 800; }
+.lp-promo b { font-weight: 900; text-transform: uppercase; letter-spacing: 0.03em; }
 .lp-chips li { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 8px 6px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); font-size: 12.5px; font-weight: 700; line-height: 1.25; color: var(--body); text-align: center; }
 .lp-chips svg { width: 20px; height: 20px; padding: 3px; border-radius: 50%; background: var(--gsoft); color: #00a862; }
 .lp-hero-vis { position: relative; display: flex; justify-content: center; min-width: 0; }
 .lp-hero-vis::before { content: ""; position: absolute; left: 50%; top: 50%; width: 440px; height: 440px; margin: -220px 0 0 -220px; border-radius: 50%; background: radial-gradient(circle, rgba(0, 192, 115, 0.22), rgba(109, 94, 252, 0.08) 45%, transparent 68%); z-index: -1; }
 
 /* Partner trust line under every main call to action */
-.lp-pline { margin: 0; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700; color: var(--muted); }
-.lp-pline.center { justify-content: center; }
-.lp-pline-logo { display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 999px; background: #000000; }
-.lp-pline-logo img { display: block; height: 15px; width: auto; }
+/* Rezekii and the TikTok Shop Partner badge side by side (owner, 29 Oct 2026, co-brand option A), then the words. */
+.lp-pline { margin: 0; align-self: flex-start; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 7px 14px 7px 8px; border-radius: 16px; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow); font-size: 13px; font-weight: 700; color: var(--body); }
+.lp-pline.center { align-self: center; justify-content: center; }
+.lp-pline-pair { display: inline-flex; align-items: center; gap: 10px; }
+.lp-pline-pair > i { width: 1px; height: 22px; background: var(--border); }
+.lp-pline-rz { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 900; color: var(--text); letter-spacing: -0.01em; }
+.lp-pline-rz img { display: block; width: 22px; height: 22px; }
+.lp-pline-logo { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 999px; background: #000000; }
+.lp-pline-logo img { display: block; height: 16px; width: auto; }
 
 /* ================= iPhone ================= */
 .lp-phone { position: relative; flex-shrink: 0; margin: 0; width: 300px; height: 620px; padding: 11px; border-radius: 54px;
@@ -345,31 +352,19 @@ i.gold { background: radial-gradient(circle at 35% 30%, #fff3bf, #f5b81e 55%, #b
 .lp-usp[data-on] .lp-u-track li i { animation: lpDotLoop 4.5s calc(var(--i) * 1.6s - 0.1s) infinite; }
 .lp-usp[data-on] .lp-u-spent b { animation: lpBeat 4.5s 3.2s infinite; }
 /* One video fans out into 4 platforms */
-.lp-u-fan { margin: 0; padding: 0; list-style: none; display: flex; justify-content: center; gap: 10px; }
-.lp-u-fan li { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.lp-u-fan .lp-thumb { width: 50px !important; height: 74px !important; border-radius: 10px; box-shadow: var(--shadow-lg); }
-.lp-u-fan .lp-pi { position: absolute; top: -6px; right: -6px; border: 2px solid var(--surface); }
-.lp-u-fan em { font-style: normal; font-size: 11px; font-weight: 900; color: var(--gink); padding: 2px 7px; border-radius: 99px; background: var(--gsoft); }
-.lp-usp[data-on] .lp-u-fan li { animation: lpUFan 4.5s var(--lp-spring) infinite; }
-.lp-usp[data-on] .lp-u-fan em { animation: lpUPosted 4.5s calc(var(--i) * 0.2s) infinite; }
+.lp-u-hub { width: 100%; max-width: 330px; display: grid; grid-template-columns: auto minmax(30px, 1fr) auto; align-items: center; }
+.lp-u-src { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.lp-u-src .lp-thumb { width: 56px !important; height: 84px !important; border-radius: 12px; box-shadow: var(--shadow-lg); }
+.lp-u-src b { font-size: 12px; font-weight: 900; }
+.lp-u-lines { width: 100%; height: 128px; overflow: visible; }
+.lp-u-lines path { fill: none; stroke: #00c073; stroke-width: 2.5; vector-effect: non-scaling-stroke; stroke-linecap: round; stroke-dasharray: 100; }
+.lp-u-hub ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.lp-u-hub li { display: flex; align-items: center; gap: 7px; padding: 3px 8px 3px 3px; border-radius: 10px; background: var(--surface2); font-size: 12.5px; font-weight: 800; }
+.lp-u-hub li > span:not(.lp-pi) { flex: 1; }
+.lp-u-hub em { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; background: #00c073; color: #ffffff; }
+.lp-usp[data-on] .lp-u-lines path { animation: lpUDraw 4.5s calc(var(--i) * 0.15s) var(--lp-ease) infinite; }
+.lp-usp[data-on] .lp-u-hub em { animation: lpUPosted 4.5s calc(0.6s + var(--i) * 0.2s) var(--lp-spring) infinite; }
 /* Free during Beta */
-.lp-u-free { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-.lp-u-price { position: relative; display: flex; flex-direction: column; align-items: center; }
-.lp-u-price .lp-u-stamp { top: auto; bottom: 22px; right: -62px; }
-.lp-u-price > b { font-size: 58px; line-height: 1; font-weight: 900; letter-spacing: -0.04em; background: linear-gradient(135deg, #00874f, #00c073); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.lp-u-was { position: relative; margin-bottom: -6px; font-size: 22px; font-weight: 800; color: var(--muted); text-decoration: none; }
-.lp-u-was small { font-size: 14px; font-weight: 700; }
-.lp-u-was::after { content: ""; position: absolute; left: -6%; right: -6%; top: 50%; height: 3px; border-radius: 2px; background: #e14b3b; transform: rotate(-8deg); transform-origin: left; }
-.lp-usp[data-on] .lp-u-was::after { animation: lpUStrike 4s infinite; }
-@keyframes lpUStrike { 0%, 6% { transform: rotate(-8deg) scaleX(0); } 22%, 100% { transform: rotate(-8deg) scaleX(1); } }
-@media (prefers-reduced-motion: reduce) { .lp-usp[data-on] .lp-u-was::after { animation: none; } }
-.lp-u-stamp { position: absolute; top: -10px; right: -46px; padding: 4px 10px; border-radius: 8px; border: 2px solid #e8a400; color: var(--amber); background: var(--asoft); font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; transform: rotate(-12deg); }
-.lp-u-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
-.lp-u-chips span { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font-size: 12px; font-weight: 800; }
-.lp-u-chips svg { color: #00a862; }
-.lp-usp[data-on] .lp-u-stamp { animation: lpUStamp 4s infinite; }
-.lp-usp[data-on] .lp-u-chips span:nth-child(1) { animation: lpUChip 4s 0.2s infinite; }
-.lp-usp[data-on] .lp-u-chips span:nth-child(2) { animation: lpUChip 4s 0.4s infinite; }
 /* Seller: RM 0 vs staff */
 .lp-u-cost { width: 100%; display: grid; gap: 10px; }
 .lp-u-cost > span { display: grid; grid-template-columns: 70px minmax(0, 1fr) auto; gap: 10px; align-items: center; font-size: 12.5px; font-weight: 800; }
@@ -710,9 +705,7 @@ button.lp-shotf { cursor: zoom-in; }
 @keyframes lpUTrend { 0%, 40% { opacity: 0.25; transform: translateX(-8px) scale(0.95); filter: grayscale(1); } 50%, 94% { opacity: 1; transform: none; filter: none; } 100% { opacity: 0.25; filter: grayscale(1); } }
 @keyframes lpUDraw { 0%, 46% { stroke-dashoffset: 100; } 64%, 94% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 100; } }
 @keyframes lpUParcel { 0% { left: 16.6%; opacity: 1; } 72%, 90% { left: 83.4%; opacity: 1; } 100% { left: 83.4%; opacity: 0; } }
-@keyframes lpUFan { 0%, 10% { transform: translateX(calc((1.5 - var(--i)) * 60px)) rotate(calc((var(--i) - 1.5) * 5deg)); } 28%, 88% { transform: none; } 100% { transform: translateX(calc((1.5 - var(--i)) * 60px)) rotate(calc((var(--i) - 1.5) * 5deg)); } }
 @keyframes lpUPosted { 0%, 32% { opacity: 0; transform: scale(0.7); } 40%, 86% { opacity: 1; transform: none; } 100% { opacity: 0; } }
-@keyframes lpUStamp { 0% { opacity: 0; transform: rotate(-12deg) scale(2.2); } 12% { opacity: 1; transform: rotate(-12deg) scale(0.92); } 18%, 90% { opacity: 1; transform: rotate(-12deg); } 100% { opacity: 0; transform: rotate(-12deg); } }
 @keyframes lpUSend { 0%, 10% { transform: none; } 20% { transform: translateX(10px) rotate(6deg); } 30%, 100% { transform: none; } }
 @keyframes lpUArrow { 0%, 18% { opacity: 0.3; transform: translateX(-6px); } 30%, 90% { opacity: 1; transform: none; } 100% { opacity: 0.3; } }
 @keyframes lpUVid { 0%, 30% { opacity: 0; transform: scale(0.6); } 42%, 90% { opacity: 1; transform: none; } 100% { opacity: 0; transform: scale(0.9); } }

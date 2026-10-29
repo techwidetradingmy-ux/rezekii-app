@@ -991,9 +991,12 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { display
    shimmering Rezekii AI chip) and sits in a .v2-aicard with a light running along its top edge, like the AI is reading. */
 .v2-aitag { display: inline-flex; align-items: center; gap: 4px; width: fit-content; height: 22px; padding: 0 9px; border-radius: 99px; font-size: 11.5px; font-weight: 800; letter-spacing: 0.02em; color: #3b2a8f; white-space: nowrap; background: linear-gradient(110deg, #ece6ff 0%, #d9f6ff 28%, #ffffff 44%, #dcfce7 60%, #ffe4f1 80%, #ece6ff 100%); background-size: 250% 100%; box-shadow: inset 0 0 0 1px rgba(124, 92, 255, 0.28), 0 2px 8px -3px rgba(124, 92, 255, 0.45); animation: v2Holo 3.2s linear infinite; }
 @keyframes v2Holo { to { background-position: -250% 0; } }
-/* Inside a sentence: an inline block, so its words sit on the same baseline as the words around it. */
-.v2-aitag.inl { display: inline-block; height: auto; padding: 0.1em 0.6em; margin: 0 0.1em; font-size: 0.86em; line-height: 1.35; vertical-align: baseline; }
-.v2-aitag.inl svg { width: 0.95em; height: 0.95em; margin-right: 0.25em; vertical-align: -0.1em; }
+/* Inside a sentence (owner, 29 Oct 2026): no box, just the words in the AI colours with the sparkle, same size as the text. */
+.v2-aitag.inl { display: inline-block; height: auto; padding: 0; margin: 0; border-radius: 0; box-shadow: none; font-size: inherit; font-weight: 800; letter-spacing: 0; line-height: inherit; vertical-align: baseline; color: transparent; background: linear-gradient(90deg, #6d5efc, #2f8ff0, #6d5efc) 0 0 / 200% 100%; -webkit-background-clip: text; background-clip: text; animation: v2Holo 4s linear infinite; }
+.v2-aitag.inl svg { width: 0.85em; height: 0.85em; margin-right: 0.2em; vertical-align: -0.05em; color: #6d5efc; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .v2-aitag.inl { color: transparent; background-image: linear-gradient(90deg, #b3a8ff, #7cc4ff, #b3a8ff); } :root:not([data-theme="light"]) .v2-aitag.inl svg { color: #b3a8ff; } }
+:root[data-theme="dark"] .v2-aitag.inl { color: transparent; background-image: linear-gradient(90deg, #b3a8ff, #7cc4ff, #b3a8ff); }
+:root[data-theme="dark"] .v2-aitag.inl svg { color: #b3a8ff; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .v2-aitag { color: #ded4ff; background-image: linear-gradient(110deg, #2a2350 0%, #12343d 28%, #3a3470 44%, #123a2a 60%, #3d1d33 80%, #2a2350 100%); } }
 :root[data-theme="dark"] .v2-aitag { color: #ded4ff; background-image: linear-gradient(110deg, #2a2350 0%, #12343d 28%, #3a3470 44%, #123a2a 60%, #3d1d33 80%, #2a2350 100%); }
 .sh-kicker .v2-aitag { margin-left: 6px; text-transform: none; letter-spacing: 0.02em; }

@@ -364,32 +364,27 @@ const USPS: Usp[] = [
     ),
   },
   {
+    // One video, four apps, one tap (owner, 29 Oct 2026): each app's own icon so it reads at a glance.
     title: "Post Once, 4 Platforms", tint: "#f08a00",
-    line: "Not tied to one app: your videos work on 4 platforms, not 1.",
+    line: "One video to TikTok, Facebook, Instagram and Threads in one tap.",
     demo: (
-      <ul className="lp-u-fan">
-        {PLATS.map((p, i) => (
-          <li key={p} style={v({ i })}>
-            <Thumb src="/ai-videos/try-on.jpg" size={46} />
-            <PlatIcon name={p} size={20} />
-            <em>Posted</em>
-          </li>
-        ))}
-      </ul>
-    ),
-  },
-  {
-    // RM 99 a month crossed out to Free during Beta, no user limit (owner, 29 Oct 2026).
-    title: "Free During Beta", tint: "#f5a623",
-    line: "Usually RM 99 a month. No follower minimum. Nothing changes without your OK.",
-    demo: (
-      <div className="lp-u-free">
-        <span className="lp-u-price">
-          <s className="lp-u-was">RM 99<small> / month</small></s>
-          <b>Free</b>
-          <span className="lp-u-stamp">Beta</span>
+      <div className="lp-u-hub">
+        <span className="lp-u-src">
+          <Thumb src="/ai-videos/try-on.jpg" size={52} />
+          <b>1 video</b>
         </span>
-        <span className="lp-u-chips"><span><Icon name="check" size={12} width={3} /> No follower minimum</span><span><Icon name="check" size={12} width={3} /> Your OK first</span></span>
+        <svg className="lp-u-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          {[12.5, 37.5, 62.5, 87.5].map((y, i) => <path key={y} d={`M0 50 C50 50 50 ${y} 100 ${y}`} pathLength={100} style={v({ i })} />)}
+        </svg>
+        <ul>
+          {PLATS.map((p, i) => (
+            <li key={p} style={v({ i })}>
+              <PlatIcon name={p} size={28} />
+              <span>{p}</span>
+              <em><Icon name="check" size={11} width={3.4} /></em>
+            </li>
+          ))}
+        </ul>
       </div>
     ),
   },
@@ -403,10 +398,11 @@ export function CreatorUsps() {
 
 const ROWS: CompareRow[] = [
   { label: "Commission, same product", without: `${POT.publicRate}% open plan`, with: <span className="lp-cmp-money"><span>{POT.tapRate}% on Rezekii</span><b>+RM {PER_SALE.toFixed(2)} a sale</b><small>RM {rmn(PER_SALE * 1000)} more per 1,000 sales</small></span> },
-  { label: "Finding products", without: "Scroll TikTok for hours, then guess", with: "Rezekii AI shows what's trending for you" },
-  { label: "Samples", without: "Buy them yourself", with: "Free, sent to your door" },
-  { label: "Posting", without: "Upload to each app, 4 times", with: <span className="lp-cmp-apps">Post once to<span>{PLATS.map((p) => <PlatIcon key={p} name={p} size={26} />)}</span><span className="lp-sr">TikTok, Facebook, Instagram and Threads</span></span> },
-  { label: "Cost", without: "—", with: "Free" },
+  { label: "Finding viral products", without: "Hours a day scrolling TikTok, then guessing", with: "Rezekii AI shows what's trending for you" },
+  { label: "Captions", without: "A new caption for every app, every post", with: "Write once, fitted to each app" },
+  { label: "Posting", without: "Same video uploaded 4 times", with: <span className="lp-cmp-apps">Post once to<span>{PLATS.map((p) => <PlatIcon key={p} name={p} size={26} />)}</span><span className="lp-sr">TikTok, Facebook, Instagram and Threads</span></span> },
+  { label: "Samples", without: "Buy them with your own money", with: "Free, sent to your door" },
+  { label: "When to post", without: "Post anytime and hope for FYP", with: "Rezekii AI finds your Viral Time Frame" },
 ];
 export function CreatorCompare() {
   return <Compare rows={ROWS} note={`Example: ${POT.name} at RM ${POT.price.toFixed(2)}. Rates differ by product and level; some products have no better rate.`} />;

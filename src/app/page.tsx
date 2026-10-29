@@ -19,7 +19,8 @@ import "./landing.css";
 
 export const metadata = { title: "Rezekii · AI-Powered Affiliate Platform" };
 
-const CHIPS = ["Free During Beta", "No Follower Minimum", "Nothing Changes Without You"];
+/** Price is only the hero label (owner, 29 Oct 2026: not our advantage, and only for now). */
+const CHIPS = ["No Follower Minimum", "Nothing Changes Without You"];
 
 const START: PathStep[] = [
   { icon: "user", title: "Sign Up", line: "Free during Beta. About 1 minute." },
@@ -71,6 +72,7 @@ export default function Landing() {
             <AiEyebrow />
             <h1>Your Showcase May Have <em>Higher Commission</em> Waiting</h1>
             <p><AiText text="Rezekii AI finds better rates, trending products and your viral time frame. You just make the videos." /></p>
+            <p className="lp-promo"><Icon name="gift" size={16} width={2.2} /> First 50 Sign-Ups <b>Free During Beta</b></p>
             <ShowcaseCheck />
             <PartnerLine />
             <ul className="lp-chips">
