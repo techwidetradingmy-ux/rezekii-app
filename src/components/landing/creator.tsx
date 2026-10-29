@@ -348,10 +348,12 @@ function WishTile() {
     <div className="lp-w-wish" aria-hidden="true">
       <span className="lp-w-link"><Icon name="link" size={12} width={2.4} /><span className="lp-type">…/bento-box-set</span></span>
       <span className="lp-w-wishrow">
-        <Thumb src={WISH.img} size={38} />
+        <Thumb src={WISH.img} size={44} />
         <span><b>{WISH.name}</b><small>{WANTED_N} creators want this</small></span>
       </span>
-      <span className="lp-w-next"><Icon name="send" size={13} width={2.4} /> Rezekii asks the seller</span>
+      {/* What she asks for (owner, 29 Oct 2026): a free sample, or a better rate on a top seller. */}
+      <span className="lp-w-asks"><span><Icon name="gift" size={13} width={2.4} /> Free sample</span><span><Icon name="trend" size={13} width={2.4} /> Better rate</span></span>
+      <span className="lp-w-next"><Icon name="users" size={13} width={2.4} /> Our team talks to the seller</span>
     </div>
   );
 }
@@ -385,7 +387,7 @@ const CLIPS = [
 const TILES: Tile[] = [
   { key: "video", title: "AI Video", ai: true, soon: true, icon: "video", tint: "linear-gradient(135deg,#25f4ee,#0e7490)", size: "tall", tip: "Make product videos with Rezekii AI. These are real examples made with it.", body: <VideoTile clips={CLIPS} /> },
   { key: "health", title: "Showcase Health", ai: true, icon: "shield", tint: "linear-gradient(135deg,#ff8a80,#e14b3b)", size: "wide", tip: "Rezekii AI checks ratings and refunds in your showcase and flags risky products. Remove them in one tap.", body: <HealthTile /> },
-  { key: "wish", title: "Wish List", icon: "bag", tint: "linear-gradient(135deg,#22dc95,#00a862)", size: "wide", tip: "Paste a product you want to sell. When enough creators want it, Rezekii asks the seller to join.", body: <WishTile /> },
+  { key: "wish", title: "Wish List", icon: "bag", tint: "linear-gradient(135deg,#22dc95,#00a862)", size: "wide", tip: "Want a free sample, or a better rate on a top seller? Add it to your Wish List. When many creators want it, our team talks to the seller for you.", body: <WishTile /> },
   { key: "rate", title: "Rate Card", icon: "tag", tint: "linear-gradient(135deg,#5ee7df,#0e9488)", tip: "Set your own prices for videos, Reels and ad rights, ready for sellers.", body: <RateTile /> },
   { key: "invite", title: "Earn with Referral", icon: "users", tint: "linear-gradient(135deg,#ff7aa8,#e8005a)", size: "wide", tip: `Do a friend a favour: they can check their showcase too and may earn more. You get ${REFERRAL_REWARD.inviter} credits and they get ${REFERRAL_REWARD.friend} when they get started.`, body: <InviteTile /> },
 ];

@@ -557,7 +557,14 @@ i.gold { background: radial-gradient(circle at 35% 30%, #fff3bf, #f5b81e 55%, #b
 .lp-w-wishrow b { font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lp-w-wishrow small { font-size: 11.5px; font-weight: 800; color: var(--gink); }
 .lp-tile[data-on] .lp-w-wishrow { animation: lpPopLoop 4.6s 1.2s infinite; }
-.lp-tile[data-on] .lp-w-wish .lp-w-next { animation: lpPopLoop 4.6s 2s infinite; }
+.lp-w-asks { display: flex; gap: 6px; }
+.lp-w-asks span { display: inline-flex; align-items: center; gap: 5px; padding: 6px 11px; border-radius: 99px; background: var(--surface); border: 1.5px solid #00c073; color: var(--gink); font-size: 12.5px; font-weight: 900; }
+.lp-tile[data-on] .lp-w-asks span { animation: lpPopLoop 4.6s 1.6s infinite; }
+.lp-tile[data-on] .lp-w-asks span + span { animation-delay: 1.85s; }
+.lp-tile[data-on] .lp-w-wish .lp-w-next { animation: lpPopLoop 4.6s 2.3s infinite; }
+.lp-bento-slides .lp-w-wish { gap: 12px; }
+.lp-bento-slides .lp-w-link { height: 42px; font-size: 14px; }
+.lp-bento-slides .lp-w-wishrow { font-size: 14px; }
 
 /* Earn with Referral: a gift travels between you and your friend, both get credits */
 .lp-w-ref { width: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
