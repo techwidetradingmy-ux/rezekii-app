@@ -22,7 +22,7 @@ const n = (v: number) => v.toLocaleString("en-MY");
  * Product (owner, 29 Oct 2026): the seller's own shop product as one full page, same layout as the creator's. It shows how the
  * product does on Rezekii (status, public → TAP rate, samples left, 7-day sales, Rezekii results) and, when creators asked for
  * it, the Wanted by Creators pitch (moved here from the sheet on Wanted by Creators). Buttons follow the status: Submit to TAP,
- * Track Progress, Add Samples or Fix and Resubmit.
+ * Track Progress, See Results or Fix and Resubmit. No Add Samples here (owner, 29 Oct 2026).
  */
 export default function SellerProductPage() {
   const { id } = useParams<{ id: string }>();
@@ -78,7 +78,7 @@ function SellerProduct({ item }: { item: ShopItem }) {
       <Link href="/seller/app/progress" className="np-btn"><Icon name="clock" size={18} /> Track Progress</Link>
     ) : st === "Live" ? (
       <>
-        <Link href="/seller/app/changes" className="np-btn"><Icon name="box" size={18} /> Add Samples</Link>
+        <Link href="/seller/app/results" className="np-btn"><Icon name="chart" size={18} /> See Results</Link>
         <Link href="/seller/app/changes" className="btn-outline"><Icon name="edit" size={18} /> Change or End</Link>
       </>
     ) : fixOpen ? null : (
