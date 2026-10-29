@@ -1484,6 +1484,9 @@ li.sc-row { cursor: default; }
 .sc-tag { position: absolute; inset: 0; margin: auto; width: max-content; height: max-content; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 99px; background: var(--surface); color: var(--text); font-size: 13px; font-weight: 800; box-shadow: var(--shadow-lg); }
 .sc-card .cr1-bigbtn { justify-content: center; }
 .sc-again { justify-self: center; font-size: 14px; }
+.sc-trust { justify-self: center; display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.sc-trust-logo { display: inline-flex; padding: 3px 7px; border-radius: 7px; background: #000000; }
+.sc-trust-logo img { display: block; height: 16px; width: auto; }
 @media (max-width: 640px) { .sc-row > .cr1-bigbtn { width: 100%; justify-content: center; } }
 @media (prefers-reduced-motion: reduce) { .sc-spin { animation: none; } }
 /* Today's Ideas (owner, 29 Oct 2026): where each tab's list comes from, and categories as chips you can swipe, never cut off. */

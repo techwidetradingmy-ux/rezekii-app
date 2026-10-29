@@ -39,7 +39,8 @@ const pick = (i: number) => JOINERS[((i % JOINERS.length) + JOINERS.length) % JO
  * Picture, masked name, Creator or Seller, state and time; a new person slides in every few seconds (still for reduced motion).
  * PDPA: only people who agreed to be shown appear, and names are never shown in full.
  */
-export function JoinBoard({ title, creators = 1248, sellers = 312 }: { title?: string; creators?: number; sellers?: number }) {
+/** A new person every few seconds, and the totals count up with them (still for reduced motion). */
+function useJoins(creators: number, sellers: number) {
   const [tick, setTick] = useState({ step: 0, creators, sellers });
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -49,6 +50,45 @@ export function JoinBoard({ title, creators = 1248, sellers = 312 }: { title?: s
     }), EVERY);
     return () => window.clearInterval(t);
   }, []);
+  return tick;
+}
+
+const n = (v: number) => v.toLocaleString("en-MY");
+
+function Avatar({ j, className }: { j: Joiner; className: string }) {
+  return j.img ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img className={className} src={j.img} alt="" />
+  ) : (
+    <span className={className} style={{ background: BG[JOINERS.indexOf(j) % BG.length] }} aria-hidden="true">{j.name.replace(/^@/, "")[0].toUpperCase()}</span>
+  );
+}
+
+/**
+ * Who's Joining as one line along the top of the landing pages (owner, 29 Oct 2026): the newest person slides up into place;
+ * the totals show on wider screens. Same people and rules as the board.
+ */
+export function JoinBar({ creators = 1248, sellers = 312 }: { creators?: number; sellers?: number }) {
+  const tick = useJoins(creators, sellers);
+  const j = pick(tick.step);
+  return (
+    <div className="jbar">
+      <div className="site-wrap jbar-in">
+        <span className="jb-live"><i aria-hidden="true" /> Live</span>
+        <span className="jbar-win">
+          <span key={tick.step} className="jbar-msg">
+            <Avatar j={j} className="jbar-av" />
+            <b>{maskName(j.name)}</b> from {j.state} joined as a {j.role.toLowerCase()}
+          </span>
+        </span>
+        <span className="jbar-tot"><b>{n(tick.creators)}</b> creators · <b>{n(tick.sellers)}</b> sellers</span>
+      </div>
+    </div>
+  );
+}
+
+export function JoinBoard({ title, creators = 1248, sellers = 312 }: { title?: string; creators?: number; sellers?: number }) {
+  const tick = useJoins(creators, sellers);
 
   // Newest first. One extra row sits below the window so the list can slide down by one.
   let mins = 0;
@@ -58,8 +98,6 @@ export function JoinBoard({ title, creators = 1248, sellers = 312 }: { title?: s
     if (k) mins += pick(id + 1).gap;
     return { id, j, mins };
   });
-  const n = (v: number) => v.toLocaleString("en-MY");
-
   return (
     <div className="jb">
       <div className="jb-head">
@@ -77,12 +115,7 @@ export function JoinBoard({ title, creators = 1248, sellers = 312 }: { title?: s
           <ol key={tick.step} className={`jb-list ${tick.step ? "go" : ""}`} aria-label="People who joined recently">
             {rows.map(({ id, j, mins: m }, k) => (
               <li key={id} className="jb-row" aria-hidden={k === ROWS || undefined}>
-                {j.img ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img className="jb-av" src={j.img} alt="" />
-                ) : (
-                  <span className="jb-av" style={{ background: BG[JOINERS.indexOf(j) % BG.length] }} aria-hidden="true">{j.name.replace(/^@/, "")[0].toUpperCase()}</span>
-                )}
+                <Avatar j={j} className="jb-av" />
                 <span className="jb-who">
                   <b>{maskName(j.name)}</b>
                   <small>{j.state} · {m ? `${m} min ago` : "Just now"}</small>

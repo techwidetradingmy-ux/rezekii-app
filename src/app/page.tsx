@@ -1,75 +1,29 @@
 import Image from "next/image";
 import Link from "next/link";
 import { DemoStrip } from "@/components/shell";
-import { Icon, type IconName } from "@/components/icons";
-import { ScanAnim } from "@/components/creator1/scan";
+import { Icon } from "@/components/icons";
+import { AiHead } from "@/components/ui";
 import { Reveal } from "@/components/creator1/reveal";
-import { JoinBoard } from "@/components/join-board";
+import { JoinBar } from "@/components/join-board";
 import { ShowcaseCheck } from "@/components/creator1/showcase-check";
 import { PartnerCard } from "@/components/partner-card";
-import { FAQS, STORIES } from "@/lib/mock-creator1";
+import { AiEyebrow } from "@/components/landing/ai-eyebrow";
+import { CreatorBento, CreatorCompare, CreatorDay, CreatorHeroPhone, CreatorSee, CreatorUsps } from "@/components/landing/creator";
+import { PartnerLine } from "@/components/landing/partner-line";
+import { Path, type PathStep } from "@/components/landing/path";
+import { Faqs } from "@/components/landing/faqs";
+import { FAQS } from "@/lib/mock-creator1";
 import "./creator1.css";
+import "./landing.css";
 
-export const metadata = { title: "Rezekii · More commission from your showcase" };
+export const metadata = { title: "Rezekii · AI-Powered Affiliate Platform" };
 
-const VS: [string, string][] = [
-  ["Checking products one by one", "One scan checks them all"],
-  ["Missing chances", "New chances daily"],
-  ["Uploading to every app", "Post once, everywhere"],
-  ["Commission only", "Commission, Free Samples, rewards, soon paid reviews"],
-  ["Nobody notices your work", "More reach, bigger brand"],
-];
+const CHIPS = ["Free During Beta", "No Follower Minimum", "Nothing Changes Without You"];
 
-type Feat = { icon: IconName; bg: string; title: string; line: string; demo: React.ReactNode; soon?: boolean };
-const FEATS: Feat[] = [
-  {
-    icon: "scan", bg: "linear-gradient(135deg,#22dc95,#00a862)", title: "Scan & one-tap raise",
-    line: "Find higher rates for your products. Add them in one tap.",
-    demo: <span className="cr1-d-rate"><s>6%</s><Icon name="arrow" size={16} /><b>7%</b><span className="badge">from +1%</span></span>,
-  },
-  {
-    icon: "spark", bg: "linear-gradient(135deg,#b48cff,#6d28d9)", title: "AI picks",
-    line: "AI tells you what to sell next, on video or LIVE.",
-    demo: <span className="cr1-d-seq"><span className="cr1-d-chip"><Icon name="video" size={13} /> Video 3.4%</span><span className="cr1-d-chip live">LIVE 6.3%</span><span className="cr1-d-chip">Match 96</span></span>,
-  },
-  {
-    icon: "gift", bg: "linear-gradient(135deg,#7aa2ff,#1d4ed8)", title: "Free Samples",
-    line: "Get products free. Post 1 video; 3 videos unlock a bonus.",
-    demo: <span className="cr1-d-vids"><i /><i /><i /><small>Bonus at 3 videos</small></span>,
-  },
-  {
-    icon: "send", bg: "linear-gradient(135deg,#ffb35c,#f08a00)", title: "Post everywhere",
-    line: "Upload once, post to every app.",
-    demo: <span className="cr1-d-seq light">{["TikTok", "Facebook", "Instagram", "Threads"].map((p) => <span key={p} className="cr1-pchip">{p}</span>)}</span>,
-  },
-  {
-    icon: "trophy", bg: "linear-gradient(135deg,#ffd34d,#e8a400)", title: "Missions & rewards",
-    line: "Earn credits for posting, not for logging in.",
-    demo: <span className="cr1-d-bar"><span className="v2-meter"><i /></span><b>+30</b></span>,
-  },
-  {
-    icon: "medal", bg: "linear-gradient(135deg,#9aa8a1,#43524b)", title: "Levels: Bronze, Silver, Gold",
-    line: "Better rates as you grow. Silver from TikTok Lv.4 or RM 10,000 sales a month. Gold in Techwide's agency.",
-    demo: <span className="cr1-d-medals"><i className="b">B</i><i className="s">S</i><i className="g">G</i></span>,
-  },
-  {
-    icon: "users", bg: "linear-gradient(135deg,#ff7aa8,#e8005a)", title: "Invite friends",
-    line: "Share your link. You both get rewards when they start.",
-    demo: <span className="cr1-d-invite"><span className="v2-av">AR</span><i /><span className="v2-av" style={{ background: "linear-gradient(135deg,#ff7aa8,#e8005a)", color: "#ffffff" }}>NB</span></span>,
-  },
-  {
-    icon: "video", bg: "linear-gradient(135deg,#25f4ee,#0e7490)", title: "Branded Mission paid reviews", soon: true,
-    line: "Brands pay you to review, plus commission.",
-    demo: <span className="cr1-d-soon"><Icon name="cal" size={16} /> Coming soon</span>,
-  },
-];
-
-const PATH: [IconName, string, string, boolean?][] = [
-  ["wallet", "Commission", "From TikTok Shop"],
-  ["scan", "Better commission", "Same products, higher rate"],
-  ["gift", "Free Samples", "Sent to your door"],
-  ["trophy", "Mission rewards", "Credits for posting"],
-  ["video", "Paid reviews", "Coming soon", true],
+const START: PathStep[] = [
+  { icon: "user", title: "Sign Up", line: "Free during Beta. About 1 minute." },
+  { icon: "link", title: "Link TikTok Shop", line: "Approve access in TikTok. Unlink anytime." },
+  { icon: "scan", title: "Scan & Add", line: "Rezekii AI checks every product. Add better rates in one tap." },
 ];
 
 const READ = [
@@ -85,13 +39,17 @@ const NEVER = [
   "Sell your data",
 ];
 
-/** Creator site: a sales page. Pain → ideal, every feature, stories, three steps, peace of mind, FAQ, one CTA throughout. */
+/**
+ * Creator site, "Watch Rezekii Work" (owner, 29 Oct 2026): Rezekii is an AI-powered affiliate platform that helps TikTok Shop
+ * creators through their journey, free during Beta. The page is a live demo: what you get → without vs with → a day with
+ * Rezekii → everything in one app → what you'll see → 3 steps → peace of mind → FAQ → one CTA.
+ */
 export default function Landing() {
   return (
     <>
       <DemoStrip />
-      <header className="site-hero cr1-hero">
-        <span className="hm-grid" aria-hidden="true" />
+      <JoinBar />
+      <header className="lp-hero">
         <nav className="site-nav site-wrap" aria-label="Main">
           <Link href="/" className="site-brand">
             <span>
@@ -99,186 +57,117 @@ export default function Landing() {
             </span>
             Rezekii
           </Link>
+          <a href="#how">How It Works</a>
           <a href="#features">Features</a>
-          <a href="#stories">Stories</a>
+          <a href="#see">What You&apos;ll See</a>
           <a href="#faq">FAQ</a>
-          <Link href="/seller">For sellers</Link>
           <span className="site-spacer" />
-          <Link href="/signin" className="site-signin">Sign in</Link>
+          <Link href="/seller" className="lp-keep">For Sellers</Link>
+          <Link href="/signin" className="site-signin">Sign In</Link>
         </nav>
-        <div className="site-wrap hero-grid">
-          <div className="hero-copy">
-            <span className="hero-eyebrow"><span className="dot" aria-hidden="true" />FOR TIKTOK SHOP CREATORS IN MALAYSIA</span>
-            <h1>Your showcase may have <em>higher commission</em> waiting</h1>
-            <p>We find higher rates for products you already promote. Add them all in one tap.</p>
+        <div className="site-wrap lp-hero-grid">
+          <div className="lp-hero-copy">
+            <AiEyebrow />
+            <h1>Your Showcase May Have <em>Higher Commission</em> Waiting</h1>
+            <p>Rezekii AI finds better rates, trending products and your best time to post. You just make the videos.</p>
             <ShowcaseCheck />
-            <ul className="hero-checks">
-              {["Free for creators", "No follower minimum", "Nothing changes without you"].map((c) => (
-                <li key={c}><Icon name="check" size={16} stroke="#00c073" width={3} />{c}</li>
+            <PartnerLine />
+            <ul className="lp-chips">
+              {CHIPS.map((c) => (
+                <li key={c}><Icon name="check" size={14} width={3} />{c}</li>
               ))}
             </ul>
           </div>
-          <div className="hero-card-wrap">
-            <ScanAnim variant="hero" loop ms={6200} />
+          <div className="lp-hero-vis">
+            <CreatorHeroPhone />
           </div>
         </div>
       </header>
 
-      <main className="site-wrap site-main cr1-main">
+      <main className="site-wrap site-main lp-main">
         <PartnerCard />
-        <Reveal className="section" label="Before and with Rezekii">
-          <span className="eyebrow">BEFORE VS WITH REZEKII</span>
-          <h2>Same Videos. Less Guessing. More Ways to Earn.</h2>
-          <div className="v2-vs cr1-stag">
-            <div className="old">
-              <h3>Before</h3>
-              <ul>
-                {VS.map(([o]) => (
-                  <li key={o}><span className="v2-x"><Icon name="x" size={12} width={3} /></span>{o}</li>
-                ))}
-              </ul>
-            </div>
-            <div className="new">
-              <h3>With Rezekii</h3>
-              <ul>
-                {VS.map(([, n]) => (
-                  <li key={n}><span className="v2-ok"><Icon name="check" size={12} width={3.2} /></span>{n}</li>
-                ))}
-              </ul>
-            </div>
+
+        <Reveal className="section" label="What you get">
+          <div className="lp-head">
+            <span className="eyebrow">WHAT YOU GET</span>
+            <h2>Your AI Affiliate Helper</h2>
           </div>
+          <CreatorUsps />
+        </Reveal>
+
+        <Reveal className="section" label="Without and with Rezekii">
+          <div className="lp-head">
+            <span className="eyebrow">THE DIFFERENCE</span>
+            <h2>Without Rezekii vs With Rezekii</h2>
+          </div>
+          <CreatorCompare />
+        </Reveal>
+
+        <Reveal id="how" className="section" label="A day with Rezekii">
+          <div className="lp-head">
+            <span className="eyebrow">HOW REZEKII HELPS</span>
+            <AiHead title="A Day With Rezekii" sub="Watch Rezekii AI do the small jobs, hour by hour." />
+          </div>
+          <CreatorDay />
+          <p className="hm-fine">Screens show sample products and numbers. Results vary.</p>
         </Reveal>
 
         <Reveal id="features" className="section" label="Features">
-          <span className="eyebrow">EVERYTHING IN ONE APP</span>
-          <h2>Every Tool a TikTok Shop Creator Needs</h2>
-          <div className="cr1-feats cr1-stag">
-            {FEATS.map((f) => (
-              <article key={f.title} className={`cr1-feat ${f.soon ? "soon" : ""}`}>
-                <div className="v2-row" style={{ justifyContent: "space-between" }}>
-                  <span className="cr1-ico" style={{ background: f.bg }}><Icon name={f.icon} size={24} /></span>
-                  {f.soon && <span className="badge badge-amber">Coming soon</span>}
-                </div>
-                <h3>{f.title}</h3>
-                <p>{f.line}</p>
-                <div className="cr1-demo">{f.demo}</div>
-              </article>
-            ))}
+          <div className="lp-head">
+            <span className="eyebrow">EVERYTHING IN ONE APP</span>
+            <h2>Everything in One App</h2>
           </div>
+          <CreatorBento />
         </Reveal>
 
-        <Reveal id="earn" className="section cr1-earn" label="More ways to earn">
-          <span className="eyebrow">MORE WAYS TO EARN</span>
-          <h2>From Your First Better Rate to Paid Reviews</h2>
-          <p className="lead">Each step adds another way to earn.</p>
-          <ol className="cr1-path cr1-stag">
-            {PATH.map(([icon, t, l, soon], i) => (
-              <li key={t} className={soon ? "soon" : undefined}>
-                <span className="cr1-node"><Icon name={icon} size={24} /><b>{i + 1}</b></span>
-                <span>
-                  <strong>{t}</strong>
-                  <small>{l}</small>
-                </span>
-              </li>
-            ))}
-          </ol>
-        </Reveal>
-
-        <Reveal id="stories" className="section" label="Creator stories">
-          <span className="eyebrow">REAL STORIES</span>
-          <h2>Creators Who Checked</h2>
-          <div className="cr1-stories cr1-stag">
-            {STORIES.map((s) => (
-              <article key={s.handle} className="cr1-story">
-                <div className="cr1-story-top">
-                  <span className="v2-av" style={{ background: s.bg, color: "#ffffff", width: 44, height: 44, fontSize: 15 }}>{s.initials}</span>
-                  <span>
-                    <b>{s.name}</b>
-                    <small>{s.handle} · {s.state}</small>
-                  </span>
-                  <span className={`badge ${s.level === "Gold" ? "badge-amber" : s.level === "Silver" ? "badge-blue" : "badge-gray"}`}>{s.level}</span>
-                </div>
-                <div className="cr1-story-big">
-                  <b>{s.big}</b>
-                  <span>{s.bigLabel}</span>
-                </div>
-                <blockquote>&ldquo;{s.quote}&rdquo;</blockquote>
-                <div className="cr1-story-facts">
-                  {s.facts.map(([v, l]) => (
-                    <span key={l}><b>{v}</b><small>{l}</small></span>
-                  ))}
-                </div>
-                <footer><Icon name="check" size={14} width={3} /> Oct 2026 · Shared with permission</footer>
-              </article>
-            ))}
+        <Reveal id="see" className="section" label="What you'll see">
+          <div className="lp-head">
+            <span className="eyebrow">WHAT YOU&apos;LL SEE</span>
+            <h2>Real Screens From the App</h2>
           </div>
-          <p className="hm-fine">Real results, shared with permission. Results vary; we don&apos;t promise income.</p>
+          <CreatorSee />
         </Reveal>
 
-        <Reveal className="section" label="Who's joining">
-          <span className="eyebrow">LIVE ON REZEKII</span>
-          <h2>Who&apos;s Joining</h2>
-          <p className="lead">Real TikTok Shop creators and sellers, joining every day.</p>
-          <JoinBoard />
-        </Reveal>
-
-        <Reveal id="how" className="section" label="Three steps">
-          <span className="eyebrow">THREE STEPS</span>
-          <h2>Start in About a Minute</h2>
-          <ol className="grid3 cr1-stag">
-            {[
-              ["Link TikTok Shop", "Sign in, then approve access in TikTok.", "About 1 minute"],
-              ["Scan", "We check every product in your showcase.", "A few minutes"],
-              ["Add in one tap", "Pick the better rates, or add all.", "Checked daily"],
-            ].map(([t, l, b], i) => (
-              <li key={t} className="card hm-step">
-                <span className="step-n">{i + 1}</span>
-                <strong>{t}</strong>
-                <span>{l}</span>
-                <span className="badge">{b}</span>
-              </li>
-            ))}
-          </ol>
+        <Reveal id="start" className="section" label="Start in 3 steps">
+          <div className="lp-head">
+            <span className="eyebrow">THREE STEPS</span>
+            <h2>Start in 3 Steps</h2>
+          </div>
+          <Path steps={START} label="Steps to start" />
         </Reveal>
 
         <Reveal className="section" label="Peace of mind">
-          <span className="eyebrow">PEACE OF MIND</span>
-          <h2>Your Account Stays Yours</h2>
-          <div className="cr1-trust cr1-stag">
-            <div className="cr1-tcard">
-              <h3><span className="cr1-tico"><Icon name="eye" size={20} /></span>What we read</h3>
-              <ul>
-                {READ.map((r) => <li key={r}><span className="dot" aria-hidden="true" />{r}</li>)}
-              </ul>
+          <div className="lp-head">
+            <span className="eyebrow">PEACE OF MIND</span>
+            <h2>Your Account Stays Yours</h2>
+          </div>
+          <div className="lp-trust">
+            <div>
+              <h3><Icon name="eye" size={18} /> What We Read</h3>
+              <ul>{READ.map((r) => <li key={r}><span className="dot" aria-hidden="true" />{r}</li>)}</ul>
             </div>
-            <div className="cr1-tcard never">
-              <h3><span className="cr1-tico green"><Icon name="shield" size={20} /></span>What we never do</h3>
-              <ul>
-                {NEVER.map((r) => <li key={r}><span className="v2-ok"><Icon name="check" size={12} width={3.2} /></span>{r}</li>)}
-              </ul>
+            <div className="never">
+              <h3><Icon name="shield" size={18} /> What We Never Do</h3>
+              <ul>{NEVER.map((r) => <li key={r}><Icon name="check" size={14} width={3} />{r}</li>)}</ul>
             </div>
           </div>
           <p className="hm-fine">Disconnect TikTok Shop or delete your account anytime.</p>
         </Reveal>
 
         <Reveal id="faq" className="section" label="Questions">
-          <span className="eyebrow">QUESTIONS</span>
-          <h2>Good to Know</h2>
-          <div className="hm-faqs">
-            {FAQS.map(([q, a]) => (
-              <details key={q} className="hm-faq">
-                <summary>{q}<Icon name="plus" size={20} /></summary>
-                <p>{a}</p>
-              </details>
-            ))}
+          <div className="lp-head">
+            <span className="eyebrow">QUESTIONS</span>
+            <h2>Good to Know</h2>
           </div>
+          <Faqs items={FAQS} />
         </Reveal>
 
-        <Reveal className="hm-cta cr1-cta" label="Get started">
+        <Reveal className="lp-final" label="Get started">
           <h2>See What Your Showcase Is Missing</h2>
-          <p>Free and quick. Nothing changes until you tap Add.</p>
-          <Link href="/signin" className="v2-btn-white cr1-bigwhite">Check my showcase free <Icon name="arrow" size={20} /></Link>
-          <span className="cr1-cta-note">No follower minimum · Malaysia</span>
+          <p>Free during Beta.</p>
+          <Link href="/signin" className="np-btn lp-bigbtn">Check My Showcase <Icon name="arrow" size={20} /></Link>
+          <span className="lp-final-note">No follower minimum · Malaysia</span>
+          <PartnerLine center />
         </Reveal>
       </main>
 

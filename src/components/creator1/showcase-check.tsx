@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
@@ -146,6 +147,11 @@ export function ShowcaseCheck() {
       </div>
       <small className="sc-note">Free during Beta. Link TikTok Shop to see your real rates; you can unlink anytime.</small>
       <Link href={`/signin?u=${encodeURIComponent(handle)}`} className="np-btn cr1-bigbtn">Sign Up to Reveal <Icon name="arrow" size={20} /></Link>
+      {/* Under every CTA (owner, 29 Oct 2026): people feel safe signing up to a TikTok-related app. */}
+      <span className="sc-trust">
+        <span className="sc-trust-logo"><Image src="/tiktok-shop-partner-logo.png" alt="TikTok Shop Partner" width={62} height={18} /></span>
+        Official TikTok Shop Partner App
+      </span>
       <button type="button" className="v2-link sc-again" onClick={() => { setStage("type"); setTried(false); }}>Use another username</button>
     </div>
   );
