@@ -65,7 +65,7 @@ export function AiPicks() {
           <AiMark size={48} />
           <span>
             <span className="v2-ailabel">AI picks</span>
-            <h2>What should you sell next?</h2>
+            <h2>What Should You Sell Next?</h2>
             <small>Link TikTok Shop to get AI picks.</small>
           </span>
         </div>
@@ -208,7 +208,7 @@ export function AiPicks() {
           </div>
 
           {sampleFor && (
-            <Sheet title="Request a free sample" onClose={() => setSampleFor(null)}>
+            <Sheet title="Request a Free Sample" onClose={() => setSampleFor(null)}>
               <div className="cr1-sheetprod">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={sampleFor.img} alt="" />

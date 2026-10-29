@@ -224,7 +224,7 @@ function Walkthrough({ items, onClose, onDone }: { items: SampleReq[]; onClose: 
   }
   if (!s || !p) return null;
   return (
-    <Sheet title="Suggested approvals" onClose={onClose}>
+    <Sheet title="Suggested Approvals" onClose={onClose}>
       <div className="ad-dots" aria-label={`${i + 1} of ${list.length}`}>
         {list.map((x, k) => <i key={x.id} className={k < i || (k === i && state === "back") ? "on" : k === i ? "now" : ""} />)}
       </div>

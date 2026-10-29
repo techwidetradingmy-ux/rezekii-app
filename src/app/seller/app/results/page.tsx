@@ -42,7 +42,7 @@ export default function Results() {
 
       <div className="v2-split">
         <section className="v2-card">
-          <div className="v2-card-h"><h2 className="v2-h2">Top creators</h2><span className="v2-small">{range}</span></div>
+          <div className="v2-card-h"><h2 className="v2-h2">Top Creators</h2><span className="v2-small">{range}</span></div>
           <div className="v2-tablewrap">
             <table className="v2-table">
               <thead>
@@ -64,7 +64,7 @@ export default function Results() {
         </section>
 
         <section className="v2-card">
-          <div className="v2-card-h"><h2 className="v2-h2">By product</h2><span className="v2-small">Sales</span></div>
+          <div className="v2-card-h"><h2 className="v2-h2">By Product</h2><span className="v2-small">Sales</span></div>
           <Bars key={range} rows={BY_PRODUCT.map((b) => ({ label: product(b.id).name, value: b.gmv * k, display: rm(b.gmv * k, 0) }))} />
           <div className="v2-divide">
             {BY_PRODUCT.map((b) => {

@@ -102,7 +102,7 @@ export default function GrowthProgress() {
           </div>
           <section className="v2-card">
             <div className="v2-card-h">
-              <h2 className="v2-h2">Where people get stuck</h2>
+              <h2 className="v2-h2">Where People Get Stuck</h2>
               <Link href="/admin/growth" className="v2-link">Edit mission</Link>
             </div>
             <Funnel steps={steps} />

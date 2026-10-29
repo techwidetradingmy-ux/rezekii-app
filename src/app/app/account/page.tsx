@@ -181,7 +181,7 @@ export default function Account() {
         <section className="cr2-group">
           <div className={`pf-card${locked ? " locked" : ""}`}>
             <div className="pf-head">
-              <h2>Your profile</h2>
+              <h2>Your Profile</h2>
               {locked ? <span className="pf-lock"><Icon name="lock" size={14} /> Saved · locked</span> : <span className="pf-hint"><Req /> required</span>}
             </div>
 
@@ -283,7 +283,7 @@ export default function Account() {
         </section>
 
         <section className="cr2-group">
-          <h2>Shipping address <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 600 }}>· optional</span></h2>
+          <h2>Shipping Address <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 600 }}>· optional</span></h2>
           <p style={{ color: "var(--body)" }}>
             For parcels outside TikTok. Free Samples use your TikTok address.
           </p>
@@ -368,7 +368,7 @@ export default function Account() {
         {tab === "settings" && (
           <>
         <section className="cr2-group">
-          <h2>Login & security</h2>
+          <h2>Login & Security</h2>
           <div className="cr2-cells">
             {/* Owner, 28 Oct 2026: remind people which account they sign in with. */}
             <div className="cr2-cell stack">
@@ -400,7 +400,7 @@ export default function Account() {
         </section>
 
         <section className="cr2-group">
-          <h2>Privacy & your data</h2>
+          <h2>Privacy & Your Data</h2>
           <div className="cr2-cells">
             <div className="cr2-cell">
               <span className="lbl">Consent</span>
@@ -455,7 +455,7 @@ export default function Account() {
         </section>
 
         <section className="cr2-group">
-          <h2>Language & appearance</h2>
+          <h2>Language & Appearance</h2>
           <div className="cr2-cells">
             <div className="cr2-cell">
               <span className="lbl">Language</span>
@@ -470,7 +470,7 @@ export default function Account() {
           <p className="acc-theme-row">Auto matches your device.</p>
         </section>
         <section className="cr2-group acc-in-panel">
-          <h2>Help & feedback</h2>
+          <h2>Help & Feedback</h2>
           <div className="cr2-cells">
             {/* The page footer is hidden on phones, so its links live here (owner, 29 Oct 2026). */}
             <a className="cr2-cell acc-link" href="mailto:support@rezekii.com"><span className="lbl">Contact support</span><span className="v2-small">support@rezekii.com</span><Icon name="arrow" size={16} /></a>
@@ -516,7 +516,7 @@ export default function Account() {
         )}
       </div>
       {confirmSave && (
-        <Sheet title="Save your profile?" onClose={() => setConfirmSave(false)}>
+        <Sheet title="Save Your Profile?" onClose={() => setConfirmSave(false)}>
           <p className="v2-muted" style={{ margin: 0 }}>After saving, only support can change it.</p>
           <dl className="pf-sum">
             <div><dt>Name</dt><dd>{name}</dd></div>
@@ -531,7 +531,7 @@ export default function Account() {
         </Sheet>
       )}
       {changeSheet && (
-        <Sheet title="Request a change" onClose={() => setChangeSheet(false)}>
+        <Sheet title="Request a Change" onClose={() => setChangeSheet(false)}>
           <label className="v2-field">What to change
             <select className="np-input" value={change.what} onChange={(e) => setChange({ ...change, what: e.target.value })}>
               {["Name", "State", "WhatsApp number", "Gender", "Creator type", "Niches"].map((x) => <option key={x}>{x}</option>)}
@@ -571,7 +571,7 @@ export default function Account() {
       )}
 
       {emailSheet && (
-        <Sheet title="Change email" onClose={() => setEmailSheet(false)}>
+        <Sheet title="Change Email" onClose={() => setEmailSheet(false)}>
           <p className="v2-muted" style={{ margin: 0 }}>Now: {email}. Confirm with the link we send.</p>
           <label className="v2-field">
             New email
@@ -589,7 +589,7 @@ export default function Account() {
       )}
 
       {delSheet && (
-        <Sheet title="Delete account" onClose={() => setDelSheet(false)}>
+        <Sheet title="Delete Account" onClose={() => setDelSheet(false)}>
           <div className="cr2-danger">
             <b>This can&apos;t be undone.</b>
             <ul>
@@ -610,7 +610,7 @@ export default function Account() {
       )}
 
       {pwSheet && (
-        <Sheet title={hasPw ? "Change password" : "Set a password"} onClose={() => setPwSheet(false)}>
+        <Sheet title={hasPw ? "Change Password" : "Set a Password"} onClose={() => setPwSheet(false)}>
           <p className="v2-muted" style={{ margin: 0 }}>{hasPw ? `For signing in with ${email}.` : `Sign in with ${email} too.`}</p>
           {hasPw && (
             <label className="v2-field">

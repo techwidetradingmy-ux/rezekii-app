@@ -96,7 +96,7 @@ export default function Progress() {
       <p className="v2-small" style={{ margin: 0 }}>Most rejections: <b>0 samples</b>, or commission <b>less than +2%</b> above the public rate.</p>
 
       {fix && (
-        <Sheet title="Fix and resubmit" onClose={() => setFix(null)}>
+        <Sheet title="Fix and Resubmit" onClose={() => setFix(null)}>
           <p className="v2-muted" style={{ margin: 0 }}>{fix.name}: {fix.reason}</p>
           <div className="v2-field">Samples per SKU <small>Must be more than 0.</small>
             <div className="v2-chips">

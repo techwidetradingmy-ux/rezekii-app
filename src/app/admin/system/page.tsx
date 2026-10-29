@@ -63,7 +63,7 @@ export default function SystemSettings() {
 
       <div className="v2-grid2">
         <section className="v2-card">
-          <h2 className="v2-h2">Uplift presets</h2>
+          <h2 className="v2-h2">Uplift Presets</h2>
           <span className="v2-small">Above the public rate. Minimum +2%.</span>
           <div className="v2-chips">
             {uplift.map((u) => (
@@ -80,7 +80,7 @@ export default function SystemSettings() {
         </section>
 
         <section className="v2-card">
-          <h2 className="v2-h2">Sample presets</h2>
+          <h2 className="v2-h2">Sample Presets</h2>
           <span className="v2-small">Per SKU. Suggest 30–50. Minimum 1.</span>
           <div className="v2-chips">
             {qty.map((n) => (
@@ -99,7 +99,7 @@ export default function SystemSettings() {
 
       <section className="v2-card">
         <div className="v2-card-h">
-          <h2 className="v2-h2">AI uplift by heat</h2>
+          <h2 className="v2-h2">AI Uplift by Heat</h2>
           <span className="ad-tag"><Icon name="spark" size={13} /> Suggestion only</span>
         </div>
         <span className="v2-small">Newer products need a higher uplift.</span>
@@ -119,7 +119,7 @@ export default function SystemSettings() {
       </section>
 
       <section className="v2-card">
-        <h2 className="v2-h2">Posting price</h2>
+        <h2 className="v2-h2">Posting Price</h2>
         <span className="v2-small">Drafts free. Failed or cancelled channels refunded. Applies to new posts.</span>
         <div className="v2-row" style={{ gap: 10 }}>
           <Stepper label="credits per channel" value={perChannel} min={0} max={50} onChange={touch(setPerChannel)} />
@@ -129,7 +129,7 @@ export default function SystemSettings() {
 
       <div className="v2-grid2">
         <section className="v2-card">
-          <h2 className="v2-h2">Activity tiers</h2>
+          <h2 className="v2-h2">Activity Tiers</h2>
           <div className="ad-set">
             <b>Active</b>
             <small>Unlocks advanced samples.</small>
@@ -144,7 +144,7 @@ export default function SystemSettings() {
         </section>
 
         <section className="v2-card">
-          <h2 className="v2-h2">Sample terms for sellers</h2>
+          <h2 className="v2-h2">Sample Terms for Sellers</h2>
           <div className="v2-row">
             <span className="ad-tag green">Version {terms.v}</span>
             <span className="v2-small">Live since {terms.since} · {terms.agreed} sellers agreed</span>
@@ -178,7 +178,7 @@ export default function SystemSettings() {
         </section>
 
         <section className="v2-card">
-          <h2 className="v2-h2">Feature flags</h2>
+          <h2 className="v2-h2">Feature Flags</h2>
           {flags.map((f) => (
             <div key={f.key} className="np-switchrow">
               <span><b>{f.label}</b><small>{f.note}</small></span>

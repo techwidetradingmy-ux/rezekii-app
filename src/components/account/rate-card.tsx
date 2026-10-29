@@ -168,7 +168,7 @@ export function RateCard() {
       </div>
 
       <section className="cr2-group">
-        <h2>À la carte</h2>
+        <h2>À La Carte</h2>
         <div className="cr2-cells">
           {ITEMS.map((it) => {
             const r = rates[it.key];
@@ -244,7 +244,7 @@ export function RateCard() {
       </section>
 
       <section className="cr2-group">
-        <h2>What sellers see</h2>
+        <h2>What Sellers See</h2>
         <div className="cr2-cells">
           <div className="cr2-cell stack">
             <Seg value={show} options={["À la carte", "Packages", "Both"] as const} onChange={setShow} />

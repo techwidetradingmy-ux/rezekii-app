@@ -129,7 +129,7 @@ export default function SellerLanding() {
       <main className="site-wrap site-main">
         <section className="section" id="results">
           <span className="eyebrow">THE NUMBERS</span>
-          <h2>Our numbers</h2>
+          <h2>Our Numbers</h2>
           <div className="hm-stats sl-wall">
             <div className="hm-stat"><b><InViewCount value={AGENCY.gmv / 1e6} format={(n) => `RM ${n.toFixed(2)}M`} /></b><span>GMV through Techwide in {AGENCY.month}</span></div>
             <div className="hm-stat"><b><InViewCount value={AGENCY.orders} /></b><span>Orders in {AGENCY.month}</span></div>
@@ -141,10 +141,10 @@ export default function SellerLanding() {
 
         <section className="section">
           <span className="eyebrow">THE PAINFUL TRUTH</span>
-          <h2>Working with creators shouldn&apos;t feel like a second job</h2>
+          <h2>Working with Creators Shouldn&apos;t Feel Like a Second Job</h2>
           <div className="v2-vs">
             <div className="old">
-              <h3>What usually happens</h3>
+              <h3>What Usually Happens</h3>
               <ul>
                 {PAIN.map(([p]) => (
                   <li key={p}><span className="v2-x"><Icon name="x" size={12} width={3} /></span><span>{p}</span></li>
@@ -164,10 +164,10 @@ export default function SellerLanding() {
 
         <section className="section" id="cost">
           <span className="eyebrow">WHAT IT COSTS</span>
-          <h2>RM 0 a month. Commission only when you sell.</h2>
+          <h2>RM 0 a Month. Commission Only When You Sell.</h2>
           <div className="sl-cost">
             <div className="old">
-              <h3>Hire someone</h3>
+              <h3>Hire Someone</h3>
               <div className="amt">RM 3,000<small> a month and up</small></div>
               <p style={{ margin: 0, fontWeight: 800 }}>Results not guaranteed.</p>
               <ul>
@@ -197,7 +197,7 @@ export default function SellerLanding() {
 
         <section className="section">
           <span className="eyebrow">WHAT SELLERS SAY</span>
-          <h2>Shops already selling with our creators</h2>
+          <h2>Shops Already Selling with Our Creators</h2>
           <div className="grid3">
             {TESTIMONIALS.map((t) => (
               <figure key={t.shop} className="card sl-quote" style={{ margin: 0 }}>
@@ -218,7 +218,7 @@ export default function SellerLanding() {
 
         <section className="section" id="how">
           <span className="eyebrow">HOW IT WORKS</span>
-          <h2>Two steps. About 3 minutes.</h2>
+          <h2>Two Steps. About 3 Minutes.</h2>
           <div className="v2-grid2">
             <div className="card hm-step">
               <span className="step-n">1</span>
@@ -246,7 +246,7 @@ export default function SellerLanding() {
 
         <section className="section">
           <span className="eyebrow">WHAT YOU&apos;LL SEE</span>
-          <h2>Every sale and every sample, in one place</h2>
+          <h2>Every Sale and Every Sample, in One Place</h2>
           <div className="v2-grid2">
             <div className="v2-card sl-window">
               <div className="sl-window-bar"><i /><i /><i /><span>TAP performance</span></div>
@@ -278,7 +278,7 @@ export default function SellerLanding() {
         <section className="sl-band">
           <div>
             <span className="eyebrow">CUSTOM SERVICE</span>
-            <h2>Want our team to run it for you?</h2>
+            <h2>Want Our Team to Run It for You?</h2>
             <p>For launches, big catalogues or paid content. Tell us what you need and we&apos;ll quote.</p>
           </div>
           <button type="button" className="np-btn" onClick={() => setTalk(true)}>Talk to us <Icon name="arrow" size={18} /></button>
@@ -286,7 +286,7 @@ export default function SellerLanding() {
 
         <section className="section" id="faq">
           <span className="eyebrow">FAQ</span>
-          <h2>Questions sellers ask us</h2>
+          <h2>Questions Sellers Ask Us</h2>
           <div className="hm-faqs">
             {SELLER_FAQ.map(([q, a]) => (
               <details key={q} className="hm-faq">
@@ -298,7 +298,7 @@ export default function SellerLanding() {
         </section>
 
         <section className="hm-cta">
-          <h2>Let creators sell for you</h2>
+          <h2>Let Creators Sell for You</h2>
           <p>Set up in about 3 minutes. No sales, you pay us nothing.</p>
           <Link href="/seller/connect" className="v2-btn-white" style={{ height: 54, padding: "0 26px", fontSize: 16 }}>Connect Seller Center <Icon name="arrow" size={18} /></Link>
         </section>

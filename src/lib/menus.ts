@@ -7,7 +7,7 @@ export type AppKind = "creator" | "seller" | "admin";
 export const MENUS: Record<AppKind, Section[]> = {
   creator: [
     { href: "/app", label: "Home", icon: "home", pages: [] },
-    { href: "/app/market", label: "Marketplace", icon: "bag", pages: [] },
+    { href: "/app/market", label: "Marketplace", icon: "bag", pages: [["/app/market", "Marketplace"], ["/app/market/wanted", "Most Wanted"]] },
     {
       href: "/app/data", label: "Analytics", icon: "chart",
       pages: [["/app/data", "Overview"], ["/app/data/performance", "Performance"], ["/app/data/ai-picks", "AI Picks"], ["/app/data/risk", "Risk Check"], ["/app/data/payouts", "Payouts"]],
@@ -20,7 +20,7 @@ export const MENUS: Record<AppKind, Section[]> = {
     { href: "/seller/app", label: "Home", icon: "home", pages: [] },
     {
       href: "/seller/app/products", label: "Products", icon: "box",
-      pages: [["/seller/app/products", "Shop Products"], ["/seller/app/submit", "Submit Products"], ["/seller/app/progress", "Progress"], ["/seller/app/changes", "Change or End"]],
+      pages: [["/seller/app/products", "Shop Products"], ["/seller/app/submit", "Submit Products"], ["/seller/app/progress", "Progress"], ["/seller/app/changes", "Change or End"], ["/seller/app/wanted", "Wanted by Creators"]],
     },
     {
       href: "/seller/app/results", label: "Results", icon: "chart",
@@ -31,7 +31,7 @@ export const MENUS: Record<AppKind, Section[]> = {
   ],
   admin: [
     { href: "/admin", label: "Today", icon: "home", pages: [] },
-    { href: "/admin/tap", label: "TAP", icon: "kanban", pages: [["/admin/tap", "Pipeline"], ["/admin/tap/campaigns", "Campaigns"], ["/admin/tap/samples", "Sample Review"], ["/admin/tap/requests", "Product Requests"]] },
+    { href: "/admin/tap", label: "TAP", icon: "kanban", pages: [["/admin/tap", "Pipeline"], ["/admin/tap/campaigns", "Campaigns"], ["/admin/tap/samples", "Sample Review"], ["/admin/tap/requests", "Wish List"]] },
     {
       href: "/admin/business", label: "Business", icon: "briefcase",
       pages: [["/admin/business", "My Merchants & Creators"], ["/admin/business/performance", "Live Performance"], ["/admin/business/open", "Open Campaigns"], ["/admin/business/custom", "Custom Service"]],

@@ -8,7 +8,7 @@ import { Emblem, SHARE_APPS, type Level } from "./emblems";
 import { useDemo } from "./demo";
 
 /** A small ⓘ beside a word; tap it to read the explanation (owner, 28 Oct 2026: tooltips instead of text on the page). */
-export function Tip({ text, label = "What's this?" }: { text: React.ReactNode; label?: string }) {
+export function Tip({ text, label = "What's this?", big = false }: { text: React.ReactNode; label?: string; big?: boolean }) {
   const [open, setOpen] = useState(false);
   const btn = useRef<HTMLButtonElement>(null);
   const bubble = useRef<HTMLSpanElement>(null);
@@ -33,8 +33,8 @@ export function Tip({ text, label = "What's this?" }: { text: React.ReactNode; l
   }, [open]);
   return (
     <span className="v2-tipwrap">
-      <button ref={btn} type="button" className="v2-tipbtn sm" aria-label={label} aria-expanded={open} onClick={() => setOpen((o) => !o)} onBlur={() => setOpen(false)}>
-        <Icon name="info" size={15} />
+      <button ref={btn} type="button" className={big ? "v2-tipbtn" : "v2-tipbtn sm"} aria-label={label} aria-expanded={open} onClick={() => setOpen((o) => !o)} onBlur={() => setOpen(false)}>
+        <Icon name="info" size={big ? 18 : 15} />
       </button>
       {open && createPortal(<span ref={bubble} className="v2-tip v2-tipfix" role="note" style={pos ?? { left: 0, top: 0, visibility: "hidden" }}>{text}</span>, document.body)}
     </span>
@@ -46,19 +46,14 @@ export function Tip({ text, label = "What's this?" }: { text: React.ReactNode; l
  * title and shows on tap (owner, 28 Oct 2026: no explaining on the page itself).
  */
 export function Title({ title, sub, children }: { title: string; sub?: React.ReactNode; children?: React.ReactNode }) {
-  const [tip, setTip] = useState(false);
+  // Same floating bubble as every other ⓘ, so it stays on screen and on top (owner, 29 Oct 2026: the title tip couldn't be seen).
   return (
     <div className="v2-title">
       <div className="v2-title-main">
         <h1>
           {title}
-          {sub && (
-            <button type="button" className="v2-tipbtn" aria-label={`About ${title}`} aria-expanded={tip} onClick={() => setTip((t) => !t)} onBlur={() => setTip(false)}>
-              <Icon name="info" size={18} />
-            </button>
-          )}
+          {sub && <Tip big text={sub} label={`About ${title}`} />}
         </h1>
-        {sub && tip && <p className="v2-tip" role="note">{sub}</p>}
       </div>
       {children && <div className="v2-row">{children}</div>}
     </div>
@@ -167,6 +162,17 @@ export function Seg<T extends string>({ value, options, onChange }: { value: T; 
         </button>
       ))}
     </div>
+  );
+}
+
+/** − n + for small whole numbers (wish-list commitments, admin thresholds). */
+export function Stepper({ value, onChange, label, min = 0, max = 99 }: { value: number; onChange: (n: number) => void; label: string; min?: number; max?: number }) {
+  return (
+    <span className="v2-stepper" role="group" aria-label={label}>
+      <button type="button" aria-label={`Less: ${label}`} disabled={value <= min} onClick={() => onChange(value - 1)}><Icon name="minus" size={16} width={2.4} /></button>
+      <b aria-live="polite">{value}</b>
+      <button type="button" aria-label={`More: ${label}`} disabled={value >= max} onClick={() => onChange(value + 1)}><Icon name="plus" size={16} width={2.4} /></button>
+    </span>
   );
 }
 

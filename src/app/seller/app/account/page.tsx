@@ -45,7 +45,7 @@ export default function SellerAccount() {
       <ConnBanner />
 
       <section className="v2-card">
-        <h2 className="v2-h2">Shop authorisation</h2>
+        <h2 className="v2-h2">Shop Authorisation</h2>
         <div className="sl-set">
           <span>
             <b>TikTok Shop Seller Center</b>
@@ -60,13 +60,13 @@ export default function SellerAccount() {
       </section>
 
       <section className="v2-card">
-        <div className="v2-card-h"><h2 className="v2-h2">Contact &amp; phone</h2><button type="button" className="v2-link" onClick={() => { setEdit(contact); setTried(false); }}>Edit</button></div>
+        <div className="v2-card-h"><h2 className="v2-h2">Contact &amp; Phone</h2><button type="button" className="v2-link" onClick={() => { setEdit(contact); setTried(false); }}>Edit</button></div>
         <div className="sl-set"><span><small>Contact name</small><b>{contact.name}</b></span></div>
         <div className="sl-set"><span><small>Phone</small><b>{phone.ok ? phone.pretty : contact.raw}</b></span><span className="badge">Verified</span></div>
       </section>
 
       <section className="v2-card">
-        <h2 className="v2-h2">Social accounts</h2>
+        <h2 className="v2-h2">Social Accounts</h2>
         <p className="v2-small" style={{ margin: 0 }}>For posting from Publish.</p>
         <div>
           {socials.map((s) => (
@@ -94,7 +94,7 @@ export default function SellerAccount() {
       </section>
 
       <section className="v2-card">
-        <h2 className="v2-h2">Login &amp; security</h2>
+        <h2 className="v2-h2">Login &amp; Security</h2>
         <div className="sl-set"><span><b>Signed in with Google</b><small>meiling@seriliving.my</small></span></div>
         <div className="sl-set"><span><b>This device</b><small>Chrome on Windows · Kuala Lumpur · now</small></span><span className="badge badge-gray">Current</span></div>
         <div className="sl-set"><span><b>iPhone</b><small>Rezekii in Safari · Kuala Lumpur · 2 days ago</small></span></div>
@@ -105,12 +105,12 @@ export default function SellerAccount() {
       </section>
 
       <section className="v2-card">
-        <h2 className="v2-h2">Sample allocation terms</h2>
+        <h2 className="v2-h2">Sample Allocation Terms</h2>
         <div className="sl-set"><span><b>You agreed on 12 Sep 2026</b><small>{TERMS_VERSION}. We&apos;ll ask again if they change.</small></span><button type="button" className="v2-link" onClick={() => setTerms(true)}>Read</button></div>
       </section>
 
       <section className="v2-card">
-        <h2 className="v2-h2">Help &amp; feedback</h2>
+        <h2 className="v2-h2">Help &amp; Feedback</h2>
         <div className="v2-chips">
           {["Question", "Something's wrong", "Idea"].map((k) => (
             <button key={k} type="button" className={`v2-chip ${kind === k ? "on" : ""}`} style={{ height: 36, fontSize: 13.5 }} onClick={() => setKind(k)}>{k}</button>
@@ -129,7 +129,7 @@ export default function SellerAccount() {
       </section>
 
       {edit && (
-        <Sheet title="Contact & phone" onClose={() => setEdit(null)}>
+        <Sheet title="Contact & Phone" onClose={() => setEdit(null)}>
           <label className="v2-field">Contact name
             <input className="np-input" value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} autoComplete="name" />
           </label>

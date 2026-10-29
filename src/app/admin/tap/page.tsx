@@ -108,7 +108,7 @@ export default function TapPipeline() {
       {result && (
         <section className={`v2-card ad-result ${result.failed.length ? "has-fail" : ""}`} aria-live="polite">
           <div className="v2-card-h">
-            <h2 className="v2-h2">Submit to TikTok: result</h2>
+            <h2 className="v2-h2">Submit to TikTok: Result</h2>
             <button type="button" className="v2-iconbtn" aria-label="Dismiss result" onClick={() => setResult(null)}><Icon name="x" size={16} /></button>
           </div>
           <div className="ad-sum">

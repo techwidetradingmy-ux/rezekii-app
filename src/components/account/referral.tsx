@@ -76,7 +76,7 @@ export function Referral() {
 
       <section className="v2-card">
         <div className="v2-card-h">
-          <h2 className="v2-h2">People you invited</h2>
+          <h2 className="v2-h2">People You Invited</h2>
           <span className="v2-small">{joined.length} people</span>
         </div>
         <div className="v2-divide">
@@ -91,7 +91,7 @@ export function Referral() {
       </section>
 
       <section className="v2-card flat">
-        <h2 className="cr2-h3">How referral works</h2>
+        <h2 className="cr2-h3">How Referral Works</h2>
         <ol className="cr2-rules">
           <li><span><b>Sign-up link wins.</b> The link or code used at sign-up gets the referral. It can&apos;t change.</span></li>
           <li><span><b>Successful</b> means, within 30 days: a creator links TikTok Shop and scans, or a seller connects Seller Center and submits a product.</span></li>

@@ -473,7 +473,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
           </section>
 
           <section id="pb-s-comment" className={secClass("comment")}>
-            <div className="pb-bar"><h2>First comment <Tip label="About the first comment" text="Your call to action and link, posted right after your post. Edit it per app under Caption." /></h2><Opt /></div>
+            <div className="pb-bar"><h2>First Comment <Tip label="About the first comment" text="Your call to action and link, posted right after your post. Edit it per app under Caption." /></h2><Opt /></div>
             <div className="pb-two">
               <label className="pb-field"><span className="pb-row"><b>Call to action</b><Opt /></span><input className="np-input" type="text" value={cta} maxLength={80} onChange={(e) => setCta(e.target.value)} placeholder="e.g. Dapatkan di sini 👉" aria-label="Call to action" /></label>
               <label className="pb-field"><span className="pb-row"><b>Product link</b><Opt /></span><input className="np-input" type="url" inputMode="url" value={link} onChange={(e) => setLink(e.target.value.trim())} placeholder="https://… (TikTok Shop or Shopee)" aria-label="Product link" /></label>
@@ -485,7 +485,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
 
           {ttKey && (
             <section id="pb-s-tiktok" className={`${secClass("tiktok")} np-sec`}>
-              <h2>TikTok settings</h2>
+              <h2>TikTok Settings</h2>
               <div className="np-seg" role="radiogroup" aria-label="Where to send it">
                 <button type="button" role="radio" aria-checked={mode === "direct"} className={mode === "direct" ? "on" : ""} onClick={() => setMode("direct")}>Post to TikTok</button>
                 <button type="button" role="radio" aria-checked={mode === "inbox"} className={mode === "inbox" ? "on" : ""} onClick={() => setMode("inbox")}>Send to TikTok drafts</button>
@@ -524,7 +524,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
 
           {apps.some((p) => p !== "tiktok") && (
             <section id="pb-s-settings" className={`${secClass("settings")} np-sec`}>
-              <div className="pb-bar"><h2>Post settings</h2><Opt /></div>
+              <div className="pb-bar"><h2>Post Settings</h2><Opt /></div>
               {apps.includes("facebook") && (
                 <div className="pb-set">
                   <span className="pb-gh"><PlatformIcon name="Facebook" size={16} />Facebook</span>
@@ -774,7 +774,7 @@ function BrandsSheet({ brands, channels, byKey, connected, onSaved, onDeleted, o
   if (edit) {
     const toggle = (k: string) => setEdit((e) => (e ? { ...e, channels: e.channels.includes(k) ? e.channels.filter((x) => x !== k) : [...e.channels, k] } : e));
     return (
-      <Sheet title={edit.id ? "Edit brand" : "New brand"} onClose={onClose}>
+      <Sheet title={edit.id ? "Edit Brand" : "New Brand"} onClose={onClose}>
         <button type="button" className="pb-link" style={{ justifySelf: "start" }} onClick={() => setEdit(null)}>← Back</button>
         <label className="pb-field"><b>Brand name</b><input className="np-input" type="text" value={edit.name} maxLength={60} onChange={(e) => setEdit({ ...edit, name: e.target.value })} placeholder="e.g. Seri Living" /></label>
         <p className="np-muted" style={{ margin: 0 }}>{edit.channels.length} channel{edit.channels.length === 1 ? "" : "s"} in this brand.</p>

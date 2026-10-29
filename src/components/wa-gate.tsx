@@ -25,7 +25,7 @@ export function WaGate() {
     }, 1800);
   };
   return (
-    <Sheet title="Verify your WhatsApp first" onClose={waCancel}>
+    <Sheet title="Verify Your WhatsApp First" onClose={waCancel}>
       <p className="v2-muted" style={{ margin: 0 }}>Free Samples need a verified WhatsApp. Takes 10 seconds.</p>
       <ol className="cr2-steps">
         <li><i>1</i><span><b>Tap Open WhatsApp.</b></span></li>

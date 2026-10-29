@@ -25,7 +25,7 @@ const WHY: Record<Role, string> = {
 export function ConsentSheet({ role, onAgree, onClose }: { role: Role; onAgree: () => void; onClose: () => void }) {
   const [tick, setTick] = useState(false);
   return (
-    <Sheet title={role === "creator" ? "Before you link TikTok Shop" : "Before you connect Seller Center"} onClose={onClose}>
+    <Sheet title={role === "creator" ? "Before You Link TikTok Shop" : "Before You Connect Seller Center"} onClose={onClose}>
       <div className="cs-block">
         <b><Icon name="eye" size={17} /> What Rezekii reads</b>
         <ul>{SCOPES[role].map((s) => <li key={s}>{s}</li>)}</ul>

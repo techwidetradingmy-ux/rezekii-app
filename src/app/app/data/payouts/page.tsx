@@ -71,7 +71,7 @@ export default function DataPayouts() {
       <Title title="Payouts" sub="Your commission, and what you earned extra with us." />
 
       <section className="v2-card flat pay-flow">
-        <h2 className="cr2-h3">How your commission moves <Tip label="About payouts" text="Real earnings only. No forecasts." /></h2>
+        <h2 className="cr2-h3">How Your Commission Moves <Tip label="About payouts" text="Real earnings only. No forecasts." /></h2>
         <Flow
           label="How commission moves from order to payout"
           steps={[

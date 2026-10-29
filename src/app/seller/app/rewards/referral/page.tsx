@@ -37,7 +37,7 @@ export default function SellerReferral() {
 
       <section className="v2-card sl-ref">
         <div>
-          <h2 className="v2-h2">Your invite link</h2>
+          <h2 className="v2-h2">Your Invite Link</h2>
           <div className="sl-linkbox">
             <code>{LINK}</code>
             <button type="button" className="np-btn v2-btn-sm" onClick={copy}>Copy</button>
@@ -59,7 +59,7 @@ export default function SellerReferral() {
       </section>
 
       <section className="v2-card">
-        <h2 className="v2-h2">How it counts</h2>
+        <h2 className="v2-h2">How It Counts</h2>
         <ul className="sl-list">
           <li><Icon name="box" size={18} stroke="var(--gink)" /> <span><b style={{ color: "var(--text)" }}>Seller:</b> connects Seller Center and submits a product within 30 days.</span></li>
           <li><Icon name="user" size={18} stroke="var(--gink)" /> <span><b style={{ color: "var(--text)" }}>Creator:</b> links TikTok Shop and runs a first scan within 30 days.</span></li>
@@ -70,7 +70,7 @@ export default function SellerReferral() {
 
       <section className="v2-card">
         <div className="v2-card-h">
-          <h2 className="v2-h2">People you invited</h2>
+          <h2 className="v2-h2">People You Invited</h2>
           <div className="sl-chipline">
             {FILTERS.map((f) => <button key={f} type="button" className={`v2-chip ${filter === f ? "on" : ""}`} onClick={() => setFilter(f)}>{f}</button>)}
           </div>

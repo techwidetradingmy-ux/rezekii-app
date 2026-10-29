@@ -172,7 +172,7 @@ export default function DataOverview() {
       <div className="v2-grid2 an-split">
         <section className="v2-card">
           <div className="v2-card-h">
-            <h2 className="v2-h2">Where your commission comes from</h2>
+            <h2 className="v2-h2">Where Your Commission Comes from</h2>
           </div>
           <Seg value={split} options={["By channel", "By product"] as const} onChange={setSplit} />
           <Lock what="where your commission comes from">
@@ -184,7 +184,7 @@ export default function DataOverview() {
 
         <section className="v2-card an-time">
           <div className="v2-card-h">
-            <h2 className="v2-h2">Best time to post <Tip label="About best time" text="Average views per video you posted in each time slot, last 30 days." /></h2>
+            <h2 className="v2-h2">Best Time to Post <Tip label="About best time" text="Average views per video you posted in each time slot, last 30 days." /></h2>
             <span className="an-hv">High virality · {bestTime[0]}</span>
           </div>
           <Bars rows={POST_TIMES.map(([label, v]) => ({ label, value: v, display: `${short(v)} views`, tone: v < avgViews ? ("blue" as const) : undefined }))} />
@@ -193,7 +193,7 @@ export default function DataOverview() {
 
       <section className="v2-card an-top">
         <div className="v2-card-h">
-          <h2 className="v2-h2">Top earning products</h2>
+          <h2 className="v2-h2">Top Earning Products</h2>
           <Link href="/app/data/performance#product">All products</Link>
         </div>
         <div className="v2-divide">
@@ -216,7 +216,7 @@ export default function DataOverview() {
 
       <section className="v2-card cr2-plan" aria-label="Your action plan">
         <div className="v2-card-h">
-          <h2 className="v2-h2">Your action plan</h2>
+          <h2 className="v2-h2">Your Action Plan</h2>
           <span className="v2-small">{doneCount} of {ACTIONS.length} done</span>
         </div>
         <Progress value={doneCount} max={ACTIONS.length} />

@@ -66,7 +66,7 @@ export default function AdminToday() {
 
       <section className="v2-stack" aria-label="Queues">
         <div className="v2-card-h">
-          <h2 className="v2-h2">Needs a person</h2>
+          <h2 className="v2-h2">Needs a Person</h2>
           <span className="v2-small">Updated 10:42</span>
         </div>
         <div className="ad-queues">
@@ -86,7 +86,7 @@ export default function AdminToday() {
 
       <section className="v2-stack" aria-label="Today's numbers">
         <div className="v2-card-h">
-          <h2 className="v2-h2">Today&apos;s numbers</h2>
+          <h2 className="v2-h2">Today&apos;s Numbers</h2>
           <Link href="/admin/analytics" className="v2-link">Analytics</Link>
         </div>
         <div className="ad-kpis">
@@ -108,7 +108,7 @@ export default function AdminToday() {
       <div className="v2-grid2">
         <section className="v2-card">
           <div className="v2-card-h">
-            <h2 className="v2-h2">Assigned to you</h2>
+            <h2 className="v2-h2">Assigned to You</h2>
             <span className="badge">{mine.length}</span>
           </div>
           <div className="ad-list">
@@ -126,7 +126,7 @@ export default function AdminToday() {
 
         <section className="v2-card">
           <div className="v2-card-h">
-            <h2 className="v2-h2">Staff actions</h2>
+            <h2 className="v2-h2">Staff Actions</h2>
             <Link href="/admin/system/audit">Audit log</Link>
           </div>
           <div className="ad-list">

@@ -42,7 +42,7 @@ export default function DataRisk() {
     <div className="v2-stack v2-in" style={{ gap: 20 }}>
       <Title title="Risk Check" sub="Ratings, cancels and returns · updated today 09:12" />
       <RatingScan />
-      <h2 className="v2-h2" style={{ marginTop: 8 }}>Cancellations and returns · last 30 days</h2>
+      <h2 className="v2-h2" style={{ marginTop: 8 }}>Cancellations and Returns · Last 30 Days</h2>
 
       <Lock what="your cancellations and refunds">
         <div className="cr2-stats">
@@ -55,7 +55,7 @@ export default function DataRisk() {
 
       <section className="v2-card">
         <div className="v2-card-h">
-          <h2 className="v2-h2">Most cancellations</h2>
+          <h2 className="v2-h2">Most Cancellations</h2>
           <span className="badge badge-red">{worst.cancelled} cancelled</span>
         </div>
         <div className="cr2-spot">
@@ -73,7 +73,7 @@ export default function DataRisk() {
 
       <section className="v2-card">
         <div className="v2-card-h">
-          <h2 className="v2-h2">Cancel rate</h2>
+          <h2 className="v2-h2">Cancel Rate</h2>
           <Seg value={by} options={["By video", "By product"] as const} onChange={setBy} />
         </div>
         <Lock what="cancel rates">

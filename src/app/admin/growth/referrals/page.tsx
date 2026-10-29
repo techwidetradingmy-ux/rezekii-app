@@ -52,7 +52,7 @@ export default function GrowthReferrals() {
 
       <div className="v2-stack" style={{ gap: 16 }}>
         <section className="v2-card">
-          <h2 className="v2-h2">Referral rewards</h2>
+          <h2 className="v2-h2">Referral Rewards</h2>
           <span className="v2-small">Both sides paid on setup. Changes apply to new referrals only.</span>
           <form
             className="rf-admin"
@@ -67,7 +67,7 @@ export default function GrowthReferrals() {
           </form>
         </section>
         <section className="v2-card">
-          <h2 className="v2-h2">Successful by pair</h2>
+          <h2 className="v2-h2">Successful by Pair</h2>
           <Bars rows={PAIRS.map((p) => ({ label: p, value: qualified.filter((x) => x.pair === p).length, display: String(qualified.filter((x) => x.pair === p).length) }))} tone="blue" />
           <Meta range="October (Malaysia time)" source="Rezekii referrals" updated="Today 10:40" />
           <span className="v2-small">Successful = first scan (creator) or first product (seller) within 30 days.</span>

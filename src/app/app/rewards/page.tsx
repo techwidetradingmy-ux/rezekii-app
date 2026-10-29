@@ -35,7 +35,7 @@ export default function Missions() {
     <MissionsBoard daily={DAILY} starter={STARTER} credits={CREATOR.credits} streak={CREATOR.streak} walletHref="/app/account#wallet" sub="Earn credits. Spend them on AI tools." starterNote="5 days left">
       <section className="v2-card mx-card">
         <div className="v2-card-h">
-          <h2 className="v2-h2">Branded missions</h2>
+          <h2 className="v2-h2">Branded Missions</h2>
           <span className="badge badge-amber">Coming soon</span>
         </div>
         <p className="v2-small" style={{ margin: 0 }}>Brands pay you for videos, on top of your commission.</p>

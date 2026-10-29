@@ -96,7 +96,7 @@ export default function ShopProducts() {
       </p>
 
       {fix && (
-        <Sheet title="Fix and resubmit" onClose={() => setFix(null)}>
+        <Sheet title="Fix and Resubmit" onClose={() => setFix(null)}>
           <div className="sl-prow" style={{ paddingTop: 0 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={fix.img} alt="" />

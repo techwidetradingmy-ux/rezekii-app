@@ -2,20 +2,21 @@
 
 import "@/app/seller.css";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Sheet, Title } from "@/components/ui";
 import { ConnBanner, ContactSheet, TermsSheet } from "@/components/seller/seller-ui";
 import { rm, short } from "@/lib/mock";
 import { SHOP_ITEMS, TAP_INVITE, TODAY, heat, listStatus, type ShopItem } from "@/lib/mock-seller";
+import { HOT_RAISE, MIN_RAISE, hotFor } from "@/lib/mock-showcase";
 
 type Raise = "2" | "ai" | "8" | "custom";
 type Presets = { end: string; extend: boolean; niche: string; subs: string[]; level: string; gmv: string; format: string; gender: string };
 
-const DEFAULTS: Presets = { end: "31 Jan 2027", extend: true, niche: "Home & Kitchen", subs: [], level: "Any", gmv: "Any", format: "Any", gender: "Any" };
+// Always the longest campaign TikTok allows, auto-extended; sellers don't choose dates (owner, 29 Oct 2026).
+const DEFAULTS: Presets = { end: "30 Apr 2027", extend: true, niche: "Home & Kitchen", subs: [], level: "Any", gmv: "Any", format: "Any", gender: "Any" };
 const OPTIONS = {
-  end: ["31 Dec 2026", "31 Jan 2027", "30 Apr 2027"],
   niche: ["Home & Kitchen", "Home & Living", "Food & Drink", "Mum & Baby"],
   subs: ["Cookware", "Drinkware", "Kitchen tools", "Cleaning", "Storage"],
   level: ["Any", "Lv.2+", "Lv.3+", "Lv.4+"],
@@ -44,6 +45,11 @@ export default function SubmitProducts() {
   const open = SHOP_ITEMS.filter((p) => p.stage === "Not submitted");
   const taken = SHOP_ITEMS.filter((p) => p.stage !== "Not submitted");
   const [picked, setPicked] = useState<string[]>(["x01", "x02"]);
+  // Arriving from Wanted by Creators with ?p=<product> picks just that product.
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("p");
+    if (id && open.some((p) => p.id === id)) setPicked([id]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [raise, setRaise] = useState<Raise>("ai");
   const [custom, setCustom] = useState("6");
   const [samples, setSamples] = useState<"30" | "40" | "50" | "custom">("40");
@@ -57,12 +63,15 @@ export default function SubmitProducts() {
   const [done, setDone] = useState<{ item: ShopItem; plus: number }[] | null>(null);
 
   const sel = open.filter((p) => picked.includes(p.id));
-  const plusFor = (p: ShopItem) => (raise === "ai" ? heat(p.sold).raise : raise === "custom" ? Number(custom) : Number(raise));
+  // Products our creators want most start at +5%; everything else at +2%.
+  const floorFor = (p: ShopItem) => (hotFor(p.id) ? HOT_RAISE : MIN_RAISE);
+  const plusFor = (p: ShopItem) => Math.max(floorFor(p), raise === "ai" ? heat(p.sold).raise : raise === "custom" ? Number(custom) : Number(raise));
+  const hot = sel.filter((p) => hotFor(p.id));
   const aiRaises = Array.from(new Set(sel.map((p) => heat(p.sold).raise)));
   const aiLabel = aiRaises.length === 1 ? `+${aiRaises[0]}%` : sel.length ? "Per product" : "+5%";
   const nSamples = samples === "custom" ? Number(samplesCustom) : Number(samples);
 
-  const customBad = raise === "custom" && (!/^\d+(\.\d+)?$/.test(custom.trim()) || Number(custom) < 2);
+  const customBad = raise === "custom" && (!/^\d+(\.\d+)?$/.test(custom.trim()) || Number(custom) < MIN_RAISE);
   const samplesBad = !Number.isFinite(nSamples) || nSamples <= 0 || !Number.isInteger(nSamples);
   const errors = [
     sel.length === 0 && "Pick at least 1 product.",
@@ -134,7 +143,7 @@ export default function SubmitProducts() {
       </Link>
 
       <section className="v2-card">
-        <div className="sl-step-h"><span className="n">1</span><h2>Pick products</h2><span className="v2-small">{sel.length} selected</span></div>
+        <div className="sl-step-h"><span className="n">1</span><h2>Pick Products</h2><span className="v2-small">{sel.length} selected</span></div>
         <div>
           {open.map((p) => {
             const on = picked.includes(p.id);
@@ -148,6 +157,7 @@ export default function SubmitProducts() {
                 <span className="sl-pinfo">
                   <strong>{p.name}</strong>
                   <small>{rm(p.price)} · {h.label}</small>
+                  {hotFor(p.id) && <span className="sl-hot"><Icon name="flame" size={12} /> {hotFor(p.id)!.creators} creators want it</span>}
                 </span>
                 <span className="sl-pick-rate">
                   <span className="sl-rate">{p.publicRate === null ? "Public ?" : `${p.publicRate}%`} <Icon name="arrow" size={12} /> <b>{r === null ? `+${plusFor(p) || 0}%` : `${Number.isFinite(r) ? r : "–"}%`}</b></span>
@@ -177,7 +187,7 @@ export default function SubmitProducts() {
       </section>
 
       <section className="v2-card">
-        <div className="sl-step-h"><span className="n">2</span><h2>Extra commission</h2><span className="v2-small">At least +2%</span></div>
+        <div className="sl-step-h"><span className="n">2</span><h2>Extra Commission</h2><span className="v2-small">At least +{MIN_RAISE}%</span></div>
         <div className="v2-chips">
           <button type="button" className={`v2-chip ${raise === "2" ? "on" : ""}`} onClick={() => setRaise("2")}>+2% <small>minimum</small></button>
           <button type="button" className={`v2-chip ${raise === "ai" ? "on" : ""}`} onClick={() => setRaise("ai")}><Icon name="spark" size={15} /> {aiLabel} <small>AI pick</small></button>
@@ -193,6 +203,9 @@ export default function SubmitProducts() {
             </label>
             {customBad && <p className="sl-err"><Icon name="alert" size={16} /> Must be at least +2% above the public rate.</p>}
           </div>
+        )}
+        {hot.length > 0 && (
+          <p className="sl-hotnote"><Icon name="flame" size={16} /> {hot.map((p) => p.name).join(", ")} {hot.length === 1 ? "is" : "are"} wanted by our creators, so {hot.length === 1 ? "it starts" : "they start"} at +{HOT_RAISE}%.</p>
         )}
         {sel.length > 0 && (
           <div className="sl-ai">
@@ -235,7 +248,6 @@ export default function SubmitProducts() {
       <section className="sl-preset">
         <span>
           <b>Preset for you</b>
-          <span>Campaign: today to {presets.end}{presets.extend ? ", auto-extends" : ""}</span>
           <span>Creators: {conditions}{allAny ? " · rest Any" : ""}</span>
         </span>
         <button type="button" className="btn-outline" onClick={() => setDraft(presets)}>Change</button>
@@ -257,15 +269,8 @@ export default function SubmitProducts() {
       </div>
 
       {draft && (
-        <Sheet title="Campaign settings" onClose={() => setDraft(null)}>
-          <h3 className="v2-h2" style={{ fontSize: 16 }}>Campaign time</h3>
-          <p className="v2-small" style={{ margin: 0 }}>Starts today ({TODAY}).</p>
-          <ChipRow label="Ends" options={OPTIONS.end} value={draft.end} onPick={(v) => setDraft({ ...draft, end: v })} />
-          <div className="np-switchrow">
-            <span><b>Auto-extend before it ends</b></span>
-            <button type="button" className={`np-switch ${draft.extend ? "on" : ""}`} aria-pressed={draft.extend} aria-label="Auto-extend" onClick={() => setDraft({ ...draft, extend: !draft.extend })}><span /></button>
-          </div>
-          <h3 className="v2-h2" style={{ fontSize: 16, marginTop: 6 }}>Creator conditions</h3>
+        <Sheet title="Campaign Settings" onClose={() => setDraft(null)}>
+          <h3 className="v2-h2" style={{ fontSize: 16 }}>Creator Conditions</h3>
           <p className="v2-small" style={{ margin: 0 }}>A guide only. Techwide decides who gets each sample.</p>
           <ChipRow label="Main niche" note="From your product's category" options={OPTIONS.niche} value={draft.niche} onPick={(v) => setDraft({ ...draft, niche: v })} />
           <ChipRow label="Sub-niches" note="Optional" multi options={OPTIONS.subs} value={draft.subs} onPick={(v) => setDraft({ ...draft, subs: draft.subs.includes(v) ? draft.subs.filter((s) => s !== v) : [...draft.subs, v] })} />

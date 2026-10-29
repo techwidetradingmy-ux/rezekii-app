@@ -35,14 +35,14 @@ export default function BusinessPerformance() {
       <div className="v2-split">
         <section className="v2-card" key={`d-${shop}`}>
           <div className="v2-card-h">
-            <h2 className="v2-h2">GMV per day (RM thousand)</h2>
+            <h2 className="v2-h2">GMV per Day (RM Thousand)</h2>
           </div>
           <Columns values={m.daily} labels={DAYS14.map((d, i) => (i % 2 === 0 ? d : ""))} />
           <Meta range="15–28 Oct" source="TikTok Partner data, updated daily" updated="Today 06:00" />
         </section>
         <section className="v2-card" key={`c-${shop}`}>
           <div className="v2-card-h">
-            <h2 className="v2-h2">Top creators</h2>
+            <h2 className="v2-h2">Top Creators</h2>
           </div>
           <Bars rows={m.top.map(([h, v]) => ({ label: h, value: v, display: rm(v, 0) }))} />
           <Meta range="Last 30 days" source="TikTok Partner data" updated="Today 06:00" />
@@ -51,7 +51,7 @@ export default function BusinessPerformance() {
 
       <section className="v2-card">
         <div className="v2-card-h">
-          <h2 className="v2-h2">All merchants</h2>
+          <h2 className="v2-h2">All Merchants</h2>
           <span className="v2-small">Last 30 days</span>
         </div>
         <div className="v2-tablewrap">

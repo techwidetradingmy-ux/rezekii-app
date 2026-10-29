@@ -115,6 +115,7 @@ export const NOTES: Note[] = [
   { id: "n4", day: "Earlier", when: "Yesterday 21:40", icon: "trophy", bg: "linear-gradient(135deg,#ffd34d,#e8a400)", title: "Mission done: Post today (tier 3)", line: "+20 credits are in your wallet. 2 more posts today opens the next chest.", href: "/app/rewards", cta: "See missions" },
   { id: "n5", day: "Earlier", when: "Yesterday 18:05", icon: "video", bg: "linear-gradient(135deg,#ff7aa8,#e8005a)", urgent: "Due 2 Nov", title: "Video counted: 1.2L 316 stainless thermos", line: "2 of 3 videos done. One more by 2 Nov.", href: "/app/account#samples", cta: "See progress" },
   { id: "n6", day: "Earlier", when: "26 Oct", icon: "x", bg: "linear-gradient(135deg,#9aa8a1,#62716a)", title: "Sample not approved: Granite casserole pot", line: "This sample unlocks at a 30-day streak. Keep posting daily: 14 more days to get there.", href: "/app/account#samples", cta: "What to do" },
+  { id: "n7", day: "Earlier", when: "20 Oct", icon: "bag", bg: "linear-gradient(135deg,#22dc95,#00a862)", title: "From your wish list: AirySoft pillowcase is on Rezekii", line: "10% now, +4% for you. Your commitment starts today: 4 videos a month for 3 months.", href: "/app/market", cta: "Open Marketplace" },
 ];
 
 /**

@@ -134,7 +134,7 @@ export function MissionsBoard(p: {
 
       <section className="v2-card mx-card mx-daily">
         <div className="v2-card-h">
-          <h2 className="v2-h2">Daily missions</h2>
+          <h2 className="v2-h2">Daily Missions</h2>
           <span className="v2-small">Resets at midnight</span>
         </div>
         {/* The streak sits on top of the missions that keep it; tap for the tiers. */}
@@ -162,7 +162,7 @@ export function MissionsBoard(p: {
 
       <section className="v2-card mx-card">
         <div className="v2-card-h">
-          <h2 className="v2-h2">Starter missions</h2>
+          <h2 className="v2-h2">Starter Missions</h2>
           <span className="badge badge-amber">Once only · {p.starterNote}</span>
         </div>
         <div className="mx-today">
@@ -185,7 +185,7 @@ export function MissionsBoard(p: {
       {p.children}
 
       {streakOpen && (
-        <Sheet title="Your streak" onClose={() => setStreakOpen(false)}>
+        <Sheet title="Your Streak" onClose={() => setStreakOpen(false)}>
           <section className="mx-streak" style={{ ["--c1" as string]: tier?.c1 ?? "#f8c39b", ["--c2" as string]: tier?.c2 ?? "#b8642f" }} aria-label="Your streak">
             <div className="mx-streak-top">
               <span className="mx-big-emblem">{tier ? <Emblem tier={tier} size={74} /> : <Emblem tier={TIERS[0]} size={74} locked />}<b>{streak}</b></span>

@@ -46,7 +46,7 @@ export default function Ledger() {
       {pending.length > 0 && (
         <section className="v2-card" style={{ borderLeft: "4px solid #f5a623" }}>
           <div className="v2-card-h">
-            <h2 className="v2-h2">Waiting for approval</h2>
+            <h2 className="v2-h2">Waiting for Approval</h2>
             <span className="v2-small">Needs a second approver</span>
           </div>
           <div className="ad-list">
@@ -123,7 +123,7 @@ function AdjustSheet({ onClose, onSubmit }: { onClose: () => void; onSubmit: (p:
   const ok = ACCOUNTS.includes(account) && n > 0 && n <= 5000 && !!reason && !!note.trim();
 
   return (
-    <Sheet title="Adjust credits" onClose={onClose}>
+    <Sheet title="Adjust Credits" onClose={onClose}>
       <label className="v2-field">
         Account
         <input className="np-input" list="ad-accounts" value={account} placeholder="Handle or shop name" onChange={(e) => setAccount(e.target.value)} />

@@ -43,7 +43,7 @@ export default function Changes() {
 
       <div className="v2-split">
         <section className="v2-card">
-          <h2 className="v2-h2">New request</h2>
+          <h2 className="v2-h2">New Request</h2>
           <div className="v2-field">Request type
             <div className="sl-radio-list">
               {KINDS.map(([k, line, icon]) => (
@@ -100,7 +100,7 @@ export default function Changes() {
         </section>
 
         <section className="v2-card">
-          <div className="v2-card-h"><h2 className="v2-h2">Your requests</h2><span className="v2-small">{reqs.length}</span></div>
+          <div className="v2-card-h"><h2 className="v2-h2">Your Requests</h2><span className="v2-small">{reqs.length}</span></div>
           <div>
             {reqs.map((r) => {
               const p = SHOP_ITEMS.find((s) => s.id === r.item);

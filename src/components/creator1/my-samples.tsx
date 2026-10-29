@@ -188,7 +188,7 @@ export function MySamples() {
       </div>
 
       <section className="v2-stack" style={{ gap: 10 }}>
-        <h3 className="v2-h2" style={{ fontSize: 17 }}>Other parcels</h3>
+        <h3 className="v2-h2" style={{ fontSize: 17 }}>Other Parcels</h3>
         {PARCELS.map((k) => (
           <article key={k.id} className="v2-card cr1-parcel">
             <span className="cr1-parcel-ico"><Icon name="box" size={20} /></span>
@@ -206,7 +206,7 @@ export function MySamples() {
       </section>
 
       {submit && (
-        <Sheet title="Submit video link" onClose={() => setSubmit(null)}>
+        <Sheet title="Submit Video Link" onClose={() => setSubmit(null)}>
           <p className="v2-small" style={{ margin: 0 }}>
             Video {submit.videos + 1} of 3 for <b>{product(submit.productId).name}</b>. Must have it in your yellow cart.
           </p>
@@ -228,10 +228,10 @@ export function MySamples() {
       )}
 
       {extend && (
-        <Sheet title="Ask for more time" onClose={() => setExtend(null)}>
+        <Sheet title="Ask for More Time" onClose={() => setExtend(null)}>
           <p className="v2-small" style={{ margin: 0 }}>Due {extend.due} for {product(extend.productId).name}. Techwide decides. A first late sample gets a reminder, not a ban.</p>
           <div className="cr1-sec">
-            <h3>How much more?</h3>
+            <h3>How Much More?</h3>
             <div className="v2-chips">
               {["2 days", "3 days", "5 days"].map((d) => (
                 <button key={d} type="button" className={`v2-chip ${days === d ? "on" : ""}`} aria-pressed={days === d} onClick={() => setDays(d)}>{d}</button>

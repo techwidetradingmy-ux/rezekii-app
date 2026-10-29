@@ -9,14 +9,69 @@ import { AiMark, Hidden, Seg, Tip } from "@/components/ui";
 import { ProductSheet } from "@/components/creator2/view-sheets";
 import { product, short } from "@/lib/mock";
 import { SAMPLE_LEFT } from "@/lib/mock-creator1";
-import { NICHE_BEST, TRY_TODAY, VIRAL } from "@/lib/mock-creator2";
+import { NICHE_BEST, TRY_TODAY, VIRAL, daily } from "@/lib/mock-creator2";
 
 /** Drafts made from Today's Ideas wait here until the Content Calendar picks them up (preview only: this browser tab). */
 export const IDEA_DRAFTS = "rz-idea-drafts";
 export type IdeaDraft = { id: string; productId: string; idea: string };
 const MAX = 5;
 
-/** A tiny rising line from the last 7 days of views (oldest first). */
+/**
+ * Cards or list for the whole page (owner, 29 Oct 2026): one switch at the top drives both Best sellers and Today's Ideas, and
+ * the choice is remembered on this device. Phones only; desktop keeps its grid and list.
+ */
+export type IdeasView = "cards" | "list";
+export function useIdeasView(): [IdeasView, (v: IdeasView) => void] {
+  const [view, setView] = useState<IdeasView>("cards");
+  useEffect(() => {
+    try { if (localStorage.getItem("rz2_ideas_view") === "list") setView("list"); } catch {}
+  }, []);
+  const pick = (v: IdeasView) => { setView(v); try { localStorage.setItem("rz2_ideas_view", v); } catch {} };
+  return [view, pick];
+}
+export function ViewSwitch({ view, onChange }: { view: IdeasView; onChange: (v: IdeasView) => void }) {
+  return (
+    <span className="td-views master" role="group" aria-label="View">
+      <button type="button" aria-label="Cards" aria-pressed={view === "cards"} className={view === "cards" ? "on" : undefined} onClick={() => onChange("cards")}><Icon name="grid" size={16} /></button>
+      <button type="button" aria-label="List" aria-pressed={view === "list"} className={view === "list" ? "on" : undefined} onClick={() => onChange("list")}><Icon name="list" size={16} /></button>
+    </span>
+  );
+}
+/** Which card a swipe row is on, for the dots under it. */
+function useRail<T extends HTMLElement>(view: IdeasView) {
+  const rail = useRef<T>(null);
+  useSideScroll(rail, view, ".none");
+  const [at, setAt] = useState(0);
+  useEffect(() => {
+    const el = rail.current;
+    if (!el || view !== "cards") return;
+    const onScroll = () => {
+      const first = el.firstElementChild as HTMLElement | null;
+      if (first) setAt(Math.round(el.scrollLeft / (first.offsetWidth + 10)));
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [view]);
+  return { rail, at };
+}
+
+/**
+ * Why pick it (owner, 29 Oct 2026): the last 7 days of sales as a small line, with the change from the first half of the week to
+ * the second. Views use the pink line, sales the green one.
+ */
+function Trend({ points, label, sales = true }: { points: number[]; label: string; sales?: boolean }) {
+  const early = points.slice(0, 3).reduce((a, b) => a + b, 0);
+  const late = points.slice(-3).reduce((a, b) => a + b, 0);
+  const change = early ? Math.round(((late - early) / early) * 100) : 0;
+  return (
+    <span className={`st-trend${sales ? " sales" : ""}`}>
+      <small>{label}{change !== 0 && <em className={change > 0 ? "up" : "down"}>{change > 0 ? "+" : ""}{change}%</em>}</small>
+      <Spark points={points} />
+    </span>
+  );
+}
+
+/** A tiny line from the last 7 days (oldest first). */
 function Spark({ points }: { points: number[] }) {
   const max = Math.max(...points);
   const d = points.map((v, i) => `${i ? "L" : "M"}${(i / (points.length - 1)) * 100} ${30 - (v / max) * 28}`).join(" ");
@@ -30,7 +85,7 @@ function Spark({ points }: { points: number[] }) {
 
 /** Where a pick comes from: her own rising videos, today's best sellers in her niche, or a free sample on Rezekii. */
 type Kind = "rising" | "best" | "sample";
-type Idea = { id: string; productId: string; kind: Kind; reason: string; stat: string; idea: string; week?: number[] };
+type Idea = { id: string; productId: string; kind: Kind; reason: string; stat: string; idea: string; week?: number[]; sales?: number[] };
 const FROM: Record<Kind, { icon: "flame" | "trend" | "gift"; short: string; cls: string }> = {
   rising: { icon: "flame", short: "Rising", cls: "" },
   best: { icon: "trend", short: "Best seller", cls: " best" },
@@ -42,29 +97,12 @@ const FROM: Record<Kind, { icon: "flame" | "trend" | "gift"; short: string; cls:
  * whose videos are taking off come first (rated 4★+ only), then new marketplace products with a free sample. She picks any of
  * them; each pick becomes a draft in the Content Calendar and the first one opens in New Post.
  */
-export function ShootToday({ bare = false }: { bare?: boolean }) {
+export function ShootToday({ bare = false, view = "cards" }: { bare?: boolean; view?: IdeasView }) {
   const router = useRouter();
   const { linked, setLinked, toast, requireWa } = useDemo();
   const [pick, setPick] = useState<string[]>([]);
-  // Phones: big swipe cards by default, or a list; the choice is remembered on this device.
-  const [view, setView] = useState<"cards" | "list">("cards");
-  useEffect(() => {
-    try { if (localStorage.getItem("rz2_ideas_view") === "list") setView("list"); } catch {}
-  }, []);
-  const pickView = (v: "cards" | "list") => { setView(v); try { localStorage.setItem("rz2_ideas_view", v); } catch {} };
-  const rail = useRef<HTMLDivElement>(null);
-  useSideScroll(rail, view, ".none");
-  const [at, setAt] = useState(0);
-  useEffect(() => {
-    const el = rail.current;
-    if (!el || view !== "cards") return;
-    const onScroll = () => {
-      const first = el.firstElementChild as HTMLElement | null;
-      if (first) setAt(Math.round(el.scrollLeft / (first.offsetWidth + 10)));
-    };
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
-  }, [view]);
+  // Phones: big swipe cards or a list, set by the page's switch.
+  const { rail, at } = useRail<HTMLDivElement>(view);
   const [asked, setAsked] = useState<string[]>([]);
   // 2 rising in her showcase, 2 of today's best sellers in her niche, 1 free sample (owner, 29 Oct 2026). All rated 4★+.
   const ok = (id: string) => product(id).rating >= 4;
@@ -74,10 +112,10 @@ export function ShootToday({ bare = false }: { bare?: boolean }) {
       reason: `+${(v.views24 / 1000).toFixed(1)}K views in 24h on “${v.title}” · ${v.ordersToday} sold today`,
     })),
     ...NICHE_BEST.filter((b) => ok(b.productId) && b.idea).slice(0, 2).map((b) => ({
-      id: `b-${b.productId}`, productId: b.productId, kind: "best" as const, idea: b.idea!, stat: `${short(b.weekSold)} sold this week`,
+      id: `b-${b.productId}`, productId: b.productId, kind: "best" as const, idea: b.idea!, stat: `${short(b.weekSold)} sold this week`, sales: daily(b.weekSold, b.trend),
       reason: `Top seller in ${product(b.productId).category} this week · ${short(b.weekSold)} sold`,
     })),
-    ...TRY_TODAY.filter((t) => ok(t.productId)).slice(0, 1).map((t) => ({ id: `t-${t.productId}`, productId: t.productId, kind: "sample" as const, idea: t.idea, reason: t.why, stat: `${SAMPLE_LEFT[t.productId] ?? 10} left` })),
+    ...TRY_TODAY.filter((t) => ok(t.productId)).slice(0, 1).map((t) => ({ id: `t-${t.productId}`, productId: t.productId, kind: "sample" as const, idea: t.idea, reason: t.why, stat: `${SAMPLE_LEFT[t.productId] ?? 10} left`, sales: daily(t.weekSold, t.trend) })),
   ].slice(0, MAX);
   const flip = (id: string) => setPick((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
 
@@ -99,11 +137,15 @@ export function ShootToday({ bare = false }: { bare?: boolean }) {
     <section className="v2-aicard st-box" aria-label="Today's Ideas">
       {!bare && <h2 className="v2-h2">Today&apos;s Ideas</h2>}
       <p className="td-lead">
-        <b>{ideas.length} products to film today</b>
-        <span className="td-ai">Updated daily by Rezekii AI <Tip label="How these are picked" text="Picked for you from your showcase, your sales and your niche. Best sellers come from TikTok Shop's public products and change every day. Each pick becomes a draft." /></span>
-        <span className="td-views" role="group" aria-label="View">
-          <button type="button" aria-label="Cards" aria-pressed={view === "cards"} className={view === "cards" ? "on" : undefined} onClick={() => pickView("cards")}><Icon name="grid" size={16} /></button>
-          <button type="button" aria-label="List" aria-pressed={view === "list"} className={view === "list" ? "on" : undefined} onClick={() => pickView("list")}><Icon name="list" size={16} /></button>
+        <b>{ideas.length} Products to Film Today</b>
+        {/* Where the picks come from, one short line (owner, 29 Oct 2026); the rest is in the tip. */}
+        <span className="td-mix">
+          {[
+            [ideas.filter((i) => i.kind === "rising").length, "your showcase"],
+            [ideas.filter((i) => i.kind === "best").length, "best sellers"],
+            [ideas.filter((i) => i.kind === "sample").length, "sample"],
+          ].filter(([c]) => c).map(([c, what]) => `${c} ${what}`).join(" · ")}
+          <Tip label="How these are picked" text="Updated daily by Rezekii AI from your showcase, your sales and your niche. Best sellers come from TikTok Shop's public products. Each pick becomes a draft." />
         </span>
       </p>
 
@@ -126,7 +168,8 @@ export function ShootToday({ bare = false }: { bare?: boolean }) {
               </span>
               <b className="td-name">{p.name}</b>
               <span className="td-why">{it.reason}</span>
-              {it.week && <Spark points={it.week} />}
+              {it.week && <Trend points={it.week} label="Views, 7 days" sales={false} />}
+              {it.sales && <Trend points={it.sales} label="Sales, 7 days" />}
               <span className="td-idea"><Icon name="video" size={13} /> {it.idea}</span>
               <span className="td-chips">
                 <span className="ok"><Icon name="star" size={11} width={2.4} /> {p.rating.toFixed(1)}</span>
@@ -165,7 +208,7 @@ export function ShootToday({ bare = false }: { bare?: boolean }) {
  * Best sellers in her niche (owner, 29 Oct 2026): public TikTok Shop products in her top categories, ranked by units sold this
  * week, rated 4★+ and not in her showcase yet. Changes daily. Tap a product to see it on Rezekii; + adds it to her showcase.
  */
-export function NicheBest() {
+export function NicheBest({ view: shape = "list" }: { view?: IdeasView }) {
   const { linked, setLinked, toast } = useDemo();
   const rows = NICHE_BEST.filter((b) => product(b.productId).rating >= 4).sort((a, b) => b.weekSold - a.weekSold);
   // Short tab names so the row fits a phone: "Home & Kitchen" shows as "Home".
@@ -175,17 +218,18 @@ export function NicheBest() {
   const [added, setAdded] = useState<string[]>([]);
   const [view, setView] = useState<string | null>(null);
   const shown = rows.filter((b) => cat === "All" || short1(product(b.productId).category) === cat);
+  const { rail, at } = useRail<HTMLOListElement>(shape);
   return (
     <section className="v2-card nb-box" aria-label="Best sellers in your niche">
       <div className="nb-head">
         <AiMark size={34} />
         <span>
-          <h2 className="v2-h2">Best sellers in your niche</h2>
-          <span className="td-ai">Updated daily by Rezekii AI <Tip label="How this list is made" text="Public TikTok Shop products in your top categories, ranked by units sold this week. Rated 4★ and up, and not in your showcase yet." /></span>
+          <h2 className="v2-h2">Best Sellers in Your Niche</h2>
+          <span className="td-mix">Live on TikTok Shop · by Rezekii AI <Tip label="How this list is made" text="Updated daily. Public TikTok Shop products in your top categories that aren't in your showcase yet, ranked by units sold this week and rated 4★ and up. The line shows sales for each of the last 7 days." /></span>
         </span>
       </div>
       <Seg value={cat} options={cats} onChange={setCat} />
-      <ol className="nb-list">
+      <ol ref={rail} className={`nb-list ${shape}`} key={cat}>
         {shown.map((b) => {
           const p = product(b.productId);
           const on = added.includes(p.id);
@@ -197,8 +241,10 @@ export function NicheBest() {
                 <img src={p.img} alt="" />
                 <span className="nb-main">
                   <b>{p.name}</b>
-                  <small>{short(b.weekSold)} sold this week · {p.rating.toFixed(1)}★ · Earn <Hidden>{p.publicRate}%</Hidden></small>
+                  <small>{short(b.weekSold)} sold this week · Earn <Hidden>{p.publicRate}%</Hidden></small>
+                  <span className="nb-score"><Icon name="star" size={12} width={2.4} /> {p.rating.toFixed(1)}</span>
                 </span>
+                <Trend points={daily(b.weekSold, b.trend)} label="Sales, 7 days" />
               </button>
               <button type="button" className={`nb-add${on ? " on" : ""}`} disabled={on} aria-label={on ? `${p.name} is in your showcase` : `Add ${p.name} to your showcase`} onClick={() => { if (!linked) return setLinked(true); setAdded((a) => [...a, p.id]); toast("Added to your showcase"); }}>
                 <Icon name={on ? "check" : "plus"} size={18} />
@@ -207,6 +253,7 @@ export function NicheBest() {
           );
         })}
       </ol>
+      {shape === "cards" && <span className="td-dots" aria-hidden="true">{shown.map((b, n) => <i key={b.productId} className={n === at ? "on" : undefined} />)}</span>}
       {view && <ProductSheet productId={view} onClose={() => setView(null)} />}
     </section>
   );

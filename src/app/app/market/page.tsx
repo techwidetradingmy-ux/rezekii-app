@@ -208,7 +208,7 @@ export default function Marketplace() {
       )}
 
       {sel && (
-        <Sheet title={step === "warn" ? "Before you request" : step === "sent" ? "Request sent" : "Free sample"} onClose={() => setSel(null)}>
+        <Sheet title={step === "warn" ? "Before You Request" : step === "sent" ? "Request Sent" : "Free Sample"} onClose={() => setSel(null)}>
           <div className="cr1-sheetprod">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={sel.img} alt="" />
@@ -234,7 +234,7 @@ export default function Marketplace() {
                 </ul>
               </div>
               <div className="cr1-sec">
-                <h3>After you get it</h3>
+                <h3>After You Get It</h3>
                 <ul className="cr1-after">
                   <li><Icon name="video" size={18} /> Post 3 videos with it in your yellow cart.</li>
                   <li><Icon name="flame" size={18} /> Bonus if you post within 1 day (smaller within 3 or 7).</li>
@@ -273,7 +273,7 @@ export default function Marketplace() {
                 <button type="button" className="btn-outline" onClick={() => setSel(null)}>Not now</button>
               </div>
               <div className="cr1-sec">
-                <h3>You can get these now</h3>
+                <h3>You Can Get These Now</h3>
                 <div className="v2-divide">
                   {suggest.map((p) => (
                     <button key={p.id} type="button" className="cr1-suggest" onClick={() => requireWa(() => open(p))}>

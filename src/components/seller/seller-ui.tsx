@@ -58,7 +58,7 @@ export function ConnBanner() {
 /** The sample allocation terms in full. */
 export function TermsSheet({ onClose }: { onClose: () => void }) {
   return (
-    <Sheet title="Sample allocation terms" onClose={onClose}>
+    <Sheet title="Sample Allocation Terms" onClose={onClose}>
       <p className="v2-small" style={{ margin: 0 }}>{TERMS_VERSION} · For every sample in Techwide&apos;s TAP, here or in Seller Center.</p>
       <ol className="sl-list" style={{ counterReset: "t" }}>
         {TERMS.map(([h, line], i) => (
@@ -85,7 +85,7 @@ export function ContactSheet({ onClose }: { onClose: () => void }) {
   const ph = tidyPhone(phone.raw, phone.dial);
   const ok = name.trim().length > 1 && ph.ok;
   return (
-    <Sheet title="Talk to our team" onClose={onClose}>
+    <Sheet title="Talk to Our Team" onClose={onClose}>
       <p className="v2-muted" style={{ margin: 0, lineHeight: 1.5 }}>Tell us what you need. We reply within 1 working day with a quote.</p>
       <div className="v2-field">What do you need?
         <div className="v2-chips">

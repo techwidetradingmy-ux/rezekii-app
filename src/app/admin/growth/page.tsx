@@ -111,7 +111,7 @@ function Editor({ m: init, onClose, onSave }: { m: Def; onClose: () => void; onS
   const reward = firstTier(m.tiers);
 
   return (
-    <Sheet title={isNew ? "New mission" : `Edit: ${init.title}`} onClose={onClose}>
+    <Sheet title={isNew ? "New Mission" : `Edit: ${init.title}`} onClose={onClose}>
       {!isNew && <span className="v2-small" style={{ marginTop: -8 }}>Saves as {`v${Number(init.version.slice(1)) + 1}`}. {init.version} stays {init.status.toLowerCase()} until then.</span>}
 
       <Sec>Who and when</Sec>

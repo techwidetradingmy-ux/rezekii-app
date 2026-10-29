@@ -26,7 +26,7 @@ export default function TapInvite() {
     return (
       <div className="v2-stack v2-in">
         <section className="v2-card sl-done">
-          <h2>No problem</h2>
+          <h2>No Problem</h2>
           <p className="v2-muted" style={{ margin: 0, maxWidth: 440 }}>We&apos;ve told {I.from}. This link works until {I.expires}.</p>
           <div className="v2-row" style={{ justifyContent: "center" }}>
             <button type="button" className="np-btn" onClick={() => setDeclined(false)}>Look again</button>
@@ -99,7 +99,7 @@ export default function TapInvite() {
       </section>
 
       <section className="v2-card">
-        <div className="sl-step-h"><span className="n">2</span><h2>How it works</h2></div>
+        <div className="sl-step-h"><span className="n">2</span><h2>How It Works</h2></div>
         <ul className="si-sync">
           <li><Icon name="refresh" size={16} /><span>Changes sync to {I.from} and TikTok.</span></li>
           <li><Icon name="kanban" size={16} /><span>Our review, then TikTok, then live.</span></li>

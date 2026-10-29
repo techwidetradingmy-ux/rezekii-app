@@ -39,7 +39,7 @@ export default function AdminAccess() {
       <Title title="Admin Access" sub="Staff use normal sign-in. Grant access and pick a role." />
 
       <section className="v2-card">
-        <h2 className="v2-h2">Give access</h2>
+        <h2 className="v2-h2">Give Access</h2>
         <Search value={q} onChange={(v) => { setQ(v); setPick(null); }} placeholder="Search name or email" />
         {q.trim().length >= 2 && !account && (
           <div className="ad-list">
@@ -81,7 +81,7 @@ export default function AdminAccess() {
 
       <section className="v2-card" style={{ paddingBottom: 8 }}>
         <div className="v2-card-h">
-          <h2 className="v2-h2">Staff with access</h2>
+          <h2 className="v2-h2">Staff with Access</h2>
           <span className="badge">{staff.length}</span>
         </div>
         <div className="ad-list">

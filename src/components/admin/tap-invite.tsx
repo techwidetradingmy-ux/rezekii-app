@@ -25,7 +25,7 @@ export function TapInvites() {
   return (
     <section className="v2-card" style={{ gap: 14 }}>
       <div className="v2-card-h">
-        <h2 className="v2-h2">Invites to sellers</h2>
+        <h2 className="v2-h2">Invites to Sellers</h2>
         <button type="button" className="np-btn v2-btn-sm" onClick={() => setOpen(true)}><Icon name="plus" size={16} /> Invite a seller</button>
       </div>
       <Flow
@@ -84,7 +84,7 @@ function InviteSheet({ onClose, onSent }: { onClose: () => void; onSent: (shop: 
 
   if (sent) {
     return (
-      <Sheet title="Invite sent" onClose={onClose}>
+      <Sheet title="Invite Sent" onClose={onClose}>
         <div className="ad-sent">
           <span className="ad-sent-ico"><Icon name="check" size={28} width={3} /></span>
           <b>{shop} has the invite{via === "Link only" ? " link" : ` on ${via}`}</b>
@@ -98,7 +98,7 @@ function InviteSheet({ onClose, onSent }: { onClose: () => void; onSent: (shop: 
   }
 
   return (
-    <Sheet title="Invite a seller" onClose={onClose} wide>
+    <Sheet title="Invite a Seller" onClose={onClose} wide>
       <p className="v2-small" style={{ margin: 0 }}>They open the link and register. <i className="pb-req">*</i> required.</p>
       <label className="v2-field"><span>Seller <i className="pb-req">*</i></span>
         <select className="np-input" value={shop} onChange={(e) => { setShop(e.target.value); setPicked(e.target.value === "Seri Living MY" ? TAP_INVITE.products : []); }}>

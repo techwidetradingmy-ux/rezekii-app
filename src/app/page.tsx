@@ -133,7 +133,7 @@ export default function Landing() {
       <main className="site-wrap site-main cr1-main">
         <Reveal className="section" label="Before and with Rezekii">
           <span className="eyebrow">BEFORE VS WITH REZEKII</span>
-          <h2>Same videos. Less guessing. More ways to earn.</h2>
+          <h2>Same Videos. Less Guessing. More Ways to Earn.</h2>
           <div className="v2-vs cr1-stag">
             <div className="old">
               <h3>Before</h3>
@@ -156,7 +156,7 @@ export default function Landing() {
 
         <Reveal id="features" className="section" label="Features">
           <span className="eyebrow">EVERYTHING IN ONE APP</span>
-          <h2>Every tool a TikTok Shop creator needs</h2>
+          <h2>Every Tool a TikTok Shop Creator Needs</h2>
           <div className="cr1-feats cr1-stag">
             {FEATS.map((f) => (
               <article key={f.title} className={`cr1-feat ${f.soon ? "soon" : ""}`}>
@@ -174,7 +174,7 @@ export default function Landing() {
 
         <Reveal id="earn" className="section cr1-earn" label="More ways to earn">
           <span className="eyebrow">MORE WAYS TO EARN</span>
-          <h2>From your first better rate to paid reviews</h2>
+          <h2>From Your First Better Rate to Paid Reviews</h2>
           <p className="lead">Each step adds another way to earn.</p>
           <ol className="cr1-path cr1-stag">
             {PATH.map(([icon, t, l, soon], i) => (
@@ -191,7 +191,7 @@ export default function Landing() {
 
         <Reveal id="stories" className="section" label="Creator stories">
           <span className="eyebrow">REAL STORIES</span>
-          <h2>Creators who checked</h2>
+          <h2>Creators Who Checked</h2>
           <div className="cr1-stories cr1-stag">
             {STORIES.map((s) => (
               <article key={s.handle} className="cr1-story">
@@ -222,7 +222,7 @@ export default function Landing() {
 
         <Reveal id="how" className="section" label="Three steps">
           <span className="eyebrow">THREE STEPS</span>
-          <h2>Start in about a minute</h2>
+          <h2>Start in About a Minute</h2>
           <ol className="grid3 cr1-stag">
             {[
               ["Link TikTok Shop", "Sign in, then approve access in TikTok.", "About 1 minute"],
@@ -241,7 +241,7 @@ export default function Landing() {
 
         <Reveal className="section" label="Peace of mind">
           <span className="eyebrow">PEACE OF MIND</span>
-          <h2>Your account stays yours</h2>
+          <h2>Your Account Stays Yours</h2>
           <div className="cr1-trust cr1-stag">
             <div className="cr1-tcard">
               <h3><span className="cr1-tico"><Icon name="eye" size={20} /></span>What we read</h3>
@@ -261,7 +261,7 @@ export default function Landing() {
 
         <Reveal id="faq" className="section" label="Questions">
           <span className="eyebrow">QUESTIONS</span>
-          <h2>Good to know</h2>
+          <h2>Good to Know</h2>
           <div className="hm-faqs">
             {FAQS.map(([q, a]) => (
               <details key={q} className="hm-faq">
@@ -273,7 +273,7 @@ export default function Landing() {
         </Reveal>
 
         <Reveal className="hm-cta cr1-cta" label="Get started">
-          <h2>See what your showcase is missing</h2>
+          <h2>See What Your Showcase Is Missing</h2>
           <p>Free and quick. Nothing changes until you tap Add.</p>
           <Link href="/signin" className="v2-btn-white cr1-bigwhite">Check my showcase free <Icon name="arrow" size={20} /></Link>
           <span className="cr1-cta-note">No follower minimum · Malaysia</span>

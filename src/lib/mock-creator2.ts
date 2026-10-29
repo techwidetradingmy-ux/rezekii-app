@@ -171,21 +171,33 @@ export const VIRAL = [
  * week, rated 4★+ and not in her showcase yet. TikTok's creator product search gives category, units sold and rating; the list
  * changes daily.
  */
-export const NICHE_BEST: { productId: string; weekSold: number; idea?: string }[] = [
-  { productId: "p24", weekSold: 18400, idea: "Leak test: upside down in my bag" },
-  { productId: "p01", weekSold: 42100, idea: "3 outfits, 1 pair of pants" },
-  { productId: "p02", weekSold: 38500 },
-  { productId: "p03", weekSold: 15200 },
-  { productId: "p14", weekSold: 12800 },
-  { productId: "p10", weekSold: 11900 },
-  { productId: "p08", weekSold: 9600 },
-  { productId: "p12", weekSold: 9800 },
+/** Shapes of a week of sales, oldest day first (each sums to 1). */
+const SHAPES = {
+  up: [0.09, 0.1, 0.12, 0.14, 0.16, 0.18, 0.21],
+  flat: [0.14, 0.15, 0.14, 0.14, 0.15, 0.14, 0.14],
+  down: [0.2, 0.18, 0.16, 0.14, 0.12, 0.11, 0.09],
+};
+export type Trend = keyof typeof SHAPES;
+/**
+ * Units sold each day for the last 7 days, oldest first (sample). The real one comes from Rezekii's daily snapshot of the sold
+ * count TikTok Shop shows for each product.
+ */
+export const daily = (weekSold: number, trend: Trend) => SHAPES[trend].map((w) => Math.round(weekSold * w));
+export const NICHE_BEST: { productId: string; weekSold: number; trend: Trend; idea?: string }[] = [
+  { productId: "p24", weekSold: 18400, trend: "up", idea: "Leak test: upside down in my bag" },
+  { productId: "p01", weekSold: 42100, trend: "up", idea: "3 outfits, 1 pair of pants" },
+  { productId: "p02", weekSold: 38500, trend: "flat" },
+  { productId: "p03", weekSold: 15200, trend: "up" },
+  { productId: "p14", weekSold: 12800, trend: "down" },
+  { productId: "p10", weekSold: 11900, trend: "flat" },
+  { productId: "p08", weekSold: 9600, trend: "up" },
+  { productId: "p12", weekSold: 9800, trend: "flat" },
 ];
 /** New products to try today: marketplace products with a free sample she can get, rated 4★+, matched to her categories. */
 export const TRY_TODAY = [
-  { productId: "p20", why: "Muslim fashion sells 2.3× your average. A try-on video fits.", idea: "Try-on: 3 ways to style it for work" },
-  { productId: "p11", why: "RM 9.90 add-on that sells fast on LIVE with your kitchen products.", idea: "Show it next to your best kitchen seller" },
-  { productId: "p07", why: "Fashion is your top category, and polos sell all year.", idea: "Fit check: 3 sizes side by side" },
+  { productId: "p20", weekSold: 6400, trend: "up" as Trend, why: "Muslim fashion sells 2.3× your average. A try-on video fits.", idea: "Try-on: 3 ways to style it for work" },
+  { productId: "p11", weekSold: 9100, trend: "flat" as Trend, why: "RM 9.90 add-on that sells fast on LIVE with your kitchen products.", idea: "Show it next to your best kitchen seller" },
+  { productId: "p07", weekSold: 5200, trend: "up" as Trend, why: "Fashion is your top category, and polos sell all year.", idea: "Fit check: 3 sizes side by side" },
 ];
 
 /** Average views per video by the time she posted it, last 30 days (from her own videos). */

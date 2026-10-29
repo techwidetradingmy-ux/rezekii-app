@@ -50,7 +50,7 @@ export default function BusinessHome() {
               <b>{short.toUpperCase()} · {event.toUpperCase()}</b>
             </div>
             <div className="v2-stack" style={{ gap: 10, minWidth: 0, width: "100%" }}>
-              <h2 className="v2-h2">Your QR and links</h2>
+              <h2 className="v2-h2">Your QR and Links</h2>
               <span className="v2-small">Tag the event to see where people came from.</span>
               <Seg value={event} options={EVENTS} onChange={setEvent} />
               <div className="ad-linkrow"><Icon name="briefcase" size={16} /><code>{shopLink}</code><button type="button" className="ad-btn-ghost" onClick={() => copy(shopLink)}>Copy</button></div>
@@ -71,7 +71,7 @@ export default function BusinessHome() {
           </div>
           <section className="v2-card">
             <div className="v2-card-h">
-              <h2 className="v2-h2">Follow-ups due</h2>
+              <h2 className="v2-h2">Follow-ups Due</h2>
               <span className={`badge ${due.some((f) => f.late) ? "badge-red" : ""}`}>{due.length}</span>
             </div>
             <div className="ad-list">
@@ -96,7 +96,7 @@ export default function BusinessHome() {
 
       <section className="v2-card">
         <div className="v2-card-h">
-          <h2 className="v2-h2">Your sign-ups</h2>
+          <h2 className="v2-h2">Your Sign-ups</h2>
           <Seg value={tab} options={["Merchants", "Creators"] as const} onChange={setTab} />
         </div>
         <div className="ad-list">
@@ -134,7 +134,7 @@ export default function BusinessHome() {
       </section>
 
       {expo && (
-        <Sheet title="Scan to join Rezekii" onClose={() => setExpo(false)}>
+        <Sheet title="Scan to Join Rezekii" onClose={() => setExpo(false)}>
           <div className="v2-stack" style={{ alignItems: "center", textAlign: "center", gap: 14 }}>
             <div className="ad-qrbox ad-qrbig">
               <Qr />

@@ -62,7 +62,7 @@ export default function Competitors() {
           </section>
 
           <section className="v2-card">
-            <div className="v2-card-h"><h2 className="v2-h2">Trending products</h2><span className="v2-small">{cat} · {period}</span></div>
+            <div className="v2-card-h"><h2 className="v2-h2">Trending Products</h2><span className="v2-small">{cat} · {period}</span></div>
             <div className="sl-reveal">
               {prods.map((p, i) => {
                 const t = Math.round(p.trend * TREND_K[period]);
@@ -86,7 +86,7 @@ export default function Competitors() {
           </section>
 
           <section className="v2-card">
-            <div className="v2-card-h"><h2 className="v2-h2">Top videos</h2><span className="v2-small">By sales</span></div>
+            <div className="v2-card-h"><h2 className="v2-h2">Top Videos</h2><span className="v2-small">By sales</span></div>
             <div className="sl-vgrid sl-reveal">
               {vids.map((v) => (
                 <button key={v.title} type="button" className="sl-vid" onClick={() => toast(`Opening ${v.handle}'s video on TikTok`)}>
@@ -105,7 +105,7 @@ export default function Competitors() {
 
           <section className="v2-card">
             <div className="v2-card-h">
-              <h2 className="v2-h2">Top creators in {cat}</h2>
+              <h2 className="v2-h2">Top Creators in {cat}</h2>
               <button type="button" className="np-btn v2-btn-sm" onClick={() => toast(SOON)}><Icon name="users" size={16} /> Invite creators</button>
             </div>
             <div className="sl-reveal">

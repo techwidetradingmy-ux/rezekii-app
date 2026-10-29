@@ -51,7 +51,7 @@ export default function Analytics() {
       <div className="v2-split">
         <section className="v2-card">
           <div className="v2-card-h">
-            <h2 className="v2-h2">Events by day</h2>
+            <h2 className="v2-h2">Events by Day</h2>
             <span className="v2-small">Total {series.reduce((a, b) => a + b, 0).toLocaleString("en-MY")} · avg {Math.round(series.reduce((a, b) => a + b, 0) / series.length)} a day</span>
           </div>
           <Chips label="Event" value={ev} onChange={setEv} options={Object.keys(EVENTS).map((k) => [k] as [string])} />
@@ -60,7 +60,7 @@ export default function Analytics() {
         </section>
 
         <section className="v2-card">
-          <h2 className="v2-h2">Activity timeline</h2>
+          <h2 className="v2-h2">Activity Timeline</h2>
           <Search value={q} onChange={setQ} placeholder="Search a creator or seller" />
           <div className="v2-chips">
             {Object.keys(TIMELINES).map((k) => (

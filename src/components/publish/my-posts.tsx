@@ -303,7 +303,7 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
       })}
       {shown.length === 0 && (
         <section className="v2-card sq-empty">
-          <h2 className="v2-h2">Nothing here</h2>
+          <h2 className="v2-h2">Nothing Here</h2>
           <p className="v2-small">No posts for these dates.</p>
           <a href={newPost} className="np-btn v2-btn-sm">New Post</a>
         </section>

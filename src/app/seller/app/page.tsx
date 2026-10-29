@@ -52,7 +52,7 @@ export default function SellerHome() {
       {stage === "fix" && broken && !fixed && (
         <section className="v2-next red">
           <small>Do this first</small>
-          <h2>1 product not approved: 0 samples</h2>
+          <h2>1 Product Not Approved: 0 Samples</h2>
           <p>{broken.name} has no samples, so creators can&apos;t apply.</p>
           <div className="v2-row">
             <button type="button" className="v2-btn-white" style={{ color: "#b42318" }} onClick={() => setFixing(true)}>Add samples</button>
@@ -80,7 +80,7 @@ export default function SellerHome() {
       {stage === "new" && (
         <section className="v2-next">
           <small>Start here</small>
-          <h2>Submit your first products</h2>
+          <h2>Submit Your First Products</h2>
           <p>Pick products. AI suggests the commission; samples are set to 40.</p>
           <div className="v2-row">
             <Link href="/seller/app/submit" className="v2-btn-white">Submit products <Icon name="arrow" size={18} /></Link>
@@ -122,7 +122,7 @@ export default function SellerHome() {
       <div className="v2-split">
         <section className="v2-card">
           <div className="v2-card-h">
-            <h2 className="v2-h2">Last 30 days in TAP</h2>
+            <h2 className="v2-h2">Last 30 Days in TAP</h2>
             <Link href="/seller/app/results">See all</Link>
           </div>
           <Source />
@@ -137,7 +137,7 @@ export default function SellerHome() {
 
         <section className="v2-card">
           <div className="v2-card-h">
-            <h2 className="v2-h2">Recent activity</h2>
+            <h2 className="v2-h2">Recent Activity</h2>
             <Link href="/seller/app/notifications">All</Link>
           </div>
           <div className="sl-acts">
@@ -153,7 +153,7 @@ export default function SellerHome() {
       </div>
 
       {fixing && broken && (
-        <Sheet title="Add samples" onClose={() => setFixing(false)}>
+        <Sheet title="Add Samples" onClose={() => setFixing(false)}>
           <div className="sl-prow" style={{ paddingTop: 0 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={broken.img} alt="" />

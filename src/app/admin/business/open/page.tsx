@@ -67,7 +67,7 @@ export default function OpenCampaigns() {
       </div>
 
       {invite && (
-        <Sheet title="Invite message" onClose={() => setInvite(null)}>
+        <Sheet title="Invite Message" onClose={() => setInvite(null)}>
           <span className="v2-small">{invite.name}. Edit, then paste into WhatsApp or email.</span>
           <label className="v2-field">
             Merchant name

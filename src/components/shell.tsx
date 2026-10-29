@@ -53,6 +53,22 @@ const INVITE = { creator: "/app/account#referral", seller: "/seller/app/rewards/
  * Signed-in frame. Desktop (owner, 28 Oct 2026: website first): a left side bar with every section and the open section's
  * pages, and a slim top bar. Smaller screens keep the top menu, the sub-menu and the phone tab bar.
  */
+/** Invite button icon (owner, 29 Oct 2026): a treasure chest that glows, peeks open and sparkles, so it's hard to miss. */
+function Chest() {
+  return (
+    <svg className="v2-chest" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+      <path className="ch-spark" d="M4 3.5l.6 1.4 1.4.6-1.4.6L4 7.5l-.6-1.4L2 5.5l1.4-.6z" fill="#ffe08a" />
+      <path className="ch-spark b" d="M20 2l.5 1.2 1.2.5-1.2.5L20 5.4l-.5-1.2-1.2-.5 1.2-.5z" fill="#ffe08a" />
+      <rect x="4" y="12" width="16" height="9" rx="2" fill="#e08a2c" stroke="#6b3a0c" strokeWidth="1.3" />
+      <rect x="4" y="14.5" width="16" height="2" fill="#ffc83d" />
+      <g className="ch-lid">
+        <path d="M4 12.5V11a8 4.5 0 0 1 16 0v1.5z" fill="#f5a623" stroke="#6b3a0c" strokeWidth="1.3" strokeLinejoin="round" />
+      </g>
+      <rect x="10.6" y="12.6" width="2.8" height="4" rx="0.9" fill="#fff3c4" stroke="#6b3a0c" strokeWidth="1" />
+    </svg>
+  );
+}
+
 export function Shell({ app, children, banner }: { app: AppKind; children: React.ReactNode; banner?: React.ReactNode }) {
   const path = usePathname();
   const section = sectionFor(app, path);
@@ -216,7 +232,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
                 if (app === "creator" && path === "/app/account") { e.preventDefault(); window.location.hash = "referral"; }
               }}
             >
-              <Icon name="gift" size={18} />
+              <Chest />
               <span>Invite</span>
             </Link>
           )}
@@ -287,7 +303,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
         )}
       </nav>
       {more && (
-        <Sheet title="Admin menu" onClose={() => setMore(false)}>
+        <Sheet title="Admin Menu" onClose={() => setMore(false)}>
           <div className="v2-divide">
             {menu.slice(4).map((s) => (
               <Link key={s.href} href={s.href} onClick={() => setMore(false)} className="v2-row" style={{ padding: "14px 2px", color: "var(--text)", textDecoration: "none", fontWeight: 700 }}>
@@ -364,7 +380,7 @@ function AccountPanel({ onClose }: { onClose: () => void }) {
           <button type="button" className="ap-row" onClick={() => setFeedback(true)}><span className="ap-ic feedback"><Icon name="edit" size={17} /></span><span>Send feedback</span><Icon name="arrow" size={15} /></button>
         </div>
         {feedback && (
-          <Sheet title="Send feedback" onClose={() => setFeedback(false)}>
+          <Sheet title="Send Feedback" onClose={() => setFeedback(false)}>
             <div className="v2-chips">
               {["Idea", "Something's broken", "Question"].map((t) => (
                 <button key={t} type="button" className={`v2-chip ${topic === t ? "on" : ""}`} onClick={() => setTopic(t)}>{t}</button>

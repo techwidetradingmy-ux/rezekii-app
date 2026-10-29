@@ -1222,6 +1222,56 @@ button.cr1-note-main { padding: 0; border: 0; background: none; color: var(--tex
   .td-dots i { width: 6px; height: 6px; border-radius: 99px; background: var(--border); transition: width 0.2s var(--ease), background 0.2s; }
   .td-dots i.on { width: 16px; background: #00c073; }
 }
+/* Score and a 7-day sales line on every product (owner, 29 Oct 2026), so she can see why it's worth picking. */
+.st-trend { display: grid; gap: 2px; min-width: 0; }
+.st-trend small { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--muted); }
+.st-trend em { font-style: normal; font-weight: 800; }
+.st-trend em.up { color: #00a862; }
+.st-trend em.down { color: var(--red); }
+.st-trend.sales .st-spark .line { stroke: #00c073; }
+.st-trend.sales .st-spark .fill { fill: rgba(0, 192, 115, 0.12); }
+.nb-score { display: inline-flex; align-items: center; gap: 3px; justify-self: start; padding: 1px 7px; border-radius: 99px; background: #fff3d6; color: #a46a00; font-size: 12px; font-weight: 800; }
+.nb-view { grid-template-columns: 52px minmax(0, 1fr) 64px; }
+.nb-view > .st-trend small { display: none; }
+.nb-view > .st-trend .st-spark { height: 26px; }
+/* One switch for the whole page, in the title row (owner, 29 Oct 2026), on every screen. Cards: a grid on desktop, swipe cards
+   on phones. List: compact rows. Best sellers follow the same switch. */
+.td-views.master { position: static; display: inline-flex; padding: 3px; gap: 2px; border-radius: 12px; background: var(--surface2); }
+.td-views.master button { width: 34px; height: 30px; border: 0; border-radius: 9px; background: none; color: var(--muted); display: grid; place-items: center; cursor: pointer; }
+.td-views.master button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12); }
+.nb-list.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+.nb-list.cards li, .nb-list.cards li:first-child { position: relative; display: block; padding: 10px; border: 2px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); min-width: 0; }
+.nb-list.cards .nb-view { display: flex; flex-direction: column; align-items: stretch; gap: 8px; width: 100%; }
+.nb-list.cards .nb-view img { width: 100%; height: auto; aspect-ratio: 4 / 3; border-radius: 12px; }
+.nb-list.cards .nb-main b { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 15px; }
+.nb-list.cards .nb-main small { white-space: normal; }
+.nb-list.cards .nb-view > .st-trend small { display: flex; }
+.nb-list.cards .nb-view > .st-trend .st-spark { height: 34px; }
+.nb-list.cards .nb-rank { position: absolute; top: 16px; left: 16px; z-index: 1; min-width: 26px; height: 26px; padding: 0 7px; border-radius: 99px; background: #0d1117; color: #ffffff; font-size: 13px; display: grid; place-items: center; }
+.nb-list.cards li:nth-child(-n+3) .nb-rank { background: #00a862; color: #ffffff; }
+.nb-list.cards .nb-add { position: absolute; top: 16px; right: 16px; z-index: 1; background: rgba(255, 255, 255, 0.94); }
+@media (min-width: 561px) {
+  .td-grid.list { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .td-grid.list .td-card { display: grid; grid-template-columns: 96px minmax(0, 1fr) 200px; column-gap: 14px; row-gap: 4px; align-items: center; padding: 10px 12px; }
+  .td-grid.list .td-card > .td-img { grid-column: 1; grid-row: 1 / span 5; width: 96px; height: 96px; aspect-ratio: auto; }
+  .td-grid.list .td-card > :not(.td-img):not(.td-hit):not(.td-rank):not(.td-tick):not(.st-trend) { grid-column: 2; }
+  .td-grid.list .td-card > .st-trend { grid-column: 3; grid-row: 2 / span 4; align-self: end; }
+  .td-grid.list .td-rank { top: 14px; left: 14px; }
+  .td-grid.list .td-tick { top: 12px; right: 12px; }
+  .td-grid.list .td-sample { justify-self: start; padding: 0 14px; }
+}
+@media (max-width: 560px) {
+  .td-lead { padding-right: 0; }
+  .td-grid.cards .st-trend { display: grid; }
+  .td-grid.cards .st-spark { display: block; }
+  .td-card .st-trend { display: none; }
+  .nb-list.cards { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -16px; padding: 2px 16px 4px; scroll-padding: 0 16px; }
+  .nb-list.cards li, .nb-list.cards li:first-child { flex: 0 0 84%; border-radius: 20px; scroll-snap-align: start; }
+  .nb-list.cards .nb-view img { aspect-ratio: auto; height: 200px; border-radius: 14px; }
+  .nb-list.cards .nb-main b { font-size: 16px; }
+  .nb-list.cards .nb-rank { top: 18px; left: 18px; }
+  .nb-list.cards .nb-add { top: 18px; right: 18px; }
+}
 /* Scan recap covers, cartoon style (owner, 29 Oct 2026): Rezi the coin on a bright gradient, a mood per page. */
 .mg.ill { background: #14102e; }
 .mg.ill .mg-safe { top: 8%; bottom: 8%; left: 6%; right: 6%; }
@@ -1269,31 +1319,28 @@ button.cr1-note-main { padding: 0; border: 0; background: none; color: var(--tex
 .il-me { display: inline-flex; align-items: center; gap: 1.4cqw; }
 .il-me img { width: 6cqw; height: 6cqw; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 0.6cqw rgba(255, 255, 255, 0.85); }
 @media (prefers-reduced-motion: reduce) { .rz-coin, .rz-tear, .il-bills svg, .il-fx i { animation: none !important; } }
-/* My Showcase (owner, 29 Oct 2026): how much is on Rezekii, the rest, and requests. */
+/* Showcase on Rezekii, the Home card (owner, 29 Oct 2026): opens in place; the header row is a button. */
 .sc-ring { position: relative; display: grid; place-items: center; flex-shrink: 0; }
 .sc-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .sc-ring b { position: relative; font-size: 14px; font-weight: 900; }
-.sc-card { display: flex; align-items: center; gap: 12px; padding: 14px 16px; color: var(--text); text-decoration: none; }
+.v2-card.sc-card { display: flex; flex-direction: column; align-items: stretch; gap: 12px; padding: 14px 16px; text-align: left; }
 .sc-main { flex: 1; display: grid; gap: 2px; min-width: 0; }
 .sc-main b { font-size: 15px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sc-main small { font-size: 13px; color: var(--muted); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sc-main small em { font-style: normal; color: var(--gink); font-weight: 800; }
-.sc-go { flex-shrink: 0; padding: 8px 12px; border-radius: 12px; background: var(--gsoft); color: var(--gink); font-size: 13px; font-weight: 800; }
-.sc-sum { display: flex; align-items: center; gap: 14px; padding: 14px 16px; }
 .sc-tabs .np-seg { width: 100%; }
 .sc-tabs .np-seg button { flex: 1; min-width: 0; padding: 0 6px; }
 .sc-search { display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 14px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); }
 .sc-search input { flex: 1; min-width: 0; border: 0; background: none; color: var(--text); font: inherit; font-size: 15px; outline: none; }
-.sc-bulk { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; font-size: 13px; font-weight: 800; color: var(--muted); }
 .sc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .sc-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
 li.sc-row { cursor: default; }
-.sc-row img, .sc-tile { width: 48px; height: 48px; border-radius: 12px; object-fit: cover; flex-shrink: 0; }
-.sc-tile { display: grid; place-items: center; color: #ffffff; font-size: 20px; font-weight: 900; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); }
+.sc-row img { width: 48px; height: 48px; border-radius: 12px; object-fit: cover; flex-shrink: 0; background: var(--surface2); }
 .sc-row > svg { color: var(--muted); flex-shrink: 0; }
-.sc-req { flex-shrink: 0; }
 .sc-steps { display: flex; gap: 4px; margin: 3px 0 1px; }
 .sc-steps i { flex: 1; height: 4px; border-radius: 99px; background: var(--line); max-width: 46px; }
 .sc-steps i.on { background: #00c073; }
 .sc-empty { padding: 18px; text-align: center; color: var(--muted); font-size: 14px; }
-.v2-card.sc-card, .v2-card.sc-sum { flex-direction: row; text-align: left; }
+.td-lead .td-mix { font-size: 13.5px; font-weight: 800; color: var(--gink); }
+.nb-head .td-mix { display: block; font-size: 13.5px; font-weight: 800; color: var(--gink); }
+.td-lead .td-mix, .nb-head .td-mix { display: inline-flex; align-items: center; gap: 4px; }
