@@ -53,20 +53,28 @@ export function CreatorHeroScan() {
   const on = useOnScreen(ref, 0.3);
   const still = useReducedMotion();
   const [count, setCount] = useState(0);
+  const [money, setMoney] = useState(0);
+  const extra = Math.round(PER_SALE * 1000);
   useEffect(() => {
     const to = CREATOR.showcaseSize;
-    if (still) return setCount(to);
+    if (still) {
+      setCount(to);
+      return setMoney(extra);
+    }
     if (!on) return;
     let raf = 0;
     const t0 = performance.now();
+    const ease = (k: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, k)), 3);
+    // Products checked first, then the extra commission counts up to its full amount (owner, 29 Oct 2026: show the money).
     const tick = (t: number) => {
-      const k = Math.min(1, (t - t0) / 1600);
-      setCount(Math.round(to * (1 - Math.pow(1 - k, 3))));
-      if (k < 1) raf = requestAnimationFrame(tick);
+      const ms = t - t0;
+      setCount(Math.round(to * ease(ms / 1600)));
+      setMoney(Math.round(extra * ease((ms - 1400) / 2200)));
+      if (ms < 3700) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [on, still]);
+  }, [on, still, extra]);
   return (
     <div ref={ref} className="hs lp-live" data-on={on ? "" : undefined} role="img" aria-label="Example: Rezekii AI scans a showcase and finds 1% more on the same products">
       <div className="hs-card" aria-hidden="true">
@@ -89,15 +97,11 @@ export function CreatorHeroScan() {
         </ul>
         {/* The extra, at scale (owner, 29 Oct 2026): what joining adds over 1,000 sales of the RM 159.90 example. */}
         <div className="hs-total">
-          <small>Extra commission by joining Rezekii</small>
-          <b>+RM {rmn(PER_SALE * 1000)}</b>
-          <span>extra commission every 1,000 sales of the RM {POT.price.toFixed(2)} pot</span>
+          <small>Extra commission on Rezekii</small>
+          <b><span>RM</span>{n(money)}</b>
+          <span className="hs-sum">RM {earn(POT, POT.publicRate).toFixed(2)} → RM {earn(POT, POT.tapRate).toFixed(2)} a sale <i>×</i> 1,000 sales</span>
         </div>
-        {/* It only ever raises (owner, 29 Oct 2026): a top creator's own better rate is left as it is. */}
-        <p className="hs-note"><Icon name="shield" size={14} width={2.4} /> Only ever raises your rate. Already earning more? It stays.</p>
       </div>
-      <span className="hs-float f1" aria-hidden="true"><Icon name="clock" size={15} width={2.2} /> Viral Time Frame · 8–10 pm</span>
-      <span className="hs-float f2" aria-hidden="true"><Icon name="gift" size={15} width={2.2} /> {OPEN.length} free samples open</span>
     </div>
   );
 }

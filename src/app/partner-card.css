@@ -2,7 +2,6 @@
 .pc-row { margin: 0; align-self: flex-start; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
 .pc-badge { display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border-radius: 10px; background: #000000; }
 .pc-badge img { display: block; height: 20px; width: auto; }
-.pc-soon { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px 0 6px; border-radius: 10px; background: #000000; color: #c9d1cd; }
+.pc-soon { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; border-radius: 10px; background: #000000; }
 .pc-store { display: grid; place-items: center; width: 22px; height: 22px; }
 .pc-store svg { width: 17px; height: 17px; }
-.pc-soon small { font-size: 11.5px; font-weight: 800; white-space: nowrap; }

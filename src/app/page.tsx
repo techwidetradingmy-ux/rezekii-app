@@ -71,7 +71,7 @@ export default function Landing() {
         <div className="site-wrap lp-hero-grid scan">
           <div className="lp-hero-copy lp-hero-top">
             <AiEyebrow text="Malaysia's 1st AI-Powered Affiliate Platform" />
-            <h1>Your Showcase Is <em>Underpaid.</em></h1>
+            <h1>Your Showcase Is Underpaid. <em>Rezekii AI Finds Your Raise.</em></h1>
             <p><AiText text="Rezekii AI finds higher commission on the products you already sell. Same products, more money." /></p>
           </div>
           <div className="lp-hero-vis">

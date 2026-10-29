@@ -35,8 +35,8 @@ export function PartnerCard() {
         <Image src="/tiktok-shop-partner-logo.png" alt="" width={69} height={20} />
       </span>
       <span className="pc-soon">
-        {STORES.map((s) => <span key={s.name} className="pc-store" title={s.name}>{s.logo}</span>)}
-        <small>Coming soon</small>
+        {/* Just the logos (owner, 29 Oct 2026); the label says they're coming soon. */}
+        {STORES.map((s) => <span key={s.name} className="pc-store" title={`${s.name}, coming soon`}>{s.logo}</span>)}
       </span>
     </p>
   );
