@@ -1,6 +1,6 @@
 /**
  * The small trust line under every main call to action on the landing pages (owner, 29 Oct 2026: people feel safer knowing
- * we're an official TikTok Shop partner). Not the big PartnerCard; one quiet line. `dark` for dark cards.
+ * we're an official TikTok Shop partner). Not the badge row (PartnerCard); one quiet line. `dark` for dark cards.
  */
 export function PartnerLine({ dark = false, center = false }: { dark?: boolean; center?: boolean }) {
   return (

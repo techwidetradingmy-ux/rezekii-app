@@ -10,6 +10,7 @@ import { PartnerCard } from "@/components/partner-card";
 import { AiEyebrow } from "@/components/landing/ai-eyebrow";
 import { CreatorBento, CreatorCompare, CreatorDay, CreatorHeroPhone, CreatorSee, CreatorUsps } from "@/components/landing/creator";
 import { PartnerLine } from "@/components/landing/partner-line";
+import { AiText } from "@/components/landing/ai-text";
 import { Path, type PathStep } from "@/components/landing/path";
 import { Faqs } from "@/components/landing/faqs";
 import { FAQS } from "@/lib/mock-creator1";
@@ -69,7 +70,7 @@ export default function Landing() {
           <div className="lp-hero-copy">
             <AiEyebrow />
             <h1>Your Showcase May Have <em>Higher Commission</em> Waiting</h1>
-            <p>Rezekii AI finds better rates, trending products and your best time to post. You just make the videos.</p>
+            <p><AiText text="Rezekii AI finds better rates, trending products and your best time to post. You just make the videos." /></p>
             <ShowcaseCheck />
             <PartnerLine />
             <ul className="lp-chips">

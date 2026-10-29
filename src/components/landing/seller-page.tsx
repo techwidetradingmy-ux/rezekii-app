@@ -15,6 +15,7 @@ import { SELLER_FAQ } from "@/lib/mock-seller";
 import { AiEyebrow } from "./ai-eyebrow";
 import { useOnScreen } from "./hooks";
 import { PartnerLine } from "./partner-line";
+import { AiText } from "./ai-text";
 import { Path, type PathStep } from "./path";
 import { SellerBento, SellerCompare, SellerHeroPhone, SellerSee, SellerUsps, SellerWeek } from "./seller";
 import { Faqs } from "./faqs";
@@ -126,7 +127,7 @@ export function SellerLanding() {
           <div className="lp-hero-copy">
             <AiEyebrow />
             <h1>Let Creators Sell for You, <em>Without Hiring Anyone</em></h1>
-            <p>Rezekii AI matches your products with the right creators. They request samples, post videos and go LIVE. You pay only when you sell.</p>
+            <p><AiText text="Rezekii AI matches your products with the right creators. They request samples, post videos and go LIVE. You pay only when you sell." /></p>
             <div className="lp-ctas">
               <Link href="/seller/connect" className="np-btn lp-bigbtn">Connect Seller Center <Icon name="arrow" size={18} /></Link>
               <button type="button" className="lp-ghost" onClick={() => setTalk(true)}>Talk to Our Team</button>

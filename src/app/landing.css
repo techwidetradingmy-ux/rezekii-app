@@ -326,7 +326,15 @@ i.gold { background: radial-gradient(circle at 35% 30%, #fff3bf, #f5b81e 55%, #b
 .lp-usp[data-on] .lp-u-fan em { animation: lpUPosted 4.5s calc(var(--i) * 0.2s) infinite; }
 /* Free during Beta */
 .lp-u-free { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-.lp-u-free > b { font-size: 58px; line-height: 1; font-weight: 900; letter-spacing: -0.04em; background: linear-gradient(135deg, #00874f, #00c073); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.lp-u-price { position: relative; display: flex; flex-direction: column; align-items: center; }
+.lp-u-price .lp-u-stamp { top: auto; bottom: 22px; right: -62px; }
+.lp-u-price > b { font-size: 58px; line-height: 1; font-weight: 900; letter-spacing: -0.04em; background: linear-gradient(135deg, #00874f, #00c073); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.lp-u-was { position: relative; margin-bottom: -6px; font-size: 22px; font-weight: 800; color: var(--muted); text-decoration: none; }
+.lp-u-was small { font-size: 14px; font-weight: 700; }
+.lp-u-was::after { content: ""; position: absolute; left: -6%; right: -6%; top: 50%; height: 3px; border-radius: 2px; background: #e14b3b; transform: rotate(-8deg); transform-origin: left; }
+.lp-usp[data-on] .lp-u-was::after { animation: lpUStrike 4s infinite; }
+@keyframes lpUStrike { 0%, 6% { transform: rotate(-8deg) scaleX(0); } 22%, 100% { transform: rotate(-8deg) scaleX(1); } }
+@media (prefers-reduced-motion: reduce) { .lp-usp[data-on] .lp-u-was::after { animation: none; } }
 .lp-u-stamp { position: absolute; top: -10px; right: -46px; padding: 4px 10px; border-radius: 8px; border: 2px solid #e8a400; color: var(--amber); background: var(--asoft); font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; transform: rotate(-12deg); }
 .lp-u-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
 .lp-u-chips span { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font-size: 12px; font-weight: 800; }

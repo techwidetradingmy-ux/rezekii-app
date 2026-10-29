@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { Icon } from "@/components/icons";
 import { useLiveChildren } from "./hooks";
+import { AiText } from "./ai-text";
 import { AutoSlider } from "./slider";
 import { StoryCard, type Story } from "./stories";
 
@@ -23,7 +24,7 @@ export function UspRail({ items, label }: { items: Usp[]; label: string }) {
           <article key={u.title} className="lp-usp" style={{ "--tint": u.tint } as React.CSSProperties}>
             <div className="lp-usp-demo" aria-hidden={u.live ? undefined : true}>{u.demo}</div>
             <h3>{u.title}</h3>
-            <p>{u.line}</p>
+            <p><AiText text={u.line} /></p>
           </article>
         ))}
       </AutoSlider>
@@ -69,7 +70,7 @@ export function SeeRail({ items, stories = [], label }: { items: See[]; stories?
               </div>
             </div>
             <h3>{x.title}</h3>
-            <p>{x.line}</p>
+            <p><AiText text={x.line} /></p>
           </article>
         ))}
         {stories.map((s) => <StoryCard key={s.handle} s={s} />)}

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { AiMark } from "@/components/ui";
+import { AiText } from "./ai-text";
 import { useMedia, useOnScreen, useReducedMotion } from "./hooks";
 import { Banner, Phone, type Note } from "./phone";
 import { AutoSlider } from "./slider";
@@ -26,7 +27,7 @@ function StepText({ s }: { s: DayStep }) {
       <span className="lp-jr-time">{s.time}</span>
       <h3>{s.ai && <AiMark size={26} />}{s.title}</h3>
       <p className="lp-jr-prob"><span className="v2-x"><Icon name="x" size={11} width={3} /></span>{s.problem}</p>
-      <p className="lp-jr-fix"><span className="v2-ok"><Icon name="check" size={11} width={3.2} /></span>{s.fix}</p>
+      <p className="lp-jr-fix"><span className="v2-ok"><Icon name="check" size={11} width={3.2} /></span><span><AiText text={s.fix} /></span></p>
     </>
   );
 }

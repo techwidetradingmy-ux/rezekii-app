@@ -17,7 +17,9 @@ import { SeeRail, UspRail, type See, type Usp } from "./usp";
  * sold counts and ratings come from PRODUCTS; people and the rest are sample, and the page says so.
  */
 
-const TRACK = product("p01");
+/** Landing examples show a modest +1% (owner, 29 Oct 2026), not the biggest gap in the sample data. */
+const example = (id: string) => { const p = product(id); return { ...p, tapRate: p.publicRate + 1 }; };
+const TRACK = example("p01");
 const POST_TODAY = MISSIONS.find((m) => m.id === "m7")!;
 const WISH = NOT_YET[0];
 const WANTED_N = WANTED[0].creators;
@@ -39,7 +41,7 @@ export function CreatorHeroPhone() {
 
 /* ---------------- Mini app screens (A Day With Rezekii) ---------------- */
 
-const SCAN = ["p01", "p13", "p24"].map(product);
+const SCAN = ["p01", "p13", "p24"].map(example);
 function ScanScreen() {
   return (
     <App title="Showcase Scan">
@@ -352,13 +354,17 @@ const USPS: Usp[] = [
     ),
   },
   {
-    title: "Free During Beta", tint: "#f5a623",
-    line: "No follower minimum. Nothing changes without your OK.",
+    // RM 99 a month crossed out to Free, for the first 50 invited users (owner, 29 Oct 2026).
+    title: "Free for the First 50", tint: "#f5a623",
+    line: "Usually RM 99 a month. Free for the first 50 invited users. No follower minimum.",
     demo: (
       <div className="lp-u-free">
-        <b>RM 0</b>
-        <span className="lp-u-stamp">Beta</span>
-        <span className="lp-u-chips"><span><Icon name="check" size={12} width={3} /> No follower minimum</span><span><Icon name="check" size={12} width={3} /> Your OK first</span></span>
+        <span className="lp-u-price">
+          <s className="lp-u-was">RM 99<small> / month</small></s>
+          <b>Free</b>
+          <span className="lp-u-stamp">Beta</span>
+        </span>
+        <span className="lp-u-chips"><span><Icon name="users" size={12} width={2.6} /> First 50 invited users</span><span><Icon name="check" size={12} width={3} /> No follower minimum</span></span>
       </div>
     ),
   },

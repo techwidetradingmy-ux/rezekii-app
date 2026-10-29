@@ -1,4 +1,5 @@
 import { Icon, type IconName } from "@/components/icons";
+import { AiText } from "./ai-text";
 
 export type PathStep = { icon: IconName; title: string; line: string; soon?: boolean };
 
@@ -15,7 +16,7 @@ export function Path({ steps, label }: { steps: PathStep[]; label: string }) {
           <span className="lp-node"><Icon name={s.icon} size={22} width={2.1} /><b>{i + 1}</b></span>
           <span>
             <strong>{s.title}{s.soon && <span className="badge badge-amber">Coming Soon</span>}</strong>
-            <small>{s.line}</small>
+            <small><AiText text={s.line} /></small>
           </span>
         </li>
       ))}

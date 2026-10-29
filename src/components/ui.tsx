@@ -548,9 +548,9 @@ export function AiHead({ title, sub, tip, busy = false, children }: { title: Rea
 }
 
 /** The AI chip. Next to the AI icon it's text only (`bare`), so a section never shows two AI icons (owner, 29 Oct 2026). */
-export function AiTag({ label = "AI", bare = false }: { label?: string; bare?: boolean }) {
+export function AiTag({ label = "AI", bare = false, inline = false }: { label?: string; bare?: boolean; inline?: boolean }) {
   return (
-    <span className="v2-aitag" aria-label={label}>
+    <span className={`v2-aitag ${inline ? "inl" : ""}`} aria-label={label}>
       {!bare && (
         <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true">
           <path d="M11 3Q12 11 20 12Q12 13 11 21Q10 13 2 12Q10 11 11 3Z" fill="currentColor" />

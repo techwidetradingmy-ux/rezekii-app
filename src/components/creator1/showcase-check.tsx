@@ -89,6 +89,7 @@ export function ShowcaseCheck() {
   }
 
   const inCats = found ? PRODUCTS.filter((p) => found.cats.includes(p.category)) : PRODUCTS;
+  // Shown as a modest +1% (owner, 29 Oct 2026: don't overclaim on the landing).
   const shown = inCats.filter((p) => p.tapRate > p.publicRate).slice(0, 3);
   const who = (
     <div className={`sc-who ${found && step > 0 ? "found" : ""}`}>
@@ -139,7 +140,7 @@ export function ShowcaseCheck() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={p.img} alt="" />
               <span>{p.name}<small>{p.shop}</small></span>
-              <b><s>{p.publicRate}%</s> {p.tapRate}%</b>
+              <b><s>{p.publicRate}%</s> {p.publicRate + 1}%</b>
             </div>
           ))}
         </div>
