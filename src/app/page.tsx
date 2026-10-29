@@ -173,10 +173,13 @@ export default function Landing() {
           <Faqs items={FAQS} />
         </Reveal>
 
-        <Reveal className="lp-final" label="Get started">
-          <h2>See What Your Showcase Is Missing</h2>
-          <Link href="/signin" className="np-btn lp-bigbtn">Check My Showcase <Icon name="arrow" size={20} /></Link>
-          <span className="lp-final-note">Free during Beta · No Follower Requirement · English and 中文</span>
+        {/* Our vision as the last ask (owner, 29 Oct 2026): join now and build Malaysia's largest affiliate community. */}
+        <Reveal className="lp-final" label="Join us">
+          <span className="eyebrow">OUR VISION</span>
+          <h2>Let&apos;s Build Malaysia&apos;s Largest Affiliate Community</h2>
+          <p>Better rates, free samples and AI tools for every creator, big or small. Join us today.</p>
+          <Link href="/signin" className="np-btn lp-bigbtn">Join Us Today <Icon name="arrow" size={20} /></Link>
+          <span className="lp-final-note">Join for Free Now. No Minimum Follower Required.</span>
           <PartnerLine center />
         </Reveal>
       </main>
