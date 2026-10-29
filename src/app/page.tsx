@@ -6,6 +6,7 @@ import { ScanAnim } from "@/components/creator1/scan";
 import { Reveal } from "@/components/creator1/reveal";
 import { JoinBoard } from "@/components/join-board";
 import { ShowcaseCheck } from "@/components/creator1/showcase-check";
+import { PartnerCard } from "@/components/partner-card";
 import { FAQS, STORIES } from "@/lib/mock-creator1";
 import "./creator1.css";
 
@@ -116,12 +117,6 @@ export default function Landing() {
                 <li key={c}><Icon name="check" size={16} stroke="#00c073" width={3} />{c}</li>
               ))}
             </ul>
-            <div className="cr1-partner">
-              <span className="cr1-partner-logo">
-                <Image src="/tiktok-shop-partner-logo.png" alt="TikTok Shop Partner" width={103} height={30} />
-              </span>
-              <span>By Techwide Marketing, a TikTok Shop partner</span>
-            </div>
           </div>
           <div className="hero-card-wrap">
             <ScanAnim variant="hero" loop ms={6200} />
@@ -130,6 +125,7 @@ export default function Landing() {
       </header>
 
       <main className="site-wrap site-main cr1-main">
+        <PartnerCard />
         <Reveal className="section" label="Before and with Rezekii">
           <span className="eyebrow">BEFORE VS WITH REZEKII</span>
           <h2>Same Videos. Less Guessing. More Ways to Earn.</h2>

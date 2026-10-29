@@ -9,6 +9,7 @@ import { DemoStrip } from "@/components/shell";
 import { Columns, Count } from "@/components/ui";
 import { Ava, ContactSheet, InViewCount, Pips } from "@/components/seller/seller-ui";
 import { JoinBoard } from "@/components/join-board";
+import { PartnerCard } from "@/components/partner-card";
 import { SAMPLE_DESTINATIONS, SELLER_RESULTS, product, rm } from "@/lib/mock";
 import { AGENCY, SELLER_FAQ, TESTIMONIALS } from "@/lib/mock-seller";
 
@@ -128,6 +129,7 @@ export default function SellerLanding() {
       </header>
 
       <main className="site-wrap site-main">
+        <PartnerCard />
         <section className="section" id="results">
           <span className="eyebrow">THE NUMBERS</span>
           <h2>Our Numbers</h2>

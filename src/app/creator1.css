@@ -53,9 +53,6 @@
 .cr1-hero .hero-grid { padding-block: 20px 72px; }
 .cr1-hero .hero-card-wrap { min-width: 0; padding: 10px 0; }
 .cr1-bigbtn { height: 56px !important; padding: 0 26px !important; font-size: 17px !important; border-radius: 16px !important; }
-.cr1-partner { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; font-size: 13px; font-weight: 700; color: var(--muted); }
-.cr1-partner-logo { display: inline-flex; padding: 6px 10px; border-radius: 10px; background: #000000; box-shadow: 0 8px 16px -10px rgba(0, 0, 0, 0.5); }
-.cr1-partner-logo img { height: 26px; width: auto; display: block; }
 .cr1-main { gap: 96px; }
 
 /* Sections fade up as they scroll in (Reveal); children stagger. */
