@@ -12,7 +12,7 @@ import { LevelFace } from "./level-face";
 import { ACCOUNT_TABS, OPEN_ACCOUNT_MENU } from "@/lib/account-tabs";
 import { useSideScroll } from "./side-scroll";
 import { ACCOUNT, HOME, MENUS, pageFor, sectionFor, type AppKind } from "@/lib/menus";
-import { CREATOR, MY_SAMPLES, SELLER } from "@/lib/mock";
+import { CREATOR, MY_SAMPLES, REFERRAL_REWARD, SELLER } from "@/lib/mock";
 
 const WHO: Record<AppKind, { name: string; initials: string; label: string; photo?: string; sub: string }> = {
   creator: { name: CREATOR.first, initials: CREATOR.initials, label: "Account", photo: CREATOR.photo, sub: `${CREATOR.level} creator` },
@@ -56,17 +56,13 @@ const INVITE = { creator: "/app/account#referral", seller: "/seller/app/rewards/
 /** Invite button icon (owner, 29 Oct 2026, option A): a green gift box with a gold ribbon that wiggles, sparkles and glows. */
 function Chest() {
   return (
-    <svg className="v2-gift" width="30" height="30" viewBox="0 0 48 48" aria-hidden="true">
-      <g className="ch-box">
+    <svg className="v2-gift" width="26" height="26" viewBox="0 0 48 48" aria-hidden="true">
+      <g className="ch-box" stroke="#04512f" strokeWidth="2.2" strokeLinejoin="round">
         <rect x="8" y="20" width="32" height="22" rx="4" fill="#00c073" />
-        <rect x="8" y="20" width="32" height="5" fill="#00a862" />
         <rect x="6" y="14" width="36" height="8" rx="3" fill="#22dc95" />
-        <rect x="21" y="14" width="6" height="28" fill="#ffd34d" />
-        <path d="M24 14c-3-6-11-7-11-2s8 2 11 2zM24 14c3-6 11-7 11-2s-8 2-11 2z" fill="#ffd34d" />
-        <rect x="11" y="16" width="8" height="2" rx="1" fill="#ffffff" opacity="0.5" />
+        <rect x="21" y="14" width="6" height="28" fill="#fff3c4" />
+        <path d="M24 14c-3-6-11-7-11-2s8 2 11 2zM24 14c3-6 11-7 11-2s-8 2-11 2z" fill="#fff3c4" />
       </g>
-      <path className="ch-spark" d="M7 6l1 2.5 2.5 1-2.5 1L7 13l-1-2.5L3.5 9.5 6 8.5z" fill="#ffd34d" />
-      <path className="ch-spark b" d="M41 4l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z" fill="#ffd34d" />
     </svg>
   );
 }
@@ -234,8 +230,9 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
                 if (app === "creator" && path === "/app/account") { e.preventDefault(); window.location.hash = "referral"; }
               }}
             >
+              {/* Option D (owner, 29 Oct 2026): the pill shows what an invite earns, on phones too. */}
               <Chest />
-              <span>Invite</span>
+              <span>+{REFERRAL_REWARD.inviter}</span>
             </Link>
           )}
           <Link href={app === "admin" ? "/admin" : app === "seller" ? "/seller/app/notifications" : "/app/notifications"} className="v2-iconbtn" aria-label="Notifications">

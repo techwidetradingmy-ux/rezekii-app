@@ -5,6 +5,7 @@ import { Icon, type IconName } from "@/components/icons";
 import { ScanAnim } from "@/components/creator1/scan";
 import { Reveal } from "@/components/creator1/reveal";
 import { JoinBoard } from "@/components/join-board";
+import { ShowcaseCheck } from "@/components/creator1/showcase-check";
 import { FAQS, STORIES } from "@/lib/mock-creator1";
 import "./creator1.css";
 
@@ -109,10 +110,7 @@ export default function Landing() {
             <span className="hero-eyebrow"><span className="dot" aria-hidden="true" />FOR TIKTOK SHOP CREATORS IN MALAYSIA</span>
             <h1>Your showcase may have <em>higher commission</em> waiting</h1>
             <p>We find higher rates for products you already promote. Add them all in one tap.</p>
-            <div className="hero-ctas">
-              <Link href="/signin" className="np-btn cr1-bigbtn">Check my showcase free <Icon name="arrow" size={20} /></Link>
-              <a href="#how" className="btn-ghost">How it works</a>
-            </div>
+            <ShowcaseCheck />
             <ul className="hero-checks">
               {["Free for creators", "No follower minimum", "Nothing changes without you"].map((c) => (
                 <li key={c}><Icon name="check" size={16} stroke="#00c073" width={3} />{c}</li>

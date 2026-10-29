@@ -306,7 +306,7 @@ body { font-feature-settings: "tnum" 0; }
 /* V1 hides top-bar links on phones; keep the bell and the account button visible in V2. */
 @media (max-width: 640px) {
   .v2-top .site-nav > a.v2-iconbtn, .v2-top .site-nav > a.v2-acct { display: inline-flex; }
-  .v2-top .site-nav { column-gap: 10px; padding-block: 10px; }
+  .v2-top .site-nav { column-gap: 6px; padding-block: 10px; }
   .v2-top .site-brand { font-size: 19px !important; }
   .v2-top .site-brand span { width: 36px; height: 36px; }
 }
@@ -330,8 +330,6 @@ body { font-feature-settings: "tnum" 0; }
   .v2-acct > span:not(.v2-av) { display: none; }
   .v2-acct { padding: 0 4px; }
   .v2-top .site-nav { column-gap: 10px; }
-  .v2-top .site-nav > a.v2-invite { width: 40px; padding: 0; justify-content: center; }
-  .v2-top .site-nav > a.v2-invite span { display: none; }
   .v2-top[data-app="admin"] .v2-menu { display: none; }
   .nv-bottom[data-app="admin"] { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: flex; padding: 8px 6px calc(10px + env(safe-area-inset-bottom, 0px)); background: var(--glass); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%); border-top: 1px solid var(--border); }
   .nv-bottom[data-app="admin"] a { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; text-decoration: none; color: var(--muted); font-size: 11px; font-weight: 700; }
@@ -460,9 +458,12 @@ body { font-feature-settings: "tnum" 0; }
 .rz-emblem-anim .em-eyes { animation: emBlink 4.6s infinite; transform-origin: 60px 66px; transform-box: view-box; }
 .rz-emblem-anim .em-tw { animation: emTw 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 @media (prefers-reduced-motion: reduce) { .rz-emblem-anim svg, .rz-emblem-anim .em-shine, .rz-emblem-anim .em-eyes, .rz-emblem-anim .em-tw, .v2-story *, .v2-vbar span { animation: none !important; } }
-.v2-invite { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; gap: 4px; height: 40px; padding: 0 6px; color: var(--text) !important; font-size: 14px; font-weight: 800; text-decoration: none; }
-@keyframes v2InvitePulse { 0%, 80%, 100% { transform: none; } 88% { transform: scale(1.06); } }
-@media (max-width: 640px) { .v2-top .site-nav > a.v2-invite { display: inline-flex; } .v2-invite { width: 40px; padding: 0; justify-content: center; } .v2-invite span { display: none; } }
+/* Invite (owner, 29 Oct 2026, option D): a gold pill with the gift and what an invite earns. Rings pulse out from it. */
+.v2-invite { flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px; height: 34px; padding: 0 11px 0 5px; border-radius: 999px; background: #ffd34d; color: #5a3d00 !important; font-size: 13px; font-weight: 800; text-decoration: none; animation: v2InvitePulse 1.8s ease-in-out infinite; }
+.v2-invite:hover { background: #ffc83d; }
+@keyframes v2InvitePulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 176, 0, 0.6); } 60% { box-shadow: 0 0 0 8px rgba(255, 176, 0, 0); } }
+/* Phones: a smaller pill, so the open page's name keeps its room in the top bar. */
+@media (max-width: 640px) { .v2-top .site-nav > a.v2-invite { display: inline-flex; } .v2-invite { height: 32px; padding: 0 9px 0 3px; gap: 3px; font-size: 12.5px; } .v2-invite .v2-gift { width: 22px; height: 22px; } }
 @media (prefers-reduced-motion: reduce) { .v2-invite { animation: none; } }
 
 
@@ -623,6 +624,7 @@ body { font-feature-settings: "tnum" 0; }
 @media (max-width: 420px) { .rf-side { padding: 12px; } .rf-side b { font-size: 20px; } .rf-offer { gap: 6px; } .rf-plus { width: 24px; height: 24px; } }
 .si-ref { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 14px; background: #fff3d6; color: #6b4a00; font-size: 13.5px; line-height: 1.45; }
 .si-ref svg { flex-shrink: 0; margin-top: 2px; }
+.si-ref.si-handle { background: var(--gsoft); color: var(--text); }
 
 /* Dark mode (owner, 28 Oct 2026): black buttons and badges vanished on the dark background. Buttons flip to light; icon tiles get a ring. */
 @media (prefers-color-scheme: dark) {
@@ -797,6 +799,8 @@ body { font-feature-settings: "tnum" 0; }
   .v2-pgpick small { font-size: 13px; font-weight: 700; color: var(--muted); }
   .v2-pgpick b { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; min-width: 0; font-size: 15px; font-weight: 800; white-space: nowrap; }
   .v2-pgpick b > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .v2-pgpick > button > * { min-width: 0; max-width: 100%; }
+  .v2-pgpick small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .v2-pgpick b svg { flex-shrink: 0; transform: rotate(90deg); color: var(--muted); transition: transform 0.2s var(--ease); }
   .v2-pgpick > button[aria-expanded="true"] { border-color: #00c073; }
   .v2-pgpick > button[aria-expanded="true"] b svg { transform: rotate(-90deg); }
@@ -971,15 +975,10 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { display
 .sl-hotnote svg { flex-shrink: 0; margin-top: 1px; }
 .wb-own { margin: 0; padding: 12px 12px 12px 30px; border-radius: 12px; background: var(--surface2); display: grid; gap: 6px; font-size: 14px; line-height: 1.45; }
 .sc-add { width: 100%; justify-content: center; }
-/* Invite (owner, 29 Oct 2026): just the gift icon on a clear background. It wiggles, sparkles and glows gold. */
-.v2-gift { flex-shrink: 0; overflow: visible; animation: v2GiftGlow 2.4s ease-in-out infinite; }
-@keyframes v2GiftGlow { 0%, 100% { filter: drop-shadow(0 0 0 rgba(255, 200, 61, 0)); } 50% { filter: drop-shadow(0 0 6px rgba(255, 200, 61, 0.95)); } }
-.v2-gift .ch-box { transform-box: fill-box; transform-origin: bottom; animation: chWiggle 2.4s ease-in-out infinite; }
-@keyframes chWiggle { 0%, 100% { transform: none; } 50% { transform: translateY(-1.5px) rotate(-4deg); } }
-.v2-gift .ch-spark { transform-box: fill-box; transform-origin: center; animation: chTwinkle 1.6s ease-in-out infinite; }
-.v2-gift .ch-spark.b { animation-delay: 0.8s; }
-@keyframes chTwinkle { 0%, 100% { opacity: 0; transform: scale(0.4); } 50% { opacity: 1; transform: scale(1); } }
-@media (prefers-reduced-motion: reduce) { .v2-gift, .v2-gift .ch-box, .v2-gift .ch-spark { animation: none; } }
+.v2-gift { flex-shrink: 0; overflow: visible; }
+.v2-gift .ch-box { transform-box: fill-box; transform-origin: bottom; animation: chWiggle 2.2s ease-in-out infinite; }
+@keyframes chWiggle { 0%, 100% { transform: none; } 50% { transform: translateY(-2px) rotate(-6deg); } }
+@media (prefers-reduced-motion: reduce) { .v2-gift .ch-box { animation: none; } }
 .wf-st { font-size: 13px; font-weight: 800; color: var(--muted); }
 .wf-st.live { color: var(--gink); }
 .wf-st.no { color: var(--red); }

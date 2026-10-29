@@ -1428,3 +1428,41 @@ li.sc-row { cursor: default; }
 /* Her special rate (owner, 29 Oct 2026): a product an admin set just for her. */
 .pp-chip.special { background: #fff3d6; color: #a46a00; }
 .mka-special { margin-left: 6px; padding: 1px 6px; border-radius: 99px; background: #fff3d6; color: #a46a00; font-style: normal; font-size: 11px; font-weight: 800; }
+
+/* Landing showcase checker (owner, 29 Oct 2026): username box, a short check, then results locked until sign-up. */
+.sc-check { display: grid; gap: 10px; }
+.sc-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.sc-field { flex: 1 1 240px; min-width: 0; display: flex; align-items: center; gap: 6px; height: 56px; padding: 0 16px; border-radius: 16px; border: 2px solid var(--green); background: var(--surface); font-size: 17px; font-weight: 800; color: var(--muted); cursor: text; }
+.sc-field.bad { border-color: var(--red); }
+.sc-field input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-weight: 700; color: var(--text); }
+.sc-field:focus-within { box-shadow: 0 0 0 4px var(--gsoft); }
+.sc-err { font-size: 13px; font-weight: 700; color: var(--red); }
+.sc-how { justify-self: start; font-size: 14px; font-weight: 800; color: var(--gink); }
+.sc-card { display: grid; gap: 12px; padding: 18px; border-radius: 22px; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-lg); max-width: 520px; }
+.sc-card h3 { margin: 0; font-size: 20px; line-height: 1.2; text-wrap: balance; }
+.sc-who { display: flex; align-items: center; gap: 10px; }
+.sc-who > span:last-child { display: grid; }
+.sc-who small { font-size: 13px; color: var(--muted); font-weight: 700; }
+.sc-steps { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; font-size: 15px; font-weight: 700; color: var(--muted); }
+.sc-steps li { display: flex; align-items: center; gap: 8px; }
+.sc-steps li.ok { color: var(--gink); }
+.sc-steps li.now { color: var(--text); }
+.sc-steps li:not(.ok):not(.now) .sc-spin { animation: none; opacity: 0.4; }
+.sc-spin { width: 16px; height: 16px; flex-shrink: 0; border-radius: 50%; border: 2.5px solid var(--border); border-top-color: var(--green); animation: scSpin 0.9s linear infinite; }
+@keyframes scSpin { to { transform: rotate(360deg); } }
+.sc-note { font-size: 13px; line-height: 1.45; color: var(--muted); }
+.sc-lock { position: relative; border-radius: 14px; background: var(--surface2); overflow: hidden; }
+.sc-blur { display: grid; padding: 4px 12px; filter: blur(5px); user-select: none; }
+.sc-ex { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
+.sc-ex:first-child { border-top: 0; }
+.sc-ex img { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; }
+.sc-ex > span { flex: 1; display: grid; gap: 5px; }
+.sc-ex > span i { height: 8px; border-radius: 4px; background: var(--border); }
+.sc-ex > span i + i { width: 60%; }
+.sc-ex b { font-size: 14px; color: var(--gink); }
+.sc-ex s { color: var(--muted); font-weight: 600; }
+.sc-tag { position: absolute; inset: 0; margin: auto; width: max-content; height: max-content; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 99px; background: var(--surface); color: var(--text); font-size: 13px; font-weight: 800; box-shadow: var(--shadow-lg); }
+.sc-card .cr1-bigbtn { justify-content: center; }
+.sc-again { justify-self: center; font-size: 14px; }
+@media (max-width: 640px) { .sc-row > .cr1-bigbtn { width: 100%; justify-content: center; } }
+@media (prefers-reduced-motion: reduce) { .sc-spin { animation: none; } }

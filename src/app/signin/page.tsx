@@ -69,9 +69,14 @@ export default function SignIn() {
   const [addr, setAddr] = useState<Address>(EMPTY_ADDRESS);
   // Came from someone's invite link (owner, 28 Oct 2026): show what the friend gets. The code is kept for sign-up.
   const [refCode, setRefCode] = useState("");
+  // Came from the landing checker (owner, 29 Oct 2026): keep the TikTok username she typed.
+  const [handle, setHandle] = useState("");
   useEffect(() => {
-    const r = new URLSearchParams(window.location.search).get("ref");
+    const q = new URLSearchParams(window.location.search);
+    const r = q.get("ref");
     if (r) setRefCode(r.toUpperCase().slice(0, 20));
+    const u = q.get("u");
+    if (u && /^[a-z0-9._]{2,24}$/i.test(u)) setHandle(u.toLowerCase());
   }, []);
   const kindError = !kinds.length ? "Pick at least one" : kinds.includes("Others") && !otherKind.trim() ? "Tell us which one" : "";
 
@@ -284,6 +289,12 @@ export default function SignIn() {
             <span>Invited with code <b>{refCode}</b>. Get <b>+{REFERRAL_REWARD.friend} credits</b>: link TikTok Shop and scan within 30 days.</span>
           </p>
         )}
+        {handle && (
+          <p className="si-ref si-handle">
+            <Icon name="scan" size={18} />
+            <span>Your scan for <b>@{handle}</b> is one step away. Sign up, then link TikTok Shop to see your rates.</span>
+          </p>
+        )}
         <button type="button" className={`btn-google cr1-authbtn`} onClick={() => oauth("Google")}><GoogleMark /> Continue with Google</button>
         <button type="button" className="btn-tiktok cr1-authbtn" onClick={() => oauth("TikTok")}><TikTokMark /> Continue with TikTok</button>
         <button type="button" className="btn-email cr1-authbtn" onClick={() => { setMode("New here"); go("email"); }}><Icon name="inbox" size={20} /> Continue with email</button>
@@ -319,7 +330,7 @@ export default function SignIn() {
           <span className="v2-av">AR</span>
           <span>
             <b>{PROVIDER[provider].who}</b>
-            <small>Signed in with {provider} · {PROVIDER[provider].id}</small>
+            <small>Signed in with {provider} · {provider === "TikTok" && handle ? `@${handle}` : PROVIDER[provider].id}</small>
           </span>
           <Icon name="check" size={18} stroke="#00c073" width={3} />
         </div>
