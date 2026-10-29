@@ -62,7 +62,7 @@ export const FAQS: [string, string][] = [
   ["Will my old videos be affected?", "No. Your videos and links keep working. The better rate counts for sales from your new videos."],
   ["How do free samples work?", "Request a sample in the app. Our team works it out with the seller and keeps you updated."],
   ["Is my TikTok account safe?", "Yes. Linking TikTok Shop lets us read your showcase, orders and samples to find better rates. We never post or change anything unless you tap to do it."],
-  ["Why can Rezekii pay more?", "We work directly with sellers on our own TikTok Shop campaigns, and many of them pay more than the open rate."],
+  ["Why can Rezekii pay more?", "Rezekii is an agency. Sellers hire us to manage their affiliates, and they pay us for it, not you. That's how creators on Rezekii get better rates."],
   ["Is signing in with TikTok the same as linking TikTok Shop?", "No. Signing in only logs you in. You link TikTok Shop separately, and you can disconnect it at any time."],
   ["Who sees my contact details?", "Only our team, to help with samples and your account. Sellers never see them."],
 ];
