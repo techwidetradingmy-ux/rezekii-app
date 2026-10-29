@@ -368,3 +368,21 @@ function RateShare({ packs, best, items, line, price, unit, showOn }: { packs: P
     </div>
   );
 }
+
+/**
+ * The share image with the sample prices, for the landing page (owner, 29 Oct 2026: show the real rate card). Same card the
+ * app makes; the two suggested packages are priced at their sample total less the suggested discount.
+ */
+export function RateCardSample() {
+  const price = (k: string) => Number(SAMPLE[k] ?? 0);
+  const worth = (k: string, q: number) => (k === "rights" ? Math.round((price(k) * q) / 30) : price(k) * q);
+  const packs: Pack[] = SUGGEST.map((s, i) => ({
+    id: i,
+    name: s.name,
+    qty: s.qty,
+    price: String(Math.round(Object.entries(s.qty).reduce((a, [k, q]) => a + worth(k, q), 0) * (1 - s.off))),
+  }));
+  const line = (p: Pack) => Object.entries(p.qty).map(([k, q]) => (k === "rights" ? `${q} days of ad rights` : k === "tt-live" ? `${q} hour${q === 1 ? "" : "s"} of TikTok LIVE` : `${q} × ${ITEMS.find((it) => it.key === k)?.label}`)).join(" · ");
+  const items = ITEMS.filter((it) => ["tt-video", "ig-reel", "fb-reel", "th-post"].includes(it.key));
+  return <RateShare packs={packs} best={packs[0]} items={items} line={line} price={(it) => rm(price(it.key))} unit={(it) => it.unit} showOn={{ whatsapp: false, email: false, accounts: true }} />;
+}

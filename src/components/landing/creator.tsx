@@ -7,6 +7,9 @@ import { NOT_YET, WANTED } from "@/lib/mock-showcase";
 import { NICHE_BEST, VIDEOS, daily } from "@/lib/mock-creator2";
 import { AiMark, Tip } from "@/components/ui";
 import { Emblem } from "@/components/emblems";
+import { RateCardSample } from "@/components/account/rate-card";
+import { ReferralOffer } from "@/components/referral-offer";
+import "@/app/creator2.css";
 import { App, Av, Flip, PLATS, PlatIcon, Ring, Swap, Thumb, v, type Plat } from "./bits";
 import { Bento, VideoTile, type Tile } from "./bento";
 import { Journey, type DayStep } from "./journey";
@@ -274,7 +277,7 @@ function RewardsScreen() {
   return (
     <App title="Rewards">
       <div className="lp-s-lvl">
-        <Ring from={POST_TODAY.progress / POST_TODAY.goal} to={(POST_TODAY.progress + 1) / POST_TODAY.goal}>
+        <Ring size={84} from={POST_TODAY.progress / POST_TODAY.goal} to={(POST_TODAY.progress + 1) / POST_TODAY.goal}>
           <Swap at={1.3} from={`${POST_TODAY.progress}/${POST_TODAY.goal}`} to={`${POST_TODAY.progress + 1}/${POST_TODAY.goal}`} />
         </Ring>
         <span>
@@ -288,7 +291,7 @@ function RewardsScreen() {
         {(["Bronze", "Silver", "Gold"] as const).map((l, i) => (
           <li key={l} className={l === CREATOR.level ? "on" : i < 1 ? "done" : ""} style={v({ i })}>
             {/* The app's own level emblems (owner, 29 Oct 2026: same as in the app). */}
-            <Emblem level={l.toLowerCase() as "bronze" | "silver" | "gold"} size={l === CREATOR.level ? 64 : 52} animate={l === CREATOR.level} dim={i > (["Bronze", "Silver", "Gold"] as const).indexOf(CREATOR.level)} />
+            <Emblem level={l.toLowerCase() as "bronze" | "silver" | "gold"} size={l === CREATOR.level ? 84 : 68} animate={l === CREATOR.level} dim={i > (["Bronze", "Silver", "Gold"] as const).indexOf(CREATOR.level)} />
             <span>{l}</span>
           </li>
         ))}
@@ -353,33 +356,17 @@ function WishTile() {
   );
 }
 
-/** Her own prices, filled in, ready for sellers. Prices are the app's own sample rate card. */
-const RATES: [Plat | null, string, string][] = [["TikTok", "TikTok video", "350"], ["Instagram", "Instagram Reel", "300"], [null, "Ad rights, 30 days", "400"]];
+/** Her shareable rate card, the same image the app makes (owner, 29 Oct 2026), with sample prices. */
 function RateTile() {
-  return (
-    <div className="lp-w-card" aria-hidden="true">
-      <ul>
-        {RATES.map(([p, label, price], i) => (
-          <li key={label} style={v({ i })}>
-            {p ? <PlatIcon name={p} size={22} /> : <span className="lp-w-ad"><Icon name="shield" size={12} width={2.4} /></span>}
-            <span>{label}</span>
-            <b>RM {price}</b>
-          </li>
-        ))}
-      </ul>
-      <span className="lp-w-next"><Icon name="check" size={13} width={3} /> Sellers see your prices</span>
-    </div>
-  );
+  return <div className="lp-w-rcs" aria-hidden="true"><RateCardSample /></div>;
 }
 
-/** Share your link; when your friend gets started you both get credits. */
+/** The app's own referral offer (owner, 29 Oct 2026: a better presentation), with the share link under it. */
 function InviteTile() {
   return (
-    <div className="lp-w-ref" aria-hidden="true">
-      <span className="lp-w-who"><Av name={CREATOR.handle} size={38} /><em>+{REFERRAL_REWARD.inviter}</em><small>You</small></span>
-      <span className="lp-w-wire"><i><Icon name="gift" size={12} width={2.4} /></i></span>
-      <span className="lp-w-who"><Av name="@nurul.beauty" size={38} /><em>+{REFERRAL_REWARD.friend}</em><small>Your friend</small></span>
-      <small className="lp-w-cap">Credits for both of you</small>
+    <div className="lp-w-ref2">
+      <ReferralOffer />
+      <span className="lp-w-link2"><Icon name="link" size={14} width={2.4} /> rezekii.com/r/{CREATOR.handle.replace(/^@/, "")}<b>Share</b></span>
     </div>
   );
 }
@@ -528,7 +515,8 @@ export function CreatorBanner() {
     <section className="lp-banner" aria-label="Same products, more commission">
       <div className="lp-banner-t">
         <h2>Same Products. <em>More Commission.</em></h2>
-        <p>Rezekii AI finds the better rate. You keep posting.</p>
+        {/* 1% sounds small; at volume it isn't (owner, 29 Oct 2026). */}
+        <p>1% sounds small. On about RM 160,000 of sales, it's RM 1,600 more.</p>
       </div>
       <div className="lp-banner-c" aria-hidden="true">
         {COLLAGE.map((p, i) => (
