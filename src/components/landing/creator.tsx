@@ -354,9 +354,9 @@ const USPS: Usp[] = [
     ),
   },
   {
-    // RM 99 a month crossed out to Free, for the first 50 invited users (owner, 29 Oct 2026).
-    title: "Free for the First 50", tint: "#f5a623",
-    line: "Usually RM 99 a month. Free for the first 50 invited users. No follower minimum.",
+    // RM 99 a month crossed out to Free during Beta, no user limit (owner, 29 Oct 2026).
+    title: "Free During Beta", tint: "#f5a623",
+    line: "Usually RM 99 a month. No follower minimum. Nothing changes without your OK.",
     demo: (
       <div className="lp-u-free">
         <span className="lp-u-price">
@@ -364,7 +364,7 @@ const USPS: Usp[] = [
           <b>Free</b>
           <span className="lp-u-stamp">Beta</span>
         </span>
-        <span className="lp-u-chips"><span><Icon name="users" size={12} width={2.6} /> First 50 invited users</span><span><Icon name="check" size={12} width={3} /> No follower minimum</span></span>
+        <span className="lp-u-chips"><span><Icon name="check" size={12} width={3} /> No follower minimum</span><span><Icon name="check" size={12} width={3} /> Your OK first</span></span>
       </div>
     ),
   },
