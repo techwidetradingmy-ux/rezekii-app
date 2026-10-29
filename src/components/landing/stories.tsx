@@ -42,7 +42,7 @@ export const CREATOR_STORIES: Story[] = [
   },
   {
     name: "Hafiz Roslan", handle: "@hafiz.tech", state: "Selangor", level: "Bronze", sample: true,
-    result: "RM 0", period: "spent on samples", quote: "I was new. Free samples meant I didn't have to buy stock to review it.",
+    result: "Week 1", period: "her first free samples", quote: "I was new. Here the samples were open to me, no big follower count needed.",
     shot: { kind: "samples", title: "My Samples", rows: [["4-in-1 USB-C cable", 3], ["Phone stand", 2], ["Chopper blender", 1]] },
   },
   {

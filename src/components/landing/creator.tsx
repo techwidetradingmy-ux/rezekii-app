@@ -19,7 +19,9 @@ import { SeeRail, UspRail, type See, type Usp } from "./usp";
 
 /** Landing examples show a modest +1% (owner, 29 Oct 2026), not the biggest gap in the sample data. */
 const example = (id: string) => { const p = product(id); return { ...p, tapRate: p.publicRate + 1 }; };
-const TRACK = example("p01");
+/** Every rate example on the page uses one product (owner, 29 Oct 2026): the RM 159.90 pot, 9% open plan, 10% on Rezekii. */
+const POT = example("p08");
+const TRACK = product("p01");
 const POST_TODAY = MISSIONS.find((m) => m.id === "m7")!;
 const WISH = NOT_YET[0];
 const WANTED_N = WANTED[0].creators;
@@ -28,7 +30,7 @@ const n = (x: number) => x.toLocaleString("en-MY");
 /* ---------------- Hero ---------------- */
 
 const HERO_NOTES: Note[] = [
-  { title: "3 products have a better rate", line: `${TRACK.name}: ${TRACK.publicRate}% → ${TRACK.tapRate}% on Rezekii` },
+  { title: "3 products have a better rate", line: `${POT.name}: ${POT.publicRate}% → ${POT.tapRate}% on Rezekii` },
   { title: `AI pick: ${TRACK.name.replace(/ \(.*\)$/, "")} is selling fast`, line: `${short(TRACK.sold)} sold. Fits your Fashion videos` },
   { title: "Your viral time frame today: 8–10 pm", line: "When your followers watch most" },
   { title: "Sample shipped. Post by 6 Nov", line: `${product("p05").name} is on its way` },
@@ -52,7 +54,7 @@ const rm = (x: number) => `RM${x.toFixed(2)}`;
 const earn = (p: Product, rate: number) => (p.price * rate) / 100;
 
 /** Showcase Scan, laid out like the showcase list creators know: what each product earns, then a scan line runs down it. */
-const SCAN = ["p01", "p13", "p24"].map(example);
+const SCAN = ["p08", "p13", "p24"].map(example);
 const LOW = product("p04");
 function ScanScreen() {
   return (
@@ -221,7 +223,7 @@ function RewardsScreen() {
 const DAY: DayStep[] = [
   { id: "scan", time: "9:00", title: "Showcase Scan", ai: true, problem: "Checking 500 products one by one.", fix: "One scan shows where Rezekii pays more. Add All in one tap.", note: { title: "Scan done: 3 better rates", line: "Tap to see them and add all" }, screen: <ScanScreen /> },
   { id: "picks", time: "10:00", title: "AI Picks", ai: true, problem: "Scrolling TikTok for hours to find products.", fix: "Rezekii AI picks trending best sellers that suit you.", note: HERO_NOTES[1], screen: <PicksScreen /> },
-  { id: "samples", time: "13:00", title: "Free Samples", problem: "Buying samples with your own money.", fix: "Free samples, open to new creators. Sent to your door.", note: { title: `${OPEN.length} free samples open now`, line: "Open to new creators" }, screen: <SamplesScreen /> },
+  { id: "samples", time: "13:00", title: "Free Samples", problem: "Strict seller rules shut new creators out.", fix: "Free samples, open to new creators. Sent to your door.", note: { title: `${OPEN.length} free samples open now`, line: "Open to new creators" }, screen: <SamplesScreen /> },
   { id: "time", time: "19:00", title: "Viral Time Frame", ai: true, problem: "Posting when your followers aren't watching.", fix: "Rezekii AI learns when YOUR followers watch.", note: HERO_NOTES[2], screen: <BestTimeScreen /> },
   { id: "rewards", time: "21:00", title: "Rewards & Levels", problem: "Doing well, with nothing extra for it.", fix: "Credits for posting. Better rates as you level up.", note: HERO_NOTES[4], screen: <RewardsScreen /> },
 ];
@@ -309,8 +311,6 @@ export function CreatorBento() {
 
 /* ---------------- Why Rezekii (USP banners) ---------------- */
 
-/** Money examples use a pricier sample product (owner, 29 Oct 2026): +1% on RM 159.90 shows what it adds up to. */
-const POT = example("p08");
 const PER_SALE = (POT.price * (POT.tapRate - POT.publicRate)) / 100;
 const rmn = (x: number) => x.toLocaleString("en-MY", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 const AI_PICK = product("p20");
@@ -341,17 +341,18 @@ const USPS: Usp[] = [
     demo: (
       <div className="lp-u-col">
         <div className="lp-u-row">
-          <Thumb src={TRACK.img} size={44} />
-          <span>{TRACK.name}<small>Already in your showcase</small></span>
-          <span className="lp-u-flip"><span className="was">{TRACK.publicRate}%</span><b>{TRACK.tapRate}% <s>{TRACK.publicRate}%</s></b></span>
+          <Thumb src={POT.img} size={44} />
+          <span>{POT.name}<small>Already in your showcase</small></span>
+          <span className="lp-u-flip"><span className="was">{POT.publicRate}%</span><b>{POT.tapRate}% <s>{POT.publicRate}%</s></b></span>
         </div>
         <span className="lp-u-chip">Example: RM {POT.price.toFixed(2)} item, +RM {PER_SALE.toFixed(2)} a sale</span>
       </div>
     ),
   },
   {
-    title: "Free Samples, No Money Upfront", tint: "#1d4ed8",
-    line: "Just starting? You don't need to buy stock to review it.",
+    // TikTok samples are free too; sellers there often set strict rules (owner, 29 Oct 2026). The difference is who gets in.
+    title: "Free Samples, Open to New Creators", tint: "#1d4ed8",
+    line: "No strict follower rules to get your first samples.",
     demo: (
       <div className="lp-u-col">
         <div className="lp-u-track">
@@ -359,19 +360,21 @@ const USPS: Usp[] = [
           <span className="lp-u-parcel"><Icon name="box" size={16} width={2.2} /></span>
           <ol>{["Applied", "Shipped", "Received"].map((t, i) => <li key={t} style={v({ i })}><i />{t}</li>)}</ol>
         </div>
-        <span className="lp-u-spent"><s><Icon name="bag" size={13} width={2.2} /> Buy samples</s><b>RM 0 spent</b></span>
+        <span className="lp-u-spent"><s><Icon name="lock" size={13} width={2.2} /> Strict requirements</s><b>Open to new creators</b></span>
       </div>
     ),
   },
   {
     // One video, four apps, one tap (owner, 29 Oct 2026): each app's own icon so it reads at a glance.
-    title: "Post Once, 4 Platforms", tint: "#f08a00",
-    line: "One video to TikTok, Facebook, Instagram and Threads in one tap.",
+    // Four apps means four places to earn (owner, 29 Oct 2026), not a promise of 4× the commission.
+    title: "Post Once, Earn on 4 Platforms", tint: "#f08a00",
+    line: "One tap posts to TikTok, Facebook, Instagram and Threads: 4 places to earn, not 1.",
     demo: (
       <div className="lp-u-hub">
         <span className="lp-u-src">
           <Thumb src="/ai-videos/try-on.jpg" size={52} />
           <b>1 video</b>
+          <small>4 places to earn</small>
         </span>
         <svg className="lp-u-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
           {[12.5, 37.5, 62.5, 87.5].map((y, i) => <path key={y} d={`M0 50 C50 50 50 ${y} 100 ${y}`} pathLength={100} style={v({ i })} />)}
@@ -381,7 +384,7 @@ const USPS: Usp[] = [
             <li key={p} style={v({ i })}>
               <PlatIcon name={p} size={28} />
               <span>{p}</span>
-              <em><Icon name="check" size={11} width={3.4} /></em>
+              <em>RM</em>
             </li>
           ))}
         </ul>
@@ -411,7 +414,7 @@ export function CreatorCompare() {
 /* ---------------- What You'll See ---------------- */
 
 const SEE: See[] = [
-  { title: "Your Scan Results", line: `Better rates found, like ${TRACK.publicRate}% → ${TRACK.tapRate}%.`, screen: <ScanScreen /> },
+  { title: "Your Scan Results", line: `Better rates found, like ${POT.publicRate}% → ${POT.tapRate}%.`, screen: <ScanScreen /> },
   { title: "Posted to 4 Apps", line: "One upload: TikTok, Facebook, Instagram, Threads.", screen: <PostScreen /> },
 ];
 export function CreatorSee() {

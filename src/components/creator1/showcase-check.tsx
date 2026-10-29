@@ -83,7 +83,8 @@ export function ShowcaseCheck() {
           <button type="submit" className="np-btn cr1-bigbtn">Check My Showcase <Icon name="arrow" size={20} /></button>
         </div>
         {tried && err && <span className="sc-err" role="alert">{err}</span>}
-        <a href="#how" className="sc-how">How it works</a>
+        {/* Price is just "free to join", by the button (owner, 29 Oct 2026). */}
+        <p className="sc-free"><b>Free to Join</b> · <a href="#how" className="sc-how">How it works</a></p>
       </form>
     );
   }
@@ -146,7 +147,7 @@ export function ShowcaseCheck() {
         </div>
         <span className="sc-tag"><Icon name="lock" size={14} /> {found ? "Which ones are in your showcase?" : "Example only"}</span>
       </div>
-      <small className="sc-note">Free during Beta. Link TikTok Shop to see your real rates; you can unlink anytime.</small>
+      <small className="sc-note">Free to join. Link TikTok Shop to see your real rates; you can unlink anytime.</small>
       <Link href={`/signin?u=${encodeURIComponent(handle)}`} className="np-btn cr1-bigbtn">Sign Up to Reveal <Icon name="arrow" size={20} /></Link>
       {/* Under every CTA (owner, 29 Oct 2026): people feel safe signing up to a TikTok-related app. */}
       <span className="sc-trust">

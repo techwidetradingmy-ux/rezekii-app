@@ -27,9 +27,6 @@
 .lp-ctas .lp-ghost { height: 56px; padding: 0 22px; font-size: 16px; border-radius: 16px; }
 /* Three equal columns, always one tidy row (owner, 29 Oct 2026, option A). */
 .lp-chips { margin: 0; padding: 0; list-style: none; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; max-width: 540px; }
-.lp-announce { background: var(--asoft); border-bottom: 1px solid #f5c76a; color: var(--amber); }
-.lp-announce .site-wrap { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 34px; padding-block: 6px; font-size: 13px; font-weight: 800; text-align: center; }
-.lp-announce b { font-weight: 900; text-transform: uppercase; letter-spacing: 0.03em; }
 .lp-chips li { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 8px 6px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); font-size: 12.5px; font-weight: 700; line-height: 1.25; color: var(--body); text-align: center; }
 .lp-chips svg { width: 20px; height: 20px; padding: 3px; border-radius: 50%; background: var(--gsoft); color: #00a862; }
 .lp-hero-vis { position: relative; display: flex; justify-content: center; min-width: 0; }
@@ -357,14 +354,18 @@ i.gold { background: radial-gradient(circle at 35% 30%, #fff3bf, #f5b81e 55%, #b
 .lp-u-src { display: flex; flex-direction: column; align-items: center; gap: 5px; }
 .lp-u-src .lp-thumb { width: 56px !important; height: 84px !important; border-radius: 12px; box-shadow: var(--shadow-lg); }
 .lp-u-src b { font-size: 12px; font-weight: 900; }
+.lp-u-src small { padding: 2px 7px; border-radius: 99px; background: var(--asoft); color: var(--amber); font-size: 10.5px; font-weight: 900; white-space: nowrap; }
 .lp-u-lines { width: 100%; height: 128px; overflow: visible; }
-.lp-u-lines path { fill: none; stroke: #00c073; stroke-width: 2.5; vector-effect: non-scaling-stroke; stroke-linecap: round; stroke-dasharray: 100; }
+/* Dashes flowing out to each app: transform-free and smooth, always visible. */
+.lp-u-lines path { fill: none; stroke: #00c073; stroke-width: 2.5; vector-effect: non-scaling-stroke; stroke-linecap: round; stroke-dasharray: 6 5; }
 .lp-u-hub ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
 .lp-u-hub li { display: flex; align-items: center; gap: 7px; padding: 3px 8px 3px 3px; border-radius: 10px; background: var(--surface2); font-size: 12.5px; font-weight: 800; }
 .lp-u-hub li > span:not(.lp-pi) { flex: 1; }
-.lp-u-hub em { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; background: #00c073; color: #ffffff; }
-.lp-usp[data-on] .lp-u-lines path { animation: lpUDraw 4.5s calc(var(--i) * 0.15s) var(--lp-ease) infinite; }
-.lp-usp[data-on] .lp-u-hub em { animation: lpUPosted 4.5s calc(0.6s + var(--i) * 0.2s) var(--lp-spring) infinite; }
+.lp-u-hub em { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 9px; font-weight: 900; color: #6b4200; background: radial-gradient(circle at 35% 30%, #ffe48a, #f5b400 70%); box-shadow: inset 0 0 0 1.5px #e09a00; }
+.lp-usp[data-on] .lp-u-lines path { animation: lpUFlow 1.1s linear infinite; }
+.lp-usp[data-on] .lp-u-hub em { animation: lpUCoin 3.2s calc(var(--i) * 0.3s) ease-out infinite; }
+@keyframes lpUFlow { to { stroke-dashoffset: -11; } }
+@keyframes lpUCoin { 0% { transform: scale(0.7); opacity: 0.4; } 10% { transform: scale(1.15); opacity: 1; } 18%, 100% { transform: none; opacity: 1; } }
 /* Free during Beta */
 /* Seller: RM 0 vs staff */
 .lp-u-cost { width: 100%; display: grid; gap: 10px; }
@@ -706,7 +707,6 @@ button.lp-shotf { cursor: zoom-in; }
 @keyframes lpUTrend { 0%, 40% { opacity: 0.25; transform: translateX(-8px) scale(0.95); filter: grayscale(1); } 50%, 94% { opacity: 1; transform: none; filter: none; } 100% { opacity: 0.25; filter: grayscale(1); } }
 @keyframes lpUDraw { 0%, 46% { stroke-dashoffset: 100; } 64%, 94% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 100; } }
 @keyframes lpUParcel { 0% { left: 16.6%; opacity: 1; } 72%, 90% { left: 83.4%; opacity: 1; } 100% { left: 83.4%; opacity: 0; } }
-@keyframes lpUPosted { 0%, 32% { opacity: 0; transform: scale(0.7); } 40%, 86% { opacity: 1; transform: none; } 100% { opacity: 0; } }
 @keyframes lpUSend { 0%, 10% { transform: none; } 20% { transform: translateX(10px) rotate(6deg); } 30%, 100% { transform: none; } }
 @keyframes lpUArrow { 0%, 18% { opacity: 0.3; transform: translateX(-6px); } 30%, 90% { opacity: 1; transform: none; } 100% { opacity: 0.3; } }
 @keyframes lpUVid { 0%, 30% { opacity: 0; transform: scale(0.6); } 42%, 90% { opacity: 1; transform: none; } 100% { opacity: 0; transform: scale(0.9); } }

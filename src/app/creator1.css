@@ -1461,6 +1461,8 @@ li.sc-row { cursor: default; }
 .sc-field:focus-within { box-shadow: 0 0 0 4px var(--gsoft); }
 .sc-err { font-size: 13px; font-weight: 700; color: var(--red); }
 .sc-how { justify-self: start; font-size: 14px; font-weight: 800; color: var(--gink); }
+.sc-free { margin: 0; justify-self: start; font-size: 14px; font-weight: 700; color: var(--muted); }
+.sc-free b { font-weight: 900; color: var(--text); }
 .sc-card { display: grid; gap: 12px; padding: 18px; border-radius: 22px; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-lg); max-width: 520px; }
 .sc-card h3 { margin: 0; font-size: 20px; line-height: 1.2; text-wrap: balance; }
 .sc-who { display: flex; align-items: center; gap: 10px; }

@@ -23,7 +23,7 @@ export const metadata = { title: "Rezekii · AI-Powered Affiliate Platform" };
 const CHIPS = ["No Follower Minimum", "Nothing Changes Without You"];
 
 const START: PathStep[] = [
-  { icon: "user", title: "Sign Up", line: "Free during Beta. About 1 minute." },
+  { icon: "user", title: "Sign Up", line: "Free to join. About 1 minute." },
   { icon: "link", title: "Link TikTok Shop", line: "Approve access in TikTok. Unlink anytime." },
   { icon: "scan", title: "Scan & Add", line: "Rezekii AI checks every product. Add better rates in one tap." },
 ];
@@ -50,8 +50,6 @@ export default function Landing() {
   return (
     <>
       <DemoStrip />
-      {/* The only price mention, as an announcement (owner, 29 Oct 2026), not in the hero. */}
-      <div className="lp-announce"><div className="site-wrap"><Icon name="gift" size={15} width={2.2} /> First 50 Sign-Ups <b>Free During Beta</b></div></div>
       <JoinBar />
       <header className="lp-hero">
         <nav className="site-nav site-wrap" aria-label="Main">
@@ -168,9 +166,9 @@ export default function Landing() {
 
         <Reveal className="lp-final" label="Get started">
           <h2>See What Your Showcase Is Missing</h2>
-          <p>Free during Beta.</p>
+          <p>Free to join.</p>
           <Link href="/signin" className="np-btn lp-bigbtn">Check My Showcase <Icon name="arrow" size={20} /></Link>
-          <span className="lp-final-note">No Follower Requirement</span>
+          <span className="lp-final-note">Free to Join · No Follower Requirement</span>
           <PartnerLine center />
         </Reveal>
       </main>
