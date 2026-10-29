@@ -1,12 +1,6 @@
-import { AiMark, AiTag } from "@/components/ui";
-
-/** Hero badge on both landing pages (owner, 29 Oct 2026): Rezekii introduces itself as an AI-powered affiliate platform. */
+/**
+ * Hero line above the headline on both landing pages (owner, 29 Oct 2026): just the words, no icon or chip, which read as extra.
+ */
 export function AiEyebrow({ text = "AI-Powered Affiliate Platform · Malaysia" }: { text?: string }) {
-  return (
-    <span className="lp-eyebrow">
-      <AiMark size={22} />
-      <AiTag label="Rezekii AI" bare />
-      <span>{text}</span>
-    </span>
-  );
+  return <span className="lp-eyebrow">{text}</span>;
 }

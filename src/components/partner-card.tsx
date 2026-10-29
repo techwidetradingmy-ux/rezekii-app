@@ -25,22 +25,19 @@ const STORES = [
 ];
 
 /**
- * All our badges in one row, under both landing heroes (owner, 29 Oct 2026): official TikTok Shop Partner App (listed in the
- * Seller Center App Store since 21 Oct 2026), and coming soon to the App Store and Google Play. Always dark, like store badges.
+ * Our badges as one small row inside both landing heroes (owner, 29 Oct 2026: simple, not a section of its own): official
+ * TikTok Shop Partner App (listed in the Seller Center App Store since 21 Oct 2026), and App Store and Google Play coming soon.
  */
 export function PartnerCard() {
   return (
-    <section className="pc-row" aria-label="Official TikTok Shop Partner App. Coming soon to the App Store and Google Play.">
+    <p className="pc-row" aria-label="Official TikTok Shop Partner App. Coming soon to the App Store and Google Play.">
       <span className="pc-badge">
-        <Image src="/tiktok-shop-partner-logo.png" alt="TikTok Shop Partner" width={103} height={30} />
-        <span className="pc-t"><small>Verified</small>Official App</span>
+        <Image src="/tiktok-shop-partner-logo.png" alt="" width={69} height={20} />
       </span>
-      {STORES.map((s) => (
-        <span key={s.name} className="pc-badge soon">
-          {s.logo}
-          <span className="pc-t"><small>Coming soon to</small>{s.name}</span>
-        </span>
-      ))}
-    </section>
+      <span className="pc-soon">
+        {STORES.map((s) => <span key={s.name} className="pc-store" title={s.name}>{s.logo}</span>)}
+        <small>Coming soon</small>
+      </span>
+    </p>
   );
 }

@@ -13,7 +13,9 @@ import { Av, v } from "./bits";
 export type Shot =
   | { kind: "earn"; title: string; amount: string; period: string; bars: number[] }
   | { kind: "creators"; title: string; rows: [string, number][] }
-  | { kind: "samples"; title: string; rows: [string, number][] };
+  | { kind: "samples"; title: string; rows: [string, number][] }
+  /** TikTok Shop commission before and after, same products (owner, 29 Oct 2026). */
+  | { kind: "payout"; title: string; before: string; after: string; period: string };
 
 export type Story = {
   name: string;
@@ -37,8 +39,9 @@ export const CREATOR_STORIES: Story[] = [
   },
   {
     name: "Tan Mei Ling", handle: "@mei.ling.deals", state: "Kuala Lumpur", level: "Silver", sample: true,
-    result: "+RM 640", period: "from Reels and Threads, 30 days", quote: "I upload once now, and my Reels started selling too.",
-    shot: { kind: "earn", title: "Other Platforms", amount: "RM 640.10", period: "Last 30 days", bars: [12, 18, 26, 30, 41, 47, 52, 66] },
+    // 9% to 10% on the same sales is about 11% more: modest on purpose.
+    result: "+RM 161", period: "more TikTok Shop commission, 30 days", quote: "Same products, same videos. My TikTok Shop commission just went up.",
+    shot: { kind: "payout", title: "TikTok Shop Commission", before: "RM 1,452", after: "RM 1,613", period: "Last 30 days" },
   },
   {
     name: "Hafiz Roslan", handle: "@hafiz.tech", state: "Selangor", level: "Bronze", sample: true,
@@ -82,6 +85,14 @@ function ShotUI({ shot }: { shot: Shot }) {
           <span className="lp-shotui-amt">{shot.amount}<small>{shot.period}</small></span>
           <span className="lp-shotui-bars">{shot.bars.map((h, i) => <i key={i} style={v({ h: `${h}%`, i })} />)}</span>
         </>
+      )}
+      {shot.kind === "payout" && (
+        <span className="lp-shotui-pay">
+          <span><small>Before</small><s>{shot.before}</s></span>
+          <Icon name="arrow" size={14} width={2.6} />
+          <span className="now"><small>With Rezekii</small><b>{shot.after}</b></span>
+          <small>{shot.period}</small>
+        </span>
       )}
       {shot.kind === "creators" && (
         <ul className="lp-shotui-rows">

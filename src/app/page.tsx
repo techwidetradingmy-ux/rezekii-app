@@ -8,7 +8,7 @@ import { JoinBar } from "@/components/join-board";
 import { ShowcaseCheck } from "@/components/creator1/showcase-check";
 import { PartnerCard } from "@/components/partner-card";
 import { AiEyebrow } from "@/components/landing/ai-eyebrow";
-import { CreatorBento, CreatorCompare, CreatorDay, CreatorHeroPhone, CreatorSee, CreatorUsps } from "@/components/landing/creator";
+import { CreatorBento, CreatorCompare, CreatorDay, CreatorHeroScan, CreatorSee, CreatorUsps } from "@/components/landing/creator";
 import { PartnerLine } from "@/components/landing/partner-line";
 import { AiText } from "@/components/landing/ai-text";
 import { Path, type PathStep } from "@/components/landing/path";
@@ -19,8 +19,6 @@ import "./landing.css";
 
 export const metadata = { title: "Rezekii · AI-Powered Affiliate Platform" };
 
-/** Price is only the hero label (owner, 29 Oct 2026: not our advantage, and only for now). */
-const CHIPS = ["No Follower Minimum", "Nothing Changes Without You"];
 
 const START: PathStep[] = [
   { icon: "user", title: "Sign Up", line: "Free to join. About 1 minute." },
@@ -67,28 +65,25 @@ export default function Landing() {
           <Link href="/seller" className="lp-keep">For Sellers</Link>
           <Link href="/signin" className="site-signin">Sign In</Link>
         </nav>
-        <div className="site-wrap lp-hero-grid">
-          <div className="lp-hero-copy">
+        {/* Pain, then hope, then the product working, big (owner, 29 Oct 2026, option A1). Phones: words, picture, then the box. */}
+        <div className="site-wrap lp-hero-grid scan">
+          <div className="lp-hero-copy lp-hero-top">
             <AiEyebrow />
-            <h1>Your Showcase May Have <em>Higher Commission</em> Waiting</h1>
-            <p><AiText text="Rezekii AI finds better rates, trending products and your viral time frame. You just make the videos." /></p>
-            <ShowcaseCheck />
-            <PartnerLine />
-            <ul className="lp-chips">
-              {CHIPS.map((c) => (
-                <li key={c}><Icon name="check" size={14} width={3} />{c}</li>
-              ))}
-            </ul>
+            <h1>Selling the Same Products <em>for Less?</em></h1>
+            <p><AiText text="Rezekii AI checks your whole showcase and finds better rates on the same products. You just make the videos." /></p>
           </div>
           <div className="lp-hero-vis">
-            <CreatorHeroPhone />
+            <CreatorHeroScan />
+          </div>
+          <div className="lp-hero-copy lp-hero-cta">
+            {/* Just the box: the partner badges sit in the row right under the hero (owner, 29 Oct 2026: the rest felt extra). */}
+            <ShowcaseCheck />
+            <PartnerCard />
           </div>
         </div>
       </header>
 
       <main className="site-wrap site-main lp-main">
-        <PartnerCard />
-
         <Reveal className="section" label="What you get">
           <div className="lp-head">
             <span className="eyebrow">WHAT YOU GET</span>
@@ -166,7 +161,6 @@ export default function Landing() {
 
         <Reveal className="lp-final" label="Get started">
           <h2>See What Your Showcase Is Missing</h2>
-          <p>Free to join.</p>
           <Link href="/signin" className="np-btn lp-bigbtn">Check My Showcase <Icon name="arrow" size={20} /></Link>
           <span className="lp-final-note">Free to Join · No Follower Requirement</span>
           <PartnerLine center />

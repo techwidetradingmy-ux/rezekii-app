@@ -1,10 +1,8 @@
-/* Badge row under both landing heroes (owner, 29 Oct 2026). Always dark, like official store badges. */
-.pc-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-block: -32px -24px; }
-.pc-badge { display: inline-flex; align-items: center; gap: 10px; height: 52px; padding: 0 16px; border-radius: 12px; background: #000000; border: 1px solid #2a2f36; color: #ffffff; }
-.pc-badge img { display: block; height: 30px; width: auto; }
-.pc-badge.soon { background: #161a1f; }
-.pc-badge svg { flex-shrink: 0; color: #c9d1cd; }
-.pc-t { display: grid; font-size: 15px; font-weight: 800; line-height: 1.15; white-space: nowrap; }
-.pc-t small { font-size: 10.5px; font-weight: 700; color: #c9d1cd; letter-spacing: 0.02em; }
-/* Phones: the partner badge on its own row, the two store badges side by side under it, all the same width. */
-@media (max-width: 640px) { .pc-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-block: -36px 0; } .pc-badge { justify-content: center; height: 46px; padding: 0 10px; gap: 8px; } .pc-badge:first-child { grid-column: 1 / -1; } .pc-badge img { height: 26px; } .pc-t { font-size: 14px; } }
+/* Badge row inside both landing heroes (owner, 29 Oct 2026): small and simple, partner badge then the store logos. */
+.pc-row { margin: 0; align-self: flex-start; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.pc-badge { display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border-radius: 10px; background: #000000; }
+.pc-badge img { display: block; height: 20px; width: auto; }
+.pc-soon { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px 0 6px; border-radius: 10px; background: #000000; color: #c9d1cd; }
+.pc-store { display: grid; place-items: center; width: 22px; height: 22px; }
+.pc-store svg { width: 17px; height: 17px; }
+.pc-soon small { font-size: 11.5px; font-weight: 800; white-space: nowrap; }

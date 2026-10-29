@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Icon, type IconName } from "@/components/icons";
-import { AiMark, Tip } from "@/components/ui";
+import { Tip } from "@/components/ui";
+import { AiText } from "./ai-text";
 import { useLiveChildren, useMedia, useOnScreen, useReducedMotion } from "./hooks";
 import { AutoSlider } from "./slider";
 
@@ -36,10 +37,11 @@ function TileCard({ t, item = false }: { t: Tile; item?: boolean }) {
       <header>
         <span className="lp-tico" style={{ background: t.tint }}><Icon name={t.icon} size={16} width={2.2} /></span>
         <h3>{t.title}</h3>
-        {t.ai && <AiMark size={20} />}
         {t.soon && <span className="badge badge-amber">Soon</span>}
         <Tip text={t.tip} label={`About ${t.title}`} />
       </header>
+      {/* Phones: the explanation shows under the title instead of behind the ⓘ (owner, 29 Oct 2026). One icon per card. */}
+      <p className="lp-tile-d"><AiText text={t.tip} /></p>
       <div className="lp-tile-b">{t.body}</div>
     </article>
   );

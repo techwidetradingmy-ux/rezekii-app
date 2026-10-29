@@ -132,7 +132,7 @@ export function SellerLanding() {
               <Link href="/seller/connect" className="np-btn lp-bigbtn">Connect Seller Center <Icon name="arrow" size={18} /></Link>
               <button type="button" className="lp-ghost" onClick={() => setTalk(true)}>Talk to Our Team</button>
             </div>
-            <PartnerLine />
+            <PartnerCard />
             <ul className="lp-chips">
               {CHIPS.map((c) => (
                 <li key={c}><Icon name="check" size={14} width={3} />{c}</li>
@@ -146,7 +146,6 @@ export function SellerLanding() {
       </header>
 
       <main className="site-wrap site-main lp-main">
-        <PartnerCard />
 
         <Reveal className="section" label="What you get">
           <div className="lp-head">
