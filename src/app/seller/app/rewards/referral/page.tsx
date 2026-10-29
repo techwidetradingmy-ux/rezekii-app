@@ -16,8 +16,8 @@ const GOAL = 5;
 
 /**
  * Seller referral (owner, 29 Oct 2026, same layout as creators, option C): progress toward the next bonus with Share on top, then
- * who joined with the link. A friend counts once they connect (sellers: Seller Center; creators: TikTok Shop) and fill in their
- * details. What each one earned stays in the credit history, so the list shows names and status only.
+ * who joined with the link. Sellers only invite sellers (owner, 30 Oct 2026); one counts once they connect Seller Center and fill in
+ * their details.
  */
 export default function SellerReferral() {
   const { toast } = useDemo();
@@ -31,12 +31,12 @@ export default function SellerReferral() {
 
   return (
     <div className="v2-stack v2-in">
-      <Title title="Referral" sub="Invite sellers and creators. You both earn credits once they're set up." />
+      <Title title="Referral" sub="Invite fellow sellers. You both earn credits once they're set up." />
 
       <section className="v2-card rf-hero">
         <div className="rf-goal">
           <b>{Math.min(done, GOAL)} of {GOAL} Friends</b>
-          <small>{done >= GOAL ? "Bonus unlocked" : `${GOAL - done} more for a bonus`} <Tip text="Friends count once they connect Seller Center (creators: TikTok Shop) and fill in their details. The bonus lands in your credit history." /></small>
+          <small>{done >= GOAL ? "Bonus unlocked" : `${GOAL - done} more for a bonus`} <Tip text="Sellers count once they connect Seller Center and fill in their details. The bonus lands in your credit history." /></small>
         </div>
         <div className="rf-segs" aria-hidden="true">{Array.from({ length: GOAL }, (_, i) => <i key={i} className={i < done ? "on" : undefined} />)}</div>
         <p className="rf-line">+{REFERRAL_REWARD.inviter} credits for you, +{REFERRAL_REWARD.friend} for your friend, once they&apos;re set up. Credits are not cash.</p>
@@ -79,9 +79,9 @@ export default function SellerReferral() {
       <section className="v2-card flat">
         <h2 className="cr2-h3">How It Counts</h2>
         <ol className="cr2-rules">
+          <li><span><b>Sellers only.</b> Invite fellow sellers. Creators have their own referral.</span></li>
           <li><span><b>Sellers</b> count once they connect Seller Center and fill in their details within 30 days.</span></li>
-          <li><span><b>Creators</b> count once they link TikTok Shop and fill in their details within 30 days.</span></li>
-          <li><span><b>Sign-up link wins.</b> The link or code used at sign-up counts. It can&apos;t change.</span></li>
+          <li><span><b>Last click wins.</b> Your link works for 14 days after the seller taps it. If they tap another seller&apos;s link after yours, that one counts, so share early.</span></li>
         </ol>
       </section>
 

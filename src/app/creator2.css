@@ -1037,6 +1037,15 @@ span.pd-row { grid-template-columns: 12px minmax(0, 1fr) auto 14px; }
 @media (max-width: 760px) { .acc-theme-row { display: none !important; } }
 /* Referral, option C (owner, 29 Oct 2026): progress to the next bonus, Share on top, friends by status only. */
 .rf-hero { gap: 12px; }
+.rf-banner { position: relative; display: grid; gap: 6px; padding: 20px 18px; border-radius: 22px; overflow: hidden; background: linear-gradient(135deg, #ff7aa8, #e8005a); color: #ffffff; }
+.rf-banner small { font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.9; }
+.rf-banner h2 { margin: 0; max-width: 78%; font-size: 24px; line-height: 1.15; font-weight: 900; text-wrap: balance; }
+.rf-banner p { margin: 0; max-width: 85%; font-size: 14px; line-height: 1.45; opacity: 0.92; }
+.rf-banner-ico { position: absolute; top: 16px; right: 16px; display: grid; place-items: center; width: 62px; height: 62px; border-radius: 20px; background: rgba(255, 255, 255, 0.2); transform: rotate(8deg); }
+.rf-banner-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.rf-banner-chips span { padding: 6px 12px; border-radius: 99px; background: #ffffff; color: #b0004a; font-size: 13px; font-weight: 700; }
+.rf-banner-chips b { font-weight: 900; }
+.rf-banner-note { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 12.5px; font-weight: 700; opacity: 0.95; }
 .rf-goal { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 10px; }
 .rf-goal b { font-size: 18px; font-weight: 900; }
 .rf-goal small { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 700; color: var(--muted); }

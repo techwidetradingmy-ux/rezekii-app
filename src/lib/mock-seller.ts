@@ -223,9 +223,9 @@ export const NEWBIE_LEFT_MS = ((5 * 24 + 12) * 60 + 4) * 60 * 1000;
 
 export const SELLER_INVITES = [
   { name: "Rumah Rapi MY", role: "Seller", status: "Successful", note: "Connected shop and submitted 3 products", when: "4 Oct", credits: 50 },
-  { name: "@hana.masak", role: "Creator", status: "Successful", note: "Linked TikTok Shop and ran a scan", when: "11 Oct", credits: 50 },
+  { name: "Kedai Ummi", role: "Seller", status: "Successful", note: "Connected shop and submitted 2 products", when: "11 Oct", credits: 50 },
   { name: "Bayu Sports Gear", role: "Seller", status: "Successful", note: "Connected shop and submitted 1 product", when: "19 Oct", credits: 50 },
-  { name: "@kemas.dengan.lia", role: "Creator", status: "Signed up", note: "Hasn't linked TikTok Shop yet · 23 days left", when: "22 Oct", credits: 0 },
+  { name: "Teh Tarik Co.", role: "Seller", status: "Signed up", note: "Hasn't connected Seller Center yet · 23 days left", when: "22 Oct", credits: 0 },
   { name: "Lembut Baby Co.", role: "Seller", status: "Signed up", note: "Hasn't connected Seller Center yet · 26 days left", when: "26 Oct", credits: 0 },
 ];
 
@@ -233,7 +233,7 @@ export const SELLER_LEDGER = [
   { when: "Today 09:10", what: "Cross-channel post · 4 channels", amount: -20 },
   { when: "Today 08:15", what: "Referral: Bayu Sports Gear", amount: 50 },
   { when: "19 Oct", what: "Mission: Submit your first products", amount: 100 },
-  { when: "11 Oct", what: "Referral: @hana.masak", amount: 50 },
+  { when: "11 Oct", what: "Referral: Kedai Ummi", amount: 50 },
   { when: "4 Oct", what: "Referral: Rumah Rapi MY", amount: 50 },
   { when: "13 Sep", what: "Mission: Add your contact name and phone", amount: 50 },
   { when: "12 Sep", what: "Mission: Connect Seller Center", amount: 100 },

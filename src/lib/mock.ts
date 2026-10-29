@@ -227,12 +227,12 @@ export const BADGES = [
 export const REFERRAL_REWARD = { inviter: 50, friend: 50 };
 
 /**
- * People who signed up with her link or code. Successful (owner, 29 Oct 2026) = linked TikTok Shop (sellers: Seller Center) and
+ * Creators who signed up with her link or code; creators only invite creators (owner, 30 Oct 2026). Successful = linked TikTok Shop and
  * filled in their details. What each one earned her lives in her credit history, not here.
  */
 export const INVITES = [
   { name: "@nurul.beauty", role: "Creator", linked: true, details: true, when: "3 Oct" },
-  { name: "Seri Living MY", role: "Seller", linked: true, details: true, when: "11 Oct" },
+  { name: "@siti.deco", role: "Creator", linked: true, details: true, when: "11 Oct" },
   { name: "@farah.home", role: "Creator", linked: true, details: false, when: "20 Oct" },
   { name: "@hafiz.tech", role: "Creator", linked: true, details: true, when: "22 Oct" },
   { name: "@mira.new", role: "Creator", linked: false, details: false, when: "27 Oct" },

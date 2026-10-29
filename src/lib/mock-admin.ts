@@ -363,13 +363,13 @@ export const MISSION_FUNNELS: Record<string, [string, number][]> = {
 
 export const REFERRALS = [
   { id: "R-901", from: "@aisyah.glow", to: "@hafiz.tech", pair: "Creator → Creator", status: "Reward paid", reward: 50, when: "22 Oct", flag: "" },
-  { id: "R-902", from: "@aisyah.glow", to: "Seri Living MY", pair: "Creator → Seller", status: "Qualified · paying", reward: 50, when: "11 Oct", flag: "" },
+  { id: "R-902", from: "@aisyah.glow", to: "@zara.home", pair: "Creator → Creator", status: "Qualified · paying", reward: 50, when: "11 Oct", flag: "" },
   { id: "R-903", from: "Seri Living MY", to: "Kopi Senja", pair: "Seller → Seller", status: "Reward paid", reward: 50, when: "24 Oct", flag: "" },
-  { id: "R-904", from: "Urban Basics MY", to: "@nurul.beauty", pair: "Seller → Creator", status: "Reward paid", reward: 50, when: "3 Oct", flag: "" },
+  { id: "R-904", from: "Urban Basics MY", to: "Mawar Wear", pair: "Seller → Seller", status: "Reward paid", reward: 50, when: "3 Oct", flag: "" },
   { id: "R-905", from: "@siti.deco", to: "@siti.deco2", pair: "Creator → Creator", status: "Held for review", reward: 50, when: "27 Oct", flag: "Same device" },
   { id: "R-906", from: "@aisyah.glow", to: "@farah.home", pair: "Creator → Creator", status: "Signed up · no scan yet", reward: 0, when: "20 Oct", flag: "" },
   { id: "R-907", from: "@danial.vlogs", to: "@danial.reviews", pair: "Creator → Creator", status: "Held for review", reward: 50, when: "26 Oct", flag: "Same TikTok account" },
-  { id: "R-908", from: "@kak.ros.kitchen", to: "Dapur Pintar", pair: "Creator → Seller", status: "Qualified · paying", reward: 50, when: "19 Oct", flag: "" },
+  { id: "R-908", from: "@kak.ros.kitchen", to: "@mei.ling.deals", pair: "Creator → Creator", status: "Qualified · paying", reward: 50, when: "19 Oct", flag: "" },
   { id: "R-909", from: "Bersih Pro", to: "Kraf Rotan", pair: "Seller → Seller", status: "Signed up · no product yet", reward: 0, when: "25 Oct", flag: "" },
 ];
 

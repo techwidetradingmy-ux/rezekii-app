@@ -12,7 +12,7 @@ import { REFERRAL_REWARD } from "@/lib/mock";
 type Ref = (typeof REFERRALS)[number];
 type Filter = "All" | "Held for review" | "Qualified" | "Not yet";
 const tone = (s: string): Tone => (s.startsWith("Reward paid") || s.startsWith("Qualified") ? "ok" : s.startsWith("Held") ? "bad" : s.startsWith("Reversed") ? "mute" : "info");
-const PAIRS = ["Creator → Creator", "Creator → Seller", "Seller → Seller", "Seller → Creator"];
+const PAIRS = ["Creator → Creator", "Seller → Seller"];
 
 /** Who invited whom, by role pair, with suspected abuse held for a person to check. */
 export default function GrowthReferrals() {
@@ -33,7 +33,7 @@ export default function GrowthReferrals() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
-      <Title title="Referrals" sub="Anyone can invite anyone. Same reward for every pair." />
+      <Title title="Referrals" sub="Creators invite creators, sellers invite sellers. Same reward for both." />
 
       <div className="v2-grid4 ad-stats">
         <div className="v2-stat"><small>Referrals in October</small><b>{list.length}</b><em>Via invite link</em></div>

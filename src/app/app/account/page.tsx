@@ -150,6 +150,8 @@ export default function Account() {
       <div className="cr2-settings acc-layout">
         {/* Owner, 28 Oct 2026: on a wide screen the profile and the sections sit in a side bar. */}
         <aside className="acc-side">
+        {/* Referral shows its own banner instead of her profile (owner, 30 Oct 2026). */}
+        {tab !== "referral" && (
         <div className="cr2-cells">
           <div className="cr2-profile">
             <LevelFace lv={linked ? CREATOR.tiktokLevel : null} size={76} img={CREATOR.photo} name={CREATOR.name} />
@@ -176,6 +178,7 @@ export default function Account() {
             </span>
           </div>
         </div>
+        )}
 
         <div ref={tabsRef} className="acc-tabs nv-noscroll" role="tablist" aria-label="Account sections">
           {TABS.map(([k, label, icon]) => (

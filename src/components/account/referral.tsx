@@ -32,6 +32,19 @@ export function Referral() {
 
   return (
     <div className="v2-stack" style={{ gap: 16 }}>
+      {/* The program at a glance, in place of her profile (owner, 30 Oct 2026). */}
+      <section className="rf-banner">
+        <span className="rf-banner-ico" aria-hidden="true"><Icon name="gift" size={34} width={2} /></span>
+        <small>Referral Program</small>
+        <h2>Invite Friends, Earn Together</h2>
+        <p>Do a friend a favour: they can check their showcase for better rates too.</p>
+        <span className="rf-banner-chips">
+          <span><b>+{REFERRAL_REWARD.inviter}</b> for you</span>
+          <span><b>+{REFERRAL_REWARD.friend}</b> for your friend</span>
+        </span>
+        {/* Attribution (owner, 30 Oct 2026): a link lasts 14 days and the last one tapped wins. */}
+        <span className="rf-banner-note"><Icon name="clock" size={14} width={2.4} /> Links last 14 days and the last one tapped wins. Share early.</span>
+      </section>
       <section className="v2-card rf-hero">
         <div className="rf-goal">
           <b>{Math.min(done, GOAL)} of {GOAL} Friends</b>
@@ -39,7 +52,7 @@ export function Referral() {
         </div>
         <div className="rf-segs" aria-hidden="true">{Array.from({ length: GOAL }, (_, i) => <i key={i} className={i < done ? "on" : undefined} />)}</div>
         <p className="rf-line">+{REFERRAL_REWARD.inviter} credits for you, +{REFERRAL_REWARD.friend} for your friend, once they&apos;re set up.</p>
-        <ShareButton primary="Share Invite" big="Join me on Rezekii" label="Better commission for your TikTok Shop showcase" lines={[`Use my code ${CODE}: +${REFERRAL_REWARD.friend} credits`, "Free for creators and sellers"]} moment="invite" />
+        <ShareButton primary="Share Invite" big="Join me on Rezekii" label="Better commission for your TikTok Shop showcase" lines={[`Use my code ${CODE}: +${REFERRAL_REWARD.friend} credits`, "Free for creators"]} moment="invite" />
         <div className="rf-acts">
           <button type="button" className="btn-outline v2-btn-sm" onClick={() => copy(`https://${LINK}`, "Link")}>Copy Link</button>
           <button type="button" className="btn-outline v2-btn-sm" onClick={() => copy(CODE, "Code")}>Copy Code</button>
@@ -76,8 +89,9 @@ export function Referral() {
       <section className="v2-card flat">
         <h2 className="cr2-h3">How It Counts</h2>
         <ol className="cr2-rules">
-          <li><span><b>Successful</b> means your friend links TikTok Shop (sellers: Seller Center) and fills in their details within 30 days.</span></li>
-          <li><span><b>Sign-up link wins.</b> The link or code used at sign-up counts. It can&apos;t change.</span></li>
+          <li><span><b>Creators only.</b> Invite fellow creators. Sellers have their own referral.</span></li>
+          <li><span><b>Successful</b> means your friend links TikTok Shop and fills in their details within 30 days.</span></li>
+          <li><span><b>Last click wins.</b> Your link works for 14 days after your friend taps it. If they tap another creator&apos;s link after yours, that one counts, so share early.</span></li>
           <li><span>Your credits show in your <Link href="/app/account#wallet" className="v2-link">Wallet</Link>.</span></li>
         </ol>
       </section>
