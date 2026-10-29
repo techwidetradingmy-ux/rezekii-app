@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useOnScreen, useReducedMotion } from "./hooks";
 import { AiText } from "./ai-text";
 
-export type CompareRow = { label: string; without: string; with: string };
+/** `with` can be a picture (app icons, a big number) instead of words. */
+export type CompareRow = { label: string; without: string; with: React.ReactNode };
 
 /**
  * Without Rezekii vs With Rezekii (owner, 29 Oct 2026: show the difference, not our own results). Phones: one column that
@@ -36,7 +37,7 @@ export function Compare({ rows, note }: { rows: CompareRow[]; note?: string }) {
           <li key={r.label} style={{ "--i": i } as React.CSSProperties}>
             <b>{r.label}</b>
             <span className="wo"><span className="lp-sr">Without Rezekii: </span>{r.without}</span>
-            <span className="wi"><span className="lp-sr">With Rezekii: </span><span><AiText text={r.with} /></span></span>
+            <span className="wi"><span className="lp-sr">With Rezekii: </span><span>{typeof r.with === "string" ? <AiText text={r.with} /> : r.with}</span></span>
           </li>
         ))}
       </ul>

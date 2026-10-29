@@ -417,6 +417,11 @@ i.gold { background: radial-gradient(circle at 35% 30%, #fff3bf, #f5b81e 55%, #b
 .lp-cmp .wo, .lp-cmp .wi { grid-column: 2; grid-row: 1; display: flex; align-items: center; gap: 8px; font-size: 14.5px; font-weight: 700; line-height: 1.35; transition: opacity 0.3s, transform 0.45s var(--lp-spring); transition-delay: calc(var(--i) * 60ms); }
 .lp-cmp .wo { color: var(--muted); }
 .lp-cmp .wi { color: var(--text); }
+.lp-cmp-money { display: grid; gap: 1px; }
+.lp-cmp .lp-cmp-money b { font-size: 19px; font-weight: 900; letter-spacing: -0.01em; color: var(--gink); }
+.lp-cmp-money small { font-size: 12px; font-weight: 700; color: var(--muted); }
+.lp-cmp-apps { display: grid; gap: 5px; }
+.lp-cmp-apps > span:not(.lp-sr) { display: flex; gap: 6px; }
 .lp-cmp .wo::before, .lp-cmp .wi::before { flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 900; color: #ffffff; }
 .lp-cmp .wo::before { content: "\2715"; background: #9aa8a1; }
 .lp-cmp .wi::before { content: "\2713"; background: #00c073; }

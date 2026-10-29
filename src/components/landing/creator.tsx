@@ -309,7 +309,10 @@ export function CreatorBento() {
 
 /* ---------------- Why Rezekii (USP banners) ---------------- */
 
-const PER_SALE = (TRACK.price * (TRACK.tapRate - TRACK.publicRate)) / 100;
+/** Money examples use a pricier sample product (owner, 29 Oct 2026): +1% on RM 159.90 shows what it adds up to. */
+const POT = example("p08");
+const PER_SALE = (POT.price * (POT.tapRate - POT.publicRate)) / 100;
+const rmn = (x: number) => x.toLocaleString("en-MY", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 const AI_PICK = product("p20");
 const FEED = ["p02", "p11", "p23", "p04", "p18", "p12"].map(product);
 const TREND = ["p01", "p13", "p20"].map(product);
@@ -342,7 +345,7 @@ const USPS: Usp[] = [
           <span>{TRACK.name}<small>Already in your showcase</small></span>
           <span className="lp-u-flip"><span className="was">{TRACK.publicRate}%</span><b>{TRACK.tapRate}% <s>{TRACK.publicRate}%</s></b></span>
         </div>
-        <span className="lp-u-chip">+RM {PER_SALE.toFixed(2)} a sale · example</span>
+        <span className="lp-u-chip">Example: RM {POT.price.toFixed(2)} item, +RM {PER_SALE.toFixed(2)} a sale</span>
       </div>
     ),
   },
@@ -399,14 +402,14 @@ export function CreatorUsps() {
 /* ---------------- Without vs With ---------------- */
 
 const ROWS: CompareRow[] = [
-  { label: "Commission, same product", without: `${TRACK.publicRate}% open plan`, with: `${TRACK.tapRate}% on Rezekii, +RM ${PER_SALE.toFixed(2)} a sale` },
+  { label: "Commission, same product", without: `${POT.publicRate}% open plan`, with: <span className="lp-cmp-money"><span>{POT.tapRate}% on Rezekii</span><b>+RM {PER_SALE.toFixed(2)} a sale</b><small>RM {rmn(PER_SALE * 1000)} more per 1,000 sales</small></span> },
   { label: "Finding products", without: "Scroll TikTok for hours, then guess", with: "Rezekii AI shows what's trending for you" },
   { label: "Samples", without: "Buy them yourself", with: "Free, sent to your door" },
-  { label: "Posting", without: "One app, or upload 4 times", with: "Post once to 4 platforms" },
-  { label: "Cost", without: "—", with: "Free during Beta" },
+  { label: "Posting", without: "Upload to each app, 4 times", with: <span className="lp-cmp-apps">Post once to<span>{PLATS.map((p) => <PlatIcon key={p} name={p} size={26} />)}</span><span className="lp-sr">TikTok, Facebook, Instagram and Threads</span></span> },
+  { label: "Cost", without: "—", with: "Free" },
 ];
 export function CreatorCompare() {
-  return <Compare rows={ROWS} note={`Example: ${TRACK.name} at RM ${TRACK.price.toFixed(2)}. Rates differ by product and level; some products have no better rate.`} />;
+  return <Compare rows={ROWS} note={`Example: ${POT.name} at RM ${POT.price.toFixed(2)}. Rates differ by product and level; some products have no better rate.`} />;
 }
 
 /* ---------------- What You'll See ---------------- */
