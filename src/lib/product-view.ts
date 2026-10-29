@@ -1,4 +1,4 @@
-import { CREATOR, MY_SAMPLES, PRODUCTS, product, type Product } from "./mock";
+import { CREATOR, MY_SAMPLES, PRODUCTS, product, rateFor, type Product } from "./mock";
 import { SAMPLE_ACCESS, SELLER_CONDS, type Cond, type Pool } from "./mock-creator1";
 import { NICHE_BEST, daily, type Trend } from "./mock-creator2";
 import { NOT_YET, ON_IDS, WANTED, wantedFor, type Wanted } from "./mock-showcase";
@@ -19,6 +19,8 @@ export type ProductView = {
   sold: number | null;
   publicRate: number | null;
   tapRate: number | null;
+  /** Her rate is one admin gave her for this product (owner, 29 Oct 2026). */
+  special: { until?: string } | null;
   samples: Product["samples"];
   inShowcase: boolean;
   /** Her own orders of it in the last 30 days, when it's in her showcase but not on Rezekii. */
@@ -37,7 +39,7 @@ export function productView(id: string): ProductView | null {
     const nb = NICHE_BEST.find((b) => b.productId === id);
     return {
       id, name: m.name, shop: m.shop, img: m.img, price: m.price, category: m.category, rating: m.rating, sold: m.sold,
-      publicRate: m.publicRate, tapRate: m.tapRate, samples: m.samples, inShowcase: ON_IDS.includes(id), mySold: null,
+      publicRate: m.publicRate, tapRate: rateFor(m).rate, special: rateFor(m).special ? { until: rateFor(m).until } : null, samples: m.samples, inShowcase: ON_IDS.includes(id), mySold: null,
       week: daily(nb?.weekSold ?? Math.round(m.sold / 26), nb?.trend ?? pickTrend(id)), wanted: null,
     };
   }
@@ -47,7 +49,7 @@ export function productView(id: string): ProductView | null {
   if (!base) return null;
   return {
     id, name: base.name, shop: base.shop, img: base.img, price: base.price, category: off?.category ?? w?.category ?? "", rating: null, sold: null,
-    publicRate: base.rate, tapRate: null, samples: null, inShowcase: !!off, mySold: off?.sold ?? null,
+    publicRate: base.rate, tapRate: null, special: null, samples: null, inShowcase: !!off, mySold: off?.sold ?? null,
     week: daily(Math.max(70, (off?.sold ?? w?.sold30 ?? 300) * 2), pickTrend(id)), wanted: wantedFor(id) ?? null,
   };
 }

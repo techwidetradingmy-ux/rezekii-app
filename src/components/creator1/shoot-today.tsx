@@ -8,7 +8,7 @@ import { useDemo } from "@/components/demo";
 import { AiMark, Hidden, Seg, Tip } from "@/components/ui";
 import Link from "next/link";
 import { productHref } from "@/lib/product-view";
-import { product, short } from "@/lib/mock";
+import { product, short, rateFor } from "@/lib/mock";
 import { SAMPLE_LEFT } from "@/lib/mock-creator1";
 import { NICHE_BEST, TRY_TODAY, VIRAL, daily } from "@/lib/mock-creator2";
 
@@ -174,7 +174,7 @@ export function ShootToday({ bare = false, view = "cards", inFrame = false }: { 
               <span className="td-idea"><Icon name="video" size={13} /> {it.idea}</span>
               <span className="td-chips">
                 <span className="ok"><Icon name="star" size={11} width={2.4} /> {p.rating.toFixed(1)}</span>
-                {it.kind === "sample" && <span>Earn <Hidden>{p.tapRate}%</Hidden></span>}
+                {it.kind === "sample" && <span>Earn <Hidden>{rateFor(p).rate}%</Hidden></span>}
                 {it.kind === "best" && <span>Earn <Hidden>{p.publicRate}%</Hidden></span>}
                 {it.kind === "sample" && <span>{SAMPLE_LEFT[p.id] ?? 10} samples left</span>}
               </span>

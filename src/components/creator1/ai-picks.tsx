@@ -7,7 +7,7 @@ import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { AiMark, Count, Hidden } from "@/components/ui";
 import { productHref, requestedSamples } from "@/lib/product-view";
-import { AI_PICKS, AI_PROFILE, PRODUCTS, product, rm, short, type AiPick } from "@/lib/mock";
+import { AI_PICKS, AI_PROFILE, PRODUCTS, product, rateFor, rm, short, type AiPick } from "@/lib/mock";
 import { SAMPLE_ACCESS, type Pool } from "@/lib/mock-creator1";
 
 type Fit = AiPick["fit"];
@@ -27,7 +27,7 @@ const COUNTED = [0, 380, 1460, AI_PROFILE.compared, AI_PROFILE.compared, AI_PROF
 const THUMBS = [...PRODUCTS, ...PRODUCTS];
 
 /** Techwide's rate where there's a campaign, otherwise TikTok's open-plan rate. */
-const rateOf = (pk: AiPick) => (pk.from === "tap" ? product(pk.productId).tapRate : product(pk.productId).publicRate);
+const rateOf = (pk: AiPick) => (pk.from === "tap" ? rateFor(product(pk.productId)).rate : product(pk.productId).publicRate);
 
 /**
  * AI picks on Home: the AI reads the creator's sales, compares TikTok Shop's best-sellers with Techwide's campaigns,

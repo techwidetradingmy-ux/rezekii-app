@@ -116,6 +116,7 @@ export default function ProductPage() {
         <div className="pp-chips">
           {p.rating !== null && <span className="pp-chip score"><Icon name="star" size={13} width={2.4} /> {p.rating.toFixed(1)}</span>}
           {m?.samples && <PoolTag pool={m.samples as Pool} />}
+          {p.special && <span className="pp-chip special"><Icon name="star" size={13} width={2.4} /> Your Special Rate</span>}
           {(p.inShowcase || added) && <span className="pp-chip">In Your Showcase</span>}
           {p.tapRate === null && <span className="pp-chip muted">Not on Rezekii Yet</span>}
         </div>
@@ -123,7 +124,7 @@ export default function ProductPage() {
         {p.tapRate !== null ? (
           <div className="pp-rate">
             <span className="pp-rate-line"><s>{p.publicRate}%</s> <Icon name="arrow" size={14} /> <b><Hidden>{p.tapRate}%</Hidden></b> on Rezekii</span>
-            <small>You earn <b><Hidden>{rm(earn ?? 0)}</Hidden></b> per sale</small>
+            <small>You earn <b><Hidden>{rm(earn ?? 0)}</Hidden></b> per sale{p.special ? ` · just for you${p.special.until ? ` until ${p.special.until}` : ""}` : ""}</small>
           </div>
         ) : (
           <div className="pp-rate off">

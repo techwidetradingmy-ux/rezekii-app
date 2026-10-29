@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { Lock, Seg, Sheet } from "@/components/ui";
 import { LinkFinder, WishSteps, useWishes } from "@/components/creator1/wish";
-import { product } from "@/lib/mock";
+import { product, rateFor } from "@/lib/mock";
 import { NOT_YET, ON_IDS, ON_REZEKII, SHOWCASE_TOTAL, commitText } from "@/lib/mock-showcase";
 import { productHref } from "@/lib/product-view";
 
@@ -66,7 +66,7 @@ export function CoverageCard() {
                   <Link href={productHref(p.id)} className="sc-row">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={p.img} alt="" />
-                    <span className="sc-main"><b>{p.name}</b><small>{p.publicRate}% open plan · <em>{p.tapRate}% on Rezekii</em></small></span>
+                    <span className="sc-main"><b>{p.name}</b><small>{p.publicRate}% open plan · <em>{rateFor(p).rate}% on Rezekii</em></small></span>
                   </Link>
                 </li>
               ))}

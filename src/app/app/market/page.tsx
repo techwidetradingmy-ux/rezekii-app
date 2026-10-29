@@ -7,7 +7,7 @@ import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Flow, Hidden, Title } from "@/components/ui";
 import { PoolTag } from "@/components/creator1/brand";
-import { MY_SAMPLES, PRODUCTS, rm, type Product } from "@/lib/mock";
+import { MY_SAMPLES, PRODUCTS, rateFor, rm, type Product } from "@/lib/mock";
 import { SAMPLE_ACCESS as ACCESS, SAMPLE_LEFT, type Pool } from "@/lib/mock-creator1";
 import { productHref, requestedSamples } from "@/lib/product-view";
 import "@/app/creator1.css";
@@ -25,7 +25,9 @@ const SORTS = [
   ["samples", "Most samples left"],
 ] as const;
 type SortKey = (typeof SORTS)[number][0];
-const earn = (p: Product) => (p.price * p.tapRate) / 100;
+// Her own rate: level or special (owner, 29 Oct 2026).
+const mine = (p: Product) => rateFor(p).rate;
+const earn = (p: Product) => (p.price * mine(p)) / 100;
 
 /**
  * Marketplace: every product in Techwide's TAP campaigns, with TikTok's open-plan rate next to the Rezekii rate and what you earn
@@ -63,7 +65,7 @@ export default function Marketplace() {
 
   const term = q.trim().toLowerCase();
   const list = PRODUCTS.filter((p) => (!onlySamples || CAN_GET.includes(p)) && (cat === "All" || p.category === cat) && (!term || `${p.name} ${p.shop}`.toLowerCase().includes(term))).sort((a, b) => {
-    if (sort === "rate") return b.tapRate - a.tapRate;
+    if (sort === "rate") return mine(b) - mine(a);
     if (sort === "earn") return earn(b) - earn(a);
     if (sort === "cheap") return a.price - b.price;
     if (sort === "dear") return b.price - a.price;
@@ -73,7 +75,7 @@ export default function Marketplace() {
   const addToShowcase = (p: Product) => {
     if (!linked) return setLinked(true);
     setAdded((a) => [...a, p.id]);
-    toast(`Added at ${p.tapRate}%: ${p.name}`);
+    toast(`Added at ${mine(p)}%: ${p.name}`);
   };
   return (
     <div className="v2-stack v2-in mk-page" style={{ gap: 20 }}>
@@ -145,7 +147,7 @@ export default function Marketplace() {
               </Link>
               <Link href={productHref(p.id)} className="mka-name"><strong>{p.name}</strong></Link>
               <small className="mk-meta">{rm(p.price)} · {p.sold >= 1e6 ? `${(p.sold / 1e6).toFixed(1)}M` : `${Math.round(p.sold / 1e3)}K`} sold</small>
-              <span className="mka-rate" aria-label={`Open plan ${p.publicRate}%, Rezekii ${p.tapRate}%`}><s>{p.publicRate}%</s><Icon name="arrow" size={13} /><b><Hidden>{p.tapRate}%</Hidden></b></span>
+              <span className="mka-rate" aria-label={`Open plan ${p.publicRate}%, Rezekii ${mine(p)}%`}><s>{p.publicRate}%</s><Icon name="arrow" size={13} /><b><Hidden>{mine(p)}%</Hidden></b>{rateFor(p).special && <em className="mka-special">Special</em>}</span>
               <span className="mka-earn">Earn <b><Hidden>{rm(earn(p))}</Hidden></b></span>
               <span className="mka-acts">
                 <button type="button" className={isAdded ? "mka-add done" : "mka-add"} disabled={isAdded} onClick={() => addToShowcase(p)}>

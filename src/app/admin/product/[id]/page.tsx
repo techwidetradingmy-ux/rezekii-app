@@ -11,7 +11,7 @@ import { useDemo } from "@/components/demo";
 import { Stepper, Tip } from "@/components/ui";
 import { Pill, type Tone } from "@/components/admin/bits";
 import { Trend } from "@/components/creator1/shoot-today";
-import { PRODUCTS, rm, short, type Product } from "@/lib/mock";
+import { CUSTOM_RATES, PRODUCTS, rm, short, type CreatorLevel, type CustomRate, type Product } from "@/lib/mock";
 import { SAMPLE_LEFT } from "@/lib/mock-creator1";
 import { BOARD_MIN, WANTED, commitText, isReady, onBoard, type Wanted } from "@/lib/mock-showcase";
 import { campaignFor, pitch, ticketsFor } from "@/lib/product-pages";
@@ -54,9 +54,18 @@ export default function AdminProductPage() {
 function AdminProduct({ v, m, w }: { v: ProductView; m: Product | null; w: Wanted | null }) {
   const router = useRouter();
   const { toast } = useDemo();
+  // Creator commission (owner, 29 Oct 2026): one Rezekii rate for everyone, optionally a different rate per level, and special
+  // rates for single creators. The seller's TAP commission is fixed; admin moves only these, from the open plan to TAP −1%.
   const [rate, setRate] = useState(m?.tapRate ?? 0);
+  const [levels, setLevels] = useState<Partial<Record<CreatorLevel, number>>>(m?.levelRates ?? {});
+  const [specials, setSpecials] = useState<CustomRate[]>(() => CUSTOM_RATES.filter((c) => c.productId === m?.id));
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(rate);
+  const [byLevel, setByLevel] = useState(false);
+  const [dLevels, setDLevels] = useState<Partial<Record<CreatorLevel, number>>>({});
+  const [dSpecials, setDSpecials] = useState<CustomRate[]>([]);
+  const [handle, setHandle] = useState("");
+  const [specialRate, setSpecialRate] = useState(rate);
   const [confirm, setConfirm] = useState(false);
   const [state, setState] = useState<"Paused" | "Ended" | null>(null);
 
@@ -145,19 +154,32 @@ function AdminProduct({ v, m, w }: { v: ProductView; m: Product | null; w: Wante
   const p = m!;
   const camp = campaignFor(p.id);
   const tickets = ticketsFor(p.id);
-  // The seller's TAP commission is fixed; admin moves only the creators' Rezekii rate, from open plan +1% to TAP commission −1%.
-  const floor = Math.min(rate, p.publicRate + 1);
+  const floor = Math.min(rate, p.publicRate);
   const ceil = Math.max(rate, p.partnerRate - 1);
+  const LEVELS: CreatorLevel[] = ["Bronze", "Silver", "Gold"];
+  const levelSummary = LEVELS.some((l) => levels[l] !== undefined && levels[l] !== rate) ? LEVELS.map((l) => `${l} ${levels[l] ?? rate}%`).join(" · ") : "";
   const openEdit = () => {
     setDraft(rate);
+    setDLevels(levels);
+    setByLevel(Object.keys(levels).length > 0);
+    setDSpecials(specials);
+    setSpecialRate(rate);
+    setHandle("");
     setEditing(true);
     go("edit");
   };
+  const addSpecial = () => {
+    const h = handle.trim().startsWith("@") ? handle.trim() : `@${handle.trim()}`;
+    if (h.length < 3) return toast("Enter the creator's @handle");
+    setDSpecials((l) => [...l.filter((x) => x.handle !== h), { productId: p.id, handle: h, rate: specialRate }]);
+    setHandle("");
+  };
   const save = () => {
-    setEditing(false);
-    if (draft === rate) return toast("No change");
-    toast(`Creator commission ${rate}% → ${draft}%`);
     setRate(draft);
+    setLevels(byLevel ? dLevels : {});
+    setSpecials(dSpecials);
+    setEditing(false);
+    toast("Creator commission saved");
   };
   const act = (s: "Paused" | "Ended" | null) => {
     setState(s);
@@ -187,8 +209,10 @@ function AdminProduct({ v, m, w }: { v: ProductView; m: Product | null; w: Wante
           <span className="pp-rate-line"><s>{p.publicRate}%</s> <Icon name="arrow" size={14} /> <b>{rate}%</b> for creators</span>
           <small>
             TAP commission {p.partnerRate}% · Techwide keeps <b>{p.partnerRate - rate}%</b>{" "}
-            <Tip text="The seller pays the TAP commission, fixed when they registered; only the seller can raise it. Creators get the Rezekii rate, from open plan +1% up to TAP commission −1%. Techwide keeps the rest." />
+            <Tip text="The seller pays the TAP commission, fixed when they registered; only the seller can raise it. Creators get the Rezekii rate, from the open plan rate up to TAP commission −1%. Techwide keeps the rest." />
           </small>
+          {levelSummary && <small>By level: {levelSummary}</small>}
+          {specials.length > 0 && <small>Special rates: {specials.map((c) => `${c.handle} ${c.rate}%`).join(" · ")}</small>}
         </div>
 
         {!editing && (
@@ -200,12 +224,34 @@ function AdminProduct({ v, m, w }: { v: ProductView; m: Product | null; w: Wante
 
         {editing && (
           <section className="v2-card pp-card" id="edit">
-            <h2 className="v2-h2">Change Creator Commission <Tip text={`From ${p.publicRate + 1}% (open plan +1%) to ${p.partnerRate - 1}% (TAP commission −1%).`} /></h2>
+            <h2 className="v2-h2">Creator Commission <Tip text={`Every rate is from ${p.publicRate}% (open plan) to ${p.partnerRate - 1}% (TAP commission −1%).`} /></h2>
             <div className="ad-wl-line">
-              <span>Creators get</span>
-              <span className="ad-wl-raise"><Stepper label="Creator commission in percent" value={draft} min={floor} max={ceil} onChange={setDraft} />%</span>
+              <span>All creators</span>
+              <span className="ad-wl-raise"><Stepper label="Rate for all creators in percent" value={draft} min={floor} max={ceil} onChange={setDraft} />%</span>
             </div>
-            <p className="pg-line">Creators earn {rm((p.price * draft) / 100)} per sale · Techwide keeps {p.partnerRate - draft}%</p>
+            <label className="pg-check">
+              <input type="checkbox" checked={byLevel} onChange={(e) => { setByLevel(e.target.checked); if (e.target.checked) setDLevels(Object.fromEntries(LEVELS.map((l) => [l, dLevels[l] ?? draft]))); }} />
+              Different rate by level
+            </label>
+            {byLevel && LEVELS.map((l) => (
+              <div key={l} className="ad-wl-line">
+                <span>{l}</span>
+                <span className="ad-wl-raise"><Stepper label={`${l} rate in percent`} value={dLevels[l] ?? draft} min={floor} max={ceil} onChange={(n) => setDLevels((d) => ({ ...d, [l]: n }))} />%</span>
+              </div>
+            ))}
+            <h3 className="pg-sub">Special Rates <Tip text="For one creator on this product. They see it as their special rate." /></h3>
+            {dSpecials.map((c) => (
+              <div key={c.handle} className="ad-wl-line">
+                <span>{c.handle}{c.until ? <small className="v2-small"> · until {c.until}</small> : null}</span>
+                <span className="pg-special">{c.rate}% <button type="button" className="v2-link" onClick={() => setDSpecials((l) => l.filter((x) => x.handle !== c.handle))}>Remove</button></span>
+              </div>
+            ))}
+            <div className="pg-addrow">
+              <input className="np-input" placeholder="@creator" value={handle} onChange={(e) => setHandle(e.target.value)} aria-label="Creator handle" />
+              <span className="ad-wl-raise"><Stepper label="Special rate in percent" value={specialRate} min={floor} max={ceil} onChange={setSpecialRate} />%</span>
+              <button type="button" className="btn-outline v2-btn-sm" onClick={addSpecial}>Add</button>
+            </div>
+            <p className="pg-line">At {draft}%, creators earn {rm((p.price * draft) / 100)} per sale · Techwide keeps {p.partnerRate - draft}%</p>
             <div className="pp-stack">
               <button type="button" className="np-btn" onClick={save}>Save</button>
               <button type="button" className="btn-outline" onClick={() => setEditing(false)}>Cancel</button>

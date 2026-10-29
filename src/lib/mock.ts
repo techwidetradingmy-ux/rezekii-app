@@ -3,6 +3,8 @@
  * people and numbers are invented so the screens look real. Nothing here comes from or goes to TikTok.
  */
 
+export type CreatorLevel = "Bronze" | "Silver" | "Gold";
+
 export type Product = {
   id: string;
   name: string;
@@ -18,10 +20,15 @@ export type Product = {
    */
   partnerRate: number;
   /**
-   * Rezekii rate: what creators earn on Rezekii, percent (owner, 29 Oct 2026). At least open plan +1% and at most the TAP
-   * commission −1%; Techwide keeps the rest. Admin can change it inside those limits.
+   * Rezekii rate: what creators earn on Rezekii, percent (owner, 29 Oct 2026). From the open plan rate up to the TAP commission
+   * −1%; Techwide keeps the rest. Admin can change it inside those limits.
    */
   tapRate: number;
+  /**
+   * Optional rate per level, e.g. open plan 8%, TAP commission 10%: Bronze 8%, Silver 9%, Gold 9%. Most products give every
+   * level the same rate.
+   */
+  levelRates?: Partial<Record<CreatorLevel, number>>;
   sold: number;
   rating: number;
   samples: "open" | "advanced" | "designated" | null;
@@ -32,11 +39,11 @@ export const PRODUCTS: Product[] = [
   { id: "p02", name: "Plain cotton tee, unisex", shop: "Urban Basics MY", img: "/products/tap-02.jpg", price: 16.9, category: "Fashion", publicRate: 5, partnerRate: 8, tapRate: 7, sold: 955078, rating: 4.7, samples: "open" },
   { id: "p03", name: "Hooded water-resistant windbreaker", shop: "Urban Basics MY", img: "/products/tap-03.jpg", price: 22.9, category: "Fashion", publicRate: 6, partnerRate: 10, tapRate: 9, sold: 929468, rating: 4.7, samples: "advanced" },
   { id: "p04", name: "Women's casual wide pants", shop: "Urban Basics MY", img: "/products/tap-04.jpg", price: 23.9, category: "Fashion", publicRate: 6, partnerRate: 10, tapRate: 9, sold: 750806, rating: 3.9, samples: "open" },
-  { id: "p05", name: "High-waist yoga pants", shop: "Urban Basics MY", img: "/products/tap-05.jpg", price: 16.9, category: "Sports", publicRate: 5, partnerRate: 8, tapRate: 7, sold: 727638, rating: 4.8, samples: "advanced" },
+  { id: "p05", name: "High-waist yoga pants", shop: "Urban Basics MY", img: "/products/tap-05.jpg", price: 16.9, category: "Sports", publicRate: 5, partnerRate: 8, tapRate: 6, sold: 727638, rating: 4.8, samples: "advanced" },
   { id: "p06", name: "Scuba training pants", shop: "Urban Basics MY", img: "/products/tap-06.jpg", price: 24.9, category: "Sports", publicRate: 6, partnerRate: 10, tapRate: 9, sold: 648901, rating: 4.5, samples: null },
   { id: "p07", name: "Microfiber polo shirt", shop: "Urban Basics MY", img: "/products/tap-07.jpg", price: 16.9, category: "Fashion", publicRate: 6, partnerRate: 10, tapRate: 9, sold: 524819, rating: 4.6, samples: "open" },
   { id: "p08", name: "Granite non-stick casserole pot", shop: "Seri Living MY", img: "/products/tap-08.jpg", price: 159.9, category: "Home & Kitchen", publicRate: 4, partnerRate: 6, tapRate: 5, sold: 512430, rating: 4.9, samples: "designated" },
-  { id: "p09", name: "Stretchable slim pants with zip", shop: "Mawar Wear", img: "/products/tap-09.jpg", price: 11.13, category: "Fashion", publicRate: 8, partnerRate: 12, tapRate: 11, sold: 496651, rating: 4.4, samples: "open" },
+  { id: "p09", name: "Stretchable slim pants with zip", shop: "Mawar Wear", img: "/products/tap-09.jpg", price: 11.13, category: "Fashion", publicRate: 8, partnerRate: 10, tapRate: 9, levelRates: { Bronze: 8, Silver: 9, Gold: 9 }, sold: 496651, rating: 4.4, samples: "open" },
   { id: "p10", name: "Women's bootcut pants", shop: "Urban Basics MY", img: "/products/tap-10.jpg", price: 23.9, category: "Fashion", publicRate: 6, partnerRate: 10, tapRate: 9, sold: 481274, rating: 4.7, samples: null },
   { id: "p11", name: "900ml spin chopper blender", shop: "Seri Living MY", img: "/products/tap-11.jpg", price: 9.9, category: "Home & Kitchen", publicRate: 4, partnerRate: 6, tapRate: 5, sold: 469228, rating: 4.6, samples: "open" },
   { id: "p12", name: "Long-sleeve cotton tee", shop: "Urban Basics MY", img: "/products/tap-12.jpg", price: 13.99, category: "Fashion", publicRate: 5, partnerRate: 8, tapRate: 7, sold: 468296, rating: 4.7, samples: "open" },
@@ -56,6 +63,16 @@ export const PRODUCTS: Product[] = [
 
 export const product = (id: string) => PRODUCTS.find((p) => p.id === id) ?? PRODUCTS[0];
 
+/** A rate admin gives one creator for one product (owner, 29 Oct 2026). She sees it as her special rate. */
+export type CustomRate = { productId: string; handle: string; rate: number; until?: string };
+export const CUSTOM_RATES: CustomRate[] = [{ productId: "p05", handle: "@aisyah.glow", rate: 7, until: "31 Dec" }];
+/** What one creator earns on a product: her special rate, else her level's rate, else the product's Rezekii rate. */
+export function rateFor(p: Product, who: { handle: string; level: CreatorLevel } = CREATOR): { rate: number; special: boolean; until?: string } {
+  const c = CUSTOM_RATES.find((r) => r.productId === p.id && r.handle === who.handle);
+  if (c) return { rate: c.rate, special: true, until: c.until };
+  return { rate: p.levelRates?.[who.level] ?? p.tapRate, special: false };
+}
+
 /** RM 1,245.00 */
 export const rm = (n: number, dp = 2) => `RM ${n.toLocaleString("en-MY", { minimumFractionDigits: dp, maximumFractionDigits: dp })}`;
 /** 1.1M, 955K */
@@ -72,7 +89,7 @@ export const CREATOR = {
   whatsapp: "+60 12-345 6789",
   initials: "AR",
   state: "Selangor",
-  level: "Silver" as "Bronze" | "Silver" | "Gold",
+  level: "Silver" as CreatorLevel,
   tiktokLevel: 4,
   activity: "Active" as "New" | "Active" | "Highly active",
   streak: 16,
@@ -88,7 +105,7 @@ export type Raise = { id: string; productId: string; nowRate: number | null; tap
 export const RAISES: Raise[] = [
   { id: "r1", productId: "p13", nowRate: 12, tapRate: 13, until: "30 Nov", eligible: true },
   { id: "r2", productId: "p22", nowRate: 10, tapRate: 15, until: "15 Dec", eligible: true },
-  { id: "r3", productId: "p09", nowRate: 8, tapRate: 10, until: "31 Dec", eligible: true },
+  { id: "r3", productId: "p09", nowRate: 8, tapRate: 9, until: "31 Dec", eligible: true },
   { id: "r4", productId: "p01", nowRate: 6, tapRate: 7, until: "30 Nov", eligible: true },
   { id: "r5", productId: "p21", nowRate: null, tapRate: 9, until: "31 Jan", eligible: true },
   { id: "r6", productId: "p24", nowRate: 8, tapRate: 9, until: "31 Dec", eligible: false },

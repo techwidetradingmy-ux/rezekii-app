@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { AiTag, Count, Flow, Hidden, Sheet } from "@/components/ui";
-import { CREATOR, PRODUCTS, RAISES, SIMILAR, product, type Raise } from "@/lib/mock";
+import { CREATOR, PRODUCTS, RAISES, SIMILAR, product, type Raise, rateFor } from "@/lib/mock";
 import { NEW_ON_RESCAN, SILVER_UNLOCKS } from "@/lib/mock-creator1";
 import { LEVELS } from "@/lib/mock-creator2";
 import { ScanStory } from "@/components/creator1/scan-story";
@@ -36,7 +36,7 @@ const raiseItem = (r: Raise): Item => {
 };
 const similarItem = (id: string): Item => {
   const p = product(id);
-  return { id: `sim-${id}`, productId: id, kind: "similar", from: p.publicRate, fromLabel: "Open", to: p.tapRate, note: "" };
+  return { id: `sim-${id}`, productId: id, kind: "similar", from: p.publicRate, fromLabel: "Open", to: rateFor(p).rate, note: "" };
 };
 
 /**
@@ -390,10 +390,10 @@ export function ScanHub() {
                         <b>{p.name}</b>
                         {p.samples === "advanced" && <small>Free sample at Silver</small>}
                       </span>
-                      <span className="sh-rate" aria-label={`Now ${p.publicRate}%, at Silver ${p.tapRate}%`}>
+                      <span className="sh-rate" aria-label={`Now ${p.publicRate}%, on Rezekii ${rateFor(p).rate}%`}>
                         <span><small>Now</small>{p.publicRate}%</span>
                         <Icon name="arrow" size={13} />
-                        <span className="to"><small>At Silver</small><Hidden>{p.tapRate}%</Hidden></span>
+                        <span className="to"><small>On Rezekii</small><Hidden>{rateFor(p).rate}%</Hidden></span>
                       </span>
                     </div>
                   </li>
