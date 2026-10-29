@@ -34,10 +34,13 @@ export function PartnerCard() {
       <span className="pc-badge">
         <Image src="/tiktok-shop-partner-logo.png" alt="" width={69} height={20} />
       </span>
-      <span className="pc-soon">
-        {/* Just the logos (owner, 29 Oct 2026); the label says they're coming soon. */}
-        {STORES.map((s) => <span key={s.name} className="pc-store" title={`${s.name}, coming soon`}>{s.logo}</span>)}
-      </span>
+      {/* Shaped like the stores' own badges (owner, 29 Oct 2026), but "Coming soon on" until the apps are listed. */}
+      {STORES.map((s) => (
+        <span key={s.name} className="pc-store">
+          {s.logo}
+          <span><small>Coming soon on</small><b>{s.name}</b></span>
+        </span>
+      ))}
     </p>
   );
 }

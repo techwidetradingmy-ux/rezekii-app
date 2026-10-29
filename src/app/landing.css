@@ -19,7 +19,9 @@
 .lp-hero-copy > p { margin: 0; max-width: 34em; font-size: clamp(16px, 1.5vw, 19px); line-height: 1.5; color: var(--body); }
 .lp-hero .sc-field { box-shadow: 0 14px 34px -20px rgba(0, 154, 92, 0.6); }
 /* A slimmer username box in the hero (owner, 29 Oct 2026): one row, so more fits below. */
-.lp-hero .sc-row { flex-wrap: nowrap; gap: 8px; padding: 0; border: 0; background: none; }
+.lp-hero .sc-check { grid-template-columns: minmax(0, 1fr); }
+.lp-hero .sc-row { min-width: 0; flex-wrap: nowrap; gap: 8px; padding: 0; border: 0; background: none; }
+.lp-hero .sc-field input { width: 100%; }
 .lp-hero .sc-field { flex: 1 1 0; min-width: 0; height: 48px; padding: 0 12px; border-radius: 14px; font-size: 15px; }
 .lp-hero .sc-row .cr1-bigbtn { flex: 0 0 auto !important; width: auto !important; height: 48px !important; padding: 0 14px !important; font-size: 15px !important; border-radius: 14px !important; white-space: nowrap; }
 .lp-ctas { display: flex; flex-wrap: wrap; gap: 10px; }
@@ -529,10 +531,29 @@ i.gold { background: radial-gradient(circle at 35% 30%, #fff3bf, #f5b81e 55%, #b
 @keyframes lpNeedle { 0%, 38% { left: 50%; } 48%, 86% { left: 16%; } 94%, 100% { left: 50%; } }
 
 /* Rate Card: her prices, ready for sellers */
-/* Rate Card: the app's own share image */
-.lp-w-rcs { display: grid; place-items: center; width: 100%; }
-.lp-w-rcs .rcs { width: 230px; zoom: 0.62; }
-.lp-bento-slides .lp-w-rcs .rcs { zoom: 0.92; }
+/* Rate Card: a personal card for every creator, fanned out */
+.lp-w-rcx { position: relative; width: 100%; height: 250px; }
+.lp-rcx { position: absolute; left: 50%; top: 10px; width: 200px; margin-left: -100px; display: grid; gap: 8px; padding: 0 0 10px; border-radius: 18px; overflow: hidden; background: var(--surface); box-shadow: 0 16px 34px -16px rgba(0, 60, 36, 0.45), 0 0 0 1px var(--line); font-size: 12px; transform-origin: 50% 120%; }
+.lp-rcx:nth-child(1) { transform: rotate(-12deg) translateX(-30px); }
+.lp-rcx:nth-child(2) { transform: rotate(10deg) translateX(30px); }
+.lp-rcx:nth-child(3) { z-index: 2; }
+.lp-rcx-h { display: flex; align-items: center; gap: 5px; padding: 8px 10px; background: linear-gradient(135deg, #00c073, #00874f); color: #ffffff; font-weight: 900; }
+.lp-rcx-h img { width: 16px; height: 16px; }
+.lp-rcx-h em { margin-left: auto; padding: 2px 7px; border-radius: 99px; background: #ffffff; color: #00874f; font-style: normal; font-size: 9.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em; }
+.lp-rcx-me { display: flex; align-items: center; gap: 8px; padding: 0 10px; }
+.lp-rcx-me img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 2px #00c073; }
+.lp-rcx-me b { display: block; font-size: 12.5px; font-weight: 900; }
+.lp-rcx-me small { font-size: 10.5px; font-weight: 700; color: var(--muted); }
+.lp-rcx ul { margin: 0; padding: 0 10px; list-style: none; display: grid; gap: 5px; }
+.lp-rcx li { display: flex; justify-content: space-between; gap: 8px; padding-bottom: 5px; border-bottom: 1px dashed var(--line); font-weight: 700; }
+.lp-rcx li b { color: var(--gink); font-weight: 900; }
+.lp-rcx-f { margin: 0 10px; font-size: 11px; font-weight: 900; color: #00874f; }
+.lp-tile[data-on] .lp-rcx:nth-child(1) { animation: lpRcxL 4.4s var(--lp-spring) infinite; }
+.lp-tile[data-on] .lp-rcx:nth-child(2) { animation: lpRcxR 4.4s var(--lp-spring) infinite; }
+@keyframes lpRcxL { 0%, 12% { transform: none; } 30%, 88% { transform: rotate(-12deg) translateX(-30px); } 100% { transform: none; } }
+@keyframes lpRcxR { 0%, 12% { transform: none; } 30%, 88% { transform: rotate(10deg) translateX(30px); } 100% { transform: none; } }
+.lp-bento .lp-w-rcx { zoom: 0.72; }
+.lp-bento-slides .lp-w-rcx { zoom: 1.1; }
 /* Earn with Referral: the app's referral offer and a share link */
 .lp-w-ref2 { width: 100%; display: grid; gap: 10px; }
 .lp-w-ref2 .rf-card { margin: 0; box-shadow: none; }

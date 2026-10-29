@@ -1,7 +1,21 @@
-/* Badge row inside both landing heroes (owner, 29 Oct 2026): small and simple, partner badge then the store logos. */
-.pc-row { margin: 0; align-self: flex-start; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
-.pc-badge { display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border-radius: 10px; background: #000000; }
-.pc-badge img { display: block; height: 20px; width: auto; }
-.pc-soon { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; border-radius: 10px; background: #000000; }
-.pc-store { display: grid; place-items: center; width: 22px; height: 22px; }
-.pc-store svg { width: 17px; height: 17px; }
+/* Badge row inside both landing heroes (owner, 29 Oct 2026): partner badge, then App Store and Google Play badges. */
+.pc-row { margin: 0; align-self: flex-start; display: inline-flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; }
+.pc-badge, .pc-store { display: inline-flex; align-items: center; height: 40px; border-radius: 9px; background: #000000; border: 1px solid #3a3f45; color: #ffffff; }
+.pc-badge { padding: 0 12px; }
+.pc-badge img { display: block; height: 22px; width: auto; }
+.pc-store { gap: 7px; padding: 0 12px 0 9px; }
+.pc-store svg { flex-shrink: 0; width: 22px; height: 22px; }
+.pc-store > span { display: grid; line-height: 1.05; text-align: left; }
+.pc-store small { font-size: 9.5px; font-weight: 600; letter-spacing: 0.02em; color: #d6d9dc; }
+.pc-store b { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; }
+/* Phones: smaller, all three on one row (owner, 29 Oct 2026). */
+@media (max-width: 720px) {
+  .pc-row { flex-wrap: nowrap; gap: 6px; }
+  .pc-badge, .pc-store { height: 34px; border-radius: 8px; }
+  .pc-badge { padding: 0 8px; }
+  .pc-badge img { height: 17px; }
+  .pc-store { gap: 5px; padding: 0 8px 0 6px; }
+  .pc-store svg { width: 17px; height: 17px; }
+  .pc-store small { font-size: 8.5px; }
+  .pc-store b { font-size: 12.5px; }
+}

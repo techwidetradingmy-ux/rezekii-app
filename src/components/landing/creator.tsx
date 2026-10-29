@@ -7,9 +7,7 @@ import { NOT_YET, WANTED } from "@/lib/mock-showcase";
 import { NICHE_BEST, VIDEOS, daily } from "@/lib/mock-creator2";
 import { AiMark, Tip } from "@/components/ui";
 import { Emblem } from "@/components/emblems";
-import { RateCardSample } from "@/components/account/rate-card";
 import { ReferralOffer } from "@/components/referral-offer";
-import "@/app/creator2.css";
 import { App, Av, Flip, PLATS, PlatIcon, Ring, Swap, Thumb, v, type Plat } from "./bits";
 import { Bento, VideoTile, type Tile } from "./bento";
 import { Journey, type DayStep } from "./journey";
@@ -358,9 +356,32 @@ function WishTile() {
   );
 }
 
-/** Her shareable rate card, the same image the app makes (owner, 29 Oct 2026), with sample prices. */
+/** A personal rate card for every creator (owner, 29 Oct 2026): three sample creators' cards fanned out. Sample prices. */
+const RATE_CARDS: { handle: string; level: string; photo?: string; rows: [string, string][] }[] = [
+  { handle: "@kak.ros.kitchen", level: "Gold", rows: [["TikTok video", "RM 450"], ["TikTok LIVE", "RM 300"]] },
+  { handle: "@hafiz.tech", level: "Bronze", rows: [["TikTok video", "RM 180"], ["Threads post", "RM 50"]] },
+  { handle: CREATOR.handle, level: CREATOR.level, photo: CREATOR.photo, rows: [["TikTok video", "RM 350"], ["Instagram Reel", "RM 300"], ["Ad rights, 30 days", "RM 400"]] },
+];
 function RateTile() {
-  return <div className="lp-w-rcs" aria-hidden="true"><RateCardSample /></div>;
+  return (
+    <div className="lp-w-rcx" aria-hidden="true">
+      {RATE_CARDS.map((c, i) => (
+        <div key={c.handle} className="lp-rcx" style={v({ i })}>
+          <span className="lp-rcx-h">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/master-logo-transparent.png" alt="" />Rezekii<em>Rate card</em>
+          </span>
+          <span className="lp-rcx-me">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {c.photo ? <img src={c.photo} alt="" /> : <Av name={c.handle} size={34} />}
+            <span><b>{c.handle}</b><small>{c.level} creator</small></span>
+          </span>
+          <ul>{c.rows.map(([k, p]) => <li key={k}><span>{k}</span><b>{p}</b></li>)}</ul>
+          <span className="lp-rcx-f">Book me on Rezekii</span>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 /** The app's own referral offer (owner, 29 Oct 2026: a better presentation), with the share link under it. */
@@ -388,7 +409,7 @@ const TILES: Tile[] = [
   { key: "video", title: "AI Video", ai: true, soon: true, icon: "video", tint: "linear-gradient(135deg,#25f4ee,#0e7490)", size: "tall", tip: "Make product videos with Rezekii AI. These are real examples made with it.", body: <VideoTile clips={CLIPS} /> },
   { key: "health", title: "Showcase Health", ai: true, icon: "shield", tint: "linear-gradient(135deg,#ff8a80,#e14b3b)", size: "wide", tip: "Rezekii AI checks ratings and refunds in your showcase and flags risky products. Remove them in one tap.", body: <HealthTile /> },
   { key: "wish", title: "Wish List", icon: "bag", tint: "linear-gradient(135deg,#22dc95,#00a862)", size: "wide", tip: "Want a free sample, or a better rate on a top seller? Add it to your Wish List. When many creators want it, our team talks to the seller for you.", body: <WishTile /> },
-  { key: "rate", title: "Rate Card", icon: "tag", tint: "linear-gradient(135deg,#5ee7df,#0e9488)", tip: "Set your own prices for videos, Reels and ad rights, ready for sellers.", body: <RateTile /> },
+  { key: "rate", title: "Rate Card", icon: "tag", tint: "linear-gradient(135deg,#5ee7df,#0e9488)", tip: "Rezekii makes a personal rate card for every creator: your photo, your prices, your packages. Share it with sellers in one tap.", body: <RateTile /> },
   { key: "invite", title: "Earn with Referral", icon: "users", tint: "linear-gradient(135deg,#ff7aa8,#e8005a)", size: "wide", tip: `Do a friend a favour: they can check their showcase too and may earn more. You get ${REFERRAL_REWARD.inviter} credits and they get ${REFERRAL_REWARD.friend} when they get started.`, body: <InviteTile /> },
 ];
 export function CreatorBento() {
