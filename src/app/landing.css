@@ -845,6 +845,17 @@ button.lp-shotf { cursor: zoom-in; }
 .lp-pa-row.top small { color: #00874f; }
 .lp-pa-tag i.dot { width: 8px; height: 8px; border-radius: 50%; background: #5fffb0; box-shadow: 0 0 0 4px rgba(95, 255, 176, 0.25); animation: jb-pulse 1.6s ease-in-out infinite; }
 .lp-pa-live .lp-pa-tag i { width: 8px; height: 8px; border-radius: 50%; background: #5fffb0; box-shadow: 0 0 0 4px rgba(95, 255, 176, 0.25); animation: jb-pulse 1.6s ease-in-out infinite; }
+/* Posting time: a clock with the golden hours lit up */
+.lp-pa-clock { display: grid; justify-items: center; gap: 10px; }
+.lp-pa-clock svg { display: block; }
+.lp-pa-clock .face { fill: rgba(255, 255, 255, 0.1); stroke: rgba(255, 255, 255, 0.3); stroke-width: 2; }
+.lp-pa-clock .tick { stroke: rgba(255, 255, 255, 0.6); stroke-width: 2.5; stroke-linecap: round; }
+.lp-pa-clock text { font-family: inherit; font-size: 15px; font-weight: 800; fill: rgba(255, 255, 255, 0.8); }
+.lp-pa-clock .arc { fill: none; stroke: #f5b400; stroke-width: 15; stroke-linecap: round; filter: drop-shadow(0 0 8px rgba(245, 180, 0, 0.7)); animation: lpArcGlow 1.4s ease-in-out infinite alternate; }
+.lp-pa-clock .hand { stroke: #ffffff; stroke-linecap: round; transform-box: view-box; transform-origin: 100px 100px; }
+.lp-pa-clock .hand.h { stroke-width: 6; transform: rotate(240deg); }
+.lp-pa-clock .hand.m { stroke-width: 3.5; }
+.lp-pa-clock .pin { fill: #ffffff; }
 /* Out of ideas: a TikTok feed scrolling past, then today's ideas take its place. */
 .lp-pa-swap { position: relative; height: 230px; }
 .lp-pa-swap > div { position: absolute; inset: 0; }

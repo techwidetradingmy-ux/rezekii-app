@@ -569,7 +569,6 @@ const HOT_P = product(HOT.productId);
 const IDEAS = NICHE_BEST.filter((x) => x.idea).slice(0, 2);
 const TT_FEED = ["try-on", "pov-demo", "review", "expert", "drama", "home-demo"].map((x) => `/ai-videos/${x}.jpg`);
 const TOP_VIDS = [...VIDEOS].sort((x, y) => y.commission - x.commission).slice(0, 3);
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 type Pain = { key: string; tint: string; pain: string; why: string; fix: string; art: React.ReactNode };
 const PAINS: Pain[] = [
   {
@@ -643,9 +642,22 @@ const PAINS: Pain[] = [
     pain: "Posting Whenever You Can?",
     why: "Random times mean your best videos land when nobody's watching.",
     fix: "Plan the week in Content Calendar, timed to your golden hours.",
+    // Posting time as a clock (owner, 29 Oct 2026): her golden 8–10 pm lit up, then the posts lined up for it.
     art: (
-      <div className="lp-pa-week">
-        {DAYS.map((d, i) => <span key={d} className={i % 2 === 0 ? "on" : ""}><small>{d}</small><i>{i % 2 === 0 ? "8 pm" : ""}</i></span>)}
+      <div className="lp-pa-clock">
+        <svg viewBox="0 0 200 200" width="170" height="170">
+          <circle cx="100" cy="100" r="96" className="face" />
+          {TICKS.map((d) => <path key={d} d={`M${at(d, 89)} L${at(d, 94)}`} className="tick" />)}
+          {NUMS.map(([t, d]) => {
+            const [x, y] = pt(d, 58);
+            return <text key={t} x={x.toFixed(2)} y={(y + 5).toFixed(2)} textAnchor="middle">{t}</text>;
+          })}
+          <path d={arc(8, 10)} className="arc" />
+          <line x1="100" y1="100" x2="100" y2="56" className="hand h" />
+          <line x1="100" y1="100" x2="100" y2="36" className="hand m" />
+          <circle cx="100" cy="100" r="5" className="pin" />
+        </svg>
+        <span className="lp-pa-tag">Your golden time: 8–10 pm · 4 posts lined up</span>
       </div>
     ),
   },
