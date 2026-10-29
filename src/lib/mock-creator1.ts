@@ -56,10 +56,11 @@ export const STORIES = [
 
 export const FAQS: [string, string][] = [
   ["How much more commission will I get?", "It depends, and it isn't guaranteed. Many products pay +1% more through Techwide; some pay +5% or +10% more. The rate depends on the product, your level (Bronze, Silver or Gold) and your sales. Some products have no better rate at all. You always see the exact rate before you add."],
+  ["Can Rezekii lower my commission?", "No. The scanner only shows products where Rezekii pays more than you earn now. If you already have a better rate on a product, as many top creators do, we leave it as it is."],
   ["Is Rezekii free?", "Yes. Rezekii is free for creators. TikTok Shop pays your commission as usual; we don't take a cut of it."],
   ["What does linking TikTok Shop let you do?", "Read the products in your showcase and their commission, your orders and your sample status, so we can find better rates and show your numbers. We never post, remove or change anything unless you tap the button yourself."],
   ["Why does Rezekii pay more?", "Rezekii runs its own TikTok Shop campaigns with sellers, and many of them pay more than the rate open to everyone. Your level (Bronze, Silver or Gold) decides which rate you get."],
-  ["Will adding a product break my old videos?", "No. Adding through Techwide keeps the same product in your showcase, so your videos and links keep working. We re-read your showcase straight away and confirm when the new rate is live."],
+  ["Will adding a product break my old videos?", "No. Adding through Techwide keeps the same product in your showcase, so your videos and links keep working. Videos you already posted keep the rate they had; the better rate counts for sales from your new videos. We confirm when it's live."],
   ["Who approves free samples?", "Anyone can request one. The Techwide team approves them, based on the sample pool (Open, Advanced or Designated) and the seller's conditions. Before you request, we tell you if it's likely to be turned down and why."],
   ["Is signing in with TikTok the same as linking TikTok Shop?", "No. Signing in with TikTok only signs you in. You link TikTok Shop separately inside the app, and you can disconnect it at any time."],
   ["Who sees my WhatsApp number?", "Only the Techwide team, to help with samples and your account. Sellers never see your contact details."],

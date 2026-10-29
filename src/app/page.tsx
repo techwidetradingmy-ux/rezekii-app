@@ -32,7 +32,9 @@ const READ = [
   "Your sample status",
   "Your public TikTok stats, if linked",
 ];
+/** Never lowers a rate (owner, 29 Oct 2026): the scanner only ever offers a raise. */
 const NEVER = [
+  "Lower your commission",
   "Change anything without your tap",
   "Ask for your TikTok password",
   "Share your contact details with sellers",
@@ -70,7 +72,7 @@ export default function Landing() {
           <div className="lp-hero-copy lp-hero-top">
             <AiEyebrow text="Malaysia's 1st AI-Powered Affiliate Platform" />
             <h1>Your Showcase Is <em>Underpaid.</em></h1>
-            <p><AiText text="Rezekii AI finds higher commission on the products you already sell. Same videos, more money." /></p>
+            <p><AiText text="Rezekii AI finds higher commission on the products you already sell. Same products, more money." /></p>
           </div>
           <div className="lp-hero-vis">
             <CreatorHeroScan />

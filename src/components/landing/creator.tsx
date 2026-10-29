@@ -93,6 +93,8 @@ export function CreatorHeroScan() {
           <b>+RM {rmn(PER_SALE * 1000)}</b>
           <span>extra commission every 1,000 sales of the RM {POT.price.toFixed(2)} pot</span>
         </div>
+        {/* It only ever raises (owner, 29 Oct 2026): a top creator's own better rate is left as it is. */}
+        <p className="hs-note"><Icon name="shield" size={14} width={2.4} /> Only ever raises your rate. Already earning more? It stays.</p>
       </div>
       <span className="hs-float f1" aria-hidden="true"><Icon name="clock" size={15} width={2.2} /> Viral Time Frame · 8–10 pm</span>
       <span className="hs-float f2" aria-hidden="true"><Icon name="gift" size={15} width={2.2} /> {OPEN.length} free samples open</span>

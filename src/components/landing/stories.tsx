@@ -40,7 +40,7 @@ export const CREATOR_STORIES: Story[] = [
   {
     name: "Tan Mei Ling", handle: "@mei.ling.deals", state: "Kuala Lumpur", level: "Silver", sample: true,
     // 9% to 10% on the same sales is about 11% more: modest on purpose.
-    result: "+RM 161", period: "more TikTok Shop commission, 30 days", quote: "Same products, same videos. My TikTok Shop commission just went up.",
+    result: "+RM 161", period: "more TikTok Shop commission, 30 days", quote: "Same products, better rates. My TikTok Shop commission went up.",
     shot: { kind: "payout", title: "TikTok Shop Commission", before: "RM 1,452", after: "RM 1,613", period: "Last 30 days" },
   },
   {
