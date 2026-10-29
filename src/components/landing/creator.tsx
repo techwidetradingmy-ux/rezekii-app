@@ -656,7 +656,7 @@ const PAINS: Pain[] = [
   {
     key: "plan", tint: "linear-gradient(160deg,#0b2246,#2f80ed)",
     pain: "Posting Whenever You Can?",
-    why: "Random times mean your best videos land when nobody's watching.",
+    why: "Copying others' posting time rarely works. The right time for your own account does far better.",
     fix: "Plan the week in Content Calendar, timed to your golden hours.",
     // Posting time as a clock (owner, 29 Oct 2026): her golden 8–10 pm lit up, then the posts lined up for it.
     art: (
