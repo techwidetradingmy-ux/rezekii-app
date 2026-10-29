@@ -18,6 +18,8 @@ import { AddressFields } from "@/components/account/address-fields";
 import { SAMPLE_INFO, addressOk, birthdayError, readSignup, useAddress, type Address } from "@/lib/address";
 import type { IconName } from "@/components/icons";
 import { MY_STATES, NICHES, NOTIFY } from "@/lib/mock-creator2";
+import { GoogleMark, TikTokMark } from "@/components/creator1/brand";
+import { BrandLogo } from "@/components/brand-logos";
 import { MyWishes } from "@/components/creator1/my-wishes";
 import { ACCOUNT_TABS, type AccountTab } from "@/lib/account-tabs";
 import { applyTheme, readTheme, type Theme } from "@/lib/theme";
@@ -135,12 +137,14 @@ export default function Account() {
     }, 1800);
   };
 
-  const socials: { key: string; label: string; icon: React.ReactNode; detail: string; on: boolean }[] = [
-    { key: "TikTok Shop", label: "TikTok Shop", icon: <span className="cr2-cico" style={{ background: "#111111" }}><Icon name="bag" size={18} /></span>, detail: linked ? "Linked" : "Not linked", on: linked },
+  const socials: { key: string; label: string; icon: React.ReactNode; detail: string; on: boolean; soon?: boolean }[] = [
+    { key: "TikTok Shop", label: "TikTok Shop", icon: <BrandLogo name="TikTok Shop" size={34} className="cr2-pi" />, detail: linked ? "Linked" : "Not linked", on: linked },
     { key: "TikTok", label: "TikTok account", icon: <PlatformIcon name="TikTok" size={34} />, detail: conn.TikTok ? SOCIALS[0].handle : "Not connected", on: conn.TikTok },
     { key: "Facebook", label: "Facebook Page", icon: <PlatformIcon name="Facebook" size={34} />, detail: conn.Facebook ? SOCIALS[2].handle : "Not connected", on: conn.Facebook },
     { key: "Instagram", label: "Instagram", icon: <PlatformIcon name="Instagram" size={34} />, detail: conn.Instagram ? `${SOCIALS[1].handle} · Reels` : "Not connected", on: conn.Instagram },
     { key: "Threads", label: "Threads", icon: <PlatformIcon name="Threads" size={34} />, detail: conn.Threads ? "@aisyah.glow" : "Not connected", on: conn.Threads },
+    // A teaser (owner, 30 Oct 2026): Shopee is on the way, nothing to connect yet.
+    { key: "Shopee", label: "Shopee", icon: <BrandLogo name="Shopee" size={34} className="cr2-pi" />, detail: "Shopee Affiliate, on the way", on: false, soon: true },
   ];
 
   return (
@@ -324,7 +328,9 @@ export default function Account() {
                   <b>{s.label}</b>
                   <small>{s.detail}</small>
                 </span>
-                {s.on && s.key === "TikTok Shop" ? (
+                {s.soon ? (
+                  <span className="badge badge-amber">Coming soon</span>
+                ) : s.on && s.key === "TikTok Shop" ? (
                   <button type="button" className="btn-outline v2-btn-sm" onClick={() => setUnlink(true)}>Unlink</button>
                 ) : s.on ? (
                   <button
@@ -372,7 +378,7 @@ export default function Account() {
                   ["Email and password", hasPw ? `${email} · password changed 3 Mar 2026` : `${email} · no password yet`, hasPw, "em"],
                 ] as [string, string, boolean, string][]).map(([label, detail, on, key]) => (
                   <span key={key} className={`si-m ${on ? "on" : ""}`}>
-                    <span className={`si-ico ${key}`} aria-hidden="true">{key === "tt" ? "♪" : key === "gg" ? "G" : <Icon name="lock" size={15} />}</span>
+                    <span className={`si-ico ${key}`} aria-hidden="true">{key === "tt" ? <TikTokMark size={18} /> : key === "gg" ? <GoogleMark /> : <Icon name="lock" size={15} />}</span>
                     <span><b>{label}</b><small>{detail}</small></span>
                     {/* Each way in names its account (owner, 29 Oct 2026): her TikTok handle and her Gmail. */}
                     {key === "tt" ? <span className="badge">Last used</span>

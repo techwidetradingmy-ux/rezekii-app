@@ -1,5 +1,6 @@
 "use client";
 
+import { BrandLogo } from "@/components/brand-logos";
 import { Icon } from "@/components/icons";
 import { AiMark } from "@/components/ui";
 
@@ -62,24 +63,9 @@ export function Flip({ was, now, i = 0, fmt = (x: number) => `${x}%` }: { was: n
 }
 
 export type Plat = "TikTok" | "Facebook" | "Instagram" | "Threads";
-/** The four apps Rezekii posts to (same marks as the app's own composer). */
+/** The four apps Rezekii posts to, with their real logos (owner, 30 Oct 2026). */
 export function PlatIcon({ name, size = 28 }: { name: Plat; size?: number }) {
-  const g = Math.round(size * 0.56);
-  return (
-    <span className={`lp-pi ${name.toLowerCase()}`} style={{ width: size, height: size, borderRadius: Math.round(size * 0.3) }}>
-      <svg width={g} height={g} viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth={2.3} strokeLinecap="round" strokeLinejoin="round">
-        {name === "TikTok" && <path d="M14 3.5v11a3.6 3.6 0 1 1-3.6-3.6M14 3.5c.4 2.6 2.3 4.4 5 4.6" />}
-        {name === "Instagram" && (
-          <>
-            <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
-            <circle cx="12" cy="12" r="3.9" />
-          </>
-        )}
-        {name === "Facebook" && <path d="M14.6 8H16.5V4.8h-2.3a4 4 0 0 0-4 4v2.3H8.2v3.1h2v6.6h3.2v-6.6h2.3l.5-3.1h-2.8V9a1 1 0 0 1 1.2-1z" fill="#ffffff" stroke="none" />}
-        {name === "Threads" && <text x="12" y="17.2" textAnchor="middle" fontSize="16.5" fontWeight="800" fill="#ffffff" stroke="none" fontFamily="inherit">@</text>}
-      </svg>
-    </span>
-  );
+  return <BrandLogo name={name} size={size} className="lp-pi" />;
 }
 export const PLATS: Plat[] = ["TikTok", "Facebook", "Instagram", "Threads"];
 
