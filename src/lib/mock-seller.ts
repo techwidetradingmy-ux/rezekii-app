@@ -107,18 +107,19 @@ export type Dest = { id: string; handle: string; item: string; videos: number; l
 export const DESTINATIONS: Dest[] = [
   { id: "d01", handle: "@aisyah.glow", item: "p21", videos: 3, live: false, state: "Delivered", activity: "Active", sentOn: "14 Sep" },
   { id: "d02", handle: "@kak.ros.kitchen", item: "p08", videos: 3, live: true, state: "Delivered", activity: "Highly active", sentOn: "18 Sep" },
-  { id: "d03", handle: "@mei.ling.deals", item: "p24", videos: 2, live: false, state: "On time", due: "2 Nov", activity: "Highly active", sentOn: "20 Oct" },
-  { id: "d04", handle: "@zara.home", item: "p18", videos: 1, live: false, state: "Overdue", late: 3, reminded: "Reminded 26 Oct and 27 Oct", activity: "Active", sentOn: "11 Oct" },
+  { id: "d03", handle: "@mei.ling.deals", item: "p24", videos: 2, live: false, state: "Delivered", activity: "Highly active", sentOn: "20 Oct" },
+  { id: "d04", handle: "@zara.home", item: "p18", videos: 0, live: false, state: "Overdue", late: 3, reminded: "Reminded 26 Oct and 27 Oct", activity: "Active", sentOn: "11 Oct" },
   { id: "d05", handle: "@dapur.wani", item: "p11", videos: 3, live: true, state: "Delivered", activity: "Active", sentOn: "26 Sep" },
   { id: "d06", handle: "@nurul.beauty", item: "p21", videos: 3, live: false, state: "Delivered", activity: "Highly active", sentOn: "29 Sep" },
   { id: "d07", handle: "@ahmad.fitlife", item: "p24", videos: 3, live: true, state: "Delivered", activity: "Active", sentOn: "8 Oct" },
   { id: "d08", handle: "@farah.home", item: "p08", videos: 0, live: false, state: "On time", due: "3 Nov", activity: "Active", sentOn: "24 Oct" },
-  { id: "d09", handle: "@hana.masak", item: "p11", videos: 1, live: false, state: "On time", due: "31 Oct", activity: "Active", sentOn: "21 Oct" },
+  { id: "d09", handle: "@hana.masak", item: "p11", videos: 1, live: false, state: "Delivered", activity: "Active", sentOn: "21 Oct" },
   { id: "d10", handle: "@iqbal.gadget", item: "p18", videos: 0, live: false, state: "Overdue", late: 1, reminded: "Reminded today", activity: "New", sentOn: "17 Oct" },
   { id: "d11", handle: "@sofia.rumah", item: "p21", videos: 3, live: false, state: "Delivered", activity: "Active", sentOn: "2 Oct" },
   { id: "d12", handle: "@kak.ros.kitchen", item: "p24", videos: 3, live: true, state: "Delivered", activity: "Highly active", sentOn: "9 Oct" },
 ];
-export const SAMPLE_SUMMARY = { sent: 48, delivered: 31, onTime: 12, overdue: 5, videos: 118, lives: 14 };
+/** Delivered = at least 1 video posted. On time = no video yet, not due. Overdue = no video by the due date. */
+export const SAMPLE_SUMMARY = { sent: 48, delivered: 34, onTime: 9, overdue: 5, videos: 118, lives: 14 };
 
 /* ---------------- Change requests ---------------- */
 
@@ -244,7 +245,7 @@ export const SELLER_CREDITS = SELLER_LEDGER.reduce((a, l) => a + l.amount, 0);
 export const SELLER_NOTES = [
   { id: "n1", icon: "check" as const, title: "Spin chopper 1.5L passed our review", line: "It's being added to the TAP campaign. Next: TikTok's check.", when: "Today 10:40", unread: true, href: "/seller/app/progress" },
   { id: "n2", icon: "video" as const, title: "@kak.ros.kitchen went LIVE with your casserole pot", line: "38 units sold during the LIVE.", when: "Today 09:05", unread: true, href: "/seller/app/results" },
-  { id: "n3", icon: "alert" as const, title: "@zara.home is 3 days late on a sample", line: "We've reminded them twice. Their sample access is paused until they post.", when: "Yesterday", unread: true, href: "/seller/app/results/samples" },
+  { id: "n3", icon: "alert" as const, title: "@zara.home is 3 days late on a sample", line: "No video yet. We've reminded them twice. Their sample access is paused until they post.", when: "Yesterday", unread: true, href: "/seller/app/results/samples" },
   { id: "n4", icon: "x" as const, title: "Vacuum spare mop pads wasn't approved", line: "It has 0 samples per SKU. Add samples and we'll resubmit it.", when: "23 Oct", unread: false, href: "/seller/app/progress" },
   { id: "n5", icon: "chart" as const, title: "Your week: RM 25,840 from 30 creators", line: "Up 18% on the week before.", when: "21 Oct", unread: false, href: "/seller/app/results" },
   { id: "n6", icon: "gift" as const, title: "+100 credits: Bayu Sports Gear joined with your link", line: "They connected their shop and submitted a product.", when: "19 Oct", unread: false, href: "/seller/app/rewards/wallet" },
@@ -255,7 +256,7 @@ export const SELLER_NOTES = [
 export const AGENCY = { gmv: 2850000, orders: 84224, campaigns: 126, products: 1940, month: "Aug 2026" };
 
 export const TESTIMONIALS = [
-  { shop: "Rumah Rapi MY", who: "Aida, owner", what: "Home storage", initials: "RR", stat: "3 videos per sample", quote: "We used to post samples to anyone who asked and maybe one in four ever made a video. Now every sample comes with three videos, and I can see who's late before I even ask." },
+  { shop: "Rumah Rapi MY", who: "Aida, owner", what: "Home storage", initials: "RR", stat: "Every sample gets a video", quote: "We used to post samples to anyone who asked and maybe one in four ever made a video. Now every sample comes back with a video, most with two or three, and I can see who's late before I even ask." },
   { shop: "Bayu Sports Gear", who: "Kelvin, founder", what: "Sports", initials: "BS", stat: "31 creators in 6 weeks", quote: "I was about to hire someone just to message creators. Instead I submitted 4 products on a Sunday night. Six weeks later 31 creators have sold for us and I haven't sent a single DM." },
   { shop: "Lembut Baby Co.", who: "Siti, marketing", what: "Mum & baby", initials: "LB", stat: "RM 0 before the first sale", quote: "What sold me was paying nothing until something sells. The samples are our cost, which is fair, and the dashboard shows exactly where each one went." },
 ];
@@ -263,7 +264,7 @@ export const TESTIMONIALS = [
 export const SELLER_FAQ: [string, string][] = [
   ["Is it really free?", "There's no monthly fee and no sign-up fee. Techwide earns a partner commission from TikTok only when a creator in our TAP campaign sells your product. The samples you send are your own marketing cost, the same as today."],
   ["Who decides which creators get my samples?", "Techwide's team. We look at each creator's activity, delivery record, category, TikTok level and sales, and pick the ones most likely to bring results. The creator conditions you set are a reference. Ask our support team if you want to know why someone was picked."],
-  ["What does 1 sample = 3 videos mean?", "Every creator who gets your sample agrees to post 3 videos with your product in the cart. You can see each one on Where samples went. Creators who don't deliver are reminded, then frozen or banned from samples."],
+  ["What does 1 sample = 1 video mean?", "Every creator who gets your sample must post at least 1 video with your product in the cart by the due date. Most Rezekii creators post more than 1, and creators who post 3 earn an extra bonus. You can see each video on Where samples went. Creators with no video by the due date are reminded, then frozen or banned from samples."],
   ["How do I set the commission?", "You pick how much above your public commission you want to pay through TAP, at least +2%. Our AI suggests an amount based on how well each product already sells. You can always type your own."],
   ["Do I need a TikTok Shop?", "Yes. Rezekii is for Malaysian TikTok Shop sellers. Connecting Seller Center is the first step; it lets us read your products so you never type them in, and it keeps the platform for real sellers."],
   ["Can I stop at any time?", "Yes. You can stop adding samples or end a product early. Samples already sent can't be taken back, and creators who have them still finish their videos."],

@@ -53,18 +53,20 @@ const INVITE = { creator: "/app/account#referral", seller: "/seller/app/rewards/
  * Signed-in frame. Desktop (owner, 28 Oct 2026: website first): a left side bar with every section and the open section's
  * pages, and a slim top bar. Smaller screens keep the top menu, the sub-menu and the phone tab bar.
  */
-/** Invite button icon (owner, 29 Oct 2026): a treasure chest that glows, peeks open and sparkles, so it's hard to miss. */
+/** Invite button icon (owner, 29 Oct 2026, option A): a green gift box with a gold ribbon that wiggles, sparkles and glows. */
 function Chest() {
   return (
-    <svg className="v2-chest" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-      <path className="ch-spark" d="M4 3.5l.6 1.4 1.4.6-1.4.6L4 7.5l-.6-1.4L2 5.5l1.4-.6z" fill="#ffe08a" />
-      <path className="ch-spark b" d="M20 2l.5 1.2 1.2.5-1.2.5L20 5.4l-.5-1.2-1.2-.5 1.2-.5z" fill="#ffe08a" />
-      <rect x="4" y="12" width="16" height="9" rx="2" fill="#e08a2c" stroke="#6b3a0c" strokeWidth="1.3" />
-      <rect x="4" y="14.5" width="16" height="2" fill="#ffc83d" />
-      <g className="ch-lid">
-        <path d="M4 12.5V11a8 4.5 0 0 1 16 0v1.5z" fill="#f5a623" stroke="#6b3a0c" strokeWidth="1.3" strokeLinejoin="round" />
+    <svg className="v2-chest" width="24" height="24" viewBox="0 0 48 48" aria-hidden="true">
+      <g className="ch-box">
+        <rect x="8" y="20" width="32" height="22" rx="4" fill="#00c073" />
+        <rect x="8" y="20" width="32" height="5" fill="#00a862" />
+        <rect x="6" y="14" width="36" height="8" rx="3" fill="#22dc95" />
+        <rect x="21" y="14" width="6" height="28" fill="#ffd34d" />
+        <path d="M24 14c-3-6-11-7-11-2s8 2 11 2zM24 14c3-6 11-7 11-2s-8 2-11 2z" fill="#ffd34d" />
+        <rect x="11" y="16" width="8" height="2" rx="1" fill="#ffffff" opacity="0.5" />
       </g>
-      <rect x="10.6" y="12.6" width="2.8" height="4" rx="0.9" fill="#fff3c4" stroke="#6b3a0c" strokeWidth="1" />
+      <path className="ch-spark" d="M7 6l1 2.5 2.5 1-2.5 1L7 13l-1-2.5L3.5 9.5 6 8.5z" fill="#ffd34d" />
+      <path className="ch-spark b" d="M41 4l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z" fill="#ffd34d" />
     </svg>
   );
 }

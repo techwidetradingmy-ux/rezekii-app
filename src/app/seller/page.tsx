@@ -8,12 +8,13 @@ import { Icon } from "@/components/icons";
 import { DemoStrip } from "@/components/shell";
 import { Columns, Count } from "@/components/ui";
 import { Ava, ContactSheet, InViewCount, Pips } from "@/components/seller/seller-ui";
+import { JoinBoard } from "@/components/join-board";
 import { SAMPLE_DESTINATIONS, SELLER_RESULTS, product, rm } from "@/lib/mock";
 import { AGENCY, SELLER_FAQ, TESTIMONIALS } from "@/lib/mock-seller";
 
 const PAIN: [string, string][] = [
   ["Creators vanish after getting your sample.", "Samples only go to creators who deliver on time."],
-  ["Samples go to people who never post.", "We review every request. 1 sample = 3 videos."],
+  ["Samples go to people who never post.", "We review every request. 1 sample = at least 1 video."],
   ["You pay RM 3,000–3,500 a month for staff to chase creators.", "We chase creators for you. No hire needed."],
   ["You pay upfront, before any orders.", "We only earn commission when you sell."],
 ];
@@ -44,7 +45,7 @@ function LiveDash() {
   return (
     <div className="sl-dash-wrap">
       <div style={{ position: "relative", width: 340, maxWidth: "100%" }}>
-        <span className="sl-chip-float a"><span className="sl-ico" style={{ width: 24, height: 24, borderRadius: 8 }}><Icon name="check" size={14} width={2.6} /></span> Sample delivered · 3 / 3 videos</span>
+        <span className="sl-chip-float a"><span className="sl-ico" style={{ width: 24, height: 24, borderRadius: 8 }}><Icon name="check" size={14} width={2.6} /></span> Sample delivered · 3 videos</span>
         <div className="sl-dash" aria-label="Example: a shop's TAP sales">
           <div className="sl-dash-h">
             <span className="sl-shop-ico" style={{ width: 38, height: 38, borderRadius: 12, fontSize: 14 }}>SL</span>
@@ -216,6 +217,13 @@ export default function SellerLanding() {
           </div>
         </section>
 
+        <section className="section">
+          <span className="eyebrow">LIVE ON REZEKII</span>
+          <h2>Who&apos;s Joining</h2>
+          <p className="lead">Real TikTok Shop sellers and creators, joining every day.</p>
+          <JoinBoard />
+        </section>
+
         <section className="section" id="how">
           <span className="eyebrow">HOW IT WORKS</span>
           <h2>Two Steps. About 3 Minutes.</h2>
@@ -267,7 +275,7 @@ export default function SellerLanding() {
                   <div key={s.handle} className="sl-act">
                     <Ava name={s.handle} />
                     <span><b style={{ fontSize: 14 }}>{s.handle}</b><small>{product(s.productId).name}</small></span>
-                    <span className={`badge ${s.ok ? "" : "badge-red"}`}>{s.ok ? <><Pips n={Number(s.status[0])} /> {s.status[0]} / 3</> : "Overdue · reminded"}</span>
+                    <span className={`badge ${s.ok ? "" : "badge-red"}`}>{s.ok ? <><Pips n={s.videos} /> {s.videos} video{s.videos === 1 ? "" : "s"}</> : "No video · reminded"}</span>
                   </div>
                 ))}
               </div>

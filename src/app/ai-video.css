@@ -1,0 +1,39 @@
+/* AI Video waitlist: creator page (/app/publish/ai-video) and admin list (/admin/growth/waitlist). */
+
+/* Creator: one readable column on desktop */
+.av-hero, .av-form, .av-joined { width: 100%; max-width: 680px; }
+
+/* Creator: Coming Soon hero */
+.av-hero { flex-direction: row; align-items: center; gap: 14px; }
+.av-hero-txt { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
+.av-hero-txt > b { font-size: 16px; font-weight: 800; line-height: 1.35; }
+
+/* Creator: form. Picked chips are a light tint; the solid green stays on the one main button. */
+.av-form .np-btn { align-self: stretch; }
+.av-chips .v2-chip { height: 36px; padding: 0 14px; font-size: 13.5px; }
+.av-chips .v2-chip.on { background: var(--gsoft); border-color: var(--green); color: var(--gink); box-shadow: none; }
+
+/* Creator: joined */
+.av-joined { align-items: center; text-align: center; gap: 10px; padding-block: 26px 20px; }
+.av-joined .v2-medal::before { inset: -9px; }
+.av-joined > b { margin-top: 8px; font-size: 19px; font-weight: 800; }
+.av-sum { margin: 0; padding: 8px 12px; border-radius: 12px; background: var(--surface2); color: var(--body); font-size: 13.5px; font-weight: 700; line-height: 1.45; }
+
+/* Admin: trial count */
+.av-trial .v2-card-h > span { display: flex; flex-direction: column; gap: 2px; }
+.av-trial small { font-size: 13px; font-weight: 700; color: var(--muted); }
+.av-trial b { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.av-trial b em { font-style: normal; font-size: 15px; color: var(--muted); }
+.av-trial .v2-card-h > span:last-child { align-items: flex-end; }
+
+/* Admin: list */
+.av-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.av-row .av-col { flex: 0 1 200px; }
+.av-row .av-col.sm { flex: 0 1 110px; }
+.av-row .av-note { font-style: italic; }
+.av-plats { display: flex; flex-wrap: wrap; gap: 4px; flex: 0 1 170px; }
+.av-plat { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; background: var(--bsoft); color: var(--blue); font-size: 12px; font-weight: 800; white-space: nowrap; }
+.av-pick { flex-shrink: 0; margin-left: auto; display: inline-flex; align-items: center; gap: 4px; height: 34px; padding: 0 12px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-size: 13.5px; font-weight: 800; white-space: nowrap; cursor: pointer; transition: transform 0.12s var(--ease), border-color 0.2s; }
+.av-pick:hover { border-color: var(--green); }
+.av-pick:active { transform: scale(0.97); }
+.av-pick.on { background: var(--gsoft); border-color: transparent; color: var(--gink); }

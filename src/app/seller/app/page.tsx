@@ -1,12 +1,14 @@
 "use client";
 
 import "@/app/seller.css";
+import "@/app/custom-service.css";
 import Link from "next/link";
 import { useState } from "react";
 import { Icon, type IconName } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Columns, Count, Sheet, Stat } from "@/components/ui";
 import { ConnBanner, ContactSheet, Source } from "@/components/seller/seller-ui";
+import { JoinBoard } from "@/components/join-board";
 import { SELLER, SELLER_RESULTS, rm } from "@/lib/mock";
 import { RESULTS, SHOP_ITEMS } from "@/lib/mock-seller";
 
@@ -15,9 +17,9 @@ type StageKey = "new" | "fix" | "waiting" | "running";
 const ACTIVITY: { icon: IconName; tone?: "red" | "amber" | "blue"; text: React.ReactNode; sub: string; when: string; href: string }[] = [
   { icon: "check", text: <>Spin chopper 1.5L passed our review</>, sub: "Next: it goes to TikTok", when: "10:40", href: "/seller/app/progress" },
   { icon: "video", tone: "blue", text: <><b>@kak.ros.kitchen</b> went LIVE with your casserole pot</>, sub: "38 units sold during the LIVE", when: "09:05", href: "/seller/app/results" },
-  { icon: "alert", tone: "red", text: <><b>@zara.home</b> is 3 days late on a sample</>, sub: "Reminded twice · sample access paused", when: "Yesterday", href: "/seller/app/results/samples" },
+  { icon: "alert", tone: "red", text: <><b>@zara.home</b> is 3 days late on a sample</>, sub: "No video yet · reminded twice · samples paused", when: "Yesterday", href: "/seller/app/results/samples" },
   { icon: "send", tone: "amber", text: <>Cordless vacuum, pet hair edition went to TikTok</>, sub: "TikTok usually replies in 1–3 working days", when: "25 Oct", href: "/seller/app/progress" },
-  { icon: "video", tone: "blue", text: <><b>@mei.ling.deals</b> posted video 2 of 3 for your tumbler</>, sub: "1 more due by 2 Nov", when: "24 Oct", href: "/seller/app/results/samples" },
+  { icon: "video", tone: "blue", text: <><b>@mei.ling.deals</b> posted a 2nd video for your tumbler</>, sub: "1 video promised · 2 posted", when: "24 Oct", href: "/seller/app/results/samples" },
 ];
 
 const QUICK: [string | null, string, string, IconName, string][] = [
@@ -149,6 +151,21 @@ export default function SellerHome() {
               </Link>
             ))}
           </div>
+        </section>
+      </div>
+
+      <div className="v2-split">
+        <section className="v2-card">
+          <JoinBoard title="Who's Joining" />
+        </section>
+        {/* Custom Service (owner, 29 Oct 2026): a small way in to what our team can run for the shop. */}
+        <section className="v2-card cs-home">
+          <h2 className="v2-h2">Want Our Team to Run It?</h2>
+          <p>Techwide can run your TAP campaign, creators, samples, LIVEs, content and ads. Tell us what you need and we&apos;ll quote.</p>
+          <ul aria-label="For example">
+            {["Full TAP management", "LIVE sessions", "Mega sale pushes", "Spark Ads"].map((t) => <li key={t} className="badge">{t}</li>)}
+          </ul>
+          <Link href="/seller/app/custom" className="np-btn">See Custom Service <Icon name="arrow" size={18} /></Link>
         </section>
       </div>
 

@@ -1,18 +1,17 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { Sheet, Stepper } from "@/components/ui";
-import { rm } from "@/lib/mock";
+import { Stepper } from "@/components/ui";
 import "@/app/creator1.css";
-import "@/app/creator2.css";
 import { MY_WISHES, commitText, lookupLink, type Commit, type Lookup, type Wanted, type Wish, type WishItem } from "@/lib/mock-showcase";
+import { productHref } from "@/lib/product-view";
 
 /**
- * Her wish list, shared by Home and Most Wanted. The preview has no server, so new wishes live in this browser tab on top of the
- * sample ones.
+ * Her wish list, shared by Home, Most Wanted and the Product page. The preview has no server, so new wishes live in this browser
+ * tab on top of the sample ones.
  */
 const KEY = "rz2_wishes";
 const EVT = "rz2-wishes";
@@ -53,15 +52,13 @@ const RIGHTS: Commit["rights"][] = [0, 90, 180];
 const MONTHS: Commit["months"][] = [1, 3, 6];
 
 /**
- * Add to wish list (owner, 29 Oct 2026): not a one-tap wish. She says what she'll give each month if the product launches on
- * Rezekii; that's what we take to the seller. No rate to ask for: none is guaranteed, and if the seller agrees it's at least +1%.
- * `start` opens on the product (from her showcase or a pasted link) or straight on the form (Join on Most Wanted).
+ * Add to wish list (owner, 29 Oct 2026), on the Product page: not a one-tap wish. She says what she'll give each month if the
+ * product launches on Rezekii; that's what we take to the seller. No rate to ask for: none is guaranteed, at least +1% if agreed.
  */
-export function WishSheet({ item, sold, wanted, kind = "new", start = "detail", onClose }: { item: WishItem; sold?: number; wanted?: Wanted; kind?: Lookup["kind"]; start?: "detail" | "commit"; onClose: () => void }) {
+export function WishForm({ item, wanted, onCancel }: { item: WishItem; wanted?: Wanted | null; onCancel: () => void }) {
   const { linked, setLinked } = useDemo();
-  const { add, mine } = useWishes();
-  const had = mine(item.id);
-  const [step, setStep] = useState<"detail" | "commit" | "done">(start);
+  const { add } = useWishes();
+  const [done, setDone] = useState(false);
   const [videos, setVideos] = useState(4);
   const [lives, setLives] = useState(0);
   const [rights, setRights] = useState<Commit["rights"]>(0);
@@ -70,92 +67,55 @@ export function WishSheet({ item, sold, wanted, kind = "new", start = "detail", 
   const [err, setErr] = useState("");
   const avg = wanted ? Math.round(wanted.videos / wanted.creators) : 0;
 
-  const go = () => (linked ? setStep("commit") : setLinked(true));
   const send = () => {
     if (!linked) return setLinked(true);
     if (videos + lives === 0) return setErr("Commit at least 1 video or LIVE a month.");
     add({ ...item, status: "On wish list", when: "Just now", commit: { videos, lives, rights, months, note: note.trim() || undefined } });
-    setStep("done");
+    setDone(true);
   };
 
+  if (done) {
+    return (
+      <section className="v2-card wf-card wf-done" aria-live="polite">
+        <span className="v2-medal green" style={{ width: 64, height: 64 }}><Icon name="check" size={28} width={2.6} /></span>
+        <b>{wanted ? "You've Joined" : "Added to Your Wish List"}</b>
+        <p className="v2-muted" style={{ margin: 0 }}>{commitText({ videos, lives, rights, months })}. We&apos;ll tell you when the seller replies.</p>
+      </section>
+    );
+  }
   return (
-    <Sheet title={step === "done" ? "On Your Wish List" : step === "commit" ? (wanted ? "Join This Wish" : "Add to Wish List") : "Product"} onClose={onClose}>
-      <div className="cr1-sheetprod">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={item.img} alt="" />
-        <span>
-          <b>{item.name}</b>
-          <small>{item.shop} · {rm(item.price)}{item.rate !== null ? ` · open plan ${item.rate}%` : ""}</small>
-        </span>
-      </div>
-
-      {step === "detail" && (
-        <>
-          <div className="cr2-mini">
-            <span><small>Price</small><b>{rm(item.price)}</b></span>
-            {sold !== undefined ? <span><small>Your sales, 30 days</small><b>{sold}</b></span> : wanted && <span><small>Creators want it</small><b>{wanted.creators}</b></span>}
-            <span><small>Open plan</small><b>{item.rate === null ? "—" : `${item.rate}%`}</b></span>
-          </div>
-          {kind === "onRezekii" ? (
-            <>
-              <p className="wf-note"><Icon name="check" size={16} width={2.6} /> Already on Rezekii. Add it from the marketplace.</p>
-              <Link href="/app/market" className="np-btn">Open Marketplace</Link>
-            </>
-          ) : had ? (
-            <div className="wf-had"><WishSteps w={had} /><small>{commitText(had.commit)}</small></div>
-          ) : (
-            <>
-              <p className="v2-muted" style={{ margin: 0 }}>
-                Not on Rezekii yet.{wanted ? ` ${wanted.creators} creators already want it, ${avg} videos a month each on average.` : ""}
-              </p>
-              {kind === "new" && sold !== undefined ? (
-                <button type="button" className="wf-quiet" onClick={go}>Want this on Rezekii? <b>Add to wish list</b></button>
-              ) : (
-                <button type="button" className="np-btn" onClick={go}>{wanted ? "Join with your commitment" : "Add to wish list"}</button>
-              )}
-            </>
-          )}
-        </>
-      )}
-
-      {step === "commit" && (
-        <>
-          <p className="v2-muted" style={{ margin: 0 }}>If it launches on Rezekii, what will you give each month?</p>
-          <div className="wf-rows">
-            <div className="wf-row"><span>Videos a month</span><Stepper label="Videos a month" value={videos} max={60} onChange={(v) => { setVideos(v); setErr(""); }} /></div>
-            <div className="wf-row"><span>LIVE sessions a month</span><Stepper label="LIVE sessions a month" value={lives} max={30} onChange={(v) => { setLives(v); setErr(""); }} /></div>
-            <div className="wf-row col">
-              <span>Ad rights for the seller</span>
-              <div className="v2-chips">{RIGHTS.map((r) => <button key={r} type="button" className={`v2-chip ${rights === r ? "on" : ""}`} onClick={() => setRights(r)}>{r ? `${r} days` : "None"}</button>)}</div>
-            </div>
-            <div className="wf-row col">
-              <span>For how long</span>
-              <div className="v2-chips">{MONTHS.map((m) => <button key={m} type="button" className={`v2-chip ${months === m ? "on" : ""}`} onClick={() => setMonths(m)}>{m} month{m === 1 ? "" : "s"}</button>)}</div>
-            </div>
-          </div>
-          <textarea className="np-input wf-note-in" rows={2} maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} placeholder="A free sample would help me film faster" aria-label="Note for the seller (optional)" />
-          {err && <p className="wf-err" role="alert">{err}</p>}
-          <p className="wf-fine">
-            If the seller agrees, you get at least +1%. Not guaranteed. The seller sees what you commit and sell.
-          </p>
-          <button type="button" className="np-btn" onClick={send}>{wanted ? "Join" : "Add to wish list"}</button>
-        </>
-      )}
-
-      {step === "done" && (
-        <div className="cr1-sent">
-          <span className="v2-medal green" style={{ width: 84, height: 84 }}><Icon name="check" size={34} width={2.6} /></span>
-          <b>{wanted ? "You've joined" : "Added to your wish list"}</b>
-          <p className="v2-muted" style={{ margin: 0 }}>{commitText({ videos, lives, rights, months })}. We&apos;ll tell you when the seller replies.</p>
-          <button type="button" className="np-btn v2-btn-sm" onClick={onClose}>Done</button>
+    <section className="v2-card wf-card" id="wish">
+      <h2 className="v2-h2">{wanted ? "Join This Wish" : "Add to Wish List"}</h2>
+      <p className="v2-muted" style={{ margin: 0 }}>If it launches on Rezekii, what will you give each month?{wanted ? ` Others give ${avg} videos on average.` : ""}</p>
+      <div className="wf-rows">
+        <div className="wf-row"><span>Videos a month</span><Stepper label="Videos a month" value={videos} max={60} onChange={(v) => { setVideos(v); setErr(""); }} /></div>
+        <div className="wf-row"><span>LIVE sessions a month</span><Stepper label="LIVE sessions a month" value={lives} max={30} onChange={(v) => { setLives(v); setErr(""); }} /></div>
+        <div className="wf-row col">
+          <span>Ad rights for the seller</span>
+          <div className="v2-chips">{RIGHTS.map((r) => <button key={r} type="button" className={`v2-chip ${rights === r ? "on" : ""}`} onClick={() => setRights(r)}>{r ? `${r} days` : "None"}</button>)}</div>
         </div>
-      )}
-    </Sheet>
+        <div className="wf-row col">
+          <span>For how long</span>
+          <div className="v2-chips">{MONTHS.map((m) => <button key={m} type="button" className={`v2-chip ${months === m ? "on" : ""}`} onClick={() => setMonths(m)}>{m} month{m === 1 ? "" : "s"}</button>)}</div>
+        </div>
+      </div>
+      <textarea className="np-input wf-note-in" rows={2} maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} placeholder="A free sample would help me film faster" aria-label="Note for the seller (optional)" />
+      {err && <p className="wf-err" role="alert">{err}</p>}
+      <p className="wf-fine">If the seller agrees, you get at least +1%. Not guaranteed. The seller sees what you commit and sell.</p>
+      <div className="pp-stack">
+        <button type="button" className="np-btn" onClick={send}>{wanted ? "Join" : "Add to Wish List"}</button>
+        <button type="button" className="btn-outline" onClick={onCancel}>Cancel</button>
+      </div>
+    </section>
   );
 }
 
-/** Paste a TikTok Shop link and we find the product (owner, 29 Oct 2026). Short links like vt.tiktok.com work too. */
-export function LinkFinder({ onFound }: { onFound: (r: Lookup) => void }) {
+/**
+ * Paste a TikTok Shop link and we find the product (owner, 29 Oct 2026). Short links like vt.tiktok.com work too. Found products
+ * open on the Product page unless `onFound` says otherwise.
+ */
+export function LinkFinder({ onFound }: { onFound?: (r: Lookup) => void }) {
+  const router = useRouter();
   const [url, setUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -168,7 +128,8 @@ export function LinkFinder({ onFound }: { onFound: (r: Lookup) => void }) {
       const r = lookupLink(url);
       if (!r) return setErr("Couldn't find this product. Check the link.");
       setUrl("");
-      onFound(r);
+      if (onFound) onFound(r);
+      else router.push(productHref(r.item.id));
     }, 700);
   };
   return (

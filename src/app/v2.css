@@ -976,12 +976,15 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { display
 /* Invite chest (owner, 29 Oct 2026): glows gold, the lid peeks open, sparkles twinkle. */
 @keyframes v2ChestGlow { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 200, 61, 0), 0 8px 18px -10px rgba(13, 17, 23, 0.6); } 50% { box-shadow: 0 0 16px 4px rgba(255, 200, 61, 0.55), 0 8px 18px -10px rgba(13, 17, 23, 0.6); } }
 .v2-chest { flex-shrink: 0; overflow: visible; }
-.v2-chest .ch-lid { transform-origin: 4px 12px; animation: chLid 3.2s ease-in-out infinite; }
-@keyframes chLid { 0%, 70%, 100% { transform: none; } 80%, 88% { transform: rotate(-16deg); } }
+.v2-chest .ch-box { transform-box: fill-box; transform-origin: bottom; animation: chWiggle 2.4s ease-in-out infinite; }
+@keyframes chWiggle { 0%, 100% { transform: none; } 50% { transform: translateY(-1.5px) rotate(-4deg); } }
 .v2-chest .ch-spark { transform-box: fill-box; transform-origin: center; animation: chTwinkle 1.6s ease-in-out infinite; }
 .v2-chest .ch-spark.b { animation-delay: 0.8s; }
 @keyframes chTwinkle { 0%, 100% { opacity: 0; transform: scale(0.4); } 50% { opacity: 1; transform: scale(1); } }
-@media (prefers-reduced-motion: reduce) { .v2-invite, .v2-chest .ch-lid, .v2-chest .ch-spark { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .v2-invite, .v2-chest .ch-box, .v2-chest .ch-spark { animation: none; } }
 .wf-st { font-size: 13px; font-weight: 800; color: var(--muted); }
 .wf-st.live { color: var(--gink); }
 .wf-st.no { color: var(--red); }
+/* Less green (owner, 29 Oct 2026): solid green is only for the main button on a card. Tags, status, ticks and done states
+   use a light tint so the button that matters stands out. */
+.v2-chip.on { background: var(--gsoft); border-color: #00c073; color: var(--gink); box-shadow: none; }

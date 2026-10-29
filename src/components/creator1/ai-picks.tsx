@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { AiMark, Count, Hidden, Sheet } from "@/components/ui";
-import { PoolTag } from "@/components/creator1/brand";
-import { AI_PICKS, AI_PROFILE, PRODUCTS, product, rm, short, type AiPick, type Product } from "@/lib/mock";
+import { AiMark, Count, Hidden } from "@/components/ui";
+import { productHref, requestedSamples } from "@/lib/product-view";
+import { AI_PICKS, AI_PROFILE, PRODUCTS, product, rm, short, type AiPick } from "@/lib/mock";
 import { SAMPLE_ACCESS, type Pool } from "@/lib/mock-creator1";
 
 type Fit = AiPick["fit"];
@@ -38,8 +40,9 @@ export function AiPicks() {
   const [fit, setFit] = useState<Fit>("video");
   const [sort, setSort] = useState<Sort>("Best match");
   const [added, setAdded] = useState<string[]>([]);
-  const [sampleFor, setSampleFor] = useState<Product | null>(null);
+  const router = useRouter();
   const [requested, setRequested] = useState<string[]>([]);
+  useEffect(() => setRequested(requestedSamples()), []);
 
   useEffect(() => {
     if (!linked) return;
@@ -169,14 +172,14 @@ export function AiPicks() {
               const asked = requested.includes(p.id);
               return (
                 <article key={p.id} className="ai-item" style={{ animationDelay: `${i * 45}ms` }}>
-                  <span className="ai-img">
+                  <Link href={productHref(p.id)} className="ai-img" aria-label={p.name}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={p.img} alt="" />
                     {pk.rank && <span className="ai-rank" title={`#${pk.rank} in ${p.category} on TikTok Shop Malaysia this week`}>#{pk.rank}</span>}
-                  </span>
+                  </Link>
                   <span className="ai-body">
                     <span className="ai-row1">
-                      <strong>{p.name}</strong>
+                      <Link href={productHref(p.id)} className="ai-name"><strong>{p.name}</strong></Link>
                       <span className="ai-match" style={{ "--m": pk.match } as React.CSSProperties} title="Match with you, out of 100"><b>{pk.match}</b></span>
                     </span>
                     <small className="ai-meta">{rm(p.price)} · {short(pk.week)} sold this week{pk.rank ? ` · #${pk.rank} in ${p.category}` : ""}</small>
@@ -188,7 +191,7 @@ export function AiPicks() {
                     <span className="ai-foot">
                       <span className="ai-earn">Earn <b><Hidden>{rateOf(pk)}%</Hidden></b></span>
                       {sample && (
-                        <button type="button" className={`ai-btn ghost ${asked ? "asked" : ""}`} disabled={asked} onClick={() => requireWa(() => setSampleFor(p))}>
+                        <button type="button" className={`ai-btn ghost ${asked ? "asked" : ""}`} disabled={asked} onClick={() => requireWa(() => router.push(productHref(p.id, { sample: true })))}>
                           <Icon name={asked ? "check" : "gift"} size={14} width={asked ? 2.8 : 1.9} /> {asked ? "Requested" : "Free sample"}
                         </button>
                       )}
@@ -207,35 +210,6 @@ export function AiPicks() {
             })}
           </div>
 
-          {sampleFor && (
-            <Sheet title="Request a Free Sample" onClose={() => setSampleFor(null)}>
-              <div className="cr1-sheetprod">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={sampleFor.img} alt="" />
-                <span>
-                  <b>{sampleFor.name}</b>
-                  <small>{sampleFor.shop} · {rm(sampleFor.price)} · earn <Hidden>{sampleFor.tapRate}%</Hidden></small>
-                  <PoolTag pool={sampleFor.samples as Pool} />
-                </span>
-              </div>
-              <ul className="cr1-after">
-                <li><Icon name="check" size={18} /> You meet the conditions.</li>
-                <li><Icon name="video" size={18} /> Post 1 video with it in your yellow cart by the due date. 3 videos unlock an extra reward.</li>
-                <li><Icon name="shield" size={18} /> Techwide approves it, usually within 2 working days.</li>
-              </ul>
-              <button
-                type="button"
-                className="np-btn"
-                onClick={() => {
-                  setRequested((r) => [...r, sampleFor.id]);
-                  setSampleFor(null);
-                  toast(`Sample requested: ${sampleFor.name}`);
-                }}
-              >
-                <Icon name="gift" size={18} /> Request free sample
-              </button>
-            </Sheet>
-          )}
 
           <p className="ai-fine">
             <b>Match</b>: fit with you, out of 100. Not a forecast. <b>Video / LIVE</b>: orders per 100 viewers, last 7 days.{" "}

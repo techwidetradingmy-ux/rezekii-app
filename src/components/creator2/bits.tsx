@@ -29,12 +29,12 @@ export function PlatformIcon({ name, size = 40 }: { name: Platform; size?: numbe
 }
 
 /** "Share" button for the top right of every rewards screen: opens the ready-made share card. */
-export function ShareButton({ big, label, lines, moment }: { big: string; label: string; lines: string[]; moment?: MomentKind }) {
+export function ShareButton({ big, label, lines, moment, primary }: { big: string; label: string; lines: string[]; moment?: MomentKind; primary?: string }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button type="button" className="btn-outline cr2-sharebtn" onClick={() => setOpen(true)}>
-        <Icon name="share" size={18} /> Share
+      <button type="button" className={primary ? "np-btn rf-share" : "btn-outline cr2-sharebtn"} onClick={() => setOpen(true)}>
+        <Icon name="share" size={18} /> {primary ?? "Share"}
       </button>
       {open && <ShareSheet onClose={() => setOpen(false)} big={big} label={label} lines={lines} moment={moment} />}
     </>

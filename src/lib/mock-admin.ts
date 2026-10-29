@@ -166,8 +166,8 @@ export type SampleReq = {
 };
 type Facts = Omit<SampleReq, "id" | "handle" | "productId" | "pool" | "verdict" | "summary">;
 const FACTS: Record<string, Facts> = {
-  "SR-221": { asked: "2 h ago", tier: "Highly active", days: 31, delivery: "100% · 3 of 3 (9 videos)", deliveryOk: true, overdue: 0, level: "Silver", tt: 5, category: "Home matches", categoryOk: true, seller: "Silver or above · Home", sellerOk: true },
-  "SR-222": { asked: "3 h ago", tier: "Active", days: 11, delivery: "1 in progress · 1 video short, due in 2 days", deliveryOk: true, overdue: 0, level: "Bronze", tt: 3, category: "Kitchen matches", categoryOk: true, seller: "None", sellerOk: true },
+  "SR-221": { asked: "2 h ago", tier: "Highly active", days: 31, delivery: "100% · 3 of 3 samples (9 videos)", deliveryOk: true, overdue: 0, level: "Silver", tt: 5, category: "Home matches", categoryOk: true, seller: "Silver or above · Home", sellerOk: true },
+  "SR-222": { asked: "3 h ago", tier: "Active", days: 11, delivery: "1 in progress · no video yet, due in 2 days", deliveryOk: true, overdue: 0, level: "Bronze", tt: 3, category: "Kitchen matches", categoryOk: true, seller: "None", sellerOk: true },
   "SR-223": { asked: "4 h ago", tier: "New", days: 0, delivery: "No samples yet", deliveryOk: true, overdue: 0, level: "Bronze", tt: 1, category: "No videos yet", categoryOk: false, seller: "Highly active only", sellerOk: false, creatorSees: "Designated samples go to Highly active creators (30 days of videos in a row). You joined 4 days ago. Open samples are free to request: try the spin chopper or the cotton tee." },
   "SR-224": { asked: "5 h ago", tier: "New", days: 2, delivery: "No samples yet", deliveryOk: true, overdue: 0, level: "Bronze", tt: 2, category: "Electronics matches", categoryOk: true, seller: "None (open sample)", sellerOk: true },
   "SR-225": { asked: "6 h ago", tier: "Active", days: 14, delivery: "80% · 4 of 5", deliveryOk: false, overdue: 1, level: "Silver", tt: 4, category: "Home matches", categoryOk: true, seller: "Highly active only", sellerOk: false, creatorSees: "You have a sample that's 3 days late (cordless vacuum). Post its videos and you can request designated samples again." },
@@ -292,9 +292,9 @@ const EXTRA_FACTS: Record<string, { delivery: number; samples: number; gold?: st
 export const DIRECTORY: Person[] = [...PEOPLE.map((p) => ({ ...p, niche: NICHE[p.handle] ?? "Home", ...EXTRA_FACTS[p.handle] })), ...EXTRA_PEOPLE];
 
 export const SAMPLE_HISTORY: Record<string, { product: string; when: string; status: string; ok: boolean }[]> = {
-  "@aisyah.glow": [{ product: "1.2L 316 stainless thermos", when: "26 Oct", status: "2 / 3 videos · due 2 Nov", ok: true }, { product: "900ml spin chopper blender", when: "Shipped", status: "On the way", ok: true }, { product: "Plain cotton tee, unisex", when: "2 Oct", status: "3 / 3 videos", ok: true }],
-  "@kak.ros.kitchen": [{ product: "Granite non-stick casserole pot", when: "12 Oct", status: "3 / 3 videos + 1 LIVE", ok: true }, { product: "Capsule spin chopper", when: "28 Sep", status: "3 / 3 videos", ok: true }],
-  "@zara.home": [{ product: "Cordless vacuum with mop pad", when: "16 Oct", status: "Overdue 3 days · reminded", ok: false }, { product: "AirySoft pillowcase", when: "20 Sep", status: "3 / 3 videos", ok: true }],
+  "@aisyah.glow": [{ product: "1.2L 316 stainless thermos", when: "26 Oct", status: "2 videos posted", ok: true }, { product: "900ml spin chopper blender", when: "Shipped", status: "On the way", ok: true }, { product: "Plain cotton tee, unisex", when: "2 Oct", status: "3 videos posted · bonus earned", ok: true }],
+  "@kak.ros.kitchen": [{ product: "Granite non-stick casserole pot", when: "12 Oct", status: "3 videos posted + 1 LIVE", ok: true }, { product: "Capsule spin chopper", when: "28 Sep", status: "3 videos posted · bonus earned", ok: true }],
+  "@zara.home": [{ product: "Cordless vacuum with mop pad", when: "16 Oct", status: "No video yet · 3 days late · reminded", ok: false }, { product: "AirySoft pillowcase", when: "20 Sep", status: "1 video posted", ok: true }],
 };
 
 /* ---------------- Growth ---------------- */
@@ -429,7 +429,7 @@ export const TIMELINES: Record<string, { when: string; what: string; tone?: "ok"
   ],
   "@zara.home": [
     { when: "28 Oct 08:00", what: "Overdue reminder sent (cordless vacuum, day 3)", tone: "bad" },
-    { when: "25 Oct 08:00", what: "Sample due: cordless vacuum, 1 of 3 videos", tone: "warn" },
+    { when: "25 Oct 08:00", what: "Sample due: cordless vacuum, no video posted", tone: "warn" },
     { when: "19 Oct 14:40", what: "Sample received (cordless vacuum)" },
     { when: "18 Oct 16:02", what: "Raise confirmed: 4-in-1 cable 12% → 20%", tone: "ok" },
   ],
@@ -445,10 +445,10 @@ export const TIMELINES: Record<string, { when: string; what: string; tone?: "ok"
 
 export type DisputeStatus = "Open" | "Waiting on creator" | "Waiting on seller" | "Resolved";
 export const DISPUTES: { id: string; kind: "Sample not received" | "Creator overdue" | "Seller complaint"; title: string; creator: string; seller: string; opened: string; status: DisputeStatus; owner: string | null; due: string; late?: boolean; log: { when: string; who: string; text: string }[] }[] = [
-  { id: "D-118", kind: "Creator overdue", title: "Cordless vacuum: 1 of 3 videos, 3 days late", creator: "@zara.home", seller: "Seri Living MY", opened: "25 Oct", status: "Waiting on creator", owner: "Aina", due: "Today", late: true, log: [{ when: "25 Oct 08:00", who: "System", text: "Delivery due date passed with 1 of 3 videos." }, { when: "26 Oct 10:12", who: "Aina", text: "Reminded on WhatsApp. She says the second video is being edited." }, { when: "28 Oct 08:00", who: "System", text: "Day 3 overdue. Designated samples paused for her." }] },
+  { id: "D-118", kind: "Creator overdue", title: "Cordless vacuum: no video yet, 3 days late", creator: "@zara.home", seller: "Seri Living MY", opened: "25 Oct", status: "Waiting on creator", owner: "Aina", due: "Today", late: true, log: [{ when: "25 Oct 08:00", who: "System", text: "Due date passed with no video." }, { when: "26 Oct 10:12", who: "Aina", text: "Reminded on WhatsApp. She says her first video is being edited." }, { when: "28 Oct 08:00", who: "System", text: "Day 3 overdue. Designated samples paused for her." }] },
   { id: "D-117", kind: "Sample not received", title: "Spin chopper shows Delivered, creator says no parcel", creator: "@aisyah.glow", seller: "Seri Living MY", opened: "27 Oct", status: "Waiting on seller", owner: "Kumar", due: "30 Oct", log: [{ when: "27 Oct 14:22", who: "@aisyah.glow", text: "TikTok says delivered on 25 Oct but nothing arrived. Guardhouse checked." }, { when: "27 Oct 15:01", who: "Kumar", text: "Asked Seri Living to check the courier's proof of delivery." }] },
   { id: "D-116", kind: "Seller complaint", title: "Creator used a different product in the video", creator: "@siti.deco", seller: "Lena Home", opened: "26 Oct", status: "Open", owner: null, due: "29 Oct", log: [{ when: "26 Oct 19:40", who: "Lena Home", text: "Her video shows another brand's pillowcase with our product in the cart." }] },
-  { id: "D-114", kind: "Creator overdue", title: "Yoga pants: 2 of 3 videos, 1 day late", creator: "@ahmad.fitlife", seller: "Urban Basics MY", opened: "27 Oct", status: "Waiting on creator", owner: "Aina", due: "29 Oct", log: [{ when: "27 Oct 08:00", who: "System", text: "Delivery due date passed with 2 of 3 videos." }] },
+  { id: "D-114", kind: "Creator overdue", title: "Yoga pants: no video yet, 1 day late", creator: "@ahmad.fitlife", seller: "Urban Basics MY", opened: "27 Oct", status: "Waiting on creator", owner: "Aina", due: "29 Oct", log: [{ when: "27 Oct 08:00", who: "System", text: "Due date passed with no video." }] },
   { id: "D-109", kind: "Sample not received", title: "Thermos parcel returned to seller", creator: "@mei.ling.deals", seller: "Seri Living MY", opened: "20 Oct", status: "Resolved", owner: "Kumar", due: "—", log: [{ when: "20 Oct 11:00", who: "@mei.ling.deals", text: "Parcel shows Returned." }, { when: "22 Oct 09:30", who: "Kumar", text: "Seller re-sent. Received 24 Oct. Closed." }] },
 ];
 

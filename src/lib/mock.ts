@@ -201,11 +201,16 @@ export const BADGES = [
 /** Referral rewards (owner, 28 Oct 2026): win-win, the same for creators and sellers. Admin can change them. */
 export const REFERRAL_REWARD = { inviter: 100, friend: 50 };
 
+/**
+ * People who signed up with her link or code. Successful (owner, 29 Oct 2026) = linked TikTok Shop (sellers: Seller Center) and
+ * filled in their details. What each one earned her lives in her credit history, not here.
+ */
 export const INVITES = [
-  { name: "@nurul.beauty", role: "Creator", status: "Successful · paid", when: "3 Oct" },
-  { name: "Seri Living MY", role: "Seller", status: "Successful · pending", when: "11 Oct" },
-  { name: "@farah.home", role: "Creator", status: "Signed up · no scan yet", when: "20 Oct" },
-  { name: "@hafiz.tech", role: "Creator", status: "Successful · paid", when: "22 Oct" },
+  { name: "@nurul.beauty", role: "Creator", linked: true, details: true, when: "3 Oct" },
+  { name: "Seri Living MY", role: "Seller", linked: true, details: true, when: "11 Oct" },
+  { name: "@farah.home", role: "Creator", linked: true, details: false, when: "20 Oct" },
+  { name: "@hafiz.tech", role: "Creator", linked: true, details: true, when: "22 Oct" },
+  { name: "@mira.new", role: "Creator", linked: false, details: false, when: "27 Oct" },
 ];
 
 export const LEDGER = [
@@ -245,11 +250,12 @@ export const SELLER_RESULTS = {
   ],
 };
 
+/** 1 sample = at least 1 video by the due date; 3 videos earn the creator a bonus (owner, 29 Oct 2026). Only 0 videos past due is overdue. */
 export const SAMPLE_DESTINATIONS = [
-  { handle: "@aisyah.glow", productId: "p21", status: "3 / 3 videos", ok: true },
-  { handle: "@kak.ros.kitchen", productId: "p08", status: "3 / 3 videos + 1 LIVE", ok: true },
-  { handle: "@mei.ling.deals", productId: "p24", status: "2 / 3 videos · due 2 Nov", ok: true },
-  { handle: "@zara.home", productId: "p18", status: "Overdue 3 days · reminded", ok: false },
+  { handle: "@aisyah.glow", productId: "p21", videos: 3, status: "3 videos posted", ok: true },
+  { handle: "@kak.ros.kitchen", productId: "p08", videos: 3, status: "3 videos posted + 1 LIVE", ok: true },
+  { handle: "@mei.ling.deals", productId: "p24", videos: 2, status: "2 videos posted", ok: true },
+  { handle: "@zara.home", productId: "p18", videos: 0, status: "No video yet · 3 days late · reminded", ok: false },
 ];
 
 /* ---------------- Admin ---------------- */
@@ -266,7 +272,7 @@ export const TAP_PIPELINE = [
 export type Verdict = "Approve" | "Look" | "Reject";
 export const SAMPLE_REVIEW = [
   { id: "SR-221", handle: "@mei.ling.deals", productId: "p24", pool: "Designated", verdict: "Approve" as Verdict, facts: "Highly active · 31 days in a row · delivered 3 / 3 samples (9 videos) · Silver · TikTok Lv.5 · Home matches", summary: "Always delivers on time and meets every condition for designated samples." },
-  { id: "SR-222", handle: "@farah.home", productId: "p14", pool: "Advanced", verdict: "Look" as Verdict, facts: "Active · 11 days in a row · Bronze · last sample 1 video short, due in 2 days", summary: "Previous sample not finished yet, but not overdue." },
+  { id: "SR-222", handle: "@farah.home", productId: "p14", pool: "Advanced", verdict: "Look" as Verdict, facts: "Active · 11 days in a row · Bronze · last sample: no video yet, due in 2 days", summary: "No video yet for her last sample, but it isn't due." },
   { id: "SR-223", handle: "@mira.new", productId: "p08", pool: "Designated", verdict: "Reject" as Verdict, facts: "New · joined 4 days ago · no videos yet", summary: "Designated samples go to Highly active creators. Suggest 3 open samples instead." },
   { id: "SR-224", handle: "@hafiz.tech", productId: "p13", pool: "Open", verdict: "Approve" as Verdict, facts: "New · TikTok Shop linked · Electronics matches", summary: "Open samples are for everyone; category matches." },
   { id: "SR-225", handle: "@zara.home", productId: "p18", pool: "Designated", verdict: "Reject" as Verdict, facts: "Overdue sample: 3 days late on cordless vacuum", summary: "Has an overdue sample. Approve again after it's delivered." },

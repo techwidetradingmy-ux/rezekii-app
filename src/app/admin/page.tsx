@@ -34,7 +34,7 @@ export default function AdminToday() {
     { href: "/admin/tap", n: late.length, label: "Overdue reviews", note: `${late[0]?.id ?? ""} ${late[0]?.shop ?? ""}, 2 days over`, icon: "alert", bg: "linear-gradient(135deg,#ff8a80,#d93a2b)", tone: "red" },
     { href: "/admin/tap/samples", n: SAMPLES.length, label: "Sample requests", note: `${approve} suggested to approve`, icon: "gift", bg: "linear-gradient(135deg,#7aa2ff,#1d4ed8)" },
     { href: "/admin/tap", n: failedTasks + handTasks, label: "Tasks to fix", note: `${failedTasks} failed · ${handTasks} need a person`, icon: "refresh", bg: "linear-gradient(135deg,#ff8a80,#d93a2b)", tone: "red" },
-    { href: "/admin/support", n: overdueDeliveries, label: "Overdue deliveries", note: "Past 3-video due date", icon: "box", bg: "linear-gradient(135deg,#ffb35c,#f08a00)", tone: "amber" },
+    { href: "/admin/support", n: overdueDeliveries, label: "Overdue deliveries", note: "No video by the due date", icon: "box", bg: "linear-gradient(135deg,#ffb35c,#f08a00)", tone: "amber" },
     { href: "/admin/users", n: REVIEW_CREATORS.length + REVIEW_SELLERS.length, label: "Accounts to review", note: `${REVIEW_CREATORS.length} creators · ${REVIEW_SELLERS.length} sellers`, icon: "users", bg: "linear-gradient(135deg,#a78bfa,#6d28d9)" },
     { href: "/admin/support/feedback", n: fbNew, label: "New feedback", note: "Ideas, bugs, complaints", icon: "inbox", bg: "linear-gradient(135deg,#5eead4,#0f766e)" },
     { href: "/admin/system/publishing", n: FAILED_POSTS.length, label: "Failed posts", note: `${FAILED_POSTS.filter((p) => p.retry).length} can be retried now`, icon: "send", bg: "linear-gradient(135deg,#ff7aa8,#e8005a)", tone: "amber" },

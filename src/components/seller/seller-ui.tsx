@@ -128,11 +128,11 @@ export function PhoneField({ dial, raw, onChange, showError, label = "Phone numb
   );
 }
 
-/** Three little bars for x / 3 videos. */
-export function Pips({ n, of = 3 }: { n: number; of?: number }) {
+/** One bar per video posted, never fewer than the 1 promised (owner, 29 Oct 2026: 1 sample = at least 1 video). */
+export function Pips({ n, promised = 1 }: { n: number; promised?: number }) {
   return (
-    <span className="sl-pips" aria-label={`${n} of ${of} videos`}>
-      {Array.from({ length: of }, (_, i) => <i key={i} className={i < n ? "on" : ""} />)}
+    <span className="sl-pips" aria-label={`${n} video${n === 1 ? "" : "s"} posted, ${promised} promised`}>
+      {Array.from({ length: Math.max(n, promised) }, (_, i) => <i key={i} className={i < n ? "on" : ""} />)}
     </span>
   );
 }

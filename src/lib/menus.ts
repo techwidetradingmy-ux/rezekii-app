@@ -13,14 +13,14 @@ export const MENUS: Record<AppKind, Section[]> = {
       pages: [["/app/data", "Overview"], ["/app/data/performance", "Performance"], ["/app/data/ai-picks", "AI Picks"], ["/app/data/risk", "Risk Check"], ["/app/data/payouts", "Payouts"]],
     },
     // Today's Ideas first (owner, 28 Oct 2026): Publish opens on what to film, then New Post, then the calendar.
-    { href: "/app/publish/plan", label: "Publish", icon: "send", pages: [["/app/publish/plan", "Today's Ideas"], ["/app/publish", "New Post"], ["/app/publish/calendar", "Content Calendar"]] },
+    { href: "/app/publish/plan", label: "Publish", icon: "send", pages: [["/app/publish/plan", "Today's Ideas"], ["/app/publish", "New Post"], ["/app/publish/calendar", "Content Calendar"], ["/app/publish/ai-video", "AI Video"]] },
     { href: "/app/rewards", label: "Missions", icon: "gift", pages: [] },
   ],
   seller: [
     { href: "/seller/app", label: "Home", icon: "home", pages: [] },
     {
       href: "/seller/app/products", label: "Products", icon: "box",
-      pages: [["/seller/app/products", "Shop Products"], ["/seller/app/submit", "Submit Products"], ["/seller/app/progress", "Progress"], ["/seller/app/changes", "Change or End"], ["/seller/app/wanted", "Wanted by Creators"]],
+      pages: [["/seller/app/products", "Shop Products"], ["/seller/app/submit", "Submit Products"], ["/seller/app/progress", "Progress"], ["/seller/app/changes", "Change or End"], ["/seller/app/wanted", "Wanted by Creators"], ["/seller/app/custom", "Custom Service"]],
     },
     {
       href: "/seller/app/results", label: "Results", icon: "chart",
@@ -37,7 +37,7 @@ export const MENUS: Record<AppKind, Section[]> = {
       pages: [["/admin/business", "My Merchants & Creators"], ["/admin/business/performance", "Live Performance"], ["/admin/business/open", "Open Campaigns"], ["/admin/business/custom", "Custom Service"]],
     },
     { href: "/admin/users", label: "Users", icon: "users", pages: [["/admin/users", "Review"], ["/admin/users/sellers", "Sellers"], ["/admin/users/creators", "Creators"], ["/admin/users/access", "Admin Access"]] },
-    { href: "/admin/growth", label: "Growth", icon: "gift", pages: [["/admin/growth", "Missions"], ["/admin/growth/progress", "Progress per Person"], ["/admin/growth/referrals", "Referrals"]] },
+    { href: "/admin/growth", label: "Growth", icon: "gift", pages: [["/admin/growth", "Missions"], ["/admin/growth/progress", "Progress per Person"], ["/admin/growth/referrals", "Referrals"], ["/admin/growth/waitlist", "AI Video Waitlist"]] },
     { href: "/admin/accounts", label: "Accounts", icon: "wallet", pages: [["/admin/accounts", "Ledger"], ["/admin/accounts/reconcile", "Reconciliation"]] },
     { href: "/admin/analytics", label: "Analytics", icon: "chart", pages: [] },
     { href: "/admin/support", label: "Support", icon: "inbox", pages: [["/admin/support", "Disputes"], ["/admin/support/feedback", "Feedback Inbox"]] },

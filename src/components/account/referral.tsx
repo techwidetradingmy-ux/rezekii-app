@@ -1,24 +1,28 @@
 "use client";
 
+import Link from "next/link";
+import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { Count, Qr } from "@/components/ui";
+import { Qr, Tip } from "@/components/ui";
 import { ShareButton } from "@/components/creator2/bits";
-import { ReferralOffer } from "@/components/referral-offer";
 import { INVITES, REFERRAL_REWARD } from "@/lib/mock";
 import "@/app/creator2.css";
 
 const LINK = "rezekii.com/r/aisyah";
 const CODE = "AISYAH8";
+/** Friends to set up for the referral bonus (sample goal; admin sets it). */
+const GOAL = 5;
 
-/** Referral (in My account, also one tap from the top bar): link, QR, who joined, and credits only for real successes. */
+/**
+ * Referral (owner, 29 Oct 2026, option C): progress toward the next bonus with Share as the main button on top, then who joined
+ * with her link. A friend counts once they link TikTok Shop and fill in their details. Earnings per friend stay in her credit
+ * history, so the list shows names and status only.
+ */
 export function Referral() {
   const { toast } = useDemo();
-  // Only people who signed up and linked their account (owner, 28 Oct 2026): username and date.
-  const joined = INVITES.filter((i) => i.status.startsWith("Successful"));
-  const successful = joined.length;
-  const paid = INVITES.filter((i) => i.status.includes("paid")).length;
-
+  const [qr, setQr] = useState(false);
+  const done = INVITES.filter((i) => i.linked && i.details).length;
   const copy = (text: string, what: string) => {
     try {
       void navigator.clipboard?.writeText(text).catch(() => {});
@@ -27,76 +31,54 @@ export function Referral() {
   };
 
   return (
-    <div className="v2-stack" style={{ gap: 20 }}>
-      <div className="acc-head"><span className="v2-small">Invite creators and sellers to earn credits.</span>
-        <ShareButton big="Join me on Rezekii" label="Better commission for your TikTok Shop showcase" lines={[`Use my code ${CODE}: +${REFERRAL_REWARD.friend} credits`, "Free for creators and sellers"]} moment="invite" />
-      </div>
-
-      <ReferralOffer />
-
-      <section className="v2-card">
-        <div className="cr2-ref">
-          <div className="v2-stack" style={{ gap: 14 }}>
-            <div className="v2-field">
-              Your link
-              <span className="cr2-linkbox">
-                <b>{LINK}</b>
-                <button type="button" className="np-btn v2-btn-sm" onClick={() => copy(`https://${LINK}`, "Link")}><Icon name="link" size={16} /> Copy</button>
-              </span>
-            </div>
-            <div className="v2-field">
-              Invite code
-              <span className="cr2-linkbox">
-                <b className="cr2-code">{CODE}</b>
-                <button type="button" className="btn-outline v2-btn-sm" onClick={() => copy(CODE, "Code")}>Copy</button>
-              </span>
-            </div>
-            <span className="v2-small">Sign-ups with your link or code are yours for good.</span>
-          </div>
-          <div className="cr2-qrwrap">
+    <div className="v2-stack" style={{ gap: 16 }}>
+      <section className="v2-card rf-hero">
+        <div className="rf-goal">
+          <b>{Math.min(done, GOAL)} of {GOAL} Friends</b>
+          <small>{done >= GOAL ? "Bonus unlocked" : `${GOAL - done} more for a bonus`} <Tip text="Friends count once they link TikTok Shop and fill in their details. The bonus lands in your credit history." /></small>
+        </div>
+        <div className="rf-segs" aria-hidden="true">{Array.from({ length: GOAL }, (_, i) => <i key={i} className={i < done ? "on" : undefined} />)}</div>
+        <p className="rf-line">+{REFERRAL_REWARD.inviter} credits for you, +{REFERRAL_REWARD.friend} for your friend, once they&apos;re set up.</p>
+        <ShareButton primary="Share Invite" big="Join me on Rezekii" label="Better commission for your TikTok Shop showcase" lines={[`Use my code ${CODE}: +${REFERRAL_REWARD.friend} credits`, "Free for creators and sellers"]} moment="invite" />
+        <div className="rf-acts">
+          <button type="button" className="btn-outline v2-btn-sm" onClick={() => copy(`https://${LINK}`, "Link")}>Copy Link</button>
+          <button type="button" className="btn-outline v2-btn-sm" onClick={() => copy(CODE, "Code")}>Copy Code</button>
+          <button type="button" className="btn-outline v2-btn-sm" aria-expanded={qr} onClick={() => setQr((q) => !q)}><Icon name="qr" size={16} /> QR</button>
+        </div>
+        {qr && (
+          <div className="rf-qr">
             <Qr />
-            <span className="v2-small">Scan to join</span>
+            <span className="v2-small">Scan to join · {LINK} · code {CODE}</span>
           </div>
-        </div>
-      </section>
-
-      <section className="v2-card">
-        <span className="v2-small" style={{ fontWeight: 800 }}>This month</span>
-        <div className="cr2-big">
-          <b><Count value={successful} /></b>
-          <span>successful referrals</span>
-        </div>
-        <div className="cr2-funnel">
-          <span><b>41</b>Clicked</span>
-          <span><b>9</b>Signed up</span>
-          <span><b>{successful}</b>Successful</span>
-          <span><b>{paid}</b>Rewarded</span>
-        </div>
+        )}
       </section>
 
       <section className="v2-card">
         <div className="v2-card-h">
-          <h2 className="v2-h2">People You Invited</h2>
-          <span className="v2-small">{joined.length} people</span>
+          <h2 className="v2-h2">Your Friends</h2>
+          <span className="v2-small">{INVITES.length} joined</span>
         </div>
-        <div className="v2-divide">
-          {joined.map((p) => (
-            <div key={p.name} className="cr2-person">
-              <span className={`v2-av ${p.role === "Seller" ? "seller" : ""}`}>{p.name.replace("@", "").slice(0, 2).toUpperCase()}</span>
-              <b className="cr2-ellip">{p.name}</b>
-              <span className="v2-small">{p.when}</span>
-            </div>
-          ))}
+        <div className="v2-divide rf-friends">
+          {INVITES.map((p) => {
+            const ok = p.linked && p.details;
+            const next = !p.linked ? (p.role === "Seller" ? "Connect Seller Center" : "Link TikTok Shop") : "Fill in details";
+            return (
+              <div key={p.name} className="cr2-person">
+                <span className={`v2-av ${p.role === "Seller" ? "seller" : ""}`}>{p.name.replace("@", "").slice(0, 2).toUpperCase()}</span>
+                <span><b className="cr2-ellip">{p.name}</b><small>{ok ? `Joined ${p.when}` : `Next: ${next}`}</small></span>
+                <span className={`rf-pill${ok ? " ok" : ""}`}>{ok ? "Successful" : "Joining"}</span>
+              </div>
+            );
+          })}
         </div>
       </section>
 
       <section className="v2-card flat">
-        <h2 className="cr2-h3">How Referral Works</h2>
+        <h2 className="cr2-h3">How It Counts</h2>
         <ol className="cr2-rules">
-          <li><span><b>Sign-up link wins.</b> The link or code used at sign-up gets the referral. It can&apos;t change.</span></li>
-          <li><span><b>Successful</b> means, within 30 days: a creator links TikTok Shop and scans, or a seller connects Seller Center and submits a product.</span></li>
-          <li><span><b>Same reward for both.</b> +{REFERRAL_REWARD.inviter} credits for you, +{REFERRAL_REWARD.friend} for them.</span></li>
-          <li><span><b>Sharing alone earns nothing.</b></span></li>
+          <li><span><b>Successful</b> means your friend links TikTok Shop (sellers: Seller Center) and fills in their details within 30 days.</span></li>
+          <li><span><b>Sign-up link wins.</b> The link or code used at sign-up counts. It can&apos;t change.</span></li>
+          <li><span>Your credits show in your <Link href="/app/account#wallet" className="v2-link">Wallet</Link>.</span></li>
         </ol>
       </section>
     </div>

@@ -1,12 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { Lock, Seg, Sheet } from "@/components/ui";
-import { ProductSheet } from "@/components/creator2/view-sheets";
-import { LinkFinder, WishSheet, WishSteps, useWishes } from "@/components/creator1/wish";
+import { LinkFinder, WishSteps, useWishes } from "@/components/creator1/wish";
 import { product } from "@/lib/mock";
-import { NOT_YET, ON_IDS, ON_REZEKII, SHOWCASE_TOTAL, commitText, wantedFor, type Lookup, type OffItem } from "@/lib/mock-showcase";
+import { NOT_YET, ON_IDS, ON_REZEKII, SHOWCASE_TOTAL, commitText } from "@/lib/mock-showcase";
+import { productHref } from "@/lib/product-view";
 
 const pct = (n: number) => Math.round((n / SHOWCASE_TOTAL) * 100);
 
@@ -36,10 +37,7 @@ export function CoverageCard() {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("Not yet");
   const [limit, setLimit] = useState(5);
-  const [onView, setOnView] = useState<string | null>(null);
-  const [off, setOff] = useState<OffItem | null>(null);
   const [paste, setPaste] = useState(false);
-  const [found, setFound] = useState<Lookup | null>(null);
   const pickTab = (t: Tab) => { setTab(t); setLimit(5); };
   const all = tab === "On Rezekii" ? ON_IDS.length : tab === "Not yet" ? NOT_YET.length : wishes.length;
   const more = Math.min(5, all - limit);
@@ -65,28 +63,30 @@ export function CoverageCard() {
             <ul className="sc-list">
               {tab === "On Rezekii" && ON_IDS.slice(0, limit).map(product).map((p) => (
                 <li key={p.id}>
-                  <button type="button" className="sc-row" onClick={() => setOnView(p.id)}>
+                  <Link href={productHref(p.id)} className="sc-row">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={p.img} alt="" />
                     <span className="sc-main"><b>{p.name}</b><small>{p.publicRate}% open plan · <em>{p.tapRate}% on Rezekii</em></small></span>
-                  </button>
+                  </Link>
                 </li>
               ))}
               {tab === "Not yet" && NOT_YET.slice(0, limit).map((it) => (
                 <li key={it.id}>
-                  <button type="button" className="sc-row" onClick={() => setOff(it)}>
+                  <Link href={productHref(it.id)} className="sc-row">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={it.img} alt="" />
                     <span className="sc-main"><b>{it.name}</b><small>{it.shop} · {it.sold} sold by you</small></span>
                     {mine(it.id) && <span className="sc-tag">On wish list</span>}
-                  </button>
+                  </Link>
                 </li>
               ))}
               {tab === "Wish List" && wishes.slice(0, limit).map((w) => (
-                <li key={w.id} className="sc-row sc-asked">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={w.img} alt="" />
-                  <span className="sc-main"><b>{w.name}</b><WishSteps w={w} /><small>{commitText(w.commit)}</small></span>
+                <li key={w.id}>
+                  <Link href={productHref(w.id)} className="sc-row sc-asked">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={w.img} alt="" />
+                    <span className="sc-main"><b>{w.name}</b><WishSteps w={w} /><small>{commitText(w.commit)}</small></span>
+                  </Link>
                 </li>
               ))}
               {tab === "Wish List" && wishes.length === 0 && <li className="sc-empty">Your wish list is empty.</li>}
@@ -97,16 +97,13 @@ export function CoverageCard() {
         </div>
       )}
 
-      {onView && <ProductSheet productId={onView} onClose={() => setOnView(null)} />}
-      {off && <WishSheet item={off} sold={off.sold} wanted={wantedFor(off.id)} onClose={() => setOff(null)} />}
       {paste && (
         <Sheet title="Add to Wish List" onClose={() => setPaste(false)}>
           <p className="v2-muted" style={{ margin: 0 }}>Paste any TikTok Shop product link, even one that&apos;s not in your showcase.</p>
-          <LinkFinder onFound={(r) => { setPaste(false); setFound(r); }} />
+          <LinkFinder />
           {tab === "Wish List" && <button type="button" className="btn-outline" onClick={() => { setPaste(false); pickTab("Not yet"); }}>Pick From Your Showcase</button>}
         </Sheet>
       )}
-      {found && <WishSheet item={found.item} kind={found.kind} wanted={wantedFor(found.item.id)} onClose={() => setFound(null)} />}
     </section>
   );
 }

@@ -242,7 +242,7 @@ export default function SubmitProducts() {
             {samplesBad && <p className="sl-err"><Icon name="alert" size={16} /> Must be more than 0, or TikTok won&apos;t approve it.</p>}
           </div>
         )}
-        <p className="v2-small" style={{ margin: 0 }}>1 sample = 3 videos. You pay for samples, sent through TikTok.</p>
+        <p className="v2-small" style={{ margin: 0 }}>1 sample = at least 1 video; most creators post more. You pay for samples, sent through TikTok.</p>
       </section>
 
       <section className="sl-preset">

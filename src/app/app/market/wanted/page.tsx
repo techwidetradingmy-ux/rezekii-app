@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { Seg, Title } from "@/components/ui";
-import { LinkFinder, WishSheet, useWishes } from "@/components/creator1/wish";
-import { WANTED, onBoard, wantedFor, type Lookup, type Wanted } from "@/lib/mock-showcase";
+import Link from "next/link";
+import { LinkFinder, useWishes } from "@/components/creator1/wish";
+import { WANTED, onBoard } from "@/lib/mock-showcase";
+import { productHref } from "@/lib/product-view";
 import "@/app/creator1.css";
 
 type Sort = "This week" | "All time";
@@ -17,8 +19,6 @@ type Sort = "This week" | "All time";
 export default function MostWanted() {
   const { mine } = useWishes();
   const [sort, setSort] = useState<Sort>("This week");
-  const [join, setJoin] = useState<Wanted | null>(null);
-  const [found, setFound] = useState<Lookup | null>(null);
   const board = WANTED.filter(onBoard).sort((a, b) => (sort === "This week" ? b.week - a.week : 0) || b.creators - a.creators);
 
   return (
@@ -27,7 +27,7 @@ export default function MostWanted() {
 
       <section className="v2-card mw-paste">
         <b>Missing a Product?</b>
-        <LinkFinder onFound={setFound} />
+        <LinkFinder />
       </section>
 
       <div className="mw-bar">
@@ -40,20 +40,22 @@ export default function MostWanted() {
           return (
             <li key={w.id} className="mw-row">
               <span className="mw-rank">{i + 1}</span>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={w.img} alt="" />
-              <span className="sc-main">
-                <b>{w.name}</b>
-                <small>{w.shop}</small>
-                <small className="mw-stat">
-                  <Icon name="users" size={13} /> {w.creators} committed
-                  {sort === "This week" && w.week > 0 && <em> · +{w.week} this week</em>}
-                </small>
-              </span>
+              <Link href={productHref(w.id)} className="mw-open">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={w.img} alt="" />
+                <span className="sc-main">
+                  <b>{w.name}</b>
+                  <small>{w.shop}</small>
+                  <small className="mw-stat">
+                    <Icon name="users" size={13} /> {w.creators} committed
+                    {sort === "This week" && w.week > 0 && <em> · +{w.week} this week</em>}
+                  </small>
+                </span>
+              </Link>
               {joined ? (
                 <span className="mw-joined"><Icon name="check" size={14} width={2.8} /> Joined</span>
               ) : (
-                <button type="button" className="btn-outline v2-btn-sm" onClick={() => setJoin(w)}>Join</button>
+                <Link href={productHref(w.id, { join: true })} className="btn-outline v2-btn-sm">Join</Link>
               )}
             </li>
           );
@@ -61,8 +63,6 @@ export default function MostWanted() {
       </ol>
       <p className="v2-small" style={{ margin: 0, textAlign: "center" }}>A product leaves this list once it launches on Rezekii. Everyone who joined is told.</p>
 
-      {join && <WishSheet item={join} wanted={join} kind="wanted" start="commit" onClose={() => setJoin(null)} />}
-      {found && <WishSheet item={found.item} kind={found.kind} wanted={wantedFor(found.item.id)} onClose={() => setFound(null)} />}
     </div>
   );
 }

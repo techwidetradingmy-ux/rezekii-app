@@ -24,21 +24,3 @@ export function VideoSheet({ video, onClose }: { video: VideoRow; onClose: () =>
     </Sheet>
   );
 }
-
-/** A product, opened on Rezekii: photo, price, rates and rating. */
-export function ProductSheet({ productId, onClose }: { productId: string; onClose: () => void }) {
-  const p = product(productId);
-  return (
-    <Sheet title="Product" onClose={onClose}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className="ps-img" src={p.img} alt="" />
-      <b style={{ fontSize: 16 }}>{p.name}</b>
-      <div className="cr2-mini">
-        <span><small>Price</small><b>{rm(p.price)}</b></span>
-        <span><small>Rating</small><b className={p.rating < 3 ? "cr2-red" : undefined}>{p.rating.toFixed(1)} ★</b></span>
-        <span><small>Open plan</small><b>{p.publicRate}%</b></span>
-        <span><small>Rezekii</small><b className="cr2-green">{p.tapRate}%</b></span>
-      </div>
-    </Sheet>
-  );
-}

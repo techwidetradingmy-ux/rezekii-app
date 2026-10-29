@@ -6,7 +6,8 @@ import { useSideScroll } from "@/components/side-scroll";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { AiMark, Hidden, Seg, Tip } from "@/components/ui";
-import { ProductSheet } from "@/components/creator2/view-sheets";
+import Link from "next/link";
+import { productHref } from "@/lib/product-view";
 import { product, short } from "@/lib/mock";
 import { SAMPLE_LEFT } from "@/lib/mock-creator1";
 import { NICHE_BEST, TRY_TODAY, VIRAL, daily } from "@/lib/mock-creator2";
@@ -59,7 +60,7 @@ function useRail<T extends HTMLElement>(view: IdeasView) {
  * Why pick it (owner, 29 Oct 2026): the last 7 days of sales as a small line, with the change from the first half of the week to
  * the second. Views use the pink line, sales the green one.
  */
-function Trend({ points, label, sales = true }: { points: number[]; label: string; sales?: boolean }) {
+export function Trend({ points, label, sales = true }: { points: number[]; label: string; sales?: boolean }) {
   const early = points.slice(0, 3).reduce((a, b) => a + b, 0);
   const late = points.slice(-3).reduce((a, b) => a + b, 0);
   const change = early ? Math.round(((late - early) / early) * 100) : 0;
@@ -97,7 +98,7 @@ const FROM: Record<Kind, { icon: "flame" | "trend" | "gift"; short: string; cls:
  * whose videos are taking off come first (rated 4★+ only), then new marketplace products with a free sample. She picks any of
  * them; each pick becomes a draft in the Content Calendar and the first one opens in New Post.
  */
-export function ShootToday({ bare = false, view = "cards" }: { bare?: boolean; view?: IdeasView }) {
+export function ShootToday({ bare = false, view = "cards", inFrame = false }: { bare?: boolean; view?: IdeasView; inFrame?: boolean }) {
   const router = useRouter();
   const { linked, setLinked, toast, requireWa } = useDemo();
   const [pick, setPick] = useState<string[]>([]);
@@ -134,7 +135,7 @@ export function ShootToday({ bare = false, view = "cards" }: { bare?: boolean; v
   }
 
   return (
-    <section className="v2-aicard st-box" aria-label="Today's Ideas">
+    <section className={inFrame ? "st-box st-in" : "v2-aicard st-box"} aria-label="Today's Ideas">
       {!bare && <h2 className="v2-h2">Today&apos;s Ideas</h2>}
       <p className="td-lead">
         <b>{ideas.length} Products to Film Today</b>
@@ -208,7 +209,7 @@ export function ShootToday({ bare = false, view = "cards" }: { bare?: boolean; v
  * Best sellers in her niche (owner, 29 Oct 2026): public TikTok Shop products in her top categories, ranked by units sold this
  * week, rated 4★+ and not in her showcase yet. Changes daily. Tap a product to see it on Rezekii; + adds it to her showcase.
  */
-export function NicheBest({ view: shape = "list" }: { view?: IdeasView }) {
+export function NicheBest({ view: shape = "list", inFrame = false }: { view?: IdeasView; inFrame?: boolean }) {
   const { linked, setLinked, toast } = useDemo();
   const rows = NICHE_BEST.filter((b) => product(b.productId).rating >= 4).sort((a, b) => b.weekSold - a.weekSold);
   // Short tab names so the row fits a phone: "Home & Kitchen" shows as "Home".
@@ -216,15 +217,14 @@ export function NicheBest({ view: shape = "list" }: { view?: IdeasView }) {
   const cats = ["All", ...Array.from(new Set(rows.map((b) => short1(product(b.productId).category))))];
   const [cat, setCat] = useState("All");
   const [added, setAdded] = useState<string[]>([]);
-  const [view, setView] = useState<string | null>(null);
   const shown = rows.filter((b) => cat === "All" || short1(product(b.productId).category) === cat);
   const { rail, at } = useRail<HTMLOListElement>(shape);
   return (
-    <section className="v2-card nb-box" aria-label="Best sellers in your niche">
+    <section className={inFrame ? "nb-box nb-in" : "v2-card nb-box"} aria-label="Best sellers in your niche">
       <div className="nb-head">
         <AiMark size={34} />
         <span>
-          <h2 className="v2-h2">Best Sellers in Your Niche</h2>
+          {!inFrame && <h2 className="v2-h2">Best Sellers in Your Niche</h2>}
           <span className="td-mix">Live on TikTok Shop · by Rezekii AI <Tip label="How this list is made" text="Updated daily. Public TikTok Shop products in your top categories that aren't in your showcase yet, ranked by units sold this week and rated 4★ and up. The line shows sales for each of the last 7 days." /></span>
         </span>
       </div>
@@ -236,7 +236,7 @@ export function NicheBest({ view: shape = "list" }: { view?: IdeasView }) {
           return (
             <li key={p.id}>
               <span className="nb-rank">{rows.indexOf(b) + 1}</span>
-              <button type="button" className="nb-view" onClick={() => setView(p.id)} aria-label={`View ${p.name}`}>
+              <Link href={productHref(p.id)} className="nb-view" aria-label={`View ${p.name}`}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={p.img} alt="" />
                 <span className="nb-main">
@@ -245,7 +245,7 @@ export function NicheBest({ view: shape = "list" }: { view?: IdeasView }) {
                   <span className="nb-score"><Icon name="star" size={12} width={2.4} /> {p.rating.toFixed(1)}</span>
                 </span>
                 <Trend points={daily(b.weekSold, b.trend)} label="Sales, 7 days" />
-              </button>
+              </Link>
               <button type="button" className={`nb-add${on ? " on" : ""}`} disabled={on} aria-label={on ? `${p.name} is in your showcase` : `Add ${p.name} to your showcase`} onClick={() => { if (!linked) return setLinked(true); setAdded((a) => [...a, p.id]); toast("Added to your showcase"); }}>
                 <Icon name={on ? "check" : "plus"} size={18} />
               </button>
@@ -254,7 +254,6 @@ export function NicheBest({ view: shape = "list" }: { view?: IdeasView }) {
         })}
       </ol>
       {shape === "cards" && <span className="td-dots" aria-hidden="true">{shown.map((b, n) => <i key={b.productId} className={n === at ? "on" : undefined} />)}</span>}
-      {view && <ProductSheet productId={view} onClose={() => setView(null)} />}
     </section>
   );
 }

@@ -1,0 +1,42 @@
+/* Seller Custom Service page (src/app/seller/app/custom/page.tsx) and its Home card. */
+.cs-hero { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 22px; border-radius: 20px; border: 1px solid var(--line); background: radial-gradient(520px 240px at 0% 0%, var(--gsoft), transparent 70%), var(--surface); box-shadow: var(--shadow); }
+.cs-hero h2 { margin: 0; font-size: clamp(22px, 3vw, 28px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
+.cs-hero p { margin: 0; color: var(--body); line-height: 1.55; max-width: 40em; }
+.cs-partner { display: inline-flex; padding: 6px 10px; border-radius: 10px; background: #000000; } /* the logo is white on black */
+.cs-partner img { display: block; height: 24px; width: auto; }
+.cs-jump { display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 16px; border-radius: 999px; background: var(--gsoft); color: var(--gink); font-weight: 800; font-size: 14px; text-decoration: none; }
+.cs-jump svg { transform: rotate(90deg); }
+
+.cs-layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 960px) { .cs-layout { grid-template-columns: minmax(0, 1fr); } }
+
+.cs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; min-width: 0; }
+.cs-svc { display: flex; align-items: flex-start; gap: 12px; padding: 14px; border-radius: 16px; border: 1.5px solid var(--line); background: var(--surface); color: var(--text); font: inherit; text-align: left; cursor: pointer; min-width: 0; transition: border-color 0.15s, background 0.15s; }
+.cs-svc:hover { border-color: var(--border); }
+.cs-svc.on { border-color: var(--green); background: var(--gsoft); }
+.cs-ico { width: 40px; height: 40px; flex-shrink: 0; border-radius: 12px; display: grid; place-items: center; background: var(--gsoft); color: var(--gink); }
+.cs-svc.on .cs-ico { background: var(--surface); }
+.cs-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.cs-txt b { font-size: 15px; font-weight: 800; line-height: 1.3; }
+.cs-txt small { font-size: 13px; color: var(--muted); line-height: 1.4; }
+.cs-tick { width: 24px; height: 24px; flex-shrink: 0; border-radius: 50%; display: grid; place-items: center; background: var(--surface2); color: var(--muted); }
+.cs-svc.on .cs-tick { background: var(--surface); color: var(--gink); }
+
+/* Selected chips are a light tint here; the solid green stays for Send request. */
+.cs-form .v2-chip { height: auto; min-height: 36px; padding: 6px 14px; font-size: 13.5px; line-height: 1.3; text-align: left; }
+.cs-form .v2-chip.on { background: var(--gsoft); border-color: var(--green); color: var(--gink); box-shadow: none; }
+.cs-form .np-btn { width: 100%; }
+.cs-form { scroll-margin-top: 90px; }
+
+.cs-sent { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.cs-sent-ico { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: var(--gsoft); color: var(--gink); }
+.cs-sum { margin: 4px 0; width: 100%; display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 14px; background: var(--surface2); }
+.cs-sum div { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 10px; font-size: 14px; }
+.cs-sum dt { color: var(--muted); font-weight: 700; }
+.cs-sum dd { margin: 0; color: var(--text); font-weight: 600; overflow-wrap: anywhere; }
+@media (max-width: 420px) { .cs-sum div { grid-template-columns: minmax(0, 1fr); gap: 2px; } }
+
+/* Small card on seller Home. */
+.cs-home { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.cs-home p { margin: 0; color: var(--body); font-size: 14px; line-height: 1.5; }
+.cs-home ul { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }

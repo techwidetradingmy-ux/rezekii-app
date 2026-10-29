@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { Lock, Seg, Tip } from "@/components/ui";
-import { ProductSheet } from "@/components/creator2/view-sheets";
+import { useRouter } from "next/navigation";
+import { productHref } from "@/lib/product-view";
 import { product, rm } from "@/lib/mock";
 import { LIVES } from "@/lib/mock-creator2";
 import "@/app/creator2.css";
@@ -14,7 +15,7 @@ type Sort = (typeof SORTS)[number];
 /** Performance by LIVE (owner, 28 Oct 2026): what each LIVE sold, from her orders tagged LIVE, sorted like By video. */
 export function LiveList() {
   const [openId, setOpenId] = useState<string | null>(null);
-  const [pick, setPick] = useState<string | null>(null);
+  const router = useRouter();
   const [sort, setSort] = useState<Sort>("Orders");
   const key = (o: number, c: number, x: number) => (sort === "Orders" ? o : sort === "Commission" ? c : x);
   const rows = [...LIVES].sort((a, b) => key(b.orders, b.commission, b.cancel) - key(a.orders, a.commission, a.cancel));
@@ -56,7 +57,7 @@ export function LiveList() {
                   </div>
                   <div className="lv-prods">
                     {[...l.products].sort((a, b) => key(b[2], b[1], b[3]) - key(a[2], a[1], a[3])).map(([id, c, o, x]) => (
-                      <button key={id} type="button" onClick={() => setPick(id)}>
+                      <button key={id} type="button" onClick={() => router.push(productHref(id))}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={product(id).img} alt="" />
                         <span>{product(id).name}</span>
@@ -70,7 +71,6 @@ export function LiveList() {
           ))}
         </div>
       </Lock>
-      {pick && <ProductSheet productId={pick} onClose={() => setPick(null)} />}
     </div>
   );
 }

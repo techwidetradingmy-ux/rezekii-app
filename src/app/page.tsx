@@ -4,6 +4,7 @@ import { DemoStrip } from "@/components/shell";
 import { Icon, type IconName } from "@/components/icons";
 import { ScanAnim } from "@/components/creator1/scan";
 import { Reveal } from "@/components/creator1/reveal";
+import { JoinBoard } from "@/components/join-board";
 import { FAQS, STORIES } from "@/lib/mock-creator1";
 import "./creator1.css";
 
@@ -218,6 +219,13 @@ export default function Landing() {
             ))}
           </div>
           <p className="hm-fine">Real results, shared with permission. Results vary; we don&apos;t promise income.</p>
+        </Reveal>
+
+        <Reveal className="section" label="Who's joining">
+          <span className="eyebrow">LIVE ON REZEKII</span>
+          <h2>Who&apos;s Joining</h2>
+          <p className="lead">Real TikTok Shop creators and sellers, joining every day.</p>
+          <JoinBoard />
         </Reveal>
 
         <Reveal id="how" className="section" label="Three steps">

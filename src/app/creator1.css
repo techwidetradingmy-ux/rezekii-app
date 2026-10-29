@@ -1354,3 +1354,65 @@ li.sc-row { cursor: default; }
 .cr1-segbar { display: flex; align-items: center; gap: 8px; }
 .cr1-segbar .np-seg { flex: 1; min-width: 0; }
 .cr1-segbar .v2-iconbtn { flex-shrink: 0; }
+/* Product page (owner, 29 Oct 2026): one page for every product. Phones: big photo on top, buttons stacked in a bar at the
+   bottom. Desktop: photo on the left, details and the buy box on the right. */
+.pp { position: relative; display: grid; gap: 16px; }
+.pp-back { position: absolute; top: 10px; left: 10px; z-index: 2; width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, 0.92); color: #0d1117; display: grid; place-items: center; cursor: pointer; box-shadow: 0 4px 14px -6px rgba(0, 0, 0, 0.35); }
+.pp-photo { border-radius: 22px; overflow: hidden; background: var(--surface2); aspect-ratio: 1 / 1; }
+.pp-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pp-info { display: grid; gap: 12px; min-width: 0; align-content: start; }
+.pp-name { margin: 0; font-size: 22px; font-weight: 800; line-height: 1.25; letter-spacing: -0.01em; }
+.pp-meta { margin: 0; color: var(--muted); font-size: 14px; font-weight: 600; }
+.pp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.pp-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 99px; background: var(--gsoft); color: var(--gink); font-size: 12.5px; font-weight: 800; }
+.pp-chip.score { background: #fff3d6; color: #a46a00; }
+.pp-chip.muted { background: var(--surface2); color: var(--muted); }
+.pp-rate { display: grid; gap: 2px; padding: 12px 14px; border-radius: 16px; background: var(--gsoft); }
+.pp-rate.off { background: var(--surface2); }
+.pp-rate-line { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 700; color: var(--gink); }
+.pp-rate.off .pp-rate-line { color: var(--text); }
+.pp-rate-line s { color: var(--muted); font-weight: 600; }
+.pp-rate-line b { font-size: 22px; font-weight: 900; }
+.pp-rate small { font-size: 13.5px; color: var(--muted); font-weight: 600; }
+.pp-rate small b { color: var(--text); }
+.pp-buy, .pp-stack { display: grid; gap: 8px; }
+.pp-buy .np-btn, .pp-buy .btn-outline, .pp-stack .np-btn, .pp-stack .btn-outline { width: 100%; height: 48px; justify-content: center; text-decoration: none; }
+.pp-card { gap: 10px; }
+.pp-card .st-trend small { font-size: 13px; }
+.pp-card .st-spark { height: 46px; }
+.pp-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.pp-facts > span { display: grid; gap: 2px; padding: 9px 11px; border-radius: 12px; background: var(--surface2); min-width: 0; }
+.pp-facts small { font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.pp-facts b { font-size: 15px; font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wf-card { gap: 10px; }
+.wf-done { align-items: center; text-align: center; }
+@media (min-width: 761px) {
+  .pp { grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: 28px; align-items: start; }
+  .pp-photo { position: sticky; top: 90px; }
+  .pp-name { font-size: 26px; }
+}
+@media (max-width: 760px) {
+  .pp { padding-bottom: 130px; }
+  .pp-buy { position: fixed; left: 12px; right: 12px; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); z-index: 30; padding: 10px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 16px 34px -14px rgba(0, 0, 0, 0.35); }
+  .pp-buy .np-btn, .pp-buy .btn-outline { height: 44px; }
+}
+.mw-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; color: var(--text); text-decoration: none; }
+.mw-open img { width: 56px; height: 56px; border-radius: 12px; object-fit: cover; flex-shrink: 0; }
+.mka-name { color: inherit; text-decoration: none; min-width: 0; }
+.mk-grid.list .mka-name { grid-area: name; }
+.ai-name { color: inherit; text-decoration: none; min-width: 0; }
+.ai-img { display: block; }
+/* Today's Ideas in one card with two tabs (owner, 29 Oct 2026, option A). */
+.td-one { gap: 14px; }
+.td-one > .np-seg { width: 100%; }
+.td-one > .np-seg button { flex: 1; min-width: 0; }
+.nb-in, .st-in { display: flex; flex-direction: column; gap: 12px; padding: 0; border: 0; background: none; box-shadow: none; }
+@media (max-width: 560px) {
+  .st-in .td-grid.cards { margin: 0 -16px; padding: 2px 16px 4px; scroll-padding: 0 16px; }
+}
+/* Less green (owner, 29 Oct 2026): solid green is only for the main button on a card. Tags, status, ticks and done states
+   use a light tint so the button that matters stands out. */
+.cr1-tier.open { background: #e6f8ef; color: #00804f; box-shadow: 0 4px 10px -8px rgba(0, 0, 0, 0.35); }
+.cr1-vids span.on { background: var(--gsoft); color: var(--gink); border: 1px solid #b8ead2; box-shadow: none; }
+.cr1-st.ok, .cr1-tick { background: var(--gsoft); color: var(--gink); }
+.ai-btn.done, .ai-btn.ghost.asked, .mka-add.done, .mka-gift.asked, .nb-add.on { background: var(--gsoft); border-color: #b8ead2; color: var(--gink); }
