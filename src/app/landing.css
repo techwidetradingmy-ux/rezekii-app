@@ -27,8 +27,9 @@
 .lp-ctas .lp-ghost { height: 56px; padding: 0 22px; font-size: 16px; border-radius: 16px; }
 /* Three equal columns, always one tidy row (owner, 29 Oct 2026, option A). */
 .lp-chips { margin: 0; padding: 0; list-style: none; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; max-width: 540px; }
-.lp-promo { margin: 0; align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; border: 1px solid #f5c76a; background: var(--asoft); color: var(--amber); font-size: 13.5px; font-weight: 800; }
-.lp-promo b { font-weight: 900; text-transform: uppercase; letter-spacing: 0.03em; }
+.lp-announce { background: var(--asoft); border-bottom: 1px solid #f5c76a; color: var(--amber); }
+.lp-announce .site-wrap { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 34px; padding-block: 6px; font-size: 13px; font-weight: 800; text-align: center; }
+.lp-announce b { font-weight: 900; text-transform: uppercase; letter-spacing: 0.03em; }
 .lp-chips li { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 8px 6px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); font-size: 12.5px; font-weight: 700; line-height: 1.25; color: var(--body); text-align: center; }
 .lp-chips svg { width: 20px; height: 20px; padding: 3px; border-radius: 50%; background: var(--gsoft); color: #00a862; }
 .lp-hero-vis { position: relative; display: flex; justify-content: center; min-width: 0; }
