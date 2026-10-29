@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { CalendarPicker, between, dayName, iso } from "@/components/calendar-picker";
 import { useDemo } from "@/components/demo";
-import { AiMark, AiTag, Bars, Count, Lock, Progress, RemoveWarn, Seg, Stat, Tip, Title } from "@/components/ui";
+import { AiHead, Bars, Count, Lock, Progress, RemoveWarn, Seg, Stat, Tip, Title } from "@/components/ui";
 import { product, rm, short } from "@/lib/mock";
 import { productHref } from "@/lib/product-view";
 import { ACTIONS, CHARTS, POST_TIMES, RANGES, RANGE_DATA, SHORT, WATCH, type RangeKey } from "@/lib/mock-creator2";
@@ -111,6 +111,19 @@ export default function DataOverview() {
         </div>
       </Lock>
 
+      {/* Right under the range's numbers (owner, 29 Oct 2026), so she sees where the commission came from. */}
+      <section className="v2-card an-src">
+        <div className="v2-card-h">
+          <h2 className="v2-h2">Commission Sources</h2>
+        </div>
+        <Seg value={split} options={["By channel", "By product"] as const} onChange={setSplit} />
+        <Lock what="where your commission comes from">
+          <div style={{ paddingTop: 4 }}>
+            {split === "By channel" ? <Bars key="ch" rows={channelRows} /> : <Bars key="pr" rows={productRows} />}
+          </div>
+        </Lock>
+      </section>
+
       <section className="v2-card an-chart">
         <div className="v2-card-h">
           <h2 className="v2-h2">Commission <Tip label="About this chart" text={`Estimated, by the ${chart.unit} the order was placed. The latest ${chart.unit} is still in progress.`} /></h2>
@@ -121,13 +134,7 @@ export default function DataOverview() {
       </section>
 
       <section className="v2-aicard cr2-aisum" aria-label="AI summary">
-        <div className="cr2-aisum-h">
-          <AiMark size={44} />
-          <span>
-            <span className="v2-ailabel">AI summary · {span}</span>
-            <small>Based on your TikTok Shop sales</small>
-          </span>
-        </div>
+        <AiHead title="AI Summary" sub={`From your TikTok Shop sales, ${span}`} />
         <ul className="an-lines">
           <li><Icon name="trend" size={18} width={2.2} /><span><b>{pct(top2, d.est)}%</b> from {SHORT[ranked[0].productId]} + {SHORT[ranked[1].productId]}</span></li>
           <li><Icon name="clock" size={18} /><span><b>{bestTime[0]}</b> best time to post</span></li>
@@ -173,34 +180,11 @@ export default function DataOverview() {
 
 
 
-      <div className="v2-grid2 an-split">
-        <section className="v2-card">
-          <div className="v2-card-h">
-            <h2 className="v2-h2">Where Your Commission Comes from</h2>
-          </div>
-          <Seg value={split} options={["By channel", "By product"] as const} onChange={setSplit} />
-          <Lock what="where your commission comes from">
-            <div style={{ paddingTop: 4 }}>
-              {split === "By channel" ? <Bars key="ch" rows={channelRows} /> : <Bars key="pr" rows={productRows} />}
-            </div>
-          </Lock>
-        </section>
-
-        <section className="v2-card an-time">
-          {/* An AI feature (owner, 29 Oct 2026): worked out from her own posts, so everyone's best time is different. */}
-          <div className="v2-card-h">
-            <span className="an-ai">
-              <AiMark size={34} />
-              <span>
-                <h2 className="v2-h2">Best Time to Post <Tip label="About best time" text="Rezekii AI looks at your own videos from the last 30 days and the average views in each time slot. Everyone's best time is different." /></h2>
-                <AiTag label="Rezekii AI" bare />
-              </span>
-            </span>
-            <span className="an-hv">High virality · {bestTime[0]}</span>
-          </div>
-          <Bars rows={POST_TIMES.map(([label, v]) => ({ label, value: v, display: `${short(v)} views`, tone: v < avgViews ? ("blue" as const) : undefined }))} />
-        </section>
-      </div>
+      {/* An AI feature (owner, 29 Oct 2026): worked out from her own posts, so everyone's best time is different. */}
+      <section className="v2-card v2-aicard an-time an-split">
+        <AiHead title="Best Time to Post" sub={<span className="an-hv">High virality · {bestTime[0]}</span>} tip={<Tip label="About best time" text="Rezekii AI looks at your own videos from the last 30 days and the average views in each time slot. Everyone's best time is different." />} />
+        <Bars rows={POST_TIMES.map(([label, v]) => ({ label, value: v, display: `${short(v)} views`, tone: v < avgViews ? ("blue" as const) : undefined }))} />
+      </section>
 
       <section className="v2-card an-top">
         <div className="v2-card-h">

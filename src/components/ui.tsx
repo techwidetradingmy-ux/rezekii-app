@@ -527,6 +527,26 @@ export function Empty({ title, line, href, cta }: { title: string; line: string;
   );
 }
 
+/**
+ * The one AI header (owner, 29 Oct 2026): AI icon, the section's name with the Rezekii AI chip, and an optional line under it.
+ * Every AI section uses it, once per card. `children` sit on the right (a button or a pill).
+ */
+export function AiHead({ title, sub, tip, busy = false, children }: { title: React.ReactNode; sub?: React.ReactNode; tip?: React.ReactNode; busy?: boolean; children?: React.ReactNode }) {
+  return (
+    <div className="v2-aihead">
+      <AiMark size={40} busy={busy} />
+      <span className="v2-aihead-main">
+        <span className="v2-aihead-t">
+          <h2 className="v2-h2">{title}{tip}</h2>
+          <AiTag label="Rezekii AI" bare />
+        </span>
+        {sub && <small>{sub}</small>}
+      </span>
+      {children}
+    </div>
+  );
+}
+
 /** The AI chip. Next to the AI icon it's text only (`bare`), so a section never shows two AI icons (owner, 29 Oct 2026). */
 export function AiTag({ label = "AI", bare = false }: { label?: string; bare?: boolean }) {
   return (

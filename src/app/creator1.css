@@ -299,10 +299,6 @@
 
 /* ================= AI picks (Home) ================= */
 .ai-box { display: flex; flex-direction: column; gap: 16px; scroll-margin-top: 90px; }
-.ai-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-.ai-head > span:nth-child(2) { display: flex; flex-direction: column; gap: 2px; flex: 1 1 240px; min-width: 0; }
-.ai-head h2 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
-.ai-head small { color: var(--muted); font-size: 13.5px; line-height: 1.45; }
 
 .ai-run { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: center; }
 .ai-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
@@ -389,7 +385,7 @@
   .ai-run { grid-template-columns: 1fr; }
   .ai-lens { height: 140px; }
   .ai-fit { grid-template-columns: 1fr; }
-  .ai-head .btn-outline { width: 100%; }
+  .v2-aihead .btn-outline { width: 100%; }
 }
 @media (max-width: 400px) { .ai-item { grid-template-columns: 68px minmax(0, 1fr); } .ai-img img { width: 68px; height: 68px; } }
 @media (prefers-reduced-motion: reduce) { .ai-track, .ai-steps li.now i, .ai-fit .ai-dot { animation: none !important; } }
@@ -1144,8 +1140,6 @@ a.sh-go { text-decoration: none; }
 .mk-mysamples .badge { position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; padding: 0 5px; font-size: 11px; display: grid; place-items: center; border: 2px solid var(--bg); }
 /* Best sellers in her niche (owner, 29 Oct 2026): a ranked list under Today's Ideas. */
 .nb-box { gap: 12px; }
-.nb-head { display: flex; align-items: center; gap: 10px; }
-.nb-head h2 { margin: 0; }
 .nb-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .nb-list li { display: grid; grid-template-columns: 22px minmax(0, 1fr) 40px; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
 .nb-list li:first-child { border-top: 0; }
@@ -1343,8 +1337,7 @@ li.sc-row { cursor: default; }
 .sc-steps i.on { background: #00c073; }
 .sc-empty { padding: 18px; text-align: center; color: var(--muted); font-size: 14px; }
 .td-lead .td-mix { font-size: 13.5px; font-weight: 800; color: var(--gink); }
-.nb-head .td-mix { display: block; font-size: 13.5px; font-weight: 800; color: var(--gink); }
-.td-lead .td-mix, .nb-head .td-mix { display: inline-flex; align-items: center; gap: 4px; }
+.td-lead .td-mix { display: inline-flex; align-items: center; gap: 4px; }
 /* Sample steps on phones (owner, 29 Oct 2026: six labels were squeezed together): dots for every step, a label only for the current one. */
 @media (max-width: 560px) { .cr1-steps li { font-size: 0; gap: 4px; } .cr1-steps li.cur { font-size: 13px; white-space: nowrap; overflow: visible; } }
 /* Due date always stands out (owner, 29 Oct 2026); red in the last 2 days. */
@@ -1382,6 +1375,9 @@ li.sc-row { cursor: default; }
 .pp-sub { margin: 4px 0 0; font-size: 15px; font-weight: 800; }
 .pp-fix { display: flex; width: fit-content; align-items: center; gap: 4px; margin-top: 2px; font-size: 13px; font-weight: 800; color: var(--red); text-decoration: none; }
 @media (prefers-reduced-motion: reduce) { .pp-live i { animation: none; } }
+.pp-sold { display: flex; align-items: center; gap: 6px; width: fit-content; margin: 0; padding: 5px 11px; border-radius: 99px; background: var(--surface2); color: var(--muted); font-size: 13px; font-weight: 700; }
+.pp-sold.ok { background: var(--gsoft); color: var(--gink); }
+.pp-sold b { color: var(--text); font-weight: 900; }
 .pp-extra { font-size: 15px; font-weight: 800; color: var(--gink); }
 .pp-extra b { font-size: 28px; font-weight: 900; letter-spacing: -0.02em; margin-right: 2px; }
 .pp-extra + .pp-rate-line { font-size: 14px; color: var(--text); }
@@ -1490,3 +1486,9 @@ li.sc-row { cursor: default; }
 .sc-again { justify-self: center; font-size: 14px; }
 @media (max-width: 640px) { .sc-row > .cr1-bigbtn { width: 100%; justify-content: center; } }
 @media (prefers-reduced-motion: reduce) { .sc-spin { animation: none; } }
+/* Today's Ideas (owner, 29 Oct 2026): where each tab's list comes from, and categories as chips you can swipe, never cut off. */
+.nb-src { margin: 0; font-size: 13.5px; font-weight: 800; color: var(--gink); }
+.nb-cats { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.nb-cats::-webkit-scrollbar { display: none; }
+.nb-cats .v2-chip { flex: 0 0 auto; height: 34px; padding: 0 14px; font-size: 13.5px; }
+.nb-cats .v2-chip.on { background: var(--text); border-color: var(--text); color: var(--bg); box-shadow: none; }

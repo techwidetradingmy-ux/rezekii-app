@@ -126,6 +126,13 @@ export default function ProductPage() {
       <div className="pp-info">
         <h1 className="pp-name">{p.name}</h1>
         <p className="pp-meta">{p.shop} · {rm(p.price)}{p.sold !== null ? ` · ${short(p.sold)} sold` : ""}</p>
+        {/* Has she sold it? (owner, 29 Oct 2026) From her TikTok Shop orders, and our campaign data for TAP products. */}
+        {linked ? (
+          <p className={`pp-sold${p.mySold ? " ok" : ""}`}>
+            <Icon name={p.mySold ? "check" : "info"} size={15} width={2.6} />
+            {p.mySold ? <span>You&apos;ve sold this · <b>{p.mySold}</b> in the last 30 days</span> : <span>You haven&apos;t sold this yet</span>}
+          </p>
+        ) : null}
         <div className="pp-chips">
           {p.rating !== null && <span className="pp-chip score"><Icon name="star" size={13} width={2.4} /> {p.rating.toFixed(1)}</span>}
           {m?.samples && <PoolTag pool={m.samples as Pool} />}

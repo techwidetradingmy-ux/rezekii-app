@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { AiMark, Count, Hidden } from "@/components/ui";
+import { AiHead, Count, Hidden } from "@/components/ui";
 import { productHref, requestedSamples } from "@/lib/product-view";
 import { AI_PICKS, AI_PROFILE, PRODUCTS, product, rateFor, rm, short, type AiPick } from "@/lib/mock";
 import { SAMPLE_ACCESS, type Pool } from "@/lib/mock-creator1";
@@ -64,14 +64,7 @@ export function AiPicks() {
   if (!linked) {
     return (
       <section id="ai-picks" className="v2-aicard ai-box" aria-label="AI picks">
-        <div className="ai-head">
-          <AiMark size={48} />
-          <span>
-            <span className="v2-ailabel">AI picks</span>
-            <h2>What Should You Sell Next?</h2>
-            <small>Link TikTok Shop to get AI picks.</small>
-          </span>
-        </div>
+        <AiHead title="AI Picks" sub="What should you sell next? Link TikTok Shop to get your picks." />
         <button type="button" className="np-btn" style={{ alignSelf: "flex-start" }} onClick={() => setLinked(true)}>Link TikTok Shop</button>
       </section>
     );
@@ -79,19 +72,13 @@ export function AiPicks() {
 
   return (
     <section id="ai-picks" className="v2-aicard ai-box" aria-label="AI picks">
-      <div className="ai-head">
-        <AiMark size={48} busy={!done} />
-        <span>
-          <span className="v2-ailabel">AI picks for you</span>
-          <h2>{done ? "What to sell next" : "Analysing your account…"}</h2>
-          <small>{done ? `Today 09:12 · ${AI_PROFILE.compared.toLocaleString("en-MY")} best-sellers compared` : "Takes a few seconds"}</small>
-        </span>
+      <AiHead title="AI Picks" busy={!done} sub={done ? `What to sell next · Today 09:12 · ${AI_PROFILE.compared.toLocaleString("en-MY")} best-sellers compared` : "Analysing your account. Takes a few seconds."}>
         {done && (
           <button type="button" className="btn-outline v2-btn-sm" onClick={() => setRun((r) => r + 1)}>
             <Icon name="refresh" size={15} /> Analyse again
           </button>
         )}
-      </div>
+      </AiHead>
 
       {!done ? (
         <div className="ai-run" aria-live="polite">

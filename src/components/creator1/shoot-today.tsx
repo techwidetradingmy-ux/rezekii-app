@@ -5,12 +5,13 @@ import { useEffect, useRef, useState } from "react";
 import { useSideScroll } from "@/components/side-scroll";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { AiMark, AiTag, Hidden, Seg, Tip } from "@/components/ui";
+import { AiHead, Hidden, Tip } from "@/components/ui";
 import Link from "next/link";
 import { productHref } from "@/lib/product-view";
 import { product, short, rateFor } from "@/lib/mock";
 import { SAMPLE_LEFT } from "@/lib/mock-creator1";
-import { NICHE_BEST, TRY_TODAY, VIRAL, daily } from "@/lib/mock-creator2";
+import { NICHE_BEST, TRY_TODAY, VIRAL, daily, type Trend } from "@/lib/mock-creator2";
+import { ON_IDS, ON_SOLD30 } from "@/lib/mock-showcase";
 import { useKept } from "@/lib/keep";
 
 /** Drafts made from Today's Ideas wait here until the Content Calendar picks them up (preview only: this browser tab). */
@@ -207,30 +208,35 @@ export function ShootToday({ bare = false, view = "cards", inFrame = false }: { 
   );
 }
 
+/** Where a best-seller list comes from (owner, 29 Oct 2026): the TikTok Shop market, or her own showcase. Same order for both. */
+export type BestSource = "market" | "showcase";
+
 /**
- * Best sellers in her niche (owner, 29 Oct 2026): public TikTok Shop products in her top categories, ranked by units sold this
- * week, rated 4★+ and not in her showcase yet. Changes daily. Tap a product to see it on Rezekii; + adds it to her showcase.
+ * Best sellers (owner, 29 Oct 2026). Marketplace: public TikTok Shop products in her top categories that aren't in her showcase
+ * yet, rated 4★+; + adds one to her showcase. Showcase: products already in her showcase; Plan a Video starts a post. Both are
+ * ranked best-selling first (units sold this week). Tap a product to see it on Rezekii.
  */
-export function NicheBest({ view: shape = "list", inFrame = false }: { view?: IdeasView; inFrame?: boolean }) {
+export function NicheBest({ view: shape = "list", inFrame = false, source = "market" }: { view?: IdeasView; inFrame?: boolean; source?: BestSource }) {
   const { linked, setLinked, toast } = useDemo();
-  const rows = NICHE_BEST.filter((b) => product(b.productId).rating >= 4).sort((a, b) => b.weekSold - a.weekSold);
+  const mine = source === "showcase";
+  const week = (id: string) => NICHE_BEST.find((b) => b.productId === id)?.weekSold ?? Math.round(product(id).sold / 26);
+  const rows = (mine ? ON_IDS : NICHE_BEST.map((b) => b.productId).filter((id) => !ON_IDS.includes(id) && product(id).rating >= 4))
+    .map((id) => ({ productId: id, weekSold: week(id), trend: NICHE_BEST.find((b) => b.productId === id)?.trend ?? ("flat" as Trend) }))
+    .sort((x, y) => y.weekSold - x.weekSold);
   // Short tab names so the row fits a phone: "Home & Kitchen" shows as "Home".
   const short1 = (c: string) => c.split(" & ")[0];
   const cats = ["All", ...Array.from(new Set(rows.map((b) => short1(product(b.productId).category))))];
-  const [cat, setCat] = useKept("best-cat", "All");
+  const [cat, setCat] = useKept(`best-cat-${source}`, "All");
   const [added, setAdded] = useState<string[]>([]);
   const shown = rows.filter((b) => cat === "All" || short1(product(b.productId).category) === cat);
   const { rail, at } = useRail<HTMLOListElement>(shape);
   return (
-    <section className={inFrame ? "nb-box nb-in" : "v2-card nb-box"} aria-label="Best sellers in your niche">
-      <div className="nb-head">
-        <AiMark size={34} />
-        <span>
-          {!inFrame && <h2 className="v2-h2">Best Sellers in Your Niche</h2>}
-          <span className="td-mix">Live on TikTok Shop <AiTag label="Rezekii AI" bare /> <Tip label="How this list is made" text="Updated daily. Public TikTok Shop products in your top categories that aren't in your showcase yet, ranked by units sold this week and rated 4★ and up. The line shows sales for each of the last 7 days." /></span>
-        </span>
+    <section className={inFrame ? "nb-box nb-in" : "v2-card nb-box"} aria-label={mine ? "Best sellers in your showcase" : "Best sellers in your niche"}>
+      {/* The card's AI header sits above the tabs (owner, 29 Oct 2026: one AI label per card); each tab just says where it's from. */}
+      {inFrame ? <p className="nb-src">{mine ? "Products in your showcase" : "Live on TikTok Shop, not in your showcase yet"}</p> : <AiHead title={mine ? "Best Sellers in Your Showcase" : "Best Sellers on TikTok Shop"} sub="Best-selling first, updated daily" />}
+      <div className="nb-cats" role="group" aria-label="Category">
+        {cats.map((c) => <button key={c} type="button" className={`v2-chip${c === cat ? " on" : ""}`} aria-pressed={c === cat} onClick={() => setCat(c)}>{c}</button>)}
       </div>
-      <Seg value={cat} options={cats} onChange={setCat} />
       <ol ref={rail} className={`nb-list ${shape}`} key={cat}>
         {shown.map((b) => {
           const p = product(b.productId);
@@ -243,14 +249,18 @@ export function NicheBest({ view: shape = "list", inFrame = false }: { view?: Id
                 <img src={p.img} alt="" />
                 <span className="nb-main">
                   <b>{p.name}</b>
-                  <small>{short(b.weekSold)} sold this week · Earn <Hidden>{p.publicRate}%</Hidden></small>
+                  <small>{short(b.weekSold)} sold this week · {mine && ON_SOLD30[p.id] ? <>You sold {ON_SOLD30[p.id]} · </> : null}Earn <Hidden>{mine ? rateFor(p).rate : p.publicRate}%</Hidden></small>
                   <span className="nb-score"><Icon name="star" size={12} width={2.4} /> {p.rating.toFixed(1)}</span>
                 </span>
                 <Trend points={daily(b.weekSold, b.trend)} label="Sales, 7 days" />
               </Link>
+              {mine ? (
+                <Link href={`/app/publish?idea=${encodeURIComponent(`Show ${p.name}`)}`} className="nb-add" aria-label={`Plan a video for ${p.name}`}><Icon name="video" size={18} /></Link>
+              ) : (
               <button type="button" className={`nb-add${on ? " on" : ""}`} disabled={on} aria-label={on ? `${p.name} is in your showcase` : `Add ${p.name} to your showcase`} onClick={() => { if (!linked) return setLinked(true); setAdded((a) => [...a, p.id]); toast("Added to your showcase"); }}>
                 <Icon name={on ? "check" : "plus"} size={18} />
               </button>
+              )}
             </li>
           );
         })}
