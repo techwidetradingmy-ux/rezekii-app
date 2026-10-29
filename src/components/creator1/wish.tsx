@@ -86,7 +86,7 @@ export function WishForm({ item, wanted, onCancel }: { item: WishItem; wanted?: 
   return (
     <section className="v2-card wf-card" id="wish">
       <h2 className="v2-h2">{wanted ? "Join This Wish" : "Add to Wish List"}</h2>
-      <p className="v2-muted" style={{ margin: 0 }}>If it launches on Rezekii, what will you give each month?{wanted ? ` Others give ${avg} videos on average.` : ""}</p>
+      <p className="v2-muted" style={{ margin: 0 }}>If the seller agrees, what will you give each month?{wanted ? ` Others give ${avg} videos on average.` : ""}</p>
       <div className="wf-rows">
         <div className="wf-row"><span>Videos a month</span><Stepper label="Videos a month" value={videos} max={60} onChange={(v) => { setVideos(v); setErr(""); }} /></div>
         <div className="wf-row"><span>LIVE sessions a month</span><Stepper label="LIVE sessions a month" value={lives} max={30} onChange={(v) => { setLives(v); setErr(""); }} /></div>

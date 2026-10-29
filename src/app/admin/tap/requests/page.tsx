@@ -19,7 +19,7 @@ const n = (v: number) => v.toLocaleString("en-MY");
 /**
  * Wish List (owner, 29 Oct 2026): products creators want on Rezekii, with what each creator commits if it launches. We only
  * approach a seller once a product passes the "Ready to pitch" line, show them who wants it and what they'll give, and log
- * the seller's reply. Joining takes it off the public Most Wanted board and tells every creator who committed.
+ * the seller's reply. Joining takes it off the public Community Wish List and tells every creator who committed.
  */
 export default function WishListAdmin() {
   const router = useRouter();
@@ -52,9 +52,9 @@ export default function WishListAdmin() {
   };
   const log = (w: Wanted) => {
     if (!reply) return;
-    if (reply === "Joined") update(w.id, { status: "Joined", raise }, `Joined at +${raise}%. ${w.creators} creators told, off Most Wanted.`);
+    if (reply === "Joined") update(w.id, { status: "Joined", raise }, `Joined at +${raise}%. ${w.creators} creators told, off the Community Wish List.`);
     if (reply === "Bonus") update(w.id, { status: "Bonus" }, `Bonus program logged. ${w.creators} creators told.`);
-    if (reply === "Declined") update(w.id, { status: "Declined" }, `Declined. ${w.creators} creators told, off Most Wanted.`);
+    if (reply === "Declined") update(w.id, { status: "Declined" }, `Declined. ${w.creators} creators told, off the Community Wish List.`);
     setReply(null);
   };
   const status = (w: Wanted) =>
@@ -103,7 +103,7 @@ export default function WishListAdmin() {
         </div>
       </section>
       <p className="v2-small" style={{ margin: 0 }}>
-        Ready to pitch at {line.creators} creators or {line.videos} videos a month. Products show on the creators&apos; Most Wanted board from {BOARD_MIN} creators until they launch.
+        Ready to pitch at {line.creators} creators or {line.videos} videos a month. Products show on the creators&apos; Community Wish List from {BOARD_MIN} creators until they launch.
       </p>
 
       {editLine && (
@@ -136,7 +136,7 @@ export default function WishListAdmin() {
             <span><small>Their sales, 30 days</small><b>{n(sel.sold30)}</b></span>
             <span><small>New this week</small><b>+{sel.week}</b></span>
           </div>
-          <p className="v2-small" style={{ margin: 0 }}>{onBoard(sel) ? "On the creators' Most Wanted board." : sel.creators < BOARD_MIN && !closed(sel) ? `Not public yet: shows on Most Wanted at ${BOARD_MIN} creators.` : "Off the Most Wanted board."}</p>
+          <p className="v2-small" style={{ margin: 0 }}>{onBoard(sel) ? "On the creators' Community Wish List." : sel.creators < BOARD_MIN && !closed(sel) ? `Not public yet: shows on Community Wish List at ${BOARD_MIN} creators.` : "Off the Community Wish List."}</p>
 
           <div className="ad-wl-sec">
             <h3>Top Offers</h3>

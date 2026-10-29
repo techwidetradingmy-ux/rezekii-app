@@ -1,12 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import { Icon } from "@/components/icons";
-import { Lock, Seg, Sheet } from "@/components/ui";
-import { LinkFinder, WishSteps, useWishes } from "@/components/creator1/wish";
+import { Lock, Seg } from "@/components/ui";
 import { product, rateFor } from "@/lib/mock";
-import { NOT_YET, ON_IDS, ON_REZEKII, SHOWCASE_TOTAL, commitText } from "@/lib/mock-showcase";
+import { NOT_YET, ON_IDS, ON_REZEKII, SHOWCASE_TOTAL } from "@/lib/mock-showcase";
 import { productHref } from "@/lib/product-view";
 import { useKept } from "@/lib/keep";
 
@@ -26,21 +24,19 @@ export function CoverageRing({ size = 56 }: { size?: number }) {
   );
 }
 
-type Tab = "On Rezekii" | "Not yet" | "Wish List";
+type Tab = "On Rezekii" | "Not yet";
 
 /**
  * Home card (owner, 29 Oct 2026, layout A): what share of her showcase is on Rezekii, opening in place. Not yet lists her top
- * sellers that aren't on Rezekii, for awareness; the wish list sits one step deeper, inside a product, so only creators who mean
- * it add one. She can also paste a product link.
+ * sellers that aren't on Rezekii, for awareness. No wish list here (owner, 30 Oct 2026): it lives on each product page.
  */
 export function CoverageCard() {
-  const { wishes, mine } = useWishes();
   const [open, setOpen] = useKept("cov-open", false);
-  const [tab, setTab] = useKept<Tab>("cov-tab", "Not yet");
+  const [kept, setTab] = useKept<string>("cov-tab", "Not yet");
+  const tab: Tab = kept === "On Rezekii" ? "On Rezekii" : "Not yet";
   const [limit, setLimit] = useKept("cov-limit", 5);
-  const [paste, setPaste] = useState(false);
   const pickTab = (t: Tab) => { setTab(t); setLimit(5); };
-  const all = tab === "On Rezekii" ? ON_IDS.length : tab === "Not yet" ? NOT_YET.length : wishes.length;
+  const all = tab === "On Rezekii" ? ON_IDS.length : NOT_YET.length;
   const more = Math.min(5, all - limit);
 
   return (
@@ -57,10 +53,8 @@ export function CoverageCard() {
       {open && (
         <div className="sc-body">
           <Lock what="your showcase">
-            <div className="sc-tabs"><Seg value={tab} options={["On Rezekii", "Not yet", "Wish List"] as const} onChange={pickTab} /></div>
+            <div className="sc-tabs"><Seg value={tab} options={["On Rezekii", "Not yet"] as const} onChange={pickTab} /></div>
             {tab === "Not yet" && <p className="sc-hint">Your Top Sellers Not on Rezekii</p>}
-            {/* On her own wish list she's already chosen to be here, so adding is a plain button (owner, 29 Oct 2026). */}
-            {tab === "Wish List" && <button type="button" className="btn-outline v2-btn-sm sc-add" onClick={() => setPaste(true)}><Icon name="plus" size={16} /> Add a Product</button>}
             <ul className="sc-list">
               {tab === "On Rezekii" && ON_IDS.slice(0, limit).map(product).map((p) => (
                 <li key={p.id}>
@@ -77,33 +71,13 @@ export function CoverageCard() {
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={it.img} alt="" />
                     <span className="sc-main"><b>{it.name}</b><small>{it.shop} · {it.sold} sold by you</small></span>
-                    {mine(it.id) && <span className="sc-tag">On wish list</span>}
                   </Link>
                 </li>
               ))}
-              {tab === "Wish List" && wishes.slice(0, limit).map((w) => (
-                <li key={w.id}>
-                  <Link href={productHref(w.id)} className="sc-row sc-asked">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={w.img} alt="" />
-                    <span className="sc-main"><b>{w.name}</b><WishSteps w={w} /><small>{commitText(w.commit)}</small></span>
-                  </Link>
-                </li>
-              ))}
-              {tab === "Wish List" && wishes.length === 0 && <li className="sc-empty">Your wish list is empty.</li>}
             </ul>
             {more > 0 && <button type="button" className="sc-more" onClick={() => setLimit((l) => l + 5)}>Show {more} more</button>}
-            {tab === "Not yet" && <button type="button" className="sc-paste" onClick={() => setPaste(true)}><Icon name="link" size={15} /> Paste a product link</button>}
           </Lock>
         </div>
-      )}
-
-      {paste && (
-        <Sheet title="Add to Wish List" onClose={() => setPaste(false)}>
-          <p className="v2-muted" style={{ margin: 0 }}>Paste any TikTok Shop product link, even one that&apos;s not in your showcase.</p>
-          <LinkFinder />
-          {tab === "Wish List" && <button type="button" className="btn-outline" onClick={() => { setPaste(false); pickTab("Not yet"); }}>Pick From Your Showcase</button>}
-        </Sheet>
       )}
     </section>
   );

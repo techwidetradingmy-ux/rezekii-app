@@ -18,6 +18,7 @@ import { AddressFields } from "@/components/account/address-fields";
 import { SAMPLE_INFO, addressOk, birthdayError, readSignup, useAddress, type Address } from "@/lib/address";
 import type { IconName } from "@/components/icons";
 import { MY_STATES, NICHES, NOTIFY } from "@/lib/mock-creator2";
+import { MyWishes } from "@/components/creator1/my-wishes";
 import { ACCOUNT_TABS, type AccountTab } from "@/lib/account-tabs";
 import { applyTheme, readTheme, type Theme } from "@/lib/theme";
 import "@/app/creator2.css";
@@ -349,6 +350,7 @@ export default function Account() {
         {tab === "wallet" && <Wallet />}
         {tab === "referral" && <Referral />}
         {tab === "samples" && <MySamples />}
+        {tab === "wish" && <MyWishes />}
 
         {tab === "rate-card" && <RateCard />}
 

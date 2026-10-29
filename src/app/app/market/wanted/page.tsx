@@ -12,7 +12,7 @@ import "@/app/creator1.css";
 type Sort = "This week" | "All time";
 
 /**
- * Most Wanted (owner, 29 Oct 2026): products creators want on Rezekii, ranked by how many have committed. Joining means saying
+ * Community Wish List (owner, 29 Oct 2026; renamed from Most Wanted 30 Oct 2026): products creators want on Rezekii, ranked by how many have committed. Joining means saying
  * what you'll give if it launches, never a one-tap vote. A product leaves the board once it launches on Rezekii, and everyone
  * who joined is told. Rates asked and who joined stay private.
  */
@@ -23,7 +23,7 @@ export default function MostWanted() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 16 }}>
-      <Title title="Most Wanted" sub="Products creators want on Rezekii. Join one by saying what you'll give if it launches; we take it to the seller." />
+      <Title title="Community Wish List" sub="Products creators want on Rezekii. Join one by saying what you'll give if it launches; we take it to the seller." />
 
       <section className="v2-card mw-paste">
         <b>Missing a Product?</b>

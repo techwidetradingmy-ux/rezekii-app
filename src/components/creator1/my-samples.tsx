@@ -97,7 +97,7 @@ export function MySamples() {
       {/* Tabs and the Marketplace icon share one row (owner, 29 Oct 2026: no empty rows). */}
       <div className="cr1-segwrap cr1-segbar">
         <Seg value={tabLabels[TABS.indexOf(tab)]} options={tabLabels} onChange={(v) => setTab(TABS[tabLabels.indexOf(v)])} />
-        <Link href="/app/market" className="v2-iconbtn" aria-label="Open Marketplace" title="Marketplace"><Icon name="bag" size={18} /></Link>
+        <Link href="/app/market" className="v2-iconbtn" aria-label="Open Marketplace" title="Marketplace"><Icon name="store" size={18} /></Link>
       </div>
 
       <div className="v2-stack" style={{ gap: 14 }}>

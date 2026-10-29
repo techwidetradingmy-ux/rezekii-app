@@ -18,8 +18,8 @@ import "@/app/creator1.css";
 /**
  * Product (owner, 29 Oct 2026): every product in the app opens this one page instead of a slide-up sheet. Big photo, the
  * numbers that say why it's worth it (score, sales, a 7-day sales line, her own sales), then the buttons stacked like a shop's
- * buy box: Add to Showcase on top (owner, 30 Oct 2026: the main CTA, not Plan a Video), Free Sample below; Add to Wish List
- * when it isn't on Rezekii yet.
+ * buy box, the same for every product (owner, 30 Oct 2026): Add to Showcase on top, Free Sample below. Add to Wish List is a
+ * small link at the very end, for a product with no free sample or not on Rezekii yet.
  */
 export default function ProductPage() {
   const { id } = useParams<{ id: string }>();
@@ -75,7 +75,7 @@ export default function ProductPage() {
   const addToShowcase = () => {
     if (!linked) return setLinked(true);
     setAdded(true);
-    toast(`Added at ${p.tapRate}%: ${p.name}`);
+    toast(p.tapRate !== null ? `Added at ${p.tapRate}%: ${p.name}` : `Added to your showcase: ${p.name}`);
   };
   const request = () => {
     if (!linked) return setLinked(true);
@@ -102,16 +102,12 @@ export default function ProductPage() {
       ? <Link href="/app/account#samples" className="btn-outline"><Icon name="check" size={18} /> Sample Requested</Link>
       : <button type="button" className="btn-outline" onClick={canSample ? request : () => document.getElementById("sample")?.scrollIntoView({ behavior: "smooth" })}><Icon name="gift" size={18} /> {canSample ? "Request Free Sample" : `Free Sample at ${SAMPLE_STREAK[m.samples as Pool]}-Day Streak`}</button>
   );
-  const buy = p.tapRate === null ? (
-    wish || wishOpen ? null : <button type="button" className="np-btn" onClick={openWish}>{p.wanted ? "Join This Wish" : "Add to Wish List"}</button>
-  ) : p.inShowcase || added ? (
+  // One buy box for every product (owner, 30 Oct 2026): Add to Showcase, then Free Sample. The wish list is a small link at the end.
+  const buy = (
     <>
-      <button type="button" className="np-btn" disabled><Icon name="check" size={18} width={2.4} /> In Your Showcase</button>
-      {sampleBtn}
-    </>
-  ) : (
-    <>
-      <button type="button" className="np-btn" onClick={addToShowcase}><Icon name="plus" size={18} width={2.4} /> Add to Showcase</button>
+      {p.inShowcase || added
+        ? <button type="button" className="np-btn" disabled><Icon name="check" size={18} width={2.4} /> In Your Showcase</button>
+        : <button type="button" className="np-btn" onClick={addToShowcase}><Icon name="plus" size={18} width={2.4} /> Add to Showcase</button>}
       {sampleBtn}
     </>
   );
@@ -165,7 +161,7 @@ export default function ProductPage() {
           </div>
         )}
 
-        {buy && <div className="pp-buy">{buy}</div>}
+        <div className="pp-buy">{buy}</div>
 
         <section className="v2-card pp-card">
           <Trend points={p.week} label="Sales, last 7 days" />
@@ -220,7 +216,13 @@ export default function ProductPage() {
             <small className="v2-small">{commitText(wish.commit)}</small>
           </section>
         )}
-        {wishOpen && p.tapRate === null && <WishForm item={{ id: p.id, name: p.name, shop: p.shop, img: p.img, price: p.price, rate: p.publicRate }} wanted={p.wanted} onCancel={() => setWishOpen(false)} />}
+        {!wish && !wishOpen && (p.tapRate === null || !m?.samples) && (
+          <p className="pp-wishlink">
+            Want a free sample or a better rate?{" "}
+            <button type="button" onClick={openWish}>{p.wanted ? "Join This Wish" : "Add to Wish List"}</button>
+          </p>
+        )}
+        {wishOpen && <WishForm item={{ id: p.id, name: p.name, shop: p.shop, img: p.img, price: p.price, rate: p.publicRate }} wanted={p.wanted} onCancel={() => setWishOpen(false)} />}
       </div>
     </div>
   );

@@ -92,7 +92,7 @@ function AdminProduct({ v, m, w }: { v: ProductView; m: Product | null; w: Wante
         <span><small>New this week</small><b>+{w.week}</b></span>
       </div>
       <p className="v2-small" style={{ margin: 0 }}>
-        Wanted since {w.first} · {onBoard(w) ? "on the creators' Most Wanted board." : w.creators < BOARD_MIN && !closed(w) ? `not public yet: shows on Most Wanted at ${BOARD_MIN} creators.` : "off the Most Wanted board."}
+        Wanted since {w.first} · {onBoard(w) ? "on the Community Wish List." : w.creators < BOARD_MIN && !closed(w) ? `not public yet: shows on the Community Wish List at ${BOARD_MIN} creators.` : "off the Community Wish List."}
       </p>
       <div className="ad-wl-sec">
         <h3>Top Offers</h3>

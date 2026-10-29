@@ -1,7 +1,9 @@
 /** Line icons (24px grid, 1.9 stroke), same style as V1's phone menu. */
 const P = {
   home: "M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z",
-  bag: "M5 7h14l-1.5 13h-11zM9 7a3 3 0 0 1 6 0",
+  bag: "M6 3 4 7v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7l-2-4zM4 7h16M16 11a4 4 0 0 1-8 0",
+  // A shopfront with an awning (owner, 30 Oct 2026): the Marketplace icon.
+  store: "M3 9l1.5-5h15L21 9M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0M5 11.6V20h14v-8.4M10 20v-5h4v5",
   scan: "M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16",
   chart: "M4 20V11M10 20V5M16 20v-6M3 20h18",
   send: "M4 12 20 4l-6 16-3-7zM11 13l9-9",

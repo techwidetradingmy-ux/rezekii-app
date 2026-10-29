@@ -182,7 +182,7 @@ function SellerProduct({ item }: { item: ShopItem }) {
           <section className="v2-card pp-card" id="wanted">
             <h2 className="v2-h2">Wanted by Creators <Tip text="Creators agreed to share their commitment and their sales of your product with you. We negotiate for them; no rate is promised." /></h2>
             <div className="wb-pitch">
-              <div className="wb-band"><b>Rezekii Most Wanted</b>{rank && <span>#{rank} this week</span>}</div>
+              <div className="wb-band"><b>Rezekii Community Wish List</b>{rank && <span>#{rank} this week</span>}</div>
               <div className="wb-pbody">
                 <b className="wb-big">{wanted.creators} creators want to sell your product</b>
                 <small>{wanted.sold30 ? `They sold ${n(wanted.sold30)} of it in the last 30 days` : "It's a new listing, and they still want it"}</small>

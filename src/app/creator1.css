@@ -1391,6 +1391,8 @@ li.sc-row { cursor: default; }
 .pp-buy, .pp-stack { display: grid; gap: 8px; }
 .pp-buy .np-btn, .pp-buy .btn-outline, .pp-stack .np-btn, .pp-stack .btn-outline { width: 100%; height: 48px; justify-content: center; text-decoration: none; }
 .pp-card { gap: 10px; }
+.pp-wishlink { margin: 4px 0 0; text-align: center; font-size: 13px; color: var(--muted); }
+.pp-wishlink button { padding: 0; border: 0; background: none; font: inherit; font-weight: 800; color: var(--gink); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .pp-card .st-trend small { font-size: 13px; }
 .pp-card .st-spark { height: 46px; }
 .pp-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }

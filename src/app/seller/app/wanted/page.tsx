@@ -41,7 +41,7 @@ export default function WantedByCreators() {
             <span className="wb-main">
               <b>{w.name}</b>
               <small>{w.creators} creators · {n(w.videos)} videos{w.lives ? `, ${w.lives} LIVE` : ""} a month</small>
-              <small>{w.sold30 ? `They sold ${n(w.sold30)} of it in 30 days` : "New listing"}{onBoard(w) ? ` · #${ranked.indexOf(w) + 1} on Most Wanted` : ""}</small>
+              <small>{w.sold30 ? `They sold ${n(w.sold30)} of it in 30 days` : "New listing"}{onBoard(w) ? ` · #${ranked.indexOf(w) + 1} on the Community Wish List` : ""}</small>
             </span>
             <Icon name="arrow" size={16} />
           </Link>

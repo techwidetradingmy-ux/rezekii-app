@@ -7,6 +7,7 @@ export const ACCOUNT_TABS = [
   ["wallet", "Wallet", "wallet"],
   ["referral", "Referral", "users"],
   ["samples", "Samples & Delivery", "box"],
+  ["wish", "Wish List", "gift"],
   ["connections", "Connections", "link"],
   ["rate-card", "Rate Card", "tag"],
   ["settings", "Settings", "gear"],

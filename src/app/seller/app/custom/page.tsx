@@ -17,7 +17,7 @@ const waLink = (shop: string) => `https://wa.me/${TECHWIDE_WA}?text=${encodeURIC
 
 const SERVICES: [IconName, string, string][] = [
   ["kanban", "Full TAP Campaign Management", "We submit your products, set commission and follow up creators."],
-  ["users", "Creator Matching & Outreach", "We find creators from our Wish List and Most Wanted demand."],
+  ["users", "Creator Matching & Outreach", "We find creators from our Community Wish List."],
   ["box", "Free Sample Management", "We approve requests, track parcels and chase the videos."],
   ["star", "Paid Reviews & UGC with Ad Rights", "Creator reviews you can run as Spark Ads, with the ad codes."],
   ["video", "LIVE Sessions with Our Creators", "Our creators sell your products live on TikTok."],
