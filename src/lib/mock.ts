@@ -224,7 +224,7 @@ export const BADGES = [
 ];
 
 /** Referral rewards (owner, 28 Oct 2026): win-win, the same for creators and sellers. Admin can change them. */
-export const REFERRAL_REWARD = { inviter: 100, friend: 50 };
+export const REFERRAL_REWARD = { inviter: 50, friend: 50 };
 
 /**
  * People who signed up with her link or code. Successful (owner, 29 Oct 2026) = linked TikTok Shop (sellers: Seller Center) and
@@ -242,7 +242,7 @@ export const LEDGER = [
   { when: "Today 10:02", what: "Mission: Post today (tier 3)", amount: 20 },
   { when: "Today 09:40", what: "Cross-channel post · 3 channels", amount: -15 },
   { when: "Yesterday", what: "Refund: Instagram post failed", amount: 5 },
-  { when: "Yesterday", what: "Referral: @hafiz.tech", amount: 100 },
+  { when: "Yesterday", what: "Referral: @hafiz.tech", amount: 50 },
   { when: "21 Oct", what: "AI script generation", amount: -12 },
   { when: "21 Oct", what: "Refund: generation failed", amount: 12 },
   { when: "18 Oct", what: "Mission: Link TikTok Shop", amount: 100 },

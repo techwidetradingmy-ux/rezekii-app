@@ -362,14 +362,14 @@ export const MISSION_FUNNELS: Record<string, [string, number][]> = {
 };
 
 export const REFERRALS = [
-  { id: "R-901", from: "@aisyah.glow", to: "@hafiz.tech", pair: "Creator → Creator", status: "Reward paid", reward: 100, when: "22 Oct", flag: "" },
-  { id: "R-902", from: "@aisyah.glow", to: "Seri Living MY", pair: "Creator → Seller", status: "Qualified · paying", reward: 100, when: "11 Oct", flag: "" },
-  { id: "R-903", from: "Seri Living MY", to: "Kopi Senja", pair: "Seller → Seller", status: "Reward paid", reward: 100, when: "24 Oct", flag: "" },
-  { id: "R-904", from: "Urban Basics MY", to: "@nurul.beauty", pair: "Seller → Creator", status: "Reward paid", reward: 100, when: "3 Oct", flag: "" },
-  { id: "R-905", from: "@siti.deco", to: "@siti.deco2", pair: "Creator → Creator", status: "Held for review", reward: 100, when: "27 Oct", flag: "Same device" },
+  { id: "R-901", from: "@aisyah.glow", to: "@hafiz.tech", pair: "Creator → Creator", status: "Reward paid", reward: 50, when: "22 Oct", flag: "" },
+  { id: "R-902", from: "@aisyah.glow", to: "Seri Living MY", pair: "Creator → Seller", status: "Qualified · paying", reward: 50, when: "11 Oct", flag: "" },
+  { id: "R-903", from: "Seri Living MY", to: "Kopi Senja", pair: "Seller → Seller", status: "Reward paid", reward: 50, when: "24 Oct", flag: "" },
+  { id: "R-904", from: "Urban Basics MY", to: "@nurul.beauty", pair: "Seller → Creator", status: "Reward paid", reward: 50, when: "3 Oct", flag: "" },
+  { id: "R-905", from: "@siti.deco", to: "@siti.deco2", pair: "Creator → Creator", status: "Held for review", reward: 50, when: "27 Oct", flag: "Same device" },
   { id: "R-906", from: "@aisyah.glow", to: "@farah.home", pair: "Creator → Creator", status: "Signed up · no scan yet", reward: 0, when: "20 Oct", flag: "" },
-  { id: "R-907", from: "@danial.vlogs", to: "@danial.reviews", pair: "Creator → Creator", status: "Held for review", reward: 100, when: "26 Oct", flag: "Same TikTok account" },
-  { id: "R-908", from: "@kak.ros.kitchen", to: "Dapur Pintar", pair: "Creator → Seller", status: "Qualified · paying", reward: 100, when: "19 Oct", flag: "" },
+  { id: "R-907", from: "@danial.vlogs", to: "@danial.reviews", pair: "Creator → Creator", status: "Held for review", reward: 50, when: "26 Oct", flag: "Same TikTok account" },
+  { id: "R-908", from: "@kak.ros.kitchen", to: "Dapur Pintar", pair: "Creator → Seller", status: "Qualified · paying", reward: 50, when: "19 Oct", flag: "" },
   { id: "R-909", from: "Bersih Pro", to: "Kraf Rotan", pair: "Seller → Seller", status: "Signed up · no product yet", reward: 0, when: "25 Oct", flag: "" },
 ];
 
@@ -379,7 +379,7 @@ export type LedgerRow = { id: string; when: string; account: string; type: "Gran
 export const LEDGER_ALL: LedgerRow[] = [
   { id: "L-88213", when: "28 Oct 10:02", account: "@aisyah.glow", type: "Grant", amount: 20, source: "Mission: Post today v3 (tier 3)", expires: "28 Nov", by: "System" },
   { id: "L-88212", when: "28 Oct 09:51", account: "@kak.ros.kitchen", type: "Reserve", amount: -100, source: "Video prompt batch #88", expires: "—", by: "System" },
-  { id: "L-88209", when: "28 Oct 09:30", account: "Seri Living MY", type: "Referral", amount: 100, source: "Referral R-903: Kopi Senja qualified", expires: "28 Dec", by: "System" },
+  { id: "L-88209", when: "28 Oct 09:30", account: "Seri Living MY", type: "Referral", amount: 50, source: "Referral R-903: Kopi Senja qualified", expires: "28 Dec", by: "System" },
   { id: "L-88204", when: "28 Oct 08:12", account: "@mei.ling.deals", type: "Spend", amount: -12, source: "AI script generation", expires: "—", by: "System" },
   { id: "L-88201", when: "27 Oct 21:10", account: "@farah.home", type: "Grant", amount: 50, source: "Mission: Run your first scan v1", expires: "27 Nov", by: "System" },
   { id: "L-88190", when: "27 Oct 18:44", account: "@zara.home", type: "Refund", amount: 12, source: "Generation failed, credits returned", expires: "—", by: "System" },
@@ -435,7 +435,7 @@ export const TIMELINES: Record<string, { when: string; what: string; tone?: "ok"
   ],
   "Seri Living MY": [
     { when: "28 Oct 09:41", what: "Submitted 2 products from the KL Expo QR (TAP-0418)" },
-    { when: "28 Oct 09:30", what: "Referral reward: Kopi Senja qualified (+100)", tone: "ok" },
+    { when: "28 Oct 09:30", what: "Referral reward: Kopi Senja qualified (+50)", tone: "ok" },
     { when: "27 Oct 18:00", what: "Viewed TAP performance (Last 30 days)" },
     { when: "24 Oct 10:12", what: "Agreed to sample terms v2", tone: "ok" },
   ],
@@ -493,7 +493,7 @@ export const AUDIT: Audit[] = [
   { id: "A-55190", when: "28 Oct 09:12", who: "Aina", role: "Ops", action: "Marked done by hand", target: "TAP-0380 · Auto-extend", before: "Waiting for a person", after: "Done · record 1730 3910 2290" },
   { id: "A-55181", when: "28 Oct 08:00", who: "System", role: "System", action: "Sample pool paused", target: "@zara.home", before: "Designated allowed", after: "Paused (overdue 3 days)" },
   { id: "A-55170", when: "27 Oct 18:22", who: "Aina", role: "Ops", action: "Creator marked Gold", target: "@kak.ros.kitchen", before: "Silver", after: "Gold · 1 Oct 2026 – 31 Mar 2027" },
-  { id: "A-55162", when: "27 Oct 15:31", who: "Farid", role: "Finance", action: "Referral reward reversed", target: "R-907 @danial.reviews", before: "+100", after: "0 · same TikTok account" },
+  { id: "A-55162", when: "27 Oct 15:31", who: "Farid", role: "Finance", action: "Referral reward reversed", target: "R-907 @danial.reviews", before: "+50", after: "0 · same TikTok account" },
   { id: "A-55150", when: "27 Oct 11:02", who: "Hazwan", role: "Super Admin", action: "Setting changed", target: "Sample quantity presets", before: "30 / 50", after: "30 / 40 / 50" },
   { id: "A-55141", when: "26 Oct 16:44", who: "Aina", role: "Ops", action: "Review passed", target: "TAP-0409 Mawar Wear", before: "In review", after: "To submit" },
 ];

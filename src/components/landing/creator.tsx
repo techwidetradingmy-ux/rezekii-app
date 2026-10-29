@@ -410,7 +410,7 @@ const TILES: Tile[] = [
   { key: "health", title: "Showcase Health", ai: true, icon: "shield", tint: "linear-gradient(135deg,#ff8a80,#e14b3b)", size: "wide", tip: "Rezekii AI checks ratings and refunds in your showcase and flags risky products. Remove them in one tap.", body: <HealthTile /> },
   { key: "wish", title: "Wish List", icon: "bag", tint: "linear-gradient(135deg,#22dc95,#00a862)", size: "wide", tip: "Want a free sample, or a better rate on a top seller? Add it to your Wish List. When many creators want it, our team talks to the seller for you.", body: <WishTile /> },
   { key: "rate", title: "Rate Card", icon: "tag", tint: "linear-gradient(135deg,#5ee7df,#0e9488)", tip: "Rezekii makes a personal rate card for every creator: your photo, your prices, your packages. Share it with sellers in one tap.", body: <RateTile /> },
-  { key: "invite", title: "Earn with Referral", icon: "users", tint: "linear-gradient(135deg,#ff7aa8,#e8005a)", size: "wide", tip: `Do a friend a favour: they can check their showcase too and may earn more. You get ${REFERRAL_REWARD.inviter} credits and they get ${REFERRAL_REWARD.friend} when they get started.`, body: <InviteTile /> },
+  { key: "invite", title: "Earn with Referral", icon: "users", tint: "linear-gradient(135deg,#ff7aa8,#e8005a)", size: "wide", tip: `Do a friend a favour: they can check their showcase too and may earn more. You each get ${REFERRAL_REWARD.inviter} credits once they get started.`, body: <InviteTile /> },
 ];
 export function CreatorBento() {
   return <Bento tiles={TILES} label="Rezekii features" />;
