@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { CREATOR, MISSIONS, PRODUCTS, REFERRAL_REWARD, product, short, type Product } from "@/lib/mock";
 import { NOT_YET, WANTED } from "@/lib/mock-showcase";
+import { NICHE_BEST, daily } from "@/lib/mock-creator2";
 import { AiMark } from "@/components/ui";
 import { Emblem } from "@/components/emblems";
 import { App, Av, Flip, PLATS, PlatIcon, Ring, Swap, Thumb, v, type Plat } from "./bits";
@@ -11,9 +12,11 @@ import { Bento, VideoTile, type Tile } from "./bento";
 import { Journey, type DayStep } from "./journey";
 import { type Note } from "./phone";
 import { useOnScreen, useReducedMotion } from "./hooks";
+import { AutoSlider } from "./slider";
+import { AiText } from "./ai-text";
 import { Compare, type CompareRow } from "./compare";
 import { CREATOR_STORIES } from "./stories";
-import { SeeRail, UspRail, type See, type Usp } from "./usp";
+import { SeeRail, UspRail, type Usp } from "./usp";
 
 /**
  * Creator landing, "Watch Rezekii Work" (owner, 29 Oct 2026): every animation is a real feature in miniature. Products, rates,
@@ -86,9 +89,9 @@ export function CreatorHeroScan() {
         </ul>
         {/* The extra, at scale (owner, 29 Oct 2026): what joining adds over 1,000 sales of the RM 159.90 example. */}
         <div className="hs-total">
-          <small>Extra you earn by joining Rezekii</small>
+          <small>Extra commission by joining Rezekii</small>
           <b>+RM {rmn(PER_SALE * 1000)}</b>
-          <span>per 1,000 sales of the RM {POT.price.toFixed(2)} pot · RM {PER_SALE.toFixed(2)} each</span>
+          <span>extra commission every 1,000 sales of the RM {POT.price.toFixed(2)} pot</span>
         </div>
       </div>
       <span className="hs-float f1" aria-hidden="true"><Icon name="clock" size={15} width={2.2} /> Viral Time Frame · 8–10 pm</span>
@@ -255,29 +258,6 @@ function BestTimeScreen() {
 
 const HEALTH = ["p05", "p17", "p21", "p22"].map(product);
 
-function PostScreen() {
-  return (
-    <App title="Post Everywhere">
-      <div className="lp-s-up">
-        <Thumb src="/ai-videos/try-on.jpg" size={52} />
-        <span>
-          <b>Try-on video</b>
-          <Swap at={1.4} from="Uploading…" to="Uploaded once" />
-          <span className="lp-bar"><i /></span>
-        </span>
-      </div>
-      <ul className="lp-s-apps">
-        {PLATS.map((p, i) => (
-          <li key={p} style={v({ i })}>
-            <PlatIcon name={p} size={28} />
-            <span>{p}</span>
-            <Swap at={1.8 + i * 0.45} from="Waiting" to={<b><Icon name="check" size={12} width={3.2} /> Posted</b>} />
-          </li>
-        ))}
-      </ul>
-    </App>
-  );
-}
 
 function RewardsScreen() {
   return (
@@ -517,10 +497,137 @@ export function CreatorCompare() {
 
 /* ---------------- What You'll See ---------------- */
 
-const SEE: See[] = [
-  { title: "Your Scan Results", line: `Better rates found, like ${POT.publicRate}% → ${POT.tapRate}%.`, screen: <ScanScreen /> },
-  { title: "Posted to 4 Apps", line: "One upload: TikTok, Facebook, Instagram, Threads.", screen: <PostScreen /> },
-];
 export function CreatorSee() {
-  return <SeeRail items={SEE} stories={CREATOR_STORIES.slice(0, 2)} label="App screens and testimonials" />;
+  return <SeeRail items={[]} stories={CREATOR_STORIES} label="What creators say" />;
+}
+
+/* ---------------- Banner, product strip and pain-point posters (owner, 29 Oct 2026: some banners, not all animation) ---------------- */
+
+const COLLAGE = ["p08", "p01", "p13", "p24", "p21"].map(example);
+/** A bold banner right after the hero: the promise in big type over the products it applies to. */
+export function CreatorBanner() {
+  return (
+    <section className="lp-banner" aria-label="Same products, more commission">
+      <div className="lp-banner-t">
+        <h2>Same Products. <em>More Commission.</em></h2>
+        <p>Rezekii AI finds the better rate. You keep posting.</p>
+      </div>
+      <div className="lp-banner-c" aria-hidden="true">
+        {COLLAGE.map((p, i) => (
+          <span key={p.id} style={v({ i })}>
+            <Thumb src={p.img} size={84} />
+            <em>+1%</em>
+          </span>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/** A slow strip of products with their better rate, between sections. */
+const STRIP = ["p08", "p01", "p13", "p24", "p21", "p02", "p11", "p12", "p07", "p16"].map(example);
+export function CreatorStrip() {
+  return (
+    <div className="lp-strip" aria-hidden="true">
+      <div>
+        {[...STRIP, ...STRIP].map((p, i) => (
+          <span key={i}>
+            <Thumb src={p.img} size={44} />
+            <b>+1% on Rezekii</b>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The pains affiliates feel, one poster each (owner, 29 Oct 2026). Every fix is something Rezekii can do from real data:
+ * ratings and refunds per product and video (not TikTok's own health score, which no API gives), weekly sold counts, live
+ * orders from TikTok Shop.
+ */
+const HOT = NICHE_BEST[0];
+const HOT_P = product(HOT.productId);
+const IDEAS = NICHE_BEST.filter((x) => x.idea).slice(0, 2);
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+type Pain = { key: string; tint: string; pain: string; why: string; fix: string; art: React.ReactNode };
+const PAINS: Pain[] = [
+  {
+    key: "health", tint: "linear-gradient(160deg,#3b0d12,#b4232c)",
+    pain: "Scared Your Account Gets Frozen?",
+    why: "Low-rated products and refunds can bring violations, less traffic and money you can't withdraw.",
+    fix: "Rezekii AI flags risky products and the videos selling them, so you fix them early.",
+    art: (
+      <div className="lp-pa-risk">
+        <span className="lp-pa-tag">Showcase risk · <b>Watch</b></span>
+        <div className="lp-pa-row bad"><Thumb src={RISKY.img} size={36} /><span>{RISKY.name}<small>★ {RISKY.rating} · high refunds</small></span></div>
+        <div className="lp-pa-row"><Icon name="video" size={16} width={2.2} /><span>Linked to 2 of your videos<small>Remove it in one tap</small></span></div>
+      </div>
+    ),
+  },
+  {
+    key: "source", tint: "linear-gradient(160deg,#1e1452,#6d5efc)",
+    pain: "Saw It Trending? You're Already Late.",
+    why: "By the time your sample arrives, about a week later, the wave has passed.",
+    fix: "AI Viral Product Sourcing reads real sales and your account, and tells you what to shoot next. Trust data, not trends.",
+    art: (
+      <div className="lp-pa-chart">
+        <span className="lp-pa-tag"><Thumb src={HOT_P.img} size={28} /> {short(HOT.weekSold)} sold this week <b>↑</b></span>
+        <span className="lp-pa-bars">{daily(HOT.weekSold, HOT.trend).map((d, i, a) => <i key={i} style={v({ h: `${Math.round((d / Math.max(...a)) * 100)}%`, i })} />)}</span>
+        <small>Rising early, before the wave</small>
+      </div>
+    ),
+  },
+  {
+    key: "ideas", tint: "linear-gradient(160deg,#4a2a00,#e8a400)",
+    pain: "Out of Ideas Today?",
+    why: "Scrolling TikTok for hours to find what to film, then copying what's already old.",
+    fix: "Today's Ideas gives you what to film, picked for your account.",
+    art: (
+      <div className="lp-pa-ideas">
+        {IDEAS.map((x) => {
+          const p = product(x.productId);
+          return <div key={x.productId} className="lp-pa-row"><Thumb src={p.img} size={36} /><span>“{x.idea}”<small>{p.name}</small></span></div>;
+        })}
+      </div>
+    ),
+  },
+  {
+    key: "live", tint: "linear-gradient(160deg,#04291a,#00a862)",
+    pain: "Is Your Data Even Up to Date?",
+    why: "Scraped numbers lag and guess. You can't plan with them.",
+    fix: "Real-time GMV and commission straight from TikTok Shop's own data, not scraped.",
+    art: (
+      <div className="lp-pa-live">
+        <span className="lp-pa-tag"><i /> Live from TikTok Shop</span>
+        <b>RM 2,316.80</b>
+        <small>GMV today · updated just now</small>
+      </div>
+    ),
+  },
+  {
+    key: "plan", tint: "linear-gradient(160deg,#0b2246,#2f80ed)",
+    pain: "Posting Whenever You Can?",
+    why: "Random times mean your best videos land when nobody's watching.",
+    fix: "Plan the week in Content Calendar, timed to your golden hours.",
+    art: (
+      <div className="lp-pa-week">
+        {DAYS.map((d, i) => <span key={d} className={i % 2 === 0 ? "on" : ""}><small>{d}</small><i>{i % 2 === 0 ? "8 pm" : ""}</i></span>)}
+      </div>
+    ),
+  },
+];
+export function CreatorPains() {
+  return (
+    <AutoSlider label="Affiliate problems Rezekii solves" every={5000} className="three lp-pains">
+      {PAINS.map((x) => (
+        <article key={x.key} className="lp-poster" style={{ background: x.tint }}>
+          <h3>{x.pain}</h3>
+          <p className="lp-poster-why">{x.why}</p>
+          <div className="lp-poster-art" aria-hidden="true">{x.art}</div>
+          <p className="lp-poster-fix"><Icon name="check" size={14} width={3} /><span><AiText text={x.fix} /></span></p>
+        </article>
+      ))}
+    </AutoSlider>
+  );
 }

@@ -8,7 +8,7 @@ import { JoinBar } from "@/components/join-board";
 import { ShowcaseCheck } from "@/components/creator1/showcase-check";
 import { PartnerCard } from "@/components/partner-card";
 import { AiEyebrow } from "@/components/landing/ai-eyebrow";
-import { CreatorBento, CreatorCompare, CreatorDay, CreatorHeroScan, CreatorSee, CreatorUsps } from "@/components/landing/creator";
+import { CreatorBanner, CreatorBento, CreatorCompare, CreatorDay, CreatorHeroScan, CreatorPains, CreatorSee, CreatorStrip, CreatorUsps } from "@/components/landing/creator";
 import { PartnerLine } from "@/components/landing/partner-line";
 import { AiText } from "@/components/landing/ai-text";
 import { Path, type PathStep } from "@/components/landing/path";
@@ -21,7 +21,7 @@ export const metadata = { title: "Rezekii · AI-Powered Affiliate Platform" };
 
 
 const START: PathStep[] = [
-  { icon: "user", title: "Sign Up", line: "Free to join. About 1 minute." },
+  { icon: "user", title: "Sign Up", line: "Free during Beta. About 1 minute." },
   { icon: "link", title: "Link TikTok Shop", line: "Approve access in TikTok. Unlink anytime." },
   { icon: "scan", title: "Scan & Add", line: "Rezekii AI checks every product. Add better rates in one tap." },
 ];
@@ -68,9 +68,9 @@ export default function Landing() {
         {/* Pain, then hope, then the product working, big (owner, 29 Oct 2026, option A1). Phones: words, picture, then the box. */}
         <div className="site-wrap lp-hero-grid scan">
           <div className="lp-hero-copy lp-hero-top">
-            <AiEyebrow />
-            <h1>Selling the Same Products <em>for Less?</em></h1>
-            <p><AiText text="Rezekii AI checks your whole showcase and finds better rates on the same products. You just make the videos." /></p>
+            <AiEyebrow text="Malaysia's 1st AI-Powered Affiliate Platform" />
+            <h1>Your Showcase Is <em>Underpaid.</em></h1>
+            <p><AiText text="Rezekii AI finds higher commission on the products you already sell. Same videos, more money." /></p>
           </div>
           <div className="lp-hero-vis">
             <CreatorHeroScan />
@@ -84,6 +84,8 @@ export default function Landing() {
       </header>
 
       <main className="site-wrap site-main lp-main">
+        <CreatorBanner />
+
         <Reveal className="section" label="What you get">
           <div className="lp-head">
             <span className="eyebrow">WHAT YOU GET</span>
@@ -98,6 +100,16 @@ export default function Landing() {
             <h2>Without Rezekii vs With Rezekii</h2>
           </div>
           <CreatorCompare />
+        </Reveal>
+
+        <CreatorStrip />
+
+        <Reveal className="section" label="Affiliate problems">
+          <div className="lp-head">
+            <span className="eyebrow">MADE FOR AFFILIATES</span>
+            <h2>Every Affiliate Headache, Sorted</h2>
+          </div>
+          <CreatorPains />
         </Reveal>
 
         <Reveal id="how" className="section" label="A day with Rezekii">
@@ -119,8 +131,8 @@ export default function Landing() {
 
         <Reveal id="see" className="section" label="What you'll see">
           <div className="lp-head">
-            <span className="eyebrow">WHAT YOU&apos;LL SEE</span>
-            <h2>Real Screens From the App</h2>
+            <span className="eyebrow">WHAT CREATORS SAY</span>
+            <h2>Same Products, More Commission</h2>
           </div>
           <CreatorSee />
         </Reveal>
@@ -162,7 +174,7 @@ export default function Landing() {
         <Reveal className="lp-final" label="Get started">
           <h2>See What Your Showcase Is Missing</h2>
           <Link href="/signin" className="np-btn lp-bigbtn">Check My Showcase <Icon name="arrow" size={20} /></Link>
-          <span className="lp-final-note">Free to Join · No Follower Requirement</span>
+          <span className="lp-final-note">Free during Beta · No Follower Requirement · English and 中文</span>
           <PartnerLine center />
         </Reveal>
       </main>
