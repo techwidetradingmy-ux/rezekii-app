@@ -19,6 +19,8 @@ a[href*="/product/"] { text-decoration: none; }
 /* A product photo or name that opens the product, looking like the text around it. In a row that does something else on tap,
    .pv-hit covers the row and the photo and name sit above it. */
 .pv-open { position: relative; z-index: 2; color: inherit; text-decoration: none; cursor: pointer; }
+.rk-vopen { display: inline-flex; align-items: flex-start; gap: 6px; padding: 0; border: 0; background: none; font: inherit; font-weight: 700; color: var(--text); text-align: left; cursor: pointer; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
+.rk-vopen svg { flex-shrink: 0; margin-top: 3px; color: #00a862; }
 .pv-hit { position: absolute; inset: 0; z-index: 1; border: 0; background: none; border-radius: inherit; cursor: pointer; }
 .pv-hit:focus-visible { outline: 3px solid #00c073; outline-offset: 2px; }
 :has(> .pv-hit) { position: relative; }

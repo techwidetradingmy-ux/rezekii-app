@@ -100,7 +100,8 @@ export default function DataRisk() {
               {by === "By video"
                 ? vids.map((v) => (
                     <tr key={v.id}>
-                      <td style={{ minWidth: 180 }}>{v.title}<br /><span className="v2-small">{v.date}</span></td>
+                      {/* Tap a video to watch it here (owner, 30 Oct 2026). */}
+                      <td style={{ minWidth: 180 }}><button type="button" className="rk-vopen" onClick={() => setOpenVideo(VIDEOS.find((x) => x.id === v.id) ?? null)}><Icon name="video" size={15} width={2.4} />{v.title}</button><br /><span className="v2-small">{v.date}</span></td>
                       <td className="v2-num">{v.orders}</td>
                       <td className="v2-num">{v.cancelled}</td>
                       <td className="v2-num">{v.refunds}</td>

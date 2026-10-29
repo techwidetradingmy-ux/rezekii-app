@@ -9,16 +9,16 @@ import { product, rm } from "@/lib/mock";
 import { LIVES } from "@/lib/mock-creator2";
 import "@/app/creator2.css";
 
-const SORTS = ["Orders", "Commission", "Cancels"] as const;
+const SORTS = ["GMV", "Commission", "Cancels"] as const;
 type Sort = (typeof SORTS)[number];
 
 /** Performance by LIVE (owner, 28 Oct 2026): what each LIVE sold, from her orders tagged LIVE, sorted like By video. */
 export function LiveList() {
   const [openId, setOpenId] = useState<string | null>(null);
   const router = useRouter();
-  const [sort, setSort] = useState<Sort>("Orders");
-  const key = (o: number, c: number, x: number) => (sort === "Orders" ? o : sort === "Commission" ? c : x);
-  const rows = [...LIVES].sort((a, b) => key(b.orders, b.commission, b.cancel) - key(a.orders, a.commission, a.cancel));
+  const [sort, setSort] = useState<Sort>("GMV");
+  const key = (g: number, c: number, x: number) => (sort === "GMV" ? g : sort === "Commission" ? c : x);
+  const rows = [...LIVES].sort((a, b) => key(b.gmv, b.commission, b.cancel) - key(a.gmv, a.commission, a.cancel));
   const top = rows[0]?.id;
   const total = rows.reduce((a, l) => a + l.commission, 0);
   return (
@@ -41,11 +41,11 @@ export function LiveList() {
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       {l.products.slice(0, 3).map(([id]) => <img key={id} src={product(id).img} alt="" />)}
                     </span>
-                    {sort !== "Cancels" && l.id === top && <span className="badge">{sort === "Orders" ? "Most orders" : "Top earner"}</span>}
+                    {sort !== "Cancels" && l.id === top && <span className="badge">{sort === "GMV" ? "Top GMV" : "Top earner"}</span>}
                     {l.cancel > 10 && <span className="badge badge-red">High cancels</span>}
                   </span>
                 </span>
-                <b className={`v2-num${sort === "Cancels" && l.cancel > 10 ? " cr2-red" : ""}`}>{sort === "Orders" ? `${l.orders} orders` : sort === "Commission" ? rm(l.commission, 0) : `${l.cancel}%`}</b>
+                <b className={`v2-num${sort === "Cancels" && l.cancel > 10 ? " cr2-red" : ""}`}>{sort === "GMV" ? rm(l.gmv, 0) : sort === "Commission" ? rm(l.commission, 0) : `${l.cancel}%`}</b>
                 <Icon name="arrow" size={16} />
               </button>
               {openId === l.id && (
@@ -56,12 +56,13 @@ export function LiveList() {
                     <span><small>Cancel rate</small><b className={l.cancel > 10 ? "cr2-red" : undefined}>{l.cancel}%</b></span>
                   </div>
                   <div className="lv-prods">
-                    {[...l.products].sort((a, b) => key(b[2], b[1], b[3]) - key(a[2], a[1], a[3])).map(([id, c, o, x]) => (
+                    {/* A product's GMV in the LIVE is its orders times its price. */}
+                    {[...l.products].sort((a, b) => key(b[2] * product(b[0]).price, b[1], b[3]) - key(a[2] * product(a[0]).price, a[1], a[3])).map(([id, c, o, x]) => (
                       <button key={id} type="button" onClick={() => router.push(productHref(id))}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={product(id).img} alt="" />
                         <span>{product(id).name}</span>
-                        <b className={sort === "Cancels" && x > 10 ? "cr2-red" : undefined}>{sort === "Orders" ? `${o} orders` : sort === "Commission" ? rm(c, 0) : `${x}%`}</b>
+                        <b className={sort === "Cancels" && x > 10 ? "cr2-red" : undefined}>{sort === "GMV" ? rm(o * product(id).price, 0) : sort === "Commission" ? rm(c, 0) : `${x}%`}</b>
                       </button>
                     ))}
                   </div>
