@@ -590,7 +590,7 @@ const PAINS: Pain[] = [
   {
     key: "health", tint: "linear-gradient(160deg,#3b0d12,#b4232c)",
     pain: "Scared Your Account Gets Frozen?",
-    why: "Low-rated products and refunds bring violations. That can mean low traffic, a shadow ban, even frozen commission you can't withdraw.",
+    why: "Violations can mean low traffic, a shadow ban, even frozen commission you can't withdraw.",
     fix: "Rezekii AI flags risky products and the videos selling them, so you fix them early.",
     art: (
       <div className="lp-pa-risk">
@@ -617,7 +617,7 @@ const PAINS: Pain[] = [
     key: "ideas", tint: "linear-gradient(160deg,#4a2a00,#e8a400)",
     pain: "Out of Ideas Today?",
     why: "Scrolling TikTok for hours to find what to film, then copying what's already old.",
-    fix: "Today's Ideas gives you what to film, picked for your account.",
+    fix: "Rezekii AI gives ideas made for your account, not copied from others.",
     // Before: endless TikTok scrolling. After: today's ideas, ready (owner, 29 Oct 2026).
     art: (
       <div className="lp-pa-swap">
@@ -626,7 +626,7 @@ const PAINS: Pain[] = [
           <span className="lp-pa-tag"><Icon name="clock" size={14} width={2.4} /> 2 hours of scrolling…</span>
         </div>
         <div className="lp-pa-ideas">
-          <span className="lp-pa-tag">Today&apos;s Ideas, for you</span>
+          <span className="lp-pa-tag">Made for your account</span>
           {IDEAS.map((x) => {
             const p = product(x.productId);
             return <div key={x.productId} className="lp-pa-row"><Thumb src={p.img} size={36} /><span>“{x.idea}”<small>{p.name}</small></span></div>;
@@ -639,7 +639,7 @@ const PAINS: Pain[] = [
     // What they care about: which videos earn, not where the data comes from (owner, 29 Oct 2026).
     key: "live", tint: "linear-gradient(160deg,#04291a,#00a862)",
     pain: "Which Video Is Actually Making You Money?",
-    why: "Posting blindly or copying others is a guess. Some products sell on your account, some don't. Sometimes posting the same product again works best.",
+    why: "Copying others is a guess. What sells is different for every account, and sometimes a repost wins.",
     fix: "See commission per video and product as it happens, so you post more of what earns.",
     art: (
       <div className="lp-pa-risk">
