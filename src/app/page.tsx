@@ -31,8 +31,8 @@ const FEATS: Feat[] = [
   },
   {
     icon: "gift", bg: "linear-gradient(135deg,#7aa2ff,#1d4ed8)", title: "Free Samples",
-    line: "Get products free. Post 3 videos each; post early for a bonus.",
-    demo: <span className="cr1-d-vids"><i /><i /><i /><small>3 videos per sample</small></span>,
+    line: "Get products free. Post 1 video; 3 videos unlock a bonus.",
+    demo: <span className="cr1-d-vids"><i /><i /><i /><small>Bonus at 3 videos</small></span>,
   },
   {
     icon: "send", bg: "linear-gradient(135deg,#ffb35c,#f08a00)", title: "Post everywhere",

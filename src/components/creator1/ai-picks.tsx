@@ -220,7 +220,7 @@ export function AiPicks() {
               </div>
               <ul className="cr1-after">
                 <li><Icon name="check" size={18} /> You meet the conditions.</li>
-                <li><Icon name="video" size={18} /> Post 3 videos with it in your yellow cart. Bonus within 1 day.</li>
+                <li><Icon name="video" size={18} /> Post 1 video with it in your yellow cart by the due date. 3 videos unlock an extra reward.</li>
                 <li><Icon name="shield" size={18} /> Techwide approves it, usually within 2 working days.</li>
               </ul>
               <button

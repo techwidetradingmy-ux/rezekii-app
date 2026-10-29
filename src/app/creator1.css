@@ -463,7 +463,7 @@
 }
 .cr1-sample { gap: 14px; animation: v2Rise2 0.45s var(--ease) both; }
 .cr1-sample.bad { border-color: var(--rsoft); }
-.cr1-sample-top { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.cr1-sample-top { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 12px; align-items: center; }
 .cr1-sample-top img { width: 56px; height: 56px; border-radius: 14px; object-fit: cover; }
 .cr1-sample-top > span:nth-child(2) { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; }
 .cr1-sample-top strong { font-size: 16px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1344,3 +1344,13 @@ li.sc-row { cursor: default; }
 .td-lead .td-mix { font-size: 13.5px; font-weight: 800; color: var(--gink); }
 .nb-head .td-mix { display: block; font-size: 13.5px; font-weight: 800; color: var(--gink); }
 .td-lead .td-mix, .nb-head .td-mix { display: inline-flex; align-items: center; gap: 4px; }
+/* Sample steps on phones (owner, 29 Oct 2026: six labels were squeezed together): dots for every step, a label only for the current one. */
+@media (max-width: 560px) { .cr1-steps li { font-size: 0; gap: 4px; } .cr1-steps li.cur { font-size: 13px; white-space: nowrap; overflow: visible; } }
+/* Due date always stands out (owner, 29 Oct 2026); red in the last 2 days. */
+.cr1-due { display: inline-flex; align-items: center; gap: 4px; margin-top: 2px; padding: 2px 8px; border-radius: 99px; background: #fff3d6; color: #8a5a00; font-style: normal; font-weight: 800; font-size: 13px; }
+.cr1-due.soon { background: var(--rsoft); color: var(--red); }
+.cr1-more { display: inline-flex; align-items: center; gap: 4px; margin-top: 2px; padding: 2px 8px; border-radius: 99px; background: var(--gsoft); color: var(--gink); font-style: normal; font-weight: 800; font-size: 13px; }
+.cr1-shopline { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.cr1-segbar { display: flex; align-items: center; gap: 8px; }
+.cr1-segbar .np-seg { flex: 1; min-width: 0; }
+.cr1-segbar .v2-iconbtn { flex-shrink: 0; }

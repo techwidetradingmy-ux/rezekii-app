@@ -10,7 +10,10 @@ import { CREATOR, MY_SAMPLES, product, type MySample, type SampleStatus } from "
 import type { Pool } from "@/lib/mock-creator1";
 import "@/app/creator1.css";
 
-const STEPS: SampleStatus[] = ["Applied", "Approved", "Shipped", "Received", "Posting", "Done"];
+/** The steps she sees (owner, 29 Oct 2026): no separate "Posting" step; the first video posted is the last step. */
+const STEPS = ["Applied", "Approved", "Shipped", "Received", "Posted"] as const;
+const stepAt = (status: SampleStatus, videos: number) =>
+  status === "Done" || (status === "Posting" && videos > 0) ? STEPS.length : status === "Posting" ? 4 : STEPS.indexOf(status as (typeof STEPS)[number]);
 const TABS = ["In progress", "Done", "Not approved"] as const;
 type Tab = (typeof TABS)[number];
 /** Where each parcel is, from TikTok's logistics (samples) or the courier (PR kits). */
@@ -27,7 +30,7 @@ const tabOf = (s: MySample): Tab => (s.status === "Done" ? "Done" : s.status ===
 const daysTo = (due?: string) => (due ? Math.max(0, Number(due.split(" ")[0]) + (due.includes("Nov") ? 31 : 0) - 28) : 0);
 
 /** TikTok's sample steps as a bar; "Not approved" stops after Applied. */
-function StepBar({ status }: { status: SampleStatus }) {
+function StepBar({ status, videos }: { status: SampleStatus; videos: number }) {
   if (status === "Not approved") {
     return (
       <ol className="cr1-steps" aria-label="Sample steps">
@@ -37,12 +40,12 @@ function StepBar({ status }: { status: SampleStatus }) {
       </ol>
     );
   }
-  const at = STEPS.indexOf(status);
+  const at = stepAt(status, videos);
   return (
-    <ol className="cr1-steps" aria-label={`Sample steps: ${status}`}>
+    <ol className="cr1-steps" aria-label={`Sample steps: ${STEPS[Math.min(at, STEPS.length - 1)]}`}>
       {STEPS.map((s, i) => (
-        <li key={s} className={i < at || status === "Done" ? "done" : i === at ? "cur" : undefined} aria-current={i === at ? "step" : undefined}>
-          <i>{(i < at || status === "Done") && <Icon name="check" size={11} width={3.4} />}</i>
+        <li key={s} className={i < at ? "done" : i === at ? "cur" : undefined} aria-current={i === at ? "step" : undefined}>
+          <i>{i < at && <Icon name="check" size={11} width={3.4} />}</i>
           {s}
         </li>
       ))}
@@ -82,18 +85,15 @@ export function MySamples() {
     setSubmit(null);
     setLink("");
     if (finished) setParty(next);
-    else toast(`Video added: ${n} of 3`);
+    else toast(n === 1 ? "First video counted. You're on time." : `Video added. ${3 - n} more for the bonus.`);
   }
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 20 }}>
-      <div className="v2-row" style={{ justifyContent: "space-between" }}>
-        <span className="v2-small">From TikTok · updated today 09:12</span>
-        <Link href="/app/market" className="btn-outline v2-btn-sm"><Icon name="bag" size={17} /> Marketplace</Link>
-      </div>
-
-      <div className="cr1-segwrap">
+      {/* Tabs and the Marketplace icon share one row (owner, 29 Oct 2026: no empty rows). */}
+      <div className="cr1-segwrap cr1-segbar">
         <Seg value={tabLabels[TABS.indexOf(tab)]} options={tabLabels} onChange={(v) => setTab(TABS[tabLabels.indexOf(v)])} />
+        <Link href="/app/market" className="v2-iconbtn" aria-label="Open Marketplace" title="Marketplace"><Icon name="bag" size={18} /></Link>
       </div>
 
       <div className="v2-stack" style={{ gap: 14 }}>
@@ -105,17 +105,17 @@ export function MySamples() {
               <div className="cr1-sample-top">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={p.img} alt="" />
+                {/* No status badge: the steps below show it (owner, 29 Oct 2026). */}
                 <span>
                   <strong>{p.name}</strong>
-                  <small>{p.shop}</small>
-                  {p.samples && <PoolTag pool={p.samples as Pool} />}
+                  <span className="cr1-shopline"><small>{p.shop}</small>{p.samples && <PoolTag pool={p.samples as Pool} />}</span>
                 </span>
-                <span className={`badge ${s.status === "Done" ? "" : s.status === "Not approved" ? "badge-red" : s.status === "Posting" ? "badge-amber" : "badge-blue"}`}>{s.status}</span>
               </div>
 
-              <StepBar status={s.status} />
+              <StepBar status={s.status} videos={s.videos} />
 
-              {DELIVERY[s.id] && (
+              {/* Tracking only while it's on the way (owner, 29 Oct 2026). */}
+              {DELIVERY[s.id] && s.status === "Shipped" && (
                 <p className="cr1-track">
                   <Icon name="box" size={16} />
                   <span><b>{DELIVERY[s.id].line}</b> · {DELIVERY[s.id].courier} · {DELIVERY[s.id].track}</span>
@@ -128,9 +128,12 @@ export function MySamples() {
                     {[0, 1, 2].map((i) => <span key={i} className={i < s.videos ? "on" : undefined}><Icon name={i < s.videos ? "check" : "video"} size={16} width={i < s.videos ? 3 : 1.9} /></span>)}
                   </span>
                   <span className="cr1-vidtext">
-                    <b>{s.videos} of 3 videos</b>
+                    <b>{s.videos} video{s.videos === 1 ? "" : "s"} posted</b>
+                    {/* The due date is for the first video only; 3 videos unlock the extra reward (owner, 29 Oct 2026). */}
                     <small>
-                      {s.status === "Done" ? "Delivered on time." : `Due ${s.due} · ${left} day${left === 1 ? "" : "s"} left`}
+                      {s.status === "Done" ? "Bonus unlocked." : s.videos === 0
+                        ? <em className={`cr1-due${left <= 2 ? " soon" : ""}`}><Icon name="cal" size={13} /> 1st video due {s.due} · {left} day{left === 1 ? "" : "s"} left</em>
+                        : <em className="cr1-more"><Icon name="gift" size={13} /> {3 - s.videos} more for the bonus</em>}
                       {extended.includes(s.id) && " · more time requested"}
                     </small>
                   </span>
@@ -139,13 +142,13 @@ export function MySamples() {
               {s.status === "Posting" && <Progress value={s.videos} max={3} />}
 
               {s.status === "Posting" && s.receivedAt && (
-                <p className="cr1-bonus"><Icon name="flame" size={16} /> Posted on {s.receivedAt}, the day it arrived. +30 credits early bonus.</p>
+                <p className="cr1-bonus"><Icon name="flame" size={16} /> +30 credits for posting on arrival day.</p>
               )}
               {(s.status === "Approved" || s.status === "Shipped") && (
-                <p className="cr1-bonus"><Icon name="flame" size={16} /> Post within 1 day of arrival for the biggest bonus.</p>
+                <p className="cr1-bonus"><Icon name="flame" size={16} /> Post within 1 day of arrival for the top bonus.</p>
               )}
-              {s.status === "Approved" && <p className="v2-small" style={{ margin: 0 }}>Ships via TikTok, usually within 3 to 5 days.</p>}
-              {s.status === "Shipped" && <p className="v2-small" style={{ margin: 0 }}>On the way. 3 videos due within 7 days of delivery.</p>}
+              {s.status === "Approved" && <p className="v2-small" style={{ margin: 0 }}>Ships in 3 to 5 days.</p>}
+              {s.status === "Shipped" && <p className="v2-small" style={{ margin: 0 }}>1st video due 7 days after delivery.</p>}
 
               {s.status === "Not approved" && (
                 <div className="cr1-why-no">
@@ -160,9 +163,11 @@ export function MySamples() {
                 {s.status === "Posting" && (
                   <>
                     <button type="button" className="np-btn v2-btn-sm" onClick={() => { setSubmit(s); setLinkErr(false); }}><Icon name="link" size={16} /> Submit video link</button>
-                    <button type="button" className="btn-outline v2-btn-sm" disabled={extended.includes(s.id)} onClick={() => { setExtend(s); setWhy(null); }}>
-                      {extended.includes(s.id) ? "More time requested" : "Ask for more time"}
-                    </button>
+                    {s.videos === 0 && (
+                      <button type="button" className="btn-outline v2-btn-sm" disabled={extended.includes(s.id)} onClick={() => { setExtend(s); setWhy(null); }}>
+                        {extended.includes(s.id) ? "More time requested" : "Ask for more time"}
+                      </button>
+                    )}
                   </>
                 )}
                 {s.status === "Shipped" && <button type="button" className="btn-outline v2-btn-sm" onClick={() => toast("Opening the delivery in TikTok…")}>Track in TikTok</button>}
@@ -208,7 +213,7 @@ export function MySamples() {
       {submit && (
         <Sheet title="Submit Video Link" onClose={() => setSubmit(null)}>
           <p className="v2-small" style={{ margin: 0 }}>
-            Video {submit.videos + 1} of 3 for <b>{product(submit.productId).name}</b>. Must have it in your yellow cart.
+            Video {submit.videos + 1} for <b>{product(submit.productId).name}</b>. Must have it in your yellow cart.
           </p>
           <label className="v2-field">
             TikTok video link
@@ -265,9 +270,9 @@ export function MySamples() {
         <Celebrate
           tone="green"
           icon="check"
-          title="Sample done"
-          line={`3 of 3 videos for ${product(party.productId).name}`}
-          cheer="Delivered on time."
+          title="Bonus unlocked"
+          line={`3 videos for ${product(party.productId).name}`}
+          cheer="Extra reward unlocked."
           onShare={() => { setShare(party); setParty(null); setTab("Done"); }}
           onClose={() => { setParty(null); setTab("Done"); }}
         />

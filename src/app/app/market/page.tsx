@@ -34,7 +34,7 @@ function conditionsFor(p: Product): Cond[] {
   const base: Cond[] = [
     { label: "TikTok Shop linked", ok: CREATOR.tiktokShopLinked, you: "Linked as @aisyah.glow" },
     { label: "Basic profile complete (name, state, WhatsApp)", ok: true, you: "Complete" },
-    { label: "No overdue samples", ok: true, you: unfinished ? `${unfinishedName}: ${unfinished.videos} of 3 videos, due ${unfinished.due}. On time.` : "None" },
+    { label: "No overdue samples", ok: true, you: unfinished ? `${unfinishedName}: ${unfinished.videos ? "first video posted. On time." : `first video due ${unfinished.due}.`}` : "None" },
   ];
   if (pool === "advanced") base.push({ label: "Posting 10 days in a row", ok: true, you: `You're on day ${CREATOR.streak}` });
   if (pool === "designated") {
@@ -150,7 +150,7 @@ export default function Marketplace() {
             { icon: "tag", title: "Better rate" },
             { icon: "plus", title: "Add to showcase" },
             { icon: "gift", title: "Or Free Samples" },
-            { icon: "video", title: "Post 3 videos" },
+            { icon: "video", title: "Post 1 video" },
             { icon: "wallet", title: "Earn per sale" },
           ]}
         />
@@ -236,7 +236,8 @@ export default function Marketplace() {
               <div className="cr1-sec">
                 <h3>After You Get It</h3>
                 <ul className="cr1-after">
-                  <li><Icon name="video" size={18} /> Post 3 videos with it in your yellow cart.</li>
+                  <li><Icon name="video" size={18} /> Post 1 video with it in your yellow cart by the due date.</li>
+                  <li><Icon name="gift" size={18} /> Post 3 videos to unlock an extra reward.</li>
                   <li><Icon name="flame" size={18} /> Bonus if you post within 1 day (smaller within 3 or 7).</li>
                   <li><Icon name="cal" size={18} /> We count videos from TikTok. Nothing to upload.</li>
                 </ul>
