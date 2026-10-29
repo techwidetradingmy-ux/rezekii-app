@@ -365,6 +365,8 @@ function RateTile() {
 function InviteTile() {
   return (
     <div className="lp-w-ref2">
+      {/* Sharing is a favour to a friend (owner, 29 Oct 2026): what they'd send. */}
+      <span className="lp-w-msg">“Check your TikTok showcase on Rezekii. It found me better rates on the same products, free.”</span>
       <ReferralOffer />
       <span className="lp-w-link2"><Icon name="link" size={14} width={2.4} /> rezekii.com/r/{CREATOR.handle.replace(/^@/, "")}<b>Share</b></span>
     </div>
@@ -385,7 +387,7 @@ const TILES: Tile[] = [
   { key: "health", title: "Showcase Health", ai: true, icon: "shield", tint: "linear-gradient(135deg,#ff8a80,#e14b3b)", size: "wide", tip: "Rezekii AI checks ratings and refunds in your showcase and flags risky products. Remove them in one tap.", body: <HealthTile /> },
   { key: "wish", title: "Wish List", icon: "bag", tint: "linear-gradient(135deg,#22dc95,#00a862)", size: "wide", tip: "Paste a product you want to sell. When enough creators want it, Rezekii asks the seller to join.", body: <WishTile /> },
   { key: "rate", title: "Rate Card", icon: "tag", tint: "linear-gradient(135deg,#5ee7df,#0e9488)", tip: "Set your own prices for videos, Reels and ad rights, ready for sellers.", body: <RateTile /> },
-  { key: "invite", title: "Earn with Referral", icon: "users", tint: "linear-gradient(135deg,#ff7aa8,#e8005a)", size: "wide", tip: `Share your link. You get ${REFERRAL_REWARD.inviter} credits and your friend gets ${REFERRAL_REWARD.friend} when they get started.`, body: <InviteTile /> },
+  { key: "invite", title: "Earn with Referral", icon: "users", tint: "linear-gradient(135deg,#ff7aa8,#e8005a)", size: "wide", tip: `Do a friend a favour: they can check their showcase too and may earn more. You get ${REFERRAL_REWARD.inviter} credits and they get ${REFERRAL_REWARD.friend} when they get started.`, body: <InviteTile /> },
 ];
 export function CreatorBento() {
   return <Bento tiles={TILES} label="Rezekii features" />;

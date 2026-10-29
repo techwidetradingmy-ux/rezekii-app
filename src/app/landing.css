@@ -536,6 +536,7 @@ i.gold { background: radial-gradient(circle at 35% 30%, #fff3bf, #f5b81e 55%, #b
 /* Earn with Referral: the app's referral offer and a share link */
 .lp-w-ref2 { width: 100%; display: grid; gap: 10px; }
 .lp-w-ref2 .rf-card { margin: 0; box-shadow: none; }
+.lp-w-msg { justify-self: end; max-width: 88%; padding: 10px 12px; border-radius: 16px 16px 4px 16px; background: #dcf8c6; color: #0d1117; font-size: 13.5px; font-weight: 600; line-height: 1.4; box-shadow: 0 2px 6px -3px rgba(0, 0, 0, 0.2); }
 .lp-w-link2 { display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 6px 0 12px; border-radius: 12px; border: 1.5px dashed #00c073; color: var(--body); font-size: 13px; font-weight: 700; }
 .lp-w-link2 b { margin-left: auto; padding: 7px 14px; border-radius: 9px; background: #00c073; color: #ffffff; font-size: 13px; font-weight: 900; }
 .lp-w-card { width: 100%; display: grid; gap: 8px; }
