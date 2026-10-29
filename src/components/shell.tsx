@@ -162,7 +162,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
             <span className="v2-pgpick">
               <button type="button" aria-haspopup="menu" aria-expanded={pgOpen} onClick={() => setPgOpen((o) => !o)}>
                 <small>{pick.title}</small>
-                <b>{pick.items.find((x) => x.on)?.label ?? pick.title}<Icon name="updown" size={14} width={2.4} /></b>
+                <b><span>{pick.items.find((x) => x.on)?.label ?? pick.title}</span><Icon name="updown" size={14} width={2.4} /></b>
               </button>
               {pgOpen && (
                 <>

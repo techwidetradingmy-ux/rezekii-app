@@ -722,7 +722,16 @@ li.done .cr2-check.num { background: #00c073; border-color: #00c073; }
 
 /* Commission chart (owner, 28 Oct 2026): running total by default, drag across to read any point. */
 .cc { display: flex; flex-direction: column; gap: 12px; }
-.cc-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px; }
+/* Total / Per day stay pinned top right and the header never re-wraps while scrubbing (owner, 29 Oct 2026: the chart
+   jumped as the number got shorter or longer). On phones the big number gets its own row under them. */
+.cc-head { display: flex; flex-wrap: nowrap; align-items: flex-start; justify-content: space-between; gap: 10px; }
+@media (max-width: 760px) {
+  .cc-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 10px; row-gap: 2px; }
+  .cc-now { display: contents; }
+  .cc-now small { grid-column: 1; grid-row: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cc-now b { grid-column: 1 / -1; grid-row: 2; }
+  .cc-head .np-seg { grid-column: 2; grid-row: 1; }
+}
 .cc-now { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .cc-now small { font-size: 13px; font-weight: 700; color: var(--muted); }
 .cc-now b { font-size: 30px; font-weight: 900; letter-spacing: -0.02em; line-height: 1.1; }

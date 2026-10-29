@@ -792,10 +792,13 @@ body { font-feature-settings: "tnum" 0; }
 @media (max-width: 760px) {
   .v2-subwrap { display: none; }
   .v2-top .site-nav:has(.v2-pgpick) .site-brand { font-size: 0 !important; gap: 0; }
+  /* One row always (owner, 29 Oct 2026): a long page name shortens with … instead of pushing the photo to a second row. */
+  .v2-top .site-nav:has(.v2-pgpick) { flex-wrap: nowrap; }
   .v2-pgpick { position: relative; display: inline-flex; min-width: 0; }
   .v2-pgpick > button { display: grid; justify-items: start; gap: 0; min-width: 0; max-width: 190px; padding: 3px 12px 3px 10px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; text-align: left; cursor: pointer; line-height: 1.2; }
   .v2-pgpick small { font-size: 13px; font-weight: 700; color: var(--muted); }
-  .v2-pgpick b { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; font-size: 15px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .v2-pgpick b { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; min-width: 0; font-size: 15px; font-weight: 800; white-space: nowrap; }
+  .v2-pgpick b > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .v2-pgpick b svg { flex-shrink: 0; transform: rotate(90deg); color: var(--muted); transition: transform 0.2s var(--ease); }
   .v2-pgpick > button[aria-expanded="true"] { border-color: #00c073; }
   .v2-pgpick > button[aria-expanded="true"] b svg { transform: rotate(-90deg); }
