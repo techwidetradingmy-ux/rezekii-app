@@ -639,7 +639,7 @@ const PAINS: Pain[] = [
     // What they care about: which videos earn, not where the data comes from (owner, 29 Oct 2026).
     key: "live", tint: "linear-gradient(160deg,#04291a,#00a862)",
     pain: "Which Video Is Actually Making You Money?",
-    why: "Guessing what works means posting more of what doesn't.",
+    why: "Posting blindly or copying others is a guess. Some products sell on your account, some don't. Sometimes posting the same product again works best.",
     fix: "See commission per video and product as it happens, so you post more of what earns.",
     art: (
       <div className="lp-pa-risk">
