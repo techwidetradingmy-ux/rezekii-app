@@ -6,13 +6,15 @@ import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Qr, Tip } from "@/components/ui";
 import { ShareButton } from "@/components/creator2/bits";
-import { INVITES, REFERRAL_REWARD } from "@/lib/mock";
+import { CREATOR, INVITES, REFERRAL_REWARD } from "@/lib/mock";
 import "@/app/creator2.css";
 
 const LINK = "rezekii.com/r/aisyah";
 const CODE = "AISYAH8";
 /** Friends to set up for the referral bonus (sample goal; admin sets it). */
 const GOAL = 5;
+/** Friends around her on the banner: where each bubble sits and its colour. */
+const FRIENDS = INVITES.slice(0, 4).map((f, i) => ({ name: f.name, ...[{ x: "14%", y: "26%", c: "#00c073" }, { x: "86%", y: "22%", c: "#2f80ed" }, { x: "18%", y: "80%", c: "#ffb400" }, { x: "84%", y: "78%", c: "#8b5cf6" }][i] }));
 
 /**
  * Referral (owner, 29 Oct 2026, option C): progress toward the next bonus with Share as the main button on top, then who joined
@@ -32,11 +34,25 @@ export function Referral() {
 
   return (
     <div className="v2-stack" style={{ gap: 16 }}>
-      {/* The program at a glance, in place of her profile (owner, 30 Oct 2026). */}
+      {/* The program as a poster, in place of her profile (owner, 30 Oct 2026): you in the middle, friends joining, credits flying. */}
       <section className="rf-banner">
-        <span className="rf-banner-ico" aria-hidden="true"><Icon name="gift" size={34} width={2} /></span>
+        <div className="rf-art" aria-hidden="true">
+          <span className="rf-orbit" />
+          {FRIENDS.map((f, i) => (
+            <span key={f.name} className="rf-friend" style={{ ["--x" as string]: f.x, ["--y" as string]: f.y, ["--c" as string]: f.c, ["--d" as string]: `${i * 0.35}s` }}>
+              {f.name.replace("@", "").slice(0, 2).toUpperCase()}
+              <em>+{REFERRAL_REWARD.friend}</em>
+            </span>
+          ))}
+          <span className="rf-me">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={CREATOR.photo} alt="" />
+          </span>
+          <span className="rf-gift"><Icon name="gift" size={22} width={2.2} /></span>
+          <i className="rf-spark s1" /><i className="rf-spark s2" /><i className="rf-spark s3" />
+        </div>
         <small>Referral Program</small>
-        <h2>Invite Friends, Earn Together</h2>
+        <h2>Invite Friends.<br /><em>Earn Together.</em></h2>
         <p>Do a friend a favour: they can check their showcase for better rates too.</p>
         <span className="rf-banner-chips">
           <span><b>+{REFERRAL_REWARD.inviter}</b> for you</span>

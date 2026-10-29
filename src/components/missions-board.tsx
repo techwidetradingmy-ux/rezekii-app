@@ -142,7 +142,7 @@ export function MissionsBoard(p: {
           <span className="mx-strip-em">{tier ? <Emblem tier={tier} size={34} /> : <Emblem tier={TIERS[0]} size={34} locked />}<b>{streak}</b></span>
           <span className="mx-strip-txt">
             <b>{streak}-day streak</b>
-            <small>{checkedToday ? "Today counted" : "Do 1 mission today to keep it"} · {Math.max(0, next.days - streak)} days to {next.name} +{next.bonus}</small>
+            <small>{checkedToday ? "Today counted" : "Check in or finish a mission today to keep it"} · {Math.max(0, next.days - streak)} days to {next.name} +{next.bonus}</small>
           </span>
           <span className="mx-strip-week" aria-hidden="true">
             {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => <i key={i} className={i < 2 || (i === 2 && checkedToday) ? "on" : i === 2 ? "today" : ""} />)}
@@ -192,7 +192,7 @@ export function MissionsBoard(p: {
               <span className="mx-streak-txt">
                 <span className="mx-tiername">{tier ? `${tier.name} · ${tier.metal}` : "No tier yet"}</span>
                 <strong>{streak}-day streak</strong>
-                <small>{checkedToday ? "Today counted." : "Do 1 daily mission today to keep it."}</small>
+                <small>{checkedToday ? "Today counted." : "Check in or finish any daily mission today to keep it."}</small>
               </span>
             </div>
             <div className="mx-week" aria-label="This week">
