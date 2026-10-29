@@ -1,5 +1,5 @@
 import { Icon } from "@/components/icons";
-import { SAMPLE_ACCESS, SAMPLE_STREAK, type Pool } from "@/lib/mock-creator1";
+import { canGetSample } from "@/lib/mock-creator1";
 
 /** TikTok's note and Google's G for the sign-in buttons (same marks as V1). */
 const NOTE =
@@ -27,12 +27,12 @@ export function GoogleMark() {
 }
 
 /**
- * A product's free-sample tag for creators (owner, 28 Oct 2026): no pool names (Open, Advanced, Designated) since Bronze/Silver/Gold
- * and the streak are enough to learn. It says "Free sample", or the streak it unlocks at when she isn't there yet.
+ * A product's free-sample tag for creators (owner, 30 Oct 2026: no pools, just a streak if the seller asks for one). It says
+ * "Free sample", or the streak it needs when she isn't there yet.
  */
-export function PoolTag({ pool, label = true }: { pool: Pool; label?: boolean }) {
-  const can = SAMPLE_ACCESS[pool];
-  const text = can ? "Free sample" : `Free sample at a ${SAMPLE_STREAK[pool]}-day streak`;
+export function SampleTag({ streak, label = true }: { streak: number; label?: boolean }) {
+  const can = canGetSample(streak);
+  const text = can ? "Free sample" : `Free sample at a ${streak}-day streak`;
   return (
     <span className={`cr1-tier ${can ? "open" : "locked"} ${label ? "" : "icon"}`} title={text} aria-label={label ? undefined : text}>
       <Icon name={can ? "gift" : "lock"} size={label ? 13 : 15} width={2.4} />

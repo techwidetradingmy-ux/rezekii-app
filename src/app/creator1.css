@@ -1570,17 +1570,4 @@ li.sc-row { cursor: default; }
 .ds-ring .rm { width: 100%; height: 100%; object-fit: cover; object-position: 50% 12%; transform: scale(1.35); animation: none; }
 .ds-foot { gap: 10px; }
 .ds-cta { height: 42px; padding: 0 18px; border-radius: 999px; border: 1.5px solid rgba(255, 255, 255, 0.6); background: rgba(255, 255, 255, 0.12); color: #ffffff; font: inherit; font-size: 15px; font-weight: 800; display: inline-flex; align-items: center; text-decoration: none; cursor: pointer; }
-/* The story card on Home */
-.dsb { position: relative; display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px 16px; border-radius: 22px; border: 0; color: #ffffff; text-align: left; font: inherit; cursor: pointer; overflow: hidden; background: radial-gradient(60% 80% at 0% 50%, rgba(255, 211, 77, 0.45), transparent 70%), linear-gradient(135deg, #00c073, #00804f); box-shadow: 0 16px 30px -18px rgba(0, 128, 79, 0.8); }
-.dsb-ring { position: relative; flex-shrink: 0; width: 68px; height: 68px; padding: 3px; border-radius: 50%; }
-.dsb-ring::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(#ffd34d, #ff4f8b, #6d5efc, #00c073, #ffd34d); animation: dsSpin 4s linear infinite; }
-.dsb.seen .dsb-ring::before { background: rgba(255, 255, 255, 0.45); animation: none; }
-.dsb-ring .rm { position: relative; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; object-position: 50% 8%; background: #fff6d6; border: 3px solid #00a862; animation: none; }
-.dsb-txt { flex: 1; min-width: 0; display: grid; gap: 2px; }
-.dsb-txt small { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; opacity: 0.9; white-space: nowrap; }
-.dsb-txt b { font-size: 18px; font-weight: 900; }
-.dsb-txt span { font-size: 13.5px; font-weight: 600; opacity: 0.92; }
-.dsb-go { flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 99px; background: #ffffff; color: #00804f; font-size: 14px; font-weight: 900; }
-@keyframes dsSpin { to { transform: rotate(360deg); } }
-@media (max-width: 380px) { .dsb-go { display: none; } }
-@media (prefers-reduced-motion: reduce) { .rm, .dsc-fx i, .dsb-ring::before, .dsc-prod { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .rm, .dsc-fx i, .dsc-prod { animation: none !important; } }

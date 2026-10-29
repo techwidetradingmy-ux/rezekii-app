@@ -141,6 +141,8 @@ export function storyFor(day: SampleDay = "good"): StoryPage[] {
   return [intro, ...good, ...heads, ...steady, trend, cleaned, total, end];
 }
 
+/** Where this device remembers that today's story was watched. */
+export const STORY_SEEN = "rz_story_seen";
 /** Story day key: a new story at 8 AM Malaysia time (UTC+8), so 00:00 UTC. */
 export function storyDayKey(now = new Date()): string {
   return now.toISOString().slice(0, 10);

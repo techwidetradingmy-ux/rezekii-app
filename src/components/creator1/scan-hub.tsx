@@ -382,7 +382,7 @@ export function ScanHub() {
                       </span>
                       <span className="sh-name">
                         <b><Link href={productHref(p.id)} className="pv-open">{p.name}</Link></b>
-                        {p.samples === "advanced" && <small>Free sample at Silver</small>}
+                        {p.samples !== null && p.samples > CREATOR.streak && <small>Free sample at a {p.samples}-day streak</small>}
                       </span>
                       <span className="sh-rate" aria-label={`Now ${p.publicRate}%, on Rezekii ${rateFor(p).rate}%`}>
                         <span><small>Now</small>{p.publicRate}%</span>

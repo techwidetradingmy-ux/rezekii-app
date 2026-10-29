@@ -2,6 +2,7 @@
  * Extra sample data for the creator site, sign-in, scan results and Marketplace screens (cr1). Invented people, shops and numbers;
  * nothing is read from or sent to TikTok.
  */
+import { CREATOR } from "./mock";
 import type { IconName } from "@/components/icons";
 import type { Raise } from "./mock";
 
@@ -85,11 +86,12 @@ export const REFUSED = { productId: "p17", tiktok: "Adding product failed. Pleas
 
 /* ---------------- Samples ---------------- */
 
-export type Pool = "open" | "advanced" | "designated";
-/** Aisyah is Active (16-day streak): Open and Advanced samples are hers; Designated needs Highly active (30 days). */
-export const SAMPLE_ACCESS: Record<Pool, boolean> = { open: true, advanced: true, designated: false };
-/** Creators never see the pool names (owner, 28 Oct 2026: too many ladders). They see the streak a sample unlocks at. */
-export const SAMPLE_STREAK: Record<Pool, number> = { open: 0, advanced: 10, designated: 30 };
+/**
+ * No sample pools or tiers (owner, 30 Oct 2026: too many rankings confuse). A sample is open to anyone, or the seller asks
+ * for a posting streak (10 days, 30 days...). She can request it once her streak is long enough.
+ */
+const CREATOR_STREAK = CREATOR.streak;
+export const canGetSample = (streak: number | null) => streak !== null && CREATOR_STREAK >= streak;
 
 /** `fix`: where she sorts it out herself (link TikTok Shop, fill in her profile); Back brings her to the product again. */
 export type Cond = { label: string; ok: boolean; you: string; fix?: string };

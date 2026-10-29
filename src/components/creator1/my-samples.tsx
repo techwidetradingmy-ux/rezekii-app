@@ -6,9 +6,8 @@ import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Celebrate, Progress, Seg, ShareSheet, Sheet } from "@/components/ui";
-import { PoolTag } from "@/components/creator1/brand";
+import { SampleTag } from "@/components/creator1/brand";
 import { CREATOR, MY_SAMPLES, product, type MySample, type SampleStatus } from "@/lib/mock";
-import type { Pool } from "@/lib/mock-creator1";
 import { productHref } from "@/lib/product-view";
 import "@/app/creator1.css";
 import { useKept } from "@/lib/keep";
@@ -112,7 +111,7 @@ export function MySamples() {
                 {/* No status badge: the steps below show it (owner, 29 Oct 2026). */}
                 <span>
                   <strong><Link href={productHref(p.id)} className="pv-open">{p.name}</Link></strong>
-                  <span className="cr1-shopline"><small>{p.shop}</small>{p.samples && <PoolTag pool={p.samples as Pool} />}</span>
+                  <span className="cr1-shopline"><small>{p.shop}</small>{p.samples !== null && <SampleTag streak={p.samples} />}</span>
                 </span>
               </div>
 
@@ -159,7 +158,7 @@ export function MySamples() {
                   <b>Why</b>
                   <p>{s.reason}</p>
                   <b>What to do</b>
-                  <p>Post daily for {30 - CREATOR.streak} more days to unlock more samples. Open and Advanced samples are available now.</p>
+                  <p>Post daily for {30 - CREATOR.streak} more days to reach the 30-day streak this seller asks for. Samples that need a shorter streak are open to you now.</p>
                 </div>
               )}
 

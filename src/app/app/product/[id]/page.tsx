@@ -6,11 +6,11 @@ import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Hidden } from "@/components/ui";
-import { PoolTag } from "@/components/creator1/brand";
+import { SampleTag } from "@/components/creator1/brand";
 import { Trend } from "@/components/creator1/shoot-today";
 import { WishForm, WishSteps, useWishes } from "@/components/creator1/wish";
 import { product, rm, short } from "@/lib/mock";
-import { SAMPLE_STREAK, sampleCount, type Pool } from "@/lib/mock-creator1";
+import { sampleCount } from "@/lib/mock-creator1";
 import { commitText } from "@/lib/mock-showcase";
 import { canRequest, markRequested, productView, requestedSamples, sampleConditions } from "@/lib/product-view";
 import "@/app/creator1.css";
@@ -61,7 +61,8 @@ export default function ProductPage() {
   const m = p.tapRate !== null ? product(p.id) : null;
   const wish = mine(p.id);
   // The link check follows the preview's "Show as not linked" switch; unmet ones she can fix send her to My Account.
-  const conds = (m?.samples ? sampleConditions(m) : []).map((c) => (c.fix === "/app/account#connections" ? { ...c, ok: linked, you: linked ? c.you : "Link TikTok Shop" } : c));
+  const hasSample = !!m && m.samples !== null;
+  const conds = (m && hasSample ? sampleConditions(m) : []).map((c) => (c.fix === "/app/account#connections" ? { ...c, ok: linked, you: linked ? c.you : "Link TikTok Shop" } : c));
   const unmet = conds.filter((c) => !c.ok);
   const canSample = !!m && canRequest(m);
   const base = sampleCount(p.id);
@@ -97,10 +98,10 @@ export default function ProductPage() {
     window.setTimeout(() => document.getElementById("wish")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   };
 
-  const sampleBtn = m?.samples && (
+  const sampleBtn = m && hasSample && (
     asked
       ? <Link href="/app/account#samples" className="btn-outline"><Icon name="check" size={18} /> Sample Requested</Link>
-      : <button type="button" className="btn-outline" onClick={canSample ? request : () => document.getElementById("sample")?.scrollIntoView({ behavior: "smooth" })}><Icon name="gift" size={18} /> {canSample ? "Request Free Sample" : `Free Sample at ${SAMPLE_STREAK[m.samples as Pool]}-Day Streak`}</button>
+      : <button type="button" className="btn-outline" onClick={canSample ? request : () => document.getElementById("sample")?.scrollIntoView({ behavior: "smooth" })}><Icon name="gift" size={18} /> {canSample ? "Request Free Sample" : `Free Sample at ${m.samples}-Day Streak`}</button>
   );
   // One buy box for every product (owner, 30 Oct 2026): Add to Showcase, then Free Sample. The wish list is a small link at the end.
   const buy = (
@@ -132,7 +133,7 @@ export default function ProductPage() {
         ) : null}
         <div className="pp-chips">
           {p.rating !== null && <span className="pp-chip score"><Icon name="star" size={13} width={2.4} /> {p.rating.toFixed(1)}</span>}
-          {m?.samples && <PoolTag pool={m.samples as Pool} />}
+          {m && m.samples !== null && <SampleTag streak={m.samples} />}
           {p.special && <span className="pp-chip special"><Icon name="star" size={13} width={2.4} /> Your Special Rate</span>}
           {(p.inShowcase || added) && <span className="pp-chip">In Your Showcase</span>}
           {p.tapRate === null && <span className="pp-chip muted">Not on Rezekii Yet</span>}
@@ -173,7 +174,7 @@ export default function ProductPage() {
           </div>
         </section>
 
-        {m?.samples && (
+        {hasSample && (
           <section className="v2-card pp-card" id="sample">
             {/* Owner, 29 Oct 2026: how many asked and how many are left (live), then whether she can apply. Nothing about after. */}
             <div className="pp-sh">
@@ -216,7 +217,7 @@ export default function ProductPage() {
             <small className="v2-small">{commitText(wish.commit)}</small>
           </section>
         )}
-        {!wish && !wishOpen && (p.tapRate === null || !m?.samples) && (
+        {!wish && !wishOpen && (p.tapRate === null || !hasSample) && (
           <p className="pp-wishlink">
             Want a free sample or a better rate?{" "}
             <button type="button" onClick={openWish}>{p.wanted ? "Join This Wish" : "Add to Wish List"}</button>

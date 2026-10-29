@@ -6,16 +6,16 @@ import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Flow, Hidden, Title } from "@/components/ui";
-import { PoolTag } from "@/components/creator1/brand";
+import { SampleTag } from "@/components/creator1/brand";
 import { MY_SAMPLES, PRODUCTS, rateFor, rm, type Product } from "@/lib/mock";
-import { SAMPLE_ACCESS as ACCESS, SAMPLE_LEFT, type Pool } from "@/lib/mock-creator1";
+import { SAMPLE_LEFT, canGetSample } from "@/lib/mock-creator1";
 import { productHref, requestedSamples } from "@/lib/product-view";
 import "@/app/creator1.css";
 import { useKept } from "@/lib/keep";
 
-const WITH_SAMPLES = PRODUCTS.filter((p) => p.samples);
+const WITH_SAMPLES = PRODUCTS.filter((p) => p.samples !== null);
 /** Free samples she can request right now (her streak is long enough). */
-const CAN_GET = WITH_SAMPLES.filter((p) => ACCESS[p.samples as Pool]);
+const CAN_GET = WITH_SAMPLES.filter((p) => canGetSample(p.samples));
 const CATS = Array.from(new Set(PRODUCTS.map((p) => p.category))).sort();
 const SORTS = [
   ["sold", "Best-selling"],
@@ -70,7 +70,7 @@ export default function Marketplace() {
     if (sort === "earn") return earn(b) - earn(a);
     if (sort === "cheap") return a.price - b.price;
     if (sort === "dear") return b.price - a.price;
-    if (sort === "samples") return (b.samples ? SAMPLE_LEFT[b.id] ?? 10 : -1) - (a.samples ? SAMPLE_LEFT[a.id] ?? 10 : -1);
+    if (sort === "samples") return (b.samples !== null ? SAMPLE_LEFT[b.id] ?? 10 : -1) - (a.samples !== null ? SAMPLE_LEFT[a.id] ?? 10 : -1);
     return b.sold - a.sold;
   });
   const addToShowcase = (p: Product) => {
@@ -143,7 +143,7 @@ export default function Marketplace() {
               <Link href={productHref(p.id)} className="mk-img" aria-label={p.name}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={p.img} alt="" />
-                {p.samples && <PoolTag pool={p.samples as Pool} label={false} />}
+                {p.samples !== null && <SampleTag streak={p.samples} label={false} />}
                 {asked && <span className="cr1-reqd"><Icon name="check" size={13} width={3} /> Requested</span>}
               </Link>
               <Link href={productHref(p.id)} className="mka-name"><strong>{p.name}</strong></Link>
@@ -154,7 +154,7 @@ export default function Marketplace() {
                 <button type="button" className={isAdded ? "mka-add done" : "mka-add"} disabled={isAdded} onClick={() => addToShowcase(p)}>
                   <Icon name={isAdded ? "check" : "plus"} size={15} width={2.6} /> {isAdded ? "Added" : "Add"}
                 </button>
-                {p.samples ? (
+                {p.samples !== null ? (
                   <button type="button" className={`mka-gift ${asked ? "asked" : ""}`} disabled={asked} onClick={() => requireWa(() => router.push(productHref(p.id, { sample: true })))} aria-label={asked ? "Free sample requested" : `Free sample, ${left} left`} title={asked ? "Requested" : `Free sample · ${left} left`}>
                     <Icon name={asked ? "check" : "gift"} size={16} />
                   </button>

@@ -37,7 +37,6 @@ export default function SystemSettings() {
   ]);
   const [qty, setQty] = useState([30, 40, 50]);
   const [newQty, setNewQty] = useState("");
-  const [active, setActive] = useState(10);
   const [high, setHigh] = useState(30);
   const [wa, setWa] = useState({ verify: true, replies: true, link: true });
   const [flags, setFlags] = useState(FLAGS);
@@ -129,18 +128,13 @@ export default function SystemSettings() {
 
       <div className="v2-grid2">
         <section className="v2-card">
-          <h2 className="v2-h2">Activity Tiers</h2>
-          <div className="ad-set">
-            <b>Active</b>
-            <small>Unlocks advanced samples.</small>
-            <div className="v2-row"><Stepper label="Active days" value={active} min={3} max={high - 1} onChange={touch(setActive)} /><span className="v2-muted">video days in a row</span></div>
-          </div>
+          <h2 className="v2-h2">Highly Active Badge</h2>
           <div className="ad-set">
             <b>Highly active</b>
-            <small>Unlocks designated samples + badge.</small>
-            <div className="v2-row"><Stepper label="Highly active days" value={high} min={active + 1} max={90} onChange={touch(setHigh)} /><span className="v2-muted">days in a row, and</span><Pill tone="ok">100% delivery</Pill></div>
+            <small>An honour badge only. Samples don't use tiers: a seller can ask for a posting streak instead.</small>
+            <div className="v2-row"><Stepper label="Highly active days" value={high} min={3} max={90} onChange={touch(setHigh)} /><span className="v2-muted">days in a row, and</span><Pill tone="ok">100% delivery</Pill></div>
           </div>
-          <span className="v2-small">Any video counts. A missed day or overdue sample drops one tier.</span>
+          <span className="v2-small">Any video counts. A missed day or an overdue sample removes the badge.</span>
         </section>
 
         <section className="v2-card">

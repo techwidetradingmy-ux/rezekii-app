@@ -8,7 +8,7 @@ import { useDemo } from "@/components/demo";
 import { AiHead, Count, Hidden } from "@/components/ui";
 import { productHref, requestedSamples } from "@/lib/product-view";
 import { AI_PICKS, AI_PROFILE, PRODUCTS, product, rateFor, rm, short, type AiPick } from "@/lib/mock";
-import { SAMPLE_ACCESS, type Pool } from "@/lib/mock-creator1";
+import { canGetSample } from "@/lib/mock-creator1";
 
 type Fit = AiPick["fit"];
 const SORTS = ["Best match", "Best-selling", "Top commission", "Lowest price"] as const;
@@ -155,7 +155,7 @@ export function AiPicks() {
               const p = product(pk.productId);
               const isAdded = added.includes(p.id);
               // A free sample only for Techwide campaign products, and only when this creator's level opens that sample pool.
-              const sample = pk.from === "tap" && !!p.samples && SAMPLE_ACCESS[p.samples as Pool];
+              const sample = pk.from === "tap" && canGetSample(p.samples);
               const asked = requested.includes(p.id);
               return (
                 <article key={p.id} className="ai-item" style={{ animationDelay: `${i * 45}ms` }}>

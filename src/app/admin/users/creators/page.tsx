@@ -179,7 +179,7 @@ function Profile({ p, onClose, set }: { p: Person; onClose: () => void; set: (pa
       <div className="np-switchrow">
         <span>
           <b>In another MCN</b>
-          <small>No designated samples or MCN deals.</small>
+          <small>Can&apos;t join MCN deals.</small>
         </span>
         <Switch label="In another MCN" on={p.mcn} onChange={(v) => { set({ mcn: v }); toast(v ? "Flagged: in another MCN · logged" : "MCN flag removed · logged"); }} />
       </div>

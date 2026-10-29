@@ -5,11 +5,10 @@ import { useCallback, useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { Portal, Seg, ShareSheet } from "@/components/ui";
 import { CREATOR } from "@/lib/mock";
-import { hoursLeft, storyDayKey, storyFor, type SampleDay, type StoryPage } from "@/lib/daily-story";
+import { STORY_SEEN, hoursLeft, storyDayKey, storyFor, type SampleDay, type StoryPage } from "@/lib/daily-story";
 import "@/app/creator1.css";
 
 const SLIDE_MS = 5200;
-const SEEN_KEY = "rz_story_seen";
 const TONE_TAG: Record<StoryPage["tone"], string> = { intro: "Daily Story", good: "Good news", heads: "Heads-up", steady: "Today", trend: "For you", total: "All-time", end: "Daily Story" };
 
 /** Rimau the tiger cub, in a pose, moving to match the moment. */
@@ -86,7 +85,7 @@ export function DailyStory({ day = "good", onClose }: { day?: SampleDay; onClose
 
   useEffect(() => setLeft(hoursLeft()), []);
   useEffect(() => {
-    try { localStorage.setItem(SEEN_KEY, storyDayKey()); } catch {}
+    try { localStorage.setItem(STORY_SEEN, storyDayKey()); } catch {}
   }, []);
   useEffect(() => {
     if (held || share || i >= last) return;
@@ -171,36 +170,5 @@ export function DailyStory({ day = "good", onClose }: { day?: SampleDay; onClose
         </div>
       </div>
     </Portal>
-  );
-}
-
-/**
- * The story's place on Home (owner, 30 Oct 2026): Rimau in a ring that glows until she has watched today's story, which
- * ends at the next 8 AM. In this preview, add ?day=slow to the address to see a slow day.
- */
-export function DailyStoryCard() {
-  const [open, setOpen] = useState(false);
-  const [seen, setSeen] = useState(false);
-  const [left, setLeft] = useState(0);
-  const [day, setDay] = useState<SampleDay>("good");
-  useEffect(() => {
-    setLeft(hoursLeft());
-    setDay(new URLSearchParams(window.location.search).get("day") === "slow" ? "slow" : "good");
-    try { setSeen(localStorage.getItem(SEEN_KEY) === storyDayKey()); } catch {}
-  }, []);
-  const count = storyFor(day).length - 2;
-  return (
-    <>
-      <button type="button" className={`dsb${seen ? " seen" : ""}`} onClick={() => setOpen(true)} aria-label="Watch your Daily Story">
-        <span className="dsb-ring"><Rimau pose="wave" motion="bounce" /></span>
-        <span className="dsb-txt">
-          <small>{seen ? "Watched" : "New"}{left ? ` · ends in ${left}h` : ""}</small>
-          <b>Your Daily Story</b>
-          <span>Rimau has {count} updates from yesterday</span>
-        </span>
-        <span className="dsb-go"><Icon name="video" size={16} width={2.4} /> Watch</span>
-      </button>
-      {open && <DailyStory day={day} onClose={() => { setOpen(false); setSeen(true); }} />}
-    </>
   );
 }

@@ -1,5 +1,5 @@
 import { CREATOR, MY_SAMPLES, PRODUCTS, product, rateFor, type Product } from "./mock";
-import { SAMPLE_ACCESS, SELLER_CONDS, type Cond, type Pool } from "./mock-creator1";
+import { SELLER_CONDS, canGetSample, type Cond } from "./mock-creator1";
 import { NICHE_BEST, daily, type Trend } from "./mock-creator2";
 import { NOT_YET, ON_IDS, ON_SOLD30, WANTED, wantedFor, type Wanted } from "./mock-showcase";
 
@@ -56,7 +56,7 @@ export function productView(id: string): ProductView | null {
 
 /** The free-sample conditions for one product, ticked against Aisyah (Active, 16-day streak, Silver, TikTok Lv.4). */
 export function sampleConditions(p: Product): Cond[] {
-  const pool = p.samples as Pool;
+  const streak = p.samples ?? 0;
   const posting = MY_SAMPLES.find((s) => s.status === "Posting");
   const postingName = posting ? product(posting.productId).name : "";
   const base: Cond[] = [
@@ -64,11 +64,11 @@ export function sampleConditions(p: Product): Cond[] {
     { label: "Basic profile complete (name, state, WhatsApp)", ok: true, you: "Complete", fix: "/app/account#profile" },
     { label: "No overdue samples", ok: true, you: posting ? `${postingName}: ${posting.videos ? "first video posted. On time." : `first video due ${posting.due}.`}` : "None" },
   ];
-  if (pool === "advanced") base.push({ label: "Posting 10 days in a row", ok: true, you: `You're on day ${CREATOR.streak}` });
-  if (pool === "designated") base.push({ label: "Posting 30 days in a row", ok: false, you: `You're on day ${CREATOR.streak} (${30 - CREATOR.streak} to go)` });
+  // The only extra rule is the streak the seller asks for, if any.
+  if (streak > 0) base.push({ label: `Posting ${streak} days in a row`, ok: CREATOR.streak >= streak, you: CREATOR.streak >= streak ? `You're on day ${CREATOR.streak}` : `You're on day ${CREATOR.streak} (${streak - CREATOR.streak} to go)` });
   return [...base, ...(SELLER_CONDS[p.id] ?? [])];
 }
-export const canRequest = (p: Product) => !!p.samples && SAMPLE_ACCESS[p.samples as Pool];
+export const canRequest = (p: Product) => canGetSample(p.samples);
 
 /** Samples she asked for in this browser tab, so Marketplace, AI Picks and the Product page agree (preview only). */
 const REQ = "rz2_sample_requests";

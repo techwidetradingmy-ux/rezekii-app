@@ -15,8 +15,6 @@ import { adminProductHref } from "@/lib/product-pages";
 type Filter = "Suggest approve" | "Needs a look" | "Suggest reject";
 const OF: Record<Filter, Verdict> = { "Suggest approve": "Approve", "Needs a look": "Look", "Suggest reject": "Reject" };
 const VERDICT_LABEL: Record<Verdict, string> = { Approve: "Suggest approve", Look: "Needs a look", Reject: "Suggest reject" };
-/** What each sample pool asks for (blueprint 11.4b). */
-const NEED: Record<string, { tier: string; days: number }> = { Open: { tier: "Anyone", days: 0 }, Advanced: { tier: "Active", days: 10 }, Designated: { tier: "Highly active", days: 30 } };
 
 type Done = { result?: "Approved" | "Rejected" | "Waiting"; at?: string; overruled?: { reason: string; note: string; to: "Approve" | "Reject" } };
 
@@ -91,14 +89,12 @@ export default function SampleReview() {
 
 function RequestCard({ s, state, onAct, onDisagree }: { s: SampleReq; state?: Done; onAct: (to: "Approve" | "Reject") => void; onDisagree: () => void }) {
   const p = product(s.productId);
-  const need = NEED[s.pool] ?? NEED.Open;
   const call: Verdict = state?.overruled?.to ?? s.verdict;
   const finished = state?.result === "Approved" || state?.result === "Rejected";
-  const tierOk = need.tier === "Anyone" || s.tier === need.tier || (need.tier === "Active" && s.tier === "Highly active");
-  const daysOk = !s.missing && s.days >= need.days;
+  // The only sample rule left is the posting streak the seller asks for (owner, 30 Oct 2026).
+  const daysOk = !s.missing && s.days >= s.streak;
   const facts: [string, string, boolean][] = [
-    ["Activity tier", tierOk ? s.tier : `${s.tier} · needs ${need.tier}`, tierOk],
-    ["Days in a row", s.missing ? "Can't count" : daysOk ? `${s.days} days` : `${s.days} of ${need.days} days`, daysOk],
+    ["Days in a row", s.missing ? "Can't count" : !s.streak ? `${s.days} days · none needed` : daysOk ? `${s.days} of ${s.streak} days` : `${s.days} of ${s.streak} days`, daysOk],
     ["Delivery rate", s.delivery, s.deliveryOk],
     ["Overdue samples", s.overdue ? `${s.overdue} overdue` : "None", s.overdue === 0],
     ["Rezekii level", s.level, true],
@@ -122,7 +118,7 @@ function RequestCard({ s, state, onAct, onDisagree }: { s: SampleReq; state?: Do
               <img className="ad-thumb" src={p.img} alt="" />
               <span>
                 <b>{p.name}</b>
-                <small className="v2-small">{p.shop} · {s.pool} sample</small>
+                <small className="v2-small">{p.shop} · {s.streak ? `needs a ${s.streak}-day streak` : "open to all"}</small>
               </span>
             </Link>
           </div>
@@ -238,13 +234,13 @@ function Walkthrough({ items, onClose, onDone }: { items: SampleReq[]; onClose: 
           <Av name={s.handle} size={44} />
           <span>
             <b>{s.handle}</b>
-            <small className="v2-small">{s.tier} · {s.days} days in a row · {s.level} · TikTok Lv.{s.tt}</small>
+            <small className="v2-small">{s.days} days in a row · {s.level} · TikTok Lv.{s.tt}</small>
           </span>
         </div>
         <div className="ad-req-prod">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img className="ad-thumb" src={p.img} alt="" />
-          <span><b>{p.name}</b><small className="v2-small">{s.pool} sample · {p.shop}</small></span>
+          <span><b>{p.name}</b><small className="v2-small">{s.streak ? `${s.streak}-day streak` : "Open to all"} · {p.shop}</small></span>
         </div>
         <p className="ad-summary">{s.summary}</p>
         {state === "ready" && <button type="button" className="np-btn" onClick={open}><Icon name="link" size={17} /> Approve in Partner Center</button>}

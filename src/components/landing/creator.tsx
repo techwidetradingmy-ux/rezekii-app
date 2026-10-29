@@ -215,7 +215,7 @@ function PicksScreen() {
 }
 
 /** Free Samples: a shop of free samples scrolling past, open to new creators (the open pool needs no streak). */
-const OPEN = PRODUCTS.filter((p) => p.samples === "open");
+const OPEN = PRODUCTS.filter((p) => p.samples === 0);
 const SHOP = [...OPEN].sort((a, b) => b.sold - a.sold).slice(0, 12);
 function SamplesScreen() {
   return (

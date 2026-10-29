@@ -1,6 +1,8 @@
 "use client";
 
 import { FeedbackForm } from "@/components/feedback-form";
+import { DailyStory } from "@/components/daily-story";
+import { STORY_SEEN, storyDayKey, type SampleDay } from "@/lib/daily-story";
 import { SUPPORT } from "@/lib/support";
 import Image from "next/image";
 import Link from "next/link";
@@ -105,6 +107,16 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
         : null;
   // Account panel (owner, 29 Oct 2026, option B): on phones the avatar opens every account section in a side panel.
   const [acctOpen, setAcctOpen] = useState(false);
+  // Daily Story (owner, 30 Oct 2026): her photo glows while today's story is new; tapping it plays the story.
+  const [story, setStory] = useState(false);
+  const [storyNew, setStoryNew] = useState(false);
+  const [storyDay, setStoryDay] = useState<SampleDay>("good");
+  useLayoutEffect(() => {
+    if (app !== "creator") return;
+    setStoryDay(new URLSearchParams(window.location.search).get("day") === "slow" ? "slow" : "good");
+    try { setStoryNew(localStorage.getItem(STORY_SEEN) !== storyDayKey()); } catch { setStoryNew(true); }
+  }, [app]);
+  const ring = app === "creator" ? (storyNew ? " story new" : " story") : "";
   useLayoutEffect(() => {
     const open = () => setAcctOpen(true);
     window.addEventListener(OPEN_ACCOUNT_MENU, open);
@@ -156,7 +168,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
             );
           })}
         </nav>
-        <Link href={ACCOUNT[app]} className="v2-side-me">
+        <Link href={ACCOUNT[app]} className={`v2-side-me${ring}`} onClick={(e) => { if (app === "creator" && (e.target as HTMLElement).closest(".v2-av")) { e.preventDefault(); setStory(true); } }}>
           {who.photo ? (
             // eslint-disable-next-line @next/next/no-img-element
             <span className="v2-av photo"><img src={who.photo} alt="" /></span>
@@ -244,7 +256,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
             <Icon name="bell" size={20} />
             <b>3</b>
           </Link>
-          <Link href={ACCOUNT[app]} className="v2-acct" onClick={(e) => { if (app === "creator" && window.matchMedia("(max-width: 760px)").matches) { e.preventDefault(); setAcctOpen(true); } }}>
+          <Link href={ACCOUNT[app]} className={`v2-acct${ring}`} aria-label={storyNew && app === "creator" ? "Watch your Daily Story" : undefined} onClick={(e) => { if (app === "creator" && storyNew) { e.preventDefault(); setStory(true); return; } if (app === "creator" && window.matchMedia("(max-width: 760px)").matches) { e.preventDefault(); setAcctOpen(true); } }}>
             {who.photo ? (
               // eslint-disable-next-line @next/next/no-img-element
               <span className="v2-av photo"><img src={who.photo} alt="" /></span>
@@ -266,7 +278,8 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
           </nav>
         </div>
       )}
-      {acctOpen && <AccountPanel onClose={() => setAcctOpen(false)} />}
+      {acctOpen && <AccountPanel onClose={() => setAcctOpen(false)} onStory={() => { setAcctOpen(false); setStory(true); }} />}
+      {story && <DailyStory day={storyDay} onClose={() => { setStory(false); setStoryNew(false); }} />}
       <main className="site-wrap v2-main">
         {banner}
         {children}
@@ -326,7 +339,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
 const AI_PAGES = ["AI Picks", "Today's Ideas", "AI Competitors"];
 
 /** Every account section in a panel from the right (phones), with her photo, level and streak on top. */
-function AccountPanel({ onClose }: { onClose: () => void }) {
+function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory: () => void }) {
   const path = usePathname();
   const { toast, linked } = useDemo();
   // Language, theme, support and feedback live here on phones (owner, 29 Oct 2026), not in Settings.
@@ -361,6 +374,7 @@ function AccountPanel({ onClose }: { onClose: () => void }) {
             <span className="ap-chips">
               <i className={`lv ${CREATOR.level.toLowerCase()}`} title={`${CREATOR.level} creator`} aria-label={`${CREATOR.level} creator`}><Icon name="gem" size={13} /></i>
               <i className="st" title={`${CREATOR.streak}-day streak`} aria-label={`${CREATOR.streak}-day streak`}><Icon name="flame" size={13} />{CREATOR.streak}</i>
+              <button type="button" className="ap-story" onClick={onStory}><Icon name="video" size={13} width={2.4} /> Story</button>
             </span>
           </span>
           <span className="ap-tools">

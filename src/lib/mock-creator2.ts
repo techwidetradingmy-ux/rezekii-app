@@ -338,18 +338,12 @@ export const LEVELS = [
   },
   {
     name: "Silver", how: "TikTok Shop Lv.4+, or RM 10,000 sales last month",
-    gives: ["Silver Rezekii rates, higher than open plan", "Advanced samples once you're Active", "Everything in Bronze"],
+    gives: ["Silver Rezekii rates, higher than open plan", "More free samples as your streak grows", "Everything in Bronze"],
   },
   {
     name: "Gold", how: "Techwide MCN creators, after 6 months",
     gives: ["Higher commission on selected products", "TikTok Shop support line for violations and frozen accounts", "Event invites, sample priority, paid content jobs"],
   },
-] as const;
-
-export const TIERS = [
-  { name: "New", how: "Linked TikTok Shop", samples: "Open samples" },
-  { name: "Active", how: "Post every day, 10 days in a row", samples: "Open + advanced samples" },
-  { name: "Highly active", how: "30 days in a row + 100% sample delivery", samples: "All samples, including designated" },
 ] as const;
 
 export const BADGE_INFO: Record<string, string> = {

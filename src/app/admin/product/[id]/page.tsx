@@ -18,7 +18,6 @@ import { campaignFor, pitch, ticketsFor } from "@/lib/product-pages";
 import { productView, type ProductView } from "@/lib/product-view";
 
 const n = (v: number) => v.toLocaleString("en-MY");
-const POOL: Record<string, string> = { open: "Open Samples", advanced: "Advanced Samples", designated: "Designated Samples" };
 const closed = (w: Wanted) => w.status === "Joined" || w.status === "Bonus" || w.status === "Declined";
 const wishPill = (w: Wanted): [string, Tone] =>
   w.status === "Joined" ? [`Joined +${w.raise ?? 1}%`, "ok"]
@@ -201,7 +200,7 @@ function AdminProduct({ v, m, w }: { v: ProductView; m: Product | null; w: Wante
         <div className="pp-chips">
           {state ? <Pill tone={state === "Paused" ? "warn" : "bad"}>{state}</Pill> : camp?.status === "Live" ? <Pill tone="ok">Live in TAP</Pill> : <Pill>{camp?.status ?? "Not in a campaign"}</Pill>}
           <span className="pp-chip score"><Icon name="star" size={13} width={2.4} /> {p.rating.toFixed(1)}</span>
-          {p.samples && <span className="pp-chip">{POOL[p.samples]}</span>}
+          {p.samples !== null && <span className="pp-chip">{p.samples ? `Samples · ${p.samples}-day streak` : "Samples · open to all"}</span>}
           <span className="pp-chip muted">{p.category}</span>
         </div>
 
@@ -283,7 +282,7 @@ function AdminProduct({ v, m, w }: { v: ProductView; m: Product | null; w: Wante
           <Trend points={v.week} label="Sales, last 7 days" />
           <div className="pp-facts">
             <span><small>Total sold</small><b>{short(p.sold)}</b></span>
-            <span><small>Samples left</small><b>{p.samples ? SAMPLE_LEFT[p.id] ?? 10 : "No samples"}</b></span>
+            <span><small>Samples left</small><b>{p.samples !== null ? SAMPLE_LEFT[p.id] ?? 10 : "No samples"}</b></span>
             <span><small>Rating</small><b>{p.rating.toFixed(1)}</b></span>
             <span><small>Category</small><b>{p.category}</b></span>
           </div>

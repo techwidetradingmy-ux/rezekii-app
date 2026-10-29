@@ -6,7 +6,7 @@ import { Emblem, type Level } from "@/components/emblems";
 import { Portal, Progress, ShareSheet, type MomentKind, Sheet } from "@/components/ui";
 import { Honour } from "@/components/creator2/bits";
 import { BADGES, CREATOR } from "@/lib/mock";
-import { BADGE_INFO, LEVELS, TIERS } from "@/lib/mock-creator2";
+import { BADGE_INFO, LEVELS } from "@/lib/mock-creator2";
 import "@/app/rewards.css";
 
 /** Each badge's sticker: icon, colours, and how far along a locked one is. */
@@ -74,7 +74,6 @@ export function LevelBadges() {
   const [share, setShare] = useState<Share | null>(null);
   const got = BADGES.filter((b) => b.got).length;
   const levelAt = LEVELS.findIndex((l) => l.name === CREATOR.level);
-  const tierAt = TIERS.findIndex((t) => t.name === CREATOR.activity);
   const mine = KEY[CREATOR.level];
 
   useEffect(() => {
@@ -176,7 +175,7 @@ export function LevelBadges() {
             <b>Highly active</b>
             <span className="badge badge-amber">Honour badge</span>
           </span>
-          <span className="v2-small">{TIERS[tierAt].name} now · day {CREATOR.streak} of 30. Post daily, deliver every sample.</span>
+          <span className="v2-small">Day {CREATOR.streak} of 30. Post daily, deliver every sample.</span>
           <Progress value={CREATOR.streak} max={30} />
         </span>
         <button type="button" className="btn-outline v2-btn-sm" onClick={() => setUnlock(true)}><Icon name="eye" size={15} /> Preview</button>
