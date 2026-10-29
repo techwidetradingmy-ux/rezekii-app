@@ -18,7 +18,8 @@ import "@/app/creator1.css";
 /**
  * Product (owner, 29 Oct 2026): every product in the app opens this one page instead of a slide-up sheet. Big photo, the
  * numbers that say why it's worth it (score, sales, a 7-day sales line, her own sales), then the buttons stacked like a shop's
- * buy box: Add to Showcase or Plan a Video on top, Free Sample below; Add to Wish List when it isn't on Rezekii yet.
+ * buy box: Add to Showcase on top (owner, 30 Oct 2026: the main CTA, not Plan a Video), Free Sample below; Add to Wish List
+ * when it isn't on Rezekii yet.
  */
 export default function ProductPage() {
   const { id } = useParams<{ id: string }>();
@@ -105,7 +106,7 @@ export default function ProductPage() {
     wish || wishOpen ? null : <button type="button" className="np-btn" onClick={openWish}>{p.wanted ? "Join This Wish" : "Add to Wish List"}</button>
   ) : p.inShowcase || added ? (
     <>
-      <Link href={`/app/publish?idea=${encodeURIComponent(`Show ${p.name}`)}`} className="np-btn"><Icon name="video" size={18} /> Plan a Video</Link>
+      <button type="button" className="np-btn" disabled><Icon name="check" size={18} width={2.4} /> In Your Showcase</button>
       {sampleBtn}
     </>
   ) : (
