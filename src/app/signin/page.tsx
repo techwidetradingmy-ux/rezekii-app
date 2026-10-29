@@ -7,11 +7,14 @@ import { useEffect, useState } from "react";
 import { DemoStrip } from "@/components/shell";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { Seg } from "@/components/ui";
+import { Seg, Tip } from "@/components/ui";
+import { AddressFields } from "@/components/account/address-fields";
 import { GoogleMark, TikTokMark } from "@/components/creator1/brand";
 import { Otp } from "@/components/creator1/otp";
 import { MY_STATES, isEmail, tidyPhone } from "@/lib/mock-creator1";
 import { REFERRAL_REWARD } from "@/lib/mock";
+import { NICHES } from "@/lib/mock-creator2";
+import { EMPTY_ADDRESS, addressOk, birthdayError, saveAddress, saveSignup, type Address } from "@/lib/address";
 import "../creator1.css";
 
 type Step = "start" | "oauth" | "profile" | "email" | "code" | "password" | "forgot" | "newpass" | "welcome";
@@ -32,7 +35,9 @@ const PROVIDER = {
 
 /**
  * Sign in or sign up (blueprint 7.2/7.3): Google, TikTok or email. Email sign-up is one form plus a 6-digit code; Google and
- * TikTok ask one small screen (state, WhatsApp). Password sign-in and Forgot password are here too. Sample only: any code works.
+ * TikTok ask one screen. Owner, 29 Oct 2026: sign-up asks everything her Profile needs (name, birthday, gender, state, WhatsApp,
+ * creator type, niches) so there's nothing to fill in after joining; the delivery address is optional here and only required
+ * for the Rate Card. Password sign-in and Forgot password are here too. Sample only: any code works.
  */
 export default function SignIn() {
   const router = useRouter();
@@ -57,6 +62,11 @@ export default function SignIn() {
   // Owner, 28 Oct 2026: which kind of affiliate creator they are, picked at sign-up. More than one is fine.
   const [kinds, setKinds] = useState<string[]>([]);
   const [otherKind, setOtherKind] = useState("");
+  const [birthday, setBirthday] = useState("");
+  const [gender, setGender] = useState("");
+  const [niches, setNiches] = useState<string[]>([]);
+  const [showAddr, setShowAddr] = useState(false);
+  const [addr, setAddr] = useState<Address>(EMPTY_ADDRESS);
   // Came from someone's invite link (owner, 28 Oct 2026): show what the friend gets. The code is kept for sign-up.
   const [refCode, setRefCode] = useState("");
   useEffect(() => {
@@ -115,6 +125,7 @@ export default function SignIn() {
 
   function oauth(p: keyof typeof PROVIDER) {
     setProvider(p);
+    setName(PROVIDER[p].who);
     setStep("oauth");
     window.setTimeout(() => setStep("profile"), 1100);
   }
@@ -183,6 +194,70 @@ export default function SignIn() {
     </div>
   );
 
+  const nameField = (
+    <label className="v2-field">
+      Your name
+      <input className="np-input" autoComplete="name" placeholder="e.g. Aisyah Rahman" value={name} onChange={(e) => setName(e.target.value)} aria-invalid={tried && name.trim().length < 2} />
+      {tried && name.trim().length < 2 ? <small className="cr1-err">Enter your name</small> : <small>As on your IC, for payouts.</small>}
+    </label>
+  );
+
+  // TikTok Shop affiliates must be 18 or older.
+  const today = new Date();
+  const maxBirth = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate()).toLocaleDateString("en-CA");
+  const bErr = birthdayError(birthday);
+  const birthdayField = (
+    <label className="v2-field">
+      Birthday
+      <input className="np-input" type="date" min="1920-01-01" max={maxBirth} value={birthday} onChange={(e) => setBirthday(e.target.value)} aria-invalid={tried && !!bErr} />
+      {tried && bErr ? <small className="cr1-err">{bErr}</small> : <small>Only Techwide sees it. For birthday rewards and the 18+ check.</small>}
+    </label>
+  );
+
+  const genderField = (
+    <div className="v2-field">
+      Gender
+      <div className="v2-chips" role="group" aria-label="Gender">
+        {["Female", "Male"].map((g) => <button key={g} type="button" className={`v2-chip ${gender === g ? "on" : ""}`} aria-pressed={gender === g} onClick={() => setGender(g)}>{g}</button>)}
+      </div>
+      {tried && !gender && <small className="cr1-err">Choose one</small>}
+    </div>
+  );
+
+  const nicheField = (
+    <div className="v2-field">
+      Your niches
+      <div className="v2-chips cr1-kinds" role="group" aria-label="Your niches">
+        {NICHES.map((n) => {
+          const on = niches.includes(n);
+          return (
+            <button key={n} type="button" className={`v2-chip ${on ? "on" : ""}`} aria-pressed={on} disabled={!on && niches.length >= 3} onClick={() => setNiches((l) => (on ? l.filter((x) => x !== n) : [...l, n]))}>
+              {on && <Icon name="check" size={14} width={3} />}{n}
+            </button>
+          );
+        })}
+      </div>
+      {tried && !niches.length ? <small className="cr1-err">Pick at least one</small> : <small>Up to 3. The first is your main niche.</small>}
+    </div>
+  );
+
+  // Optional here; if she starts filling it in, it has to be complete.
+  const addrStarted = Object.values(addr).some((v) => v.trim());
+  const addrBad = showAddr && addrStarted && !addressOk(addr);
+  const addressField = showAddr ? (
+    <div className="v2-field">
+      <span className="cr1-addr-h">Delivery address <small>· optional</small> <Tip text="Only needed for your Rate Card, so sellers can send products for paid reviews. Free Samples use your TikTok address." /></span>
+      <AddressFields value={addr} onChange={setAddr} tried={tried && addrStarted} />
+    </div>
+  ) : (
+    <button type="button" className="cr1-addaddr" onClick={() => setShowAddr(true)}><Icon name="plus" size={16} /> Add delivery address <small>(optional)</small></button>
+  );
+  const aboutBad = !!bErr || !gender || !niches.length || addrBad;
+  const keep = () => {
+    saveSignup({ birthday, niches });
+    if (addressOk(addr)) saveAddress(addr);
+  };
+
   const emailField = (
     <label className="v2-field">
       Email
@@ -234,8 +309,9 @@ export default function SignIn() {
         onSubmit={(e) => {
           e.preventDefault();
           setTried(true);
-          if (!state || tel.error || kindError) return;
-          finish(`Welcome to Rezekii, ${PROVIDER[provider].who.split(" ")[0]}`);
+          if (name.trim().length < 2 || !state || tel.error || kindError || aboutBad) return;
+          keep();
+          finish(`Welcome to Rezekii, ${name.trim().split(" ")[0]}`);
         }}
       >
         {back("start")}
@@ -248,11 +324,17 @@ export default function SignIn() {
           <Icon name="check" size={18} stroke="#00c073" width={3} />
         </div>
         <div>
-          <h1>One more thing</h1>
+          <h1>About You</h1>
+          <p className="cr1-sub">Once only. You won&apos;t need to fill this in again.</p>
         </div>
-        {kindField}
+        {nameField}
+        {birthdayField}
+        {genderField}
         {stateField}
         {phoneField}
+        {kindField}
+        {nicheField}
+        {addressField}
         <button type="submit" className="np-btn np-submit">Continue <Icon name="arrow" size={18} /></button>
       </form>
     );
@@ -265,24 +347,23 @@ export default function SignIn() {
           e.preventDefault();
           setTried(true);
           if (!isEmail(email)) return;
-          if (isNew && (name.trim().length < 2 || !state || tel.error || kindError)) return;
+          if (isNew && (name.trim().length < 2 || !state || tel.error || kindError || aboutBad)) return;
+          if (isNew) keep();
           sendCode(isNew ? "signup" : "signin");
         }}
       >
         {back("start")}
         <h1>{isNew ? "Create your account" : "Sign in with email"}</h1>
         <Seg value={mode} options={["New here", "I have an account"] as const} onChange={(m) => { setMode(m); setTried(false); }} />
-        {isNew && (
-          <label className="v2-field">
-            Your name
-            <input className="np-input" autoComplete="name" placeholder="e.g. Aisyah Rahman" value={name} onChange={(e) => setName(e.target.value)} aria-invalid={tried && name.trim().length < 2} />
-            {tried && name.trim().length < 2 ? <small className="cr1-err">Enter your name</small> : <small>You can change it later.</small>}
-          </label>
-        )}
+        {isNew && nameField}
         {emailField}
-        {isNew && kindField}
+        {isNew && birthdayField}
+        {isNew && genderField}
         {isNew && stateField}
         {isNew && phoneField}
+        {isNew && kindField}
+        {isNew && nicheField}
+        {isNew && addressField}
         <button type="submit" className="np-btn np-submit">Send code</button>
         {!isNew && (
           <p className="cr1-center cr1-small">

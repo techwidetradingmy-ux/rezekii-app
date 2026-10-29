@@ -14,6 +14,8 @@ import { LevelBadges } from "@/components/account/level-badges";
 import { Referral } from "@/components/account/referral";
 import { RateCard } from "@/components/account/rate-card";
 import { Wallet } from "@/components/account/wallet";
+import { AddressFields } from "@/components/account/address-fields";
+import { SAMPLE_INFO, addressOk, birthdayError, readSignup, useAddress, type Address } from "@/lib/address";
 import type { IconName } from "@/components/icons";
 import { MY_STATES, NICHES, NOTIFY } from "@/lib/mock-creator2";
 import { ACCOUNT_TABS, type AccountTab } from "@/lib/account-tabs";
@@ -81,12 +83,18 @@ export default function Account() {
   const [niche, setNiche] = useState("Home Supplies");
   const [sub1, setSub1] = useState("Muslim Fashion");
   const [sub2, setSub2] = useState("");
-  const [locked, setLocked] = useState(false);
+  // Sign-up asks for all of this (owner, 29 Oct 2026), so the profile arrives saved; changes go through support.
+  const [locked, setLocked] = useState(true);
+  const [birthday, setBirthday] = useState(SAMPLE_INFO.birthday);
+  useEffect(() => setBirthday(readSignup().birthday), []);
   const [tried, setTried] = useState(false);
   const [confirmSave, setConfirmSave] = useState(false);
   const [changeSheet, setChangeSheet] = useState(false);
   const [change, setChange] = useState({ what: "WhatsApp number", to: "", why: "" });
-  const [addr, setAddr] = useState({ to: "", phone: "", line: "", postcode: "", city: "", state: "" });
+  const [savedAddr, saveAddr] = useAddress();
+  const [addr, setAddr] = useState<Address>(savedAddr);
+  useEffect(() => setAddr(savedAddr), [savedAddr]);
+  const [addrTried, setAddrTried] = useState(false);
   const [conn, setConn] = useState<Record<string, boolean>>(Object.fromEntries(SOCIALS.map((s) => [s.name, s.linked])));
   const [notify, setNotify] = useState<Record<string, [boolean, boolean]>>({ samples: [true, true], chances: [true, true], posts: [true, false], rewards: [true, false] });
   const [pwSheet, setPwSheet] = useState(false);
@@ -109,6 +117,7 @@ export default function Account() {
   const intl = local ? `${cc}${local}` : null;
   const profileErrors = [
     !name.trim() && "Enter your name.",
+    birthdayError(birthday) && `Birthday: ${birthdayError(birthday)}.`,
     !local && "Enter a valid WhatsApp number.",
     types.length === 0 && "Pick at least one creator type.",
   ].filter(Boolean) as string[];
@@ -189,6 +198,10 @@ export default function Account() {
               <label className="pf-f">
                 <span className="pf-l">Name {!locked && <Req />}</span>
                 {locked ? <b className="pf-v">{name}</b> : <input className="np-input" value={name} onChange={(e) => setName(e.target.value)} />}
+              </label>
+              <label className="pf-f">
+                <span className="pf-l">Birthday {!locked && <Req />}</span>
+                {locked ? <b className="pf-v">{new Date(birthday).toLocaleDateString("en-MY", { day: "numeric", month: "long", year: "numeric" })}</b> : <input className="np-input" type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} />}
               </label>
               <label className="pf-f">
                 <span className="pf-l">State {!locked && <Req />}</span>
@@ -283,40 +296,12 @@ export default function Account() {
         </section>
 
         <section className="cr2-group">
-          <h2>Shipping Address <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 600 }}>· optional</span></h2>
+          <h2>Delivery Address <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 600 }}>· optional</span></h2>
           <p style={{ color: "var(--body)" }}>
-            For parcels outside TikTok. Free Samples use your TikTok address.
+            Needed for your Rate Card, so sellers can send products for paid reviews. Free Samples use your TikTok address.
           </p>
-          <div className="cr2-cells">
-            <div className="cr2-cell">
-              <label htmlFor="cr2-a1">Recipient</label>
-              <input id="cr2-a1" className="np-input val" placeholder="Full name" value={addr.to} onChange={(e) => setAddr({ ...addr, to: e.target.value })} />
-            </div>
-            <div className="cr2-cell">
-              <label htmlFor="cr2-a2">Phone</label>
-              <input id="cr2-a2" className="np-input val" inputMode="tel" placeholder="012-345 6789" value={addr.phone} onChange={(e) => setAddr({ ...addr, phone: e.target.value })} />
-            </div>
-            <div className="cr2-cell">
-              <label htmlFor="cr2-a3">Address</label>
-              <input id="cr2-a3" className="np-input val" placeholder="House number, street, area" value={addr.line} onChange={(e) => setAddr({ ...addr, line: e.target.value })} />
-            </div>
-            <div className="cr2-cell">
-              <label htmlFor="cr2-a4">Postcode</label>
-              <input id="cr2-a4" className="np-input val" inputMode="numeric" maxLength={5} placeholder="40000" value={addr.postcode} onChange={(e) => setAddr({ ...addr, postcode: e.target.value.replace(/\D/g, "") })} />
-            </div>
-            <div className="cr2-cell">
-              <label htmlFor="cr2-a5">City</label>
-              <input id="cr2-a5" className="np-input val" placeholder="Shah Alam" value={addr.city} onChange={(e) => setAddr({ ...addr, city: e.target.value })} />
-            </div>
-            <div className="cr2-cell">
-              <label htmlFor="cr2-a6">State</label>
-              <select id="cr2-a6" className="np-input val" value={addr.state} onChange={(e) => setAddr({ ...addr, state: e.target.value })}>
-                <option value="">Choose a state</option>
-                {MY_STATES.map((s) => <option key={s}>{s}</option>)}
-              </select>
-            </div>
-          </div>
-          <button type="button" className="btn-outline" style={{ alignSelf: "flex-start" }} onClick={() => toast(addr.line ? "Address saved" : "Nothing to save")}>Save address</button>
+          <AddressFields value={addr} onChange={setAddr} tried={addrTried} />
+          <button type="button" className="btn-outline" style={{ alignSelf: "flex-start" }} onClick={() => { setAddrTried(true); if (!addressOk(addr)) return; saveAddr(addr); toast("Address saved"); }}>Save Address</button>
         </section>
 
           </>

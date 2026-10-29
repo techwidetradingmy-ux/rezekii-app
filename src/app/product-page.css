@@ -1,0 +1,30 @@
+/* Product page for sellers and admins (owner, 29 Oct 2026). The page itself reuses the creator's .pp* classes from
+   creator1.css; this file only adds what the seller and admin versions need, plus product rows that open the page. */
+.pg-more { display: flex; flex-wrap: wrap; gap: 8px; }
+.pg-more .btn-outline { flex: 1 1 140px; height: 40px; font-size: 14px; text-decoration: none; }
+.pg-danger { color: var(--red); }
+.pg-danger:hover { border-color: var(--red); }
+.pg-confirm { display: grid; gap: 8px; }
+.pg-confirm .v2-row { gap: 8px; }
+.pg-warn { margin: 0; color: var(--amber); font-size: 13.5px; font-weight: 700; }
+.pg-camp { display: grid; gap: 3px; min-width: 0; }
+.pg-camp small { color: var(--muted); font-size: 13px; }
+.pg-line { margin: 0; font-size: 14px; color: var(--body); }
+.pp-card .ad-wl-line { flex-wrap: wrap; }
+
+/* Rows that open the Product page: photo and name are links, the row's own buttons stay. */
+.pg-rowimg { display: block; width: 56px; height: 56px; border-radius: 13px; overflow: hidden; background: var(--surface2); }
+.pg-rowimg img { width: 100%; height: 100%; object-fit: cover; display: block; }
+@media (max-width: 600px) { .pg-rowimg { width: 48px; height: 48px; } }
+.pg-name { color: inherit; text-decoration: none; }
+.pg-name:hover { color: var(--gink); }
+a.wb-row { text-decoration: none; }
+.ad-wl-head .v2-link { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; }
+a.ad-item, a.ad-req-prod { color: inherit; text-decoration: none; }
+a.ad-item { border-radius: 10px; transition: background-color 0.2s; }
+a.ad-item:hover { background: var(--surface2); }
+a.ad-req-prod:hover { box-shadow: inset 0 0 0 1.5px var(--green); }
+.ad-thumbs > a, .ad-thumbs > span { display: block; flex-shrink: 0; }
+.ad-thumbs > * + * { margin-left: -10px; }
+.ad-thumbs > a img, .ad-thumbs > span img { display: block; }
+.ad-thumbs > a:hover img { border-color: var(--green); }

@@ -56,7 +56,7 @@ const INVITE = { creator: "/app/account#referral", seller: "/seller/app/rewards/
 /** Invite button icon (owner, 29 Oct 2026, option A): a green gift box with a gold ribbon that wiggles, sparkles and glows. */
 function Chest() {
   return (
-    <svg className="v2-chest" width="24" height="24" viewBox="0 0 48 48" aria-hidden="true">
+    <svg className="v2-gift" width="30" height="30" viewBox="0 0 48 48" aria-hidden="true">
       <g className="ch-box">
         <rect x="8" y="20" width="32" height="22" rx="4" fill="#00c073" />
         <rect x="8" y="20" width="32" height="5" fill="#00a862" />

@@ -1,6 +1,8 @@
 "use client";
 
 import "@/app/admin.css";
+import "@/app/product-page.css";
+import Link from "next/link";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -8,6 +10,7 @@ import { Celebrate, Sheet, Title } from "@/components/ui";
 import { Av, Chips, Reasons } from "@/components/admin/bits";
 import { SAMPLES, type SampleReq } from "@/lib/mock-admin";
 import { product, type Verdict } from "@/lib/mock";
+import { adminProductHref } from "@/lib/product-pages";
 
 type Filter = "Suggest approve" | "Needs a look" | "Suggest reject";
 const OF: Record<Filter, Verdict> = { "Suggest approve": "Approve", "Needs a look": "Look", "Suggest reject": "Reject" };
@@ -113,14 +116,15 @@ function RequestCard({ s, state, onAct, onDisagree }: { s: SampleReq; state?: Do
               <b>{s.handle}</b>
               <small>{s.id} · asked {s.asked}</small>
             </span>
-            <span className="ad-req-prod" style={{ flex: "1 1 240px" }}>
+            {/* Product (owner, 29 Oct 2026): the product opens its page. */}
+            <Link href={adminProductHref(p.id)} className="ad-req-prod" style={{ flex: "1 1 240px" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img className="ad-thumb" src={p.img} alt="" />
               <span>
                 <b>{p.name}</b>
                 <small className="v2-small">{p.shop} · {s.pool} sample</small>
               </span>
-            </span>
+            </Link>
           </div>
           <div className="ad-facts">
             {facts.map(([k, v, ok]) => (

@@ -11,6 +11,10 @@ import { PhoneField } from "@/components/seller/seller-ui";
 import { SELLER } from "@/lib/mock";
 import { tidyPhone } from "@/lib/mock-seller";
 
+/** Techwide's WhatsApp for sellers who'd rather just chat (owner, 29 Oct 2026): +60 11-7019 3374. */
+const TECHWIDE_WA = "601170193374";
+const waLink = (shop: string) => `https://wa.me/${TECHWIDE_WA}?text=${encodeURIComponent(`Hi Techwide, I'm from ${shop}. I'd like to know more about your Custom Service.`)}`;
+
 const SERVICES: [IconName, string, string][] = [
   ["kanban", "Full TAP Campaign Management", "We submit your products, set commission and follow up creators."],
   ["users", "Creator Matching & Outreach", "We find creators from our Wish List and Most Wanted demand."],
@@ -60,7 +64,10 @@ export default function CustomServicePage() {
         <span className="cs-partner"><Image src="/tiktok-shop-partner-logo.png" alt="TikTok Shop Partner" width={103} height={30} /></span>
         <h2>Let Our Team Run It for You</h2>
         <p>Pick the services you want. We WhatsApp you within 1 working day with a plan and a quote. You see every result here in Rezekii.</p>
-        <a href="#request" className="cs-jump">Send a request <Icon name="arrow" size={16} /></a>
+        <span className="cs-hero-acts">
+          <a href="#request" className="cs-jump">Send a request <Icon name="arrow" size={16} /></a>
+          <a href={waLink(SELLER.shop)} target="_blank" rel="noopener noreferrer" className="cs-jump cs-wa"><Icon name="whatsapp" size={16} /> Chat on WhatsApp</a>
+        </span>
       </section>
 
       <div className="cs-layout">
@@ -114,7 +121,7 @@ export default function CustomServicePage() {
               <PhoneField dial={phone.dial} raw={phone.raw} onChange={(dial, raw) => setPhone({ dial, raw })} showError={tried} label="WhatsApp number" />
               {tried && !picked.length && <p className="sl-err"><Icon name="alert" size={16} /> Pick at least 1 service.</p>}
               <button type="button" className="np-btn" onClick={submit}>Send request <Icon name="send" size={17} /></button>
-              <small className="v2-small">No payment now. We quote first.</small>
+              <small className="v2-small">No payment now. We quote first. Prefer to chat? <a href={waLink(SELLER.shop)} target="_blank" rel="noopener noreferrer" className="v2-link">WhatsApp us</a>.</small>
             </>
           )}
         </section>

@@ -1,22 +1,19 @@
 "use client";
 
 import "@/app/admin.css";
+import "@/app/product-page.css";
+import Link from "next/link";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Sheet, Stepper, Title } from "@/components/ui";
 import { Chips, Pill } from "@/components/admin/bits";
 import { BOARD_MIN, READY, WANTED, commitText, isReady, onBoard, type Wanted } from "@/lib/mock-showcase";
+import { adminProductHref, pitch } from "@/lib/product-pages";
 
 type Filter = "All" | "Ready to pitch" | "Contacting" | "Closed";
 type Reply = "Joined" | "Bonus" | "Declined";
 const n = (v: number) => v.toLocaleString("en-MY");
-
-/** The message for the seller: who wants it, what they already sell, and what they'll give. We negotiate for the creators. */
-const pitch = (w: Wanted) =>
-  `${w.creators} creators want to promote your ${w.name}. They sold ${n(w.sold30)} of it in the last 30 days. ` +
-  `Together they can give ${n(w.videos)} videos${w.lives ? ` and ${n(w.lives)} LIVE sessions` : ""} a month${w.rights ? `, and ${w.rights} of them offer ad rights` : ""}. ` +
-  `Submit it to our TAP campaign, or invite us to yours, to work with them.`;
 
 /**
  * Wish List (owner, 29 Oct 2026): products creators want on Rezekii, with what each creator commits if it launches. We only
@@ -123,6 +120,8 @@ export default function WishListAdmin() {
               <b>{sel.name}</b>
               <small>{sel.shop} · {sel.rate === null ? "no open plan" : `open plan ${sel.rate}%`} · wanted since {sel.first}</small>
               {status(sel)}
+              {/* Product (owner, 29 Oct 2026): the full product page; this sheet keeps the reply log so the list stays in step. */}
+              <Link href={adminProductHref(sel.id)} className="v2-link">View Product <Icon name="arrow" size={14} /></Link>
             </span>
           </div>
           <div className="ad-wl-stats">

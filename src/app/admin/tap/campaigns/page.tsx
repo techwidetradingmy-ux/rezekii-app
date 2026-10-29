@@ -1,6 +1,8 @@
 "use client";
 
 import "@/app/admin.css";
+import "@/app/product-page.css";
+import Link from "next/link";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -9,6 +11,7 @@ import { Chips, Pill, Switch } from "@/components/admin/bits";
 import { TapInvites } from "@/components/admin/tap-invite";
 import { CAMPAIGNS, LONGEST_END, type Campaign } from "@/lib/mock-admin";
 import { rm } from "@/lib/mock";
+import { adminProductHref, productIdByImg } from "@/lib/product-pages";
 
 type Filter = "All live" | "Ending in 14 days" | "Auto-extend on" | "Ended";
 type Outcome = { total: number; ok: string[]; failed: [string, string][] };
@@ -105,10 +108,13 @@ export default function TapCampaigns() {
           {shown.map((c) => (
             <div key={c.id} className="ad-row" style={soon(c) ? { boxShadow: "inset 4px 0 0 #f5a623", paddingLeft: 12, marginLeft: -12 } : undefined}>
               <span className="ad-thumbs">
-                {c.imgs.slice(0, 3).map((src) => (
+                {/* Product (owner, 29 Oct 2026): each product photo opens its product page. */}
+                {c.imgs.slice(0, 3).map((src) => {
+                  const pid = productIdByImg(src);
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img key={src} src={src} alt="" />
-                ))}
+                  const img = <img src={src} alt="" />;
+                  return pid ? <Link key={src} href={adminProductHref(pid)} aria-label={`Open product ${pid}`}>{img}</Link> : <span key={src}>{img}</span>;
+                })}
               </span>
               <span className="main">
                 <b>{c.shop} · {c.name}</b>

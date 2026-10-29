@@ -40,3 +40,6 @@
 .cs-home { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
 .cs-home p { margin: 0; color: var(--body); font-size: 14px; line-height: 1.5; }
 .cs-home ul { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+.cs-hero-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.cs-wa { background: transparent; border: 1.5px solid currentColor; }
+.cs-wa svg { transform: none; }

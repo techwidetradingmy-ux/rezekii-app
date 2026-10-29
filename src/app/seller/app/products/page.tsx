@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/seller.css";
+import "@/app/product-page.css";
 import Link from "next/link";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
@@ -9,6 +10,7 @@ import { Sheet, Title } from "@/components/ui";
 import { ConnBanner } from "@/components/seller/seller-ui";
 import { SELLER, rm, short } from "@/lib/mock";
 import { SHOP_ITEMS, UPDATED, listStatus, type ShopItem } from "@/lib/mock-seller";
+import { sellerProductHref } from "@/lib/product-pages";
 
 const FILTERS = ["All", "Not submitted", "Under review", "Live", "Not approved"] as const;
 type Filter = (typeof FILTERS)[number];
@@ -58,10 +60,13 @@ export default function ShopProducts() {
             const st = listStatus(p.stage);
             return (
               <div key={p.id} className="sl-prow">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.img} alt="" />
+                {/* Product (owner, 29 Oct 2026): the photo and name open the product's page; the row's buttons stay. */}
+                <Link href={sellerProductHref(p.id)} className="pg-rowimg" aria-label={`Open ${p.name}`} tabIndex={-1}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={p.img} alt="" />
+                </Link>
                 <span className="sl-pinfo">
-                  <strong>{p.name}</strong>
+                  <strong><Link href={sellerProductHref(p.id)} className="pg-name">{p.name}</Link></strong>
                   <small>{rm(p.price)} · {p.sold ? `${short(p.sold)} sold` : "No sales yet"} · Public {p.publicRate === null ? "unknown" : `${p.publicRate}%`}</small>
                   {(p.fromSellerCenter || p.note) && (
                     <span className="v2-row">

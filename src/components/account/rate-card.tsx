@@ -6,6 +6,8 @@ import { useDemo } from "@/components/demo";
 import { Portal, Qr, Seg, ShareSheet, Tip } from "@/components/ui";
 import { PlatformIcon } from "@/components/creator2/bits";
 import { CREATOR, SOCIALS } from "@/lib/mock";
+import { AddressSheet } from "@/components/account/address-fields";
+import { addressOk, useAddress } from "@/lib/address";
 
 type App = "TikTok" | "Instagram" | "Facebook" | "Threads" | "rights";
 type Item = { key: string; app: App; label: string; unit: string };
@@ -107,6 +109,9 @@ export function RateCard() {
   const { toast } = useDemo();
   const [rates, setRates] = useState<Record<string, Rate>>(() => Object.fromEntries(ITEMS.map((it) => [it.key, { on: ["tt-video", "tt-live", "ig-reel", "fb-reel", "rights"].includes(it.key), price: "", ...(it.key === "rights" ? { days: RIGHTS_TIP } : {}) }])));
   const [sharing, setSharing] = useState(false);
+  // A delivery address is required before saving or sharing (owner, 29 Oct 2026): sellers send products for paid reviews to it.
+  const [address] = useAddress();
+  const [needAddr, setNeedAddr] = useState<null | "save" | "share">(null);
   const [showOn, setShowOn] = useState({ whatsapp: true, email: false, accounts: true });
   const [packs, setPacks] = useState<Pack[]>([]);
   const [show, setShow] = useState<Show>("Both");
@@ -153,12 +158,18 @@ export function RateCard() {
   // LIVE is sold by the hour (owner, 29 Oct 2026), so packages say "2 hours of TikTok LIVE".
   const packLine = (p: Pack) => inPack(p).map((it) => (it.key === "rights" ? `${p.qty.rights} days of ad rights` : it.key === "tt-live" ? `${p.qty[it.key]} hour${p.qty[it.key] === 1 ? "" : "s"} of TikTok LIVE` : `${p.qty[it.key]} × ${it.label}`)).join(" · ");
   const rightsFor = (it: Item) => (it.key === "rights" ? `for ${rates.rights.days ?? 30} days` : it.unit);
-  function save() {
+  function save(checked = false) {
     setTried(true);
     if (problems.length) return;
+    if (!checked && !addressOk(address)) return setNeedAddr("save");
     setTried(false);
     toast("Rate card saved");
   }
+  const share = (checked = false) => {
+    if (!(ready.length || priced.length)) return toast("Add your prices first");
+    if (!checked && !addressOk(address)) return setNeedAddr("share");
+    setSharing(true);
+  };
 
   return (
     <div className="v2-stack rc-page" style={{ gap: 18 }}>
@@ -275,9 +286,16 @@ export function RateCard() {
         </div>
       )}
       <div className="rc-acts">
-        <button type="button" className="np-btn rc-save-btn" onClick={save}>Save rate card</button>
-        <button type="button" className="btn-outline rc-save-btn" onClick={() => (ready.length || priced.length ? setSharing(true) : toast("Add your prices first"))}><Icon name="share" size={17} /> Share rate card</button>
+        <button type="button" className="np-btn rc-save-btn" onClick={() => save()}>Save Rate Card</button>
+        <button type="button" className="btn-outline rc-save-btn" onClick={() => share()}><Icon name="share" size={17} /> Share Rate Card</button>
       </div>
+      {!addressOk(address) && <p className="v2-small" style={{ margin: 0 }}>You&apos;ll add a delivery address before saving. Sellers send products for paid reviews to it.</p>}
+      {needAddr && (
+        <AddressSheet
+          onClose={() => setNeedAddr(null)}
+          onDone={() => { const next = needAddr; setNeedAddr(null); if (next === "save") save(true); else share(true); }}
+        />
+      )}
       {sharing && (
         <ShareSheet
           title="Share your rate card"

@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/admin.css";
+import "@/app/product-page.css";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { Icon } from "@/components/icons";
@@ -8,6 +9,7 @@ import { useDemo } from "@/components/demo";
 import { Sheet, Title } from "@/components/ui";
 import { Av, Kv, Pill, Reasons, Sec, type Tone } from "@/components/admin/bits";
 import { COLS, ME, TICKETS, type Col, type ExtTask, type Ticket } from "@/lib/mock-admin";
+import { adminProductHref, productIdByName } from "@/lib/product-pages";
 
 const NOW = "28 Oct 10:45";
 const COL_TONE: Record<Col, Tone> = { New: "info", "In review": "warn", "To submit": "warn", "Waiting on TikTok": "info", "Not approved": "bad", Live: "ok" };
@@ -310,17 +312,22 @@ function TicketSheet({ t, onClose, update, submit, extId }: { t: Ticket; onClose
         ["Checks", lowSamples ? <span key="c" className="ad-down">0 samples on a product</span> : lowRate ? <span key="c" className="ad-down">Commission under +2% on a product</span> : <span key="c" className="ad-okmark"><Icon name="check" size={15} /> All passed</span>],
       ]} />
       <div className="ad-items">
-        {t.items.map((i) => (
-          <div key={i.name} className="ad-item">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            {i.img ? <img src={i.img} alt="" /> : <span className="ph"><Icon name="box" size={18} /></span>}
-            <span>
-              <strong>{i.name}</strong>
-              <small>{i.samples} samples · public {i.publicRate === null ? "unknown" : `${i.publicRate}%`}</small>
-            </span>
-            <span className="v2-rate"><b>{i.rate}%</b></span>
-          </div>
-        ))}
+        {t.items.map((i) => {
+          const body = (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {i.img ? <img src={i.img} alt="" /> : <span className="ph"><Icon name="box" size={18} /></span>}
+              <span>
+                <strong>{i.name}</strong>
+                <small>{i.samples} samples · public {i.publicRate === null ? "unknown" : `${i.publicRate}%`}</small>
+              </span>
+              <span className="v2-rate"><b>{i.rate}%</b></span>
+            </>
+          );
+          // Product (owner, 29 Oct 2026): items that are on Rezekii open the product page.
+          const pid = productIdByName(i.name);
+          return pid ? <Link key={i.name} href={adminProductHref(pid)} className="ad-item">{body}</Link> : <div key={i.name} className="ad-item">{body}</div>;
+        })}
       </div>
 
       <Sec>External tasks</Sec>
