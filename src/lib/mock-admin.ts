@@ -57,7 +57,7 @@ export type Ticket = {
 
 const P = (id: string, samples: number): TicketItem => {
   const p = PRODUCTS.find((x) => x.id === id)!;
-  return { name: p.name, img: p.img, publicRate: p.publicRate, rate: p.tapRate, samples };
+  return { name: p.name, img: p.img, publicRate: p.publicRate, rate: p.partnerRate, samples };
 };
 const done = (id: string, name: string, extId: string, at: string): ExtTask => ({ id, name, state: "Success", extId, at });
 

@@ -12,7 +12,15 @@ export type Product = {
   category: string;
   /** Commission open to every creator (TikTok's open plan), percent. */
   publicRate: number;
-  /** Commission through Techwide's TAP campaign at Silver, percent. */
+  /**
+   * TAP commission the seller pays into Techwide's campaign, percent. Fixed when the seller registers; only the seller can raise
+   * it (Change or End).
+   */
+  partnerRate: number;
+  /**
+   * Rezekii rate: what creators earn on Rezekii, percent (owner, 29 Oct 2026). At least open plan +1% and at most the TAP
+   * commission −1%; Techwide keeps the rest. Admin can change it inside those limits.
+   */
   tapRate: number;
   sold: number;
   rating: number;
@@ -20,30 +28,30 @@ export type Product = {
 };
 
 export const PRODUCTS: Product[] = [
-  { id: "p01", name: "Slim-fit track pants (S–XXL)", shop: "Urban Basics MY", img: "/products/tap-01.jpg", price: 30.9, category: "Fashion", publicRate: 6, tapRate: 10, sold: 1119976, rating: 4.8, samples: "open" },
-  { id: "p02", name: "Plain cotton tee, unisex", shop: "Urban Basics MY", img: "/products/tap-02.jpg", price: 16.9, category: "Fashion", publicRate: 5, tapRate: 8, sold: 955078, rating: 4.7, samples: "open" },
-  { id: "p03", name: "Hooded water-resistant windbreaker", shop: "Urban Basics MY", img: "/products/tap-03.jpg", price: 22.9, category: "Fashion", publicRate: 6, tapRate: 10, sold: 929468, rating: 4.7, samples: "advanced" },
-  { id: "p04", name: "Women's casual wide pants", shop: "Urban Basics MY", img: "/products/tap-04.jpg", price: 23.9, category: "Fashion", publicRate: 6, tapRate: 10, sold: 750806, rating: 3.9, samples: "open" },
-  { id: "p05", name: "High-waist yoga pants", shop: "Urban Basics MY", img: "/products/tap-05.jpg", price: 16.9, category: "Sports", publicRate: 5, tapRate: 8, sold: 727638, rating: 4.8, samples: "advanced" },
-  { id: "p06", name: "Scuba training pants", shop: "Urban Basics MY", img: "/products/tap-06.jpg", price: 24.9, category: "Sports", publicRate: 6, tapRate: 10, sold: 648901, rating: 4.5, samples: null },
-  { id: "p07", name: "Microfiber polo shirt", shop: "Urban Basics MY", img: "/products/tap-07.jpg", price: 16.9, category: "Fashion", publicRate: 6, tapRate: 10, sold: 524819, rating: 4.6, samples: "open" },
-  { id: "p08", name: "Granite non-stick casserole pot", shop: "Seri Living MY", img: "/products/tap-08.jpg", price: 159.9, category: "Home & Kitchen", publicRate: 4, tapRate: 6, sold: 512430, rating: 4.9, samples: "designated" },
-  { id: "p09", name: "Stretchable slim pants with zip", shop: "Mawar Wear", img: "/products/tap-09.jpg", price: 11.13, category: "Fashion", publicRate: 8, tapRate: 12, sold: 496651, rating: 4.4, samples: "open" },
-  { id: "p10", name: "Women's bootcut pants", shop: "Urban Basics MY", img: "/products/tap-10.jpg", price: 23.9, category: "Fashion", publicRate: 6, tapRate: 10, sold: 481274, rating: 4.7, samples: null },
-  { id: "p11", name: "900ml spin chopper blender", shop: "Seri Living MY", img: "/products/tap-11.jpg", price: 9.9, category: "Home & Kitchen", publicRate: 4, tapRate: 6, sold: 469228, rating: 4.6, samples: "open" },
-  { id: "p12", name: "Long-sleeve cotton tee", shop: "Urban Basics MY", img: "/products/tap-12.jpg", price: 13.99, category: "Fashion", publicRate: 5, tapRate: 8, sold: 468296, rating: 4.7, samples: "open" },
-  { id: "p13", name: "4-in-1 USB-C charging cable", shop: "Volt Gadget", img: "/products/tap-13.jpg", price: 10, category: "Electronics", publicRate: 12, tapRate: 20, sold: 447199, rating: 4.5, samples: "open" },
-  { id: "p14", name: "Capsule spin chopper, free whisk", shop: "Dapur Pintar", img: "/products/tap-14.jpg", price: 24.89, category: "Home & Kitchen", publicRate: 6, tapRate: 10, sold: 441924, rating: 4.3, samples: "advanced" },
-  { id: "p15", name: "Women's straight-cut pants", shop: "Urban Basics MY", img: "/products/tap-15.jpg", price: 23.9, category: "Fashion", publicRate: 6, tapRate: 10, sold: 429202, rating: 4.6, samples: null },
-  { id: "p16", name: "Straight-leg casual pants", shop: "Urban Basics MY", img: "/products/tap-16.jpg", price: 24.9, category: "Fashion", publicRate: 6, tapRate: 10, sold: 416592, rating: 4.6, samples: "open" },
-  { id: "p17", name: "AirySoft pillowcase", shop: "Lena Home", img: "/products/tap-17.jpg", price: 6.6, category: "Home & Living", publicRate: 6, tapRate: 10, sold: 416526, rating: 2.8, samples: "open" },
-  { id: "p18", name: "Cordless vacuum with mop pad", shop: "Seri Living MY", img: "/products/tap-18.jpg", price: 29.89, category: "Home & Living", publicRate: 6, tapRate: 10, sold: 379286, rating: 4.4, samples: "designated" },
-  { id: "p19", name: "Women's bootcut pants, tall", shop: "Urban Basics MY", img: "/products/tap-19.jpg", price: 21.9, category: "Fashion", publicRate: 5, tapRate: 8, sold: 366964, rating: 3.7, samples: "open" },
-  { id: "p20", name: "Muslimah microfibre jersey", shop: "Urban Basics MY", img: "/products/tap-20.jpg", price: 16.9, category: "Muslim Fashion", publicRate: 5, tapRate: 8, sold: 361080, rating: 4.8, samples: "advanced" },
-  { id: "p21", name: "1.2L 316 stainless thermos", shop: "Seri Living MY", img: "/products/tap-21.jpg", price: 22.9, category: "Home & Kitchen", publicRate: 6, tapRate: 10, sold: 354613, rating: 4.7, samples: "open" },
-  { id: "p22", name: "Scrub-free toilet bowl cleaner", shop: "Bersih Pro", img: "/products/tap-22.jpg", price: 15.9, category: "Household", publicRate: 10, tapRate: 17, sold: 339049, rating: 2.9, samples: "open" },
-  { id: "p23", name: "Merdeka 2026 decoration set", shop: "Festa Craft", img: "/products/tap-23.jpg", price: 6.34, category: "Party", publicRate: 12, tapRate: 20, sold: 314642, rating: 3.6, samples: null },
-  { id: "p24", name: "Leak-proof tumbler 900ml", shop: "Seri Living MY", img: "/products/tap-24.jpg", price: 54.9, category: "Home & Kitchen", publicRate: 8, tapRate: 12, sold: 303256, rating: 4.8, samples: "designated" },
+  { id: "p01", name: "Slim-fit track pants (S–XXL)", shop: "Urban Basics MY", img: "/products/tap-01.jpg", price: 30.9, category: "Fashion", publicRate: 6, partnerRate: 10, tapRate: 9, sold: 1119976, rating: 4.8, samples: "open" },
+  { id: "p02", name: "Plain cotton tee, unisex", shop: "Urban Basics MY", img: "/products/tap-02.jpg", price: 16.9, category: "Fashion", publicRate: 5, partnerRate: 8, tapRate: 7, sold: 955078, rating: 4.7, samples: "open" },
+  { id: "p03", name: "Hooded water-resistant windbreaker", shop: "Urban Basics MY", img: "/products/tap-03.jpg", price: 22.9, category: "Fashion", publicRate: 6, partnerRate: 10, tapRate: 9, sold: 929468, rating: 4.7, samples: "advanced" },
+  { id: "p04", name: "Women's casual wide pants", shop: "Urban Basics MY", img: "/products/tap-04.jpg", price: 23.9, category: "Fashion", publicRate: 6, partnerRate: 10, tapRate: 9, sold: 750806, rating: 3.9, samples: "open" },
+  { id: "p05", name: "High-waist yoga pants", shop: "Urban Basics MY", img: "/products/tap-05.jpg", price: 16.9, category: "Sports", publicRate: 5, partnerRate: 8, tapRate: 7, sold: 727638, rating: 4.8, samples: "advanced" },
+  { id: "p06", name: "Scuba training pants", shop: "Urban Basics MY", img: "/products/tap-06.jpg", price: 24.9, category: "Sports", publicRate: 6, partnerRate: 10, tapRate: 9, sold: 648901, rating: 4.5, samples: null },
+  { id: "p07", name: "Microfiber polo shirt", shop: "Urban Basics MY", img: "/products/tap-07.jpg", price: 16.9, category: "Fashion", publicRate: 6, partnerRate: 10, tapRate: 9, sold: 524819, rating: 4.6, samples: "open" },
+  { id: "p08", name: "Granite non-stick casserole pot", shop: "Seri Living MY", img: "/products/tap-08.jpg", price: 159.9, category: "Home & Kitchen", publicRate: 4, partnerRate: 6, tapRate: 5, sold: 512430, rating: 4.9, samples: "designated" },
+  { id: "p09", name: "Stretchable slim pants with zip", shop: "Mawar Wear", img: "/products/tap-09.jpg", price: 11.13, category: "Fashion", publicRate: 8, partnerRate: 12, tapRate: 11, sold: 496651, rating: 4.4, samples: "open" },
+  { id: "p10", name: "Women's bootcut pants", shop: "Urban Basics MY", img: "/products/tap-10.jpg", price: 23.9, category: "Fashion", publicRate: 6, partnerRate: 10, tapRate: 9, sold: 481274, rating: 4.7, samples: null },
+  { id: "p11", name: "900ml spin chopper blender", shop: "Seri Living MY", img: "/products/tap-11.jpg", price: 9.9, category: "Home & Kitchen", publicRate: 4, partnerRate: 6, tapRate: 5, sold: 469228, rating: 4.6, samples: "open" },
+  { id: "p12", name: "Long-sleeve cotton tee", shop: "Urban Basics MY", img: "/products/tap-12.jpg", price: 13.99, category: "Fashion", publicRate: 5, partnerRate: 8, tapRate: 7, sold: 468296, rating: 4.7, samples: "open" },
+  { id: "p13", name: "4-in-1 USB-C charging cable", shop: "Volt Gadget", img: "/products/tap-13.jpg", price: 10, category: "Electronics", publicRate: 12, partnerRate: 20, tapRate: 19, sold: 447199, rating: 4.5, samples: "open" },
+  { id: "p14", name: "Capsule spin chopper, free whisk", shop: "Dapur Pintar", img: "/products/tap-14.jpg", price: 24.89, category: "Home & Kitchen", publicRate: 6, partnerRate: 10, tapRate: 9, sold: 441924, rating: 4.3, samples: "advanced" },
+  { id: "p15", name: "Women's straight-cut pants", shop: "Urban Basics MY", img: "/products/tap-15.jpg", price: 23.9, category: "Fashion", publicRate: 6, partnerRate: 10, tapRate: 9, sold: 429202, rating: 4.6, samples: null },
+  { id: "p16", name: "Straight-leg casual pants", shop: "Urban Basics MY", img: "/products/tap-16.jpg", price: 24.9, category: "Fashion", publicRate: 6, partnerRate: 10, tapRate: 9, sold: 416592, rating: 4.6, samples: "open" },
+  { id: "p17", name: "AirySoft pillowcase", shop: "Lena Home", img: "/products/tap-17.jpg", price: 6.6, category: "Home & Living", publicRate: 6, partnerRate: 10, tapRate: 9, sold: 416526, rating: 2.8, samples: "open" },
+  { id: "p18", name: "Cordless vacuum with mop pad", shop: "Seri Living MY", img: "/products/tap-18.jpg", price: 29.89, category: "Home & Living", publicRate: 6, partnerRate: 10, tapRate: 9, sold: 379286, rating: 4.4, samples: "designated" },
+  { id: "p19", name: "Women's bootcut pants, tall", shop: "Urban Basics MY", img: "/products/tap-19.jpg", price: 21.9, category: "Fashion", publicRate: 5, partnerRate: 8, tapRate: 7, sold: 366964, rating: 3.7, samples: "open" },
+  { id: "p20", name: "Muslimah microfibre jersey", shop: "Urban Basics MY", img: "/products/tap-20.jpg", price: 16.9, category: "Muslim Fashion", publicRate: 5, partnerRate: 8, tapRate: 7, sold: 361080, rating: 4.8, samples: "advanced" },
+  { id: "p21", name: "1.2L 316 stainless thermos", shop: "Seri Living MY", img: "/products/tap-21.jpg", price: 22.9, category: "Home & Kitchen", publicRate: 6, partnerRate: 10, tapRate: 9, sold: 354613, rating: 4.7, samples: "open" },
+  { id: "p22", name: "Scrub-free toilet bowl cleaner", shop: "Bersih Pro", img: "/products/tap-22.jpg", price: 15.9, category: "Household", publicRate: 10, partnerRate: 17, tapRate: 16, sold: 339049, rating: 2.9, samples: "open" },
+  { id: "p23", name: "Merdeka 2026 decoration set", shop: "Festa Craft", img: "/products/tap-23.jpg", price: 6.34, category: "Party", publicRate: 12, partnerRate: 20, tapRate: 19, sold: 314642, rating: 3.6, samples: null },
+  { id: "p24", name: "Leak-proof tumbler 900ml", shop: "Seri Living MY", img: "/products/tap-24.jpg", price: 54.9, category: "Home & Kitchen", publicRate: 8, partnerRate: 12, tapRate: 11, sold: 303256, rating: 4.8, samples: "designated" },
 ];
 
 export const product = (id: string) => PRODUCTS.find((p) => p.id === id) ?? PRODUCTS[0];
@@ -82,7 +90,7 @@ export const RAISES: Raise[] = [
   { id: "r2", productId: "p22", nowRate: 10, tapRate: 15, until: "15 Dec", eligible: true },
   { id: "r3", productId: "p09", nowRate: 8, tapRate: 10, until: "31 Dec", eligible: true },
   { id: "r4", productId: "p01", nowRate: 6, tapRate: 7, until: "30 Nov", eligible: true },
-  { id: "r5", productId: "p21", nowRate: null, tapRate: 10, until: "31 Jan", eligible: true },
+  { id: "r5", productId: "p21", nowRate: null, tapRate: 9, until: "31 Jan", eligible: true },
   { id: "r6", productId: "p24", nowRate: 8, tapRate: 9, until: "31 Dec", eligible: false },
 ];
 /** Similar products (different listing) in Techwide's TAP campaigns, added straight to the showcase. */

@@ -13,7 +13,7 @@ import { Pill, type Tone } from "@/components/admin/bits";
 import { Trend } from "@/components/creator1/shoot-today";
 import { PRODUCTS, rm, short, type Product } from "@/lib/mock";
 import { SAMPLE_LEFT } from "@/lib/mock-creator1";
-import { BOARD_MIN, MIN_RAISE, WANTED, commitText, isReady, onBoard, type Wanted } from "@/lib/mock-showcase";
+import { BOARD_MIN, WANTED, commitText, isReady, onBoard, type Wanted } from "@/lib/mock-showcase";
 import { campaignFor, pitch, ticketsFor } from "@/lib/product-pages";
 import { productView, type ProductView } from "@/lib/product-view";
 
@@ -30,7 +30,7 @@ const wishPill = (w: Wanted): [string, Tone] =>
 
 /**
  * Product (owner, 29 Oct 2026): any product as admin sees it, same full page as the creator's. Marketplace products are run
- * in TAP from here (Edit Commission, Review Sample Requests, Contact Seller, Pause or End) with the campaign they're in;
+ * in TAP from here (Change Creator Commission, Review Sample Requests, Contact Seller, Pause or End) with the campaign they're in;
  * wish-list products show what creators committed, with Copy Seller Pitch and Open in Wish List.
  */
 export default function AdminProductPage() {
@@ -145,7 +145,9 @@ function AdminProduct({ v, m, w }: { v: ProductView; m: Product | null; w: Wante
   const p = m!;
   const camp = campaignFor(p.id);
   const tickets = ticketsFor(p.id);
-  const floor = Math.min(rate, p.publicRate + MIN_RAISE);
+  // The seller's TAP commission is fixed; admin moves only the creators' Rezekii rate, from open plan +1% to TAP commission −1%.
+  const floor = Math.min(rate, p.publicRate + 1);
+  const ceil = Math.max(rate, p.partnerRate - 1);
   const openEdit = () => {
     setDraft(rate);
     setEditing(true);
@@ -154,7 +156,7 @@ function AdminProduct({ v, m, w }: { v: ProductView; m: Product | null; w: Wante
   const save = () => {
     setEditing(false);
     if (draft === rate) return toast("No change");
-    toast(`Commission ${rate}% → ${draft}% · sent to TikTok for review`);
+    toast(`Creator commission ${rate}% → ${draft}%`);
     setRate(draft);
   };
   const act = (s: "Paused" | "Ended" | null) => {
@@ -182,28 +184,28 @@ function AdminProduct({ v, m, w }: { v: ProductView; m: Product | null; w: Wante
         </div>
 
         <div className="pp-rate">
-          <span className="pp-rate-line"><s>{p.publicRate}%</s> <Icon name="arrow" size={14} /> <b>{rate}%</b> TAP rate</span>
+          <span className="pp-rate-line"><s>{p.publicRate}%</s> <Icon name="arrow" size={14} /> <b>{rate}%</b> for creators</span>
           <small>
-            +{rate - p.publicRate}% above public · creators earn <b>{rm((p.price * rate) / 100)}</b> per sale{" "}
-            <Tip text="The rate Silver creators get through our TAP campaign. TikTok reviews every change, usually in 1–3 working days." />
+            TAP commission {p.partnerRate}% · Techwide keeps <b>{p.partnerRate - rate}%</b>{" "}
+            <Tip text="The seller pays the TAP commission, fixed when they registered; only the seller can raise it. Creators get the Rezekii rate, from open plan +1% up to TAP commission −1%. Techwide keeps the rest." />
           </small>
         </div>
 
         {!editing && (
           <div className="pp-buy">
-            <button type="button" className="np-btn" onClick={openEdit}><Icon name="tag" size={18} /> Edit Commission</button>
+            <button type="button" className="np-btn" onClick={openEdit}><Icon name="tag" size={18} /> Change Creator Commission</button>
             <Link href="/admin/tap/samples" className="btn-outline"><Icon name="gift" size={18} /> Review Sample Requests</Link>
           </div>
         )}
 
         {editing && (
           <section className="v2-card pp-card" id="edit">
-            <h2 className="v2-h2">Edit Commission <Tip text={`At least +${MIN_RAISE}% above the public rate. TikTok reviews every change, usually in 1–3 working days.`} /></h2>
+            <h2 className="v2-h2">Change Creator Commission <Tip text={`From ${p.publicRate + 1}% (open plan +1%) to ${p.partnerRate - 1}% (TAP commission −1%).`} /></h2>
             <div className="ad-wl-line">
-              <span>TAP rate</span>
-              <span className="ad-wl-raise"><Stepper label="TAP rate in percent" value={draft} min={floor} max={50} onChange={setDraft} />%</span>
+              <span>Creators get</span>
+              <span className="ad-wl-raise"><Stepper label="Creator commission in percent" value={draft} min={floor} max={ceil} onChange={setDraft} />%</span>
             </div>
-            <p className="pg-line">Public {p.publicRate}% <Icon name="arrow" size={12} /> <b>{draft}%</b> · creators earn {rm((p.price * draft) / 100)} per sale</p>
+            <p className="pg-line">Creators earn {rm((p.price * draft) / 100)} per sale · Techwide keeps {p.partnerRate - draft}%</p>
             <div className="pp-stack">
               <button type="button" className="np-btn" onClick={save}>Save</button>
               <button type="button" className="btn-outline" onClick={() => setEditing(false)}>Cancel</button>

@@ -73,7 +73,7 @@ export const NOT_ELIGIBLE: Record<string, string> = {
 };
 
 /** What a fresh scan finds in this preview. */
-export const NEW_ON_RESCAN: Raise = { id: "r7", productId: "p16", nowRate: 6, tapRate: 8, until: "31 Dec", eligible: true };
+export const NEW_ON_RESCAN: Raise = { id: "r7", productId: "p16", nowRate: 6, tapRate: 9, until: "31 Dec", eligible: true };
 
 /** Shown to Bronze creators only (owner, 28 Oct 2026): what Silver would unlock, a nudge to grow, never addable at Bronze. */
 export const SILVER_UNLOCKS = ["p03", "p20", "p09"];
@@ -110,12 +110,12 @@ export const SAMPLE_LEFT: Record<string, number> = { p01: 18, p02: 40, p04: 9, p
 export type Note = { id: string; day: "Today" | "Earlier"; when: string; icon: IconName; bg: string; title: string; line: string; href?: string; cta: string; action?: "reconnect"; urgent?: string };
 export const NOTES: Note[] = [
   { id: "n1", day: "Today", when: "10:24", icon: "gift", bg: "linear-gradient(135deg,#7aa2ff,#1d4ed8)", title: "Sample approved: High-waist yoga pants", line: "Urban Basics MY will ship it through TikTok. Post your first video within 1 day of receiving it for the biggest bonus.", href: "/app/account#samples", cta: "See sample" },
-  { id: "n2", day: "Today", when: "09:12", icon: "scan", bg: "linear-gradient(135deg,#22dc95,#00a862)", title: "New commission chance: Straight-leg casual pants", line: "Already in your showcase. 6% now, 10% through Techwide until 31 Dec.", href: "/app#scan", cta: "See scan results" },
+  { id: "n2", day: "Today", when: "09:12", icon: "scan", bg: "linear-gradient(135deg,#22dc95,#00a862)", title: "New commission chance: Straight-leg casual pants", line: "Already in your showcase. 6% now, 9% through Techwide until 31 Dec.", href: "/app#scan", cta: "See scan results" },
   { id: "n3", day: "Today", when: "08:40", icon: "alert", bg: "linear-gradient(135deg,#ffb35c,#f08a00)", urgent: "5 days left", title: "Reconnect TikTok Shop in 5 days", line: "TikTok asks you to approve access again every year. Reconnect so scans and commission numbers keep working.", cta: "Reconnect", action: "reconnect" },
   { id: "n4", day: "Earlier", when: "Yesterday 21:40", icon: "trophy", bg: "linear-gradient(135deg,#ffd34d,#e8a400)", title: "Mission done: Post today (tier 3)", line: "+20 credits are in your wallet. 2 more posts today opens the next chest.", href: "/app/rewards", cta: "See missions" },
   { id: "n5", day: "Earlier", when: "Yesterday 18:05", icon: "video", bg: "linear-gradient(135deg,#ff7aa8,#e8005a)", title: "Video counted: 1.2L 316 stainless thermos", line: "2 videos posted. One more unlocks the bonus.", href: "/app/account#samples", cta: "See progress" },
   { id: "n6", day: "Earlier", when: "26 Oct", icon: "x", bg: "linear-gradient(135deg,#9aa8a1,#62716a)", title: "Sample not approved: Granite casserole pot", line: "This sample unlocks at a 30-day streak. Keep posting daily: 14 more days to get there.", href: "/app/account#samples", cta: "What to do" },
-  { id: "n7", day: "Earlier", when: "20 Oct", icon: "bag", bg: "linear-gradient(135deg,#22dc95,#00a862)", title: "From your wish list: AirySoft pillowcase is on Rezekii", line: "10% now, +4% for you. Your commitment starts today: 4 videos a month for 3 months.", href: "/app/market", cta: "Open Marketplace" },
+  { id: "n7", day: "Earlier", when: "20 Oct", icon: "bag", bg: "linear-gradient(135deg,#22dc95,#00a862)", title: "From your wish list: AirySoft pillowcase is on Rezekii", line: "9% now, +3% for you. Your commitment starts today: 4 videos a month for 3 months.", href: "/app/market", cta: "Open Marketplace" },
 ];
 
 /**

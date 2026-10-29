@@ -51,7 +51,7 @@ export type Wish = WishItem & { status: WishStatus; when: string; commit: Commit
 export const MY_WISHES: Wish[] = [
   { ...off("s4"), status: "On wish list", when: "Yesterday", commit: { videos: 2, lives: 1, rights: 0, months: 1 } },
   { ...off("s2"), status: "On wish list", when: "24 Oct", commit: { videos: 4, lives: 0, rights: 90, months: 3 } },
-  { ...fromProduct("p17"), status: "On Rezekii", when: "20 Oct", commit: { videos: 4, lives: 0, rights: 0, months: 3 }, raise: 4 },
+  { ...fromProduct("p17"), status: "On Rezekii", when: "20 Oct", commit: { videos: 4, lives: 0, rights: 0, months: 3 }, raise: 3 },
 ];
 
 /**
@@ -96,7 +96,7 @@ export const WANTED: Wanted[] = [
   { ...off("s3"), category: "Home & Kitchen", creators: 4, videos: 10, lives: 0, rights: 1, sold30: 560, week: 1, first: "24 Oct", status: "New", offers: [
     { handle: "@kak.ros.kitchen", sold: 230, commit: { videos: 4, lives: 0, rights: 0, months: 1 } },
   ] },
-  { ...fromProduct("p17"), category: "Home & Living", creators: 27, videos: 80, lives: 4, rights: 9, sold30: 2950, week: 0, first: "2 Oct", status: "Joined", raise: 4, offers: [
+  { ...fromProduct("p17"), category: "Home & Living", creators: 27, videos: 80, lives: 4, rights: 9, sold30: 2950, week: 0, first: "2 Oct", status: "Joined", raise: 3, offers: [
     { handle: "@aisyah.glow", sold: 260, commit: { videos: 4, lives: 0, rights: 0, months: 3 } },
   ] },
   { ...off("s7"), category: "Fashion", creators: 7, videos: 18, lives: 0, rights: 3, sold30: 690, week: 0, first: "10 Oct", status: "Declined", offers: [

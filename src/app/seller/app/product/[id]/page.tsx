@@ -109,15 +109,15 @@ function SellerProduct({ item }: { item: ShopItem }) {
           <div className="pp-rate">
             <span className="pp-rate-line">
               {p.publicRate !== null && <><s>{p.publicRate}%</s> <Icon name="arrow" size={14} /></>}
-              <b>{p.tapRate}%</b> on Rezekii
+              <b>{p.tapRate}%</b> TAP commission
             </span>
-            <small>Creators earn <b>{rm((p.price * p.tapRate) / 100)}</b> per sale{st === "Live" ? "" : " once it's live"}</small>
+            <small>You pay <b>{rm((p.price * p.tapRate) / 100)}</b> per sale{st === "Live" ? "" : " once it's live"}, only when it sells</small>
           </div>
         ) : (
           <div className="pp-rate off">
             <span className="pp-rate-line">Public rate {p.publicRate === null ? "unknown" : `${p.publicRate}%`}</span>
             <small>
-              We suggest <b>+{raise}%</b> on Rezekii{p.publicRate !== null ? ` (${p.publicRate + raise}%)` : ""}{" "}
+              We suggest <b>+{raise}%</b> TAP commission{p.publicRate !== null ? ` (${p.publicRate + raise}%)` : ""}{" "}
               <Tip text={`Because ${h.why}.${hotFor(p.id) ? ` Creators want it most, so it starts at +${HOT_RAISE}% or more.` : ` Every product starts at +${MIN_RAISE}% or more.`}`} />
             </small>
           </div>
