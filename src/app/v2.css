@@ -360,7 +360,6 @@ a[href*="/product/"] { text-decoration: none; }
 .v2-aimark.busy::before { animation-duration: 1.6s; }
 @keyframes v2Twinkle { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(0.82); opacity: 0.8; } }
 .v2-aicard { position: relative; border-radius: 20px; padding: 20px; border: 1.5px solid transparent; background: linear-gradient(135deg, rgba(109, 94, 252, 0.07), rgba(37, 200, 244, 0.05) 45%, transparent 75%) padding-box, linear-gradient(var(--surface), var(--surface)) padding-box, linear-gradient(135deg, #8b7dff, #25c8f4 55%, #22dc95) border-box; box-shadow: 0 24px 48px -30px rgba(109, 94, 252, 0.55), var(--shadow); }
-.v2-ailabel { font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; background: linear-gradient(90deg, #6d5efc, #1aa3cf); -webkit-background-clip: text; background-clip: text; color: transparent; }
 @media (prefers-reduced-motion: reduce) { .v2-aimark::before, .v2-aimark svg, .v2-aimark svg .s2 { animation: none !important; } }
 
 /* ---------- Date picker (ported from V1's calendar-picker.css) ---------- */
@@ -675,7 +674,6 @@ a[href*="/product/"] { text-decoration: none; }
   .v2-chest { font-size: 13px; }
   .v2-x, .v2-ok { font-size: 13px; }
   .v2-demo-toggle { font-size: 13px; }
-  .v2-ailabel { font-size: 13px; }
   .cp-sub { font-size: 13px; }
   .cp-week span { font-size: 13px; }
   .cp-hint { font-size: 13px; }
@@ -866,11 +864,6 @@ a[href*="/product/"] { text-decoration: none; }
 /* No visible scrollbars anywhere in the app (owner, 29 Oct 2026); scrolling still works by touch, wheel and keys. */
 html, body, * { scrollbar-width: none; -ms-overflow-style: none; }
 html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { display: none; width: 0; height: 0; }
-.v2-aitag { display: inline-flex; align-items: center; gap: 3px; height: 20px; padding: 0 7px; border-radius: 99px; background: #efeaff; color: #6d4bff; font-size: 11px; font-weight: 900; letter-spacing: 0.04em; text-transform: none; vertical-align: middle; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .v2-aitag { background: #2a2350; color: #b9a8ff; } }
-:root[data-theme="dark"] .v2-aitag { background: #2a2350; color: #b9a8ff; }
-.sh-kicker .v2-aitag { margin-left: 6px; }
-@media (max-width: 760px) { .v2-aitag { font-size: 13px; height: 22px; } }
 /* The Scan tab always glows softly so it reads as tappable (owner, 29 Oct 2026). */
 .nv-scan-btn { position: relative; }
 .nv-scan-btn::after { content: ""; position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 0 rgba(0, 192, 115, 0.55); animation: nvGlow 2.2s ease-out infinite; pointer-events: none; }
@@ -993,3 +986,16 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { display
 /* Less green (owner, 29 Oct 2026): solid green is only for the main button on a card. Tags, status, ticks and done states
    use a light tint so the button that matters stands out. */
 .v2-chip.on { background: var(--gsoft); border-color: #00c073; color: var(--gink); box-shadow: none; }
+
+/* AI look (owner, 29 Oct 2026, option B, keeping the AI icon): one shimmering hologram chip marks every AI feature, and AI cards
+   get a light running along their top edge, like the AI is reading. */
+.v2-aitag, .v2-ailabel { display: inline-flex; align-items: center; gap: 4px; width: fit-content; height: 22px; padding: 0 9px; border-radius: 99px; font-size: 11.5px; font-weight: 800; letter-spacing: 0.02em; color: #3b2a8f; white-space: nowrap; background: linear-gradient(110deg, #ece6ff 0%, #d9f6ff 28%, #ffffff 44%, #dcfce7 60%, #ffe4f1 80%, #ece6ff 100%); background-size: 250% 100%; box-shadow: inset 0 0 0 1px rgba(124, 92, 255, 0.28), 0 2px 8px -3px rgba(124, 92, 255, 0.45); animation: v2Holo 3.2s linear infinite; }
+.v2-ailabel { text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px; }
+@keyframes v2Holo { to { background-position: -250% 0; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) :is(.v2-aitag, .v2-ailabel) { color: #ded4ff; background-image: linear-gradient(110deg, #2a2350 0%, #12343d 28%, #3a3470 44%, #123a2a 60%, #3d1d33 80%, #2a2350 100%); } }
+:root[data-theme="dark"] :is(.v2-aitag, .v2-ailabel) { color: #ded4ff; background-image: linear-gradient(110deg, #2a2350 0%, #12343d 28%, #3a3470 44%, #123a2a 60%, #3d1d33 80%, #2a2350 100%); }
+.sh-kicker .v2-aitag { margin-left: 6px; }
+.v2-card:has(.v2-aimark) { position: relative; }
+.v2-card:has(.v2-aimark)::before { content: ""; position: absolute; top: -1px; left: 18px; right: 18px; height: 2px; border-radius: 2px; background: linear-gradient(90deg, transparent, #7c5cff, #22d3ee, transparent) no-repeat; background-size: 40% 100%; animation: v2AiScan 2.6s ease-in-out infinite; pointer-events: none; }
+@keyframes v2AiScan { from { background-position: -60% 0; } to { background-position: 160% 0; } }
+@media (prefers-reduced-motion: reduce) { .v2-aitag, .v2-ailabel, .v2-card:has(.v2-aimark)::before { animation: none; } }

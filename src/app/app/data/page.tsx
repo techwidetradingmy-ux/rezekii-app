@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { CalendarPicker, between, dayName, iso } from "@/components/calendar-picker";
 import { useDemo } from "@/components/demo";
-import { AiMark, Bars, Count, Lock, Progress, RemoveWarn, Seg, Stat, Tip, Title } from "@/components/ui";
+import { AiMark, AiTag, Bars, Count, Lock, Progress, RemoveWarn, Seg, Stat, Tip, Title } from "@/components/ui";
 import { product, rm, short } from "@/lib/mock";
 import { productHref } from "@/lib/product-view";
 import { ACTIONS, CHARTS, POST_TIMES, RANGES, RANGE_DATA, SHORT, WATCH, type RangeKey } from "@/lib/mock-creator2";
@@ -193,7 +193,7 @@ export default function DataOverview() {
               <AiMark size={34} />
               <span>
                 <h2 className="v2-h2">Best Time to Post <Tip label="About best time" text="Rezekii AI looks at your own videos from the last 30 days and the average views in each time slot. Everyone's best time is different." /></h2>
-                <span className="v2-ailabel">By Rezekii AI</span>
+                <AiTag label="Rezekii AI" bare />
               </span>
             </span>
             <span className="an-hv">High virality · {bestTime[0]}</span>

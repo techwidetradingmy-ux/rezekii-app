@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSideScroll } from "@/components/side-scroll";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { AiMark, Hidden, Seg, Tip } from "@/components/ui";
+import { AiMark, AiTag, Hidden, Seg, Tip } from "@/components/ui";
 import Link from "next/link";
 import { productHref } from "@/lib/product-view";
 import { product, short, rateFor } from "@/lib/mock";
@@ -227,7 +227,7 @@ export function NicheBest({ view: shape = "list", inFrame = false }: { view?: Id
         <AiMark size={34} />
         <span>
           {!inFrame && <h2 className="v2-h2">Best Sellers in Your Niche</h2>}
-          <span className="td-mix">Live on TikTok Shop · by Rezekii AI <Tip label="How this list is made" text="Updated daily. Public TikTok Shop products in your top categories that aren't in your showcase yet, ranked by units sold this week and rated 4★ and up. The line shows sales for each of the last 7 days." /></span>
+          <span className="td-mix">Live on TikTok Shop <AiTag label="Rezekii AI" bare /> <Tip label="How this list is made" text="Updated daily. Public TikTok Shop products in your top categories that aren't in your showcase yet, ranked by units sold this week and rated 4★ and up. The line shows sales for each of the last 7 days." /></span>
         </span>
       </div>
       <Seg value={cat} options={cats} onChange={setCat} />
