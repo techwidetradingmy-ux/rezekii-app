@@ -517,7 +517,7 @@ export function CreatorUsps() {
 /* ---------------- Without vs With ---------------- */
 
 const ROWS: CompareRow[] = [
-  { label: `Commission on a RM ${POT.price.toFixed(2)} product`, without: `${POT.publicRate}% open plan, RM ${earn(POT, POT.publicRate).toFixed(2)} a sale`, with: <span className="lp-cmp-money"><span>{POT.tapRate}% on Rezekii, RM {earn(POT, POT.tapRate).toFixed(2)} a sale</span><b>+RM {PER_SALE.toFixed(2)} extra a sale</b><small>+RM {PER_SALE.toFixed(2)} × 1,000 orders = +RM {rmn(PER_SALE * 1000)} extra</small></span> },
+  { label: `Commission on a RM ${POT.price.toFixed(2)} product`, without: `${POT.publicRate}% open plan, RM ${earn(POT, POT.publicRate).toFixed(2)}/sale`, with: <span className="lp-cmp-money"><span>{POT.tapRate}% on Rezekii, RM{" "}{earn(POT, POT.tapRate).toFixed(2)}/sale</span><b>+RM {PER_SALE.toFixed(2)}/sale</b><small><span>× 1,000 orders</span><span>= <b>+RM {rmn(PER_SALE * 1000)} extra</b></span></small></span> },
   { label: "Finding viral products", without: "Hours a day scrolling TikTok, then guessing", with: "Rezekii AI shows what's trending for you" },
   { label: "Captions", without: "A new caption for every app, every post", with: "Write once, fitted to each app" },
   { label: "Posting", without: "Upload to each app, one by one", with: <span className="lp-cmp-apps">Multi-platform in one click<span>{PLATS.map((p) => <PlatIcon key={p} name={p} size={26} />)}</span><span className="lp-sr">TikTok, Facebook, Instagram and Threads</span></span> },
@@ -590,7 +590,7 @@ const PAINS: Pain[] = [
   {
     key: "health", tint: "linear-gradient(160deg,#3b0d12,#b4232c)",
     pain: "Scared Your Account Gets Frozen?",
-    why: "Low-rated products and refunds can bring violations, less traffic and money you can't withdraw.",
+    why: "Low-rated products and refunds bring violations. That can mean low traffic, a shadow ban, even frozen commission you can't withdraw.",
     fix: "Rezekii AI flags risky products and the videos selling them, so you fix them early.",
     art: (
       <div className="lp-pa-risk">

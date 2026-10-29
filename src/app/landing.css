@@ -437,7 +437,9 @@ i.gold { background: radial-gradient(circle at 35% 30%, #fff3bf, #f5b81e 55%, #b
 .lp-cmp .wi { color: var(--text); }
 .lp-cmp-money { display: grid; gap: 1px; }
 .lp-cmp .lp-cmp-money b { font-size: 19px; font-weight: 900; letter-spacing: -0.01em; color: var(--gink); }
-.lp-cmp-money small { font-size: 12px; font-weight: 700; color: var(--muted); }
+.lp-cmp-money small { display: grid; font-size: 12.5px; font-weight: 700; line-height: 1.35; color: var(--muted); }
+.lp-cmp .lp-cmp-money small b { font-size: 13.5px; font-weight: 900; color: var(--gink); }
+.lp-cmp-money > b { white-space: nowrap; }
 .lp-cmp-apps { display: grid; gap: 5px; }
 .lp-cmp-apps > span:not(.lp-sr) { display: flex; gap: 6px; }
 .lp-cmp .wo::before, .lp-cmp .wi::before { flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 900; color: #ffffff; }
@@ -905,6 +907,7 @@ button.lp-shotf { cursor: zoom-in; }
 /* Posting time: a clock with the golden hours lit up */
 .lp-pa-clock { display: grid; justify-items: center; gap: 10px; }
 .lp-pa-clock svg { display: block; }
+.lp-pa-clock .lp-pa-tag { justify-self: center; text-align: center; }
 .lp-pa-clock .face { fill: rgba(255, 255, 255, 0.1); stroke: rgba(255, 255, 255, 0.3); stroke-width: 2; }
 .lp-pa-clock .tick { stroke: rgba(255, 255, 255, 0.6); stroke-width: 2.5; stroke-linecap: round; }
 .lp-pa-clock text { font-family: inherit; font-size: 15px; font-weight: 800; fill: rgba(255, 255, 255, 0.8); }
