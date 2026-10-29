@@ -1,10 +1,10 @@
 /* Partner card under both landing heroes (owner, 29 Oct 2026). Always dark, like TikTok's own partner badge. */
 .pc-card { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px; margin-block: -32px -24px; padding: 18px 22px; border-radius: 20px; background: #0d1117; border: 1px solid var(--border); color: #ffffff; box-shadow: var(--shadow-lg); }
-.pc-logo { flex-shrink: 0; display: inline-flex; padding: 8px 12px; border-radius: 12px; background: #000000; border: 1px solid #2a2f36; }
-.pc-logo img { display: block; height: 32px; width: auto; }
+.pc-logo { flex-shrink: 0; display: inline-flex; padding: 10px 14px; border-radius: 12px; background: #000000; border: 1px solid #2a2f36; }
+.pc-logo img { display: block; height: 44px; width: auto; }
 .pc-copy { flex: 1 1 260px; min-width: 0; display: grid; gap: 8px; }
 .site-main .pc-card h2 { margin: 0; font-size: 20px; line-height: 1.2; letter-spacing: -0.01em; color: #ffffff; }
 .pc-card ul { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 14px; font-weight: 700; color: #c9d1cd; }
 .pc-card li { display: inline-flex; align-items: center; gap: 6px; }
 .pc-card li svg { flex-shrink: 0; color: #5fe3ab; }
-@media (max-width: 640px) { .pc-card { padding: 16px; margin-block: -36px 0; } .site-main .pc-card h2 { font-size: 18px; } .pc-card ul { display: grid; gap: 6px; } }
+@media (max-width: 640px) { .pc-card { padding: 16px; margin-block: -36px 0; } .pc-logo img { height: 38px; } .site-main .pc-card h2 { font-size: 18px; } .pc-card ul { display: grid; gap: 6px; } }
