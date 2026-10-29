@@ -47,7 +47,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   { id: "x05", name: "Cordless vacuum, pet hair edition", img: "/products/tap-18.jpg", price: 39.9, category: "Home & Living", publicRate: 6, sold: 120, stage: "Submitted to TikTok", tapRate: 16, samples: 40, dates: { Submitted: "24 Oct", "Under review": "24 Oct", "Submitted to TikTok": "25 Oct" } },
   fromMock("p21", { stage: "Live", tapRate: 10, samples: 40, samplesLeft: 6, dates: { Submitted: "9 Sep", "Under review": "9 Sep", "Submitted to TikTok": "10 Sep", Live: "12 Sep" } }),
   fromMock("p24", { stage: "Live", tapRate: 12, samples: 50, samplesLeft: 19, dates: { Submitted: "2 Oct", "Under review": "2 Oct", "Submitted to TikTok": "3 Oct", Live: "6 Oct" }, note: "First try on 29 Sep wasn't approved: commission was only +1% above the public rate. Fixed and resubmitted on 2 Oct." }),
-  fromMock("p08", { stage: "Live", tapRate: 6, samples: 30, samplesLeft: 4, fromSellerCenter: true, dates: { Submitted: "14 Sep", "Under review": "15 Sep", "Submitted to TikTok": "15 Sep", Live: "17 Sep" } }),
+  fromMock("p08", { stage: "Live", tapRate: 10, samples: 30, samplesLeft: 4, fromSellerCenter: true, dates: { Submitted: "14 Sep", "Under review": "15 Sep", "Submitted to TikTok": "15 Sep", Live: "17 Sep" } }),
   fromMock("p18", { stage: "Live", tapRate: 10, samples: 40, samplesLeft: 11, dates: { Submitted: "20 Sep", "Under review": "20 Sep", "Submitted to TikTok": "21 Sep", Live: "23 Sep" } }),
   fromMock("p11", { stage: "Live", tapRate: 6, samples: 30, samplesLeft: 9, dates: { Submitted: "20 Sep", "Under review": "21 Sep", "Submitted to TikTok": "21 Sep", Live: "24 Sep" } }),
 ];

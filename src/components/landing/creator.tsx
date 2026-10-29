@@ -397,11 +397,11 @@ export function CreatorUsps() {
 /* ---------------- Without vs With ---------------- */
 
 const ROWS: CompareRow[] = [
-  { label: "Commission, same product", without: `${POT.publicRate}% open plan`, with: <span className="lp-cmp-money"><span>{POT.tapRate}% on Rezekii</span><b>+RM {PER_SALE.toFixed(2)} a sale</b><small>RM {rmn(PER_SALE * 1000)} more per 1,000 sales</small></span> },
+  { label: `Commission on a RM ${POT.price.toFixed(2)} product`, without: `${POT.publicRate}% open plan, RM ${earn(POT, POT.publicRate).toFixed(2)} a sale`, with: <span className="lp-cmp-money"><span>{POT.tapRate}% on Rezekii</span><b>RM {earn(POT, POT.tapRate).toFixed(2)} a sale</b><small>+RM {PER_SALE.toFixed(2)} more each sale, RM {rmn(PER_SALE * 1000)} per 1,000 sales</small></span> },
   { label: "Finding viral products", without: "Hours a day scrolling TikTok, then guessing", with: "Rezekii AI shows what's trending for you" },
   { label: "Captions", without: "A new caption for every app, every post", with: "Write once, fitted to each app" },
   { label: "Posting", without: "Same video uploaded 4 times", with: <span className="lp-cmp-apps">Post once to<span>{PLATS.map((p) => <PlatIcon key={p} name={p} size={26} />)}</span><span className="lp-sr">TikTok, Facebook, Instagram and Threads</span></span> },
-  { label: "Samples", without: "Buy them with your own money", with: "Free, sent to your door" },
+  { label: "Free samples", without: "Free, but sellers set strict requirements", with: "Open to new creators, sent to your door" },
   { label: "When to post", without: "Post anytime and hope for FYP", with: "Rezekii AI finds your Viral Time Frame" },
 ];
 export function CreatorCompare() {
