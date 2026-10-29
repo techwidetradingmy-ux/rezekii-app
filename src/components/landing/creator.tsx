@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Icon } from "@/components/icons";
+import { Icon, type IconName } from "@/components/icons";
 import { CREATOR, MISSIONS, PRODUCTS, REFERRAL_REWARD, product, short, type Product } from "@/lib/mock";
 import { NOT_YET, WANTED } from "@/lib/mock-showcase";
 import { NICHE_BEST, VIDEOS, daily } from "@/lib/mock-creator2";
@@ -558,16 +558,24 @@ export function CreatorBanner() {
   );
 }
 
-/** A slow strip of products with their better rate, between sections. */
-const STRIP = ["p08", "p01", "p13", "p24", "p21", "p02", "p11", "p12", "p07", "p16"].map(example);
+/** A slow strip of what Rezekii gives you, between sections (owner, 30 Oct 2026, option 2A: benefits, not more products). */
+const PERKS: { icon: IconName; text: string; tone?: "gold" }[] = [
+  { icon: "trend", text: "+1% commission" },
+  { icon: "gift", text: "Free samples" },
+  { icon: "spark", text: "AI Viral Product Sourcing" },
+  { icon: "clock", text: "Golden time to go FYP", tone: "gold" },
+  { icon: "share", text: "4 places to earn" },
+  { icon: "tag", text: "Rate cards" },
+];
 export function CreatorStrip() {
   return (
-    <div className="lp-strip" aria-hidden="true">
+    <div className="lp-strip perks" aria-hidden="true">
       <div>
-        {[...STRIP, ...STRIP].map((p, i) => (
-          <span key={i}>
-            <Thumb src={p.img} size={44} />
-            <b>+1% on Rezekii</b>
+        {[...PERKS, ...PERKS, ...PERKS].map((x, i) => (
+          <span key={i} className={x.tone}>
+            {/* The AI tag brings its own spark, so no second icon. */}
+            {x.icon !== "spark" && <Icon name={x.icon} size={18} width={2.4} />}
+            <b><AiText text={x.text} /></b>
           </span>
         ))}
       </div>
@@ -584,7 +592,9 @@ const HOT = NICHE_BEST[0];
 const HOT_P = product(HOT.productId);
 const IDEAS = NICHE_BEST.filter((x) => x.idea).slice(0, 2);
 const TT_FEED = ["try-on", "pov-demo", "review", "expert", "drama", "home-demo"].map((x) => `/ai-videos/${x}.jpg`);
-const TOP_VIDS = [...VIDEOS].sort((x, y) => y.commission - x.commission).slice(0, 3);
+// Winner in the middle, a good one and a weak one either side, so the gap between videos is plain to see.
+const BY_EARN = [...VIDEOS].sort((x, y) => y.commission - x.commission);
+const VID_ROW = [BY_EARN[1], BY_EARN[0], BY_EARN[BY_EARN.length - 1]];
 type Pain = { key: string; tint: string; pain: string; why: string; fix: string; art: React.ReactNode };
 const PAINS: Pain[] = [
   {
@@ -642,14 +652,26 @@ const PAINS: Pain[] = [
     why: "Copying others is a guess. What sells is different for every account, and sometimes a repost wins.",
     fix: "See commission per video and product as it happens, so you post more of what earns.",
     art: (
+      // Option 1A (owner, 30 Oct 2026): three video covers, commission bars filling up, the winner crowned and worth reposting.
       <div className="lp-pa-risk">
-        <span className="lp-pa-tag"><i className="dot" /> Live</span>
-        {TOP_VIDS.map((x, i) => (
-          <div key={x.id} className={`lp-pa-row ${i === 0 ? "bad top" : ""}`}>
-            <Icon name="video" size={16} width={2.2} />
-            <span>{x.title}<small>{i === 0 ? "Top earner · " : ""}RM {x.commission.toFixed(2)} commission</small></span>
-          </div>
-        ))}
+        <div className="lp-pa-vids">
+          {VID_ROW.map((x) => {
+            const top = x.id === BY_EARN[0].id;
+            return (
+              <div key={x.id} className={`lp-pa-vid${top ? " top" : ""}`} style={v({ h: `${Math.round((x.commission / BY_EARN[0].commission) * 100)}%` })}>
+                {top && <span className="lp-pa-crown">Top earner</span>}
+                <span className="lp-pa-cover">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={product(x.productId).img} alt="" />
+                  <Icon name="video" size={15} width={2.4} />
+                </span>
+                <span className="lp-pa-bar"><i /></span>
+                <b>RM {Math.round(x.commission)}</b>
+              </div>
+            );
+          })}
+        </div>
+        <span className="lp-pa-again"><Icon name="refresh" size={15} width={2.6} /> Post it again</span>
       </div>
     ),
   },
