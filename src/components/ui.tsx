@@ -303,12 +303,10 @@ export function Celebrate({ title, line, cheer, onShare, onClose, tone = "gold",
   );
 }
 
-/** Where a card goes, and its real size there. */
+/** Where a card goes, and its real size there. Portrait or landscape only (owner, 30 Oct 2026): more sizes squeezed the words. */
 const FORMATS = [
-  { key: "story", label: "Story", ratio: "9 / 16", size: "1080 × 1920", where: "TikTok, Instagram and WhatsApp stories" },
-  { key: "post", label: "Post", ratio: "4 / 5", size: "1080 × 1350", where: "Instagram and Facebook feed" },
-  { key: "square", label: "Square", ratio: "1 / 1", size: "1080 × 1080", where: "Threads, X and chats" },
-  { key: "wide", label: "Wide", ratio: "1.91 / 1", size: "1200 × 630", where: "Facebook and X link posts" },
+  { key: "story", label: "Portrait", ratio: "9 / 16", size: "1080 × 1920", where: "TikTok, Instagram and WhatsApp" },
+  { key: "wide", label: "Landscape", ratio: "16 / 9", size: "1920 × 1080", where: "Facebook, X and YouTube" },
 ] as const;
 const DESIGNS = ["Pastel", "Certificate", "Night"] as const;
 /** What is being shared. Every moment gets its own hero inside the same branded frame (owner, 28 Oct 2026). */
@@ -429,7 +427,7 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
             </span>
             <span className="st-mid">
               <span className="st-hero">
-                {moment ? <MomentHero moment={moment} big={big} lines={lines} level={level} size={fmt === "wide" ? 52 : fmt === "square" ? 56 : 64} /> : level ? <Emblem level={level} size={fmt === "wide" ? 64 : fmt === "square" ? 66 : 78} animate /> : <span className="st-medal"><Icon name="medal" size={30} width={2.2} /></span>}
+                {moment ? <MomentHero moment={moment} big={big} lines={lines} level={level} size={fmt === "wide" ? 52 : 64} /> : level ? <Emblem level={level} size={fmt === "wide" ? 60 : 78} animate /> : <span className="st-medal"><Icon name="medal" size={30} width={2.2} /></span>}
               </span>
               <span className="st-body">
                 <span className="st-kick st-t">{kicker} · Oct 2026</span>
@@ -438,7 +436,7 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
                 {lines.length > 0 && <span className="st-pills st-t">{lines.map((l) => <span key={l}>{l}</span>)}</span>}
               </span>
             </span>
-            {(fmt === "story" || fmt === "post") && <span className="st-quote">&ldquo;{BLESS[bless]}&rdquo;</span>}
+            {fmt === "story" && <span className="st-quote">&ldquo;{BLESS[bless]}&rdquo;</span>}
             <span className="st-foot">
               <span className="v2-av">{initials}</span>
               <span className="st-foot-txt"><b>{handle}</b><small>Join me on Rezekii</small></span>
