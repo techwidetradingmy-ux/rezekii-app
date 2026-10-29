@@ -7,6 +7,7 @@ import { Reveal } from "@/components/creator1/reveal";
 import { JoinBar } from "@/components/join-board";
 import { ShowcaseCheck } from "@/components/creator1/showcase-check";
 import { PartnerCard } from "@/components/partner-card";
+import { ForceLight } from "@/components/landing/force-light";
 import { AiEyebrow } from "@/components/landing/ai-eyebrow";
 import { CreatorBanner, CreatorBento, CreatorCompare, CreatorDay, CreatorHeroScan, CreatorPains, CreatorSee, CreatorStrip, CreatorUsps } from "@/components/landing/creator";
 import { PartnerLine } from "@/components/landing/partner-line";
@@ -49,6 +50,7 @@ const NEVER = [
 export default function Landing() {
   return (
     <>
+      <ForceLight />
       <DemoStrip />
       <JoinBar />
       <header className="lp-hero">

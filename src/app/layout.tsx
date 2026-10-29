@@ -17,8 +17,11 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#00874f", viewportFit: "cover" };
 
-/** Applies the Light / Dark choice from Account before the page paints (saved on this device only). */
-const THEME_SCRIPT = `try{var t=localStorage.getItem("rz2_theme");if(t==="Light"||t==="Dark"){document.documentElement.dataset.theme=t.toLowerCase()}}catch(e){}`;
+/**
+ * Applies the Light / Dark choice from Account before the page paints (saved on this device only). The landing pages are
+ * always light (owner, 30 Oct 2026).
+ */
+const THEME_SCRIPT = `try{var p=location.pathname;if(p==="/"||p==="/seller"){document.documentElement.dataset.theme="light"}else{var t=localStorage.getItem("rz2_theme");if(t==="Light"||t==="Dark"){document.documentElement.dataset.theme=t.toLowerCase()}}}catch(e){}`;
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (

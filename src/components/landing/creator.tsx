@@ -100,12 +100,12 @@ export function CreatorHeroScan() {
         {/* The extra, at scale (owner, 29 Oct 2026): what joining adds over 1,000 sales of the RM 159.90 example. */}
         <div className="hs-total">
           <small>
-            Extra commission on Rezekii
+            Estimated extra commission
             {/* What the example is, and that it isn't a promise (owner, 29 Oct 2026). */}
             <Tip label="About this example" text={`Example only: the ${POT.name} (RM ${POT.price.toFixed(2)}) at ${POT.publicRate}% on the open plan vs ${POT.tapRate}% on Rezekii, over 1,000 orders. It doesn't mean your account will earn this; it depends on your products, rates and sales.`} />
           </small>
-          <b><span>RM</span>{n(money)}</b>
-          <span className="hs-sum">+RM {PER_SALE.toFixed(2)} extra a sale <i>×</i> 1,000 orders</span>
+          <b><span>+RM</span>{n(money)}<em>extra, est.</em></b>
+          <span className="hs-sum">≈ +RM {PER_SALE.toFixed(2)} extra a sale <i>×</i> 1,000 orders</span>
         </div>
       </div>
     </div>
@@ -464,13 +464,16 @@ const USPS: Usp[] = [
     title: "Free Samples, Even on Best Sellers", tint: "#1d4ed8",
     line: "Sellers worry samples never become videos. Rezekii tracks each one to your post, so they can trust you.",
     demo: (
-      <div className="lp-u-col">
-        <div className="lp-u-track">
-          <span className="lp-u-line"><i /></span>
-          <span className="lp-u-parcel"><Icon name="box" size={16} width={2.2} /></span>
-          <ol>{["Approved", "Received", "Video posted"].map((t, i) => <li key={t} style={v({ i })}><i />{t}</li>)}</ol>
-        </div>
-        <span className="lp-u-spent"><s><Icon name="lock" size={13} width={2.2} /> No sample</s><b>Free sample · {short(TRACK.sold)} sold</b></span>
+      // A best seller with no free sample on TikTok flips to a free sample on Rezekii (owner, 30 Oct 2026).
+      <div className="lp-u-samp">
+        <span className="lp-u-prod">
+          <Thumb src={TRACK.img} size={56} />
+          <span><b>{TRACK.name}</b><small>{short(TRACK.sold)} sold · Best seller</small></span>
+        </span>
+        <span className="lp-u-flipbox">
+          <span className="no"><Icon name="lock" size={14} width={2.4} /> On TikTok: no free sample</span>
+          <span className="yes"><Icon name="gift" size={14} width={2.4} /> On Rezekii: free sample</span>
+        </span>
       </div>
     ),
   },
@@ -517,7 +520,7 @@ const ROWS: CompareRow[] = [
   { label: `Commission on a RM ${POT.price.toFixed(2)} product`, without: `${POT.publicRate}% open plan, RM ${earn(POT, POT.publicRate).toFixed(2)} a sale`, with: <span className="lp-cmp-money"><span>{POT.tapRate}% on Rezekii, RM {earn(POT, POT.tapRate).toFixed(2)} a sale</span><b>+RM {PER_SALE.toFixed(2)} extra a sale</b><small>+RM {PER_SALE.toFixed(2)} × 1,000 orders = +RM {rmn(PER_SALE * 1000)} extra</small></span> },
   { label: "Finding viral products", without: "Hours a day scrolling TikTok, then guessing", with: "Rezekii AI shows what's trending for you" },
   { label: "Captions", without: "A new caption for every app, every post", with: "Write once, fitted to each app" },
-  { label: "Posting", without: "Same video uploaded 4 times", with: <span className="lp-cmp-apps">Post once to<span>{PLATS.map((p) => <PlatIcon key={p} name={p} size={26} />)}</span><span className="lp-sr">TikTok, Facebook, Instagram and Threads</span></span> },
+  { label: "Posting", without: "Upload to each app, one by one", with: <span className="lp-cmp-apps">Multi-platform in one click<span>{PLATS.map((p) => <PlatIcon key={p} name={p} size={26} />)}</span><span className="lp-sr">TikTok, Facebook, Instagram and Threads</span></span> },
   { label: "Free samples", without: "Sellers often say no, and best sellers rarely offer samples", with: "Free samples, even on best sellers" },
   { label: "When to post", without: "Post anytime and hope for FYP", with: "Rezekii AI finds your Viral Time Frame" },
 ];
