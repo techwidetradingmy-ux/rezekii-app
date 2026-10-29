@@ -521,7 +521,7 @@ const ROWS: CompareRow[] = [
   { label: "Finding viral products", without: "Hours a day scrolling TikTok, then guessing", with: "Rezekii AI shows what's trending for you" },
   { label: "Captions", without: "A new caption for every app, every post", with: "Write once, fitted to each app" },
   { label: "Posting", without: "Upload to each app, one by one", with: <span className="lp-cmp-apps">Multi-platform in one click<span>{PLATS.map((p) => <PlatIcon key={p} name={p} size={26} />)}</span><span className="lp-sr">TikTok, Facebook, Instagram and Threads</span></span> },
-  { label: "Free samples", without: "Sellers often say no, and best sellers rarely offer samples", with: "Free samples, even on best sellers" },
+  { label: "Free samples", without: "Sample requests often get rejected", with: "Higher approval through Rezekii, even on best sellers" },
   { label: "When to post", without: "Post anytime and hope for FYP", with: "Rezekii AI finds your Viral Time Frame" },
 ];
 export function CreatorCompare() {
