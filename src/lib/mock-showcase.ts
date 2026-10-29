@@ -9,6 +9,8 @@ export const ON_REZEKII = 86;
 
 /** A sample of her showcase products already on Rezekii (marketplace product ids), most sold first. */
 export const ON_IDS = ["p21", "p13", "p09", "p01", "p22", "p17", "p05", "p16", "p11", "p20", "p07", "p24"];
+/** Her own orders of each showcase product in the last 30 days (sample; the real app reads her TikTok Shop orders). */
+export const ON_SOLD30: Record<string, number> = { p21: 42, p13: 18, p09: 65, p01: 120, p22: 9, p17: 27, p05: 33, p16: 14, p11: 51, p20: 6, p07: 22, p24: 38 };
 
 /**
  * What a creator promises to give if the product launches on Rezekii (owner, 29 Oct 2026). There is no rate field: no rate is

@@ -1366,6 +1366,22 @@ li.sc-row { cursor: default; }
 .pp-chip.muted { background: var(--surface2); color: var(--muted); }
 .pp-rate { display: grid; gap: 2px; padding: 12px 14px; border-radius: 16px; background: var(--gsoft); }
 .pp-rate.off { background: var(--surface2); }
+/* Free sample card (owner, 29 Oct 2026): live counts, then the conditions she meets or can fix. */
+.pp-sh { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.pp-live { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 800; color: var(--gink); }
+.pp-live i { width: 8px; height: 8px; border-radius: 50%; background: #00c073; box-shadow: 0 0 0 0 rgba(0, 192, 115, 0.6); animation: ppLive 1.6s ease-out infinite; }
+@keyframes ppLive { 70%, 100% { box-shadow: 0 0 0 7px rgba(0, 192, 115, 0); } }
+.pp-count { display: grid; gap: 6px; }
+.pp-count .v2-meter i { transition: width 0.6s var(--ease); }
+.pp-count small { font-size: 13.5px; font-weight: 600; color: var(--muted); }
+.pp-count small b { color: var(--text); font-weight: 900; }
+.pp-sub { margin: 4px 0 0; font-size: 15px; font-weight: 800; }
+.pp-fix { display: flex; width: fit-content; align-items: center; gap: 4px; margin-top: 2px; font-size: 13px; font-weight: 800; color: var(--red); text-decoration: none; }
+@media (prefers-reduced-motion: reduce) { .pp-live i { animation: none; } }
+.pp-extra { font-size: 15px; font-weight: 800; color: var(--gink); }
+.pp-extra b { font-size: 28px; font-weight: 900; letter-spacing: -0.02em; margin-right: 2px; }
+.pp-extra + .pp-rate-line { font-size: 14px; color: var(--text); }
+.pp-extra + .pp-rate-line b { font-size: 15px; }
 .pp-rate-line { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 700; color: var(--gink); }
 .pp-rate.off .pp-rate-line { color: var(--text); }
 .pp-rate-line s { color: var(--muted); font-weight: 600; }

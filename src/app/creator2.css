@@ -745,6 +745,8 @@ li.done .cr2-check.num { background: #00c073; border-color: #00c073; }
 .cc-cursor { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1.5px dashed rgba(0, 135, 79, 0.5); pointer-events: none; }
 .cc-dot { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: #00c073; border: 3px solid var(--surface); box-shadow: 0 2px 8px rgba(0, 120, 70, 0.4); pointer-events: none; }
 .cc-axis { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; color: var(--muted); }
+.an-ai { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.an-ai > span { display: grid; gap: 2px; }
 .an-hv { font-size: 12.5px; font-weight: 800; padding: 4px 10px; border-radius: 99px; background: var(--gsoft); color: var(--gink); white-space: nowrap; }
 
 /* Phones (owner, 28 Oct 2026): no text smaller than 13px. Share-card images, phone previews and tiny badges on icons keep their size. */

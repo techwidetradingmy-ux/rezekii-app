@@ -89,7 +89,8 @@ export const SAMPLE_ACCESS: Record<Pool, boolean> = { open: true, advanced: true
 /** Creators never see the pool names (owner, 28 Oct 2026: too many ladders). They see the streak a sample unlocks at. */
 export const SAMPLE_STREAK: Record<Pool, number> = { open: 0, advanced: 10, designated: 30 };
 
-export type Cond = { label: string; ok: boolean; you: string };
+/** `fix`: where she sorts it out herself (link TikTok Shop, fill in her profile); Back brings her to the product again. */
+export type Cond = { label: string; ok: boolean; you: string; fix?: string };
 /** The seller's own conditions on top of the pool rules (by product id). */
 export const SELLER_CONDS: Record<string, Cond[]> = {
   p08: [{ label: "Seller: Home & Kitchen creator", ok: true, you: "Home & Kitchen is your top category" }, { label: "Seller: Silver or Gold", ok: true, you: "You're Silver" }],
@@ -102,6 +103,12 @@ export const SELLER_CONDS: Record<string, Cond[]> = {
 };
 
 /** One-off sample notes, so the grid feels real. */
+/** Samples asked for and left on one product (sample; the real app reads TikTok's live counts). */
+export function sampleCount(id: string) {
+  const left = SAMPLE_LEFT[id] ?? 10;
+  const total = Math.max(20, Math.ceil((left * 2.5) / 10) * 10);
+  return { left, applied: total - left, total };
+}
 export const SAMPLE_LEFT: Record<string, number> = { p01: 18, p02: 40, p04: 9, p07: 25, p09: 32, p11: 12, p12: 30, p13: 50, p16: 7, p17: 20, p19: 11, p21: 6, p22: 15, p03: 8, p05: 10, p14: 5, p20: 6, p08: 3, p18: 2, p24: 4 };
 
 /* ---------------- Notifications ---------------- */

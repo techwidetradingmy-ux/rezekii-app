@@ -183,8 +183,15 @@ export default function DataOverview() {
         </section>
 
         <section className="v2-card an-time">
+          {/* An AI feature (owner, 29 Oct 2026): worked out from her own posts, so everyone's best time is different. */}
           <div className="v2-card-h">
-            <h2 className="v2-h2">Best Time to Post <Tip label="About best time" text="Average views per video you posted in each time slot, last 30 days." /></h2>
+            <span className="an-ai">
+              <AiMark size={34} />
+              <span>
+                <h2 className="v2-h2">Best Time to Post <Tip label="About best time" text="Rezekii AI looks at your own videos from the last 30 days and the average views in each time slot. Everyone's best time is different." /></h2>
+                <span className="v2-ailabel">By Rezekii AI</span>
+              </span>
+            </span>
             <span className="an-hv">High virality · {bestTime[0]}</span>
           </div>
           <Bars rows={POST_TIMES.map(([label, v]) => ({ label, value: v, display: `${short(v)} views`, tone: v < avgViews ? ("blue" as const) : undefined }))} />

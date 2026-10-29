@@ -9,8 +9,8 @@ import { Hidden } from "@/components/ui";
 import { PoolTag } from "@/components/creator1/brand";
 import { Trend } from "@/components/creator1/shoot-today";
 import { WishForm, WishSteps, useWishes } from "@/components/creator1/wish";
-import { CREATOR, product, rm, short } from "@/lib/mock";
-import { SAMPLE_LEFT, SAMPLE_STREAK, type Pool } from "@/lib/mock-creator1";
+import { product, rm, short } from "@/lib/mock";
+import { SAMPLE_STREAK, sampleCount, type Pool } from "@/lib/mock-creator1";
 import { commitText } from "@/lib/mock-showcase";
 import { canRequest, markRequested, productView, requestedSamples, sampleConditions } from "@/lib/product-view";
 import "@/app/creator1.css";
@@ -30,6 +30,12 @@ export default function ProductPage() {
   const [asked, setAsked] = useState(false);
   const [warn, setWarn] = useState(false);
   const [wishOpen, setWishOpen] = useState(false);
+  // Samples asked for and left, kept live (the preview moves one along now and then).
+  const [taken, setTaken] = useState(0);
+  useEffect(() => {
+    const t = window.setInterval(() => setTaken((n) => n + 1), 20000);
+    return () => window.clearInterval(t);
+  }, []);
 
   // ?sample=1 jumps to the free sample, ?join=1 opens the wish list form (from Marketplace, AI Picks and Most Wanted).
   useEffect(() => {
@@ -53,10 +59,17 @@ export default function ProductPage() {
 
   const m = p.tapRate !== null ? product(p.id) : null;
   const wish = mine(p.id);
-  const conds = m?.samples ? sampleConditions(m) : [];
+  // The link check follows the preview's "Show as not linked" switch; unmet ones she can fix send her to My Account.
+  const conds = (m?.samples ? sampleConditions(m) : []).map((c) => (c.fix === "/app/account#connections" ? { ...c, ok: linked, you: linked ? c.you : "Link TikTok Shop" } : c));
   const unmet = conds.filter((c) => !c.ok);
   const canSample = !!m && canRequest(m);
+  const base = sampleCount(p.id);
+  const moved = Math.min(taken, Math.max(0, base.left - 1));
+  const count = { ...base, applied: base.applied + moved, left: base.left - moved };
   const earn = p.tapRate !== null ? (p.price * p.tapRate) / 100 : null;
+  // Owner, 29 Oct 2026: lead with the extra she earns through Rezekii, per sale and at her own 30-day sales.
+  const extra = p.tapRate !== null && p.publicRate !== null ? (p.price * (p.tapRate - p.publicRate)) / 100 : 0;
+  const month = extra * (p.mySold ?? 100);
   const back = () => (window.history.length > 1 ? router.back() : router.push("/app/market"));
   const addToShowcase = () => {
     if (!linked) return setLinked(true);
@@ -122,10 +135,21 @@ export default function ProductPage() {
         </div>
 
         {p.tapRate !== null ? (
-          <div className="pp-rate">
-            <span className="pp-rate-line"><s>{p.publicRate}%</s> <Icon name="arrow" size={14} /> <b><Hidden>{p.tapRate}%</Hidden></b> on Rezekii</span>
-            <small>You earn <b><Hidden>{rm(earn ?? 0)}</Hidden></b> per sale{p.special ? ` · just for you${p.special.until ? ` until ${p.special.until}` : ""}` : ""}</small>
-          </div>
+          extra > 0 ? (
+            <div className="pp-rate">
+              <span className="pp-extra"><b><Hidden>+{rm(extra)}</Hidden></b> extra per sale on Rezekii</span>
+              <span className="pp-rate-line"><s>{p.publicRate}%</s> <Icon name="arrow" size={14} /> <b><Hidden>{p.tapRate}%</Hidden></b> · <Hidden>{rm(earn ?? 0)}</Hidden> a sale</span>
+              <small>
+                {p.mySold ? <>At your {p.mySold} sales last 30 days: <b><Hidden>+{rm(month)}</Hidden></b> a month</> : <>Sell 100 a month: <b><Hidden>+{rm(month)}</Hidden></b> more</>}
+                {p.special ? ` · your special rate${p.special.until ? ` until ${p.special.until}` : ""}` : ""}
+              </small>
+            </div>
+          ) : (
+            <div className="pp-rate">
+              <span className="pp-rate-line"><b><Hidden>{p.tapRate}%</Hidden></b> on Rezekii</span>
+              <small>You earn <b><Hidden>{rm(earn ?? 0)}</Hidden></b> per sale{p.special ? ` · your special rate${p.special.until ? ` until ${p.special.until}` : ""}` : ""}</small>
+            </div>
+          )
         ) : (
           <div className="pp-rate off">
             <span className="pp-rate-line">Open plan {p.publicRate === null ? "—" : `${p.publicRate}%`}</span>
@@ -147,19 +171,26 @@ export default function ProductPage() {
 
         {m?.samples && (
           <section className="v2-card pp-card" id="sample">
-            <h2 className="v2-h2">Free Sample <span className="v2-small">{SAMPLE_LEFT[m.id] ?? 10} left</span></h2>
-            <p className="v2-small" style={{ margin: 0 }}>{canSample ? "You can request now." : `Unlocks at a ${SAMPLE_STREAK[m.samples as Pool]}-day streak. You're on day ${CREATOR.streak}.`}</p>
+            {/* Owner, 29 Oct 2026: how many asked and how many are left (live), then whether she can apply. Nothing about after. */}
+            <div className="pp-sh">
+              <h2 className="v2-h2">Free Sample</h2>
+              <span className="pp-live"><i /> Live</span>
+            </div>
+            <div className="pp-count">
+              <span className="v2-meter"><i style={{ width: `${(count.applied / count.total) * 100}%` }} /></span>
+              <small><b>{count.applied}</b> applied · <b>{count.left}</b> left</small>
+            </div>
+            <h3 className="pp-sub">Can You Apply?</h3>
             <ul className="cr1-conds">
               {conds.map((c) => (
                 <li key={c.label}>
                   <span className={`cr1-tick ${c.ok ? "" : "no"}`}><Icon name={c.ok ? "check" : "x"} size={13} width={3} /></span>
-                  <span>{c.label}<small>{c.you}</small></span>
+                  <span>
+                    {c.label}
+                    {!c.ok && c.fix ? <Link href={c.fix} className="pp-fix">{c.you} <Icon name="arrow" size={14} /></Link> : <small>{c.you}</small>}
+                  </span>
                 </li>
               ))}
-            </ul>
-            <ul className="cr1-after">
-              <li><Icon name="video" size={18} /> Post 1 video with it in your yellow cart by the due date.</li>
-              <li><Icon name="gift" size={18} /> 3 videos unlock an extra reward.</li>
             </ul>
             {warn && !asked && (
               <div className="cr1-warn">
