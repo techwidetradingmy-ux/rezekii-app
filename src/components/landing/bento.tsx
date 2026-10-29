@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon, type IconName } from "@/components/icons";
 import { AiMark, Tip } from "@/components/ui";
-import { useLiveChildren, useOnScreen, useReducedMotion } from "./hooks";
+import { useLiveChildren, useMedia, useOnScreen, useReducedMotion } from "./hooks";
+import { AutoSlider } from "./slider";
 
 export type Tile = {
   key: string;
@@ -21,10 +22,42 @@ export type Tile = {
 };
 
 /**
- * "Everything in One App": on wide screens small live widgets, each the real feature in miniature (a tile plays only while it
- * is on screen; a soft glow follows the mouse). On phones a compact 3-column grid of icon tiles (owner, 29 Oct 2026: short page).
+ * "Everything in One App": small live widgets, each the real feature in miniature (a tile plays only while it is on screen).
+ * Wide screens: a grid where a soft glow follows the mouse. Phones (owner, 29 Oct 2026, option A): one full card per slide.
  */
 export function Bento({ tiles, label }: { tiles: Tile[]; label: string }) {
+  const phone = useMedia("(max-width: 720px)");
+  return phone ? <BentoSlides tiles={tiles} label={label} /> : <BentoGrid tiles={tiles} label={label} />;
+}
+
+function TileCard({ t, item = false }: { t: Tile; item?: boolean }) {
+  return (
+    <article role={item ? "listitem" : undefined} className={`lp-tile lp-live ${t.size ?? ""} ${t.bare ? "bare" : ""} ${t.soon ? "soon" : ""}`}>
+      <header>
+        <span className="lp-tico" style={{ background: t.tint }}><Icon name={t.icon} size={16} width={2.2} /></span>
+        <h3>{t.title}</h3>
+        {t.ai && <AiMark size={20} />}
+        {t.soon && <span className="badge badge-amber">Soon</span>}
+        <Tip text={t.tip} label={`About ${t.title}`} />
+      </header>
+      <div className="lp-tile-b">{t.body}</div>
+    </article>
+  );
+}
+
+function BentoSlides({ tiles, label }: { tiles: Tile[]; label: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useLiveChildren(ref, ".lp-tile", 0.6);
+  return (
+    <div ref={ref} className="lp-bento-slides">
+      <AutoSlider label={label} every={5000}>
+        {tiles.map((t) => <TileCard key={t.key} t={t} />)}
+      </AutoSlider>
+    </div>
+  );
+}
+
+function BentoGrid({ tiles, label }: { tiles: Tile[]; label: string }) {
   const ref = useRef<HTMLDivElement>(null);
   useLiveChildren(ref, ".lp-tile");
   const raf = useRef(0);
@@ -43,18 +76,7 @@ export function Bento({ tiles, label }: { tiles: Tile[]; label: string }) {
   useEffect(() => () => cancelAnimationFrame(raf.current), []);
   return (
     <div ref={ref} className="lp-bento" role="list" aria-label={label} onPointerMove={glow}>
-      {tiles.map((t) => (
-        <article key={t.key} role="listitem" className={`lp-tile lp-live ${t.size ?? ""} ${t.bare ? "bare" : ""} ${t.soon ? "soon" : ""}`}>
-          <header>
-            <span className="lp-tico" style={{ background: t.tint }}><Icon name={t.icon} size={16} width={2.2} /></span>
-            <h3>{t.title}</h3>
-            {t.ai && <AiMark size={20} />}
-            {t.soon && <span className="badge badge-amber">Soon</span>}
-            <Tip text={t.tip} label={`About ${t.title}`} />
-          </header>
-          <div className="lp-tile-b">{t.body}</div>
-        </article>
-      ))}
+      {tiles.map((t) => <TileCard key={t.key} t={t} item />)}
     </div>
   );
 }

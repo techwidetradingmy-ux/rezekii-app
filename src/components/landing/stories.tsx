@@ -47,8 +47,8 @@ export const CREATOR_STORIES: Story[] = [
   },
   {
     name: "Nurul Aina", handle: "@nurul.beauty", state: "Kuala Lumpur", level: "Silver", sample: true,
-    result: "8–10 pm", period: "her best time to post", quote: "Posting at my best time made my evenings count.",
-    shot: { kind: "earn", title: "Best Time to Post", amount: "8–10 pm", period: "From your own posts", bars: [10, 16, 28, 22, 40, 92, 64, 20] },
+    result: "8–10 pm", period: "her viral time frame", quote: "Posting at my best time made my evenings count.",
+    shot: { kind: "earn", title: "Viral Time Frame", amount: "8–10 pm", period: "From your own posts", bars: [10, 16, 28, 22, 40, 92, 64, 20] },
   },
 ];
 

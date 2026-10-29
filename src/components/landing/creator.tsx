@@ -1,13 +1,13 @@
 "use client";
 
 import { Icon } from "@/components/icons";
-import { CREATOR, MISSIONS, REFERRAL_REWARD, product, short } from "@/lib/mock";
+import { CREATOR, MISSIONS, PRODUCTS, REFERRAL_REWARD, product, short, type Product } from "@/lib/mock";
 import { NOT_YET, WANTED } from "@/lib/mock-showcase";
 import { AiMark } from "@/components/ui";
 import { App, Av, Flip, PLATS, PlatIcon, Ring, Swap, Thumb, v } from "./bits";
 import { Bento, VideoTile, type Tile } from "./bento";
 import { Journey, type DayStep } from "./journey";
-import { LockScreen, type Note } from "./phone";
+import { HeroAlerts, LockScreen, type Note } from "./phone";
 import { Compare, type CompareRow } from "./compare";
 import { CREATOR_STORIES } from "./stories";
 import { SeeRail, UspRail, type See, type Usp } from "./usp";
@@ -30,120 +30,142 @@ const n = (x: number) => x.toLocaleString("en-MY");
 const HERO_NOTES: Note[] = [
   { title: "3 products have a better rate", line: `${TRACK.name}: ${TRACK.publicRate}% → ${TRACK.tapRate}% on Rezekii` },
   { title: `AI pick: ${TRACK.name.replace(/ \(.*\)$/, "")} is selling fast`, line: `${short(TRACK.sold)} sold. Fits your Fashion videos` },
-  { title: "Best time to post today: 8–10 pm", line: "When your followers watch most" },
+  { title: "Your viral time frame today: 8–10 pm", line: "When your followers watch most" },
   { title: "Sample shipped. Post by 6 Nov", line: `${product("p05").name} is on its way` },
   { title: `+${POST_TODAY.reward} credits`, line: "Mission done: you posted today" },
 ];
 
 export function CreatorHeroPhone() {
-  return <LockScreen notes={HERO_NOTES} label="Example: Rezekii notifications arriving on a phone's lock screen" />;
+  return (
+    <>
+      <LockScreen notes={HERO_NOTES} label="Example: Rezekii notifications arriving on a phone's lock screen" />
+      <HeroAlerts notes={HERO_NOTES.slice(0, 2)} />
+    </>
+  );
 }
 
 /* ---------------- Mini app screens (A Day With Rezekii) ---------------- */
 
+/* Screens fill top to bottom from the first frame and keep moving (owner, 29 Oct 2026, option A). Sample data only. */
+
+const rm = (x: number) => `RM${x.toFixed(2)}`;
+const earn = (p: Product, rate: number) => (p.price * rate) / 100;
+
+/** Showcase Scan, laid out like the showcase list creators know: what each product earns, then a scan line runs down it. */
 const SCAN = ["p01", "p13", "p24"].map(example);
+const LOW = product("p04");
 function ScanScreen() {
   return (
-    <App title="Showcase Scan">
+    <App title="Showcase Scan" ai>
       <div className="lp-s-scan">
         <span className="lp-bar"><i /></span>
         <Swap at={1.1} from="Checking your showcase…" to={<><b>{n(CREATOR.showcaseSize)}</b> products checked</>} />
       </div>
       <p className="lp-s-hit"><Icon name="trend" size={14} width={2.4} /> {SCAN.length} pay more on Rezekii</p>
-      <ul className="lp-s-rows">
+      <ul className="lp-s-man">
         {SCAN.map((p, i) => (
           <li key={p.id} style={v({ i })}>
-            <Thumb src={p.img} size={36} />
-            <span>{p.name}<small>{p.shop}</small></span>
-            <Flip was={p.publicRate} now={p.tapRate} i={i} />
+            <Thumb src={p.img} size={38} />
+            <span>{p.name}<small>{p.shop}</small><em>+1% on Rezekii</em></span>
+            <span className="lp-s-earn"><small>Earn</small><Flip was={earn(p, p.publicRate)} now={earn(p, p.tapRate)} i={i} fmt={rm} /></span>
           </li>
         ))}
+        <li className="low" style={v({ i: SCAN.length })}>
+          <Thumb src={LOW.img} size={38} />
+          <span>{LOW.name}<small>{LOW.shop}</small><em>Low rating ★{LOW.rating}</em></span>
+          <span className="lp-s-earn"><small>Earn</small><b>{rm(earn(LOW, LOW.publicRate))}</b></span>
+        </li>
+        <i className="lp-s-beam" />
       </ul>
       <Swap className="lp-s-btn press" at={2.9} from="Add All" to={<><Icon name="check" size={14} width={3} /> {SCAN.length} Added</>} />
     </App>
   );
 }
 
-const PICKS = [
-  { id: "p01", tag: "Selling fast" },
-  { id: "p20", tag: "Fits your videos" },
-  { id: "p21", tag: "Your #2 category" },
-];
+/** AI Picks: a light sweeps a grid of products, then the three that suit her light up. */
+const PICK_TAG: Record<string, string> = { p01: "Selling fast", p20: "Fits your videos", p21: "Your #2 category" };
+const GRID = ["p01", "p06", "p20", "p10", "p12", "p21", "p15", "p07", "p02"].map(product);
 function PicksScreen() {
   return (
     <App title="AI Picks" ai>
       <ul className="lp-s-read">
         {["Your videos and sales", "What sells in Malaysia"].map((t, i) => (
           <li key={t} style={v({ i })}>
-            <Swap at={0.5 + i * 0.5} from={<span className="lp-spin" />} to={<span className="lp-ok"><Icon name="check" size={10} width={3.4} /></span>} />
+            <Swap at={0.3 + i * 0.4} from={<span className="lp-spin" />} to={<span className="lp-ok"><Icon name="check" size={10} width={3.4} /></span>} />
             {t}
           </li>
         ))}
       </ul>
-      <ul className="lp-s-picks">
-        {PICKS.map(({ id, tag }, i) => {
-          const p = product(id);
-          return (
-            <li key={id} style={v({ i })}>
-              <Thumb src={p.img} size={44} />
-              <span>
-                {p.name}
-                <small>{short(p.sold)} sold · ★{p.rating}</small>
-                <em className={i === 0 ? "hot" : ""}>{tag}</em>
-              </span>
-            </li>
-          );
-        })}
-      </ul>
+      <div className="lp-s-grid">
+        {GRID.map((p, i) => (
+          <span key={p.id} className={PICK_TAG[p.id] ? "pick" : ""} style={v({ i })}>
+            <Thumb src={p.img} size={72} />
+            <small>{short(p.sold)} sold</small>
+            {PICK_TAG[p.id] && <em>{PICK_TAG[p.id]}</em>}
+          </span>
+        ))}
+        <i className="lp-s-sweep" />
+      </div>
+      <p className="lp-s-hit ai"><AiMark size={18} /> 3 picks that suit you</p>
+    </App>
+  );
+}
+
+/** Free Samples: a shop of free samples scrolling past, open to new creators (the open pool needs no streak). */
+const OPEN = PRODUCTS.filter((p) => p.samples === "open");
+const SHOP = [...OPEN].sort((a, b) => b.rating - a.rating).slice(0, 12);
+function SamplesScreen() {
+  return (
+    <App title="Free Samples">
+      <p className="lp-s-open"><Icon name="gift" size={16} width={2.2} /><b>{OPEN.length} free samples</b> open now</p>
+      <p className="lp-s-free"><span><Icon name="check" size={11} width={3.2} /> Open to new creators</span><span><Icon name="check" size={11} width={3.2} /> No streak needed</span></p>
+      <div className="lp-s-shop">
+        <div>
+          {[...SHOP, ...SHOP].map((p, i) => (
+            <span key={i}>
+              <Thumb src={p.img} size={72} />
+              <em>Free</em>
+              <small>{p.name}</small>
+            </span>
+          ))}
+        </div>
+      </div>
+    </App>
+  );
+}
+
+/** Viral Time Frame (owner, 29 Oct 2026: everyone wants the FYP) as a clock: the hand moves round to her 8–10 pm, which lights up; another creator's 12–2 pm in grey. */
+const TICKS = Array.from({ length: 12 }, (_, h) => h * 30);
+const pt = (deg: number, r: number) => [100 + r * Math.sin((deg * Math.PI) / 180), 100 - r * Math.cos((deg * Math.PI) / 180)];
+const at = (deg: number, r: number) => pt(deg, r).map((x) => x.toFixed(2)).join(" ");
+const arc = (from: number, to: number) => `M${at(from * 30, 80)} A80 80 0 0 1 ${at(to * 30, 80)}`;
+const NUMS: [string, number][] = [["12", 0], ["3", 90], ["6", 180], ["9", 270]];
+function BestTimeScreen() {
+  return (
+    <App title="Viral Time Frame" ai>
+      <div className="lp-s-clock">
+        <svg viewBox="0 0 200 200" width="200" height="200">
+          <circle cx="100" cy="100" r="96" className="face" />
+          {TICKS.map((d) => <path key={d} d={`M${at(d, 89)} L${at(d, 94)}`} className="tick" />)}
+          {NUMS.map(([t, d]) => {
+            const [x, y] = pt(d, 58);
+            return <text key={t} x={x.toFixed(2)} y={(y + 5).toFixed(2)} textAnchor="middle">{t}</text>;
+          })}
+          <path d={arc(0, 2)} className="arc b" />
+          <path d={arc(8, 10)} className="arc a" />
+          <line x1="100" y1="100" x2="100" y2="56" className="hand h" />
+          <line x1="100" y1="100" x2="100" y2="36" className="hand m" />
+          <circle cx="100" cy="100" r="5" className="pin" />
+        </svg>
+      </div>
+      <p className="lp-s-when"><b>Your best: 8–10 pm</b><small>When your followers watch most</small></p>
+      <p className="lp-s-other"><i /> Another creator: 12–2 pm</p>
+      <small className="lp-s-fine">Everyone&apos;s time is different.</small>
     </App>
   );
 }
 
 const HEALTH = ["p05", "p17", "p21", "p22"].map(product);
-const STAGES = ["Applied", "Approved", "Shipped", "Received"];
-const YOGA = product("p05");
-function SamplesScreen() {
-  return (
-    <App title="Free Samples">
-      <div className="lp-s-prod">
-        <Thumb src={YOGA.img} size={44} />
-        <span>{YOGA.name}<small>{YOGA.shop} · Free sample</small></span>
-      </div>
-      <ol className="lp-s-track">
-        {STAGES.map((t, i) => (
-          <li key={t} style={v({ i })}><i />{t}</li>
-        ))}
-      </ol>
-      <p className="lp-s-due"><Icon name="cal" size={14} width={2.2} /> Post 1 video by 6 Nov</p>
-      <div className="lp-s-vids">
-        <span>Videos posted</span>
-        <span className="lp-pips">{[0, 1, 2].map((i) => <i key={i} style={v({ i })} />)}</span>
-        <Swap at={3.6} from="0 of 3" to={<b>Bonus unlocked</b>} />
-      </div>
-    </App>
-  );
-}
-
-const SLOTS = ["6a", "9a", "12p", "3p", "6p", "8p", "10p"];
-const YOU = [14, 20, 34, 26, 48, 96, 66];
-const OTHER = [22, 58, 94, 50, 36, 30, 18];
-function BestTimeScreen() {
-  return (
-    <App title="Best Time to Post" ai>
-      <div className="lp-s-who"><i /><span>You</span><span>Another creator</span></div>
-      <div className="lp-s-bars">
-        {SLOTS.map((s, i) => (
-          <span key={s} className={i === 5 ? "a" : i === 2 ? "b" : ""} style={v({ a: `${YOU[i]}%`, b: `${OTHER[i]}%`, i })}>
-            <i />
-            <small>{s}</small>
-          </span>
-        ))}
-      </div>
-      <p className="lp-s-best"><span className="pa"><b>Your best:</b> 8–10 pm</span><span className="pb"><b>Theirs:</b> 12–2 pm</span></p>
-      <small className="lp-s-fine">Everyone&apos;s time is different.</small>
-    </App>
-  );
-}
 
 function PostScreen() {
   return (
@@ -199,8 +221,8 @@ function RewardsScreen() {
 const DAY: DayStep[] = [
   { id: "scan", time: "9:00", title: "Showcase Scan", ai: true, problem: "Checking 500 products one by one.", fix: "One scan shows where Rezekii pays more. Add All in one tap.", note: { title: "Scan done: 3 better rates", line: "Tap to see them and add all" }, screen: <ScanScreen /> },
   { id: "picks", time: "10:00", title: "AI Picks", ai: true, problem: "Scrolling TikTok for hours to find products.", fix: "Rezekii AI picks trending best sellers that suit you.", note: HERO_NOTES[1], screen: <PicksScreen /> },
-  { id: "samples", time: "13:00", title: "Free Samples", problem: "Buying samples with your own money.", fix: "Free, tracked to your door. Post 1 video; 3 unlock a bonus.", note: HERO_NOTES[3], screen: <SamplesScreen /> },
-  { id: "time", time: "19:00", title: "Best Time to Post", ai: true, problem: "Posting when your followers aren't watching.", fix: "Rezekii AI learns when YOUR followers watch.", note: HERO_NOTES[2], screen: <BestTimeScreen /> },
+  { id: "samples", time: "13:00", title: "Free Samples", problem: "Buying samples with your own money.", fix: "Free samples, open to new creators. Sent to your door.", note: { title: `${OPEN.length} free samples open now`, line: "Open to new creators" }, screen: <SamplesScreen /> },
+  { id: "time", time: "19:00", title: "Viral Time Frame", ai: true, problem: "Posting when your followers aren't watching.", fix: "Rezekii AI learns when YOUR followers watch.", note: HERO_NOTES[2], screen: <BestTimeScreen /> },
   { id: "rewards", time: "21:00", title: "Rewards & Levels", problem: "Doing well, with nothing extra for it.", fix: "Credits for posting. Better rates as you level up.", note: HERO_NOTES[4], screen: <RewardsScreen /> },
 ];
 export function CreatorDay() {

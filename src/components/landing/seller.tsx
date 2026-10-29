@@ -6,7 +6,7 @@ import { WANTED } from "@/lib/mock-showcase";
 import { App, Av, PLATS, PlatIcon, Swap, Thumb, v } from "./bits";
 import { Bento, VideoTile, type Tile } from "./bento";
 import { Journey, type DayStep } from "./journey";
-import { LockScreen, type Note } from "./phone";
+import { HeroAlerts, LockScreen, type Note } from "./phone";
 import { Compare, type CompareRow } from "./compare";
 import { SELLER_STORIES } from "./stories";
 import { SeeRail, UspRail, type See, type Usp } from "./usp";
@@ -30,7 +30,12 @@ const HERO_NOTES: Note[] = [
 ];
 
 export function SellerHeroPhone() {
-  return <LockScreen notes={HERO_NOTES} label="Example: Rezekii notifications for a seller arriving on a phone's lock screen" />;
+  return (
+    <>
+      <LockScreen notes={HERO_NOTES} label="Example: Rezekii notifications for a seller arriving on a phone's lock screen" />
+      <HeroAlerts notes={HERO_NOTES.slice(0, 2)} />
+    </>
+  );
 }
 
 /* ---------------- Mini app screens (A Week With Rezekii) ---------------- */

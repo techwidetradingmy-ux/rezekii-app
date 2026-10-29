@@ -70,7 +70,7 @@ export default function Landing() {
           <div className="lp-hero-copy">
             <AiEyebrow />
             <h1>Your Showcase May Have <em>Higher Commission</em> Waiting</h1>
-            <p><AiText text="Rezekii AI finds better rates, trending products and your best time to post. You just make the videos." /></p>
+            <p><AiText text="Rezekii AI finds better rates, trending products and your viral time frame. You just make the videos." /></p>
             <ShowcaseCheck />
             <PartnerLine />
             <ul className="lp-chips">
@@ -167,7 +167,7 @@ export default function Landing() {
           <h2>See What Your Showcase Is Missing</h2>
           <p>Free during Beta.</p>
           <Link href="/signin" className="np-btn lp-bigbtn">Check My Showcase <Icon name="arrow" size={20} /></Link>
-          <span className="lp-final-note">No follower minimum · Malaysia</span>
+          <span className="lp-final-note">No Follower Requirement</span>
           <PartnerLine center />
         </Reveal>
       </main>

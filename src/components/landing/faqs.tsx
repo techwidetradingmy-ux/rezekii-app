@@ -17,7 +17,8 @@ export function Faqs({ items, show = 4 }: { items: [string, string][]; show?: nu
       ))}
       {items.length > show && (
         <button type="button" className="lp-ghost lp-more" aria-expanded={all} onClick={() => setAll((x) => !x)}>
-          {all ? "Fewer Questions" : `More Questions (${items.length - show})`}
+          {all ? "Show Fewer Questions" : `Show ${items.length - show} More Questions`}
+          <Icon name="arrow" size={16} width={2.4} />
         </button>
       )}
     </div>

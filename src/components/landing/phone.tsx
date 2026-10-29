@@ -60,6 +60,17 @@ export function Banner({ note, className = "", style }: { note: Note; className?
   );
 }
 
+/** Phones and tablets (owner, 29 Oct 2026, option A): no phone frame in the hero, just the first two notifications. */
+export function HeroAlerts({ notes }: { notes: Note[] }) {
+  return (
+    <div className="lp-hero-alerts" aria-hidden="true">
+      {notes.map((note, i) => (
+        <Banner key={note.title} note={{ ...note, when: i === 0 ? "now" : `${i * 2 + 1}m ago` }} style={{ "--i": i } as React.CSSProperties} />
+      ))}
+    </div>
+  );
+}
+
 const STEP = 76;
 
 /**

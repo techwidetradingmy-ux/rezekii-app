@@ -51,12 +51,12 @@ export function Swap({ from, to, at = 1, className = "" }: { from: React.ReactNo
   );
 }
 
-/** Old rate flips over to the Rezekii rate, the old one stays struck through. */
-export function Flip({ was, now, i = 0 }: { was: number; now: number; i?: number }) {
+/** Old value flips over to the Rezekii value, the old one stays struck through. `fmt` for money; rates by default. */
+export function Flip({ was, now, i = 0, fmt = (x: number) => `${x}%` }: { was: number; now: number; i?: number; fmt?: (x: number) => string }) {
   return (
-    <span className="lp-flip" data-was={`${was}%`} style={v({ i })}>
-      <s>{was}%</s>
-      <b>{now}%</b>
+    <span className="lp-flip" data-was={fmt(was)} style={v({ i })}>
+      <s>{fmt(was)}</s>
+      <b>{fmt(now)}</b>
     </span>
   );
 }
