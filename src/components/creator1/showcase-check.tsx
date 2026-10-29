@@ -70,7 +70,7 @@ export function ShowcaseCheck() {
             <input
               value={raw}
               onChange={(e) => setRaw(e.target.value)}
-              placeholder="your TikTok username"
+              placeholder="TikTok username"
               aria-label="Your TikTok username"
               aria-invalid={tried && !!err}
               autoCapitalize="none"

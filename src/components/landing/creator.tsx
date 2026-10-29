@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { CREATOR, MISSIONS, PRODUCTS, REFERRAL_REWARD, product, short, type Product } from "@/lib/mock";
 import { NOT_YET, WANTED } from "@/lib/mock-showcase";
-import { NICHE_BEST, daily } from "@/lib/mock-creator2";
-import { AiMark } from "@/components/ui";
+import { NICHE_BEST, VIDEOS, daily } from "@/lib/mock-creator2";
+import { AiMark, Tip } from "@/components/ui";
 import { Emblem } from "@/components/emblems";
 import { App, Av, Flip, PLATS, PlatIcon, Ring, Swap, Thumb, v, type Plat } from "./bits";
 import { Bento, VideoTile, type Tile } from "./bento";
@@ -77,16 +77,16 @@ export function CreatorHeroScan() {
     return () => cancelAnimationFrame(raf);
   }, [on, still, extra]);
   return (
-    <div ref={ref} className="hs lp-live" data-on={on ? "" : undefined} role="img" aria-label="Example: Rezekii AI scans a showcase and finds 1% more on the same products">
-      <div className="hs-card" aria-hidden="true">
-        <div className="hs-head">
+    <div ref={ref} className="hs lp-live" data-on={on ? "" : undefined}>
+      <div className="hs-card">
+        <div className="hs-head" aria-hidden="true">
           <AiMark size={34} busy={on} />
           <span>
             <b>Scanning your showcase</b>
             <small><span className="hs-n">{n(count)}</span> products checked</small>
           </span>
         </div>
-        <ul className="hs-rows">
+        <ul className="hs-rows" aria-hidden="true">
           {HERO_ROWS.map((p, i) => (
             <li key={p.id} style={v({ i })}>
               <Thumb src={p.img} size={42} />
@@ -98,7 +98,11 @@ export function CreatorHeroScan() {
         </ul>
         {/* The extra, at scale (owner, 29 Oct 2026): what joining adds over 1,000 sales of the RM 159.90 example. */}
         <div className="hs-total">
-          <small>Extra commission on Rezekii</small>
+          <small>
+            Extra commission on Rezekii
+            {/* What the example is, and that it isn't a promise (owner, 29 Oct 2026). */}
+            <Tip label="About this example" text={`Example only: the ${POT.name} (RM ${POT.price.toFixed(2)}) at ${POT.publicRate}% on the open plan vs ${POT.tapRate}% on Rezekii, over 1,000 orders. It doesn't mean your account will earn this; it depends on your products, rates and sales.`} />
+          </small>
           <b><span>RM</span>{n(money)}</b>
           <span className="hs-sum">+RM {PER_SALE.toFixed(2)} extra a sale <i>×</i> 1,000 orders</span>
         </div>
@@ -563,6 +567,8 @@ export function CreatorStrip() {
 const HOT = NICHE_BEST[0];
 const HOT_P = product(HOT.productId);
 const IDEAS = NICHE_BEST.filter((x) => x.idea).slice(0, 2);
+const TT_FEED = ["try-on", "pov-demo", "review", "expert", "drama", "home-demo"].map((x) => `/ai-videos/${x}.jpg`);
+const TOP_VIDS = [...VIDEOS].sort((x, y) => y.commission - x.commission).slice(0, 3);
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 type Pain = { key: string; tint: string; pain: string; why: string; fix: string; art: React.ReactNode };
 const PAINS: Pain[] = [
@@ -597,25 +603,38 @@ const PAINS: Pain[] = [
     pain: "Out of Ideas Today?",
     why: "Scrolling TikTok for hours to find what to film, then copying what's already old.",
     fix: "Today's Ideas gives you what to film, picked for your account.",
+    // Before: endless TikTok scrolling. After: today's ideas, ready (owner, 29 Oct 2026).
     art: (
-      <div className="lp-pa-ideas">
-        {IDEAS.map((x) => {
-          const p = product(x.productId);
-          return <div key={x.productId} className="lp-pa-row"><Thumb src={p.img} size={36} /><span>“{x.idea}”<small>{p.name}</small></span></div>;
-        })}
+      <div className="lp-pa-swap">
+        <div className="lp-pa-feed">
+          <div>{[...TT_FEED, ...TT_FEED].map((src, i) => <Thumb key={i} src={src} size={60} />)}</div>
+          <span className="lp-pa-tag"><Icon name="clock" size={14} width={2.4} /> 2 hours of scrolling…</span>
+        </div>
+        <div className="lp-pa-ideas">
+          <span className="lp-pa-tag">Today&apos;s Ideas, for you</span>
+          {IDEAS.map((x) => {
+            const p = product(x.productId);
+            return <div key={x.productId} className="lp-pa-row"><Thumb src={p.img} size={36} /><span>“{x.idea}”<small>{p.name}</small></span></div>;
+          })}
+        </div>
       </div>
     ),
   },
   {
+    // What they care about: which videos earn, not where the data comes from (owner, 29 Oct 2026).
     key: "live", tint: "linear-gradient(160deg,#04291a,#00a862)",
-    pain: "Is Your Data Even Up to Date?",
-    why: "Scraped numbers lag and guess. You can't plan with them.",
-    fix: "Real-time GMV and commission straight from TikTok Shop's own data, not scraped.",
+    pain: "Which Video Is Actually Making You Money?",
+    why: "Guessing what works means posting more of what doesn't.",
+    fix: "See commission per video and product as it happens, so you post more of what earns.",
     art: (
-      <div className="lp-pa-live">
-        <span className="lp-pa-tag"><i /> Live from TikTok Shop</span>
-        <b>RM 2,316.80</b>
-        <small>GMV today · updated just now</small>
+      <div className="lp-pa-risk">
+        <span className="lp-pa-tag"><i className="dot" /> Live</span>
+        {TOP_VIDS.map((x, i) => (
+          <div key={x.id} className={`lp-pa-row ${i === 0 ? "bad top" : ""}`}>
+            <Icon name="video" size={16} width={2.2} />
+            <span>{x.title}<small>{i === 0 ? "Top earner · " : ""}RM {x.commission.toFixed(2)} commission</small></span>
+          </div>
+        ))}
       </div>
     ),
   },

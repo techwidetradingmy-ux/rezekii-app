@@ -18,6 +18,10 @@
 .lp-hero h1 em { font-style: normal; background: linear-gradient(90deg, #00a862, #00c073 45%, #14b8a6); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .lp-hero-copy > p { margin: 0; max-width: 34em; font-size: clamp(16px, 1.5vw, 19px); line-height: 1.5; color: var(--body); }
 .lp-hero .sc-field { box-shadow: 0 14px 34px -20px rgba(0, 154, 92, 0.6); }
+/* A slimmer username box in the hero (owner, 29 Oct 2026): one row, so more fits below. */
+.lp-hero .sc-row { flex-wrap: nowrap; gap: 8px; padding: 0; border: 0; background: none; }
+.lp-hero .sc-field { flex: 1 1 0; min-width: 0; height: 48px; padding: 0 12px; border-radius: 14px; font-size: 15px; }
+.lp-hero .sc-row .cr1-bigbtn { flex: 0 0 auto !important; width: auto !important; height: 48px !important; padding: 0 14px !important; font-size: 15px !important; border-radius: 14px !important; white-space: nowrap; }
 .lp-ctas { display: flex; flex-wrap: wrap; gap: 10px; }
 .lp-ctas.center { justify-content: center; }
 .lp-bigbtn { height: 56px !important; padding: 0 24px !important; font-size: 16.5px !important; font-weight: 800 !important; border-radius: 16px !important; }
@@ -769,7 +773,8 @@ button.lp-shotf { cursor: zoom-in; }
 .hs-beam { position: absolute; left: -8px; right: -8px; top: -30px; height: 30px; pointer-events: none; opacity: 0; border-bottom: 2px solid #00c073; border-radius: 0 0 6px 6px; background: linear-gradient(180deg, transparent, rgba(0, 192, 115, 0.24)); }
 /* The money, shown like a payout (owner, 29 Oct 2026): dark card, the amount counts up in big type, the sum under it. */
 .hs-total { position: relative; overflow: hidden; display: grid; gap: 2px; padding: 16px 18px; border-radius: 18px; color: #ffffff; background: radial-gradient(90% 120% at 100% 0%, rgba(0, 192, 115, 0.35), transparent 60%), linear-gradient(160deg, #0d2a1e, #06140e); box-shadow: inset 0 0 0 1px rgba(95, 255, 176, 0.18); }
-.hs-total small { font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: #8ff0c3; }
+.hs-total small { display: flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: #8ff0c3; }
+.hs-total small .v2-tipbtn { color: #8ff0c3; text-transform: none; letter-spacing: 0; }
 .hs-total b { display: flex; align-items: baseline; gap: 6px; font-size: 52px; line-height: 1; font-weight: 900; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; background: linear-gradient(90deg, #ffffff, #b6ffd9); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .hs-total b span { font-size: 22px; letter-spacing: 0; }
 .hs-sum { margin-top: 4px; font-size: 12.5px; font-weight: 700; color: rgba(255, 255, 255, 0.78); }
@@ -783,6 +788,7 @@ button.lp-shotf { cursor: zoom-in; }
 @media (max-width: 960px) {
   /* Phones: the username box right under the words, then the scan card (owner, 29 Oct 2026). */
   .lp-hero-grid.scan { grid-template-areas: "top" "cta" "vis"; }
+  .lp-hero .sc-row .cr1-bigbtn svg { display: none; }
   .lp-hero-cta .sc-free, .lp-hero-cta .pc-row { align-self: center; justify-self: center; text-align: center; }
 }
 @media (max-width: 720px) {
@@ -835,7 +841,24 @@ button.lp-shotf { cursor: zoom-in; }
 .lp-pa-chart small { font-size: 12.5px; font-weight: 700; color: rgba(255, 255, 255, 0.8); }
 .lp-pa-live b { font-size: 40px; line-height: 1; font-weight: 900; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .lp-pa-live small { font-size: 13px; font-weight: 700; color: rgba(255, 255, 255, 0.8); }
+.lp-pa-row.bad.top { box-shadow: 0 0 0 3px rgba(95, 255, 176, 0.7); }
+.lp-pa-row.top small { color: #00874f; }
+.lp-pa-tag i.dot { width: 8px; height: 8px; border-radius: 50%; background: #5fffb0; box-shadow: 0 0 0 4px rgba(95, 255, 176, 0.25); animation: jb-pulse 1.6s ease-in-out infinite; }
 .lp-pa-live .lp-pa-tag i { width: 8px; height: 8px; border-radius: 50%; background: #5fffb0; box-shadow: 0 0 0 4px rgba(95, 255, 176, 0.25); animation: jb-pulse 1.6s ease-in-out infinite; }
+/* Out of ideas: a TikTok feed scrolling past, then today's ideas take its place. */
+.lp-pa-swap { position: relative; height: 230px; }
+.lp-pa-swap > div { position: absolute; inset: 0; }
+.lp-pa-feed { overflow: hidden; border-radius: 16px; -webkit-mask: linear-gradient(transparent, #000 10%, #000 90%, transparent); mask: linear-gradient(transparent, #000 10%, #000 90%, transparent); }
+.lp-pa-feed > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.lp-pa-feed .lp-thumb { width: 100% !important; height: auto !important; aspect-ratio: 9 / 16; border-radius: 10px; }
+.lp-pa-feed .lp-pa-tag { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); white-space: nowrap; background: rgba(0, 0, 0, 0.6); }
+.lp-pa-swap .lp-pa-ideas { align-content: center; opacity: 0; }
+.lp-pa-feed > div { animation: lpPaFeed 1.6s linear infinite; }
+.lp-poster .lp-pa-feed { animation: lpPaA 7s infinite; }
+.lp-poster .lp-pa-swap .lp-pa-ideas { animation: lpPaB 7s infinite; }
+@keyframes lpPaFeed { from { transform: translateY(0); } to { transform: translateY(-50%); } }
+@keyframes lpPaA { 0%, 46% { opacity: 1; filter: none; } 54%, 94% { opacity: 0; filter: blur(4px); } 100% { opacity: 1; filter: none; } }
+@keyframes lpPaB { 0%, 48% { opacity: 0; transform: translateY(12px); } 56%, 92% { opacity: 1; transform: none; } 100% { opacity: 0; } }
 .lp-pa-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
 .lp-pa-week span { display: grid; justify-items: center; gap: 5px; padding: 8px 0; border-radius: 12px; background: rgba(255, 255, 255, 0.1); }
 .lp-pa-week small { font-size: 11px; font-weight: 800; color: rgba(255, 255, 255, 0.8); }
@@ -847,7 +870,7 @@ button.lp-shotf { cursor: zoom-in; }
   .lp-poster { min-height: 420px; padding: 20px 18px; }
   .lp-poster h3 { font-size: 24px; }
 }
-@media (prefers-reduced-motion: reduce) { .lp-banner-c span, .lp-strip > div, .lp-pa-live .lp-pa-tag i { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .lp-banner-c span, .lp-strip > div, .lp-pa-live .lp-pa-tag i, .lp-pa-feed, .lp-pa-feed > div, .lp-pa-swap .lp-pa-ideas { animation: none !important; } .lp-pa-feed { opacity: 0; } .lp-pa-swap .lp-pa-ideas { opacity: 1; } }
 
 /* ================= Tablet and phone ================= */
 @media (max-width: 1100px) { .lp-jr { grid-template-columns: minmax(0, 1fr) 300px; gap: 36px; } }
