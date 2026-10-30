@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/admin.css";
+import { LiveSampleReview } from "@/components/admin/live-admin-data";
 import "@/app/product-page.css";
 import Link from "next/link";
 import { useState } from "react";
@@ -20,13 +21,15 @@ type Done = { result?: "Approved" | "Rejected" | "Waiting"; at?: string; overrul
 
 /** Sample review: the system pre-checks every request against fixed rules; staff decide in Partner Center. */
 export default function SampleReview() {
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const [filter, setFilter] = useState<Filter>("Suggest approve");
   const [done, setDone] = useState<Record<string, Done>>({});
   const [handled, setHandled] = useState(31);
   const [overruled, setOverruled] = useState(2);
   const [disagree, setDisagree] = useState<SampleReq | null>(null);
   const [walk, setWalk] = useState(false);
+  // Signed in (owner, 31 Oct 2026): real data.
+  if (live) return <LiveSampleReview />;
 
   const count = (f: Filter) => SAMPLES.filter((s) => s.verdict === OF[f] && done[s.id]?.result !== "Approved" && done[s.id]?.result !== "Rejected").length;
   const list = SAMPLES.filter((s) => s.verdict === OF[filter]);

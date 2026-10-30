@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/admin.css";
+import { LiveLedger } from "@/components/admin/live-lists";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -15,12 +16,14 @@ const ACCOUNTS = ["@aisyah.glow", "@kak.ros.kitchen", "@mei.ling.deals", "@farah
 
 /** Wallet ledger: every credit entry; manual adjustments need a second person's approval. */
 export default function Ledger() {
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const [rows, setRows] = useState<LedgerRow[]>(LEDGER_ALL);
   const [pending, setPending] = useState<Pending[]>(PENDING_ADJ);
   const [type, setType] = useState<Type>("All");
   const [q, setQ] = useState("");
   const [adjust, setAdjust] = useState(false);
+  // Signed in (owner, 31 Oct 2026): the real credit ledger.
+  if (live) return <LiveLedger />;
 
   const shown = rows.filter((r) => (type === "All" || r.type === type) && (!q || `${r.account} ${r.source}`.toLowerCase().includes(q.toLowerCase())));
 

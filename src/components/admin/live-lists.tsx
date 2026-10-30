@@ -206,3 +206,54 @@ export function LiveReferrals() {
     </div>
   );
 }
+
+type Credit = { id: string; who: string; side: string; amount: number; kind: string; what: string; created_at: string; expires_at: string | null };
+const KINDS: Record<string, string> = { welcome: "Welcome", mission: "Mission", chest: "Chest", streak: "Streak", referral: "Referral", post: "Post Everywhere", refund: "Refund", expired: "Expired", admin: "Admin" };
+/** Accounts › Ledger on real data: every credit in and out, read-only. */
+export function LiveLedger() {
+  const { toast } = useDemo();
+  const [items, err] = useList<Credit>("ledger");
+  const [q, setQ] = useState("");
+  const [kind, setKind] = useState("All");
+  const kinds = ["All", ...new Set((items ?? []).map((c) => c.kind))];
+  const shown = (items ?? []).filter((c) => (kind === "All" || c.kind === kind) && (!q || `${c.who} ${c.what}`.toLowerCase().includes(q.toLowerCase())));
+  const sum = (f: (c: Credit) => boolean) => (items ?? []).filter(f).reduce((t, c) => t + c.amount, 0);
+  return (
+    <div className="v2-stack v2-in" style={{ gap: 18 }}>
+      <Title title="Ledger" sub="Every credit in and out. Entries can't be edited; corrections are new entries.">
+        <button type="button" className="ad-btn-ghost" disabled={!shown.length} onClick={() => { csv("rezekii-credit-ledger", [["When", "Account", "Side", "Type", "Credits", "What", "Expires"], ...shown.map((c) => [c.created_at, c.who, c.side, KINDS[c.kind] ?? c.kind, c.amount, c.what, c.expires_at ?? ""])]); toast("Exported as CSV"); }}><Icon name="doc" size={15} /> Export</button>
+      </Title>
+      {!items ? <p className="v2-muted">{err ?? "Loading…"}</p> : (
+        <>
+          <div className="v2-grid4 ad-stats">
+            <div className="v2-stat"><small>Given</small><b>{sum((c) => c.amount > 0).toLocaleString("en-MY")}</b><em>Credits in</em></div>
+            <div className="v2-stat"><small>Used</small><b>{Math.abs(sum((c) => c.kind === "post")).toLocaleString("en-MY")}</b><em>Post Everywhere</em></div>
+            <div className="v2-stat"><small>Expired</small><b>{Math.abs(sum((c) => c.kind === "expired")).toLocaleString("en-MY")}</b></div>
+            <div className="v2-stat"><small>Balance in wallets</small><b>{sum(() => true).toLocaleString("en-MY")}</b><em>Latest {items.length} entries</em></div>
+          </div>
+          <div className="ad-bar"><Search value={q} onChange={setQ} placeholder="Search account or reason" /></div>
+          <Chips<string> label="Type" value={kind} onChange={setKind} options={kinds.map((k) => [k === "All" ? "All" : k, k === "All" ? items.length : items.filter((c) => c.kind === k).length])} />
+          <section className="v2-card" style={{ padding: "8px 12px" }}>
+            <div className="v2-tablewrap">
+              <table className="v2-table ad-table">
+                <thead><tr><th>When</th><th>Account</th><th>Type</th><th>What</th><th style={{ textAlign: "right" }}>Credits</th></tr></thead>
+                <tbody>
+                  {shown.map((c) => (
+                    <tr key={c.id}>
+                      <td className="ad-nowrap">{when(c.created_at)}</td>
+                      <td className="ad-nowrap"><b>{c.who}</b><small className="v2-small" style={{ display: "block" }}>{c.side === "seller" ? "Seller wallet" : "Creator wallet"}</small></td>
+                      <td className="ad-nowrap">{KINDS[c.kind] ?? c.kind}</td>
+                      <td style={{ minWidth: 200 }}>{c.what}</td>
+                      <td style={{ textAlign: "right", fontWeight: 800, color: c.amount < 0 ? "var(--red)" : undefined }}>{c.amount > 0 ? "+" : ""}{c.amount}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {!shown.length && <p className="v2-muted" style={{ padding: 12 }}>Nothing matches.</p>}
+          </section>
+        </>
+      )}
+    </div>
+  );
+}

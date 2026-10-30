@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/admin.css";
+import { LiveCreators } from "@/components/admin/live-admin-data";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -20,6 +21,7 @@ const day = (iso: string) => {
 
 /** Creator directory with filters, and a profile sheet for Gold, MCN flag and freeze / ban. */
 export default function CreatorDirectory() {
+  const { live } = useDemo();
   const [people, setPeople] = useState<Person[]>(DIRECTORY);
   const [q, setQ] = useState("");
   const [level, setLevel] = useState<Level>("Any level");
@@ -28,6 +30,8 @@ export default function CreatorDirectory() {
   const [tt, setTt] = useState("Any TikTok level");
   const [niche, setNiche] = useState("Any niche");
   const [open, setOpen] = useState<string | null>(null);
+  // Signed in (owner, 31 Oct 2026): real data.
+  if (live) return <LiveCreators />;
 
   const shown = people.filter(
     (p) =>

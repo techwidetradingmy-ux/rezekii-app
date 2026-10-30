@@ -1,13 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { actorName } from "@/modules/admin/admins.ts";
-import { CUSTOM_STATUSES, auditList, customList, referralList, setCustomStatus, waitlistList, type CustomStatus } from "@/modules/admin/lists.ts";
+import { CUSTOM_STATUSES, auditList, customList, ledgerList, referralList, setCustomStatus, waitlistList, type CustomStatus } from "@/modules/admin/lists.ts";
 
 export const dynamic = "force-dynamic";
 
-const LISTS = { audit: auditList, custom: customList, waitlist: waitlistList, referrals: referralList } as const;
+const LISTS = { audit: auditList, custom: customList, waitlist: waitlistList, referrals: referralList, ledger: ledgerList } as const;
 
-/** Admin lists on real data (admins only; owner, 31 Oct 2026): ?part=audit|custom|waitlist|referrals. */
+/** Admin lists on real data (admins only; owner, 31 Oct 2026): ?part=audit|custom|waitlist|referrals|ledger. */
 export async function GET(req: NextRequest) {
   const user = await currentUser();
   if (user?.role !== "admin") return NextResponse.json({ error: "Admins only." }, { status: 403 });

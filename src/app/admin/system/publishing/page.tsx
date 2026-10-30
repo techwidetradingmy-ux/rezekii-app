@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/admin.css";
+import { LivePublishing } from "@/components/admin/live-admin-data";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -13,10 +14,12 @@ const PLATFORMS = ["All", "TikTok", "Instagram", "Facebook", "Threads"];
 
 /** Publishing ops: failed posts across every user, with retry where it can help and a nudge where the user must act. */
 export default function PublishingOps() {
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const [list, setList] = useState<Post[]>(FAILED_POSTS);
   const [pf, setPf] = useState("All");
   const [sum, setSum] = useState<{ tried: number; ok: number } | null>(null);
+  // Signed in (owner, 31 Oct 2026): real data.
+  if (live) return <LivePublishing />;
 
   const set = (id: string, patch: Partial<Post>) => setList((l) => l.map((x) => (x.id === id ? { ...x, ...patch } : x)));
   const shown = list.filter((p) => pf === "All" || p.platform === pf);

@@ -58,3 +58,12 @@ export async function referralList() {
   const name = (id: string) => { const n = names.get(id); return n?.handle ? `@${n.handle}` : n?.name ?? "Someone"; };
   return list.map((r) => ({ side: r.side, via: r.via, inviter: name(r.inviter_id), friend: name(r.friend_id), joined: r.joined_at, qualified: r.qualified_at }));
 }
+
+/** Every credit in and out (newest first, latest 1,000), with whose wallet. */
+export async function ledgerList() {
+  const list = await rows<{ id: string; user_id: string; side: string; amount: number; kind: string; what: string; created_at: string; expires_at: string | null }>(
+    "credit_ledger?select=id,user_id,side,amount,kind,what,created_at,expires_at&order=created_at.desc&limit=1000",
+  );
+  const names = await namesOf(list.map((r) => r.user_id));
+  return list.map((r) => { const n = names.get(r.user_id); return { ...r, who: n?.handle ? `@${n.handle}` : n?.name ?? "Someone" }; });
+}
