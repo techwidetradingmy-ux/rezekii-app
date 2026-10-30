@@ -57,7 +57,13 @@ export function ScanHub() {
   // Signed in (owner, 30 Oct 2026): her real showcase scan replaces the sample.
   const [checked, setChecked] = useState(CREATOR.showcaseSize);
   useEffect(() => {
-    if (!live || !linked) return;
+    if (!live) return;
+    // Not linked yet: nothing of hers to show, and no sample numbers either.
+    if (!linked) {
+      setRows([]);
+      setSimilar([]);
+      return;
+    }
     loadScan().then((s) => {
       if (!s) return;
       setRows(s.raises);
