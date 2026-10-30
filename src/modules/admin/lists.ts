@@ -140,3 +140,39 @@ export async function consentList() {
     before: links.filter((l) => l.user_id && !recorded.has(l.user_id)).length,
   };
 }
+
+export const DISPUTE_KINDS = ["Sample not received", "Creator overdue", "Seller complaint", "Creator complaint", "Other"] as const;
+type Dispute = { id: string; kind: string; creator: string | null; shop: string | null; product: string | null; detail: string; status: "open" | "waiting" | "resolved"; outcome: string | null; owner: string | null; opened_by: string; created_at: string; updated_at: string };
+
+/**
+ * Disputes: the cases staff opened, plus creators TikTok shows with a TAP sample received and no content yet (TikTok's
+ * "ContentPending"), so a late video is seen before anyone complains.
+ */
+export async function disputeList() {
+  const [cases, waiting] = await Promise.all([
+    rows<Dispute>("disputes?select=*&order=created_at.desc&limit=1000"),
+    rows<{ username: string; product_name: string | null; shop: string | null; videos: number; updated_at: string }>(
+      "tap_creator_products?sample_status=eq.ContentPending&select=username,product_name,shop,videos,updated_at&order=updated_at&limit=500",
+    ),
+  ]);
+  return { cases, waiting: waiting.map((w) => ({ creator: `@${w.username}`, product: w.product_name, shop: w.shop, videos: w.videos, since: w.updated_at })) };
+}
+export async function openDispute(d: { kind: string; creator?: string; shop?: string; product?: string; detail: string }, actor: string): Promise<boolean> {
+  const t = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) || null : null);
+  const res = await supabaseRest("disputes", {
+    method: "POST",
+    headers: { "content-type": "application/json", prefer: "return=minimal" },
+    body: JSON.stringify({ kind: d.kind, creator: t(d.creator, 80), shop: t(d.shop, 120), product: t(d.product, 200), detail: d.detail.trim().slice(0, 1000), opened_by: actor, owner: actor }),
+  });
+  if (res.ok) await logActivity(actor, "Business", `opened a dispute: ${d.kind}${d.creator ? ` (${d.creator})` : ""}`);
+  return res.ok;
+}
+export async function updateDispute(id: string, patch: { status?: "open" | "waiting" | "resolved"; outcome?: string; owner?: string }, actor: string): Promise<boolean> {
+  const body: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (patch.status) body.status = patch.status;
+  if (typeof patch.outcome === "string") body.outcome = patch.outcome.trim().slice(0, 500) || null;
+  if (typeof patch.owner === "string") body.owner = patch.owner.slice(0, 80);
+  const res = await supabaseRest(`disputes?id=eq.${id}`, { method: "PATCH", headers: { "content-type": "application/json", prefer: "return=minimal" }, body: JSON.stringify(body) });
+  if (res.ok) await logActivity(actor, "Business", `updated a dispute${patch.status ? ` to ${patch.status}` : ""}`);
+  return res.ok;
+}

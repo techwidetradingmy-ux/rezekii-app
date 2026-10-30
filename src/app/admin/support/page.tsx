@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/admin.css";
+import { LiveDisputes } from "@/components/admin/live-disputes";
 import { useState } from "react";
 import { Icon, type IconName } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -20,13 +21,15 @@ const KIND_ICON: Record<D["kind"], [IconName, string]> = {
 
 /** Disputes between creators and sellers: sample not received, creator overdue, seller complaint. */
 export default function Disputes() {
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const [list, setList] = useState<D[]>(DISPUTES);
   const [show, setShow] = useState<"Open" | "Resolved">("Open");
   const [kind, setKind] = useState<Kind>("All");
   const [open, setOpen] = useState<string | null>(null);
   const [to, setTo] = useState<"Creator" | "Seller" | "Both">("Both");
   const [msg, setMsg] = useState("");
+  // Signed in (owner, 31 Oct 2026): real cases.
+  if (live) return <LiveDisputes />;
 
   const openOnes = list.filter((x) => x.status !== "Resolved");
   const base = show === "Open" ? openOnes : list.filter((x) => x.status === "Resolved");
