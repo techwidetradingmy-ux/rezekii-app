@@ -9,10 +9,11 @@ export const maxDuration = 60;
 const DAY = 86_400_000;
 const PARTS = {
   creators: async () => (await creatorsPage()).creators,
+  review: creatorsPage,
   posts: () => postsBetween(new Date(Date.now() - 14 * DAY).toISOString(), new Date(Date.now() + 14 * DAY).toISOString()),
 } as const;
 
-/** Admin data from Rezekii's own records (admins only; owner, 31 Oct 2026): ?part=creators|posts. */
+/** Admin data from Rezekii's own records (admins only; owner, 31 Oct 2026): ?part=creators|review|posts. */
 export async function GET(req: NextRequest) {
   const user = await currentUser();
   if (user?.role !== "admin") return NextResponse.json({ error: "Admins only." }, { status: 403 });

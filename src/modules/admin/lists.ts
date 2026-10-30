@@ -1,5 +1,5 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
-import { listActivity, logActivity } from "./admins.ts";
+import { listActivity, listAdmins, logActivity } from "./admins.ts";
 
 const rows = async <T>(path: string): Promise<T[]> => (await (await supabaseRest(path)).json()) as T[];
 type User = { id: string; display_name: string | null; email: string | null; tiktok_username: string | null; role: string };
@@ -67,3 +67,31 @@ export async function ledgerList() {
   const names = await namesOf(list.map((r) => r.user_id));
   return list.map((r) => { const n = names.get(r.user_id); return { ...r, who: n?.handle ? `@${n.handle}` : n?.name ?? "Someone" }; });
 }
+
+/** Feedback from the form, newest first, with who sent it (screenshots only on request, they're large). */
+export async function feedbackList() {
+  const list = await rows<{ id: string; user_id: string; kind: string; message: string; mood: number | null; reply_by: string; page: string | null; device: string | null; status: string; created_at: string }>(
+    "feedback?select=id,user_id,kind,message,mood,reply_by,page,device,status,created_at&order=created_at.desc&limit=500",
+  );
+  const shots = new Set((await rows<{ id: string }>("feedback?screenshot=not.is.null&select=id&limit=500")).map((r) => r.id));
+  const ids = [...new Set(list.map((r) => r.user_id))];
+  const users = new Map<string, { name: string; handle: string | null; email: string | null }>();
+  for (let i = 0; i < ids.length; i += 150) {
+    for (const u of await rows<User>(`app_users?id=in.(${ids.slice(i, i + 150).join(",")})&select=id,display_name,email,tiktok_username,role`)) {
+      users.set(u.id, { name: u.display_name ?? u.email?.split("@")[0] ?? "Someone", handle: u.tiktok_username, email: u.email });
+    }
+  }
+  return list.map((r) => ({ ...r, shot: shots.has(r.id), who: users.get(r.user_id) ?? { name: "Someone", handle: null, email: null } }));
+}
+export async function feedbackShot(id: string): Promise<string | null> {
+  const [row] = await rows<{ screenshot: string | null }>(`feedback?id=eq.${id}&select=screenshot&limit=1`);
+  return row?.screenshot ?? null;
+}
+export async function setFeedbackStatus(id: string, status: "new" | "handled", actor: string): Promise<boolean> {
+  const res = await supabaseRest(`feedback?id=eq.${id}`, { method: "PATCH", headers: { "content-type": "application/json", prefer: "return=minimal" }, body: JSON.stringify({ status }) });
+  if (res.ok) await logActivity(actor, "Business", `marked a feedback message as ${status}`);
+  return res.ok;
+}
+
+/** Who has admin access, as Settings keeps it. */
+export const adminList = listAdmins;

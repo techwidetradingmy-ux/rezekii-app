@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/admin.css";
+import { LiveFeedback } from "@/components/admin/live-people";
 import { useState } from "react";
 import { Icon, type IconName } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -17,12 +18,14 @@ const open = (f: F) => f.status === "New" || f.status === "In progress";
 
 /** Feedback from creators and sellers: ideas, bugs, complaints. Mark handled, reply. */
 export default function FeedbackInbox() {
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const [list, setList] = useState<F[]>(FEEDBACK);
   const [show, setShow] = useState<"To do" | "Done">("To do");
   const [type, setType] = useState<TypeF>("All");
   const [sel, setSel] = useState<string | null>(null);
   const [reply, setReply] = useState("");
+  // Signed in (owner, 31 Oct 2026): real data.
+  if (live) return <LiveFeedback />;
 
   const base = list.filter((f) => (show === "To do" ? open(f) : !open(f)));
   const shown = base.filter((f) => type === "All" || f.type === type);

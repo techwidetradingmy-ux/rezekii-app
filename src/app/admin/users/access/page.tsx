@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/admin.css";
+import { LiveAdminAccess } from "@/components/admin/live-people";
 import Link from "next/link";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
@@ -13,13 +14,15 @@ type Log = { when: string; text: string };
 
 /** Admin Access: staff sign in like everyone else; a Super Admin grants access to an account and picks a role. */
 export default function AdminAccess() {
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const [staff, setStaff] = useState<Staff[]>(STAFF);
   const [q, setQ] = useState("");
   const [pick, setPick] = useState<string | null>(null);
   const [role, setRole] = useState<Role | null>(null);
   const [revoking, setRevoking] = useState<string | null>(null);
   const [log, setLog] = useState<Log[]>([{ when: "Today 09:40", text: "Hazwan granted Business to nadia@rezekii.com" }]);
+  // Signed in (owner, 31 Oct 2026): real data.
+  if (live) return <LiveAdminAccess />;
 
   const found = q.trim().length < 2 ? [] : PLAIN_ACCOUNTS.filter((a) => !staff.some((s) => s.email === a.email) && `${a.name} ${a.email}`.toLowerCase().includes(q.toLowerCase()));
   const account = PLAIN_ACCOUNTS.find((a) => a.email === pick) ?? null;

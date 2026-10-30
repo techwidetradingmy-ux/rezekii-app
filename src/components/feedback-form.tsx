@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Icon, type IconName } from "@/components/icons";
 import { Seg } from "@/components/ui";
+import { useDemo } from "@/components/demo";
 
 const TYPES: { key: string; icon: IconName; hint: string }[] = [
   { key: "Idea", icon: "spark", hint: "What would make Rezekii better for you?" },
@@ -25,6 +26,28 @@ export function FeedbackForm({ onDone }: { onDone: () => void }) {
   const [face, setFace] = useState<number | null>(null);
   const [err, setErr] = useState("");
   const [sent, setSent] = useState(false);
+  // Signed in (owner, 31 Oct 2026): it's saved for the team, with a small copy of the screenshot.
+  const { live } = useDemo();
+  const [img, setImg] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const pickShot = (f: File | undefined) => {
+    setShot(f?.name ?? null);
+    setImg(null);
+    if (!f) return;
+    const url = URL.createObjectURL(f);
+    const pic = new Image();
+    pic.onload = () => {
+      const k = Math.min(1, 1000 / Math.max(pic.width, pic.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(pic.width * k);
+      c.height = Math.round(pic.height * k);
+      c.getContext("2d")?.drawImage(pic, 0, 0, c.width, c.height);
+      const data = c.toDataURL("image/jpeg", 0.7);
+      setImg(data.length <= 700_000 ? data : null);
+      URL.revokeObjectURL(url);
+    };
+    pic.src = url;
+  };
 
   if (sent) {
     return (
@@ -39,7 +62,16 @@ export function FeedbackForm({ onDone }: { onDone: () => void }) {
 
   const send = () => {
     if (!msg.trim()) return setErr("Write a few words first.");
-    setSent(true);
+    if (!live) return setSent(true);
+    setBusy(true);
+    fetch("/api/v2/feedback", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ kind: type.key, message: msg, mood: face === null ? null : face + 1, reply, page: window.location.pathname, screenshot: img }),
+    })
+      .then(async (r) => (r.ok ? setSent(true) : setErr(((await r.json().catch(() => ({}))) as { error?: string }).error ?? "Didn't send. Please try again.")))
+      .catch(() => setErr("Didn't send. Please try again."))
+      .finally(() => setBusy(false));
   };
 
   return (
@@ -67,11 +99,11 @@ export function FeedbackForm({ onDone }: { onDone: () => void }) {
       <div className="fb-sec">
         <b>Screenshot <span className="pf-opt">Optional</span></b>
         {shot ? (
-          <span className="fb-file"><Icon name="doc" size={16} /><span>{shot}</span><button type="button" className="v2-iconbtn" aria-label="Remove screenshot" onClick={() => setShot(null)}><Icon name="x" size={15} /></button></span>
+          <span className="fb-file"><Icon name="doc" size={16} /><span>{shot}</span><button type="button" className="v2-iconbtn" aria-label="Remove screenshot" onClick={() => { setShot(null); setImg(null); }}><Icon name="x" size={15} /></button></span>
         ) : (
           <label className="btn-outline v2-btn-sm fb-add">
             <Icon name="plus" size={15} /> Add a screenshot
-            <input type="file" accept="image/*" hidden onChange={(e) => setShot(e.target.files?.[0]?.name ?? null)} />
+            <input type="file" accept="image/*" hidden onChange={(e) => pickShot(e.target.files?.[0])} />
           </label>
         )}
       </div>
@@ -91,7 +123,7 @@ export function FeedbackForm({ onDone }: { onDone: () => void }) {
       </div>
 
       <small className="fb-note"><Icon name="info" size={14} /> We attach this page and your device, so we can fix things faster.</small>
-      <button type="button" className="np-btn" onClick={send}><Icon name="send" size={17} /> Send Feedback</button>
+      <button type="button" className="np-btn" disabled={busy} onClick={send}>{busy ? <span className="sl-spin" /> : <><Icon name="send" size={17} /> Send Feedback</>}</button>
     </div>
   );
 }

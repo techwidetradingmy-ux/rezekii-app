@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/admin.css";
+import { LiveReview } from "@/components/admin/live-people";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -17,12 +18,14 @@ const REASONS: Record<Tab, string[]> = {
 
 /** Review queue: creators who linked TikTok Shop and sellers who signed up, waiting for approval. */
 export default function UsersReview() {
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const [tab, setTab] = useState<Tab>("Creators");
   const [handled, setHandled] = useState<Record<string, "Approved" | "Rejected">>({});
   const [rejecting, setRejecting] = useState<Target | null>(null);
   const [reason, setReason] = useState<string | null>(null);
   const [note, setNote] = useState("");
+  // Signed in (owner, 31 Oct 2026): real data.
+  if (live) return <LiveReview />;
 
   const creators = REVIEW_CREATORS.filter((c) => !handled[c.handle]);
   const sellers = REVIEW_SELLERS.filter((s) => !handled[s.shop]);

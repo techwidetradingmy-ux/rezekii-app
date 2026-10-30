@@ -8,7 +8,7 @@ import { Av, Chips, Pill, Search } from "@/components/admin/bits";
 import { REFERRAL_REWARD } from "@/lib/mock";
 
 /** Loads one admin list (admins only), with a plain message for anyone else. */
-function useList<T>(part: string): [T[] | null, string | null, () => void] {
+export function useList<T>(part: string): [T[] | null, string | null, () => void] {
   const [items, setItems] = useState<T[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const load = () =>
@@ -19,8 +19,8 @@ function useList<T>(part: string): [T[] | null, string | null, () => void] {
   useEffect(() => { void load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return [items, err, load];
 }
-const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kuala_Lumpur" }) : "—");
-const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" }) : "—");
+export const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kuala_Lumpur" }) : "—");
+export const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" }) : "—");
 const csv = (name: string, rows: (string | number)[][]) => {
   const q = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
   const a = document.createElement("a");
