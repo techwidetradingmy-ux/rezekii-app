@@ -39,11 +39,13 @@ const pickTrend = (id: string) => TRENDS[[...id].reduce((n, c) => n + c.charCode
 export function productView(id: string): ProductView | null {
   const m = PRODUCTS.find((p) => p.id === id) ?? LIVE_PRODUCTS.get(id);
   if (m) {
+    // A real product (owner, 30 Oct 2026) has no rating or daily sales line from the API yet, so none is shown.
+    const real = !PRODUCTS.includes(m);
     const nb = NICHE_BEST.find((b) => b.productId === id);
     return {
-      id, name: m.name, shop: m.shop, img: m.img, price: m.price, category: m.category, rating: m.rating, sold: m.sold,
-      publicRate: m.publicRate, nowRate: bestRate(m).rate, nowPlan: bestRate(m).plan, tapRate: rateFor(m).rate, special: rateFor(m).special ? { until: rateFor(m).until } : null, samples: m.samples, inShowcase: ON_IDS.includes(id), mySold: ON_SOLD30[id] ?? null,
-      week: daily(nb?.weekSold ?? Math.round(m.sold / 26), nb?.trend ?? pickTrend(id)), wanted: null,
+      id, name: m.name, shop: m.shop, img: m.img, price: m.price, category: m.category, rating: real ? null : m.rating, sold: m.sold,
+      publicRate: m.publicRate, nowRate: bestRate(m).rate, nowPlan: bestRate(m).plan, tapRate: rateFor(m).rate, special: rateFor(m).special ? { until: rateFor(m).until } : null, samples: m.samples, inShowcase: !real && ON_IDS.includes(id), mySold: real ? null : ON_SOLD30[id] ?? null,
+      week: real ? [] : daily(nb?.weekSold ?? Math.round(m.sold / 26), nb?.trend ?? pickTrend(id)), wanted: null,
     };
   }
   const off = NOT_YET.find((s) => s.id === id);

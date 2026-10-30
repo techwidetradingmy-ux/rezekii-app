@@ -13,6 +13,7 @@ import { product, rm, short } from "@/lib/mock";
 import { sampleCount } from "@/lib/mock-creator1";
 import { commitText } from "@/lib/mock-showcase";
 import { canRequest, markRequested, productView, requestedSamples, sampleConditions } from "@/lib/product-view";
+import { addOne, loadProduct, requestSample } from "@/lib/live";
 import "@/app/creator1.css";
 
 /**
@@ -24,8 +25,13 @@ import "@/app/creator1.css";
 export default function ProductPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { linked, setLinked, toast, requireWa } = useDemo();
+  const { linked, setLinked, toast, requireWa, live, me } = useDemo();
   const { mine } = useWishes();
+  // Signed in (owner, 30 Oct 2026): a real product opened straight from a link is fetched first.
+  const [, setLoaded] = useState(0);
+  useEffect(() => {
+    if (live && !productView(id)) loadProduct(id, me?.level ?? "bronze").then((x) => x && setLoaded((n) => n + 1));
+  }, [live, id, me?.level]);
   const p = productView(id);
   const [added, setAdded] = useState(false);
   const [asked, setAsked] = useState(false);
@@ -77,6 +83,17 @@ export default function ProductPage() {
   const back = () => (window.history.length > 1 ? router.back() : router.push("/app/market"));
   const addToShowcase = () => {
     if (!linked) return setLinked(true);
+    if (live) {
+      // For real: into her TikTok Shop showcase through Techwide's TAP, or TikTok's link to open.
+      addOne(p.id).then((r) => {
+        if (r.added) {
+          setAdded(true);
+          toast(`Added at ${p.tapRate}%: ${p.name}`);
+        } else if (r.link) window.open(r.link, "_blank", "noopener");
+        else toast(r.error ?? "TikTok Shop didn't add it. Please try again.");
+      });
+      return;
+    }
     setAdded(true);
     toast(p.tapRate !== null ? `Added at ${p.tapRate}%: ${p.name}` : `Added to your showcase: ${p.name}`);
   };
@@ -86,6 +103,17 @@ export default function ProductPage() {
       if (unmet.length && !warn) {
         setWarn(true);
         document.getElementById("sample")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+      if (live) {
+        // For real: TikTok's own sample request page, where she confirms her address and applies (owner, 30 Oct 2026).
+        requestSample(p.id).then((r) => {
+          if (!r.deeplink) return toast(r.error ?? "TikTok Shop didn't open the sample request. Please try again.");
+          markRequested(p.id);
+          setAsked(true);
+          setWarn(false);
+          window.open(r.deeplink, "_blank", "noopener");
+        });
         return;
       }
       markRequested(p.id);
@@ -174,7 +202,7 @@ export default function ProductPage() {
         <div className="pp-buy">{buy}</div>
 
         <section className="v2-card pp-card">
-          <Trend points={p.week} label="Sales, last 7 days" />
+          {p.week.length > 0 && <Trend points={p.week} label="Sales, last 7 days" />}
           <div className="pp-facts">
             {p.sold !== null && <span><small>Total sold</small><b>{short(p.sold)}</b></span>}
             {p.mySold !== null && <span><small>Your sales, 30 days</small><b>{p.mySold}</b></span>}

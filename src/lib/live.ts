@@ -95,3 +95,16 @@ export function loadAnalytics(): Promise<LiveAnalytics | null> {
     .catch(() => null);
   return analytics;
 }
+
+/** One real Marketplace product by id (a page opened straight from a link, before the list has loaded). */
+export async function loadProduct(id: string, level: "bronze" | "silver" | "gold"): Promise<Product | null> {
+  if (LIVE_PRODUCTS.has(id)) return LIVE_PRODUCTS.get(id) ?? null;
+  const d = await fetch(`/api/tap/products/${encodeURIComponent(id)}`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  return d?.product ? fromLiveTap(d.product as LiveTap, level) : null;
+}
+
+/** Free sample through Techwide's TAP campaign: TikTok's one-time link to its sample request page. */
+export async function requestSample(productId: string): Promise<{ deeplink?: string; phoneUrl?: string; error?: string }> {
+  const r = await fetch("/api/tap/samples", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ productId }) });
+  return r.json().catch(() => ({ error: "Couldn't reach TikTok Shop." }));
+}

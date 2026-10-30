@@ -1,0 +1,2 @@
+# Local settings stay on this computer; the site uses the Vercel project settings.
+.env*
