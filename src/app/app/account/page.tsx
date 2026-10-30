@@ -52,7 +52,7 @@ function prettyNum(cc: string, d: string) {
 /** My account: profile, connections, samples & delivery, rate card and settings, grouped like iOS Settings. Nothing is saved. */
 export default function Account() {
   const you = useWho();
-  const { linked, setLinked, toast, consent, waVerified: verified, setWaVerified: setVerified, live, me } = useDemo();
+  const { linked, setLinked, toast, consent, waVerified: verified, setWaVerified: setVerified, live, me, refreshMe } = useDemo();
   const [unlink, setUnlink] = useState(false);
   const [tab, setTab] = useState<TabKey>("profile");
   const tabsRef = useRef<HTMLDivElement>(null);
@@ -120,6 +120,35 @@ export default function Account() {
     if (t !== "Auto") applyTheme(t);
   }, []);
   const pickTheme = (t: Theme) => { setTheme(t); applyTheme(t); };
+
+  // Settings on her real account (owner, 31 Oct 2026): how she signs in, password and email, and deleting the account.
+  const ways = live ? me?.signIn : undefined;
+  const [curPw, setCurPw] = useState("");
+  const [busyAcct, setBusyAcct] = useState(false);
+  const emailLogin = async (change: { email?: string; password?: string; current?: string }, done: string) => {
+    setBusyAcct(true);
+    try {
+      const r = await fetch("/api/account/email-login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(change) });
+      const d = (await r.json().catch(() => ({}))) as { error?: string };
+      if (!r.ok) return toast(d.error ?? "Didn't save. Please try again.");
+      toast(done);
+      setPwSheet(false);
+      setEmailSheet(false);
+      setPw(["", "", ""]);
+      setCurPw("");
+      refreshMe();
+    } finally {
+      setBusyAcct(false);
+    }
+  };
+  const deleteReal = async () => {
+    setBusyAcct(true);
+    const r = await fetch("/api/account/delete", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ confirm: "DELETE" }) }).catch(() => null);
+    const d = (await r?.json().catch(() => ({}))) as { error?: string } | undefined;
+    setBusyAcct(false);
+    if (!r?.ok) return toast(d?.error ?? "Couldn't delete the account. Please try again.");
+    window.location.href = "/";
+  };
 
   // Signed in (owner, 31 Oct 2026): her real channels for Connections, and a message when she comes back from connecting one.
   type Chan = { key: string; app: "tiktok" | "facebook" | "instagram" | "threads"; name: string; sub: string; status: "active" | "reconnect" };
@@ -486,6 +515,28 @@ export default function Account() {
             {/* Owner, 28 Oct 2026: remind people which account they sign in with. */}
             <div className="cr2-cell stack">
               <span className="lbl">How you sign in</span>
+              {ways ? (
+              <div className="si-methods">
+                <span className={`si-m ${ways.tiktok ? "on" : ""}`}>
+                  <span className="si-ico tt" aria-hidden="true"><TikTokMark size={18} /></span>
+                  <span><b>TikTok</b><small>{ways.tiktok ? `Signed in as ${ways.tiktok}` : "Not linked"}</small></span>
+                  {ways.tiktok ? <span className="badge">Linked</span> : <a className="btn-outline v2-btn-sm" href="/api/auth/tiktok/start">Link</a>}
+                </span>
+                <span className={`si-m ${ways.google ? "on" : ""}`}>
+                  <span className="si-ico gg" aria-hidden="true"><GoogleMark /></span>
+                  <span><b>Google</b><small>{ways.google ? `Linked to ${ways.google}` : "Not linked"}</small></span>
+                  {ways.google && <span className="badge">Linked</span>}
+                </span>
+                <span className={`si-m ${ways.password ? "on" : ""}`}>
+                  <span className="si-ico em" aria-hidden="true"><Icon name="lock" size={15} /></span>
+                  <span><b>Email and password</b><small>{ways.password ? `${ways.email ?? me?.email ?? ""}` : "No password yet"}</small></span>
+                  <span className="si-acts">
+                    {ways.password && <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setNewEmail(""); setCurPw(""); setEmailSheet(true); }}>Change email</button>}
+                    <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setPw(["", "", ""]); setPwSheet(true); }}>{ways.password ? "Change password" : "Set password"}</button>
+                  </span>
+                </span>
+              </div>
+              ) : (
               <div className="si-methods">
                 {([
                   ["TikTok", `Signed in as ${you.handle}`, true, "tt"],
@@ -507,6 +558,7 @@ export default function Account() {
                   </span>
                 ))}
               </div>
+              )}
             </div>
           </div>
         </section>
@@ -516,13 +568,20 @@ export default function Account() {
           <div className="cr2-cells">
             <div className="cr2-cell">
               <span className="lbl">Consent</span>
-              <span className="val v2-muted">{consent && !consent.unlinkedAt ? `Terms v${consent.terms} · Privacy v${consent.privacy} · ${consent.at}` : "None. TikTok Shop isn't linked."}</span>
+              <span className="val v2-muted">{live ? (me?.shop ? "Given when you linked TikTok Shop" : "None. TikTok Shop isn't linked.") : consent && !consent.unlinkedAt ? `Terms v${consent.terms} · Privacy v${consent.privacy} · ${consent.at}` : "None. TikTok Shop isn't linked."}</span>
             </div>
+            {live ? (
+              <a href={`mailto:${SUPPORT.email}?subject=${encodeURIComponent("A copy of my Rezekii data")}`} className="cr2-cell cr2-cellbtn">
+                <span className="lbl">Download my data</span>
+                <span className="chev">Ask support <Icon name="arrow" size={16} /></span>
+              </a>
+            ) : (
             <button type="button" className="cr2-cell cr2-cellbtn" onClick={() => toast("We'll email you a copy of your data within 7 days")}>
               <span className="lbl">Download my data</span>
               <span className="chev">Email me a copy <Icon name="arrow" size={16} /></span>
             </button>
-            <a href="#" className="cr2-cell cr2-cellbtn" onClick={(e) => { e.preventDefault(); toast("Opening the Privacy Policy"); }}>
+            )}
+            <a href="https://rezekii.com/privacy" target="_blank" rel="noreferrer" className="cr2-cell cr2-cellbtn" onClick={(e) => { if (live) return; e.preventDefault(); toast("Opening the Privacy Policy"); }}>
               <span className="lbl">Privacy Policy</span>
               <span className="chev">v1.0 · 28 Oct 2026 <Icon name="arrow" size={16} /></span>
             </a>
@@ -674,18 +733,24 @@ export default function Account() {
 
       {emailSheet && (
         <Sheet title="Change Email" onClose={() => setEmailSheet(false)}>
-          <p className="v2-muted" style={{ margin: 0 }}>Now: {email}. Confirm with the link we send.</p>
+          <p className="v2-muted" style={{ margin: 0 }}>Now: {ways ? ways.email ?? me?.email : email}.{ways ? "" : " Confirm with the link we send."}</p>
           <label className="v2-field">
             New email
             <input type="email" className="np-input" autoComplete="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="you@example.com" />
           </label>
+          {ways && (
+            <label className="v2-field">
+              Current password
+              <input type="password" className="np-input" autoComplete="current-password" value={curPw} onChange={(e) => setCurPw(e.target.value)} />
+            </label>
+          )}
           <button
             type="button"
             className="np-btn"
-            disabled={!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(newEmail)}
-            onClick={() => { setEmail(newEmail); setEmailSheet(false); toast(`Link sent to ${newEmail}`); }}
+            disabled={!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(newEmail) || (!!ways && !curPw) || busyAcct}
+            onClick={() => { if (ways) return void emailLogin({ email: newEmail, current: curPw }, "Email changed"); setEmail(newEmail); setEmailSheet(false); toast(`Link sent to ${newEmail}`); }}
           >
-            Send link
+            {ways ? "Change email" : "Send link"}
           </button>
         </Sheet>
       )}
@@ -696,7 +761,7 @@ export default function Account() {
             <b>This can&apos;t be undone.</b>
             <ul>
               <li>Your profile, connections and credits are removed.</li>
-              <li>Finish samples in progress ({active}) first, or they&apos;re marked undelivered.</li>
+              <li>{live ? "Finish samples in progress first, or they're marked undelivered." : <>Finish samples in progress ({active}) first, or they&apos;re marked undelivered.</>}</li>
               <li>TikTok still pays commission it owes you.</li>
             </ul>
           </div>
@@ -704,7 +769,7 @@ export default function Account() {
             Type DELETE to confirm
             <input className="np-input" value={delText} onChange={(e) => setDelText(e.target.value)} autoComplete="off" />
           </label>
-          <button type="button" className="np-btn cr2-delbtn" disabled={delText !== "DELETE"} onClick={() => { setDelSheet(false); toast("Preview only: nothing was deleted"); }}>
+          <button type="button" className="np-btn cr2-delbtn" disabled={delText !== "DELETE" || busyAcct} onClick={() => { if (live) return void deleteReal(); setDelSheet(false); toast("Preview only: nothing was deleted"); }}>
             Delete my account
           </button>
           <button type="button" className="btn-outline" onClick={() => setDelSheet(false)}>Keep my account</button>
@@ -712,13 +777,13 @@ export default function Account() {
       )}
 
       {pwSheet && (
-        <Sheet title={hasPw ? "Change Password" : "Set a Password"} onClose={() => setPwSheet(false)}>
-          <p className="v2-muted" style={{ margin: 0 }}>{hasPw ? `For signing in with ${email}.` : `Sign in with ${email} too.`}</p>
-          {hasPw && (
+        <Sheet title={(ways ? ways.password : hasPw) ? "Change Password" : "Set a Password"} onClose={() => setPwSheet(false)}>
+          <p className="v2-muted" style={{ margin: 0 }}>{(ways ? ways.password : hasPw) ? `For signing in with ${ways ? ways.email ?? me?.email : email}.` : `Sign in with ${ways ? me?.email ?? "your email" : email} too.`}</p>
+          {(ways ? ways.password : hasPw) && (
             <label className="v2-field">
               Current password
               <input type="password" className="np-input" autoComplete="current-password" value={pw[0]} onChange={(e) => setPw([e.target.value, pw[1], pw[2]])} />
-              <button type="button" className="v2-link" style={{ alignSelf: "flex-start", fontSize: 13 }} onClick={() => { setPwSheet(false); toast(`Reset link sent to ${email}`); }}>Email me a reset link</button>
+              {!ways && <button type="button" className="v2-link" style={{ alignSelf: "flex-start", fontSize: 13 }} onClick={() => { setPwSheet(false); toast(`Reset link sent to ${email}`); }}>Email me a reset link</button>}
             </label>
           )}
           <label className="v2-field">
@@ -734,10 +799,13 @@ export default function Account() {
           <button
             type="button"
             className="np-btn"
-            disabled={(hasPw && !pw[0]) || pw[1].length < 8 || pw[1] !== pw[2]}
-            onClick={() => { setHasPw(true); setPw(["", "", ""]); setPwSheet(false); toast(hasPw ? "Password changed. Other devices are signed out." : "Password set"); }}
+            disabled={((ways ? ways.password : hasPw) && !pw[0]) || pw[1].length < 8 || pw[1] !== pw[2] || busyAcct}
+            onClick={() => {
+              if (ways) return void emailLogin(ways.password ? { password: pw[1], current: pw[0] } : { email: me?.email ?? undefined, password: pw[1] }, ways.password ? "Password changed" : "Password set");
+              setHasPw(true); setPw(["", "", ""]); setPwSheet(false); toast(hasPw ? "Password changed. Other devices are signed out." : "Password set");
+            }}
           >
-            {hasPw ? "Change password" : "Save password"}
+            {(ways ? ways.password : hasPw) ? "Change password" : "Save password"}
           </button>
         </Sheet>
       )}

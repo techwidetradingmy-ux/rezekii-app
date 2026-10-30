@@ -23,6 +23,8 @@ export async function GET() {
     // Her TikTok Shop creator level, read by the refresh queue after linking (owner, 14 Oct 2026).
     supabaseRest(`affiliate_connections?user_id=eq.${user.id}&select=tt_level&limit=1`).then((r) => r.json() as Promise<{ tt_level: number | null }[]>).catch(() => []),
   ]);
+  // How she can sign in (owner, 31 Oct 2026: Settings shows the real ways in). No secrets leave the server.
+  const [ways] = (await supabaseRest(`app_users?id=eq.${user.id}&select=google_sub,tiktok_open_id,tiktok_username,password_hash,login_email,email&limit=1`).then((r) => r.json()).catch(() => [])) as { google_sub: string | null; tiktok_open_id: string | null; tiktok_username: string | null; password_hash: string | null; login_email: string | null; email: string | null }[];
   return NextResponse.json(
     {
       me: {
@@ -35,6 +37,12 @@ export async function GET() {
         level,
         shop: link ? { handle: link.username, access: access?.status ?? null } : null,
         ttLevel: link ? tt[0]?.tt_level ?? null : null,
+        signIn: {
+          tiktok: ways?.tiktok_open_id ? (ways.tiktok_username ? `@${ways.tiktok_username}` : "Linked") : null,
+          google: ways?.google_sub ? ways.email ?? "Linked" : null,
+          email: ways?.login_email ?? null,
+          password: !!ways?.password_hash,
+        },
         // The Seller Center shop this account authorized, for the seller app (owner, 30 Oct 2026).
         sellerShop,
       },
