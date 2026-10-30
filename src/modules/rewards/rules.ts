@@ -32,7 +32,7 @@ export const POST_CREDITS = 5;
 
 /** Win-win referral: the same for both sides, creators and sellers (owner, 28 Oct 2026). */
 export const REFERRAL_REWARD = { inviter: 50, friend: 50 };
-/** A friend counts once they link their shop and save their details within this many days of joining. */
+/** A friend counts once they link their shop within this many days of joining. */
 export const REFERRAL_DAYS = 14;
 
 /** Starter missions are open for the first days after joining. */

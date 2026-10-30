@@ -54,7 +54,7 @@ export default function SellerReferral() {
         {!r && (<>
         <div className="rf-goal">
           <b>{Math.min(done, GOAL)} of {GOAL} Friends</b>
-          <small>{done >= GOAL ? "Bonus unlocked" : `${GOAL - done} more for a bonus`} <Tip text="Sellers count once they connect Seller Center and fill in their details. The bonus lands in your credit history." /></small>
+          <small>{done >= GOAL ? "Bonus unlocked" : `${GOAL - done} more for a bonus`} <Tip text="Sellers count once they connect Seller Center. The bonus lands in your credit history." /></small>
         </div>
         <div className="rf-segs" aria-hidden="true">{Array.from({ length: GOAL }, (_, i) => <i key={i} className={i < done ? "on" : undefined} />)}</div>
         </>)}
@@ -99,7 +99,7 @@ export default function SellerReferral() {
       <section className="v2-card flat">
         <h2 className="cr2-h3">How It Counts</h2>
         <ol className="cr2-rules">
-          <li><span><b>Successful</b> means your friend connects Seller Center and fills in their details within 14 days.</span></li>
+          <li><span><b>Successful</b> means your friend connects Seller Center within 14 days.</span></li>
           <li><span><b>Last click wins.</b> Your link works for 14 days after the seller taps it. If they tap another seller&apos;s link after yours, that one counts, so share early.</span></li>
         </ol>
       </section>

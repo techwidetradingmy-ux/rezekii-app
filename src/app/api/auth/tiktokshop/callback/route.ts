@@ -15,8 +15,9 @@ import { mytDay } from "@/modules/refresh/plan.ts";
 import { addTasks } from "@/modules/refresh/store.ts";
 import { STATE_COOKIE, STATE_COOKIE_OPTIONS, stateMatches } from "../state.ts";
 
-// Linking also reads the creator's orders in the background, so Sales shows their GMV on the first visit.
-export const maxDuration = 60;
+// Linking also reads the creator's orders and her free samples in the background, so Analytics and the Marketplace are ready on
+// the first visit. Together they ran past 60 seconds (31 Oct 2026); the page itself still answers straight away.
+export const maxDuration = 300;
 
 const CREATOR_RESULTS = new Set(["connected", "waiting", "waitlist", "taken", "denied", "expired", "error"]);
 

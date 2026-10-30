@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, createSession, sessionCookieOptions } from "@/modules/accounts/session.ts";
 import { attachReferral, readRefCookie, REF_COOKIE } from "@/modules/rewards/referrals.ts";
+import { needsDetails } from "@/modules/rewards/profiles.ts";
 
 export type Provider = "google" | "tiktok";
 
@@ -28,7 +29,9 @@ export function toSignin(req: NextRequest, error: "denied" | "expired" | "failed
 /** Starts a session for the account and sends them into the app. A new account joins whoever invited it. */
 export async function signedIn(req: NextRequest, userId: string, p: Provider, to = "/app"): Promise<NextResponse> {
   const { token, expires } = await createSession(userId);
-  const res = NextResponse.redirect(`${appBase(req)}${to}`);
+  // Details not filled in yet (Google and TikTok skip the sign-up form): the same form, once, before the app (owner, 31 Oct 2026).
+  const details = to === "/app" && (await needsDetails(userId).catch(() => false));
+  const res = NextResponse.redirect(`${appBase(req)}${details ? "/signin?details=1" : to}`);
   res.cookies.set(SESSION_COOKIE, token, sessionCookieOptions(expires));
   res.cookies.set(oauthCookie(p), "", { ...OAUTH_COOKIE_OPTIONS, maxAge: 0 });
   await joinInviter(req, res, userId);

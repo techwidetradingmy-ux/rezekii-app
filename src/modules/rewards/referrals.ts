@@ -7,7 +7,7 @@ import { REFERRAL_DAYS, REFERRAL_REWARD } from "./rules.ts";
  * Referrals (owner, 28-30 Oct 2026: real data from 31 Oct). Each account has one invite code; creators invite creators with
  * /r/CODE and sellers invite sellers with /s/CODE. The last link tapped in the 14 days before sign-up wins; a typed code works
  * too. The inviter is set when the account is made and never changes. Both sides get credits once the friend is successful:
- * links TikTok Shop (creators) or connects Seller Center (sellers) and saves their details, within 14 days of joining.
+ * links TikTok Shop (creators) or connects Seller Center (sellers) within 14 days of joining (owner, 31 Oct 2026).
  */
 
 export type Side = "creator" | "seller";
@@ -91,11 +91,8 @@ export async function settleReferrals(userId: string): Promise<void> {
   const open = (await (await supabaseRest(`referrals?or=(inviter_id.eq.${userId},friend_id.eq.${userId})&qualified_at=is.null&select=friend_id,inviter_id,side,joined_at,qualified_at,qualified_with`)).json()) as Ref[];
   for (const r of open) {
     const by = Date.parse(r.joined_at) + REFERRAL_DAYS * DAY;
-    const [shop, prof] = await Promise.all([
-      shopOf(r.friend_id, r.side),
-      supabaseRest(`profiles?user_id=eq.${r.friend_id}&side=eq.${r.side}&complete=is.true&select=saved_at&limit=1`).then((x) => x.json() as Promise<{ saved_at: string }[]>),
-    ]);
-    if (!shop || !prof[0] || Date.parse(shop.at) > by || Date.parse(prof[0].saved_at) > by) continue;
+    const shop = await shopOf(r.friend_id, r.side);
+    if (!shop || Date.parse(shop.at) > by) continue;
     // One shop earns once: if it already counted for someone, this one doesn't.
     const ok = await supabaseRest(`referrals?friend_id=eq.${r.friend_id}&qualified_at=is.null`, {
       method: "PATCH",
@@ -127,7 +124,7 @@ export async function friendsOf(userId: string, side: Side): Promise<Friend[]> {
     if (r.qualified_at) return { name: await nameOf(r.friend_id, side), joined: r.joined_at, successful: true, next: null };
     const late = Date.now() > Date.parse(r.joined_at) + REFERRAL_DAYS * DAY;
     const shop = await shopOf(r.friend_id, side);
-    const next = late ? "Missed the 14 days" : !shop ? (side === "seller" ? "Connect Seller Center" : "Link TikTok Shop") : "Fill in details";
+    const next = late ? "Missed the 14 days" : shop ? "Counting soon" : side === "seller" ? "Connect Seller Center" : "Link TikTok Shop";
     return { name: await nameOf(r.friend_id, side), joined: r.joined_at, successful: false, next };
   }));
 }

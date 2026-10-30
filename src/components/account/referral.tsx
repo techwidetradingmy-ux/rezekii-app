@@ -19,7 +19,7 @@ const TONES = ["#00c073", "#2f80ed", "#8b5cf6"];
 
 /**
  * Referral (owner, 29 Oct 2026, option C): progress toward the next bonus with Share as the main button on top, then who joined
- * with her link. A friend counts once they link TikTok Shop and fill in their details. Earnings per friend stay in her credit
+ * with her link. A friend counts once they link TikTok Shop (owner, 31 Oct 2026). Earnings per friend stay in her credit
  * history, so the list shows names and status only.
  */
 export function Referral() {
@@ -37,7 +37,7 @@ export function Referral() {
   const reward = r?.reward ?? REFERRAL_REWARD;
   const friends = r
     ? r.friends.map((f) => ({ name: f.name, role: "Creator", ok: f.successful, when: whenLabel(f.joined), next: f.next ?? "" }))
-    : INVITES.map((i) => ({ name: i.name, role: i.role, ok: i.linked && i.details, when: i.when, next: !i.linked ? (i.role === "Seller" ? "Connect Seller Center" : "Link TikTok Shop") : "Fill in details" }));
+    : INVITES.map((i) => ({ name: i.name, role: i.role, ok: i.linked, when: i.when, next: i.role === "Seller" ? "Connect Seller Center" : "Link TikTok Shop" }));
   const done = friends.filter((f) => f.ok).length;
   /** The friends she brought in who are set up: they make the chain on the story card. */
   const CHAIN = friends.filter((f) => f.ok).slice(0, 3);
@@ -118,7 +118,7 @@ export function Referral() {
           {/* The bonus for 5 friends isn't set yet, so real accounts don't see a goal (owner to decide the amount). */}
           {!r && (<>
           <div className="rf-goal">
-            <b>{Math.min(done, GOAL)} of {GOAL} Friends <Tip text="Your friend counts once they link TikTok Shop and fill in their details within 14 days. Your link lasts 14 days, and the last link they tap wins, so share early." /></b>
+            <b>{Math.min(done, GOAL)} of {GOAL} Friends <Tip text="Your friend counts once they link TikTok Shop within 14 days. Your link lasts 14 days, and the last link they tap wins, so share early." /></b>
             <small>{done >= GOAL ? "Bonus unlocked" : `${GOAL - done} more for a bonus`}</small>
           </div>
           <div className="rf-segs" aria-hidden="true">{Array.from({ length: GOAL }, (_, i) => <i key={i} className={i < done ? "on" : undefined} />)}</div>
@@ -164,7 +164,7 @@ export function Referral() {
       <section className="v2-card flat">
         <h2 className="cr2-h3">How It Counts</h2>
         <ol className="cr2-rules">
-          <li><span><b>Successful</b> means your friend links TikTok Shop and fills in their details within 14 days.</span></li>
+          <li><span><b>Successful</b> means your friend links TikTok Shop within 14 days.</span></li>
           <li><span><b>Last click wins.</b> Your link works for 14 days after your friend taps it. If they tap another creator&apos;s link after yours, that one counts, so share early.</span></li>
           <li><span>Your credits show in your <Link href="/app/account#wallet" className="v2-link">Wallet</Link>.</span></li>
         </ol>

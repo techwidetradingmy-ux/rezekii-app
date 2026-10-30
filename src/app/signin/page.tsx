@@ -18,7 +18,7 @@ import { COUNTRIES, tidyPhone as tidyAnyPhone } from "@/lib/mock-seller";
 import { NICHES } from "@/lib/mock-creator2";
 import { EMPTY_ADDRESS, addressOk, birthdayError, saveAddress, saveSignup, type Address } from "@/lib/address";
 import "../creator1.css";
-import { keepInviteCode } from "@/lib/live-rewards";
+import { keepInviteCode, saveProfile } from "@/lib/live-rewards";
 
 type Step = "start" | "oauth" | "profile" | "email" | "code" | "password" | "forgot" | "newpass" | "welcome";
 type Purpose = "signup" | "signin" | "reset";
@@ -88,8 +88,11 @@ function MultiPick({ label, options, value, onChange, max, invalid }: { label: s
  */
 export default function SignIn() {
   const router = useRouter();
-  const { toast } = useDemo();
+  const { toast, me } = useDemo();
   const [step, setStep] = useState<Step>("start");
+  // Signed up with Google or TikTok: the same form once, to fill in the details those skip (owner, 31 Oct 2026).
+  const [details, setDetails] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [forgotFrom, setForgotFrom] = useState<Step>("password");
   // ?in=1 opens Sign in; everything else opens Sign up.
   const [entry, setEntry] = useState<"up" | "in">("up");
@@ -129,6 +132,11 @@ export default function SignIn() {
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     if (q.get("in")) setEntry("in");
+    if (q.get("details")) {
+      setEntry("up");
+      setStep("profile");
+      setDetails(true);
+    }
     const r = q.get("ref");
     if (r) setRefCode(r.toUpperCase().slice(0, 20));
     // Came from an invite link through the landing page: the invite is remembered for 14 days.
@@ -139,6 +147,10 @@ export default function SignIn() {
     const err = q.get("error");
     if (err) toast(err === "denied" ? "Sign-in was cancelled." : err === "config" ? "This sign-in isn't set up yet." : "Sign-in didn't finish. Please try again.");
   }, []);
+  // Her name from Google or TikTok, ready to change.
+  useEffect(() => {
+    if (details && me?.name) setName((n) => n || me.name || "");
+  }, [details, me]);
   const kindError = !kinds.length ? "Pick at least one" : kinds.includes("Others") && !otherKind.trim() ? "Tell us which one" : "";
 
   const tel = (() => {
@@ -183,6 +195,30 @@ export default function SignIn() {
     setWelcome(line);
     setStep("welcome");
     window.setTimeout(() => router.push("/app"), 1400);
+  }
+
+  /** Saves the sign-up details to her profile (and a friend's code she typed), then into the app. */
+  async function saveDetails() {
+    setSaving(true);
+    try {
+      if (typedRef && !refCode) {
+        const r = await fetch("/api/v2/referral", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ code: typedRef, side: "creator", join: true }) });
+        if (!r.ok) {
+          toast("We couldn't find that referral code. Check it, or leave it empty.");
+          return;
+        }
+      }
+      await saveProfile("creator", {
+        name: name.trim(), birthday, country, state: state.trim(), whatsapp: tel.e164.replace(/\s/g, ""), gender,
+        types: kinds.map((k) => (k === "Others" ? `Others: ${otherKind.trim()}` : k)), niches,
+      });
+      keep();
+      finish(`Welcome to Rezekii, ${name.trim().split(" ")[0]}`);
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Didn't save. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   function sendCode(p: Purpose) {
@@ -413,6 +449,11 @@ export default function SignIn() {
   const linked = step === "profile";
   if (entry === "up" && (step === "start" || step === "oauth" || linked || (step === "code" && purpose === "signup"))) {
     const unlink = () => {
+      // Signed up with Google or TikTok but not finished: going back signs out.
+      if (details) {
+        fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/signin"; });
+        return;
+      }
       setName("");
       go("start");
     };
@@ -442,6 +483,7 @@ export default function SignIn() {
                 e.preventDefault();
                 setTried(true);
                 if (signupBad || (!linked && !isEmail(email))) return;
+                if (details) return void saveDetails();
                 keep();
                 if (linked) finish(`Welcome to Rezekii, ${name.trim().split(" ")[0]}`);
                 else sendCode("signup");
@@ -459,7 +501,19 @@ export default function SignIn() {
                   <span>Your scan for <b>@{handle}</b> is one step away. Sign up, then link TikTok Shop to see your rates.</span>
                 </p>
               )}
-              {linked ? (
+              {linked && details ? (
+                <div className="cr1-who">
+                  {me?.photo ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img className="v2-av" src={me.photo} alt="" />
+                  ) : <span className="v2-av">{(me?.name ?? "?").slice(0, 2).toUpperCase()}</span>}
+                  <span>
+                    <b>{me?.name ?? "Your account"}</b>
+                    <small>{me?.email ?? (me?.handle ? `@${me.handle}` : "Signed in")}</small>
+                  </span>
+                  <Icon name="check" size={18} stroke="#00c073" width={3} />
+                </div>
+              ) : linked ? (
                 <div className="cr1-who">
                   <span className="v2-av">AR</span>
                   <span>
@@ -494,10 +548,12 @@ export default function SignIn() {
               </div>
               {refField}
               {addressField}
-              <button type="submit" className="np-btn np-submit">Create account</button>
-              <p className="cr1-center si-switch">
-                Already have an account? <button type="button" className="v2-link" onClick={() => { setEntry("in"); go("start"); }}>Sign in</button>
-              </p>
+              <button type="submit" className="np-btn np-submit" disabled={saving}>{saving ? "Saving…" : "Create account"}</button>
+              {!details && (
+                <p className="cr1-center si-switch">
+                  Already have an account? <button type="button" className="v2-link" onClick={() => { setEntry("in"); go("start"); }}>Sign in</button>
+                </p>
+              )}
               <p className="cr1-center cr1-fine">By continuing you agree to Rezekii&apos;s Terms of Service and Privacy Policy.</p>
             </form>
           )}

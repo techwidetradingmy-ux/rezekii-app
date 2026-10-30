@@ -2,11 +2,11 @@ import { supabaseRest } from "../../integrations/supabase/rest.ts";
 
 /**
  * Saved details (owner, 31 Oct 2026: real data). The creator profile from My Account, or the seller's contact name and phone.
- * Locked once saved: later changes go through support. Starter missions and referrals count a saved, complete profile.
+ * Locked once saved: later changes go through support. New Google and TikTok accounts fill it in once, right after sign-up.
  */
 
 export type Side = "creator" | "seller";
-export type CreatorDetails = { name: string; birthday: string; state: string; whatsapp: string; gender: "Female" | "Male"; types: string[]; niches: string[] };
+export type CreatorDetails = { name: string; birthday: string; country?: string; state: string; whatsapp: string; gender: "Female" | "Male" | "Others"; types: string[]; niches: string[] };
 export type SellerDetails = { contact: string; phone: string };
 export type Saved<T> = { details: T; complete: boolean; savedAt: string };
 
@@ -17,18 +17,26 @@ const list = (v: unknown, max: number) => (Array.isArray(v) ? v.map((x) => text(
 
 /** Cleans what the screen sent; null when something required is missing or wrong. */
 export function cleanCreator(v: Record<string, unknown>): CreatorDetails | null {
+  const gender = v.gender === "Male" || v.gender === "Female" || v.gender === "Others" ? v.gender : null;
   const d: CreatorDetails = {
-    name: text(v.name), birthday: text(v.birthday, 10), state: text(v.state, 40), whatsapp: text(v.whatsapp, 16),
-    gender: v.gender === "Male" ? "Male" : "Female", types: list(v.types, 4), niches: list(v.niches, 3),
+    name: text(v.name), birthday: text(v.birthday, 10), country: text(v.country, 2).toUpperCase() || "MY", state: text(v.state, 40), whatsapp: text(v.whatsapp, 16),
+    gender: gender ?? "Female", types: list(v.types, 6), niches: list(v.niches, 3),
   };
   const age = (Date.now() - Date.parse(d.birthday)) / (365.25 * 86400_000);
-  const ok = d.name.length >= 2 && DATE.test(d.birthday) && age >= 13 && age <= 100 && !!d.state && PHONE.test(d.whatsapp) && d.types.length > 0 && d.niches.length > 0 && (v.gender === "Male" || v.gender === "Female");
+  const ok = d.name.length >= 2 && DATE.test(d.birthday) && age >= 13 && age <= 100 && !!d.state && PHONE.test(d.whatsapp) && d.types.length > 0 && d.niches.length > 0 && !!gender;
   return ok ? d : null;
 }
 
 export function cleanSeller(v: Record<string, unknown>): SellerDetails | null {
   const d = { contact: text(v.contact), phone: text(v.phone, 16) };
   return d.contact.length >= 2 && PHONE.test(d.phone) ? d : null;
+}
+
+/** Whether this account still has to fill in the sign-up details (creators only; admins skip it). */
+export async function needsDetails(userId: string): Promise<boolean> {
+  const [u] = (await (await supabaseRest(`app_users?id=eq.${userId}&select=role&limit=1`)).json()) as { role: string }[];
+  if (!u || u.role === "admin") return false;
+  return !(await profileOf(userId, "creator"))?.complete;
 }
 
 export async function profileOf<T>(userId: string, side: Side): Promise<Saved<T> | null> {
