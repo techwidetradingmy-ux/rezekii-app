@@ -4,7 +4,7 @@ import { removeShopee } from "@/modules/shopee/connections.ts";
 
 export const dynamic = "force-dynamic";
 
-/** Disconnect a Shopee account from Rezekii (nothing is posted to Shopee yet, so there's nothing to cancel). */
+/** Disconnect a Shopee account from Rezekii: its scheduled Shopee posts are cancelled; what was posted stays in My posts. */
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const origin = req.headers.get("origin");
   if (origin && origin !== req.nextUrl.origin) return NextResponse.json({ error: "Please do this from rezekii.com." }, { status: 403 });

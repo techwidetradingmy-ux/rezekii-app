@@ -110,7 +110,7 @@ function Rich({ text, links, tags, at, handles = true }: { text: string; links?:
 }
 
 export type Who = { name: string; username: string; avatar: string | null };
-export type PreviewProps = { channel: Channel; caption: string; comment: string; commentImage?: string | null; video: string | null; who: Who; fbView: "reels" | "feed"; theme: "light" | "dark"; topic?: string; collaborators?: string[] };
+export type PreviewProps = { channel: Channel; caption: string; comment: string; commentImage?: string | null; video: string | null; who: Who; fbView: "reels" | "feed"; theme: "light" | "dark"; topic?: string; collaborators?: string[]; product?: string };
 
 /** Starts muted (browsers only autoplay muted video); the speaker button turns the sound on and off. */
 function Video({ src, s = 16 }: { src: string | null; s?: number }) {
@@ -304,7 +304,31 @@ function Threads({ caption, comment, commentImage, video, who, theme, topic: top
   );
 }
 
+/** Shopee Video: a full-screen vertical video with the account, the caption and, when a product is attached, its tag. */
+function Shopee({ caption, video, who, product }: PreviewProps) {
+  const c = clamp(caption, `400 ${14.5 * PT}px ${tiktokSans.style.fontFamily}`, 280 - 98 * PT, 2, " more");
+  return (
+    <div className={`pv-scr pv-tt ${tiktokSans.variable}`}>
+      <StatusBar color="#fff" />
+      <div className="pv-vid" style={{ bottom: "calc(83 * var(--p))" }}><Video src={video} /></div>
+      <div className="pv-rail pv-sh" style={{ "--rr": 25 } as CSSProperties}>
+        <span className="it" style={{ top: "55.2%" }}><span className="pv-tt-av"><Pic src={who.avatar} /></span></span>
+        <span className="it" style={{ top: "64%" }}><Ic n="heartF" s={35} /><span>0</span></span>
+        <span className="it" style={{ top: "72%" }}><Ic n="cmtF" s={33} /><span>0</span></span>
+        <span className="it" style={{ top: "80%" }}><Ic n="shareF" s={32} /><span>0</span></span>
+      </div>
+      <div className="pv-tt-txt pv-sh">
+        {product && <div className="snd"><Ic n="bag" s={13} /><span>{product}</span></div>}
+        <div className="nm">{who.name}</div>
+        <div className="cp"><Rich text={c.text} tags="bold" at="bold" />{c.cut && " … more"}</div>
+      </div>
+      <div className="pv-bar pv-tt-bar"><Nav n="homeF" label="Home" /><Nav n="reels" label="Video" on /><Nav n="bell" label="Notifications" /><Nav n="user" label="Me" /></div>
+      <span className="pv-hi" style={{ color: "#fff" }} />
+    </div>
+  );
+}
+
 export function PhonePreview(props: PreviewProps) {
-  const C = props.channel === "tiktok" ? TikTok : props.channel === "instagram" ? Instagram : props.channel === "facebook" ? Facebook : Threads;
+  const C = props.channel === "tiktok" ? TikTok : props.channel === "shopee" ? Shopee : props.channel === "instagram" ? Instagram : props.channel === "facebook" ? Facebook : Threads;
   return <div className="pv-phone"><C {...props} /></div>;
 }

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { DEFAULT_PLACEMENT, autoCaption, autoComment, channelProblems, channelWarnings, facebookAsReel, parseHashtags, postedCaption, threadsLength, withHashtags } from "./rules.ts";
+import { DEFAULT_PLACEMENT, autoCaption, autoComment, channelProblems, channelWarnings, facebookAsReel, parseHashtags, postedCaption, shopeeProblems, shopeeProduct, threadsLength, withHashtags } from "./rules.ts";
 
 const MAIN = "Umur 40 ke atas, lutut selalu rasa berat bila naik tangga? Ramai sangka itu biasa. Link produk ada di bawah.\n#krilloil #sendi #wellnessmalaysia #a #b #c #d";
 const LINK = "https://s.shopee.com.my/3g1kTMj9Ah";
@@ -107,4 +107,31 @@ test("C4c: wherever Rezekii adds the product link, the call to action goes in fr
   assert.equal(autoComment("threads", LINK, DEFAULT_PLACEMENT.threads, "Ada soalan?", cta), `Ada soalan?\n${cta} ${LINK}`);
   assert.equal(autoComment("instagram", LINK, DEFAULT_PLACEMENT.instagram, "Ada soalan?", cta), "Ada soalan?");
   assert.equal(postedCaption("facebook", `Beli ${LINK}`, LINK, DEFAULT_PLACEMENT.facebook, cta), `Beli ${LINK}`);
+});
+
+test("Shopee: a short caption stays as it is; a long one becomes its first sentence plus the hashtags that fit, no link", () => {
+  assert.equal(autoCaption("shopee", "Kusyen ni selesa untuk duduk lama. #spinelief"), "Kusyen ni selesa untuk duduk lama. #spinelief");
+  const fits = autoCaption("shopee", MAIN);
+  assert.equal(fits, "Umur 40 ke atas, lutut selalu rasa berat bila naik tangga? Ramai sangka itu biasa.\n#krilloil #sendi #wellnessmalaysia #a #b #c #d");
+  const long = "Duduk lama di pejabat buat pinggang dan tulang ekor rasa sakit menjelang petang. Kusyen memory foam ni ikut bentuk badan dan sokong postur. Dapatkan di sini 👉 https://shopee.com.my/x-i.1.2\n#spinelief #kusyen #ergonomik";
+  const t = autoCaption("shopee", long);
+  assert.ok(t.length <= 150, `${t.length} characters`);
+  assert.equal(t, "Duduk lama di pejabat buat pinggang dan tulang ekor rasa sakit menjelang petang. #spinelief #kusyen #ergonomik");
+  assert.deepEqual(postedCaption("shopee", t, LINK, DEFAULT_PLACEMENT.shopee), t);
+});
+
+test("Shopee: a full product link gives its shop and item; short links and other sites give nothing", () => {
+  assert.deepEqual(shopeeProduct("https://shopee.com.my/Spinelief-SpineFoam-Coccyx-Seat-Cushion-i.229437124.4190238573?sp_atk=x"), { shopId: "229437124", itemId: "4190238573" });
+  assert.deepEqual(shopeeProduct("https://shopee.com.my/product/229437124/12635744934"), { shopId: "229437124", itemId: "12635744934" });
+  assert.equal(shopeeProduct(LINK), null);
+  assert.equal(shopeeProduct("https://example.com/thing-i.1.2"), null);
+});
+
+test("Shopee: 150 characters, no links, videos longer than 3 seconds up to 3 minutes", () => {
+  assert.deepEqual(shopeeProblems("ok", 30), []);
+  assert.equal(shopeeProblems("x".repeat(151), 30).length, 1);
+  assert.equal(shopeeProblems(`Beli sini ${LINK}`, 30).length, 1);
+  assert.equal(shopeeProblems("ok", 3).length, 1);
+  assert.deepEqual(shopeeProblems("ok", 180), []);
+  assert.equal(shopeeProblems("ok", 181).length, 1);
 });

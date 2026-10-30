@@ -10,8 +10,10 @@ export type SocialPostRow = {
   tiktok_post_id: string | null;
   user_id: string;
   account_id: string | null;
+  /** A Shopee channel post's account (shopee_connections); account_id is for Facebook, Instagram and Threads. */
+  shopee_connection_id: string | null;
   account_name: string | null;
-  platform: Platform;
+  platform: Platform | "shopee";
   source: "upload" | "link";
   storage_path: string | null;
   link_url: string | null;
@@ -32,7 +34,7 @@ export type SocialPostRow = {
   comment_error: string | null;
   last_error: string | null;
   posted_at: string | null;
-  /** Post settings for this channel (settings.ts): Facebook draft, Instagram feed/collaborators/trial, Threads replies/topic. */
+  /** Post settings for this channel (settings.ts): Facebook draft, Instagram feed/collaborators/trial, Threads replies/topic; Shopee product, duet, stitch, AI label. */
   settings: Record<string, unknown>;
   live_checked_at: string | null;
   created_at: string;

@@ -4,6 +4,7 @@ import { commentOnInstagram, createInstagramReel, instagramContainer, instagramP
 import { createThreadsReply, createThreadsVideo, publishThreads, threadsContainer, threadsPermalink, threadsPostExists } from "../../integrations/meta/threads.ts";
 import { directLink } from "../posting/media.ts";
 import { nextRetry } from "../posting/rules.ts";
+import { checkShopee, publishShopee, shopeeStillLive, type ShopeeOutcome } from "../shopee/posting.ts";
 import { freshToken, getAccount, markReconnect, type SocialAccount } from "./accounts.ts";
 import { NAMES, facebookAsReel } from "./rules.ts";
 import { cleanSettings, unreachableUsers, type InstagramSettings, type ThreadsSettings } from "./settings.ts";
@@ -45,6 +46,13 @@ async function accountFor(p: SocialPostRow): Promise<SocialAccount | null> {
  * post "processing" until the channel has it ready. A post that already has a container resumes instead of posting again.
  */
 export async function publishSocialPost(p: SocialPostRow): Promise<string> {
+  if (p.platform === "shopee") {
+    if (p.container_id) {
+      await updateSocialPost(p.id, { status: "processing" });
+      return "resumed";
+    }
+    return applyShopee(p, await publishShopee(p));
+  }
   const acc = await accountFor(p);
   if (!acc) return recordFailure(p, "Channel disconnected", { final: true });
   if (acc.status === "reconnect") return recordFailure(p, `${acc.name ?? "This channel"} needs reconnecting in Rezekii (Posts → Channels).`, { final: true });
@@ -87,6 +95,23 @@ export async function publishSocialPost(p: SocialPostRow): Promise<string> {
   }
 }
 
+/** Still processing: fine for 30 minutes after the post was due, then it counts as failed. */
+async function stillProcessing(p: SocialPostRow): Promise<string> {
+  if (Date.now() - new Date(p.scheduled_at ?? p.created_at).getTime() > STUCK_MS) return recordFailure(p, "The channel didn't finish processing the video within 30 minutes.", { final: true });
+  return "processing";
+}
+
+/** Saves what a Shopee try came to, the same way as the other channels' tries. */
+async function applyShopee(p: SocialPostRow, o: ShopeeOutcome): Promise<string> {
+  if (o.kind === "sent") {
+    await updateSocialPost(p.id, { status: "processing", container_id: o.containerId, last_error: null });
+    return "sent";
+  }
+  if (o.kind === "waiting") return stillProcessing(p);
+  if (o.kind === "posted") return markPosted(p, o.postId, null);
+  return recordFailure(p, o.reason, { final: o.final, clearContainer: o.clearContainer });
+}
+
 async function markPosted(p: SocialPostRow, externalId: string, permalink: string | null): Promise<string> {
   await updateSocialPost(p.id, { status: "posted", external_post_id: externalId, permalink, posted_at: new Date().toISOString(), next_attempt_at: null, last_error: null, comment_status: hasComment(p) ? "pending" : "none" });
   if (!hasComment(p)) await cleanUpGroup(p.group_id);
@@ -95,6 +120,7 @@ async function markPosted(p: SocialPostRow, externalId: string, permalink: strin
 
 /** Asks the channel how a processing post is doing; publishes it once ready (Instagram and Threads need a publish call). */
 export async function checkSocialProcessing(p: SocialPostRow): Promise<string> {
+  if (p.platform === "shopee") return applyShopee(p, await checkShopee(p));
   const acc = await accountFor(p);
   if (!acc || !p.container_id) return recordFailure(p, acc ? "Nothing to check." : "Channel disconnected", { final: !acc });
   try {
@@ -121,8 +147,7 @@ export async function checkSocialProcessing(p: SocialPostRow): Promise<string> {
       if (c.status === "PUBLISHED") return markPosted(p, p.external_post_id ?? p.container_id, p.permalink);
       if (c.status === "ERROR" || c.status === "EXPIRED") return recordFailure(p, c.error_message ? `Threads: ${c.error_message}` : "Threads couldn't process the video.", { clearContainer: true });
     }
-    if (Date.now() - new Date(p.scheduled_at ?? p.created_at).getTime() > STUCK_MS) return recordFailure(p, "The channel didn't finish processing the video within 30 minutes.", { final: true });
-    return "processing";
+    return stillProcessing(p);
   } catch (err) {
     return handleError(p, acc, err);
   }
@@ -171,6 +196,20 @@ export async function postFirstComment(p: SocialPostRow): Promise<string> {
  * Posted for something that's gone. Any other answer (e.g. Meta busy) just waits for the next check.
  */
 export async function checkStillLive(p: SocialPostRow): Promise<string> {
+  if (p.platform === "shopee") {
+    const now = new Date().toISOString();
+    try {
+      if (await shopeeStillLive(p)) {
+        await updateSocialPost(p.id, { live_checked_at: now });
+        return "live";
+      }
+      await updateSocialPost(p.id, { status: "removed", live_checked_at: now, last_error: "Deleted in Shopee after it was posted." });
+      return "removed";
+    } catch (err) {
+      await updateSocialPost(p.id, { live_checked_at: now });
+      return `not checked: ${msg(err)}`;
+    }
+  }
   const acc = await accountFor(p);
   const id = p.platform === "facebook" ? (p.container_id ?? p.external_post_id) : p.external_post_id;
   const now = new Date().toISOString();

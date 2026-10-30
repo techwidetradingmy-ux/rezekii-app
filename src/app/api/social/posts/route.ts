@@ -6,7 +6,9 @@ import { nextRecommendedSlot } from "@/modules/posting/rules.ts";
 import { postingHours } from "@/modules/posting/times.ts";
 import { getAccount } from "@/modules/social/accounts.ts";
 import { canUseSocial } from "@/modules/social/access.ts";
-import { NAMES, channelProblems, facebookAsReel } from "@/modules/social/rules.ts";
+import { NAMES, channelProblems, facebookAsReel, shopeeProblems, shopeeProduct } from "@/modules/social/rules.ts";
+import { getShopee } from "@/modules/shopee/connections.ts";
+import type { ShopeeSettings } from "@/modules/shopee/posting.ts";
 import { cleanSettings, settingsProblems } from "@/modules/social/settings.ts";
 import { fileInUse } from "@/modules/posting/edit.ts";
 import { copyUpload, insertSocialPosts, listSocialPosts, postsInDay, type NewSocialPost } from "@/modules/social/store.ts";
@@ -27,8 +29,11 @@ type ChannelIn = { accountId?: string; caption?: string; firstComment?: string; 
 type Body = { source?: "upload" | "link"; storagePath?: string; linkUrl?: string; durationSec?: number; when?: string; tiktokPostId?: string; commentImagePath?: string; channels?: ChannelIn[]; staged?: boolean };
 const bad = (error: string | string[], status = 400) => NextResponse.json({ error }, { status });
 
+/** A Shopee account picked in New post comes as "shopee:<connection id>". */
+const SHOPEE_KEY = /^shopee:([0-9a-f-]{36})$/;
+
 /**
- * Schedules the Meta channels of one New post. Each channel gets its own post (its own caption and first comment), all in
+ * Schedules the Meta and Shopee channels of one New post. Each channel gets its own post (its own caption and first comment), all in
  * one group with the TikTok post when there is one. With a TikTok post, the channels go out at the TikTok post's time.
  * `staged`: an edit being saved, held as drafts with their time until /api/posts/swap puts them in place of the old post.
  */
@@ -41,12 +46,21 @@ export async function POST(req: NextRequest) {
     return bad("Add a video: upload one or paste an https link.");
   let commentImage = b.commentImagePath ?? null;
   if (commentImage && !new RegExp(`^${user.id}/comment/[0-9a-f-]{36}\\.(jpg|png)$`).test(commentImage)) return bad("The comment image upload wasn't found. Add it again.");
-  const channels = (b.channels ?? []).filter((c) => c.accountId);
-  if (!channels.length) return bad("Pick at least one Facebook, Instagram or Threads channel.");
+  const picked = (b.channels ?? []).filter((c) => c.accountId);
+  if (!picked.length) return bad("Pick at least one Facebook, Instagram, Threads or Shopee channel.");
+  const channels = picked.filter((c) => !SHOPEE_KEY.test(String(c.accountId)));
+  const shopeeChannels = picked.filter((c) => SHOPEE_KEY.test(String(c.accountId)));
   const durationSec = typeof b.durationSec === "number" ? b.durationSec : null;
 
   const accounts = await Promise.all(channels.map((c) => getAccount(String(c.accountId), user.id)));
+  const shops = await Promise.all(shopeeChannels.map((c) => getShopee(String(c.accountId).replace("shopee:", ""), user.id)));
   const problems: string[] = [];
+  shops.forEach((c, i) => {
+    if (!c) problems.push("One of the channels isn't connected any more. Reload and pick again.");
+    else if (c.status === "reconnect") problems.push(`${c.name ?? "Shopee"} needs reconnecting first (Posts → Channels).`);
+    else if (!durationSec) problems.push("Shopee needs the video's length: wait for the video to load, or upload the file instead of a link.");
+    else problems.push(...shopeeProblems(String(shopeeChannels[i].caption ?? ""), durationSec));
+  });
   accounts.forEach((a, i) => {
     if (!a) problems.push("One of the channels isn't connected any more. Reload and pick again.");
     else if (a.status === "reconnect") problems.push(`${a.name ?? NAMES[a.platform]} needs reconnecting first (Posts → Channels).`);
@@ -90,6 +104,33 @@ export async function POST(req: NextRequest) {
     commentImage = copy;
   }
   const groupId = randomUUID();
+  const shopeeRows: NewSocialPost[] = shopeeChannels.map((c, i) => {
+    const shop = shops[i]!;
+    const s = (c.settings ?? {}) as { product?: unknown; duet?: unknown; stitch?: unknown; aigc?: unknown };
+    // Sellers can show their own shop's product under the video; Shopee refuses other shops' products for affiliates.
+    const product = shop.role === "seller" && typeof s.product === "string" ? shopeeProduct(s.product) : null;
+    const settings: ShopeeSettings = { itemId: product && product.shopId === shop.shop_id ? Number(product.itemId) : null, duet: s.duet !== false, stitch: s.stitch !== false, aigc: s.aigc === true };
+    return {
+      group_id: groupId,
+      tiktok_post_id: tiktok?.id ?? null,
+      user_id: user.id,
+      account_id: null,
+      shopee_connection_id: shop.id,
+      account_name: shop.name ?? (shop.role === "seller" ? "Shopee shop" : "Shopee affiliate"),
+      platform: "shopee",
+      source: b.source as "upload" | "link",
+      storage_path: storagePath,
+      link_url: b.source === "link" ? (b.linkUrl as string) : null,
+      duration_sec: durationSec,
+      caption: String(c.caption ?? ""),
+      first_comment: "",
+      comment_image_path: null,
+      status: scheduledAt && !b.staged ? "scheduled" : "draft",
+      scheduled_at: scheduledAt?.toISOString() ?? null,
+      next_attempt_at: scheduledAt?.toISOString() ?? null,
+      settings,
+    };
+  });
   const rows: NewSocialPost[] = channels.map((c, i) => {
     const a = accounts[i]!;
     const settings = cleanSettings(a.platform, c.settings);
@@ -100,6 +141,7 @@ export async function POST(req: NextRequest) {
       tiktok_post_id: tiktok?.id ?? null,
       user_id: user.id,
       account_id: a.id,
+      shopee_connection_id: null,
       account_name: a.name ?? a.username,
       platform: a.platform,
       source: b.source as "upload" | "link",
@@ -115,5 +157,5 @@ export async function POST(req: NextRequest) {
       settings,
     };
   });
-  return NextResponse.json({ posts: await insertSocialPosts(rows) }, { status: 201 });
+  return NextResponse.json({ posts: await insertSocialPosts([...rows, ...shopeeRows]) }, { status: 201 });
 }

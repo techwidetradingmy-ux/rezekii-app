@@ -56,12 +56,15 @@ export async function shopeeFetch(url: string, init: RequestInit = {}): Promise<
   return (await proxiedFetch(url, { ...init, dispatcher: proxy.agent } as Parameters<typeof proxiedFetch>[1])) as unknown as Response;
 }
 
-async function call<T>(path: string, init: { query?: Record<string, string | number>; body?: Record<string, unknown>; signWith?: (string | number)[] } = {}): Promise<T> {
+/** One Shopee call: JSON `body` or a multipart `form` is a POST, otherwise a GET. `signWith` adds the token and account id to the sign. */
+export async function shopeeCall<T>(path: string, init: { query?: Record<string, string | number>; body?: Record<string, unknown>; form?: { data: Buffer; type: string }; signWith?: (string | number)[] } = {}): Promise<T> {
   const { partnerId, key, sandbox } = shopeeApp();
   const ts = Math.floor(Date.now() / 1000);
   const q = new URLSearchParams({ partner_id: String(partnerId), timestamp: String(ts), sign: shopeeSign(key, partnerId, path, ts, ...(init.signWith ?? [])) });
   for (const [k, v] of Object.entries(init.query ?? {})) q.set(k, String(v));
-  const res = await shopeeFetch(`${apiHost(sandbox)}${path}?${q}`, init.body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(init.body) } : {});
+  const req: RequestInit = init.form ? { method: "POST", headers: { "content-type": init.form.type }, body: new Uint8Array(init.form.data) }
+    : init.body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(init.body) } : {};
+  const res = await shopeeFetch(`${apiHost(sandbox)}${path}?${q}`, req);
   const data = (await res.json().catch(() => ({}))) as T & { error?: string; message?: string };
   if (data.error || !res.ok) throw new ShopeeError(data.message || `Shopee answered ${res.status}`, data.error || `http_${res.status}`);
   return data;
@@ -79,7 +82,7 @@ const seconds = (n: number | undefined) => (!n ? 4 * 3600 : n > 1e9 ? Math.max(6
  */
 export async function exchangeShopeeCode(code: string): Promise<ShopeeTokens> {
   const { partnerId } = shopeeApp();
-  const r = await call<{ access_token: string; refresh_token: string; expire_in?: number; user_id_list?: number[]; shop_id_list?: number[] }>("/api/v2/auth/token/get", {
+  const r = await shopeeCall<{ access_token: string; refresh_token: string; expire_in?: number; user_id_list?: number[]; shop_id_list?: number[] }>("/api/v2/auth/token/get", {
     body: { code, partner_id: partnerId },
   });
   const userId = r.user_id_list?.[0];
@@ -91,12 +94,12 @@ export async function exchangeShopeeCode(code: string): Promise<ShopeeTokens> {
 /** A new access token (4 hours) and refresh token (30 days), by user_id: Video calls are made as the user, seller or affiliate. */
 export async function refreshShopeeToken(refreshToken: string, userId: string): Promise<Omit<ShopeeTokens, "userId" | "shopId">> {
   const { partnerId } = shopeeApp();
-  const r = await call<{ access_token: string; refresh_token: string; expire_in?: number }>("/api/v2/auth/access_token/get", { body: { refresh_token: refreshToken, partner_id: partnerId, user_id: Number(userId) } });
+  const r = await shopeeCall<{ access_token: string; refresh_token: string; expire_in?: number }>("/api/v2/auth/access_token/get", { body: { refresh_token: refreshToken, partner_id: partnerId, user_id: Number(userId) } });
   return { accessToken: r.access_token, refreshToken: r.refresh_token, expiresIn: seconds(r.expire_in) };
 }
 
 /** A seller's shop name and logo (a Shop API, signed with the shop_id). */
 export async function shopeeShopProfile(accessToken: string, shopId: string): Promise<{ name: string | null; logo: string | null }> {
-  const r = await call<{ response?: { shop_name?: string; shop_logo?: string } }>("/api/v2/shop/get_profile", { query: { access_token: accessToken, shop_id: shopId }, signWith: [accessToken, shopId] });
+  const r = await shopeeCall<{ response?: { shop_name?: string; shop_logo?: string } }>("/api/v2/shop/get_profile", { query: { access_token: accessToken, shop_id: shopId }, signWith: [accessToken, shopId] });
   return { name: r.response?.shop_name || null, logo: r.response?.shop_logo || null };
 }

@@ -49,7 +49,14 @@ export async function getShopee(id: string, userId?: string): Promise<ShopeeConn
   return row ?? null;
 }
 
+/** Disconnect: its scheduled Shopee posts are cancelled first; what was posted stays in My posts. */
 export async function removeShopee(userId: string, id: string): Promise<boolean> {
+  if (!(await getShopee(id, userId))) return false;
+  await supabaseRest(`social_posts?shopee_connection_id=eq.${id}&status=in.(draft,scheduled)`, {
+    method: "PATCH",
+    headers: { prefer: "return=minimal" },
+    body: JSON.stringify({ status: "cancelled", next_attempt_at: null, last_error: "Channel disconnected", updated_at: iso() }),
+  });
   const res = await supabaseRest(`shopee_connections?id=eq.${id}&user_id=eq.${userId}`, { method: "DELETE", headers: { prefer: "return=representation" } });
   return ((await res.json()) as unknown[]).length > 0;
 }
