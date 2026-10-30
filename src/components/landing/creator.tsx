@@ -29,6 +29,8 @@ const example = (id: string) => { const p = product(id); return { ...p, tapRate:
 /** Every rate example on the page uses one product (owner, 29 Oct 2026): the RM 159.90 pot, 9% open plan, 10% on Rezekii. */
 const POT = example("p08");
 const TRACK = product("p01");
+/** The free-sample example: a best seller that really offers samples (owner, 30 Oct 2026: not the track pants). */
+const SAMPLE_PICK = product("p11");
 const POST_TODAY = MISSIONS.find((m) => m.id === "m7")!;
 const WISH = NOT_YET[0];
 const WANTED_N = WANTED[0].creators;
@@ -64,18 +66,28 @@ export function CreatorHeroScan() {
     }
     if (!on) return;
     let raf = 0;
-    const t0 = performance.now();
+    let every = 0;
+    let done = 0;
     const ease = (k: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, k)), 3);
-    // Products checked first, then the extra commission counts up to its full amount (owner, 29 Oct 2026: show the money).
-    const tick = (t: number) => {
-      const ms = t - t0;
-      setCount(Math.round(to * ease(ms / 1600)));
-      setMoney(Math.round(extra * ease((ms - 500) / 2000)));
-      if (ms < 2600) raf = requestAnimationFrame(tick);
-      else setMoney(extra);
+    // Every scan pass counts again (owner, 30 Oct 2026), in step with the scan line: products checked while it sweeps down,
+    // then the extra commission adds up. Same 6 s loop as the line, and the same 0.4 s start.
+    const run = () => {
+      cancelAnimationFrame(raf);
+      const t0 = performance.now();
+      const tick = (t: number) => {
+        const ms = t - t0;
+        setCount(Math.round(to * ease(ms / 2400)));
+        setMoney(Math.round(extra * ease((ms - 1000) / 2200)));
+        if (ms < 3300) raf = requestAnimationFrame(tick);
+        else { setCount(to); setMoney(extra); }
+      };
+      raf = requestAnimationFrame(tick);
+      // Animation frames pause in a hidden tab; this still lands on the full numbers.
+      window.clearTimeout(done);
+      done = window.setTimeout(() => { setCount(to); setMoney(extra); }, 3400);
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    const first = window.setTimeout(() => { run(); every = window.setInterval(run, 6000); }, 400);
+    return () => { window.clearTimeout(first); window.clearTimeout(done); window.clearInterval(every); cancelAnimationFrame(raf); };
   }, [on, still, extra]);
   return (
     <div ref={ref} className="hs lp-live" data-on={on ? "" : undefined}>
@@ -104,7 +116,7 @@ export function CreatorHeroScan() {
             {/* What the example is, and that it isn't a promise (owner, 29 Oct 2026). */}
             <Tip label="About this example" text={`Example only: the ${POT.name} (RM ${POT.price.toFixed(2)}) at ${POT.publicRate}% on the open plan vs ${POT.tapRate}% on Rezekii, over 1,000 orders. It doesn't mean your account will earn this; it depends on your products, rates and sales.`} />
           </small>
-          <b><span>+RM</span>{n(money)}<em>extra, est.</em></b>
+          <b><span>+RM</span>{n(money)}</b>
           <span className="hs-sum">≈ +RM {PER_SALE.toFixed(2)} extra a sale <i>×</i> 1,000 orders</span>
         </div>
       </div>
@@ -467,8 +479,8 @@ const USPS: Usp[] = [
       // A best seller with no free sample on TikTok flips to a free sample on Rezekii (owner, 30 Oct 2026).
       <div className="lp-u-samp">
         <span className="lp-u-prod">
-          <Thumb src={TRACK.img} size={56} />
-          <span><b>{TRACK.name}</b><small>{short(TRACK.sold)} sold · Best seller</small></span>
+          <Thumb src={SAMPLE_PICK.img} size={56} />
+          <span><b>{SAMPLE_PICK.name}</b><small>{short(SAMPLE_PICK.sold)} sold · Best seller</small></span>
         </span>
         <span className="lp-u-flipbox">
           <span className="no"><Icon name="lock" size={14} width={2.4} /> On TikTok: no free sample</span>

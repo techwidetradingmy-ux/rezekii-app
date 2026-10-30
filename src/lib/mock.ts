@@ -36,7 +36,7 @@ export type Product = {
 };
 
 export const PRODUCTS: Product[] = [
-  { id: "p01", name: "Slim-fit track pants (S–XXL)", shop: "Urban Basics MY", img: "/products/tap-01.jpg", price: 30.9, category: "Fashion", publicRate: 6, partnerRate: 10, tapRate: 9, sold: 1119976, rating: 4.8, samples: 0 },
+  { id: "p01", name: "Slim-fit track pants (S–XXL)", shop: "Urban Basics MY", img: "/products/tap-01.jpg", price: 30.9, category: "Fashion", publicRate: 6, partnerRate: 10, tapRate: 9, sold: 1119976, rating: 4.8, samples: null },
   { id: "p02", name: "Plain cotton tee, unisex", shop: "Urban Basics MY", img: "/products/tap-02.jpg", price: 16.9, category: "Fashion", publicRate: 5, partnerRate: 8, tapRate: 7, sold: 955078, rating: 4.7, samples: 0 },
   { id: "p03", name: "Hooded water-resistant windbreaker", shop: "Urban Basics MY", img: "/products/tap-03.jpg", price: 22.9, category: "Fashion", publicRate: 6, partnerRate: 10, tapRate: 9, sold: 929468, rating: 4.7, samples: 10 },
   { id: "p04", name: "Women's casual wide pants", shop: "Urban Basics MY", img: "/products/tap-04.jpg", price: 23.9, category: "Fashion", publicRate: 6, partnerRate: 10, tapRate: 9, sold: 750806, rating: 3.9, samples: 0 },
