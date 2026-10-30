@@ -25,6 +25,7 @@ import { BrandLogo } from "@/components/brand-logos";
 import { MyWishes } from "@/components/creator1/my-wishes";
 import { ACCOUNT_TABS, type AccountTab } from "@/lib/account-tabs";
 import { applyTheme, readTheme, type Theme } from "@/lib/theme";
+import { loadProfile, loadWallet, saveProfile } from "@/lib/live-rewards";
 import "@/app/creator2.css";
 
 const TYPES = ["Affiliate", "UGC", "Artist", "Influencer"] as const;
@@ -51,7 +52,7 @@ function prettyNum(cc: string, d: string) {
 /** My account: profile, connections, samples & delivery, rate card and settings, grouped like iOS Settings. Nothing is saved. */
 export default function Account() {
   const you = useWho();
-  const { linked, setLinked, toast, consent, waVerified: verified, setWaVerified: setVerified, live } = useDemo();
+  const { linked, setLinked, toast, consent, waVerified: verified, setWaVerified: setVerified, live, me } = useDemo();
   const [unlink, setUnlink] = useState(false);
   const [tab, setTab] = useState<TabKey>("profile");
   const tabsRef = useRef<HTMLDivElement>(null);
@@ -120,10 +121,51 @@ export default function Account() {
   }, []);
   const pickTheme = (t: Theme) => { setTheme(t); applyTheme(t); };
 
+  // Signed in (owner, 31 Oct 2026): her saved profile, or an empty one to fill in once; and her real streak.
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [streak, setStreak] = useState(CREATOR.streak);
+  const lvName = live && me ? me.level.charAt(0).toUpperCase() + me.level.slice(1) : CREATOR.level;
+  useEffect(() => {
+    if (!live) return;
+    setLoadingProfile(true);
+    loadWallet("creator").then((w) => setStreak(w.streak)).catch(() => {});
+    loadProfile<{ name: string; birthday: string; state: string; whatsapp: string; gender: "Female" | "Male"; types: string[]; niches: string[] }>("creator")
+      .then(({ profile }) => {
+        if (profile) {
+          const d = profile.details;
+          const code = CODES.map((c) => c[0]).filter((c) => d.whatsapp.startsWith(c)).sort((a, b) => b.length - a.length)[0] ?? "+60";
+          setName(d.name); setBirthday(d.birthday); setState(d.state); setCc(code); setPhone(d.whatsapp.slice(code.length));
+          setGender(d.gender); setTypes(d.types); setNiche(d.niches[0] ?? ""); setSub1(d.niches[1] ?? ""); setSub2(d.niches[2] ?? "");
+          setLocked(true);
+        } else {
+          setName(me?.name ?? ""); setBirthday(""); setState(""); setPhone(""); setTypes([]); setNiche(""); setSub1(""); setSub2("");
+          setLocked(false);
+        }
+      })
+      .catch(() => toast("Couldn't load your profile. Please refresh."))
+      .finally(() => setLoadingProfile(false));
+  }, [live]); // eslint-disable-line react-hooks/exhaustive-deps
+  const saveReal = async () => {
+    setSaving(true);
+    try {
+      await saveProfile("creator", { name, birthday, state, whatsapp: intl, gender, types, niches: [niche, sub1, sub2].filter(Boolean) });
+      setLocked(true);
+      setConfirmSave(false);
+      toast("Profile saved");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Didn't save. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const local = digitsFor(cc, phone);
   const intl = local ? `${cc}${local}` : null;
   const profileErrors = [
     !name.trim() && "Enter your name.",
+    !state && "Pick your state.",
+    !niche && "Pick your main niche.",
     birthdayError(birthday) && `Birthday: ${birthdayError(birthday)}.`,
     !local && "Enter a valid WhatsApp number.",
     types.length === 0 && "Pick at least one creator type.",
@@ -177,10 +219,11 @@ export default function Account() {
               <span className="v2-small">{you.handle}</span>
               {/* Level and streak as two small stat tiles (owner, 29 Oct 2026, option C). */}
               <span className="cr2-mstats">
-                <span><i className={`lv ${CREATOR.level.toLowerCase()}`}><Icon name="gem" size={15} /></i><b>{CREATOR.level}</b><small>Level</small></span>
-                <span><i className="st"><Icon name="flame" size={15} /></i><b>{CREATOR.streak} days</b><small>Streak</small></span>
+                <span><i className={`lv ${lvName.toLowerCase()}`}><Icon name="gem" size={15} /></i><b>{lvName}</b><small>Level</small></span>
+                <span><i className="st"><Icon name="flame" size={15} /></i><b>{streak} day{streak === 1 ? "" : "s"}</b><small>Streak</small></span>
               </span>
-              {!verified && <span className="cr2-chips"><button type="button" className="cr2-wachip" onClick={() => setWaSheet(true)}>Verify WhatsApp</button></span>}
+              {/* WhatsApp checks aren't connected yet, so real accounts don't see Verify. */}
+              {!verified && !live && <span className="cr2-chips"><button type="button" className="cr2-wachip" onClick={() => setWaSheet(true)}>Verify WhatsApp</button></span>}
             </span>
           </div>
         </div>
@@ -196,7 +239,8 @@ export default function Account() {
         </div>
         </aside>
 
-        {tab === "profile" && (
+        {tab === "profile" && loadingProfile && <p className="v2-muted">Loading your profile…</p>}
+        {tab === "profile" && !loadingProfile && (
           <>
         {/* Owner, 28 Oct 2026: the whole profile in one box; once saved it's locked, and changes go through support. */}
         <section className="cr2-group">
@@ -219,6 +263,7 @@ export default function Account() {
                 <span className="pf-l">State {!locked && <Req />}</span>
                 {locked ? <b className="pf-v">{state}</b> : (
                   <select className="np-input" value={state} onChange={(e) => setState(e.target.value)}>
+                    {!state && <option value="">Pick one</option>}
                     {MY_STATES.map((x) => <option key={x}>{x}</option>)}
                   </select>
                 )}
@@ -240,7 +285,7 @@ export default function Account() {
                   {!local && !locked ? <span className="cr2-red" style={{ fontWeight: 700 }}>{cc === "+60" ? "Enter a Malaysian mobile number, e.g. 12-345 6789" : "Enter a mobile number"}</span> : null}
                   {verified ? (
                     <span className="badge"><Icon name="check" size={13} width={3} /> Verified</span>
-                  ) : (
+                  ) : live ? null : (
                     <button type="button" className="np-btn v2-btn-sm cr2-wabtn" disabled={!intl} onClick={() => setWaSheet(true)}>
                       <Icon name="whatsapp" size={16} /> Verify
                     </button>
@@ -275,6 +320,7 @@ export default function Account() {
                 ) : (
                   <span className="pf-niches">
                     <select className="np-input" value={niche} onChange={(e) => setNiche(e.target.value)} aria-label="Main niche">
+                      {!niche && <option value="">Pick one</option>}
                       {NICHES.map((n) => <option key={n}>{n}</option>)}
                     </select>
                     <select className="np-input" value={sub1} onChange={(e) => setSub1(e.target.value)} aria-label="Second niche, optional">
@@ -511,7 +557,7 @@ export default function Account() {
             <div><dt>Creator type</dt><dd>{types.join(", ")}</dd></div>
             <div><dt>Niches</dt><dd>{[niche, sub1, sub2].filter(Boolean).join(" · ")}</dd></div>
           </dl>
-          <button type="button" className="np-btn" onClick={() => { setLocked(true); setConfirmSave(false); toast("Profile saved"); }}>Save profile</button>
+          <button type="button" className="np-btn" disabled={saving} onClick={() => { if (live) { void saveReal(); return; } setLocked(true); setConfirmSave(false); toast("Profile saved"); }}>{saving ? "Saving…" : "Save profile"}</button>
           <button type="button" className="btn-outline" style={{ height: 48 }} onClick={() => setConfirmSave(false)}>Keep editing</button>
         </Sheet>
       )}

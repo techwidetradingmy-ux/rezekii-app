@@ -7,6 +7,7 @@ import { Icon } from "./icons";
 import { Emblem, type Level } from "./emblems";
 import { BrandLogo, type Brand } from "./brand-logos";
 import { useDemo } from "./demo";
+import QRCode from "qrcode";
 
 /** A small ⓘ beside a word; tap it to read the explanation (owner, 28 Oct 2026: tooltips instead of text on the page). */
 export function Tip({ text, label = "What's this?", big = false }: { text: React.ReactNode; label?: string; big?: boolean }) {
@@ -249,11 +250,20 @@ export function RemoveWarn({ items, onConfirm, onClose }: { items: { id: string;
   );
 }
 
-/** A made-up QR pattern for the invite code on share cards. */
-export function Qr() {
+/**
+ * A QR code. With `value` it's real and scans to that address (owner, 31 Oct 2026: real invite links); without, a made-up
+ * pattern for sample screens.
+ */
+export function Qr({ value }: { value?: string } = {}) {
   const cells: [number, number][] = [];
+  let size = 21;
+  if (value) {
+    const m = QRCode.create(value, { errorCorrectionLevel: "M" }).modules;
+    size = m.size;
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) if (m.get(x, y)) cells.push([x, y]);
+  }
   let seed = 7;
-  for (let y = 0; y < 21; y++)
+  if (!value) for (let y = 0; y < 21; y++)
     for (let x = 0; x < 21; x++) {
       seed = (seed * 9301 + 49297) % 233280;
       const finder = (x < 7 && y < 7) || (x > 13 && y < 7) || (x < 7 && y > 13);
@@ -264,7 +274,7 @@ export function Qr() {
     }
   return (
     <span className="v2-qr" aria-label="Invite QR code">
-      <svg viewBox="0 0 21 21" shapeRendering="crispEdges">
+      <svg viewBox={`0 0 ${size} ${size}`} shapeRendering="crispEdges">
         {cells.map(([x, y]) => (
           <rect key={`${x}-${y}`} x={x} y={y} width="1" height="1" fill="#0b1a13" />
         ))}
@@ -317,7 +327,7 @@ const DESIGNS = ["Pastel", "Certificate", "Night"] as const;
 /** What is being shared. Every moment gets its own hero inside the same branded frame (owner, 28 Oct 2026). */
 export type MomentKind = "streak" | "level" | "badge" | "credits" | "mission" | "sample" | "invite";
 /** An invite card's own details (owner, 30 Oct 2026): her code, what the friend gets, her own invite link and photo. */
-export type InviteInfo = { code: string; reward: number; link: string; photo?: string; kick?: string; tag?: string };
+export type InviteInfo = { code: string; reward: number; link: string; photo?: string; kick?: string; tag?: string; real?: boolean };
 
 /**
  * The invite card, made like a story (owner, 30 Oct 2026): Rimau waving them in, one big line, what they get and her code on a
@@ -358,7 +368,7 @@ function InviteCard({ invite, big, handle, fmt, design, video, ratio }: { invite
           <img className="inv-foot-av" src={invite.photo} alt="" />
         ) : <span className="v2-av">{initials}</span>}
         <span className="st-foot-txt"><b>{handle}</b><small>{invite.link}</small></span>
-        <Qr />
+        <Qr value={invite.real ? `https://${invite.link}` : undefined} />
       </span>
     </div>
   );

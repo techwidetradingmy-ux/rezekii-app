@@ -2,18 +2,32 @@
 
 import "@/app/seller.css";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { Count, Seg, ShareSheet, Title } from "@/components/ui";
 import { SELLER } from "@/lib/mock";
 import { SELLER_CREDITS, SELLER_LEDGER } from "@/lib/mock-seller";
+import { useDemo } from "@/components/demo";
+import { loadWallet, whenLabel, type LiveWallet } from "@/lib/live-rewards";
 
-/** Credits wallet: balance and a ledger. Credits are rewards, not cash. */
+/** Credits wallet: balance and a ledger. Credits are rewards, not cash. Signed in, the shop's real ledger (owner, 31 Oct 2026). */
 export default function SellerWallet() {
+  const { live, me } = useDemo();
   const [view, setView] = useState<"All" | "Earned" | "Used">("All");
   const [share, setShare] = useState(false);
-  const rows = SELLER_LEDGER.filter((l) => view === "All" || (view === "Earned" ? l.amount > 0 : l.amount < 0));
-  const earned = SELLER_LEDGER.filter((l) => l.amount > 0).reduce((a, l) => a + l.amount, 0);
+  const [real, setReal] = useState<LiveWallet | null | "error">(null);
+  useEffect(() => {
+    if (live) loadWallet("seller").then(setReal).catch(() => setReal("error"));
+  }, [live]);
+  const w = live && real && real !== "error" ? real : null;
+  const all = w ? w.history.map((h) => ({ when: whenLabel(h.at), what: h.what, amount: h.amount })) : SELLER_LEDGER;
+  const rows = all.filter((l) => view === "All" || (view === "Earned" ? l.amount > 0 : l.amount < 0));
+  const earned = all.filter((l) => l.amount > 0).reduce((a, l) => a + l.amount, 0);
+  const used = all.filter((l) => l.amount < 0).reduce((a, l) => a - l.amount, 0);
+  const credits = w ? w.balance : SELLER_CREDITS;
+  const shop = w ? me?.sellerShop ?? "My shop" : SELLER.shop;
+  if (live && real === null) return <div className="v2-stack v2-in v2-narrow"><p className="v2-muted">Loading your wallet…</p></div>;
+  if (live && real === "error") return <div className="v2-stack v2-in v2-narrow"><p className="v2-muted">Couldn&apos;t load your wallet. Please refresh.</p></div>;
 
   return (
     <div className="v2-stack v2-in v2-narrow">
@@ -23,8 +37,8 @@ export default function SellerWallet() {
 
       <section className="sl-wallet">
         <small>Your credits</small>
-        <b><Count value={SELLER_CREDITS} /></b>
-        <p>{earned.toLocaleString("en-MY")} earned · 0 used · none expiring in 30 days</p>
+        <b><Count value={credits} /></b>
+        <p>{earned.toLocaleString("en-MY")} earned · {used.toLocaleString("en-MY")} used · {w?.expiring ? `${w.expiring.amount} expiring ${whenLabel(w.expiring.on)}` : "none expiring in 30 days"}</p>
         <p style={{ fontSize: 13, opacity: 0.8 }}>Credits are not cash and can&apos;t be withdrawn.</p>
       </section>
 
@@ -52,7 +66,7 @@ export default function SellerWallet() {
       </section>
 
       {share && (
-        <ShareSheet onClose={() => setShare(false)} handle={SELLER.shop} label="Credits earned on Rezekii" big={`${SELLER_CREDITS.toLocaleString("en-MY")}`} lines={["by setting up and inviting friends", "Join free with my link"]} moment="credits" />
+        <ShareSheet onClose={() => setShare(false)} handle={shop} label="Credits earned on Rezekii" big={`${credits.toLocaleString("en-MY")}`} lines={["by setting up and inviting friends", "Join free with my link"]} moment="credits" />
       )}
     </div>
   );

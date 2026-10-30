@@ -2,7 +2,7 @@
 
 import "@/app/seller.css";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Sheet, Title } from "@/components/ui";
@@ -10,6 +10,7 @@ import { ConnBanner, Plat, PhoneField, TermsSheet } from "@/components/seller/se
 import { ConnectSocialSheet, useSellerSocials } from "@/components/seller/connect-social";
 import { SELLER } from "@/lib/mock";
 import { TERMS_VERSION, tidyPhone, type Platform } from "@/lib/mock-seller";
+import { loadProfile, saveProfile } from "@/lib/live-rewards";
 
 const NOTIFY: [string, string, boolean][] = [
   ["Product status", "Approved, live or not approved", true],
@@ -21,7 +22,7 @@ const NOTIFY: [string, string, boolean][] = [
 
 /** Shop authorisation, contact, social accounts, notifications, security, help and billing. */
 export default function SellerAccount() {
-  const { linked, setLinked, toast } = useDemo();
+  const { linked, setLinked, toast, live } = useDemo();
   const { socials, connect, disconnect } = useSellerSocials();
   const [contact, setContact] = useState({ name: SELLER.contact, dial: "60", raw: "0123456789" });
   const [edit, setEdit] = useState<typeof contact | null>(null);
@@ -33,6 +34,31 @@ export default function SellerAccount() {
   const [msg, setMsg] = useState("");
   const [reconnecting, setReconnecting] = useState(false);
   const phone = tidyPhone(contact.raw, contact.dial);
+  // Signed in (owner, 31 Oct 2026): the saved contact, or empty until it's added.
+  const [saved, setSaved] = useState(!live);
+  useEffect(() => {
+    if (!live) return;
+    loadProfile<{ contact: string; phone: string }>("seller")
+      .then(({ profile }) => {
+        if (!profile) return setContact({ name: "", dial: "60", raw: "" });
+        const dial = ["673", "60", "65", "62", "66", "63", "84", "86"].find((d) => profile.details.phone.startsWith(`+${d}`)) ?? "60";
+        setContact({ name: profile.details.contact, dial, raw: profile.details.phone.slice(dial.length + 1) });
+        setSaved(true);
+      })
+      .catch(() => toast("Couldn't load your contact. Please refresh."));
+  }, [live]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [savingContact, setSavingContact] = useState(false);
+  const saveContact = async (c: typeof contact) => {
+    setSavingContact(true);
+    try {
+      await saveProfile("seller", { contact: c.name.trim(), phone: `+${c.dial}${tidyPhone(c.raw, c.dial).pretty.replace(/\D/g, "").slice(c.dial.length)}` });
+      setContact(c); setEdit(null); setSaved(true); toast("Saved");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Didn't save. Please try again.");
+    } finally {
+      setSavingContact(false);
+    }
+  };
 
   const reconnect = () => {
     setReconnecting(true);
@@ -61,8 +87,8 @@ export default function SellerAccount() {
 
       <section className="v2-card">
         <div className="v2-card-h"><h2 className="v2-h2">Contact &amp; Phone</h2><button type="button" className="v2-link" onClick={() => { setEdit(contact); setTried(false); }}>Edit</button></div>
-        <div className="sl-set"><span><small>Contact name</small><b>{contact.name}</b></span></div>
-        <div className="sl-set"><span><small>Phone</small><b>{phone.ok ? phone.pretty : contact.raw}</b></span><span className="badge">Verified</span></div>
+        <div className="sl-set"><span><small>Contact name</small><b>{contact.name || "Not added yet"}</b></span></div>
+        <div className="sl-set"><span><small>Phone</small><b>{phone.ok ? phone.pretty : contact.raw || "Not added yet"}</b></span>{!live && <span className="badge">Verified</span>}{live && !saved && <span className="badge badge-amber">Add it</span>}</div>
       </section>
 
       <section className="v2-card">
@@ -134,11 +160,12 @@ export default function SellerAccount() {
             <input className="np-input" value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} autoComplete="name" />
           </label>
           <PhoneField dial={edit.dial} raw={edit.raw} onChange={(dial, raw) => setEdit({ ...edit, dial, raw })} showError={tried} />
-          <button type="button" className="np-btn" onClick={() => {
+          <button type="button" className="np-btn" disabled={savingContact} onClick={() => {
             setTried(true);
             if (edit.name.trim().length < 2 || !tidyPhone(edit.raw, edit.dial).ok) return;
+            if (live) return void saveContact(edit);
             setContact(edit); setEdit(null); toast("Saved");
-          }}>Save</button>
+          }}>{savingContact ? "Saving…" : "Save"}</button>
         </Sheet>
       )}
       {connecting && (

@@ -18,6 +18,7 @@ import { COUNTRIES, tidyPhone as tidyAnyPhone } from "@/lib/mock-seller";
 import { NICHES } from "@/lib/mock-creator2";
 import { EMPTY_ADDRESS, addressOk, birthdayError, saveAddress, saveSignup, type Address } from "@/lib/address";
 import "../creator1.css";
+import { keepInviteCode } from "@/lib/live-rewards";
 
 type Step = "start" | "oauth" | "profile" | "email" | "code" | "password" | "forgot" | "newpass" | "welcome";
 type Purpose = "signup" | "signin" | "reset";
@@ -190,7 +191,16 @@ export default function SignIn() {
     go("code");
   }
 
-  function oauth(p: keyof typeof PROVIDER) {
+  async function oauth(p: keyof typeof PROVIDER) {
+    // A friend's code typed here is kept for the new account (owner, 31 Oct 2026); a wrong code stops so it can be fixed.
+    if (typedRef && !refCode) {
+      try {
+        await keepInviteCode(typedRef, "creator");
+      } catch {
+        toast("We couldn't find that referral code. Check it, or leave it empty.");
+        return;
+      }
+    }
     setProvider(p);
     setStep("oauth");
     // Real sign-in (owner, 30 Oct 2026): Google or TikTok, then back into the app with a session.

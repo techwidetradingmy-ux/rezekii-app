@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { cleanEmail, passwordProblem } from "@/modules/accounts/password.ts";
 import { SESSION_COOKIE, createSession, sessionCookieOptions } from "@/modules/accounts/session.ts";
 import { createEmailUser, emailSignIn } from "@/modules/accounts/users.ts";
+import { joinInviter } from "../oauth.ts";
 
 export const dynamic = "force-dynamic";
 
@@ -32,5 +33,6 @@ export async function POST(req: NextRequest) {
   const { token, expires } = await createSession(result.user.id);
   const res = NextResponse.json({ ok: true });
   res.cookies.set(SESSION_COOKIE, token, sessionCookieOptions(expires));
+  await joinInviter(req, res, result.user.id);
   return res;
 }

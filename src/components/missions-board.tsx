@@ -21,6 +21,12 @@ const tierOf = (d: number) => [...TIERS].reverse().find((t) => d >= t.days) ?? n
 /** One mission: a general action with one button. `share` opens the share card; `ready` can be claimed now. */
 export type Mission = { id: string; icon: IconName; title: string; reward: number; cta: string; href?: string; share?: boolean; progress?: [number, number]; state: "todo" | "ready" | "done"; left?: string; counts?: string };
 type List = "daily" | "starter" | "milestone";
+/** What a real claim sends back (owner, 31 Oct 2026): the board after it, and what it paid. */
+export type ClaimResult = {
+  lists: { daily: Mission[]; starter: Mission[]; milestones: Mission[] };
+  credits: number; streak: number; countedToday: boolean; week: { on: boolean[]; today: number };
+  gained: number; chest: number | null; tier: { days: number; bonus: number } | null;
+};
 type Moment = { title: string; line: string; cheer: string; icon: "gift" | "trophy" | "flame"; share?: { big: string; label: string; lines: string[]; moment: MomentKind } };
 
 /** A streak emblem: a shield in the tier's colours with a flame; grey and locked until reached. */
@@ -48,12 +54,16 @@ function Emblem({ tier, size = 44, locked = false }: { tier: (typeof TIERS)[numb
 export function MissionsBoard(p: {
   daily: Mission[]; starter: Mission[]; milestones?: Mission[]; credits: number; streak: number; walletHref: string;
   sub: string; starterNote: string; handle?: string; children?: ReactNode;
+  /** Real accounts: this week's counted days, whether today counts yet, and the claim that pays on the server. */
+  week?: { on: boolean[]; today: number }; countedToday?: boolean; onClaim?: (m: Mission) => Promise<ClaimResult>;
 }) {
   const { toast } = useDemo();
+  const [week, setWeek] = useState(p.week);
+  const [busy, setBusy] = useState<string | null>(null);
   const [credits, setCredits] = useState(p.credits);
   const [lists, setLists] = useState<Record<List, Mission[]>>({ daily: p.daily, starter: p.starter, milestone: p.milestones ?? [] });
   const [streak, setStreak] = useState(p.streak);
-  const [checkedToday, setCheckedToday] = useState(false);
+  const [checkedToday, setCheckedToday] = useState(p.countedToday ?? false);
   const [moment, setMoment] = useState<Moment | null>(null);
   const [share, setShare] = useState<Moment["share"] | null>(null);
   // A share mission waits here until the card really goes out to an app.
@@ -73,7 +83,48 @@ export function MissionsBoard(p: {
   const starterLeft = starter.filter((m) => m.state !== "done").reduce((s, m) => s + m.reward, 0);
   const streakCard = { big: `${streak} days`, label: "My streak on Rezekii", lines: [`${tier?.name ?? "Spark"} tier`, `${tier?.metal ?? "Bronze"} emblem`], moment: "streak" as const };
 
+  // A real claim: the server checks the action happened, pays once, and sends the board back.
+  const claimLive = async (m: Mission) => {
+    if (!p.onClaim || busy) return;
+    setBusy(m.id);
+    try {
+      const r = await p.onClaim(m);
+      setLists({ daily: r.lists.daily, starter: r.lists.starter, milestone: r.lists.milestones });
+      setCredits(r.credits);
+      setWeek(r.week);
+      const newDay = r.countedToday && !checkedToday;
+      setCheckedToday(r.countedToday);
+      setStreak(r.streak);
+      if (!r.gained) return;
+      if (m.share) {
+        toast(`Shared. +${r.gained} credits`);
+        return;
+      }
+      const t = r.tier ? TIERS.find((x) => x.days === r.tier!.days) : null;
+      const now = tierOf(r.streak);
+      if (newDay)
+        setMoment({
+          title: t ? `${t.name} unlocked!` : `${r.streak}-day streak!`,
+          line: `+${r.gained} credits`,
+          cheer: t ? `${t.metal} emblem. +${t.bonus} bonus credits.` : (() => { const n = TIERS.find((x) => x.days > r.streak) ?? TIERS[TIERS.length - 1]; return `${Math.max(0, n.days - r.streak)} days to ${n.name}: +${n.bonus} credits.`; })(),
+          icon: "flame",
+          share: { big: `${r.streak} days`, label: "My streak on Rezekii", lines: [`${now?.name ?? "Spark"} tier`, `${now?.metal ?? "Bronze"} emblem`], moment: "streak" },
+        });
+      else if (r.chest) setMoment({ title: "Bonus chest opened", line: `+${r.gained} credits`, cheer: "Daily missions done today.", icon: "gift", share: { big: `+${r.gained}`, label: "Done today", lines: [`${r.streak}-day streak`], moment: "mission" } });
+      else if (r.lists.daily.some((x) => x.id === m.id)) toast(`+${r.gained} credits`);
+      else setMoment({ title: `+${r.gained} credits`, line: m.title, cheer: "Nice work.", icon: "trophy" });
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Didn't go through. Please try again.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const finish = (list: List, m: Mission) => {
+    if (p.onClaim) {
+      void claimLive(m);
+      return;
+    }
     setLists((all) => ({ ...all, [list]: all[list].map((x) => (x.id === m.id ? { ...x, state: "done" as const } : x)) }));
     let gain = m.reward;
     const chest = list === "daily" ? chests.find((c) => c.at === doneToday + 1) : undefined;
@@ -115,12 +166,12 @@ export function MissionsBoard(p: {
       {m.state === "done" ? (
         <span className="mx-done"><Icon name="check" size={14} width={3} /> Done</span>
       ) : m.state === "ready" ? (
-        <button type="button" className="np-btn v2-btn-sm" onClick={() => finish(list, m)}>{m.cta}</button>
+        <button type="button" className="np-btn v2-btn-sm" disabled={busy === m.id} onClick={() => finish(list, m)}>{busy === m.id ? "…" : m.cta}</button>
       ) : m.share ? (
         <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setSharing({ list, m }); setShare(streakCard); }}>{m.cta}</button>
-      ) : (
-        <Link href={m.href!} className="btn-outline v2-btn-sm">{m.cta}</Link>
-      )}
+      ) : m.href ? (
+        <Link href={m.href} className="btn-outline v2-btn-sm">{m.cta}</Link>
+      ) : null}
     </li>
   );
   const ordered = (l: Mission[]) => [...l.filter((m) => m.state !== "done"), ...l.filter((m) => m.state === "done")];
@@ -145,7 +196,7 @@ export function MissionsBoard(p: {
             <small>{checkedToday ? "Today counted" : "Check in or finish a mission today to keep it"} · {Math.max(0, next.days - streak)} days to {next.name} +{next.bonus}</small>
           </span>
           <span className="mx-strip-week" aria-hidden="true">
-            {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => <i key={i} className={i < 2 || (i === 2 && checkedToday) ? "on" : i === 2 ? "today" : ""} />)}
+            {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => <i key={i} className={week ? (week.on[i] ? "on" : i === week.today ? "today" : "") : i < 2 || (i === 2 && checkedToday) ? "on" : i === 2 ? "today" : ""} />)}
           </span>
           <Icon name="arrow" size={16} />
         </button>
@@ -160,6 +211,7 @@ export function MissionsBoard(p: {
         <ul className="mx-list">{daily.map(row("daily"))}</ul>
       </section>
 
+      {starter.length > 0 && (
       <section className="v2-card mx-card">
         <div className="v2-card-h">
           <h2 className="v2-h2">Starter Missions</h2>
@@ -171,6 +223,7 @@ export function MissionsBoard(p: {
         </div>
         <ul className="mx-list">{ordered(starter).map(row("starter"))}</ul>
       </section>
+      )}
 
       {lists.milestone.length > 0 && (
         <section className="v2-card mx-card">
@@ -197,7 +250,9 @@ export function MissionsBoard(p: {
             </div>
             <div className="mx-week" aria-label="This week">
               {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => {
-                const state = i < 2 ? "on" : i === 2 ? (checkedToday ? "on today" : "today") : "";
+                const state = week
+                  ? week.on[i] ? (i === week.today ? "on today" : "on") : i === week.today ? "today" : ""
+                  : i < 2 ? "on" : i === 2 ? (checkedToday ? "on today" : "today") : "";
                 return <span key={i} className={`mx-wd ${state}`}><i>{state.startsWith("on") ? <Icon name="check" size={15} width={3} /> : state === "today" ? <Icon name="flame" size={16} width={2.2} /> : null}</i>{d}</span>;
               })}
             </div>
@@ -230,7 +285,7 @@ export function MissionsBoard(p: {
           kicker="Missions"
           moment={share.moment}
           handle={p.handle}
-          onShared={() => { if (sharing) { finish(sharing.list, sharing.m); setSharing(null); toast(`Shared. +${sharing.m.reward} credits`); } }}
+          onShared={() => { if (sharing) { finish(sharing.list, sharing.m); setSharing(null); if (!p.onClaim) toast(`Shared. +${sharing.m.reward} credits`); } }}
         />
       )}
     </div>

@@ -393,7 +393,7 @@ function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory: () =
             <Link key={k} href={`/app/account#${k}`} className={here(k) ? "on" : undefined} aria-current={here(k) ? "page" : undefined} onClick={(e) => { if (path === "/app/account") { e.preventDefault(); window.location.hash = k; } onClose(); }}>
               <span className={`ap-ic ${k}`}><Icon name={icon} size={17} /></span>
               <span>{label}</span>
-              {k === "wallet" && <small>{CREATOR.credits.toLocaleString("en-MY")}</small>}
+              {k === "wallet" && !live && <small>{CREATOR.credits.toLocaleString("en-MY")}</small>}
               {k === "samples" && samples > 0 && <i className="badge badge-amber">{samples}</i>}
               <Icon name="arrow" size={15} />
             </Link>

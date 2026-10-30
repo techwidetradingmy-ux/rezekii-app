@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, createSession, sessionCookieOptions } from "@/modules/accounts/session.ts";
+import { attachReferral, readRefCookie, REF_COOKIE } from "@/modules/rewards/referrals.ts";
 
 export type Provider = "google" | "tiktok";
 
@@ -24,11 +25,20 @@ export function toSignin(req: NextRequest, error: "denied" | "expired" | "failed
   return res;
 }
 
-/** Starts a session for the account and sends them into the app. */
+/** Starts a session for the account and sends them into the app. A new account joins whoever invited it. */
 export async function signedIn(req: NextRequest, userId: string, p: Provider, to = "/app"): Promise<NextResponse> {
   const { token, expires } = await createSession(userId);
   const res = NextResponse.redirect(`${appBase(req)}${to}`);
   res.cookies.set(SESSION_COOKIE, token, sessionCookieOptions(expires));
   res.cookies.set(oauthCookie(p), "", { ...OAUTH_COOKIE_OPTIONS, maxAge: 0 });
+  await joinInviter(req, res, userId);
   return res;
+}
+
+/** Links a brand-new account to the invite it came with (link or typed code), then forgets the invite. */
+export async function joinInviter(req: NextRequest, res: NextResponse, userId: string): Promise<void> {
+  const ref = readRefCookie(req.cookies.get(REF_COOKIE)?.value);
+  if (!ref) return;
+  await attachReferral(userId, ref).catch((err) => console.error("[referral] attach", err instanceof Error ? err.message : err));
+  res.cookies.set(REF_COOKIE, "", { path: "/", maxAge: 0 });
 }

@@ -3,7 +3,7 @@
 import "@/app/seller.css";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Bars, Columns, Count, Seg, Stat, Title } from "@/components/ui";
@@ -11,11 +11,16 @@ import { Ava, Source } from "@/components/seller/seller-ui";
 import { product, rm } from "@/lib/mock";
 import { BY_PRODUCT, RANGES, RESULTS, TOP_CREATORS, type Range } from "@/lib/mock-seller";
 import { sellerProductHref } from "@/lib/product-pages";
+import { recordResults } from "@/lib/live-rewards";
 
 /** How the shop's products are doing in Techwide's TAP campaigns: charts, top creators, per product. */
 export default function Results() {
   const router = useRouter();
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
+  // Opening results counts for today's mission (owner, 31 Oct 2026).
+  useEffect(() => {
+    if (live) void recordResults();
+  }, [live]);
   const [range, setRange] = useState<Range>("30 days");
   const r = RESULTS[range];
   const k = r.gmv / RESULTS["30 days"].gmv;

@@ -1,21 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo, useWho } from "@/components/demo";
 import { Qr, Tip } from "@/components/ui";
 import { ShareButton } from "@/components/creator2/bits";
 import { BrandLogo } from "@/components/brand-logos";
 import { CREATOR, INVITES, REFERRAL_REWARD } from "@/lib/mock";
+import { loadReferral, whenLabel, type LiveReferral } from "@/lib/live-rewards";
 import "@/app/creator2.css";
 
-const LINK = "rezekii.com/r/aisyah";
-const CODE = "AISYAH8";
+const SAMPLE_LINK = "rezekii.com/r/aisyah";
+const SAMPLE_CODE = "AISYAH8";
 /** Friends to set up for the referral bonus (sample goal; admin sets it). */
 const GOAL = 5;
-/** The friends she brought in who are set up: they make the chain on the story card. */
-const CHAIN = INVITES.filter((i) => i.linked && i.details).slice(0, 3);
 const TONES = ["#00c073", "#2f80ed", "#8b5cf6"];
 
 /**
@@ -25,9 +24,25 @@ const TONES = ["#00c073", "#2f80ed", "#8b5cf6"];
  */
 export function Referral() {
   const you = useWho();
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const [qr, setQr] = useState(false);
-  const done = INVITES.filter((i) => i.linked && i.details).length;
+  // Signed in (owner, 31 Oct 2026): her real code, link and the friends who joined with it.
+  const [real, setReal] = useState<LiveReferral | null | "error">(null);
+  useEffect(() => {
+    if (live) loadReferral("creator").then(setReal).catch(() => setReal("error"));
+  }, [live]);
+  const r = live && real && real !== "error" ? real : null;
+  const CODE = r?.code ?? SAMPLE_CODE;
+  const LINK = r ? r.link.replace(/^https?:\/\//, "") : SAMPLE_LINK;
+  const reward = r?.reward ?? REFERRAL_REWARD;
+  const friends = r
+    ? r.friends.map((f) => ({ name: f.name, role: "Creator", ok: f.successful, when: whenLabel(f.joined), next: f.next ?? "" }))
+    : INVITES.map((i) => ({ name: i.name, role: i.role, ok: i.linked && i.details, when: i.when, next: !i.linked ? (i.role === "Seller" ? "Connect Seller Center" : "Link TikTok Shop") : "Fill in details" }));
+  const done = friends.filter((f) => f.ok).length;
+  /** The friends she brought in who are set up: they make the chain on the story card. */
+  const CHAIN = friends.filter((f) => f.ok).slice(0, 3);
+  if (live && real === null) return <p className="v2-muted">Loading your invite…</p>;
+  if (live && real === "error") return <p className="v2-muted">Couldn&apos;t load your invite. Please refresh.</p>;
   const copy = (text: string, what: string) => {
     try {
       void navigator.clipboard?.writeText(text).catch(() => {});
@@ -86,25 +101,28 @@ export function Referral() {
         <div className="rf-pass-body">
           {/* What each side gets, as a ticket torn down the middle (owner, 30 Oct 2026: the ticket design). */}
           <div className="rf-ticket">
-            <span className="me"><b>+{REFERRAL_REWARD.inviter}</b><small>Credits for you</small></span>
-            <span className="friend"><b>+{REFERRAL_REWARD.friend}</b><small>Credits for your friend</small></span>
+            <span className="me"><b>+{reward.inviter}</b><small>Credits for you</small></span>
+            <span className="friend"><b>+{reward.friend}</b><small>Credits for your friend</small></span>
           </div>
-          <ShareButton primary="Share Invite" big="Join me on Rezekii" label="Better commission for your TikTok Shop showcase" lines={[`Use my code ${CODE}: +${REFERRAL_REWARD.friend} credits`, "Free for creators"]} moment="invite" invite={{ code: CODE, reward: REFERRAL_REWARD.friend, link: LINK, photo: you.photo, tag: "Free for creators" }} />
+          <ShareButton primary="Share Invite" big="Join me on Rezekii" label="Better commission for your TikTok Shop showcase" lines={[`Use my code ${CODE}: +${reward.friend} credits`, "Free for creators"]} moment="invite" invite={{ code: CODE, reward: reward.friend, link: LINK, photo: you.photo, tag: "Free for creators", real: !!r }} />
           <div className="rf-acts two">
             <button type="button" className="btn-outline v2-btn-sm" onClick={() => copy(`https://${LINK}`, "Link")}>Copy Link</button>
             <button type="button" className="btn-outline v2-btn-sm" aria-expanded={qr} onClick={() => setQr((q) => !q)}><Icon name="qr" size={16} /> QR</button>
           </div>
           {qr && (
             <div className="rf-qr">
-              <Qr />
+              <Qr value={r ? `https://${LINK}` : undefined} />
               <span className="v2-small">Scan to join · {LINK} · code {CODE}</span>
             </div>
           )}
+          {/* The bonus for 5 friends isn't set yet, so real accounts don't see a goal (owner to decide the amount). */}
+          {!r && (<>
           <div className="rf-goal">
             <b>{Math.min(done, GOAL)} of {GOAL} Friends <Tip text="Your friend counts once they link TikTok Shop and fill in their details within 14 days. Your link lasts 14 days, and the last link they tap wins, so share early." /></b>
             <small>{done >= GOAL ? "Bonus unlocked" : `${GOAL - done} more for a bonus`}</small>
           </div>
           <div className="rf-segs" aria-hidden="true">{Array.from({ length: GOAL }, (_, i) => <i key={i} className={i < done ? "on" : undefined} />)}</div>
+          </>)}
         </div>
       </section>
 
@@ -126,12 +144,12 @@ export function Referral() {
       <section className="v2-card">
         <div className="v2-card-h">
           <h2 className="v2-h2">Your Friends</h2>
-          <span className="v2-small">{INVITES.length} joined</span>
+          <span className="v2-small">{friends.length} joined</span>
         </div>
         <div className="v2-divide rf-friends">
-          {INVITES.map((p) => {
-            const ok = p.linked && p.details;
-            const next = !p.linked ? (p.role === "Seller" ? "Connect Seller Center" : "Link TikTok Shop") : "Fill in details";
+          {friends.length === 0 && <p className="v2-muted" style={{ margin: "12px 0 0" }}>No friends yet. Share your invite.</p>}
+          {friends.map((p) => {
+            const { ok, next } = p;
             return (
               <div key={p.name} className="cr2-person">
                 <span className={`v2-av ${p.role === "Seller" ? "seller" : ""}`}>{p.name.replace("@", "").slice(0, 2).toUpperCase()}</span>
