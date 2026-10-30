@@ -7,6 +7,8 @@ import { Count } from "@/components/ui";
 import { Av, Meta, Pill, Spark } from "@/components/admin/bits";
 import { AUDIT, DISPUTES, FAILED_POSTS, FEEDBACK, ME, RECON, REVIEW_CREATORS, REVIEW_SELLERS, SAMPLES, TICKETS, TODAY_LABEL } from "@/lib/mock-admin";
 import { rm } from "@/lib/mock";
+import { useDemo } from "@/components/demo";
+import { LiveAdminToday } from "@/components/admin/live-today";
 
 type Queue = { href: string; n: number; label: string; note: string; icon: IconName; bg: string; tone?: "red" | "amber" | "calm" };
 
@@ -21,6 +23,9 @@ const KPIS: { label: string; value: number; money?: boolean; note: string; delta
 
 /** Admin home: what's stuck right now, with counts that open the right queue, and today's key numbers. */
 export default function AdminToday() {
+  // Signed in (owner, 31 Oct 2026): real queues, numbers and staff log.
+  const { live } = useDemo();
+  if (live) return <LiveAdminToday />;
   const failedTasks = TICKETS.flatMap((t) => t.tasks).filter((t) => t.state === "Failed").length;
   const handTasks = TICKETS.flatMap((t) => t.tasks).filter((t) => t.state === "Person").length;
   const approve = SAMPLES.filter((s) => s.verdict === "Approve").length;
