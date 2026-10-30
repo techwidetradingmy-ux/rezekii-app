@@ -1,6 +1,6 @@
 "use client";
 
-import { useWho } from "@/components/demo";
+import { useDemo, useWho } from "@/components/demo";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
@@ -75,8 +75,35 @@ export function StoryCard({ page, hide = false, date }: { page: StoryPage; hide?
  * side for back, hold to pause. Each page has its own button and Share.
  */
 export function DailyStory({ day = "good", onClose }: { day?: SampleDay; onClose: () => void }) {
+  // Signed in (owner, 31 Oct 2026): her real story of yesterday, made on the server.
+  const { live } = useDemo();
+  const [real, setReal] = useState<StoryPage[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    if (!live) return;
+    fetch("/api/v2/story", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { pages?: StoryPage[] } | null) => (d?.pages?.length ? setReal(d.pages) : setFailed(true)))
+      .catch(() => setFailed(true));
+  }, [live]);
+  if (!live) return <StoryPlayer pages={storyFor(day)} onClose={onClose} />;
+  if (real) return <StoryPlayer pages={real} onClose={onClose} />;
+  return (
+    <Portal>
+      <div className="ss-back" onClick={(e) => e.target === e.currentTarget && onClose()}>
+        <div className="ss-frame ds-frame" role="dialog" aria-modal="true" aria-label="Your Daily Story" style={{ display: "grid", placeItems: "center", gap: 12, padding: 24, textAlign: "center" }}>
+          <Rimau pose={failed ? "sad" : "think"} motion={failed ? "sway" : "float"} />
+          <b>{failed ? "Rimau couldn't get your story" : "Rimau is reading your day…"}</b>
+          {failed && <button type="button" className="np-btn v2-btn-sm" onClick={onClose}>Close</button>}
+        </div>
+      </div>
+    </Portal>
+  );
+}
+
+/** The story itself: one page at a time, moving on by itself. */
+function StoryPlayer({ pages, onClose }: { pages: StoryPage[]; onClose: () => void }) {
   const you = useWho();
-  const pages = storyFor(day);
   const last = pages.length - 1;
   const [i, setI] = useState(0);
   const [held, setHeld] = useState(false);
