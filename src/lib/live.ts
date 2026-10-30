@@ -80,8 +80,11 @@ export type LiveAnalytics = {
   ranges: Record<string, import("./mock-creator2").RangeData>;
   charts: Record<string, import("./mock-creator2").Chart>;
   months: { month: string; est: number; paid: number; pending: number; clawed: number; extra: number; status: "Settling" | "Paid"; year: number; monthIndex: number; days: import("./mock-creator2").PayoutDay[] }[];
-  products: Record<string, { name: string; shop: string }>;
+  products: Record<string, { name: string; shop: string; img?: string | null }>;
   lines: number;
+  /** Her first order and when her orders were last read from TikTok Shop (ISO), or null with no orders yet. */
+  first: string | null;
+  syncedAt: string | null;
 };
 
 let analytics: Promise<LiveAnalytics | null> | null = null;
@@ -91,7 +94,7 @@ export function loadAnalytics(): Promise<LiveAnalytics | null> {
     .then((d) => {
       if (!d) return null;
       for (const [id, x] of Object.entries(d.products))
-        if (!LIVE_PRODUCTS.has(id)) LIVE_PRODUCTS.set(id, { id, name: x.name, shop: x.shop, img: "/avatars/blank.svg", price: 0, category: "", publicRate: 0, partnerRate: 0, tapRate: 0, sold: 0, rating: 0, samples: null });
+        if (!LIVE_PRODUCTS.has(id)) LIVE_PRODUCTS.set(id, { id, name: x.name, shop: x.shop, img: x.img ?? "/avatars/blank.svg", price: 0, category: "", publicRate: 0, partnerRate: 0, tapRate: 0, sold: 0, rating: 0, samples: null });
       return d;
     })
     .catch(() => null);

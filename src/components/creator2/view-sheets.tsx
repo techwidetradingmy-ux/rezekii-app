@@ -2,7 +2,8 @@
 
 import { Icon } from "@/components/icons";
 import { Sheet } from "@/components/ui";
-import { product, rm, short } from "@/lib/mock";
+import { PRODUCTS, product, rm, short } from "@/lib/mock";
+import { NO_PHOTO } from "@/lib/live-perf";
 import type { VideoRow } from "@/lib/mock-creator2";
 
 /** One of her videos, opened on Rezekii (owner, 28 Oct 2026: never send her back to TikTok just to look). */
@@ -11,7 +12,7 @@ export function VideoSheet({ video, onClose }: { video: VideoRow; onClose: () =>
     <Sheet title="Video" onClose={onClose}>
       <div className="pd-player">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={product(video.productId).img} alt="" />
+        <img src={video.cover ?? (PRODUCTS.some((p) => p.id === video.productId) ? product(video.productId).img : NO_PHOTO)} alt="" />
         <span className="pd-play" aria-hidden="true"><Icon name="video" size={26} /></span>
       </div>
       <b style={{ fontSize: 16 }}>{video.title}</b>

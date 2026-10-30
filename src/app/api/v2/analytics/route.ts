@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { supabaseRest } from "@/integrations/supabase/rest.ts";
-import { linesBetween } from "@/modules/sales/frames.ts";
+import { linesBetween, productImages } from "@/modules/sales/frames.ts";
 import { lineEarned, lineGmv, techwideCampaigns, type OrderLine } from "@/modules/sales/summary.ts";
 
 /**
@@ -131,5 +131,10 @@ export async function GET() {
     });
   }
 
-  return NextResponse.json({ ranges, charts, months, products: Object.fromEntries(names), lines: lines.length }, { headers: { "cache-control": "private, no-store" } });
+  // Photos for the top earners shown on the page (the product's TikTok Shop image).
+  const shown = [...new Set(Object.values(ranges).flatMap((r) => (r as { byProduct: { productId: string }[] }).byProduct.map((b) => b.productId)))];
+  const imgs = await productImages(user.id, shown).catch(() => new Map<string, string | null>());
+  const products = Object.fromEntries([...names].map(([id, x]) => [id, { ...x, img: imgs.get(id) ?? null }]));
+  const syncedAt = lines.reduce<string | null>((m, l) => (!m || l.synced_at > m ? l.synced_at : m), null);
+  return NextResponse.json({ ranges, charts, months, products, lines: lines.length, first: lines.length ? new Date(first).toISOString() : null, syncedAt }, { headers: { "cache-control": "private, no-store" } });
 }

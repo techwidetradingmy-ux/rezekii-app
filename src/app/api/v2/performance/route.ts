@@ -83,7 +83,7 @@ export async function GET() {
   return NextResponse.json({
     videos: [...videos.entries()].map(([id, g]) => {
       const m = meta.get(id);
-      return { id, title: m?.title?.trim() || "Video", date: day(m?.created_at ?? g.first), views: m?.views ?? null, orders: g.orders.size, gmv: r2(g.gmv), commission: r2(g.commission), cancel: pct(g.bad.size, g.orders.size), productId: topProduct(g), refunds: g.bad.size };
+      return { id, title: m?.title?.trim() || "Video", date: day(m?.created_at ?? g.first), views: m?.views ?? null, orders: g.orders.size, gmv: r2(g.gmv), commission: r2(g.commission), cancel: pct(g.bad.size, g.orders.size), productId: topProduct(g), refunds: g.bad.size, cover: m?.cover ?? null };
     }),
     lives: [...lives.entries()].map(([id, g]) => ({
       id, ...when(g.first), orders: g.orders.size, gmv: r2(g.gmv), commission: r2(g.commission), cancel: pct(g.bad.size, g.orders.size),

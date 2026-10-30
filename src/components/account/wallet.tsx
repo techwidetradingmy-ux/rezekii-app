@@ -40,7 +40,7 @@ export function Wallet() {
         {expiring && <span className="cr2-exp"><Icon name="clock" size={14} /> {expiring.amount} expire on {w ? whenLabel(expiring.on) : expiring.on}</span>}
         <div className="cr2-bacts">
           <Link href="/app/rewards" className="cr2-bbtn"><Icon name="gift" size={16} /> Earn more</Link>
-          <ShareButton big={`${credits.toLocaleString("en-MY")} credits`} label="Earned on Rezekii" lines={["From posting and inviting", `${CREATOR.streak} days in a row`]} moment="credits" />
+          <ShareButton big={`${credits.toLocaleString("en-MY")} credits`} label="Earned on Rezekii" lines={["From posting and inviting", `${w ? w.streak : CREATOR.streak} days in a row`]} moment="credits" />
         </div>
       </section>
       <p className="v2-small" style={{ margin: "-8px 0 0" }}>Credits aren&apos;t cash. Use them to post to many apps at once.</p>

@@ -77,8 +77,9 @@ export function LevelBadges() {
   // Signed in (owner, 31 Oct 2026): her real level, TikTok Shop level, streak and badges.
   const { live } = useDemo();
   const [real, setReal] = useState<{ level: string; ttLevel: number | null; streak: number; since: string | null; levels: { name: string; how: string; gives: string[] }[]; badges: { name: string; got: boolean; progress?: [number, number] }[] } | null>(null);
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
-    if (live) fetch("/api/v2/badges", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d) => d && setReal(d)).catch(() => {});
+    if (live) fetch("/api/v2/badges", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d) => (d ? setReal(d) : setFailed(true))).catch(() => setFailed(true));
   }, [live]);
   const lvName = real ? real.level.charAt(0).toUpperCase() + real.level.slice(1) : CREATOR.level;
   const ttl = real ? real.ttLevel ?? "–" : CREATOR.tiktokLevel;
@@ -118,6 +119,7 @@ export function LevelBadges() {
     el.style.setProperty("--ry", "0deg");
   };
 
+  if (live && !real) return <p className="v2-muted">{failed ? "Couldn't load your level and badges. Please refresh." : "Loading your level and badges…"}</p>;
   return (
     <div className="v2-stack" style={{ gap: 20 }}>
       <section className="lb-hero">
@@ -209,7 +211,7 @@ export function LevelBadges() {
               <button key={b.name} type="button" className={`lb-badge ${b.got ? "got" : ""}`} onClick={() => setBadge(b)}>
                 <BadgeEmblem name={b.name} got={b.got} />
                 <b>{b.name}</b>
-                <small>{b.got ? "Collected" : (b.progress ?? s.progress) ? `${(b.progress ?? s.progress)![0]} / ${(b.progress ?? s.progress)![1]} days` : "Locked"}</small>
+                <small>{b.got ? "Collected" : (real ? b.progress : b.progress ?? s.progress) ? `${(real ? b.progress : b.progress ?? s.progress)![0]} / ${(real ? b.progress : b.progress ?? s.progress)![1]} days` : "Locked"}</small>
               </button>
             );
           })}

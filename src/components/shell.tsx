@@ -382,10 +382,12 @@ function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory: () =
   const { toast, linked, live, me } = useDemo();
   // Signed in: her real level and streak (owner, 31 Oct 2026).
   const level = live && me ? LEVEL[me.level] : CREATOR.level;
-  const [streak, setStreak] = useState(CREATOR.streak);
+  const [real, setReal] = useState<number | null>(null);
   useEffect(() => {
-    if (live) loadWallet("creator").then((w) => setStreak(w.streak)).catch(() => {});
+    if (live) loadWallet("creator").then((w) => setReal(w.streak)).catch(() => {});
   }, [live]);
+  // Signed in, nothing shows until her real streak loads.
+  const streak = live ? real ?? "–" : CREATOR.streak;
   // Language, theme, support and feedback live here on phones (owner, 29 Oct 2026), not in Settings.
   // Theme is one icon (owner, 29 Oct 2026): each tap moves Light → Dark → Auto, and the icon shows the current one.
   const [theme, setTheme] = useState<Theme>("Auto");
@@ -431,7 +433,7 @@ function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory: () =
               <span className={`ap-ic ${k}`}><Icon name={icon} size={17} /></span>
               <span>{label}</span>
               {k === "wallet" && !live && <small>{CREATOR.credits.toLocaleString("en-MY")}</small>}
-              {k === "samples" && samples > 0 && <i className="badge badge-amber">{samples}</i>}
+              {k === "samples" && !live && samples > 0 && <i className="badge badge-amber">{samples}</i>}
               <Icon name="arrow" size={15} />
             </Link>
           ))}

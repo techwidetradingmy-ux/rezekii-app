@@ -15,6 +15,7 @@ import { FLAGGED } from "@/components/creator1/rating-scan";
 import { CommissionChart } from "@/components/creator2/commission-chart";
 import "@/app/creator2.css";
 import { useKept } from "@/lib/keep";
+import { LiveActionPlan, LiveAiSummary, LiveBestTime, useAnalyticsSignals } from "@/components/creator2/live-analytics";
 
 // A real account can have no orders yet, so nothing divides by zero.
 const pct = (n: number, of: number) => (of ? Math.round((n / of) * 100) : 0);
@@ -38,16 +39,27 @@ export default function DataOverview() {
   useEffect(() => {
     if (live) loadAnalytics().then(setReal);
   }, [live]);
+  const sig = useAnalyticsSignals(live);
+  // Signed in: today and her first order in Malaysia time bound the calendar (owner, 31 Oct 2026).
+  const myt = (ms: number) => new Date(ms + 8 * 3_600_000).toISOString().slice(0, 10);
+  const today = live ? myt(Date.now()) : TODAY;
+  const joined = live ? (real?.first ? myt(Date.parse(real.first)) : today) : JOINED;
+  const liveSpan = (r: RangeKey): [string, string] => (r === "Lifetime" ? [joined, today] : [myt(Date.now() - (DAYS_IN[r] - 1) * 86_400_000), today]);
   // Own dates from the calendar; this preview shows the sample data of the closest preset.
   const [custom, setCustom] = useState<[string, string] | null>(null);
-  const [from, to] = custom ?? SPAN[range];
+  const [from, to] = custom ?? (live ? liveSpan(range) : SPAN[range]);
   const [split, setSplit] = useKept<"By channel" | "By product">("data-split", "By channel");
   const [removed, setRemoved] = useState<string[]>([]);
   const [ticked, setTicked] = useState<string[]>([]);
   const [allPlan, setAllPlan] = useState(false);
   const d = real?.ranges[range] ?? RANGE_DATA[range];
   const chart = real?.charts[range] ?? CHARTS[range];
-  const span = range === "Lifetime" ? "since March 2026" : `last ${range}`;
+  const since = live ? (real?.first ? new Date(real.first).toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "Asia/Kuala_Lumpur" }) : null) : "March 2026";
+  const span = range === "Lifetime" ? (since ? `since ${since}` : "all time") : `last ${range}`;
+  const synced = real?.syncedAt ? new Date(real.syncedAt) : null;
+  const updated = !live ? "Updated today 09:12" : !real ? "Loading your orders…" : synced
+    ? `Updated ${myt(synced.getTime()) === today ? "today" : synced.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" })} ${synced.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kuala_Lumpur" })}`
+    : "No orders yet";
 
   const ranked = [...d.byProduct].sort((a, b) => b.commission - a.commission);
   const top2 = (ranked[0]?.commission ?? 0) + (ranked[1]?.commission ?? 0);
@@ -84,13 +96,13 @@ export default function DataOverview() {
 
   return (
     <div className="v2-stack v2-in an-page" style={{ gap: 22 }}>
-      <Title title="Analytics" sub="Updated today 09:12">
+      <Title title="Analytics" sub={updated}>
         <CalendarPicker
           compact
           label={rangeLabel}
           sub={`${dayName(from)} – ${dayName(to)} · ${between(from, to)} days`}
-          today={TODAY}
-          first={JOINED}
+          today={today}
+          first={joined}
           from={from}
           to={to}
           onRange={(a, b) => {
@@ -141,8 +153,9 @@ export default function DataOverview() {
         </Lock>
       </section>
 
-      {/* Signed in (owner, 30 Oct 2026): these AI cards need her own history first, so they say so instead of showing samples. */}
-      <section className="v2-aicard cr2-aisum" aria-label="AI summary" data-soon={real ? "Rezekii AI builds this from your own posts and orders. Not enough of your data yet." : undefined}>
+      {/* Signed in (owner, 31 Oct 2026): the AI cards read her own ratings, videos, orders and connections. */}
+      {live ? <LiveAiSummary sig={sig} span={span} cancel={d.cancel} lead={ranked.length >= 2 ? <li><Icon name="trend" size={18} width={2.2} /><span><b>{pct(top2, d.est)}%</b> from {nameOf(ranked[0].productId)} + {nameOf(ranked[1].productId)}</span></li> : null} /> : (
+      <section className="v2-aicard cr2-aisum" aria-label="AI summary">
         <AiHead title="AI Summary" sub={`From your TikTok Shop sales, ${span}`} />
         <ul className="an-lines">
           {ranked.length >= 2 && <li><Icon name="trend" size={18} width={2.2} /><span><b>{pct(top2, d.est)}%</b> from {nameOf(ranked[0].productId)} + {nameOf(ranked[1].productId)}</span></li>}
@@ -186,14 +199,17 @@ export default function DataOverview() {
           <Link href="/app/data/risk" className="v2-link" style={{ fontSize: 13.5, padding: "4px 2px 0" }}>See all ratings →</Link>
         </div>
       </section>
+      )}
 
 
 
       {/* An AI feature (owner, 29 Oct 2026): worked out from her own posts, so everyone's best time is different. */}
-      <section className="v2-card v2-aicard an-time an-split" data-soon={real ? "Rezekii AI builds this from your own posts and orders. Not enough of your data yet." : undefined}>
-        <AiHead title="Best Time to Post" sub={real ? undefined : <span className="an-hv">High virality · {bestTime[0]}</span>} tip={<Tip label="About best time" text="Rezekii AI looks at your own videos from the last 30 days and the average views in each time slot. Everyone's best time is different." />} />
+      {live ? <LiveBestTime sig={sig} /> : (
+      <section className="v2-card v2-aicard an-time an-split">
+        <AiHead title="Best Time to Post" sub={<span className="an-hv">High virality · {bestTime[0]}</span>} tip={<Tip label="About best time" text="Rezekii AI looks at your own videos from the last 30 days and the average views in each time slot. Everyone's best time is different." />} />
         <Bars rows={POST_TIMES.map(([label, v]) => ({ label, value: v, display: `${short(v)} views`, tone: v < avgViews ? ("blue" as const) : undefined }))} />
       </section>
+      )}
 
       <section className="v2-card an-top">
         <div className="v2-card-h">
@@ -218,7 +234,8 @@ export default function DataOverview() {
         </div>
       </section>
 
-      <section className="v2-card cr2-plan" aria-label="Your action plan" data-soon={real ? "Rezekii AI builds this from your own posts and orders. Not enough of your data yet." : undefined}>
+      {live ? <LiveActionPlan sig={sig} cancel={real?.ranges["30 days"]?.cancel ?? d.cancel} /> : (
+      <section className="v2-card cr2-plan" aria-label="Your action plan">
         <div className="v2-card-h">
           <h2 className="v2-h2">Your Action Plan</h2>
           <span className="v2-small">{doneCount} of {ACTIONS.length} done</span>
@@ -245,6 +262,7 @@ export default function DataOverview() {
         </ol>
         {PLAN.length > 3 && <button type="button" className="v2-link an-more" onClick={() => setAllPlan((x) => !x)}>{allPlan ? "Show less" : `+${PLAN.length - 3} more`}</button>}
       </section>
+      )}
       {ask && <RemoveWarn items={[{ id: ask, name: product(ask).name, img: product(ask).img }]} onConfirm={confirmRemove} onClose={() => setAsk(null)} />}
     </div>
   );

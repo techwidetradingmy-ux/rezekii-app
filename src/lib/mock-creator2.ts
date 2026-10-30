@@ -214,6 +214,8 @@ export type VideoRow = {
   cancel: number;
   productId: string;
   refunds: number;
+  /** The video's own cover from TikTok (real videos); sample videos show their product. */
+  cover?: string | null;
 };
 
 /** The five videos in ANALYTICS plus one private video (no view count). */

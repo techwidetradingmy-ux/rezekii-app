@@ -191,7 +191,8 @@ export default function Account() {
   // Signed in (owner, 31 Oct 2026): her saved profile, or an empty one to fill in once; and her real streak.
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [streak, setStreak] = useState(CREATOR.streak);
+  const [streakReal, setStreak] = useState<number | null>(null);
+  const streak = live ? streakReal : CREATOR.streak;
   const lvName = live && me ? me.level.charAt(0).toUpperCase() + me.level.slice(1) : CREATOR.level;
   useEffect(() => {
     if (!live) return;
@@ -287,7 +288,7 @@ export default function Account() {
               {/* Level and streak as two small stat tiles (owner, 29 Oct 2026, option C). */}
               <span className="cr2-mstats">
                 <span><i className={`lv ${lvName.toLowerCase()}`}><Icon name="gem" size={15} /></i><b>{lvName}</b><small>Level</small></span>
-                <span><i className="st"><Icon name="flame" size={15} /></i><b>{streak} day{streak === 1 ? "" : "s"}</b><small>Streak</small></span>
+                <span><i className="st"><Icon name="flame" size={15} /></i><b>{streak === null ? "–" : `${streak} day${streak === 1 ? "" : "s"}`}</b><small>Streak</small></span>
               </span>
               {/* WhatsApp checks aren't connected yet, so real accounts don't see Verify. */}
               {!verified && !live && <span className="cr2-chips"><button type="button" className="cr2-wachip" onClick={() => setWaSheet(true)}>Verify WhatsApp</button></span>}

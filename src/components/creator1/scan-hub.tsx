@@ -58,12 +58,11 @@ export function ScanHub() {
   const [checked, setChecked] = useState(CREATOR.showcaseSize);
   useEffect(() => {
     if (!live) return;
-    // Not linked yet: nothing of hers to show, and no sample numbers either.
-    if (!linked) {
-      setRows([]);
-      setSimilar([]);
-      return;
-    }
+    // Signed in, no sample numbers ever: clear them while hers load. Not linked yet: nothing of hers to show.
+    setRows([]);
+    setSimilar([]);
+    setChecked(0);
+    if (!linked) return;
     loadScan().then((s) => {
       if (!s) return;
       setRows(s.raises);
