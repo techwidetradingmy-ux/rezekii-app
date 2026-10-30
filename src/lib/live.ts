@@ -115,8 +115,9 @@ const STAGE: Record<string, Stage> = { submitted: "Submitted", in_review: "Under
 /** "30 Oct", Malaysia time. */
 export const myDay = (t: string | number | Date = Date.now()) => new Date(t).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" });
 
-/** Seller Center, where the seller registers a product in Techwide's TAP campaign (Affiliate). */
-export const SELLER_CENTER_TAP = "https://seller-my.tiktok.com/affiliate/platform/homepage?shop_region=MY";
+/** Techwide's campaign for the shop in Seller Center, where the seller registers the product (Affiliate → Partner collaborations). */
+export const sellerCenterCampaign = (campaignId: string) =>
+  `https://seller-my.tiktok.com/affiliate/partner/partner-collabs/agency/detail?campaign_id=${encodeURIComponent(campaignId)}&tab=overview&shop_region=MY`;
 
 /**
  * Rezekii's AI pick from a product's real units sold in the last 90 days (our reading of TikTok's numbers, not TikTok's): no
@@ -151,7 +152,7 @@ export function fromLiveShop(p: LiveShopProduct): ShopItem {
     ai: p.sold90 == null ? undefined : salesPick(p.sold90),
     // TikTok's total rate once live; before that, what the seller asked for (public + their extra), when the public rate is known.
     stage, tapRate: total != null ? total / 100 : p.request && stage !== "Not approved" && publicRate != null ? publicRate + p.request.raise : undefined, raise: p.request?.raise,
-    register: stage === "Submitted to TikTok" && p.request?.campaignId ? SELLER_CENTER_TAP : undefined,
+    register: stage === "Submitted to TikTok" && p.request?.campaignId ? sellerCenterCampaign(p.request.campaignId) : undefined,
     samples: p.request?.samples,
     reason: p.request?.status === "not_approved" ? p.request.reason ?? undefined : undefined,
     dates,
