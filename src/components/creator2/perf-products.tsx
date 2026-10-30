@@ -9,7 +9,7 @@ import { VideoSheet } from "@/components/creator2/view-sheets";
 import { productHref } from "@/lib/product-view";
 import { ANALYTICS, product, rm } from "@/lib/mock";
 import { LIVES, PREV_ORDERS, SHORT, VIDEOS, channelSplit, type VideoRow } from "@/lib/mock-creator2";
-import { perfProduct, useLivePerf } from "@/lib/live-perf";
+import { perfProduct, shortName, useLivePerf } from "@/lib/live-perf";
 
 const COLORS = ["#00c073", "#2f80ed", "#f5a623", "#e8005a", "#8b7dff"];
 import "@/app/creator2.css";
@@ -46,7 +46,6 @@ export function ProductList() {
   const top = rows[0];
   const topShare = top && total ? Math.round((top.value / total) * 100) : 0;
   // Real listing titles are long: drop "[10.10 BUY 1 FREE 1 …]" style tags and keep the first words.
-  const shortName = (n: string) => { const t = n.replace(/^(\s*[\[(【][^\])】]*[\])】]\s*)+/, "").trim() || n; return t.length > 30 ? `${t.slice(0, 28).trimEnd()}…` : t; };
   const name = (id: string) => (real ? shortName(info(id).name) : SHORT[id] ?? product(id).name);
   // Share of income as a donut (owner, 28 Oct 2026: a pie reads better than a sentence). "Other" is everything else she sold.
   const other = Math.max(0, total - rows.reduce((a, b) => a + b.value, 0));

@@ -62,6 +62,11 @@ export async function GET() {
       p.split[k] += lineEarned(l);
     }
   }
+  // Cancellations and returns for Risk Check: orders, cancelled orders, orders with items sent back, and the commission lost.
+  const all = new Set(lines.map((l) => l.order_id));
+  const bad = new Set(lines.filter((l) => cancelled(l.status)).map((l) => l.order_id));
+  const back = new Set(lines.filter((l) => l.returned_quantity > 0 || l.refunded_quantity > 0).map((l) => l.order_id));
+  const lost = lines.filter((l) => cancelled(l.status)).reduce((s, l) => s + Number(l.commission_earned_estimated ?? l.commission_estimated ?? 0), 0);
   const prevOrders = new Map<string, Set<string>>();
   for (const l of before) if (l.product_id) (prevOrders.get(l.product_id) ?? prevOrders.set(l.product_id, new Set()).get(l.product_id)!).add(l.order_id);
 
@@ -86,6 +91,7 @@ export async function GET() {
     })),
     products: [...products.entries()].map(([id, g]) => ({ productId: id, commission: r2(g.commission), orders: g.orders.size, cancel: pct(g.bad.size, g.orders.size), prevOrders: prevOrders.get(id)?.size ?? 0, split: { video: r2(g.split.video), live: r2(g.split.live), other: r2(g.split.other) } })),
     names: Object.fromEntries([...names.entries()].map(([id, name]) => [id, { name, img: imgs.get(id) ?? null }])),
+    totals: { orders: all.size, cancelled: bad.size, returns: back.size, cancelRate: pct(bad.size, all.size), clawback: r2(lost) },
     asOf: new Date(now).toISOString(),
   }, { headers: { "cache-control": "private, no-store" } });
 }

@@ -10,6 +10,7 @@ export type LivePerf = {
   lives: { id: string; date: string; time: string; orders: number; gmv: number; commission: number; cancel: number; products: [string, number, number, number, number][] }[];
   products: { productId: string; commission: number; orders: number; cancel: number; prevOrders: number; split: { video: number; live: number; other: number } }[];
   names: Record<string, { name: string; img: string | null }>;
+  totals: { orders: number; cancelled: number; returns: number; cancelRate: number; clawback: number };
   asOf: string;
 };
 
@@ -31,4 +32,7 @@ export function useLivePerf(): LivePerf | "wait" | "error" | null {
 }
 
 /** A product's name and photo from the performance data. */
+/** A TikTok product title without its [promo] prefixes, cut to fit one line. */
+export const shortName = (n: string) => { const t = n.replace(/^(\s*[\[(【][^\])】]*[\])】]\s*)+/, "").trim() || n; return t.length > 30 ? `${t.slice(0, 28).trimEnd()}…` : t; };
+
 export const perfProduct = (p: LivePerf, id: string) => ({ id, name: p.names[id]?.name ?? "Product", img: p.names[id]?.img ?? NO_PHOTO });

@@ -30,21 +30,36 @@ const SCAN_MS = 2600;
  */
 export function RatingScan() {
   const router = useRouter();
-  const { linked, setLinked, toast } = useDemo();
+  const { linked, setLinked, toast, live: signedIn } = useDemo();
   const [run, setRun] = useState(0);
   const [scanning, setScanning] = useState(true);
   const [removed, setRemoved] = useState<string[]>([]);
+  // Signed in (owner, 31 Oct 2026): TikTok's buyer ratings for every product in her showcase, and her own orders for them.
+  type Flag = { id: string; name: string; img: string | null; rating: number; orders: number; cancel: number; returned: number };
+  const [real, setReal] = useState<{ linked: boolean; total: number; checked: number; more?: boolean; flagged: Flag[]; at: string } | null>(null);
 
   useEffect(() => {
     setScanning(true);
+    if (signedIn) {
+      fetch(`/api/v2/ratings${run ? "?fresh=1" : ""}`, { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => { if (d) setReal(d); })
+        .catch(() => toast("Couldn't check ratings. Please try again."))
+        .finally(() => setScanning(false));
+      return;
+    }
     const t = window.setTimeout(() => setScanning(false), window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : SCAN_MS);
     return () => window.clearTimeout(t);
-  }, [run]);
+  }, [run, signedIn]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const live = FLAGGED.filter((p) => !removed.includes(p.id));
+  const realFlags = real?.flagged.map((f) => ({ ...f, img: f.img ?? "" })) ?? [];
+  const seen = (id: string) => (real ? realFlags.find((f) => f.id === id) : SEEN[id]) ?? { orders: 0, cancel: 0, returned: 0 };
+  const flagged: { id: string; name: string; img: string; rating: number }[] = real ? realFlags : FLAGGED;
+  const live = flagged.filter((p) => !removed.includes(p.id));
   const danger = live.filter((p) => p.rating < DANGER);
   const low = live.filter((p) => p.rating >= DANGER);
-  const healthy = CREATOR.showcaseSize - FLAGGED.length;
+  const healthy = real ? Math.max(0, real.checked - real.flagged.length) : CREATOR.showcaseSize - FLAGGED.length;
+  const checkedAt = real ? new Date(real.at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kuala_Lumpur" }) : "09:12";
   // Removing asks first: she sees the risk and confirms (owner, 28 Oct 2026).
   const [ask, setAsk] = useState<string[] | null>(null);
   const remove = (ids: string[]) => {
@@ -58,8 +73,8 @@ export function RatingScan() {
     setAsk(null);
   };
 
-  const row = (p: (typeof PRODUCTS)[number]) => {
-    const s = SEEN[p.id];
+  const row = (p: { id: string; name: string; img: string; rating: number }) => {
+    const s = seen(p.id);
     const bad = p.rating < DANGER;
     return (
       <li key={p.id} className={bad ? "danger" : "low"}>
@@ -72,7 +87,8 @@ export function RatingScan() {
         <span className="rc-stars" aria-label={`${p.rating.toFixed(1)} stars`}>
           <Icon name="star" size={14} width={2.4} /> {p.rating.toFixed(1)}
         </span>
-        <button type="button" className={bad ? "np-btn v2-btn-sm" : "btn-outline v2-btn-sm"} onClick={() => remove([p.id])}>Remove</button>
+        {/* TikTok has no way for apps to take a product out of a showcase, so real accounts do it in TikTok. */}
+        {real ? <small className="v2-small">Remove in TikTok</small> : <button type="button" className={bad ? "np-btn v2-btn-sm" : "btn-outline v2-btn-sm"} onClick={() => remove([p.id])}>Remove</button>}
       </li>
     );
   };
@@ -97,8 +113,9 @@ export function RatingScan() {
         <section className={`sh-hub rc-hub ${scanning ? "busy" : ""}`} aria-label="Rating check">
           <span className="sh-grid" aria-hidden="true" />
           <div className="sh-left">
-            <span className="sh-kicker"><i />{scanning ? "Checking ratings…" : "Rating check · today 09:12"}</span>
-            <h2><b><Count key={run} value={CREATOR.showcaseSize} ms={SCAN_MS - 200} /></b> products checked</h2>
+            <span className="sh-kicker"><i />{scanning ? "Checking ratings…" : `Rating check · today ${checkedAt}`}</span>
+            <h2><b><Count key={`${run}-${real?.total ?? 0}`} value={real ? real.total : CREATOR.showcaseSize} ms={SCAN_MS - 200} /></b> products checked</h2>
+            {real?.more && <small className="v2-small">The first {real.total} in your showcase</small>}
           </div>
           <div className="rc-bar" role="img" aria-label={`${healthy} healthy, ${low.length} low, ${danger.length} in the danger zone`}>
             <i className="ok" style={{ flexGrow: healthy }} />
@@ -111,7 +128,9 @@ export function RatingScan() {
             <span className="bad"><b>{scanning ? "…" : danger.length}</b><small>Under 3★ · danger zone</small></span>
           </div>
           <div className="sh-acts">
-            {danger.length > 0 ? (
+            {danger.length > 0 && real ? (
+              <span className="sh-clear"><Icon name="alert" size={16} /> Remove {danger.length} danger product{danger.length === 1 ? "" : "s"} in the TikTok Shop app</span>
+            ) : danger.length > 0 ? (
               <button type="button" className="sh-go rc-go" disabled={scanning} onClick={() => remove(danger.map((p) => p.id))}>
                 <Icon name="x" size={17} width={2.6} /> Remove {danger.length} danger product{danger.length === 1 ? "" : "s"}
               </button>
@@ -143,7 +162,8 @@ export function RatingScan() {
           <ul>{low.map(row)}</ul>
         </section>
       )}
-      {ask && <RemoveWarn items={ask.map((id) => PRODUCTS.find((p) => p.id === id)!).map((p) => ({ id: p.id, name: p.name, img: p.img }))} onConfirm={confirmRemove} onClose={() => setAsk(null)} />}
+      {ask && <RemoveWarn items={ask.map((id) => flagged.find((p) => p.id === id)!).filter(Boolean).map((p) => ({ id: p.id, name: p.name, img: p.img }))} onConfirm={confirmRemove} onClose={() => setAsk(null)} />}
+      {real && !real.linked && <p className="v2-muted" style={{ margin: 0 }}>Link TikTok Shop to check your showcase ratings.</p>}
     </>
   );
 }
