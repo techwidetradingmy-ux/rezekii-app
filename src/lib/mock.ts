@@ -241,6 +241,8 @@ export const BADGES = [
 
 /** Referral rewards (owner, 28 Oct 2026): win-win, the same for creators and sellers. Admin can change them. */
 export const REFERRAL_REWARD = { inviter: 50, friend: 50 };
+/** Every new account gets these free, to try Post Everywhere (owner, 30 Oct 2026). */
+export const WELCOME_CREDITS = 20;
 
 /**
  * Creators who signed up with her link or code; creators only invite creators (owner, 30 Oct 2026). Successful = linked TikTok Shop and
@@ -262,6 +264,7 @@ export const LEDGER = [
   { when: "21 Oct", what: "Cross-channel post · 2 channels", amount: -10 },
   { when: "21 Oct", what: "Refund: Threads post failed", amount: 5 },
   { when: "18 Oct", what: "Mission: Link TikTok Shop", amount: 100 },
+  { when: "17 Oct", what: "Welcome credits: try Post Everywhere", amount: WELCOME_CREDITS },
 ];
 
 /* ---------------- Seller ---------------- */

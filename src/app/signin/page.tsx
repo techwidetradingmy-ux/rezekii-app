@@ -13,7 +13,7 @@ import { AddressFields } from "@/components/account/address-fields";
 import { GoogleMark, TikTokMark } from "@/components/creator1/brand";
 import { Otp } from "@/components/creator1/otp";
 import { MY_STATES, isEmail, tidyPhone } from "@/lib/mock-creator1";
-import { REFERRAL_REWARD } from "@/lib/mock";
+import { REFERRAL_REWARD, WELCOME_CREDITS } from "@/lib/mock";
 import { COUNTRIES, tidyPhone as tidyAnyPhone } from "@/lib/mock-seller";
 import { NICHES } from "@/lib/mock-creator2";
 import { EMPTY_ADDRESS, addressOk, birthdayError, saveAddress, saveSignup, type Address } from "@/lib/address";
@@ -436,6 +436,8 @@ export default function SignIn() {
               <div className="su-head">
                 <h1>Create your account</h1>
                 <p>Free to join. No minimum followers.</p>
+                {/* Every new account gets free credits to try multi-app posting (owner, 30 Oct 2026). */}
+                <span className="su-gift"><Icon name="gift" size={15} width={2.4} /> +{WELCOME_CREDITS} free credits to try Post Everywhere</span>
               </div>
               {handle && (
                 <p className="si-ref si-handle">
@@ -646,6 +648,7 @@ export default function SignIn() {
       <div className="cr1-wait">
         <span className="v2-medal green cr1-welcome"><Icon name="check" size={40} width={2.6} /></span>
         <b>{welcome}</b>
+        {welcome.startsWith("Welcome to Rezekii") && <span className="su-gift"><Icon name="gift" size={15} width={2.4} /> +{WELCOME_CREDITS} credits added to try Post Everywhere</span>}
         <p>Opening your app…</p>
       </div>
     );
