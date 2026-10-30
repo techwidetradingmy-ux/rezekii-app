@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { supabaseRest } from "@/integrations/supabase/rest.ts";
 import { linesBetween } from "@/modules/sales/frames.ts";
-import { lineCommission, lineGmv, techwideCampaigns, type OrderLine } from "@/modules/sales/summary.ts";
+import { lineEarned, lineGmv, techwideCampaigns, type OrderLine } from "@/modules/sales/summary.ts";
+
+/**
+ * The full commission on each order, as TikTok Shop shows it to her (owner, 30 Oct 2026): for a creator with an agency, TikTok
+ * records the agency's share separately and her own share can read 0, so the full amount is what she recognises.
+ */
+const lineCommission = lineEarned;
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -111,7 +117,8 @@ export async function GET() {
       const d = days[Math.floor((Date.parse(l.created_at) - from) / DAY)];
       const c = lineCommission(l);
       const x = extraOf(l);
-      if (cancelled(l.status)) { clawed += Number(l.commission_estimated ?? 0); if (d) d.clawed += Number(l.commission_estimated ?? 0); continue; }
+      const lost = Number(l.commission_earned_estimated ?? l.commission_estimated ?? 0);
+      if (cancelled(l.status)) { clawed += lost; if (d) d.clawed += lost; continue; }
       est += c; extra += x;
       if (settled(l.status)) paid += c; else { pending += c; if (d) d.state = "pending"; }
       if (d) { d.est += c; d.extra += x; }
