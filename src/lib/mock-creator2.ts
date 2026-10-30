@@ -352,10 +352,10 @@ export const BADGE_INFO: Record<string, string> = {
   "Link master": "Linked TikTok Shop, your TikTok account and one more platform.",
   "7-day streak": "Post every day for 7 days in a row.",
   "Sample star": "Posted 3 videos for a sample.",
-  "Highly active": "30 days in a row and every sample delivered. The rarest badge on Rezekii.",
+  "Highly active": "A 30-day streak. The rarest badge on Rezekii.",
   "First RM 1,000": "Earned your first RM 1,000 of commission through TikTok Shop.",
-  Silver: "Reached Silver: TikTok Shop Lv.4 or RM 10,000 sales in a month.",
-  Gold: "Join Techwide's MCN and stay 6 months.",
+  Silver: "Reached Silver: 10 sample videos and RM1,000 sales through Rezekii in a month.",
+  Gold: "Gold is by invitation from Techwide.",
 };
 
 /* ---------------- Account ---------------- */

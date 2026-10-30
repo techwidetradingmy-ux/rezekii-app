@@ -84,3 +84,11 @@ create table if not exists profiles (
   primary key (user_id, side)
 );
 alter table profiles enable row level security;
+
+-- The creator's commission earned so far (refunded lines left out), for the "First RM 1,000" badge (owner, 31 Oct 2026).
+create or replace function commission_total(p_user uuid) returns numeric
+language sql stable security definer set search_path = public as $$
+  select coalesce(sum(coalesce(commission_earned_actual, commission_earned_estimated, commission_actual, commission_estimated, 0)), 0)
+  from creator_orders where user_id = p_user and coalesce(status, '') <> 'REFUNDED';
+$$;
+revoke execute on function commission_total(uuid) from public, anon, authenticated;

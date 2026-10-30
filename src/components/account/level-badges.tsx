@@ -1,6 +1,6 @@
 "use client";
 
-import { useWho } from "@/components/demo";
+import { useDemo, useWho } from "@/components/demo";
 import { useEffect, useRef, useState } from "react";
 import { Icon, type IconName } from "@/components/icons";
 import { Emblem, type Level } from "@/components/emblems";
@@ -70,13 +70,27 @@ export function LevelBadges() {
   const card = useRef<HTMLDivElement>(null);
   const [burst, setBurst] = useState(0);
   const [pick, setPick] = useState(LEVELS.findIndex((l) => l.name === CREATOR.level));
-  const [badge, setBadge] = useState<(typeof BADGES)[number] | null>(null);
+  const [badge, setBadge] = useState<{ name: string; got: boolean; honour?: boolean } | null>(null);
   const [unlock, setUnlock] = useState(false);
   const [lit, setLit] = useState(false);
   const [share, setShare] = useState<Share | null>(null);
-  const got = BADGES.filter((b) => b.got).length;
-  const levelAt = LEVELS.findIndex((l) => l.name === CREATOR.level);
-  const mine = KEY[CREATOR.level];
+  // Signed in (owner, 31 Oct 2026): her real level, TikTok Shop level, streak and badges.
+  const { live } = useDemo();
+  const [real, setReal] = useState<{ level: string; ttLevel: number | null; streak: number; since: string | null; levels: { name: string; how: string; gives: string[] }[]; badges: { name: string; got: boolean; progress?: [number, number] }[] } | null>(null);
+  useEffect(() => {
+    if (live) fetch("/api/v2/badges", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d) => d && setReal(d)).catch(() => {});
+  }, [live]);
+  const lvName = real ? real.level.charAt(0).toUpperCase() + real.level.slice(1) : CREATOR.level;
+  const ttl = real ? real.ttLevel ?? "–" : CREATOR.tiktokLevel;
+  const streakN = real ? real.streak : CREATOR.streak;
+  const badges: { name: string; got: boolean; honour?: boolean; progress?: [number, number] }[] = real ? real.badges.map((b) => ({ ...b, honour: b.name === "Highly active" })) : BADGES;
+  // Each level's real rule and benefits (set by Techwide in Admin) once signed in.
+  const levels = real?.levels?.length ? real.levels : LEVELS;
+  const since = real?.since ? new Date(real.since).toLocaleDateString("en-GB", { month: "short", year: "numeric" }) : null;
+  useEffect(() => { if (real) setPick(LEVELS.findIndex((l) => l.name === lvName)); }, [real]); // eslint-disable-line react-hooks/exhaustive-deps
+  const got = badges.filter((b) => b.got).length;
+  const levelAt = LEVELS.findIndex((l) => l.name === lvName);
+  const mine = KEY[lvName];
 
   useEffect(() => {
     if (!unlock) return;
@@ -115,7 +129,7 @@ export function LevelBadges() {
             onPointerLeave={rest}
             onClick={() => setBurst((b) => b + 1)}
             role="img"
-            aria-label={`Creator card: ${you.handle}, ${CREATOR.level}, TikTok Shop Lv.${CREATOR.tiktokLevel}, ${got} badges`}
+            aria-label={`Creator card: ${you.handle}, ${lvName}, TikTok Shop Lv.${ttl}, ${got} badges`}
           >
             <span className="lb-holo" aria-hidden="true" />
             <span className="lb-glare" aria-hidden="true" />
@@ -123,17 +137,17 @@ export function LevelBadges() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/master-logo-transparent.png" alt="" />
               <b>REZEKII CREATOR</b>
-              <em>No. 0428</em>
+              {!real && <em>No. 0428</em>}
             </span>
             <Emblem level={mine} size={132} animate />
-            <span className="lb-tier">{CREATOR.level.toUpperCase()}</span>
+            <span className="lb-tier">{lvName.toUpperCase()}</span>
             <strong className="lb-name">{you.handle}</strong>
             <span className="lb-stats">
-              <span><b>Lv.{CREATOR.tiktokLevel}</b>TikTok Shop</span>
-              <span><b>{CREATOR.streak}</b>day streak</span>
+              <span><b>Lv.{ttl}</b>TikTok Shop</span>
+              <span><b>{streakN}</b>day streak</span>
               <span><b>{got}</b>badges</span>
             </span>
-            <span className="lb-foot">Since Mar 2026 · rezekii.com/c/aisyah.glow</span>
+            <span className="lb-foot">{real ? (since ? `Since ${since}` : "") : "Since Mar 2026 · rezekii.com/c/aisyah.glow"}</span>
             <span className="lb-burst" key={burst} aria-hidden="true">
               {burst > 0 && Array.from({ length: 18 }, (_, i) => (
                 <i key={i} style={{ "--a": `${i * 20}deg`, "--d": `${70 + (i % 4) * 22}px`, background: SPARK[i % SPARK.length] } as React.CSSProperties} />
@@ -145,10 +159,10 @@ export function LevelBadges() {
 
         <div className="lb-side">
           <span className="lb-kicker">Your level</span>
-          <h2 className="lb-h">You&apos;re {CREATOR.level}</h2>
+          <h2 className="lb-h">You&apos;re {lvName}</h2>
           <p className="v2-muted" style={{ margin: 0 }}>Your level sets your commission rates.</p>
           <div className="lb-path" role="group" aria-label="Levels">
-            {LEVELS.map((l, i) => (
+            {levels.map((l, i) => (
               <button key={l.name} type="button" className={`lb-stop ${i === pick ? "on" : ""} ${i <= levelAt ? "got" : ""}`} aria-pressed={i === pick} onClick={() => setPick(i)}>
                 <Emblem level={KEY[l.name]} size={i === levelAt ? 74 : 60} animate={i === levelAt} dim={i > levelAt} />
                 <b>{l.name}</b>
@@ -157,13 +171,13 @@ export function LevelBadges() {
             ))}
           </div>
           <div className="lb-perks" key={pick}>
-            <small>{LEVELS[pick].how}</small>
+            <small>{levels[pick].how}</small>
             <ul>
-              {LEVELS[pick].gives.map((g) => <li key={g}><Icon name="check" size={15} width={2.8} />{g}</li>)}
+              {levels[pick].gives.map((g) => <li key={g}><Icon name="check" size={15} width={2.8} />{g}</li>)}
             </ul>
           </div>
           <div className="v2-row">
-            <button type="button" className="np-btn v2-btn-sm" onClick={() => setShare({ big: `${CREATOR.level} creator`, label: "My creator level on Rezekii", lines: [`TikTok Shop Lv.${CREATOR.tiktokLevel}`, `${got} badges earned`], level: mine, kicker: "Level up", moment: "level" })}>
+            <button type="button" className="np-btn v2-btn-sm" onClick={() => setShare({ big: `${lvName} creator`, label: "My creator level on Rezekii", lines: [`TikTok Shop Lv.${ttl}`, `${got} badges earned`], level: mine, kicker: "Level up", moment: "level" })}>
               <Icon name="share" size={16} /> Share my card
             </button>
           </div>
@@ -177,8 +191,8 @@ export function LevelBadges() {
             <b>Highly active</b>
             <span className="badge badge-amber">Honour badge</span>
           </span>
-          <span className="v2-small">Day {CREATOR.streak} of 30. Post daily, deliver every sample.</span>
-          <Progress value={CREATOR.streak} max={30} />
+          <span className="v2-small">Day {streakN} of 30. Post daily, deliver every sample.</span>
+          <Progress value={streakN} max={30} />
         </span>
         <button type="button" className="btn-outline v2-btn-sm" onClick={() => setUnlock(true)}><Icon name="eye" size={15} /> Preview</button>
       </section>
@@ -186,16 +200,16 @@ export function LevelBadges() {
       <section className="v2-card">
         <div className="v2-card-h">
           <h2 className="v2-h2">Badges</h2>
-          <span className="badge">{got} of {BADGES.length} collected</span>
+          <span className="badge">{got} of {badges.length} collected</span>
         </div>
         <div className="lb-badges">
-          {BADGES.map((b) => {
+          {badges.map((b) => {
             const s = STICKER[b.name];
             return (
               <button key={b.name} type="button" className={`lb-badge ${b.got ? "got" : ""}`} onClick={() => setBadge(b)}>
                 <BadgeEmblem name={b.name} got={b.got} />
                 <b>{b.name}</b>
-                <small>{b.got ? "Collected" : s.progress ? `${s.progress[0]} / ${s.progress[1]} days` : "Locked"}</small>
+                <small>{b.got ? "Collected" : (b.progress ?? s.progress) ? `${(b.progress ?? s.progress)![0]} / ${(b.progress ?? s.progress)![1]} days` : "Locked"}</small>
               </button>
             );
           })}
@@ -210,7 +224,7 @@ export function LevelBadges() {
           <p style={{ margin: 0, textAlign: "center", lineHeight: 1.5 }}>{BADGE_INFO[badge.name]}</p>
           <span className={`badge ${badge.got ? "" : "badge-gray"}`} style={{ alignSelf: "center" }}>{badge.got ? "Collected" : "Not yet"}</span>
           {badge.got ? (
-            <button type="button" className="np-btn" onClick={() => { setBadge(null); setShare({ big: badge.name, label: "New badge on Rezekii", lines: [`${CREATOR.level} creator`, `${got} badges so far`], kicker: "New badge", moment: "badge" }); }}>
+            <button type="button" className="np-btn" onClick={() => { setBadge(null); setShare({ big: badge.name, label: "New badge on Rezekii", lines: [`${lvName} creator`, `${got} badges so far`], kicker: "New badge", moment: "badge" }); }}>
               <Icon name="share" size={18} /> Share this badge
             </button>
           ) : (
@@ -236,7 +250,7 @@ export function LevelBadges() {
               <p style={{ fontWeight: 800, color: "var(--gink)" }}>30 days in a row · every sample delivered</p>
               <p>Every free sample is open to you now.</p>
               <div className="v2-stack" style={{ width: "100%", marginTop: 6 }}>
-                <button type="button" className="np-btn" onClick={() => { setUnlock(false); setShare({ big: `Day ${CREATOR.streak} of 30`, label: "On my way to Highly active", lines: ["Posting every day", `${CREATOR.level} creator on Rezekii`], kicker: "Streak", moment: "streak" }); }}>
+                <button type="button" className="np-btn" onClick={() => { setUnlock(false); setShare({ big: `Day ${streakN} of 30`, label: "On my way to Highly active", lines: ["Posting every day", `${lvName} creator on Rezekii`], kicker: "Streak", moment: "streak" }); }}>
                   <Icon name="share" size={18} /> Share this moment
                 </button>
                 <button type="button" className="btn-outline" onClick={() => setUnlock(false)}>Continue</button>
