@@ -6,7 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { AiMark, AiTag, Count, Flow, Hidden, Sheet } from "@/components/ui";
-import { CREATOR, PRODUCTS, RAISES, SIMILAR, bestRate, product, type Raise, rateFor } from "@/lib/mock";
+import { CREATOR, LIVE_PRODUCTS, PRODUCTS, RAISES, SIMILAR, bestRate, product, type Raise, rateFor } from "@/lib/mock";
+import { addRaises, loadScan } from "@/lib/live";
 import { NEW_ON_RESCAN, SILVER_UNLOCKS } from "@/lib/mock-creator1";
 import { LEVELS } from "@/lib/mock-creator2";
 import { productHref } from "@/lib/product-view";
@@ -14,7 +15,7 @@ import { useKept } from "@/lib/keep";
 
 type Tab = "same" | "similar" | "silver";
 /** One product the creator can move to a better rate: the same listing (raise) or a similar one in TAP. */
-type Item = { id: string; productId: string; kind: "same" | "similar"; from: number; fromLabel: "Target" | "Open"; to: number; note: string };
+type Item = { id: string; productId: string; kind: "same" | "similar"; from: number; fromLabel: "Target" | "Open" | "Now"; to: number; note: string };
 type Bulk = { phase: "working" | "done"; items: Item[]; doneIds: string[] };
 type Pending = { id: string; productId: string; from: number; to: number; state: "checking" | "confirmed" };
 /** Tap-and-swipe through the better rates, one card at a time (owner, 28 Oct 2026). */
@@ -33,7 +34,9 @@ const FLY = PRODUCTS.slice(0, 13).map((p) => p.img);
 /** "From" is her highest rate now: her target plan if she has one, else the open plan (owner, 30 Oct 2026). */
 const raiseItem = (r: Raise): Item => {
   const now = bestRate(product(r.productId));
-  return { id: r.id, productId: r.productId, kind: "same", from: r.nowRate ?? now.rate, fromLabel: now.plan === "Target plan" ? "Target" : "Open", to: r.tapRate, note: `Until ${r.until}` };
+  // A real scan gives her rate now from TikTok (target or open plan), so it's labelled "Now".
+  const fromLabel = LIVE_PRODUCTS.has(r.productId) ? "Now" : now.plan === "Target plan" ? "Target" : "Open";
+  return { id: r.id, productId: r.productId, kind: "same", from: r.nowRate ?? now.rate, fromLabel, to: r.tapRate, note: r.until ? `Until ${r.until}` : "" };
 };
 const similarItem = (id: string): Item => {
   const p = product(id);
@@ -49,8 +52,19 @@ const similarItem = (id: string): Item => {
  */
 export function ScanHub() {
   const router = useRouter();
-  const { linked, setLinked, toast, bronze } = useDemo();
+  const { linked, setLinked, toast, bronze, live } = useDemo();
   const [rows, setRows] = useState<Raise[]>(RAISES);
+  // Signed in (owner, 30 Oct 2026): her real showcase scan replaces the sample.
+  const [checked, setChecked] = useState(CREATOR.showcaseSize);
+  useEffect(() => {
+    if (!live || !linked) return;
+    loadScan().then((s) => {
+      if (!s) return;
+      setRows(s.raises);
+      setSimilar([]);
+      setChecked(s.checked);
+    });
+  }, [live, linked]);
   const [similar, setSimilar] = useState<string[]>(SIMILAR);
   const [tab, setTab] = useKept<Tab>("scan-tab", "same");
   const [open, setOpen] = useKept("scan-open", false);
@@ -90,6 +104,19 @@ export function ScanHub() {
     if (!linked) return setLinked(true);
     if (!items.length) return;
     setBulk({ phase: "working", items, doneIds: [] });
+    if (live) {
+      // For real: TikTok Shop adds them through Techwide's TAP campaign.
+      addRaises(items.map((i) => i.productId))
+        .then((r) => {
+          setBulk((b) => (b ? { ...b, phase: "done", doneIds: items.filter((i) => r.added.includes(i.productId)).map((i) => i.id) } : b));
+          if (r.failed.length) toast(`${r.failed.length} not added: ${r.failed[0].error}`);
+        })
+        .catch(() => {
+          setBulk(null);
+          toast("Couldn't reach TikTok Shop. Please try again.");
+        });
+      return;
+    }
     items.forEach((it, i) => later(() => setBulk((b) => (b ? { ...b, doneIds: [...b.doneIds, it.id] } : b)), 420 * (i + 1)));
     later(() => setBulk((b) => (b ? { ...b, phase: "done" } : b)), 420 * items.length + 300);
   }
@@ -112,6 +139,25 @@ export function ScanHub() {
     setDeck(null);
     setScanning(true);
     setScanKey((k) => k + 1);
+    if (live) {
+      // A real scan of her showcase; the radar runs at least as long as the scan.
+      const started = Date.now();
+      loadScan().then((s) => {
+        later(() => {
+          setScanning(false);
+          setLast("just now");
+          if (!s) return toast("Couldn't reach TikTok Shop. Please try again.");
+          setRows(s.raises);
+          setChecked(s.checked);
+          if (s.raises.length) {
+            setTab("same");
+            setOpen(true);
+          }
+          toast(s.raises.length ? `Scan finished: ${s.raises.length} better ${s.raises.length === 1 ? "rate" : "rates"}` : "Scan finished: no better rates right now");
+        }, Math.max(0, SCAN_MS - (Date.now() - started)));
+      });
+      return;
+    }
     later(() => {
       setScanning(false);
       setLast("just now");
@@ -200,7 +246,7 @@ export function ScanHub() {
           <div className="sh-left">
             <span className="sh-kicker"><AiMark size={22} busy={scanning} />{scanning ? "Scanning Your Showcase…" : "Showcase Scanner"} <AiTag label="Rezekii AI" bare /></span>
             <h2>
-              <b><Count key={scanKey} value={linked ? CREATOR.showcaseSize : 0} ms={scanning ? SCAN_MS - 300 : 900} /></b> products checked
+              <b><Count key={scanKey} value={linked ? checked : 0} ms={scanning ? SCAN_MS - 300 : 900} /></b> products checked
             </h2>
             {!linked && <p>Link TikTok Shop and we check every product you promote</p>}
             <div className="sh-stats">

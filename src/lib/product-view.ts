@@ -1,4 +1,4 @@
-import { CREATOR, MY_SAMPLES, PRODUCTS, bestRate, product, rateFor, type Product } from "./mock";
+import { CREATOR, LIVE_PRODUCTS, MY_SAMPLES, PRODUCTS, bestRate, product, rateFor, type Product } from "./mock";
 import { SELLER_CONDS, canGetSample, type Cond } from "./mock-creator1";
 import { NICHE_BEST, daily, type Trend } from "./mock-creator2";
 import { NOT_YET, ON_IDS, ON_SOLD30, WANTED, wantedFor, type Wanted } from "./mock-showcase";
@@ -37,7 +37,7 @@ const TRENDS: Trend[] = ["up", "flat", "up"];
 const pickTrend = (id: string) => TRENDS[[...id].reduce((n, c) => n + c.charCodeAt(0), 0) % TRENDS.length];
 
 export function productView(id: string): ProductView | null {
-  const m = PRODUCTS.find((p) => p.id === id);
+  const m = PRODUCTS.find((p) => p.id === id) ?? LIVE_PRODUCTS.get(id);
   if (m) {
     const nb = NICHE_BEST.find((b) => b.productId === id);
     return {

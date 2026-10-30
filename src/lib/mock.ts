@@ -62,7 +62,9 @@ export const PRODUCTS: Product[] = [
   { id: "p24", name: "Leak-proof tumbler 900ml", shop: "Seri Living MY", img: "/products/tap-24.jpg", price: 54.9, category: "Home & Kitchen", publicRate: 8, partnerRate: 12, tapRate: 11, sold: 303256, rating: 4.8, samples: 30 },
 ];
 
-export const product = (id: string) => PRODUCTS.find((p) => p.id === id) ?? PRODUCTS[0];
+/** Real products met while signed in (owner, 30 Oct 2026), so product() and the product page find them too. */
+export const LIVE_PRODUCTS = new Map<string, Product>();
+export const product = (id: string) => PRODUCTS.find((p) => p.id === id) ?? LIVE_PRODUCTS.get(id) ?? PRODUCTS[0];
 
 /** A rate admin gives one creator for one product (owner, 29 Oct 2026). She sees it as her special rate. */
 export type CustomRate = { productId: string; handle: string; rate: number; until?: string };

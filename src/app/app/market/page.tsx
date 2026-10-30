@@ -10,6 +10,7 @@ import { SampleTag } from "@/components/creator1/brand";
 import { MY_SAMPLES, PRODUCTS, bestRate, rateFor, rm, type Product } from "@/lib/mock";
 import { SAMPLE_LEFT, canGetSample } from "@/lib/mock-creator1";
 import { productHref, requestedSamples } from "@/lib/product-view";
+import { addOne, loadMarket } from "@/lib/live";
 import "@/app/creator1.css";
 import { useKept } from "@/lib/keep";
 
@@ -35,7 +36,7 @@ const earn = (p: Product) => (p.price * mine(p)) / 100;
  * per sale. Add to showcase in one tap; request a free sample where the product has one. Filter by category, samples and tier, then sort.
  */
 export default function Marketplace() {
-  const { linked, setLinked, toast, requireWa } = useDemo();
+  const { linked, setLinked, toast, requireWa, live, me } = useDemo();
   const [q, setQ] = useKept("mk-q", "");
   const [cat, setCat] = useKept("mk-cat", "All");
   const [sort, setSort] = useKept<SortKey>("mk-sort", "sold");
@@ -64,8 +65,27 @@ export default function Marketplace() {
     if (id) router.replace(productHref(id, { sample: true }));
   }, [router]);
 
+  // Signed in (owner, 30 Oct 2026): the real Marketplace, Techwide's TAP products, 24 at a time.
+  const [real, setReal] = useState<{ items: Product[]; total: number; cats: [string, number][]; all: number } | null>(null);
+  const [page, setPage] = useState(1);
+  useEffect(() => setPage(1), [q, cat, sort, onlySamples]);
+  useEffect(() => {
+    if (!live) return;
+    let gone = false;
+    const t = window.setTimeout(() => {
+      loadMarket({ q: q.trim(), cat, sort, onlySamples, page }, me?.level ?? "bronze").then((d) => {
+        if (gone || !d) return;
+        setReal((r) => (page > 1 && r ? { ...d, items: [...r.items, ...d.items] } : d));
+      });
+    }, q ? 300 : 0);
+    return () => {
+      gone = true;
+      window.clearTimeout(t);
+    };
+  }, [live, me?.level, q, cat, sort, onlySamples, page]);
+
   const term = q.trim().toLowerCase();
-  const list = PRODUCTS.filter((p) => (!onlySamples || CAN_GET.includes(p)) && (cat === "All" || p.category === cat) && (!term || `${p.name} ${p.shop}`.toLowerCase().includes(term))).sort((a, b) => {
+  const list = live && real ? real.items : PRODUCTS.filter((p) => (!onlySamples || CAN_GET.includes(p)) && (cat === "All" || p.category === cat) && (!term || `${p.name} ${p.shop}`.toLowerCase().includes(term))).sort((a, b) => {
     if (sort === "rate") return mine(b) - mine(a);
     if (sort === "earn") return earn(b) - earn(a);
     if (sort === "cheap") return a.price - b.price;
@@ -75,6 +95,17 @@ export default function Marketplace() {
   });
   const addToShowcase = (p: Product) => {
     if (!linked) return setLinked(true);
+    if (live) {
+      // For real: straight into her TikTok Shop showcase, or a TAP link to open when TikTok asks for one.
+      addOne(p.id).then((r) => {
+        if (r.added) {
+          setAdded((a) => [...a, p.id]);
+          toast(`Added at ${mine(p)}%: ${p.name}`);
+        } else if (r.link) window.open(r.link, "_blank", "noopener");
+        else toast(r.error ?? "TikTok Shop didn't add it. Please try again.");
+      });
+      return;
+    }
     setAdded((a) => [...a, p.id]);
     toast(`Added at ${mine(p)}%: ${p.name}`);
   };
@@ -94,8 +125,10 @@ export default function Marketplace() {
         <label className="mk-select">
           <span>Category</span>
           <select value={cat} onChange={(e) => setCat(e.target.value)}>
-            <option value="All">All categories ({PRODUCTS.length})</option>
-            {CATS.map((c) => <option key={c} value={c}>{c} ({PRODUCTS.filter((p) => p.category === c).length})</option>)}
+            <option value="All">All categories ({live && real ? real.all : PRODUCTS.length})</option>
+            {live && real
+              ? real.cats.map(([c, n]) => <option key={c} value={c}>{c} ({n})</option>)
+              : CATS.map((c) => <option key={c} value={c}>{c} ({PRODUCTS.filter((p) => p.category === c).length})</option>)}
           </select>
         </label>
         <label className="mk-select">
@@ -106,7 +139,7 @@ export default function Marketplace() {
         </label>
         <button type="button" role="switch" aria-checked={onlySamples} className={`mk-switch ${onlySamples ? "on" : ""}`} onClick={() => setOnlySamples((o) => !o)}>
           <span className="np-switch-like" aria-hidden="true"><i /></span>
-          <Icon name="gift" size={16} /> Free Samples <em>{CAN_GET.length}</em>
+          <Icon name="gift" size={16} /> Free Samples {!live && <em>{CAN_GET.length}</em>}
         </button>
       </div>
 
@@ -124,7 +157,7 @@ export default function Marketplace() {
       </section>
 
       <p className="mk-count">
-        {list.length} product{list.length === 1 ? "" : "s"}
+        {live && real ? real.total : list.length} product{(live && real ? real.total : list.length) === 1 ? "" : "s"}
         {(cat !== "All" || onlySamples || term) && <button type="button" className="v2-link" onClick={() => { setQ(""); setCat("All"); setOnlySamples(false); }}>Clear</button>}
         <span className="mk-view" role="group" aria-label="View">
           <button type="button" aria-pressed={view === "grid"} aria-label="Grid view" onClick={() => pickView("grid")}><Icon name="grid" size={16} /></button>
@@ -137,6 +170,9 @@ export default function Marketplace() {
           const left = SAMPLE_LEFT[p.id] ?? 10;
           const isAdded = added.includes(p.id);
           const now = bestRate(p);
+          // Kept only when a target plan really pays as much or more; a Rezekii rate equal to the open plan is just her rate.
+          const better = now.rate < mine(p);
+          const kept = !better && now.plan === "Target plan";
           const asked = requested.includes(p.id);
           // Option A, clean grid (owner, 28 Oct 2026): name, open → Rezekii rate, what she earns, Add and a gift button.
           return (
@@ -149,14 +185,16 @@ export default function Marketplace() {
               </Link>
               <Link href={productHref(p.id)} className="mka-name"><strong>{p.name}</strong></Link>
               <small className="mk-meta">{rm(p.price)} · {p.sold >= 1e6 ? `${(p.sold / 1e6).toFixed(1)}M` : `${Math.round(p.sold / 1e3)}K`} sold</small>
-              {now.rate < mine(p) ? (
+              {better ? (
                 <span className="mka-rate" aria-label={`${now.plan} ${now.rate}%, Rezekii ${mine(p)}%`}><s>{now.rate}%</s><Icon name="arrow" size={13} /><b><Hidden>{mine(p)}%</Hidden></b>{now.plan === "Target plan" && <em className="mka-target">Target</em>}{rateFor(p).special && <em className="mka-special">Special</em>}</span>
-              ) : (
+              ) : kept ? (
                 <span className="mka-rate" aria-label={`Your target plan ${now.rate}%, more than Rezekii's ${mine(p)}%`}><b><Hidden>{now.rate}%</Hidden></b><em className="mka-target">Your target plan</em></span>
+              ) : (
+                <span className="mka-rate" aria-label={`Rezekii ${mine(p)}%`}><b><Hidden>{mine(p)}%</Hidden></b>{rateFor(p).special && <em className="mka-special">Special</em>}</span>
               )}
               <span className="mka-earn">Earn <b><Hidden>{rm((p.price * Math.max(now.rate, mine(p))) / 100)}</Hidden></b></span>
               <span className="mka-acts">
-                {now.rate < mine(p) ? (
+                {!kept ? (
                   <button type="button" className={isAdded ? "mka-add done" : "mka-add"} disabled={isAdded} onClick={() => addToShowcase(p)}>
                     <Icon name={isAdded ? "check" : "plus"} size={15} width={2.6} /> {isAdded ? "Added" : "Add"}
                   </button>
@@ -175,6 +213,9 @@ export default function Marketplace() {
           );
         })}
       </div>
+      {live && real && real.items.length < real.total && (
+        <button type="button" className="btn-outline" style={{ alignSelf: "center" }} onClick={() => setPage((n) => n + 1)}>Show more products</button>
+      )}
       {list.length === 0 && (
         <div className="v2-card flat" style={{ alignItems: "flex-start" }}>
           <b>No products match</b>

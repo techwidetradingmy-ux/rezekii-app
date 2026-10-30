@@ -5,7 +5,7 @@ import { CREATOR } from "@/lib/mock";
 
 export type Role = "creator" | "seller";
 /** The real signed-in account (owner, 30 Oct 2026: plug real data, keep the design). Null = signed out, sample data shows. */
-export type Me = { id: string; name: string | null; email: string | null; role: "admin" | "creator"; photo: string | null; handle: string | null; shop: { handle: string; access: string | null } | null };
+export type Me = { id: string; name: string | null; email: string | null; role: "admin" | "creator"; photo: string | null; handle: string | null; level: "bronze" | "silver" | "gold"; shop: { handle: string; access: string | null } | null };
 /** Who agreed to what and when, kept as evidence (the real one also stores IP, device and TikTok's grant id). */
 export type Consent = { role: Role; at: string; terms: string; privacy: string; unlinkedAt?: string };
 
