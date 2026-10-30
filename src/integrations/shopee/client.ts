@@ -91,10 +91,14 @@ export async function exchangeShopeeCode(code: string): Promise<ShopeeTokens> {
   return { userId: String(userId), shopId: shop ? String(shop) : null, accessToken: r.access_token, refreshToken: r.refresh_token, expiresIn: seconds(r.expire_in) };
 }
 
-/** A new access token (4 hours) and refresh token (30 days), by user_id: Video calls are made as the user, seller or affiliate. */
-export async function refreshShopeeToken(refreshToken: string, userId: string): Promise<Omit<ShopeeTokens, "userId" | "shopId">> {
+/**
+ * A new access token (4 hours) and refresh token (30 days). By user_id for Video calls (seller or affiliate); by shop_id for
+ * a shop's own calls. A refresh token works once for each, so the two run as separate chains.
+ */
+export async function refreshShopeeToken(refreshToken: string, who: { userId: string } | { shopId: string }): Promise<Omit<ShopeeTokens, "userId" | "shopId">> {
   const { partnerId } = shopeeApp();
-  const r = await shopeeCall<{ access_token: string; refresh_token: string; expire_in?: number }>("/api/v2/auth/access_token/get", { body: { refresh_token: refreshToken, partner_id: partnerId, user_id: Number(userId) } });
+  const id = "shopId" in who ? { shop_id: Number(who.shopId) } : { user_id: Number(who.userId) };
+  const r = await shopeeCall<{ access_token: string; refresh_token: string; expire_in?: number }>("/api/v2/auth/access_token/get", { body: { refresh_token: refreshToken, partner_id: partnerId, ...id } });
   return { accessToken: r.access_token, refreshToken: r.refresh_token, expiresIn: seconds(r.expire_in) };
 }
 

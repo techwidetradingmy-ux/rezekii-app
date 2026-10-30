@@ -420,6 +420,7 @@ export const POSTS: Record<string, string> = {
   "Double-click a name to rename it in Rezekii, e.g. to your Shopee username.": "双击名称即可在 Rezekii 里重命名，例如改成你的 Shopee 用户名。",
   "Name in Rezekii": "在 Rezekii 里的名称",
   "Double-click to rename": "双击重命名",
+  "Connect this shop again in Rezekii (Posts → Channels → Shopee → Seller) to load its products.": "请在 Rezekii 重新连接这个店铺（帖子 → 渠道 → Shopee → 卖家）以读取它的商品。",
   "Couldn't save the brand. Try again.": "无法保存品牌，请重试。",
   "Couldn't delete the brand. Try again.": "无法删除品牌，请重试。",
   "Edit brand": "编辑品牌",

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { checkProcessing, publishPost } from "@/modules/posting/publisher.ts";
 import { claimDuePosts, isTimerToken, processingPosts } from "@/modules/posting/store.ts";
-import { renewShopee, shopeeToRenew } from "@/modules/shopee/connections.ts";
+import { renewShop, renewShopee, shopeeToRenew, shopsToRenew } from "@/modules/shopee/connections.ts";
 import { accountsForPictures, accountsToRenew, freshToken, refreshPicture } from "@/modules/social/accounts.ts";
 import { checkSocialProcessing, checkStillLive, postFirstComment, publishSocialPost } from "@/modules/social/publisher.ts";
 import { claimDueSocialPosts, pendingComments, postedToCheck, processingSocialPosts } from "@/modules/social/store.ts";
@@ -54,6 +54,7 @@ async function socialWork(): Promise<Record<string, string>> {
   for (const p of await pendingComments(10)) await run(`comment ${p.id}`, () => postFirstComment(p));
   for (const a of await accountsToRenew(5)) await run(`renew ${a.id}`, async () => (await freshToken(a), "renewed"));
   for (const c of await shopeeToRenew(5)) await run(`shopee ${c.id}`, async () => (await renewShopee(c), "renewed"));
+  for (const c of await shopsToRenew(5)) await run(`shop ${c.id}`, async () => (await renewShop(c), "renewed"));
   for (const a of await accountsForPictures(5)) await run(`picture ${a.id}`, () => refreshPicture(a));
   for (const p of await postedToCheck(5)) await run(`live ${p.id}`, () => checkStillLive(p));
   return out;

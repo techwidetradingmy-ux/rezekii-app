@@ -19,6 +19,11 @@ export type ShopeeConnection = {
   refresh_expires_at: string;
   status: "active" | "reconnect";
   connected_at: string;
+  /** A seller's second sign-in, renewed by shop_id, for the shop's own calls (its product list); null for affiliates. */
+  shop_access_token_enc: string | null;
+  shop_access_expires_at: string | null;
+  shop_refresh_token_enc: string | null;
+  shop_refresh_expires_at: string | null;
 };
 export type PublicShopee = Pick<ShopeeConnection, "id" | "shopee_user_id" | "shop_id" | "role" | "name" | "nickname" | "avatar_url" | "status" | "connected_at">;
 const PUBLIC = "id,shopee_user_id,shop_id,role,name,nickname,avatar_url,status,connected_at";
@@ -42,12 +47,19 @@ const tokenFields = (t: { accessToken: string; refreshToken: string; expiresIn: 
   refresh_expires_at: iso(Date.now() + REFRESH_DAYS * 86400e3),
 });
 
-/** Saves a connection; connecting the same Shopee account again refreshes it (no duplicate). */
+const shopFields = (t: { accessToken: string; refreshToken: string; expiresIn: number }) => ({
+  shop_access_token_enc: encryptToken(t.accessToken),
+  shop_access_expires_at: iso(Date.now() + t.expiresIn * 1000),
+  shop_refresh_token_enc: encryptToken(t.refreshToken),
+  shop_refresh_expires_at: iso(Date.now() + REFRESH_DAYS * 86400e3),
+});
+
+/** Saves a connection; connecting the same Shopee account again refreshes it (no duplicate). A shop's first tokens serve both chains. */
 export async function saveShopee(userId: string, a: { role: ShopeeRole; userId: string; shopId: string | null; name: string | null; avatarUrl: string | null; accessToken: string; refreshToken: string; expiresIn: number }): Promise<void> {
   await supabaseRest("shopee_connections?on_conflict=user_id,shopee_user_id", {
     method: "POST",
     headers: { prefer: "resolution=merge-duplicates,return=minimal" },
-    body: JSON.stringify({ user_id: userId, shopee_user_id: a.userId, shop_id: a.shopId, role: a.role, name: a.name, avatar_url: a.avatarUrl, ...tokenFields(a), status: "active", updated_at: iso() }),
+    body: JSON.stringify({ user_id: userId, shopee_user_id: a.userId, shop_id: a.shopId, role: a.role, name: a.name, avatar_url: a.avatarUrl, ...tokenFields(a), ...(a.shopId ? shopFields(a) : {}), status: "active", updated_at: iso() }),
   });
 }
 
@@ -86,7 +98,7 @@ export const RECONNECT_SHOPEE = "This Shopee account needs reconnecting in Rezek
  */
 export async function renewShopee(c: ShopeeConnection): Promise<string> {
   try {
-    const t = await refreshShopeeToken(decryptToken(c.refresh_token_enc), c.shopee_user_id);
+    const t = await refreshShopeeToken(decryptToken(c.refresh_token_enc), { userId: c.shopee_user_id });
     await supabaseRest(`shopee_connections?id=eq.${c.id}`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ ...tokenFields(t), status: "active", updated_at: iso() }) });
     return t.accessToken;
   } catch (err) {
@@ -103,6 +115,39 @@ export async function freshShopeeToken(c: ShopeeConnection): Promise<string> {
   if (c.status === "reconnect") throw new Error(RECONNECT_SHOPEE);
   if (Date.parse(c.access_expires_at) > Date.now() + 10 * 60e3) return decryptToken(c.access_token_enc);
   return renewShopee(c);
+}
+
+export const RECONNECT_SHOP = "Connect this shop again in Rezekii (Posts → Channels → Shopee → Seller) to load its products.";
+
+/**
+ * The shop's own token (its product list), renewed by shop_id when it has under 10 minutes left. The shop chain can only
+ * start from the sign-in itself (a refresh token renewed by user_id is refused for the shop_id, tested 31 Oct 2026), so a
+ * shop connected before 31 Oct, or whose shop chain ran out, connects again.
+ */
+export async function freshShopToken(c: ShopeeConnection): Promise<string> {
+  if (c.status === "reconnect") throw new Error(RECONNECT_SHOPEE);
+  if (!c.shop_id) throw new Error("Only a shop has its own products.");
+  if (c.shop_access_token_enc && c.shop_access_expires_at && Date.parse(c.shop_access_expires_at) > Date.now() + 10 * 60e3) return decryptToken(c.shop_access_token_enc);
+  if (!c.shop_refresh_token_enc || !c.shop_refresh_expires_at || Date.parse(c.shop_refresh_expires_at) <= Date.now()) throw new Error(RECONNECT_SHOP);
+  return renewShop(c);
+}
+
+/** Renews the shop chain by shop_id and saves it; Shopee refusing it means connecting the shop again (Video keeps working). */
+export async function renewShop(c: ShopeeConnection): Promise<string> {
+  try {
+    const t = await refreshShopeeToken(decryptToken(c.shop_refresh_token_enc ?? ""), { shopId: c.shop_id ?? "" });
+    await supabaseRest(`shopee_connections?id=eq.${c.id}`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ ...shopFields(t), updated_at: iso() }) });
+    return t.accessToken;
+  } catch (err) {
+    if (err instanceof ShopeeError) throw new Error(RECONNECT_SHOP);
+    throw err;
+  }
+}
+
+/** Shops whose shop chain runs out within a week, renewed by the daily timer so the product list keeps working. */
+export async function shopsToRenew(limit: number): Promise<ShopeeConnection[]> {
+  const soon = iso(Date.now() + 7 * 86400e3);
+  return (await supabaseRest(`shopee_connections?status=eq.active&shop_refresh_token_enc=not.is.null&shop_refresh_expires_at=lt.${encodeURIComponent(soon)}&order=shop_refresh_expires_at&limit=${limit}`)).json();
 }
 
 /** Check now (Channels): renewing the sign-in is the check; a channel that works again is active again. */

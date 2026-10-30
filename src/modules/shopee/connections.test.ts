@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { createHmac, randomBytes } from "node:crypto";
 import { exchangeShopeeCode, shopeeAuthUrl, shopeeSign, ShopeeError } from "../../integrations/shopee/client.ts";
 import { decryptToken, encryptToken } from "../creator-accounts/token-crypto.ts";
-import { checkShopee, freshShopeeToken, RECONNECT_SHOPEE, renameShopee, shopeeLabel, type ShopeeConnection } from "./connections.ts";
+import { checkShopee, freshShopToken, freshShopeeToken, RECONNECT_SHOP, RECONNECT_SHOPEE, renameShopee, shopeeLabel, type ShopeeConnection } from "./connections.ts";
 
 process.env.SUPABASE_URL = "https://db.test";
 process.env.SUPABASE_SECRET_KEY = "secret";
@@ -29,7 +29,7 @@ const conn = (over: Partial<ShopeeConnection> = {}): ShopeeConnection => ({
   id: "c1", user_id: "u1", shopee_user_id: "777", shop_id: null, role: "affiliate", name: null, nickname: null, avatar_url: null,
   access_token_enc: encryptToken("old-access"), access_expires_at: new Date(Date.now() + 2 * 3600e3).toISOString(),
   refresh_token_enc: encryptToken("old-refresh"), refresh_expires_at: new Date(Date.now() + 20 * 86400e3).toISOString(),
-  status: "active", connected_at: "2026-10-28T00:00:00Z", ...over,
+  status: "active", connected_at: "2026-10-28T00:00:00Z", shop_access_token_enc: null, shop_access_expires_at: null, shop_refresh_token_enc: null, shop_refresh_expires_at: null, ...over,
 });
 const shopeeCalls = () => calls.filter((c) => !c.url.startsWith("https://db.test/"));
 const patches = () => calls.filter((c) => c.init.method === "PATCH" && c.url.includes("shopee_connections?id=eq.c1")).map((c) => JSON.parse(String(c.init.body)));
@@ -134,4 +134,21 @@ test("rename: the owner's name is saved trimmed (up to 60 characters); empty goe
   assert.equal(shopeeLabel({ nickname: "@homefithacks", name: null, role: "affiliate" }), "@homefithacks");
   assert.equal(shopeeLabel({ nickname: null, name: "Spinelief+", role: "seller" }), "Spinelief+");
   assert.equal(shopeeLabel({ nickname: null, name: null, role: "affiliate" }), "Shopee affiliate");
+});
+
+test("a shop's own token (product list): used while fresh, renewed by shop_id from its own chain, saved apart; no chain means connect again", async () => {
+  const fresh = conn({ role: "seller", shop_id: "5001", shop_access_token_enc: encryptToken("shop-access"), shop_access_expires_at: new Date(Date.now() + 3600e3).toISOString() });
+  assert.equal(await freshShopToken(fresh), "shop-access");
+  assert.equal(shopeeCalls().length, 0);
+
+  shopee = { status: 200, body: { error: "", access_token: "shop-new", refresh_token: "shop-refresh-2", expire_in: 14400 } };
+  const due = conn({ role: "seller", shop_id: "5001", shop_access_token_enc: encryptToken("shop-old"), shop_access_expires_at: new Date(Date.now() - 1).toISOString(), shop_refresh_token_enc: encryptToken("shop-refresh"), shop_refresh_expires_at: new Date(Date.now() + 20 * 86400e3).toISOString() });
+  assert.equal(await freshShopToken(due), "shop-new");
+  assert.deepEqual(JSON.parse(String(shopeeCalls()[0].init.body)), { refresh_token: "shop-refresh", partner_id: 1250555, shop_id: 5001 });
+  const [saved] = patches();
+  assert.equal(decryptToken(saved.shop_access_token_enc), "shop-new");
+  assert.equal(decryptToken(saved.shop_refresh_token_enc), "shop-refresh-2");
+  assert.equal(saved.access_token_enc, undefined, "the Video (user_id) chain is left alone");
+
+  await assert.rejects(freshShopToken(conn({ role: "seller", shop_id: "5001" })), (err) => err instanceof Error && err.message === RECONNECT_SHOP);
 });

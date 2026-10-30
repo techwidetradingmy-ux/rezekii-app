@@ -18,7 +18,7 @@ const conn = {
   id: "c1", user_id: "u1", shopee_user_id: "229441705", shop_id: "229437124", role: "seller", name: "Spinelief+", nickname: null, avatar_url: null,
   access_token_enc: encryptToken("access"), access_expires_at: new Date(Date.now() + 2 * 3600e3).toISOString(),
   refresh_token_enc: encryptToken("refresh"), refresh_expires_at: new Date(Date.now() + 20 * 86400e3).toISOString(),
-  status: "active", connected_at: "2026-10-30T00:00:00Z",
+  status: "active", connected_at: "2026-10-30T00:00:00Z", shop_access_token_enc: null, shop_access_expires_at: null, shop_refresh_token_enc: null, shop_refresh_expires_at: null,
 };
 const post = (over: Partial<SocialPostRow> = {}): SocialPostRow => ({
   id: "p1", group_id: "g1", tiktok_post_id: null, user_id: "u1", account_id: null, shopee_connection_id: "c1", account_name: "Spinelief+", platform: "shopee",

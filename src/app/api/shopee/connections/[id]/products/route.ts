@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { shopeeShopItems } from "@/integrations/shopee/products.ts";
-import { freshShopeeToken, getShopee, RECONNECT_SHOPEE } from "@/modules/shopee/connections.ts";
+import { freshShopToken, getShopee, RECONNECT_SHOP, RECONNECT_SHOPEE } from "@/modules/shopee/connections.ts";
 
 export const dynamic = "force-dynamic";
 
@@ -14,10 +14,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   if (!c) return NextResponse.json({ error: "That channel isn't connected." }, { status: 404 });
   if (c.role !== "seller" || !c.shop_id) return NextResponse.json({ error: "Only a shop has its own products." }, { status: 400 });
   try {
-    return NextResponse.json({ items: await shopeeShopItems(await freshShopeeToken(c), c.shop_id) });
+    return NextResponse.json({ items: await shopeeShopItems(await freshShopToken(c), c.shop_id) });
   } catch (err) {
-    const reconnect = err instanceof Error && err.message === RECONNECT_SHOPEE;
+    const reconnect = err instanceof Error && (err.message === RECONNECT_SHOPEE || err.message === RECONNECT_SHOP);
     console.error("[shopee] products failed", err instanceof Error ? err.message : err);
-    return NextResponse.json({ error: reconnect ? RECONNECT_SHOPEE : "Couldn't load the shop's products from Shopee. Try again." }, { status: reconnect ? 409 : 502 });
+    return NextResponse.json({ error: reconnect ? (err as Error).message : "Couldn't load the shop's products from Shopee. Try again." }, { status: reconnect ? 409 : 502 });
   }
 }
