@@ -1,4 +1,5 @@
 import { createHmac } from "node:crypto";
+import { fetch as proxiedFetch, ProxyAgent } from "undici";
 
 /**
  * Shopee Open Platform v2 (app "Rezekii", type Shopee Video Management). Server-only: uses the partner key.
@@ -43,12 +44,24 @@ export function shopeeAuthUrl(role: ShopeeRole, redirectUri: string, state: stri
   return `${authPage(sandbox)}?${q}`;
 }
 
+/**
+ * Shopee wants the fixed IPs that call it declared (Other IT assets). With SHOPEE_PROXY_URL (http://user:pass@host:port)
+ * every Shopee call goes out through that server, so Shopee always sees its address; without it, calls go out directly.
+ */
+let proxy: { url: string; agent: ProxyAgent } | null = null;
+export async function shopeeFetch(url: string, init: RequestInit = {}): Promise<Response> {
+  const via = process.env.SHOPEE_PROXY_URL;
+  if (!via) return fetch(url, init);
+  if (proxy?.url !== via) proxy = { url: via, agent: new ProxyAgent(via) };
+  return (await proxiedFetch(url, { ...init, dispatcher: proxy.agent } as Parameters<typeof proxiedFetch>[1])) as unknown as Response;
+}
+
 async function call<T>(path: string, init: { query?: Record<string, string | number>; body?: Record<string, unknown>; signWith?: (string | number)[] } = {}): Promise<T> {
   const { partnerId, key, sandbox } = shopeeApp();
   const ts = Math.floor(Date.now() / 1000);
   const q = new URLSearchParams({ partner_id: String(partnerId), timestamp: String(ts), sign: shopeeSign(key, partnerId, path, ts, ...(init.signWith ?? [])) });
   for (const [k, v] of Object.entries(init.query ?? {})) q.set(k, String(v));
-  const res = await fetch(`${apiHost(sandbox)}${path}?${q}`, init.body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(init.body) } : {});
+  const res = await shopeeFetch(`${apiHost(sandbox)}${path}?${q}`, init.body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(init.body) } : {});
   const data = (await res.json().catch(() => ({}))) as T & { error?: string; message?: string };
   if (data.error || !res.ok) throw new ShopeeError(data.message || `Shopee answered ${res.status}`, data.error || `http_${res.status}`);
   return data;
