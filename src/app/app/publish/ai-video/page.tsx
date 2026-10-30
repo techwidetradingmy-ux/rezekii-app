@@ -7,7 +7,7 @@ import { AiHead, Stepper, Tip, Title } from "@/components/ui";
 import { AI_EXAMPLES, MY_SPOT, PLATFORMS, VIDEO_TYPES, type WaitlistAnswers } from "@/lib/mock-ai-video";
 import "@/app/ai-video.css";
 
-/** Her waitlist spot, remembered for this browser tab (the preview has no server). */
+/** Her waitlist spot, remembered for this browser tab when signed out (the preview). Signed in, it's kept on her account. */
 const KEY = "rz2_ai_video_waitlist";
 type Saved = WaitlistAnswers & { spot: number };
 function readSaved(): Saved | null {
@@ -49,8 +49,9 @@ function Example({ id, type, product }: (typeof AI_EXAMPLES)[number]) {
  * how often and where, and the waitlist becomes the first trial batch at launch. Nothing here claims the tool works yet.
  */
 export default function AiVideo() {
-  const { linked, setLinked, toast } = useDemo();
+  const { linked, setLinked, toast, live } = useDemo();
   const [saved, setSaved] = useState<Saved | null>(null);
+  const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [editing, setEditing] = useState(false);
   const [types, setTypes] = useState<WaitlistAnswers["types"]>([]);
@@ -59,10 +60,19 @@ export default function AiVideo() {
   const [note, setNote] = useState("");
   const [err, setErr] = useState("");
 
+  // Signed in (owner, 31 Oct 2026): her real place on the waitlist.
   useEffect(() => {
-    setSaved(readSaved());
-    setLoaded(true);
-  }, []);
+    if (!live) {
+      setSaved(readSaved());
+      setLoaded(true);
+      return;
+    }
+    fetch("/api/v2/ai-video", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { entry: Saved | null } | null) => setSaved(d?.entry ?? null))
+      .catch(() => {})
+      .finally(() => setLoaded(true));
+  }, [live]);
 
   const edit = () => {
     if (!saved) return;
@@ -84,6 +94,20 @@ export default function AiVideo() {
       note: note.trim() || undefined,
       spot: saved?.spot ?? MY_SPOT,
     };
+    if (live) {
+      setBusy(true);
+      fetch("/api/v2/ai-video", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(next) })
+        .then(async (r) => {
+          const d = (await r.json().catch(() => ({}))) as { entry?: Saved; error?: string };
+          if (!r.ok || !d.entry) return setErr(d.error ?? "Didn't save. Please try again.");
+          if (saved) toast("Waitlist answers saved");
+          setSaved(d.entry);
+          setEditing(false);
+        })
+        .catch(() => setErr("Didn't save. Please try again."))
+        .finally(() => setBusy(false));
+      return;
+    }
     try { sessionStorage.setItem(KEY, JSON.stringify(next)); } catch {}
     if (saved) toast("Waitlist answers saved");
     setSaved(next);
@@ -156,7 +180,7 @@ export default function AiVideo() {
           </div>
           <textarea className="np-input wf-note-in" rows={2} maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Anything you'd want it to do? (optional)" aria-label="Note (optional)" />
           {err && <p className="wf-err" role="alert">{err}</p>}
-          <button type="button" className="np-btn" onClick={join}>{saved ? "Save" : "Join Waitlist"}</button>
+          <button type="button" className="np-btn" disabled={busy} onClick={join}>{busy ? <span className="sl-spin" /> : saved ? "Save" : "Join Waitlist"}</button>
           <p className="wf-fine">
             {linked ? "Free to join. You can change your answers any time." : "Joining needs your TikTok Shop linked."}
           </p>
