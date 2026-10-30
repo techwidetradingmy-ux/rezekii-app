@@ -154,7 +154,7 @@ export default function Account() {
 
       <div className="cr2-settings acc-layout">
         {/* Owner, 28 Oct 2026: on a wide screen the profile and the sections sit in a side bar. */}
-        <aside className="acc-side">
+        <aside className={`acc-side${tab === "referral" ? " no-prof" : ""}`}>
         {/* Referral shows its own banner instead of her profile (owner, 30 Oct 2026). */}
         {tab !== "referral" && (
         <div className="cr2-cells">

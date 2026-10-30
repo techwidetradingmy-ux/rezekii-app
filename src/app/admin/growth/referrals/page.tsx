@@ -70,7 +70,7 @@ export default function GrowthReferrals() {
           <h2 className="v2-h2">Successful by Pair</h2>
           <Bars rows={PAIRS.map((p) => ({ label: p, value: qualified.filter((x) => x.pair === p).length, display: String(qualified.filter((x) => x.pair === p).length) }))} tone="blue" />
           <Meta range="October (Malaysia time)" source="Rezekii referrals" updated="Today 10:40" />
-          <span className="v2-small">Successful = first scan (creator) or first product (seller) within 30 days.</span>
+          <span className="v2-small">Successful = first scan (creator) or first product (seller) within 14 days.</span>
         </section>
         <section className="v2-card" style={{ padding: "8px 12px" }}>
           <div style={{ padding: "8px 8px 0" }}>

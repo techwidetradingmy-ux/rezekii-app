@@ -79,8 +79,7 @@ export default function SellerReferral() {
       <section className="v2-card flat">
         <h2 className="cr2-h3">How It Counts</h2>
         <ol className="cr2-rules">
-          <li><span><b>Sellers only.</b> Invite fellow sellers. Creators have their own referral.</span></li>
-          <li><span><b>Sellers</b> count once they connect Seller Center and fill in their details within 30 days.</span></li>
+          <li><span><b>Successful</b> means your friend connects Seller Center and fills in their details within 14 days.</span></li>
           <li><span><b>Last click wins.</b> Your link works for 14 days after the seller taps it. If they tap another seller&apos;s link after yours, that one counts, so share early.</span></li>
         </ol>
       </section>

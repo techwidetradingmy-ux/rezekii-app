@@ -20,7 +20,7 @@ export function ReferralOffer() {
           <span>for joining with your link</span>
         </span>
       </div>
-      <p className="rf-note">Paid when your friend is set up within 30 days.</p>
+      <p className="rf-note">Paid when your friend is set up within 14 days.</p>
     </section>
   );
 }

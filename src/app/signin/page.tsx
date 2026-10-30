@@ -422,7 +422,7 @@ export default function SignIn() {
               {refCode && (
                 <p className="si-ref">
                   <Icon name="gift" size={18} />
-                  <span>Invited with code <b>{refCode}</b>. Get <b>+{REFERRAL_REWARD.friend} credits</b>: link TikTok Shop and scan within 30 days.</span>
+                  <span>Invited with code <b>{refCode}</b>. Get <b>+{REFERRAL_REWARD.friend} credits</b>: link TikTok Shop and scan within 14 days.</span>
                 </p>
               )}
               {handle && (
