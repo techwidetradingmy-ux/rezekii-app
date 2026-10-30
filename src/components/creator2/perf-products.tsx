@@ -9,6 +9,7 @@ import { VideoSheet } from "@/components/creator2/view-sheets";
 import { productHref } from "@/lib/product-view";
 import { ANALYTICS, product, rm } from "@/lib/mock";
 import { LIVES, PREV_ORDERS, SHORT, VIDEOS, channelSplit, type VideoRow } from "@/lib/mock-creator2";
+import { perfProduct, useLivePerf } from "@/lib/live-perf";
 
 const COLORS = ["#00c073", "#2f80ed", "#f5a623", "#e8005a", "#8b7dff"];
 import "@/app/creator2.css";
@@ -23,21 +24,30 @@ type Source = "All" | "Video" | "LIVE";
 export function ProductList() {
   const router = useRouter();
   const [source, setSource] = useState<Source>("All");
-  const videoTotal = Math.round(ANALYTICS.commissionEst * (ANALYTICS.byChannel.find((c) => c.label === "Videos")?.share ?? 0)) / 100;
-  const liveTotal = LIVES.reduce((a, l) => a + l.commission, 0);
-  const total = source === "All" ? ANALYTICS.commissionEst : source === "Video" ? videoTotal : liveTotal;
-  const valueOf = (b: { productId: string; commission: number }) => {
+  // Signed in (owner, 31 Oct 2026): what each of her products earned in the last 30 days, and from videos or LIVE.
+  const perf = useLivePerf();
+  const real = perf && perf !== "wait" && perf !== "error" ? perf : null;
+  type Row = { productId: string; commission: number; orders: number; cancel: number; prevOrders?: number; split?: { video: number; live: number; other: number } };
+  const base: Row[] = real ? real.products : ANALYTICS.byProduct;
+  const splitOf = (b: Row) => b.split ?? channelSplit(b.productId, b.commission);
+  const videoTotal = real ? base.reduce((a, b) => a + splitOf(b).video, 0) : Math.round(ANALYTICS.commissionEst * (ANALYTICS.byChannel.find((c) => c.label === "Videos")?.share ?? 0)) / 100;
+  const liveTotal = real ? base.reduce((a, b) => a + splitOf(b).live, 0) : LIVES.reduce((a, l) => a + l.commission, 0);
+  const total = source === "All" ? (real ? base.reduce((a, b) => a + b.commission, 0) : ANALYTICS.commissionEst) : source === "Video" ? videoTotal : liveTotal;
+  const valueOf = (b: Row) => {
     if (source === "All") return b.commission;
-    const s = channelSplit(b.productId, b.commission);
+    const s = splitOf(b);
     return source === "Video" ? s.video : s.live;
   };
+  const info = (id: string) => (real ? { ...perfProduct(real, id), rating: 0 } : product(id));
   const [video, setVideo] = useState<VideoRow | null>(null);
   // A compact list (owner, 28 Oct 2026: long lists were hard to scroll): one row per product, tap to open its details.
   const [openId, setOpenId] = useState<string | null>(null);
-  const rows = ANALYTICS.byProduct.map((b) => ({ ...b, value: valueOf(b) })).filter((b) => b.value > 0).sort((a, b) => b.value - a.value);
+  const rows = base.map((b) => ({ ...b, value: valueOf(b) })).filter((b) => b.value > 0).sort((a, b) => b.value - a.value).slice(0, real ? 20 : undefined);
   const top = rows[0];
-  const topShare = Math.round((top.value / total) * 100);
-  const name = (id: string) => SHORT[id] ?? product(id).name;
+  const topShare = top && total ? Math.round((top.value / total) * 100) : 0;
+  // Real listing titles are long: drop "[10.10 BUY 1 FREE 1 …]" style tags and keep the first words.
+  const shortName = (n: string) => { const t = n.replace(/^(\s*[\[(【][^\])】]*[\])】]\s*)+/, "").trim() || n; return t.length > 30 ? `${t.slice(0, 28).trimEnd()}…` : t; };
+  const name = (id: string) => (real ? shortName(info(id).name) : SHORT[id] ?? product(id).name);
   // Share of income as a donut (owner, 28 Oct 2026: a pie reads better than a sentence). "Other" is everything else she sold.
   const other = Math.max(0, total - rows.reduce((a, b) => a + b.value, 0));
   const slices = [
@@ -48,6 +58,16 @@ export function ProductList() {
   // The slice shown in the middle: the top earner until she taps another.
   const [sel, setSel] = useState<string | null>(null);
   const shown = slices.find((s) => s.id === sel) ?? slices[0];
+  if (perf === "wait") return <p className="v2-muted">Loading your products…</p>;
+  if (perf === "error") return <p className="v2-muted">Couldn&apos;t load your products. Please refresh.</p>;
+  if (!top || !total) {
+    return (
+      <div className="v2-stack" style={{ gap: 20 }}>
+        <div className="pl-source"><Seg value={source} options={["All", "Video", "LIVE"] as const} onChange={(s) => { setSource(s); setOpenId(null); setSel(null); }} /></div>
+        <p className="v2-muted" style={{ margin: 0 }}>No sales {source === "All" ? "" : `from ${source === "Video" ? "videos" : "LIVEs"} `}in the last 30 days.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="v2-stack" style={{ gap: 20 }}>
@@ -84,13 +104,13 @@ export function ProductList() {
       <Lock what="what each product earned">
         <div className="cr2-list">
           {rows.map((b, i) => {
-            const p = product(b.productId);
-            const prev = PREV_ORDERS[b.productId] ?? b.orders;
-            const change = Math.round(((b.orders - prev) / prev) * 100);
+            const p = info(b.productId);
+            const prev = real ? b.prevOrders ?? 0 : PREV_ORDERS[b.productId] ?? b.orders;
+            const change = prev ? Math.round(((b.orders - prev) / prev) * 100) : 0;
             const dropping = change <= -20;
-            const lowRated = p.rating < 3;
+            const lowRated = !real && p.rating < 3;
             const highCancel = b.cancel > 15;
-            const vids = VIDEOS.filter((v) => v.productId === b.productId).sort((x, y) => y.orders - x.orders);
+            const vids = (real ? real.videos : VIDEOS).filter((v) => v.productId === b.productId).sort((x, y) => y.orders - x.orders);
             return (
               <article key={b.productId} id={`pd-${b.productId}`} className={`pl-row${openId === b.productId ? " open" : ""}`}>
                 {/* The photo and name open the product; the rest of the row shows its details here. */}
@@ -111,11 +131,11 @@ export function ProductList() {
                   <Icon name="arrow" size={16} />
                 </div>
                 {openId === b.productId && <div className="pl-body">
-                <Split productId={b.productId} commission={b.commission} />
+                <Split commission={b.commission} split={splitOf(b)} />
                 <div className="cr2-mini">
                   <span><small>Orders</small><b>{b.orders}</b></span>
                   <span><small>Cancel rate</small><b className={highCancel ? "cr2-red" : undefined}>{b.cancel}%</b></span>
-                  <span><small>Rating</small><b className={lowRated ? "cr2-red" : undefined}>{p.rating.toFixed(1)} / 5</b></span>
+                  {!real && <span><small>Rating</small><b className={lowRated ? "cr2-red" : undefined}>{p.rating.toFixed(1)} / 5</b></span>}
                 </div>
 
                 {/* Top video as a button (owner, 28 Oct 2026: less text); it opens here, on Rezekii. */}
@@ -134,8 +154,7 @@ export function ProductList() {
 }
 
 /** One product's commission split into video, LIVE and the rest, as a thin bar. */
-function Split({ productId, commission }: { productId: string; commission: number }) {
-  const s = channelSplit(productId, commission);
+function Split({ commission, split: s }: { commission: number; split: { video: number; live: number; other: number } }) {
   const parts = [["Video", s.video, "v"], ["LIVE", s.live, "l"], ["Other", s.other, "o"]] as const;
   const pct = (v: number) => Math.round((v / commission) * 100);
   return (

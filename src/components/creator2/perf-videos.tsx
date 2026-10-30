@@ -7,6 +7,7 @@ import { Lock, Seg } from "@/components/ui";
 import { product, rm, short } from "@/lib/mock";
 import { productHref } from "@/lib/product-view";
 import { VIDEOS, type VideoRow } from "@/lib/mock-creator2";
+import { perfProduct, useLivePerf } from "@/lib/live-perf";
 import "@/app/creator2.css";
 
 // Short sort names so the switch fits one row on a phone (owner, 28 Oct 2026); GMV first and by default (owner, 30 Oct 2026).
@@ -19,13 +20,18 @@ const per1k = (v: VideoRow) => (v.views ? (v.commission / v.views) * 1000 : null
 /** Performance by video: what each one sold, earned and how many orders were cancelled. */
 export function VideoList() {
   const [sort, setSort] = useState<Sort>("GMV");
+  // Signed in (owner, 31 Oct 2026): her real videos from her orders in the last 30 days.
+  const perf = useLivePerf();
+  const real = perf && perf !== "wait" && perf !== "error" ? perf : null;
   const rows = useMemo(() => {
-    const list = [...VIDEOS];
+    const list = [...(real ? real.videos : VIDEOS)];
     if (sort === "GMV") list.sort((a, b) => b.gmv - a.gmv);
     if (sort === "Commission") list.sort((a, b) => b.commission - a.commission);
     if (sort === "Cancels") list.sort((a, b) => b.cancel - a.cancel);
     return list;
-  }, [sort]);
+  }, [sort, real]);
+  if (perf === "wait") return <p className="v2-muted">Loading your videos…</p>;
+  if (perf === "error") return <p className="v2-muted">Couldn&apos;t load your videos. Please refresh.</p>;
 
   return (
     <div className="v2-stack" style={{ gap: 20 }}>
@@ -33,8 +39,9 @@ export function VideoList() {
 
       <Lock what="what each video earned">
         <div className="cr2-list">
+          {rows.length === 0 && <p className="v2-muted" style={{ margin: 0 }}>No sales from videos in the last 30 days.</p>}
           {rows.map((v, i) => {
-            const p = product(v.productId);
+            const p = real ? perfProduct(real, v.productId) : product(v.productId);
             const k = per1k(v);
             const high = v.cancel > 15;
             return (
@@ -51,7 +58,7 @@ export function VideoList() {
                     <span className="cr2-tags">
                       {i === 0 && <span className="badge">{TOP[sort]}</span>}
                       {high && <span className="badge badge-red">High risk · {v.cancel}% cancelled</span>}
-                      {v.views === null && <span className="badge badge-gray">Private video</span>}
+                      {v.views === null && !real && <span className="badge badge-gray">Private video</span>}
                     </span>
                   </span>
                   {high ? (

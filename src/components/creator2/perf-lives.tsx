@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { productHref } from "@/lib/product-view";
 import { product, rm } from "@/lib/mock";
 import { LIVES } from "@/lib/mock-creator2";
+import { perfProduct, useLivePerf } from "@/lib/live-perf";
 import "@/app/creator2.css";
 
 const SORTS = ["GMV", "Commission", "Cancels"] as const;
@@ -18,9 +19,17 @@ export function LiveList() {
   const router = useRouter();
   const [sort, setSort] = useState<Sort>("GMV");
   const key = (g: number, c: number, x: number) => (sort === "GMV" ? g : sort === "Commission" ? c : x);
-  const rows = [...LIVES].sort((a, b) => key(b.gmv, b.commission, b.cancel) - key(a.gmv, a.commission, a.cancel));
+  // Signed in (owner, 31 Oct 2026): her real LIVEs from her orders tagged LIVE in the last 30 days.
+  const perf = useLivePerf();
+  const real = perf && perf !== "wait" && perf !== "error" ? perf : null;
+  const info = (id: string) => (real ? { ...perfProduct(real, id), price: 0 } : product(id));
+  // A product's sales in the LIVE: what TikTok counted for real; in the sample, orders times price.
+  const gmvOf = (t: readonly [string, number, number, number, number?]) => (real ? t[4] ?? 0 : t[2] * product(t[0]).price);
+  const rows = [...(real ? real.lives : LIVES)].sort((a, b) => key(b.gmv, b.commission, b.cancel) - key(a.gmv, a.commission, a.cancel));
   const top = rows[0]?.id;
   const total = rows.reduce((a, l) => a + l.commission, 0);
+  if (perf === "wait") return <p className="v2-muted">Loading your LIVEs…</p>;
+  if (perf === "error") return <p className="v2-muted">Couldn&apos;t load your LIVEs. Please refresh.</p>;
   return (
     <div className="v2-stack" style={{ gap: 14 }}>
       <p className="an-range">
@@ -30,6 +39,7 @@ export function LiveList() {
       <div className="cr2-segfit"><span className="cr2-sortlbl">Sort by</span><Seg value={sort} options={SORTS} onChange={setSort} /></div>
       <Lock what="what each LIVE sold">
         <div className="cr2-list">
+          {rows.length === 0 && <p className="v2-muted" style={{ margin: 0 }}>No sales from LIVEs in the last 30 days.</p>}
           {rows.map((l) => (
             <article key={l.id} className={`pl-row${openId === l.id ? " open" : ""}`}>
               <button type="button" className="pl-head" aria-expanded={openId === l.id} onClick={() => setOpenId(openId === l.id ? null : l.id)}>
@@ -39,7 +49,7 @@ export function LiveList() {
                   <span className="pl-tags">
                     <span className="lv-thumbs">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      {l.products.slice(0, 3).map(([id]) => <img key={id} src={product(id).img} alt="" />)}
+                      {l.products.slice(0, 3).map(([id]) => <img key={id} src={info(id).img} alt="" />)}
                     </span>
                     {sort !== "Cancels" && l.id === top && <span className="badge">{sort === "GMV" ? "Top GMV" : "Top earner"}</span>}
                     {l.cancel > 10 && <span className="badge badge-red">High cancels</span>}
@@ -57,14 +67,14 @@ export function LiveList() {
                   </div>
                   <div className="lv-prods">
                     {/* A product's GMV in the LIVE is its orders times its price. */}
-                    {[...l.products].sort((a, b) => key(b[2] * product(b[0]).price, b[1], b[3]) - key(a[2] * product(a[0]).price, a[1], a[3])).map(([id, c, o, x]) => (
+                    {[...l.products].sort((a, b) => key(gmvOf(b), b[1], b[3]) - key(gmvOf(a), a[1], a[3])).map((t) => { const [id, c, , x] = t; return (
                       <button key={id} type="button" onClick={() => router.push(productHref(id))}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={product(id).img} alt="" />
-                        <span>{product(id).name}</span>
-                        <b className={sort === "Cancels" && x > 10 ? "cr2-red" : undefined}>{sort === "GMV" ? rm(o * product(id).price, 0) : sort === "Commission" ? rm(c, 0) : `${x}%`}</b>
+                        <img src={info(id).img} alt="" />
+                        <span>{info(id).name}</span>
+                        <b className={sort === "Cancels" && x > 10 ? "cr2-red" : undefined}>{sort === "GMV" ? rm(gmvOf(t), 0) : sort === "Commission" ? rm(c, 0) : `${x}%`}</b>
                       </button>
-                    ))}
+                    ); })}
                   </div>
                 </div>
               )}
