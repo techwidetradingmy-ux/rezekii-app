@@ -242,10 +242,9 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     ...apps.filter((p) => hasLinkOrCta(captionOf(p), cta)).map((p) => `${NAMES[p]} caption has a link or call to action. Move it to the first comment.`),
   ];
 
-  /** Real accounts: TikTok connects through TikTok sign-in; the other apps aren't open in this preview yet. */
+  /** Real accounts: each app's own sign-in, then back here with the result. */
   function connectReal(app: Channel) {
-    if (app === "tiktok") { window.location.href = "/api/auth/tiktok/start"; return; }
-    say(`${NAMES[app]} can't be connected in this preview yet.`);
+    window.location.href = app === "tiktok" ? "/api/auth/tiktok/start" : `/api/auth/meta/${app}/start${liveSide === "seller" ? "?from=seller" : ""}`;
   }
   async function checkReal(c: PubChannel) {
     const r = await fetch("/api/channels/check", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ key: c.key }) }).catch(() => null);
@@ -316,6 +315,13 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   // Arriving with ?sample opens New post already filled in (for demos).
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
+    // Back from connecting Facebook, Instagram or Threads.
+    const connect = q.get("connect");
+    if (connect) {
+      const app = NAMES[(q.get("channel") ?? "facebook") as Channel] ?? "The app";
+      say(connect === "ok" ? `${app} connected.` : connect === "no_pages" ? "No Facebook Pages were picked. Connect again and tick your Pages." : connect === "personal" ? "That Instagram account is personal. Switch it to a Business or Creator account in Instagram, then connect again." : connect === "cancelled" ? `${app} sign-in was cancelled.` : connect === "expired" ? "That took too long. Please connect again." : `${app} didn't connect. Please try again.`);
+      window.history.replaceState(null, "", window.location.pathname);
+    }
     if (q.has("sample")) fillSample();
     // From Today's Ideas: the idea becomes the start of the caption; she adds the video.
     else if (q.get("idea")) { setMain(q.get("idea")!.slice(0, 200)); say("Idea added. Now add a video and channels."); }

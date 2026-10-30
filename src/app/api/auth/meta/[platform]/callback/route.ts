@@ -7,7 +7,7 @@ import { saveAccount } from "@/modules/social/accounts.ts";
 import { canUseSocial, isPlatform } from "@/modules/social/access.ts";
 import { stateMatches } from "../../../tiktokshop/state.ts";
 import { appBase } from "../../../oauth.ts";
-import { backToComposer, metaCallbackUrl, metaCookie } from "../../meta.ts";
+import { backToComposer, composerPath, metaCallbackUrl, metaCookie } from "../../meta.ts";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +17,7 @@ const PROFESSIONAL = new Set(["BUSINESS", "MEDIA_CREATOR"]);
 /** Meta sends the person back here after its own sign-in (the return address registered in the Meta app). */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ platform: string }> }) {
   const { platform } = await params;
-  if (!isPlatform(platform)) return NextResponse.redirect(`${appBase(req)}/app/new`);
+  if (!isPlatform(platform)) return NextResponse.redirect(`${appBase(req)}${composerPath(req)}`);
   const q = req.nextUrl.searchParams;
   if (q.get("error") || q.get("error_reason")) return backToComposer(req, platform, "cancelled");
   const code = q.get("code");
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ plat
   if (!stateMatches(q.get("state"), req.cookies.get(metaCookie(platform))?.value)) return backToComposer(req, platform, "expired");
   const user = await currentUser();
   if (!user) return NextResponse.redirect(`${appBase(req)}/signin`);
-  if (!canUseSocial(user)) return NextResponse.redirect(`${appBase(req)}/app/new`);
+  if (!canUseSocial(user)) return NextResponse.redirect(`${appBase(req)}${composerPath(req)}`);
   const redirectUri = metaCallbackUrl(req, platform);
   try {
     if (platform === "facebook") {
