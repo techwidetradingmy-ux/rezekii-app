@@ -32,7 +32,7 @@ const BRANDED = [
 /** Creator missions: the shared board, plus branded missions coming soon. */
 export default function Missions() {
   return (
-    <MissionsBoard daily={DAILY} starter={STARTER} credits={CREATOR.credits} streak={CREATOR.streak} walletHref="/app/account#wallet" sub="Earn credits. Spend them on AI tools." starterNote="5 days left">
+    <MissionsBoard daily={DAILY} starter={STARTER} credits={CREATOR.credits} streak={CREATOR.streak} walletHref="/app/account#wallet" sub="Earn credits. Use them to post to many apps at once." starterNote="5 days left">
       <section className="v2-card mx-card">
         <div className="v2-card-h">
           <h2 className="v2-h2">Branded Missions</h2>

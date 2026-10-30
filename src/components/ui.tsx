@@ -310,12 +310,59 @@ const SHARE_TO: (Brand | "More")[] = ["TikTok", "WhatsApp", "Instagram", "Facebo
 
 /** Where a card goes, and its real size there. Portrait or landscape only (owner, 30 Oct 2026): more sizes squeezed the words. */
 const FORMATS = [
-  { key: "story", label: "Portrait", ratio: "9 / 16", size: "1080 × 1920", where: "TikTok, Instagram and WhatsApp" },
-  { key: "wide", label: "Landscape", ratio: "16 / 9", size: "1920 × 1080", where: "Facebook, X and YouTube" },
+  { key: "story", label: "Portrait", ratio: "9 / 16" },
+  { key: "wide", label: "Landscape", ratio: "16 / 9" },
 ] as const;
 const DESIGNS = ["Pastel", "Certificate", "Night"] as const;
 /** What is being shared. Every moment gets its own hero inside the same branded frame (owner, 28 Oct 2026). */
 export type MomentKind = "streak" | "level" | "badge" | "credits" | "mission" | "sample" | "invite";
+/** An invite card's own details (owner, 30 Oct 2026): her code, what the friend gets, her own invite link and photo. */
+export type InviteInfo = { code: string; reward: number; link: string; photo?: string; kick?: string; tag?: string };
+
+/**
+ * The invite card, made like a story (owner, 30 Oct 2026): Rimau waving them in, one big line, what they get and her code on a
+ * ticket. Her photo shows once, at the bottom. Few words so nothing is squeezed. Same frame, sizes and styles as other cards.
+ */
+function InviteCard({ invite, big, handle, fmt, design, video, ratio }: { invite: InviteInfo; big: string; handle: string; fmt: string; design: number; video: boolean; ratio: string }) {
+  const initials = handle.replace("@", "").slice(0, 2).toUpperCase();
+  return (
+    <div className={`v2-story ds${design} ${fmt} ${video ? "vid" : ""} inv-card`} style={{ aspectRatio: ratio }} role="img" aria-label={`${big}. Use code ${invite.code} for +${invite.reward} credits. ${invite.link}`}>
+      {video && <span className="v2-vbar" aria-hidden="true"><span /></span>}
+      <span className="st-head">
+        <span className="st-brand">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/master-logo-transparent.png" alt="" />
+          Rezekii
+        </span>
+        <span className="st-partner">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/tiktok-shop-partner-logo.png" alt="TikTok Shop Partner" />
+        </span>
+      </span>
+      <span className="inv-main">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="inv-rimau" src="/mascot/rimau-wave.webp" alt="" />
+        <span className="inv-text">
+          <span className="inv-kick">{invite.kick ?? "You're invited"}</span>
+          <strong className="inv-h">{big}</strong>
+          {invite.tag && <span className="inv-tag">{invite.tag}</span>}
+          <span className="inv-tk">
+            <span className="l"><b>+{invite.reward}</b><small>credits for you</small></span>
+            <span className="r"><small>Code</small><b>{invite.code}</b></span>
+          </span>
+        </span>
+      </span>
+      <span className="st-foot">
+        {invite.photo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img className="inv-foot-av" src={invite.photo} alt="" />
+        ) : <span className="v2-av">{initials}</span>}
+        <span className="st-foot-txt"><b>{handle}</b><small>{invite.link}</small></span>
+        <Qr />
+      </span>
+    </div>
+  );
+}
 const num = (s: string) => Number(/\d+/.exec(s.replace(/,/g, ""))?.[0] ?? 0);
 
 /** The picture in the middle of a share card: a flame, a podium, a rosette, a receipt, a stamp card, a parcel label or a ticket. */
@@ -386,8 +433,10 @@ const BLESS = [
  * "Share your proud moment" (V1's share window): the card in 3 designs, sized for each platform, as an image or a 5-second
  * video, with a blessing, a caption and the apps to send it to. Shows achievements, never sales.
  */
-export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow", level, kicker = "Proud moment", caption: captionInit, onShared, title = "Share your proud moment", card, moment, extra }: {
+export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow", level, kicker = "Proud moment", caption: captionInit, onShared, title, card, moment, extra, invite }: {
   onClose: () => void; big: string; label: string; lines: string[]; handle?: string; level?: Level; kicker?: string; caption?: string;
+  /** An invite: the card shows her code and reward, and Copy link copies her own invite link. */
+  invite?: InviteInfo;
   /** Which hero the card shows; without one it keeps the medal. */
   moment?: MomentKind;
   /** Extra choices shown above the caption, for a ready-made card. */
@@ -403,7 +452,20 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
   const [design, setDesign] = useState(0);
   const [video, setVideo] = useState(false);
   const [bless, setBless] = useState(0);
-  const [caption, setCaption] = useState(captionInit ?? `Alhamdulillah! ${label}: ${big} on Rezekii 🎉 #RezekiiCreator #TikTokShopMY`);
+  const [caption, setCaption] = useState(
+    captionInit ??
+      (invite
+        ? `${big}! Use my code ${invite.code} and get +${invite.reward} credits. ${label}. https://${invite.link} #RezekiiAffiliate #RezekiiMY`
+        : `Alhamdulillah! ${label}: ${big} on Rezekii 🎉 #RezekiiAffiliate #RezekiiMY`),
+  );
+  // Copy link copies the link that is hers: her invite link on an invite card, else her profile (owner, 30 Oct 2026).
+  const link = invite ? `https://${invite.link}` : `https://rezekii.com/c/${handle.replace("@", "")}`;
+  const copyLink = () => {
+    try {
+      void navigator.clipboard?.writeText(link).catch(() => {});
+    } catch {}
+    toast(`Link copied: ${link.replace("https://", "")}`);
+  };
   const f = FORMATS.find((x) => x.key === fmt)!;
   const initials = handle.startsWith("@") ? handle.slice(1, 3).toUpperCase() : handle.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
   const send = (app: string) => {
@@ -413,10 +475,22 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
   };
 
   return (
-    <Sheet title={title} onClose={onClose} wide>
+    <Sheet title={title ?? (invite ? "Share your invite" : "Share your proud moment")} onClose={onClose} wide>
       <div className="v2-shgrid">
         <div className="v2-shleft">
-          {card ? <div className="v2-shcover">{card}</div> : (
+          {/* Size as two small icons above the card (owner, 30 Oct 2026), not a big row. */}
+          {!card && (
+            <div className="v2-shsize" role="group" aria-label="Size">
+              {FORMATS.map((x) => (
+                <button key={x.key} type="button" className={fmt === x.key ? "on" : undefined} aria-pressed={fmt === x.key} aria-label={`${x.label} ${x.ratio.replace(" / ", ":")}`} title={`${x.label} ${x.ratio.replace(" / ", ":")}`} onClick={() => setFmt(x.key)}>
+                  <i className={x.key} />
+                </button>
+              ))}
+            </div>
+          )}
+          {card ? <div className="v2-shcover">{card}</div> : invite ? (
+            <InviteCard invite={invite} big={big} handle={handle} fmt={fmt} design={design} video={video} ratio={f.ratio} />
+          ) : (
           <div className={`v2-story ds${design} ${fmt} ${video ? "vid" : ""} ${moment ? `mo mo-${moment}-card` : ""}`} style={{ aspectRatio: f.ratio }} role="img" aria-label={`${label}: ${big}. ${BLESS[bless]}`}>
             {video && <span className="v2-vbar" aria-hidden="true"><span /></span>}
             <span className="st-head">
@@ -449,25 +523,13 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
             </span>
           </div>
           )}
-          <span className="v2-small" style={{ textAlign: "center" }}>{card ? "1080 × 1920 px · stories" : `${f.size} px · ${f.where}`}</span>
         </div>
 
         <div className="v2-shright">
-          {!card && <>
-          <div className="v2-shfmt" role="group" aria-label="Size">
-            {FORMATS.map((x) => (
-              <button key={x.key} type="button" className={fmt === x.key ? "on" : undefined} aria-pressed={fmt === x.key} onClick={() => setFmt(x.key)}>
-                <i style={{ aspectRatio: x.ratio }} />
-                <b>{x.label}</b>
-                <small>{x.ratio.replace(" / ", ":")}</small>
-              </button>
-            ))}
-          </div>
-          <Seg value={DESIGNS[design]} options={DESIGNS} onChange={(d) => setDesign(DESIGNS.indexOf(d))} />
-          </>}
+          {!card && <Seg value={DESIGNS[design]} options={DESIGNS} onChange={(d) => setDesign(DESIGNS.indexOf(d))} />}
           {extra}
           {!extra && <Seg value={video ? "Video · 5 sec" : "Image"} options={["Image", "Video · 5 sec"] as const} onChange={(v) => setVideo(v !== "Image")} />}
-          {!card && <div className="v2-bless">
+          {!card && !invite && <div className="v2-bless">
             <span aria-hidden="true">✨</span>
             <span><b>Blessing on your card</b><small>{BLESS[bless]}</small></span>
             <button type="button" className="btn-outline v2-btn-sm" onClick={() => setBless((b) => (b + 1) % BLESS.length)}>Another</button>
@@ -487,7 +549,7 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
             ))}
           </div>
           <div className="v2-row" style={{ gap: 8 }}>
-            <button type="button" className="btn-outline" style={{ flex: 1 }} onClick={() => toast("Link copied: rezekii.com/c/aisyah.glow")}><Icon name="link" size={17} /> Copy link</button>
+            <button type="button" className="btn-outline" style={{ flex: 1 }} onClick={copyLink}><Icon name="link" size={17} /> Copy link</button>
             <button type="button" className="np-btn" style={{ flex: 1 }} onClick={() => toast(video ? "Video saved" : "Image saved")}><Icon name="arrow" size={17} /> Save {video ? "video" : "image"}</button>
           </div>
           {!card && <p className="v2-small" style={{ margin: 0 }}>Shows your achievement and invite QR, never your sales.</p>}

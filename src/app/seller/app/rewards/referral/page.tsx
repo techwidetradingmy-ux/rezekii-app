@@ -92,6 +92,7 @@ export default function SellerReferral() {
           big="RM 0 a month"
           moment="invite"
           lines={["Commission only when you sell", `Use my code ${CODE}: +${REFERRAL_REWARD.friend} credits`]}
+          invite={{ code: CODE, reward: REFERRAL_REWARD.friend, link: LINK, kick: "Sellers, you're invited", tag: "Commission only when you sell" }}
         />
       )}
     </div>

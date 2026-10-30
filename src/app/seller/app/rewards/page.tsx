@@ -31,7 +31,7 @@ export default function SellerMissions() {
       credits={SELLER_CREDITS}
       streak={SELLER_STREAK}
       walletHref="/seller/app/rewards/wallet"
-      sub="Earn credits to spend on AI tools. Credits are not cash."
+      sub="Earn credits to post to many apps at once. Credits are not cash."
       starterNote="5 days left"
       handle={SELLER.shop}
     />

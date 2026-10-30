@@ -259,8 +259,8 @@ export const LEDGER = [
   { when: "Today 09:40", what: "Cross-channel post · 3 channels", amount: -15 },
   { when: "Yesterday", what: "Refund: Instagram post failed", amount: 5 },
   { when: "Yesterday", what: "Referral: @hafiz.tech", amount: 50 },
-  { when: "21 Oct", what: "AI script generation", amount: -12 },
-  { when: "21 Oct", what: "Refund: generation failed", amount: 12 },
+  { when: "21 Oct", what: "Cross-channel post · 2 channels", amount: -10 },
+  { when: "21 Oct", what: "Refund: Threads post failed", amount: 5 },
   { when: "18 Oct", what: "Mission: Link TikTok Shop", amount: 100 },
 ];
 

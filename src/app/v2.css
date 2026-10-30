@@ -474,13 +474,13 @@ a[href*="/product/"] { text-decoration: none; }
 @keyframes stText { 0%, 24% { opacity: 0; transform: translateY(12px); } 34%, 90% { opacity: 1; transform: none; } 100% { opacity: 0; } }
 @keyframes stQuote { 0%, 40% { opacity: 0; transform: translateY(10px); } 52%, 90% { opacity: 1; transform: none; } 100% { opacity: 0; } }
 @keyframes gsText { to { background-position: 200% 0; } }
-.v2-shfmt { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-.v2-shfmt button { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px 8px; border-radius: 14px; border: 1.5px solid var(--border); background: var(--surface); color: var(--text); font: inherit; cursor: pointer; }
-.v2-shfmt button i { display: block; height: 30px; max-width: 54px; border-radius: 5px; border: 2px solid currentColor; opacity: 0.55; }
-.v2-shfmt button b { font-size: 13px; }
-.v2-shfmt button small { font-size: 11px; color: var(--muted); font-weight: 700; }
-.v2-shfmt button.on { border-color: var(--text); box-shadow: 0 0 0 3px rgba(11, 26, 19, 0.08); }
-.v2-shfmt button.on i { opacity: 1; background: var(--gsoft); }
+/* Size switch: two small icons above the card (owner, 30 Oct 2026). */
+.v2-shsize { display: inline-flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--surface2); border: 1px solid var(--line); }
+.v2-shsize button { width: 40px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 9px; background: transparent; color: var(--muted); cursor: pointer; }
+.v2-shsize button.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+.v2-shsize i { display: block; border: 2px solid currentColor; border-radius: 3px; }
+.v2-shsize i.story { width: 11px; height: 18px; }
+.v2-shsize i.wide { width: 20px; height: 12px; }
 .v2-bless { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: 16px; background: var(--surface2); }
 .v2-bless > span:nth-child(2) { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .v2-bless b { font-size: 14px; }
@@ -1064,3 +1064,31 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { display
 .v2-side-sub a .v2-pgai, .sub-menu a .v2-pgai { width: 15px; height: 15px; }
 .sub-menu a.on .v2-pgai { color: #b3a8ff; }
 .v2-pgpick b svg.v2-pgai { transform: none; color: #7c5cff; }
+/* Invite card, made like a story (owner, 30 Oct 2026): Rimau waving them in, one big line, the reward and her code on a ticket. */
+.inv-card .inv-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 0; }
+.inv-rimau { width: 118px; height: 128px; object-fit: contain; filter: drop-shadow(0 12px 16px rgba(59, 47, 92, 0.25)); animation: invWave 2.4s ease-in-out infinite; }
+@keyframes invWave { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-4deg) translateY(-3px); } }
+.inv-text { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; min-width: 0; }
+.inv-kick { font-size: 10px; font-weight: 900; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.65; }
+.inv-h { font-size: 30px; font-weight: 900; line-height: 1.02; letter-spacing: -0.03em; text-wrap: balance; }
+.inv-tag { padding: 4px 10px; border-radius: 99px; background: rgba(255, 255, 255, 0.8); font-size: 11px; font-weight: 800; }
+.inv-tk { position: relative; margin-top: 6px; display: grid; grid-template-columns: 52% 48%; width: 100%; border-radius: 14px; background: #ffffff; color: #0b3d2a; box-shadow: 0 10px 22px -12px rgba(59, 47, 92, 0.5); -webkit-mask: radial-gradient(circle 8px at 52% 0, #0000 98%, #000) top / 100% 51% no-repeat, radial-gradient(circle 8px at 52% 100%, #0000 98%, #000) bottom / 100% 51% no-repeat; mask: radial-gradient(circle 8px at 52% 0, #0000 98%, #000) top / 100% 51% no-repeat, radial-gradient(circle 8px at 52% 100%, #0000 98%, #000) bottom / 100% 51% no-repeat; }
+.inv-tk::before { content: ""; position: absolute; left: 52%; top: 10px; bottom: 10px; border-left: 2px dashed #d5dbe3; }
+.inv-tk > span { display: grid; justify-items: center; align-content: center; gap: 2px; padding: 11px 6px; min-width: 0; }
+.inv-tk .l b { font-size: 26px; font-weight: 900; line-height: 1; color: #00995b; }
+.inv-tk .l small { font-size: 10px; font-weight: 800; color: #00995b; }
+.inv-tk .r small { font-size: 9px; font-weight: 900; letter-spacing: 0.14em; text-transform: uppercase; color: #6b7785; }
+.inv-tk .r b { font-size: 15px; font-weight: 900; letter-spacing: 0.08em; color: #0d1117; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.inv-foot-av { width: 26px; height: 26px; flex-shrink: 0; border-radius: 50%; object-fit: cover; }
+.inv-card .st-foot-txt small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inv-card.wide .inv-main { flex-direction: row; gap: 14px; padding: 0 4px; }
+.inv-card.wide .inv-rimau { width: 92px; height: 100px; }
+.inv-card.wide .inv-text { align-items: flex-start; text-align: left; gap: 4px; flex: 1; }
+.inv-card.wide .inv-h { font-size: 22px; }
+.inv-card.wide .inv-tag { display: none; }
+.inv-card.wide .inv-tk { margin-top: 2px; width: 200px; }
+.inv-card.wide .inv-tk > span { padding: 7px 6px; }
+.inv-card.wide .inv-tk .l b { font-size: 20px; }
+.inv-card.wide .inv-foot-av { width: 22px; height: 22px; }
+.v2-story.ds1 .inv-tag { box-shadow: inset 0 0 0 1px #e3cf9b; }
+.v2-story.ds2 .inv-tag { background: rgba(255, 255, 255, 0.12); color: #ffffff; }

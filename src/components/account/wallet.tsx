@@ -30,7 +30,7 @@ export function Wallet() {
           <ShareButton big={`${CREATOR.credits.toLocaleString("en-MY")} credits`} label="Earned on Rezekii" lines={["From posting and inviting", `${CREATOR.streak} days in a row`]} moment="credits" />
         </div>
       </section>
-      <p className="v2-small" style={{ margin: "-8px 0 0" }}>Credits aren&apos;t cash. Use them for AI tools.</p>
+      <p className="v2-small" style={{ margin: "-8px 0 0" }}>Credits aren&apos;t cash. Use them to post to many apps at once.</p>
 
       <section className="v2-card">
         <div className="v2-card-h">

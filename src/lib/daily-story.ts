@@ -70,7 +70,7 @@ export const SCENARIOS: { key: string; group: string; when: string; pose: Pose; 
 ];
 
 const LINK = `rezekii.com/r/${CREATOR.handle.replace(/^@/, "")}`;
-const tags = "#RezekiiStory #TikTokShopMY";
+const tags = "#RezekiiAffiliate #RezekiiMY";
 const rm = (n: number, d = 0) => `RM ${n.toLocaleString("en-MY", { minimumFractionDigits: d, maximumFractionDigits: d })}`;
 
 /** Yesterday, for the sample story. A good day and a slow day, so both moods can be seen. */
