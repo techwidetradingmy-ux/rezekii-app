@@ -1125,3 +1125,6 @@ span.pd-row { grid-template-columns: 12px minmax(0, 1fr) auto 14px; }
 .cr2-mico.done, li.done .cr2-check, li.done .cr2-check.num, .an-plan li.done .an-num { background: var(--gsoft); border-color: #b8ead2; color: var(--gink); }
 .rc-best, .rc-rec, .rc-prev-pack em { background: var(--gsoft); color: var(--gink); }
 button.rf-pill { border: 0; cursor: pointer; font: inherit; font-size: 12.5px; font-weight: 800; }
+/* A real account without enough history yet (owner, 30 Oct 2026): the card keeps its title and says so, no sample numbers. */
+[data-soon] > :not(:first-child) { display: none !important; }
+[data-soon]::after { content: attr(data-soon); display: block; margin-top: 4px; padding: 14px; border-radius: 14px; background: var(--surface2); color: var(--muted); font-size: 14px; font-weight: 600; line-height: 1.45; }

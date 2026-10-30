@@ -2,20 +2,22 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { CalendarPicker, between, dayName, iso } from "@/components/calendar-picker";
 import { useDemo } from "@/components/demo";
 import { AiHead, Bars, Count, Lock, Progress, RemoveWarn, Seg, Stat, Tip, Title } from "@/components/ui";
 import { product, rm, short } from "@/lib/mock";
 import { productHref } from "@/lib/product-view";
+import { loadAnalytics, type LiveAnalytics } from "@/lib/live";
 import { ACTIONS, CHARTS, POST_TIMES, RANGES, RANGE_DATA, SHORT, WATCH, type RangeKey } from "@/lib/mock-creator2";
 import { FLAGGED } from "@/components/creator1/rating-scan";
 import { CommissionChart } from "@/components/creator2/commission-chart";
 import "@/app/creator2.css";
 import { useKept } from "@/lib/keep";
 
-const pct = (n: number, of: number) => Math.round((n / of) * 100);
+// A real account can have no orders yet, so nothing divides by zero.
+const pct = (n: number, of: number) => (of ? Math.round((n / of) * 100) : 0);
 /** Action plan order (owner, 28 Oct 2026): protect the account first, then today's chance, then this week, then growth. */
 const RANK = { "Fix now": 0, "Shoot today": 1, "This week": 2, Grow: 3 } as const;
 const PLAN = [...ACTIONS].sort((a, b) => RANK[a.tag] - RANK[b.tag]);
@@ -29,8 +31,13 @@ const PRESETS: [string, string][] = RANGES.map((r) => [r, r === "Lifetime" ? "Li
 /** Analytics overview: the numbers for any range, an AI summary with low-rated products to avoid, an action plan, and where the money comes from. */
 export default function DataOverview() {
   const router = useRouter();
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const [range, setRange] = useKept<RangeKey>("data-range", "30 days");
+  // Signed in (owner, 30 Oct 2026): her real orders replace the sample numbers.
+  const [real, setReal] = useState<LiveAnalytics | null>(null);
+  useEffect(() => {
+    if (live) loadAnalytics().then(setReal);
+  }, [live]);
   // Own dates from the calendar; this preview shows the sample data of the closest preset.
   const [custom, setCustom] = useState<[string, string] | null>(null);
   const [from, to] = custom ?? SPAN[range];
@@ -38,12 +45,13 @@ export default function DataOverview() {
   const [removed, setRemoved] = useState<string[]>([]);
   const [ticked, setTicked] = useState<string[]>([]);
   const [allPlan, setAllPlan] = useState(false);
-  const d = RANGE_DATA[range];
-  const chart = CHARTS[range];
+  const d = real?.ranges[range] ?? RANGE_DATA[range];
+  const chart = real?.charts[range] ?? CHARTS[range];
   const span = range === "Lifetime" ? "since March 2026" : `last ${range}`;
 
   const ranked = [...d.byProduct].sort((a, b) => b.commission - a.commission);
-  const top2 = ranked[0].commission + ranked[1].commission;
+  const top2 = (ranked[0]?.commission ?? 0) + (ranked[1]?.commission ?? 0);
+  const nameOf = (id: string) => SHORT[id] ?? product(id).name;
   const highCancel = d.cancel > 10;
   const bestTime = POST_TIMES.reduce((a, b) => (b[1] > a[1] ? b : a));
   const avgViews = POST_TIMES.reduce((a, [, v]) => a + v, 0) / POST_TIMES.length;
@@ -133,10 +141,11 @@ export default function DataOverview() {
         </Lock>
       </section>
 
-      <section className="v2-aicard cr2-aisum" aria-label="AI summary">
+      {/* Signed in (owner, 30 Oct 2026): these AI cards need her own history first, so they say so instead of showing samples. */}
+      <section className="v2-aicard cr2-aisum" aria-label="AI summary" data-soon={real ? "Rezekii AI builds this from your own posts and orders. Not enough of your data yet." : undefined}>
         <AiHead title="AI Summary" sub={`From your TikTok Shop sales, ${span}`} />
         <ul className="an-lines">
-          <li><Icon name="trend" size={18} width={2.2} /><span><b>{pct(top2, d.est)}%</b> from {SHORT[ranked[0].productId]} + {SHORT[ranked[1].productId]}</span></li>
+          {ranked.length >= 2 && <li><Icon name="trend" size={18} width={2.2} /><span><b>{pct(top2, d.est)}%</b> from {nameOf(ranked[0].productId)} + {nameOf(ranked[1].productId)}</span></li>}
           <li><Icon name="clock" size={18} /><span><b>{bestTime[0]}</b> best time to post</span></li>
           <li className={watching.length ? "warn" : undefined}><Icon name={watching.length ? "alert" : "check"} size={18} /><span>{watching.length ? <><b>{watching.length} product{watching.length === 1 ? "" : "s"}</b> to avoid</> : <b>No products to avoid</b>}</span></li>
         </ul>
@@ -181,8 +190,8 @@ export default function DataOverview() {
 
 
       {/* An AI feature (owner, 29 Oct 2026): worked out from her own posts, so everyone's best time is different. */}
-      <section className="v2-card v2-aicard an-time an-split">
-        <AiHead title="Best Time to Post" sub={<span className="an-hv">High virality · {bestTime[0]}</span>} tip={<Tip label="About best time" text="Rezekii AI looks at your own videos from the last 30 days and the average views in each time slot. Everyone's best time is different." />} />
+      <section className="v2-card v2-aicard an-time an-split" data-soon={real ? "Rezekii AI builds this from your own posts and orders. Not enough of your data yet." : undefined}>
+        <AiHead title="Best Time to Post" sub={real ? undefined : <span className="an-hv">High virality · {bestTime[0]}</span>} tip={<Tip label="About best time" text="Rezekii AI looks at your own videos from the last 30 days and the average views in each time slot. Everyone's best time is different." />} />
         <Bars rows={POST_TIMES.map(([label, v]) => ({ label, value: v, display: `${short(v)} views`, tone: v < avgViews ? ("blue" as const) : undefined }))} />
       </section>
 
@@ -209,7 +218,7 @@ export default function DataOverview() {
         </div>
       </section>
 
-      <section className="v2-card cr2-plan" aria-label="Your action plan">
+      <section className="v2-card cr2-plan" aria-label="Your action plan" data-soon={real ? "Rezekii AI builds this from your own posts and orders. Not enough of your data yet." : undefined}>
         <div className="v2-card-h">
           <h2 className="v2-h2">Your Action Plan</h2>
           <span className="v2-small">{doneCount} of {ACTIONS.length} done</span>

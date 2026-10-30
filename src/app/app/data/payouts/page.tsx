@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Icon } from "@/components/icons";
 import { CalendarPicker, dayName, iso } from "@/components/calendar-picker";
 import { Count, Flow, Lock, Seg, Stat, Tip, Title } from "@/components/ui";
 import { rm } from "@/lib/mock";
+import { useDemo } from "@/components/demo";
+import { loadAnalytics, type LiveAnalytics } from "@/lib/live";
 import { PAYOUTS, payoutDays, type PayoutDay } from "@/lib/mock-creator2";
 import "@/app/creator2.css";
 
@@ -23,9 +25,24 @@ const RANGE: Record<string, [string, string]> = {
   month: ["2026-10-01", TODAY], lastmonth: ["2026-09-01", "2026-09-30"], "7d": [back(6), TODAY], "30d": [back(29), TODAY], "90d": [back(89), TODAY], all: [FIRST, TODAY],
 };
 
-function sum(from: string, to: string) {
+/** The real months as the calendar needs them (owner, 30 Oct 2026), oldest first, with today and the first month. */
+function realData(months: LiveAnalytics["months"]) {
+  const now = new Date(Date.now() + 8 * 3_600_000);
+  const today = iso(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const ms = [...months].reverse().map((m) => ({ name: m.month, year: m.year, month: m.monthIndex, days: m.days }));
+  const days: Day[] = ms.flatMap(({ year, month, days }) => days.filter((d) => d.state !== "future").map((d) => ({ ...d, date: iso(year, month, d.day) })));
+  const ago = (n: number) => { const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - n)); return iso(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()); };
+  const first = ms.length ? iso(ms[0].year, ms[0].month, 1) : today;
+  const thisMonth = iso(now.getUTCFullYear(), now.getUTCMonth(), 1);
+  const lastEnd = ago(now.getUTCDate());
+  const range: Record<string, [string, string]> = { month: [thisMonth, today], lastmonth: [lastEnd.slice(0, 8) + "01", lastEnd], "7d": [ago(6), today], "30d": [ago(29), today], "90d": [ago(89), today], all: [first, today] };
+  return { MONTHS: ms.length ? ms : [{ name: "", year: now.getUTCFullYear(), month: now.getUTCMonth(), days: [] as PayoutDay[] }], DAYS: days, RANGE: range, TODAY: today, FIRST: first };
+}
+const SAMPLE = { MONTHS, DAYS, RANGE, TODAY, FIRST };
+
+function sum(from: string, to: string, days: Day[] = DAYS) {
   const t = { est: 0, extra: 0, clawed: 0, paid: 0, pending: 0, days: 0 };
-  for (const d of DAYS) {
+  for (const d of days) {
     if (d.date < from || d.date > to) continue;
     t.est += d.est;
     t.extra += d.extra;
@@ -39,6 +56,16 @@ function sum(from: string, to: string) {
 
 /** Payouts: pick any dates (V1's picker), see each day in a calendar, and how much of it came extra through Rezekii. */
 export default function DataPayouts() {
+  const { live } = useDemo();
+  const [real, setReal] = useState<LiveAnalytics | null>(null);
+  useEffect(() => {
+    if (live) loadAnalytics().then(setReal);
+  }, [live]);
+  const { MONTHS, DAYS, RANGE, TODAY, FIRST } = useMemo(() => (real ? realData(real.months) : SAMPLE), [real]);
+  return <Payouts key={real ? "real" : "sample"} MONTHS={MONTHS} DAYS={DAYS} RANGE={RANGE} TODAY={TODAY} FIRST={FIRST} />;
+}
+
+function Payouts({ MONTHS, DAYS, RANGE, TODAY, FIRST }: typeof SAMPLE) {
   const [range, setRange] = useState<[string, string]>(RANGE.month);
   const [preset, setPreset] = useState<string | null>("month");
   const [view, setView] = useState<"Calendar" | "List">("Calendar");
@@ -46,7 +73,7 @@ export default function DataPayouts() {
   const [picked, setPicked] = useState<Day | null>(null);
 
   const [from, to] = range;
-  const total = sum(from, to);
+  const total = sum(from, to, DAYS);
   const open = total.est - total.extra;
   const w = (n: number) => `${(n / Math.max(total.est, 1)) * 100}%`;
   const monthOf = (date: string) => MONTHS.findIndex((m) => iso(m.year, m.month, 1).slice(0, 7) === date.slice(0, 7));
@@ -58,7 +85,7 @@ export default function DataPayouts() {
   };
 
   const label =
-    preset === "month" ? "October 2026" : preset === "lastmonth" ? "September 2026" : preset ? PRESETS.find(([k]) => k === preset)![1] : `${dayName(from)} – ${dayName(to)}`;
+    preset === "month" || preset === "lastmonth" ? new Date(`${from}T00:00:00Z`).toLocaleDateString("en-MY", { month: "long", year: "numeric", timeZone: "UTC" }) : preset ? PRESETS.find(([k]) => k === preset)![1] : `${dayName(from)} – ${dayName(to)}`;
   const sub = preset === "month" ? `${dayName(from)} – ${dayName(to)} · this month` : `${dayName(from)} – ${dayName(to)} · ${total.days} days`;
 
   const cal = MONTHS[calIdx];
