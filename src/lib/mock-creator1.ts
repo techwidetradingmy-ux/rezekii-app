@@ -59,7 +59,7 @@ export const STORIES = [
 export const FAQS: [string, string][] = [
   ["Is Rezekii free?", "Yes, it's free to join. TikTok Shop pays your commission as usual, and we don't take a cut of it."],
   ["How much more commission will I get?", "It depends on the product and your account. Many products pay more through Rezekii, some don't. You always see the rate before you add anything."],
-  ["Can Rezekii lower my commission?", "No. We only show products where Rezekii can pay you more. If you already have a better rate, we leave it as it is."],
+  ["Can Rezekii lower my commission?", "No. The showcase scanner only shows products where Rezekii pays you more. It never lists a product that would lower your commission, so if you already have a better rate, it stays as it is."],
   ["Will my old videos be affected?", "No. Your videos and links keep working. The better rate counts for sales from your new videos."],
   ["How do free samples work?", "Request one in the app and the Rezekii team reviews it. Each seller sets their own requirements, and some are strict, so we negotiate the best we can for you and keep you updated."],
   ["Is my TikTok account safe?", "Yes. Linking TikTok Shop lets us read your showcase, orders and samples to find better rates. We never post or change anything without your approval, and we never touch your account settings or bank details."],
