@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { createHmac, randomBytes } from "node:crypto";
 import { exchangeShopeeCode, shopeeAuthUrl, shopeeSign, ShopeeError } from "../../integrations/shopee/client.ts";
 import { decryptToken, encryptToken } from "../creator-accounts/token-crypto.ts";
-import { checkShopee, freshShopeeToken, RECONNECT_SHOPEE, type ShopeeConnection } from "./connections.ts";
+import { checkShopee, freshShopeeToken, RECONNECT_SHOPEE, renameShopee, shopeeLabel, type ShopeeConnection } from "./connections.ts";
 
 process.env.SUPABASE_URL = "https://db.test";
 process.env.SUPABASE_SECRET_KEY = "secret";
@@ -26,7 +26,7 @@ beforeEach(() => {
 });
 
 const conn = (over: Partial<ShopeeConnection> = {}): ShopeeConnection => ({
-  id: "c1", user_id: "u1", shopee_user_id: "777", shop_id: null, role: "affiliate", name: null, avatar_url: null,
+  id: "c1", user_id: "u1", shopee_user_id: "777", shop_id: null, role: "affiliate", name: null, nickname: null, avatar_url: null,
   access_token_enc: encryptToken("old-access"), access_expires_at: new Date(Date.now() + 2 * 3600e3).toISOString(),
   refresh_token_enc: encryptToken("old-refresh"), refresh_expires_at: new Date(Date.now() + 20 * 86400e3).toISOString(),
   status: "active", connected_at: "2026-10-28T00:00:00Z", ...over,
@@ -124,4 +124,14 @@ test("Check now renews the sign-in: working is active (again), refused is reconn
   assert.equal(await checkShopee(conn()), "reconnect");
   shopee = { status: 500, body: { error: "error_server", message: "Something wrong. Please try later." } };
   await assert.rejects(checkShopee(conn()), (err) => err instanceof ShopeeError && err.code === "error_server");
+});
+
+test("rename: the owner's name is saved trimmed (up to 60 characters); empty goes back to the usual name", async () => {
+  await renameShopee("u1", "c1", "  @homefithacks  ");
+  await renameShopee("u1", "c1", "   ");
+  const bodies = calls.filter((c) => c.init.method === "PATCH" && c.url.includes("shopee_connections?id=eq.c1&user_id=eq.u1")).map((c) => JSON.parse(String(c.init.body)).nickname);
+  assert.deepEqual(bodies, ["@homefithacks", null]);
+  assert.equal(shopeeLabel({ nickname: "@homefithacks", name: null, role: "affiliate" }), "@homefithacks");
+  assert.equal(shopeeLabel({ nickname: null, name: "Spinelief+", role: "seller" }), "Spinelief+");
+  assert.equal(shopeeLabel({ nickname: null, name: null, role: "affiliate" }), "Shopee affiliate");
 });

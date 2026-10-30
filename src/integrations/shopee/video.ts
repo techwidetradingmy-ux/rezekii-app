@@ -50,7 +50,8 @@ export async function shopeeCovers(token: string, userId: string, id: string): P
   }
 }
 
-export type ShopeeVideoInfo = { caption: string; cover: string; itemId: number | null; duet: boolean; stitch: boolean; aigc: boolean };
+/** Up to 6 of the shop's own products show under the video (Shopee's limit). */
+export type ShopeeVideoInfo = { caption: string; cover: string; itemIds: number[]; duet: boolean; stitch: boolean; aigc: boolean };
 
 /** Sets the caption, cover, product and settings (the video becomes a draft on the account), then posts it. Returns the post_id. */
 export async function postShopeeVideo(token: string, userId: string, id: string, v: ShopeeVideoInfo): Promise<string> {
@@ -58,7 +59,7 @@ export async function postShopeeVideo(token: string, userId: string, id: string,
   const edit = await shopeeCall<{ response: { failure_list?: { failed_reason?: string }[] } }>("/api/v2/video/edit_video_info", {
     ...user,
     body: {
-      video_upload_list: [{ video_upload_id: id, caption: v.caption, cover_image_url: v.cover, item_info: v.itemId ? [{ item_id: v.itemId }] : [], allow_info: { allow_duet: v.duet, allow_stitch: v.stitch }, scheduled_info: { scheduled_post: false } }],
+      video_upload_list: [{ video_upload_id: id, caption: v.caption, cover_image_url: v.cover, item_info: v.itemIds.slice(0, 6).map((item_id) => ({ item_id })), allow_info: { allow_duet: v.duet, allow_stitch: v.stitch }, scheduled_info: { scheduled_post: false } }],
       aigc_label: v.aigc,
     },
   });

@@ -10,6 +10,8 @@ export type ShopeeConnection = {
   shop_id: string | null;
   role: ShopeeRole;
   name: string | null;
+  /** The owner's own name for the account (Channels: double-click to rename); Shopee gives affiliates no username. */
+  nickname: string | null;
   avatar_url: string | null;
   access_token_enc: string;
   access_expires_at: string;
@@ -18,8 +20,18 @@ export type ShopeeConnection = {
   status: "active" | "reconnect";
   connected_at: string;
 };
-export type PublicShopee = Pick<ShopeeConnection, "id" | "shopee_user_id" | "shop_id" | "role" | "name" | "avatar_url" | "status" | "connected_at">;
-const PUBLIC = "id,shopee_user_id,shop_id,role,name,avatar_url,status,connected_at";
+export type PublicShopee = Pick<ShopeeConnection, "id" | "shopee_user_id" | "shop_id" | "role" | "name" | "nickname" | "avatar_url" | "status" | "connected_at">;
+const PUBLIC = "id,shopee_user_id,shop_id,role,name,nickname,avatar_url,status,connected_at";
+
+/** What a Shopee account is called in Rezekii: the owner's name for it, else the shop's name, else what it is. */
+export const shopeeLabel = (c: Pick<ShopeeConnection, "nickname" | "name" | "role">) => c.nickname ?? c.name ?? (c.role === "seller" ? "Shopee shop" : "Shopee affiliate");
+
+/** Renames an account in Rezekii only (up to 60 characters); empty goes back to its usual name. */
+export async function renameShopee(userId: string, id: string, nickname: string): Promise<boolean> {
+  const value = nickname.trim().slice(0, 60) || null;
+  const res = await supabaseRest(`shopee_connections?id=eq.${id}&user_id=eq.${userId}`, { method: "PATCH", headers: { prefer: "return=representation" }, body: JSON.stringify({ nickname: value, updated_at: iso() }) });
+  return ((await res.json()) as unknown[]).length > 0;
+}
 const iso = (ms = Date.now()) => new Date(ms).toISOString();
 const REFRESH_DAYS = 30;
 

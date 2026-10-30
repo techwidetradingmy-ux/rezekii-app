@@ -15,7 +15,7 @@ delete process.env.SHOPEE_PROXY_URL;
 
 const VIDEO = Buffer.from("fake mp4 bytes");
 const conn = {
-  id: "c1", user_id: "u1", shopee_user_id: "229441705", shop_id: "229437124", role: "seller", name: "Spinelief+", avatar_url: null,
+  id: "c1", user_id: "u1", shopee_user_id: "229441705", shop_id: "229437124", role: "seller", name: "Spinelief+", nickname: null, avatar_url: null,
   access_token_enc: encryptToken("access"), access_expires_at: new Date(Date.now() + 2 * 3600e3).toISOString(),
   refresh_token_enc: encryptToken("refresh"), refresh_expires_at: new Date(Date.now() + 20 * 86400e3).toISOString(),
   status: "active", connected_at: "2026-10-30T00:00:00Z",
@@ -24,7 +24,7 @@ const post = (over: Partial<SocialPostRow> = {}): SocialPostRow => ({
   id: "p1", group_id: "g1", tiktok_post_id: null, user_id: "u1", account_id: null, shopee_connection_id: "c1", account_name: "Spinelief+", platform: "shopee",
   source: "upload", storage_path: "u1/video.mp4", link_url: null, duration_sec: 6, caption: "Kusyen selesa #spinelief", first_comment: "", comment_image_path: null,
   status: "publishing", scheduled_at: "2026-10-31T00:00:00Z", next_attempt_at: null, attempts: 1, container_id: null, external_post_id: null, permalink: null,
-  comment_status: "none", comment_id: null, comment_error: null, last_error: null, posted_at: null, settings: { itemId: 4190238573, duet: true, stitch: false, aigc: false },
+  comment_status: "none", comment_id: null, comment_error: null, last_error: null, posted_at: null, settings: { itemIds: [4190238573, 12635744934], duet: true, stitch: false, aigc: false },
   live_checked_at: null, created_at: "2026-10-30T00:00:00Z", ...over,
 });
 
@@ -74,7 +74,7 @@ test("while Shopee processes the video, the post keeps waiting", async () => {
   assert.deepEqual(await checkShopee(post({ container_id: "sg-v1" })), { kind: "waiting" });
 });
 
-test("once processed: first frame as cover, caption, the shop's product and settings, then posted, all signed as the user", async () => {
+test("once processed: first frame as cover, caption, the shop's products and settings, then posted, all signed as the user", async () => {
   shopee = {
     "/api/v2/media/get_video_upload_result": { error: "", response: { status: "SUCCEED" } },
     "/api/v2/video/get_cover_list": { error: "", response: { image_url_list: ["https://cf/1.jpg", "https://cf/2.jpg"] } },
@@ -86,7 +86,7 @@ test("once processed: first frame as cover, caption, the shop's product and sett
   assert.equal(edit.url.searchParams.get("user_id"), "229441705");
   assert.equal(edit.url.searchParams.get("access_token"), "access");
   assert.deepEqual(JSON.parse(String(edit.init.body)), {
-    video_upload_list: [{ video_upload_id: "sg-v1", caption: "Kusyen selesa #spinelief", cover_image_url: "https://cf/1.jpg", item_info: [{ item_id: 4190238573 }], allow_info: { allow_duet: true, allow_stitch: false }, scheduled_info: { scheduled_post: false } }],
+    video_upload_list: [{ video_upload_id: "sg-v1", caption: "Kusyen selesa #spinelief", cover_image_url: "https://cf/1.jpg", item_info: [{ item_id: 4190238573 }, { item_id: 12635744934 }], allow_info: { allow_duet: true, allow_stitch: false }, scheduled_info: { scheduled_post: false } }],
     aigc_label: false,
   });
 });

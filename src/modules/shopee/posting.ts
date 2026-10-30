@@ -4,8 +4,8 @@ import { directLink } from "../posting/media.ts";
 import { signedMediaUrl, type SocialPostRow } from "../social/store.ts";
 import { freshShopeeToken, getShopee, markShopeeReconnect, RECONNECT_SHOPEE } from "./connections.ts";
 
-/** A Shopee channel post's settings (New post): the product (sellers' own shop only), duet, stitch and the AI label. */
-export type ShopeeSettings = { itemId: number | null; duet: boolean; stitch: boolean; aigc: boolean };
+/** A Shopee channel post's settings (New post): up to 6 products (sellers' own shop only), duet, stitch and the AI label. */
+export type ShopeeSettings = { itemIds: number[]; duet: boolean; stitch: boolean; aigc: boolean };
 
 /** What one try came to; the publisher saves it the same way as for the other channels. */
 export type ShopeeOutcome =
@@ -24,7 +24,8 @@ const MAX_BYTES = 200 * 1024 * 1024;
 
 const settingsOf = (p: SocialPostRow): ShopeeSettings => {
   const s = p.settings ?? {};
-  return { itemId: typeof s.itemId === "number" ? s.itemId : null, duet: s.duet !== false, stitch: s.stitch !== false, aigc: s.aigc === true };
+  const ids = Array.isArray(s.itemIds) ? s.itemIds.filter((x): x is number => typeof x === "number") : [];
+  return { itemIds: ids.slice(0, 6), duet: s.duet !== false, stitch: s.stitch !== false, aigc: s.aigc === true };
 };
 
 function failure(err: unknown): ShopeeOutcome {
@@ -69,7 +70,7 @@ export async function checkShopee(p: SocialPostRow): Promise<ShopeeOutcome> {
     const covers = await shopeeCovers(token, c.shopee_user_id, p.container_id);
     if (!covers.length) return { kind: "waiting" };
     const s = settingsOf(p);
-    return { kind: "posted", postId: await postShopeeVideo(token, c.shopee_user_id, p.container_id, { caption: p.caption, cover: covers[0], itemId: s.itemId, duet: s.duet, stitch: s.stitch, aigc: s.aigc }) };
+    return { kind: "posted", postId: await postShopeeVideo(token, c.shopee_user_id, p.container_id, { caption: p.caption, cover: covers[0], itemIds: s.itemIds, duet: s.duet, stitch: s.stitch, aigc: s.aigc }) };
   } catch (err) {
     if (err instanceof ShopeeError && err.needsReconnect) await markShopeeReconnect(c.id);
     return failure(err);

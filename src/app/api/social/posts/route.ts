@@ -6,8 +6,8 @@ import { nextRecommendedSlot } from "@/modules/posting/rules.ts";
 import { postingHours } from "@/modules/posting/times.ts";
 import { getAccount } from "@/modules/social/accounts.ts";
 import { canUseSocial } from "@/modules/social/access.ts";
-import { NAMES, channelProblems, facebookAsReel, shopeeProblems, shopeeProduct } from "@/modules/social/rules.ts";
-import { getShopee } from "@/modules/shopee/connections.ts";
+import { NAMES, channelProblems, facebookAsReel, shopeeProblems } from "@/modules/social/rules.ts";
+import { getShopee, shopeeLabel } from "@/modules/shopee/connections.ts";
 import type { ShopeeSettings } from "@/modules/shopee/posting.ts";
 import { cleanSettings, settingsProblems } from "@/modules/social/settings.ts";
 import { fileInUse } from "@/modules/posting/edit.ts";
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
   const problems: string[] = [];
   shops.forEach((c, i) => {
     if (!c) problems.push("One of the channels isn't connected any more. Reload and pick again.");
-    else if (c.status === "reconnect") problems.push(`${c.name ?? "Shopee"} needs reconnecting first (Posts → Channels).`);
+    else if (c.status === "reconnect") problems.push(`${shopeeLabel(c)} needs reconnecting first (Posts → Channels).`);
     else if (!durationSec) problems.push("Shopee needs the video's length: wait for the video to load, or upload the file instead of a link.");
     else problems.push(...shopeeProblems(String(shopeeChannels[i].caption ?? ""), durationSec));
   });
@@ -106,17 +106,17 @@ export async function POST(req: NextRequest) {
   const groupId = randomUUID();
   const shopeeRows: NewSocialPost[] = shopeeChannels.map((c, i) => {
     const shop = shops[i]!;
-    const s = (c.settings ?? {}) as { product?: unknown; duet?: unknown; stitch?: unknown; aigc?: unknown };
-    // Sellers can show their own shop's product under the video; Shopee refuses other shops' products for affiliates.
-    const product = shop.role === "seller" && typeof s.product === "string" ? shopeeProduct(s.product) : null;
-    const settings: ShopeeSettings = { itemId: product && product.shopId === shop.shop_id ? Number(product.itemId) : null, duet: s.duet !== false, stitch: s.stitch !== false, aigc: s.aigc === true };
+    const s = (c.settings ?? {}) as { items?: unknown; duet?: unknown; stitch?: unknown; aigc?: unknown };
+    // Sellers pick up to 6 of their own shop's products (Shopee checks they're the shop's); Shopee refuses other shops' products for affiliates.
+    const items = shop.role === "seller" && Array.isArray(s.items) ? s.items.map(Number).filter((n) => Number.isSafeInteger(n) && n > 0) : [];
+    const settings: ShopeeSettings = { itemIds: [...new Set(items)].slice(0, 6), duet: s.duet !== false, stitch: s.stitch !== false, aigc: s.aigc === true };
     return {
       group_id: groupId,
       tiktok_post_id: tiktok?.id ?? null,
       user_id: user.id,
       account_id: null,
       shopee_connection_id: shop.id,
-      account_name: shop.name ?? (shop.role === "seller" ? "Shopee shop" : "Shopee affiliate"),
+      account_name: shopeeLabel(shop),
       platform: "shopee",
       source: b.source as "upload" | "link",
       storage_path: storagePath,
