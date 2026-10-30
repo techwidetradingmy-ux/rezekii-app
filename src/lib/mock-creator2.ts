@@ -246,8 +246,9 @@ export function channelSplit(productId: string, commission: number) {
 export const PREV_ORDERS: Record<string, number> = { p21: 171, p13: 132, p22: 88, p17: 61, p09: 66 };
 
 /**
- * extra = commission above what TikTok's open plan pays on the same orders: every TAP order is traced, and its TAP rate is
- * compared with the open rate we recorded for that product when it was scanned. Estimated until TikTok settles the order.
+ * extra = commission above what her own rate pays on the same orders: every TAP order is traced, and its TAP rate is compared
+ * with her highest rate we recorded for that product when it was scanned (her target plan if she had one, else the open plan).
+ * Estimated until TikTok settles the order.
  */
 export type PayoutMonth = { month: string; est: number; paid: number; pending: number; clawed: number; extra: number; status: "Settling" | "Paid" };
 export const PAYOUTS: PayoutMonth[] = [

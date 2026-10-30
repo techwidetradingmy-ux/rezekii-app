@@ -70,7 +70,9 @@ export default function ProductPage() {
   const count = { ...base, applied: base.applied + moved, left: base.left - moved };
   const earn = p.tapRate !== null ? (p.price * p.tapRate) / 100 : null;
   // Owner, 29 Oct 2026: lead with the extra she earns through Rezekii, per sale and at her own 30-day sales.
-  const extra = p.tapRate !== null && p.publicRate !== null ? (p.price * (p.tapRate - p.publicRate)) / 100 : 0;
+  // Against her highest rate now, so a target plan is never shown as a raise it isn't (owner, 30 Oct 2026).
+  const extra = p.tapRate !== null && p.nowRate !== null ? (p.price * (p.tapRate - p.nowRate)) / 100 : 0;
+  const keepPlan = p.tapRate !== null && p.nowRate !== null && p.nowRate >= p.tapRate && p.nowPlan === "Target plan";
   const month = extra * (p.mySold ?? 100);
   const back = () => (window.history.length > 1 ? router.back() : router.push("/app/market"));
   const addToShowcase = () => {
@@ -108,7 +110,9 @@ export default function ProductPage() {
     <>
       {p.inShowcase || added
         ? <button type="button" className="np-btn" disabled><Icon name="check" size={18} width={2.4} /> In Your Showcase</button>
-        : <button type="button" className="np-btn" onClick={addToShowcase}><Icon name="plus" size={18} width={2.4} /> Add to Showcase</button>}
+        : keepPlan
+          ? <button type="button" className="np-btn" disabled><Icon name="shield" size={18} width={2.4} /> Your Target Plan Pays More</button>
+          : <button type="button" className="np-btn" onClick={addToShowcase}><Icon name="plus" size={18} width={2.4} /> Add to Showcase</button>}
       {sampleBtn}
     </>
   );
@@ -143,11 +147,16 @@ export default function ProductPage() {
           extra > 0 ? (
             <div className="pp-rate">
               <span className="pp-extra"><b><Hidden>+{rm(extra)}</Hidden></b> extra per sale on Rezekii</span>
-              <span className="pp-rate-line"><s>{p.publicRate}%</s> <Icon name="arrow" size={14} /> <b><Hidden>{p.tapRate}%</Hidden></b> · <Hidden>{rm(earn ?? 0)}</Hidden> a sale</span>
+              <span className="pp-rate-line">{p.nowPlan === "Target plan" && "Target plan "}<s>{p.nowRate}%</s> <Icon name="arrow" size={14} /> <b><Hidden>{p.tapRate}%</Hidden></b> · <Hidden>{rm(earn ?? 0)}</Hidden> a sale</span>
               <small>
                 {p.mySold ? <>At your {p.mySold} sales last 30 days: <b><Hidden>+{rm(month)}</Hidden></b> a month</> : <>Sell 100 a month: <b><Hidden>+{rm(month)}</Hidden></b> more</>}
                 {p.special ? ` · your special rate${p.special.until ? ` until ${p.special.until}` : ""}` : ""}
               </small>
+            </div>
+          ) : keepPlan ? (
+            <div className="pp-rate">
+              <span className="pp-rate-line"><b><Hidden>{p.nowRate}%</Hidden></b> on your target plan</span>
+              <small>More than Rezekii&apos;s <Hidden>{p.tapRate}%</Hidden>, so it stays as it is.</small>
             </div>
           ) : (
             <div className="pp-rate">
@@ -157,7 +166,7 @@ export default function ProductPage() {
           )
         ) : (
           <div className="pp-rate off">
-            <span className="pp-rate-line">Open plan {p.publicRate === null ? "—" : `${p.publicRate}%`}</span>
+            <span className="pp-rate-line">{p.nowPlan} {p.nowRate === null ? "—" : `${p.nowRate}%`}</span>
             <small>{p.wanted ? `${p.wanted.creators} creators want it on Rezekii` : "Ask us to bring it to Rezekii"}</small>
           </div>
         )}

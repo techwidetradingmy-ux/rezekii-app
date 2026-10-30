@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Icon } from "@/components/icons";
 import { Lock, Seg } from "@/components/ui";
-import { product, rateFor } from "@/lib/mock";
+import { bestRate, product, rateFor } from "@/lib/mock";
 import { NOT_YET, ON_IDS, ON_REZEKII, SHOWCASE_TOTAL } from "@/lib/mock-showcase";
 import { productHref } from "@/lib/product-view";
 import { useKept } from "@/lib/keep";
@@ -61,7 +61,7 @@ export function CoverageCard() {
                   <Link href={productHref(p.id)} className="sc-row">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={p.img} alt="" />
-                    <span className="sc-main"><b>{p.name}</b><small>{p.publicRate}% open plan · <em>{rateFor(p).rate}% on Rezekii</em></small></span>
+                    <span className="sc-main"><b>{p.name}</b><small>{bestRate(p).rate}% {bestRate(p).plan.toLowerCase()} · {bestRate(p).rate < rateFor(p).rate ? <em>{rateFor(p).rate}% on Rezekii</em> : "pays more than Rezekii"}</small></span>
                   </Link>
                 </li>
               ))}

@@ -110,15 +110,15 @@ export default function DataPayouts() {
             <div className="cr2-extra">
               <span className="v2-small">Extra through Rezekii</span>
               <div className="cr2-amt violet">+<Count key={`x${from}${to}`} value={total.extra} format={(n) => rm(n)} /></div>
-              <small>{Math.round((total.extra / Math.max(total.est, 1)) * 100)}% of your commission. Not paid on the open plan.</small>
+              <small>{Math.round((total.extra / Math.max(total.est, 1)) * 100)}% of your commission. More than your own rates pay.</small>
             </div>
           </div>
-          <div className="cr2-stack" role="img" aria-label={`Open-plan commission ${rm(open)}, extra through Rezekii ${rm(total.extra)}`}>
+          <div className="cr2-stack" role="img" aria-label={`Commission at your own rates ${rm(open)}, extra through Rezekii ${rm(total.extra)}`}>
             <i className="cr2-k-open" style={{ width: w(open) }} />
             <i className="cr2-k-extra" style={{ width: w(total.extra), animationDelay: "120ms" }} />
           </div>
           <div className="cr2-legend">
-            <span><i className="cr2-k-open" />At TikTok&apos;s open rates <b>{rm(open)}</b></span>
+            <span><i className="cr2-k-open" />At your own rates <b>{rm(open)}</b></span>
             <span><i className="cr2-k-extra" />Extra through Rezekii <b>{rm(total.extra)}</b></span>
           </div>
         </section>

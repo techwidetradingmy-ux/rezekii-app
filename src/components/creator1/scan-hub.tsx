@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { AiMark, AiTag, Count, Flow, Hidden, Sheet } from "@/components/ui";
-import { CREATOR, PRODUCTS, RAISES, SIMILAR, product, type Raise, rateFor } from "@/lib/mock";
+import { CREATOR, KEPT_TARGET, PRODUCTS, RAISES, SIMILAR, bestRate, product, type Raise, rateFor } from "@/lib/mock";
 import { NEW_ON_RESCAN, SILVER_UNLOCKS } from "@/lib/mock-creator1";
 import { LEVELS } from "@/lib/mock-creator2";
 import { productHref } from "@/lib/product-view";
@@ -14,7 +14,7 @@ import { useKept } from "@/lib/keep";
 
 type Tab = "same" | "similar" | "silver";
 /** One product the creator can move to a better rate: the same listing (raise) or a similar one in TAP. */
-type Item = { id: string; productId: string; kind: "same" | "similar"; from: number; fromLabel: "Yours" | "Open"; to: number; note: string };
+type Item = { id: string; productId: string; kind: "same" | "similar"; from: number; fromLabel: "Target" | "Open"; to: number; note: string };
 type Bulk = { phase: "working" | "done"; items: Item[]; doneIds: string[] };
 type Pending = { id: string; productId: string; from: number; to: number; state: "checking" | "confirmed" };
 /** Tap-and-swipe through the better rates, one card at a time (owner, 28 Oct 2026). */
@@ -30,15 +30,15 @@ const SWIPE_PX = 70;
 /** Her showcase photos that fly into the radar while it scans. */
 const FLY = PRODUCTS.slice(0, 13).map((p) => p.img);
 
+/** "From" is her highest rate now: her target plan if she has one, else the open plan (owner, 30 Oct 2026). */
 const raiseItem = (r: Raise): Item => {
-  const p = product(r.productId);
-  return r.nowRate === null
-    ? { id: r.id, productId: r.productId, kind: "same", from: p.publicRate, fromLabel: "Open", to: r.tapRate, note: `Until ${r.until}` }
-    : { id: r.id, productId: r.productId, kind: "same", from: r.nowRate, fromLabel: "Yours", to: r.tapRate, note: `Until ${r.until}` };
+  const now = bestRate(product(r.productId));
+  return { id: r.id, productId: r.productId, kind: "same", from: r.nowRate ?? now.rate, fromLabel: now.plan === "Target plan" ? "Target" : "Open", to: r.tapRate, note: `Until ${r.until}` };
 };
 const similarItem = (id: string): Item => {
   const p = product(id);
-  return { id: `sim-${id}`, productId: id, kind: "similar", from: p.publicRate, fromLabel: "Open", to: rateFor(p).rate, note: "" };
+  const now = bestRate(p);
+  return { id: `sim-${id}`, productId: id, kind: "similar", from: now.rate, fromLabel: now.plan === "Target plan" ? "Target" : "Open", to: rateFor(p).rate, note: "" };
 };
 
 /**
@@ -78,7 +78,7 @@ export function ScanHub() {
 
   const view: Tab = tab === "silver" && !bronze ? "same" : tab;
   const same = rows.filter((r) => r.eligible).map(raiseItem);
-  const sims = similar.map(similarItem);
+  const sims = similar.map(similarItem).filter((i) => i.to > i.from);
   const unlocks = SILVER_UNLOCKS.map(product);
   const list = view === "same" ? same : view === "similar" ? sims : [];
   const thumbs = view === "silver" ? unlocks.map((p) => p.img) : list.map((i) => product(i.productId).img);
@@ -366,6 +366,7 @@ export function ScanHub() {
                   );
                 })}
                 {list.length === 0 && <li className="sh-empty">All added. We re-check your showcase every day.</li>}
+                {view === "same" && KEPT_TARGET.length > 0 && <li className="sh-empty sh-kept"><Icon name="shield" size={14} /> {KEPT_TARGET.length} left out: your target plan already pays more.</li>}
               </ul>
             )}
 
@@ -384,8 +385,8 @@ export function ScanHub() {
                         <b><Link href={productHref(p.id)} className="pv-open">{p.name}</Link></b>
                         {p.samples !== null && p.samples > CREATOR.streak && <small>Free sample at a {p.samples}-day streak</small>}
                       </span>
-                      <span className="sh-rate" aria-label={`Now ${p.publicRate}%, on Rezekii ${rateFor(p).rate}%`}>
-                        <span><small>Now</small>{p.publicRate}%</span>
+                      <span className="sh-rate" aria-label={`Now ${bestRate(p).rate}%, on Rezekii ${rateFor(p).rate}%`}>
+                        <span><small>Now</small>{bestRate(p).rate}%</span>
                         <Icon name="arrow" size={13} />
                         <span className="to"><small>On Rezekii</small><Hidden>{rateFor(p).rate}%</Hidden></span>
                       </span>

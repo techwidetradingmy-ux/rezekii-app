@@ -8,7 +8,7 @@ import { useDemo } from "@/components/demo";
 import { AiHead, Hidden, Tip } from "@/components/ui";
 import Link from "next/link";
 import { productHref } from "@/lib/product-view";
-import { product, short, rateFor } from "@/lib/mock";
+import { bestRate, product, short, rateFor } from "@/lib/mock";
 import { SAMPLE_LEFT } from "@/lib/mock-creator1";
 import { NICHE_BEST, TRY_TODAY, VIRAL, daily, type Trend } from "@/lib/mock-creator2";
 import { ON_IDS, ON_SOLD30 } from "@/lib/mock-showcase";
@@ -178,7 +178,7 @@ export function ShootToday({ bare = false, view = "cards", inFrame = false }: { 
               <span className="td-chips">
                 <span className="ok"><Icon name="star" size={11} width={2.4} /> {p.rating.toFixed(1)}</span>
                 {it.kind === "sample" && <span>Earn <Hidden>{rateFor(p).rate}%</Hidden></span>}
-                {it.kind === "best" && <span>Earn <Hidden>{p.publicRate}%</Hidden></span>}
+                {it.kind === "best" && <span>Earn <Hidden>{bestRate(p).rate}%</Hidden></span>}
                 {it.kind === "sample" && <span>{SAMPLE_LEFT[p.id] ?? 10} samples left</span>}
               </span>
               {it.kind === "sample" && (
@@ -249,7 +249,7 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
                 <img src={p.img} alt="" />
                 <span className="nb-main">
                   <b>{p.name}</b>
-                  <small>{short(b.weekSold)} sold this week · {mine && ON_SOLD30[p.id] ? <>You sold {ON_SOLD30[p.id]} · </> : null}Earn <Hidden>{mine ? rateFor(p).rate : p.publicRate}%</Hidden></small>
+                  <small>{short(b.weekSold)} sold this week · {mine && ON_SOLD30[p.id] ? <>You sold {ON_SOLD30[p.id]} · </> : null}Earn <Hidden>{Math.max(mine ? rateFor(p).rate : 0, bestRate(p).rate)}%</Hidden></small>
                   <span className="nb-score"><Icon name="star" size={12} width={2.4} /> {p.rating.toFixed(1)}</span>
                 </span>
                 <Trend points={daily(b.weekSold, b.trend)} label="Sales, 7 days" />

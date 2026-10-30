@@ -101,16 +101,33 @@ export const CREATOR = {
   tiktokShopLinked: true,
 };
 
+/**
+ * Her target plans (owner, 30 Oct 2026), sample: a seller invited her at a rate above the open plan. The real app reads them from
+ * TikTok: her showcase products say which plan each one is on, and her target collaborations list every live target plan.
+ */
+export const TARGET_PLANS: Record<string, number> = { p22: 12, p09: 10 };
+/** Her highest rate on a product right now: a live target plan when it pays more, else the open plan. Every comparison uses this. */
+export function bestRate(p: Product): { rate: number; plan: "Target plan" | "Open plan" } {
+  const t = TARGET_PLANS[p.id];
+  return t !== undefined && t > p.publicRate ? { rate: t, plan: "Target plan" } : { rate: p.publicRate, plan: "Open plan" };
+}
+
+/** nowRate = her highest rate now (target or open plan); null when TikTok hasn't told us yet. */
 export type Raise = { id: string; productId: string; nowRate: number | null; tapRate: number; until: string; eligible: boolean };
-/** Same listing in the creator's showcase, better through Techwide's TAP campaign. */
-export const RAISES: Raise[] = [
-  { id: "r1", productId: "p13", nowRate: 12, tapRate: 13, until: "30 Nov", eligible: true },
-  { id: "r2", productId: "p22", nowRate: 10, tapRate: 15, until: "15 Dec", eligible: true },
-  { id: "r3", productId: "p09", nowRate: 8, tapRate: 9, until: "31 Dec", eligible: true },
-  { id: "r4", productId: "p01", nowRate: 6, tapRate: 7, until: "30 Nov", eligible: true },
+const now = (id: string) => bestRate(product(id)).rate;
+const SCANNED: Raise[] = [
+  { id: "r1", productId: "p13", nowRate: now("p13"), tapRate: 13, until: "30 Nov", eligible: true },
+  { id: "r2", productId: "p22", nowRate: now("p22"), tapRate: 15, until: "15 Dec", eligible: true },
+  { id: "r3", productId: "p09", nowRate: now("p09"), tapRate: 9, until: "31 Dec", eligible: true },
+  { id: "r4", productId: "p01", nowRate: now("p01"), tapRate: 7, until: "30 Nov", eligible: true },
   { id: "r5", productId: "p21", nowRate: null, tapRate: 9, until: "31 Jan", eligible: true },
-  { id: "r6", productId: "p24", nowRate: 8, tapRate: 9, until: "31 Dec", eligible: false },
+  { id: "r6", productId: "p24", nowRate: now("p24"), tapRate: 9, until: "31 Dec", eligible: false },
 ];
+const beats = (r: Raise) => r.tapRate > (r.nowRate ?? now(r.productId));
+/** Same listing in the creator's showcase, better through Techwide's TAP campaign. Only real raises: never lower than her rate now. */
+export const RAISES: Raise[] = SCANNED.filter(beats);
+/** Scanned but left out: her target plan already pays the same or more. */
+export const KEPT_TARGET: Raise[] = SCANNED.filter((r) => !beats(r));
 /** Similar products (different listing) in Techwide's TAP campaigns, added straight to the showcase. */
 export const SIMILAR = ["p14", "p11", "p18", "p05"];
 

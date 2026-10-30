@@ -7,7 +7,7 @@ import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Flow, Hidden, Title } from "@/components/ui";
 import { SampleTag } from "@/components/creator1/brand";
-import { MY_SAMPLES, PRODUCTS, rateFor, rm, type Product } from "@/lib/mock";
+import { MY_SAMPLES, PRODUCTS, bestRate, rateFor, rm, type Product } from "@/lib/mock";
 import { SAMPLE_LEFT, canGetSample } from "@/lib/mock-creator1";
 import { productHref, requestedSamples } from "@/lib/product-view";
 import "@/app/creator1.css";
@@ -31,7 +31,7 @@ const mine = (p: Product) => rateFor(p).rate;
 const earn = (p: Product) => (p.price * mine(p)) / 100;
 
 /**
- * Marketplace: every product in Techwide's TAP campaigns, with TikTok's open-plan rate next to the Rezekii rate and what you earn
+ * Marketplace: every product in Techwide's TAP campaigns, with her rate now (target plan if she has one, else open plan) next to the Rezekii rate and what you earn
  * per sale. Add to showcase in one tap; request a free sample where the product has one. Filter by category, samples and tier, then sort.
  */
 export default function Marketplace() {
@@ -136,6 +136,7 @@ export default function Marketplace() {
         {list.map((p, i) => {
           const left = SAMPLE_LEFT[p.id] ?? 10;
           const isAdded = added.includes(p.id);
+          const now = bestRate(p);
           const asked = requested.includes(p.id);
           // Option A, clean grid (owner, 28 Oct 2026): name, open → Rezekii rate, what she earns, Add and a gift button.
           return (
@@ -148,12 +149,20 @@ export default function Marketplace() {
               </Link>
               <Link href={productHref(p.id)} className="mka-name"><strong>{p.name}</strong></Link>
               <small className="mk-meta">{rm(p.price)} · {p.sold >= 1e6 ? `${(p.sold / 1e6).toFixed(1)}M` : `${Math.round(p.sold / 1e3)}K`} sold</small>
-              <span className="mka-rate" aria-label={`Open plan ${p.publicRate}%, Rezekii ${mine(p)}%`}><s>{p.publicRate}%</s><Icon name="arrow" size={13} /><b><Hidden>{mine(p)}%</Hidden></b>{rateFor(p).special && <em className="mka-special">Special</em>}</span>
-              <span className="mka-earn">Earn <b><Hidden>{rm(earn(p))}</Hidden></b></span>
+              {now.rate < mine(p) ? (
+                <span className="mka-rate" aria-label={`${now.plan} ${now.rate}%, Rezekii ${mine(p)}%`}><s>{now.rate}%</s><Icon name="arrow" size={13} /><b><Hidden>{mine(p)}%</Hidden></b>{now.plan === "Target plan" && <em className="mka-target">Target</em>}{rateFor(p).special && <em className="mka-special">Special</em>}</span>
+              ) : (
+                <span className="mka-rate" aria-label={`Your target plan ${now.rate}%, more than Rezekii's ${mine(p)}%`}><b><Hidden>{now.rate}%</Hidden></b><em className="mka-target">Your target plan</em></span>
+              )}
+              <span className="mka-earn">Earn <b><Hidden>{rm((p.price * Math.max(now.rate, mine(p))) / 100)}</Hidden></b></span>
               <span className="mka-acts">
-                <button type="button" className={isAdded ? "mka-add done" : "mka-add"} disabled={isAdded} onClick={() => addToShowcase(p)}>
-                  <Icon name={isAdded ? "check" : "plus"} size={15} width={2.6} /> {isAdded ? "Added" : "Add"}
-                </button>
+                {now.rate < mine(p) ? (
+                  <button type="button" className={isAdded ? "mka-add done" : "mka-add"} disabled={isAdded} onClick={() => addToShowcase(p)}>
+                    <Icon name={isAdded ? "check" : "plus"} size={15} width={2.6} /> {isAdded ? "Added" : "Add"}
+                  </button>
+                ) : (
+                  <button type="button" className="mka-add done" disabled title="Your target plan pays more, so it stays as it is"><Icon name="shield" size={15} width={2.4} /> Kept</button>
+                )}
                 {p.samples !== null ? (
                   <button type="button" className={`mka-gift ${asked ? "asked" : ""}`} disabled={asked} onClick={() => requireWa(() => router.push(productHref(p.id, { sample: true })))} aria-label={asked ? "Free sample requested" : `Free sample, ${left} left`} title={asked ? "Requested" : `Free sample · ${left} left`}>
                     <Icon name={asked ? "check" : "gift"} size={16} />

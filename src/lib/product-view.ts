@@ -1,4 +1,4 @@
-import { CREATOR, MY_SAMPLES, PRODUCTS, product, rateFor, type Product } from "./mock";
+import { CREATOR, MY_SAMPLES, PRODUCTS, bestRate, product, rateFor, type Product } from "./mock";
 import { SELLER_CONDS, canGetSample, type Cond } from "./mock-creator1";
 import { NICHE_BEST, daily, type Trend } from "./mock-creator2";
 import { NOT_YET, ON_IDS, ON_SOLD30, WANTED, wantedFor, type Wanted } from "./mock-showcase";
@@ -18,6 +18,9 @@ export type ProductView = {
   /** Total sold on TikTok Shop, when we know it. */
   sold: number | null;
   publicRate: number | null;
+  /** Her highest rate now: her target plan if she has one, else the open plan (owner, 30 Oct 2026). */
+  nowRate: number | null;
+  nowPlan: "Target plan" | "Open plan";
   tapRate: number | null;
   /** Her rate is one admin gave her for this product (owner, 29 Oct 2026). */
   special: { until?: string } | null;
@@ -39,7 +42,7 @@ export function productView(id: string): ProductView | null {
     const nb = NICHE_BEST.find((b) => b.productId === id);
     return {
       id, name: m.name, shop: m.shop, img: m.img, price: m.price, category: m.category, rating: m.rating, sold: m.sold,
-      publicRate: m.publicRate, tapRate: rateFor(m).rate, special: rateFor(m).special ? { until: rateFor(m).until } : null, samples: m.samples, inShowcase: ON_IDS.includes(id), mySold: ON_SOLD30[id] ?? null,
+      publicRate: m.publicRate, nowRate: bestRate(m).rate, nowPlan: bestRate(m).plan, tapRate: rateFor(m).rate, special: rateFor(m).special ? { until: rateFor(m).until } : null, samples: m.samples, inShowcase: ON_IDS.includes(id), mySold: ON_SOLD30[id] ?? null,
       week: daily(nb?.weekSold ?? Math.round(m.sold / 26), nb?.trend ?? pickTrend(id)), wanted: null,
     };
   }
@@ -49,7 +52,7 @@ export function productView(id: string): ProductView | null {
   if (!base) return null;
   return {
     id, name: base.name, shop: base.shop, img: base.img, price: base.price, category: off?.category ?? w?.category ?? "", rating: null, sold: null,
-    publicRate: base.rate, tapRate: null, special: null, samples: null, inShowcase: !!off, mySold: off?.sold ?? null,
+    publicRate: base.rate, nowRate: base.rate, nowPlan: "Open plan", tapRate: null, special: null, samples: null, inShowcase: !!off, mySold: off?.sold ?? null,
     week: daily(Math.max(70, (off?.sold ?? w?.sold30 ?? 300) * 2), pickTrend(id)), wanted: wantedFor(id) ?? null,
   };
 }

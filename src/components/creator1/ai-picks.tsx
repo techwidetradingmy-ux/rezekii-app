@@ -7,7 +7,7 @@ import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { AiHead, Count, Hidden } from "@/components/ui";
 import { productHref, requestedSamples } from "@/lib/product-view";
-import { AI_PICKS, AI_PROFILE, PRODUCTS, product, rateFor, rm, short, type AiPick } from "@/lib/mock";
+import { AI_PICKS, AI_PROFILE, PRODUCTS, bestRate, product, rateFor, rm, short, type AiPick } from "@/lib/mock";
 import { canGetSample } from "@/lib/mock-creator1";
 
 type Fit = AiPick["fit"];
@@ -26,8 +26,8 @@ const STEP_MS = 650;
 const COUNTED = [0, 380, 1460, AI_PROFILE.compared, AI_PROFILE.compared, AI_PROFILE.compared];
 const THUMBS = [...PRODUCTS, ...PRODUCTS];
 
-/** Techwide's rate where there's a campaign, otherwise TikTok's open-plan rate. */
-const rateOf = (pk: AiPick) => (pk.from === "tap" ? rateFor(product(pk.productId)).rate : product(pk.productId).publicRate);
+/** Her highest rate: Techwide's where there's a campaign, or her own (target plan if she has one, else open plan) if that's more. */
+const rateOf = (pk: AiPick) => Math.max(pk.from === "tap" ? rateFor(product(pk.productId)).rate : 0, bestRate(product(pk.productId)).rate);
 
 /**
  * AI picks on Home: the AI reads the creator's sales, compares TikTok Shop's best-sellers with Techwide's campaigns,
@@ -200,7 +200,7 @@ export function AiPicks() {
 
           <p className="ai-fine">
             <b>Match</b>: fit with you, out of 100. Not a forecast. <b>Video / LIVE</b>: orders per 100 viewers, last 7 days.{" "}
-            <b>Earn</b>: Techwide&apos;s rate, or TikTok&apos;s open rate.
+            <b>Earn</b>: Techwide&apos;s rate, or your own rate if it&apos;s higher.
           </p>
         </>
       )}
