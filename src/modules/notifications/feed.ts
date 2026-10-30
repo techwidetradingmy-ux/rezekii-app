@@ -1,4 +1,5 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import { myWishes } from "../wishes/wishes.ts";
 
 export type Side = "creator" | "seller";
 export type Note = {
@@ -29,7 +30,7 @@ export async function notesFor(userId: string, side: Side): Promise<Note[]> {
   const since = new Date(Date.now() - 30 * DAY).toISOString();
   const base = side === "seller" ? "/seller/app" : "/app";
   const walletHref = side === "seller" ? "/seller/app/rewards/wallet" : "/app/account#wallet";
-  const [ledger, invites, posts, social, accounts, shop, tiktok, samples, submissions] = await Promise.all([
+  const [ledger, invites, posts, social, accounts, shop, tiktok, samples, submissions, wishes] = await Promise.all([
     rows<{ id: string; amount: number; kind: string; what: string; created_at: string; expires_at: string | null }>(
       `credit_ledger?user_id=eq.${userId}&side=eq.${side}&created_at=gte.${enc(since)}&kind=neq.post&select=id,amount,kind,what,created_at,expires_at&order=created_at.desc&limit=40`,
     ),
@@ -53,6 +54,7 @@ export async function notesFor(userId: string, side: Side): Promise<Note[]> {
           `tap_submissions?submitted_by=eq.${userId}&status=in.(approved,with_tiktok,live,not_approved)&updated_at=gte.${enc(since)}&select=id,product_name,status,reason,updated_at&order=updated_at.desc&limit=30`,
         )
       : Promise.resolve([]),
+    side === "creator" ? myWishes(userId).catch(() => []) : Promise.resolve([]),
   ]);
 
   const notes: Note[] = [];
@@ -119,6 +121,11 @@ export async function notesFor(userId: string, side: Side): Promise<Note[]> {
   for (const t of submissions) {
     const [icon, what, line] = STEP[t.status] ?? ["check", "was updated", ""];
     notes.push({ id: `sub:${t.id}:${t.status}`, at: t.updated_at, icon, title: `${t.product_name ?? "Your product"} ${what}`, line: t.status === "not_approved" && t.reason ? t.reason : line, href: "/seller/app/progress", cta: "See progress", urgent: null });
+  }
+  // Her wishes: launched on Rezekii, or the seller said no.
+  for (const w of wishes) {
+    if (w.status === "On Rezekii") notes.push({ id: `w:${w.id}:live`, at: w.changed ?? w.at, icon: "check", title: `Now on Rezekii: ${w.name}`, line: w.raise ? `+${w.raise}% for you. Add it to your showcase.` : "Add it to your showcase from the product page.", href: `/app/product/${w.id}`, cta: "Open product", urgent: null });
+    if (w.status === "Seller said no") notes.push({ id: `w:${w.id}:no`, at: w.changed ?? w.at, icon: "x", title: `Seller said no: ${w.name}`, line: "It stays off Rezekii for now.", href: "/app/account#wish", cta: "See wish list", urgent: null });
   }
   for (const s of samples) {
     notes.push({ id: `r:${s.id}`, at: s.created_at, icon: "box", title: `Sample requested: ${s.product_name ?? "a product"}`, line: "You'll see TikTok's steps (approved, shipped, received) in Samples & Delivery.", href: "/app/account#samples", cta: "See sample", urgent: null });

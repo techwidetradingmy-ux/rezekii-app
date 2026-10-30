@@ -8,6 +8,8 @@ import { Stepper } from "@/components/ui";
 import "@/app/creator1.css";
 import { MY_WISHES, commitText, lookupLink, type Commit, type Lookup, type Wanted, type Wish, type WishItem } from "@/lib/mock-showcase";
 import { productHref } from "@/lib/product-view";
+import { findWishLink, loadMyWishes, saveWishLive, type LiveWish } from "@/lib/live-wishes";
+import { noteWhen } from "@/lib/live-notes";
 
 /**
  * Her wish list, shared by Home, Most Wanted and the Product page. The preview has no server, so new wishes live in this browser
@@ -22,14 +24,29 @@ function readWishes(): Wish[] {
   } catch {}
   return MY_WISHES;
 }
+/** Signed in (owner, 31 Oct 2026): her real wishes, loaded once per page visit and again after she adds one. */
+let liveWishes: Wish[] | null = null;
+const fromLive = (w: LiveWish): Wish => ({
+  id: w.id, name: w.name, shop: w.shop, img: w.img ?? "/avatars/blank.svg", price: w.price, rate: w.rate, status: w.status, when: noteWhen(w.at), commit: w.commit,
+  ...(w.raise !== null ? { raise: w.raise } : {}),
+});
+export async function refreshWishes() {
+  const d = await loadMyWishes();
+  if (!d) return;
+  liveWishes = d.map(fromLive);
+  window.dispatchEvent(new Event(EVT));
+}
+
 export function useWishes() {
-  const [wishes, setWishes] = useState<Wish[]>(MY_WISHES);
+  const { live } = useDemo();
+  const [wishes, setWishes] = useState<Wish[]>(live ? liveWishes ?? [] : MY_WISHES);
   useEffect(() => {
-    const sync = () => setWishes(readWishes());
+    const sync = () => setWishes(live ? liveWishes ?? [] : readWishes());
     sync();
+    if (live && !liveWishes) void refreshWishes();
     window.addEventListener(EVT, sync);
     return () => window.removeEventListener(EVT, sync);
-  }, []);
+  }, [live]);
   const add = (w: Wish) => {
     const next = [w, ...readWishes().filter((x) => x.id !== w.id)];
     try { sessionStorage.setItem(KEY, JSON.stringify(next)); } catch {}
@@ -56,9 +73,10 @@ const MONTHS: Commit["months"][] = [1, 3, 6];
  * product launches on Rezekii; that's what we take to the seller. No rate to ask for: none is guaranteed, at least +1% if agreed.
  */
 export function WishForm({ item, wanted, onCancel }: { item: WishItem; wanted?: Wanted | null; onCancel: () => void }) {
-  const { linked, setLinked } = useDemo();
+  const { linked, setLinked, live } = useDemo();
   const { add } = useWishes();
   const [done, setDone] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [videos, setVideos] = useState(4);
   const [lives, setLives] = useState(0);
   const [rights, setRights] = useState<Commit["rights"]>(0);
@@ -70,7 +88,18 @@ export function WishForm({ item, wanted, onCancel }: { item: WishItem; wanted?: 
   const send = () => {
     if (!linked) return setLinked(true);
     if (videos + lives === 0) return setErr("Commit at least 1 video or LIVE a month.");
-    add({ ...item, status: "On wish list", when: "Just now", commit: { videos, lives, rights, months, note: note.trim() || undefined } });
+    const commit = { videos, lives, rights, months, note: note.trim() || undefined };
+    if (live) {
+      setBusy(true);
+      saveWishLive(item.id, commit).then((r) => {
+        setBusy(false);
+        if (!r.ok) return setErr(r.error ?? "Didn't save. Please try again.");
+        void refreshWishes();
+        setDone(true);
+      });
+      return;
+    }
+    add({ ...item, status: "On wish list", when: "Just now", commit });
     setDone(true);
   };
 
@@ -79,7 +108,7 @@ export function WishForm({ item, wanted, onCancel }: { item: WishItem; wanted?: 
       <section className="v2-card wf-card wf-done" aria-live="polite">
         <span className="v2-medal green" style={{ width: 64, height: 64 }}><Icon name="check" size={28} width={2.6} /></span>
         <b>{wanted ? "You've Joined" : "Added to Your Wish List"}</b>
-        <p className="v2-muted" style={{ margin: 0 }}>{commitText({ videos, lives, rights, months })}. We&apos;ll tell you when the seller replies.</p>
+        <p className="v2-muted" style={{ margin: 0 }}>{commitText({ videos, lives, rights, months })}. {live ? "You'll see it in your notifications if it launches on Rezekii." : "We'll tell you when the seller replies."}</p>
       </section>
     );
   }
@@ -103,7 +132,7 @@ export function WishForm({ item, wanted, onCancel }: { item: WishItem; wanted?: 
       {err && <p className="wf-err" role="alert">{err}</p>}
       <p className="wf-fine">If the seller agrees, you get at least +1%. Not guaranteed. The seller sees what you commit and sell.</p>
       <div className="pp-stack">
-        <button type="button" className="np-btn" onClick={send}>{wanted ? "Join" : "Add to Wish List"}</button>
+        <button type="button" className="np-btn" disabled={busy} onClick={send}>{busy ? <span className="sl-spin" /> : wanted ? "Join" : "Add to Wish List"}</button>
         <button type="button" className="btn-outline" onClick={onCancel}>Cancel</button>
       </div>
     </section>
@@ -116,6 +145,7 @@ export function WishForm({ item, wanted, onCancel }: { item: WishItem; wanted?: 
  */
 export function LinkFinder({ onFound }: { onFound?: (r: Lookup) => void }) {
   const router = useRouter();
+  const { live } = useDemo();
   const [url, setUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -123,6 +153,16 @@ export function LinkFinder({ onFound }: { onFound?: (r: Lookup) => void }) {
     e.preventDefault();
     if (!url.trim()) return setErr("Paste a TikTok Shop product link first.");
     setBusy(true);
+    if (live) {
+      // For real: TikTok Shop's own facts for the link; the Product page then shows it, on Rezekii or not.
+      findWishLink(url).then((r) => {
+        setBusy(false);
+        if ("error" in r) return setErr(r.error);
+        setUrl("");
+        router.push(productHref(r.product.id));
+      });
+      return;
+    }
     window.setTimeout(() => {
       setBusy(false);
       const r = lookupLink(url);

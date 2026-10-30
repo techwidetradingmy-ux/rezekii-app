@@ -33,6 +33,18 @@ export type ProductView = {
   wanted: Wanted | null;
 };
 
+/**
+ * Real products that aren't on Rezekii yet (owner, 31 Oct 2026), found from a pasted link or the wish list board, with how many
+ * creators asked for them. Kept for this page visit, like LIVE_PRODUCTS.
+ */
+export type OffLive = { id: string; name: string; shop: string; img: string | null; price: number; rate: number | null; category: string; sold: number | null };
+export type WantedLive = OffLive & { creators: number; videos: number; lives: number; rights: number; week: number; first: string };
+export const LIVE_OFF = new Map<string, { product: OffLive; wanted: WantedLive | null }>();
+const asWanted = (w: WantedLive): Wanted => ({
+  id: w.id, name: w.name, shop: w.shop, img: w.img ?? "/avatars/blank.svg", price: w.price, rate: w.rate, category: w.category,
+  creators: w.creators, videos: w.videos, lives: w.lives, rights: w.rights, sold30: 0, week: w.week, first: w.first, status: "New", offers: [],
+});
+
 const TRENDS: Trend[] = ["up", "flat", "up"];
 const pickTrend = (id: string) => TRENDS[[...id].reduce((n, c) => n + c.charCodeAt(0), 0) % TRENDS.length];
 
@@ -46,6 +58,15 @@ export function productView(id: string): ProductView | null {
       id, name: m.name, shop: m.shop, img: m.img, price: m.price, category: m.category, rating: real ? null : m.rating, sold: m.sold,
       publicRate: m.publicRate, nowRate: bestRate(m).rate, nowPlan: bestRate(m).plan, tapRate: rateFor(m).rate, special: rateFor(m).special ? { until: rateFor(m).until } : null, samples: m.samples, inShowcase: !real && ON_IDS.includes(id), mySold: real ? null : ON_SOLD30[id] ?? null,
       week: real ? [] : daily(nb?.weekSold ?? Math.round(m.sold / 26), nb?.trend ?? pickTrend(id)), wanted: null,
+    };
+  }
+  const real = LIVE_OFF.get(id);
+  if (real) {
+    const r = real.product;
+    return {
+      id, name: r.name, shop: r.shop, img: r.img ?? "/avatars/blank.svg", price: r.price, category: r.category, rating: null, sold: r.sold,
+      publicRate: r.rate, nowRate: r.rate, nowPlan: "Open plan", tapRate: null, special: null, samples: null, inShowcase: false, mySold: null,
+      week: [], wanted: real.wanted ? asWanted(real.wanted) : null,
     };
   }
   const off = NOT_YET.find((s) => s.id === id);

@@ -14,6 +14,8 @@ import { sampleCount } from "@/lib/mock-creator1";
 import { commitText } from "@/lib/mock-showcase";
 import { canRequest, markRequested, productView, requestedSamples, sampleConditions } from "@/lib/product-view";
 import { addOne, loadProduct, requestSample } from "@/lib/live";
+import { loadOff } from "@/lib/live-wishes";
+import { useLivePerf } from "@/lib/live-perf";
 import "@/app/creator1.css";
 
 /**
@@ -28,11 +30,20 @@ export default function ProductPage() {
   const { linked, setLinked, toast, requireWa, live, me } = useDemo();
   const { mine } = useWishes();
   // Signed in (owner, 30 Oct 2026): a real product opened straight from a link is fetched first.
+  // Not on Rezekii (owner, 31 Oct 2026): TikTok Shop's facts and the wish list numbers instead.
   const [, setLoaded] = useState(0);
+  const [missing, setMissing] = useState(false);
   useEffect(() => {
-    if (live && !productView(id)) loadProduct(id, me?.level ?? "bronze").then((x) => x && setLoaded((n) => n + 1));
+    if (!live || productView(id)) return;
+    setMissing(false);
+    loadProduct(id, me?.level ?? "bronze")
+      .then((x) => (x ? true : loadOff(id)))
+      .then((ok) => (ok ? setLoaded((n) => n + 1) : setMissing(true)));
   }, [live, id, me?.level]);
   const p = productView(id);
+  // Has she sold it? Signed in, from her own orders in the last 30 days; nothing shown until they've loaded.
+  const perf = useLivePerf();
+  const mySold = live ? (perf && typeof perf === "object" ? perf.products.find((x) => x.productId === id)?.orders ?? 0 : null) : p?.mySold ?? null;
   const [added, setAdded] = useState(false);
   const [asked, setAsked] = useState(false);
   const [warn, setWarn] = useState(false);
@@ -54,6 +65,7 @@ export default function ProductPage() {
   }, [id]);
 
   if (!p) {
+    if (live && !missing) return <div className="v2-stack v2-in"><p className="v2-muted">Loading the product…</p></div>;
     return (
       <div className="v2-stack v2-in">
         <section className="v2-card flat" style={{ alignItems: "flex-start" }}>
@@ -79,7 +91,7 @@ export default function ProductPage() {
   // Against her highest rate now, so a target plan is never shown as a raise it isn't (owner, 30 Oct 2026).
   const extra = p.tapRate !== null && p.nowRate !== null ? (p.price * (p.tapRate - p.nowRate)) / 100 : 0;
   const keepPlan = p.tapRate !== null && p.nowRate !== null && p.nowRate >= p.tapRate && p.nowPlan === "Target plan";
-  const month = extra * (p.mySold ?? 100);
+  const month = extra * (mySold || 100);
   const back = () => (window.history.length > 1 ? router.back() : router.push("/app/market"));
   const addToShowcase = () => {
     if (!linked) return setLinked(true);
@@ -157,10 +169,10 @@ export default function ProductPage() {
         <h1 className="pp-name">{p.name}</h1>
         <p className="pp-meta">{p.shop} · {rm(p.price)}{p.sold !== null ? ` · ${short(p.sold)} sold` : ""}</p>
         {/* Has she sold it? (owner, 29 Oct 2026) From her TikTok Shop orders, and our campaign data for TAP products. */}
-        {linked ? (
-          <p className={`pp-sold${p.mySold ? " ok" : ""}`}>
-            <Icon name={p.mySold ? "check" : "info"} size={15} width={2.6} />
-            {p.mySold ? <span>You&apos;ve sold this · <b>{p.mySold}</b> in the last 30 days</span> : <span>You haven&apos;t sold this yet</span>}
+        {linked && (!live || mySold !== null) ? (
+          <p className={`pp-sold${mySold ? " ok" : ""}`}>
+            <Icon name={mySold ? "check" : "info"} size={15} width={2.6} />
+            {mySold ? <span>You&apos;ve sold this · <b>{mySold}</b> {live ? `order${mySold === 1 ? "" : "s"} ` : ""}in the last 30 days</span> : <span>{live ? "No orders from you in the last 30 days" : "You haven't sold this yet"}</span>}
           </p>
         ) : null}
         <div className="pp-chips">
@@ -177,7 +189,7 @@ export default function ProductPage() {
               <span className="pp-extra"><b><Hidden>+{rm(extra)}</Hidden></b> extra per sale on Rezekii</span>
               <span className="pp-rate-line">{p.nowPlan === "Target plan" && "Target plan "}<s>{p.nowRate}%</s> <Icon name="arrow" size={14} /> <b><Hidden>{p.tapRate}%</Hidden></b> · <Hidden>{rm(earn ?? 0)}</Hidden> a sale</span>
               <small>
-                {p.mySold ? <>At your {p.mySold} sales last 30 days: <b><Hidden>+{rm(month)}</Hidden></b> a month</> : <>Sell 100 a month: <b><Hidden>+{rm(month)}</Hidden></b> more</>}
+                {mySold ? <>At your {mySold} sales last 30 days: <b><Hidden>+{rm(month)}</Hidden></b> a month</> : <>Sell 100 a month: <b><Hidden>+{rm(month)}</Hidden></b> more</>}
                 {p.special ? ` · your special rate${p.special.until ? ` until ${p.special.until}` : ""}` : ""}
               </small>
             </div>
@@ -205,7 +217,7 @@ export default function ProductPage() {
           {p.week.length > 0 && <Trend points={p.week} label="Sales, last 7 days" />}
           <div className="pp-facts">
             {p.sold !== null && <span><small>Total sold</small><b>{short(p.sold)}</b></span>}
-            {p.mySold !== null && <span><small>Your sales, 30 days</small><b>{p.mySold}</b></span>}
+            {mySold !== null && <span><small>Your sales, 30 days</small><b>{mySold}</b></span>}
             {p.wanted && <span><small>Creators want it</small><b>{p.wanted.creators}</b></span>}
             {p.category && <span><small>Category</small><b>{p.category}</b></span>}
           </div>
@@ -254,7 +266,7 @@ export default function ProductPage() {
             <small className="v2-small">{commitText(wish.commit)}</small>
           </section>
         )}
-        {!wish && !wishOpen && (p.tapRate === null || !hasSample) && (
+        {!wish && !wishOpen && (p.tapRate === null || (!hasSample && !live)) && (
           <p className="pp-wishlink">
             Want a free sample or a better rate?{" "}
             <button type="button" onClick={openWish}>{p.wanted ? "Join This Wish" : "Add to Wish List"}</button>

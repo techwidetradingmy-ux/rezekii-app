@@ -1,0 +1,41 @@
+import { LIVE_OFF, type OffLive, type WantedLive } from "./product-view";
+import type { Commit } from "./mock-showcase";
+
+/** One of her wishes from /api/v2/wishes. */
+export type LiveWish = OffLive & { status: "On wish list" | "On Rezekii" | "Seller said no"; at: string; commit: Commit; raise: number | null };
+
+type Found = { product: OffLive; onRezekii: boolean; wanted: WantedLive | null };
+const remember = (d: Found) => { if (!d.onRezekii) LIVE_OFF.set(d.product.id, { product: d.product, wanted: d.wanted }); };
+
+/** Finds a pasted TikTok Shop link (or short link) and remembers it for the Product page. */
+export async function findWishLink(link: string): Promise<Found | { error: string }> {
+  const r = await fetch("/api/v2/wishes", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ find: link }) }).catch(() => null);
+  const d = (await r?.json().catch(() => null)) as (Found & { error?: string }) | null;
+  if (!r?.ok || !d || d.error) return { error: d?.error ?? "Couldn't find this product. Check the link." };
+  remember(d);
+  return d;
+}
+
+/** A product that isn't on Rezekii, opened straight from a link. */
+export async function loadOff(id: string): Promise<boolean> {
+  const d = (await fetch(`/api/v2/wishes?part=product&id=${encodeURIComponent(id)}`).then((r) => (r.ok ? r.json() : null)).catch(() => null)) as Found | null;
+  if (!d) return false;
+  remember(d);
+  return !d.onRezekii;
+}
+
+export async function loadMyWishes(): Promise<LiveWish[] | null> {
+  const d = await fetch("/api/v2/wishes?part=mine", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  return d?.wishes ?? null;
+}
+
+export async function loadBoard(): Promise<WantedLive[] | null> {
+  const d = await fetch("/api/v2/wishes?part=board", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  for (const w of (d?.items ?? []) as WantedLive[]) LIVE_OFF.set(w.id, { product: w, wanted: w });
+  return d?.items ?? null;
+}
+
+export async function saveWishLive(productId: string, commit: Commit): Promise<{ ok?: true; error?: string }> {
+  const r = await fetch("/api/v2/wishes", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ productId, commit }) }).catch(() => null);
+  return (await r?.json().catch(() => null)) ?? { error: "Didn't save. Please try again." };
+}

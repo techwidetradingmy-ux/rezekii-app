@@ -31,8 +31,8 @@ export function useLivePerf(): LivePerf | "wait" | "error" | null {
   return live ? d : null;
 }
 
-/** A product's name and photo from the performance data. */
 /** A TikTok product title without its [promo] prefixes, cut to fit one line. */
 export const shortName = (n: string) => { const t = n.replace(/^(\s*[\[(【][^\])】]*[\])】]\s*)+/, "").trim() || n; return t.length > 30 ? `${t.slice(0, 28).trimEnd()}…` : t; };
 
+/** A product's name and photo from the performance data. */
 export const perfProduct = (p: LivePerf, id: string) => ({ id, name: p.names[id]?.name ?? "Product", img: p.names[id]?.img ?? NO_PHOTO });

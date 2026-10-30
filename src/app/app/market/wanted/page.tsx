@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { Seg, Title } from "@/components/ui";
 import Link from "next/link";
 import { LinkFinder, useWishes } from "@/components/creator1/wish";
 import { WANTED, onBoard } from "@/lib/mock-showcase";
-import { productHref } from "@/lib/product-view";
+import { productHref, type WantedLive } from "@/lib/product-view";
+import { loadBoard } from "@/lib/live-wishes";
+import { useDemo } from "@/components/demo";
 import "@/app/creator1.css";
 
 type Sort = "This week" | "All time";
@@ -18,8 +20,18 @@ type Sort = "This week" | "All time";
  */
 export default function MostWanted() {
   const { mine } = useWishes();
+  const { live } = useDemo();
   const [sort, setSort] = useState<Sort>("This week");
-  const board = WANTED.filter(onBoard).sort((a, b) => (sort === "This week" ? b.week - a.week : 0) || b.creators - a.creators);
+  // Signed in (owner, 31 Oct 2026): the real board, every creator's wishes added up per product.
+  const [real, setReal] = useState<WantedLive[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    if (live) loadBoard().then((d) => (d ? setReal(d) : setFailed(true)));
+  }, [live]);
+  const rows: { id: string; name: string; shop: string; img: string; creators: number; week: number }[] = live
+    ? (real ?? []).map((w) => ({ id: w.id, name: w.name, shop: w.shop, img: w.img ?? "/avatars/blank.svg", creators: w.creators, week: w.week }))
+    : WANTED.filter(onBoard);
+  const board = [...rows].sort((a, b) => (sort === "This week" ? b.week - a.week : 0) || b.creators - a.creators);
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 16 }}>
@@ -33,6 +45,9 @@ export default function MostWanted() {
       <div className="mw-bar">
         <Seg value={sort} options={["This week", "All time"] as const} onChange={setSort} />
       </div>
+
+      {live && !real && <p className="v2-muted" style={{ margin: 0 }}>{failed ? "Couldn't load the wish list. Please try again later." : "Loading the wish list…"}</p>}
+      {live && real && !real.length && <p className="v2-muted" style={{ margin: 0 }}>No wishes yet. Paste a product link above to start one.</p>}
 
       <ol className="mw-list">
         {board.map((w, i) => {
