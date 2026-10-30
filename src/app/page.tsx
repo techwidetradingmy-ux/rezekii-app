@@ -37,7 +37,8 @@ const READ = [
 /** Never lowers a rate (owner, 29 Oct 2026): the scanner only ever offers a raise. */
 const NEVER = [
   "Lower your commission",
-  "Change anything without your tap",
+  "Change anything without your approval",
+  "Touch your account settings or bank details",
   "Ask for your TikTok password",
   "Share your contact details with sellers",
   "Sell your data",
