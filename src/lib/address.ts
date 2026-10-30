@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
+import { useDemo } from "@/components/demo";
 
 /**
  * Her delivery address and sign-up details (owner, 29 Oct 2026). The address is optional at sign-up and only required for the
- * Rate Card, so sellers can send products for paid reviews. Free Samples ship to her TikTok address. The preview has no server,
- * so this lives in the browser tab.
+ * Rate Card, so sellers can send products for paid reviews. Free Samples ship to her TikTok address. Signed out (the preview)
+ * it lives in the browser tab; signed in it's kept on her account.
  */
 export type Address = { to: string; phone: string; line: string; postcode: string; city: string; state: string };
 export const EMPTY_ADDRESS: Address = { to: "", phone: "", line: "", postcode: "", city: "", state: "" };
@@ -18,18 +19,33 @@ function read(): Address {
     return EMPTY_ADDRESS;
   }
 }
+/**
+ * Signed in (owner, 31 Oct 2026): her address is kept on her account, loaded once per visit. `undefined` until it has loaded.
+ * Saving also sends it to her account; signed out (the preview) that call is refused and only this tab keeps it.
+ */
+let server: Address | undefined;
+let loading: Promise<void> | null = null;
 export function saveAddress(a: Address) {
   try { sessionStorage.setItem(KEY, JSON.stringify(a)); } catch {}
+  server = a;
+  void fetch("/api/v2/address", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(a) }).catch(() => null);
   window.dispatchEvent(new Event(EVT));
 }
 export function useAddress(): [Address, (a: Address) => void] {
+  const { live } = useDemo();
   const [addr, setAddr] = useState<Address>(EMPTY_ADDRESS);
   useEffect(() => {
-    const sync = () => setAddr(read());
+    const sync = () => setAddr(live ? server ?? EMPTY_ADDRESS : read());
     sync();
+    if (live && server === undefined) {
+      loading ??= fetch("/api/v2/address", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d: { address?: Address | null } | null) => { server = { ...EMPTY_ADDRESS, ...(d?.address ?? {}) }; window.dispatchEvent(new Event(EVT)); })
+        .catch(() => { loading = null; });
+    }
     window.addEventListener(EVT, sync);
     return () => window.removeEventListener(EVT, sync);
-  }, []);
+  }, [live]);
   return [addr, saveAddress];
 }
 

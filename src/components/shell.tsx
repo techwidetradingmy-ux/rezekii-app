@@ -8,7 +8,7 @@ import { SUPPORT } from "@/lib/support";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
 import { useDemo } from "./demo";
 import { Portal, Sheet } from "./ui";
@@ -22,6 +22,9 @@ import { CREATOR, MY_SAMPLES, REFERRAL_REWARD, SELLER } from "@/lib/mock";
 import { DeskRail } from "./desk-rail";
 import { setDesk, useDesk, type Desk } from "@/lib/desk-layout";
 import { useUnreadNotes } from "@/lib/live-notes";
+import { loadWallet } from "@/lib/live-rewards";
+
+const LEVEL: Record<string, string> = { bronze: "Bronze", silver: "Silver", gold: "Gold" };
 
 const WHO: Record<AppKind, { name: string; initials: string; label: string; photo?: string; sub: string }> = {
   creator: { name: CREATOR.first, initials: CREATOR.initials, label: "Account", photo: CREATOR.photo, sub: `${CREATOR.level} creator` },
@@ -103,7 +106,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
   // Signed in with a Seller Center shop: the seller app shows that shop's name (owner, 30 Oct 2026).
   const shopName = app === "seller" ? me?.sellerShop : null;
   const shopInitials = (shopName ?? "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
-  const who = app === "creator" ? { ...WHO.creator, name: you.first, initials: you.initials, photo: you.photo } : shopName ? { ...WHO.seller, name: shopName, initials: shopInitials || "S" } : WHO[app];
+  const who = app === "creator" ? { ...WHO.creator, name: you.first, initials: you.initials, photo: you.photo, ...(live && me ? { sub: `${LEVEL[me.level]} creator` } : {}) } : shopName ? { ...WHO.seller, name: shopName, initials: shopInitials || "S" } : WHO[app];
   const [more, setMore] = useState(false);
   const menu = MENUS[app];
   // Where the top menu's pill sits: measured from the open section's link, again on resize.
@@ -377,6 +380,12 @@ function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory: () =
   const you = useWho();
   const path = usePathname();
   const { toast, linked, live, me } = useDemo();
+  // Signed in: her real level and streak (owner, 31 Oct 2026).
+  const level = live && me ? LEVEL[me.level] : CREATOR.level;
+  const [streak, setStreak] = useState(CREATOR.streak);
+  useEffect(() => {
+    if (live) loadWallet("creator").then((w) => setStreak(w.streak)).catch(() => {});
+  }, [live]);
   // Language, theme, support and feedback live here on phones (owner, 29 Oct 2026), not in Settings.
   // Theme is one icon (owner, 29 Oct 2026): each tap moves Light → Dark → Auto, and the icon shows the current one.
   const [theme, setTheme] = useState<Theme>("Auto");
@@ -407,8 +416,8 @@ function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory: () =
           <span>
             <b>{you.name}</b><small>{you.handle}</small>
             <span className="ap-chips">
-              <i className={`lv ${CREATOR.level.toLowerCase()}`} title={`${CREATOR.level} creator`} aria-label={`${CREATOR.level} creator`}><Icon name="gem" size={13} /></i>
-              <i className="st" title={`${CREATOR.streak}-day streak`} aria-label={`${CREATOR.streak}-day streak`}><Icon name="flame" size={13} />{CREATOR.streak}</i>
+              <i className={`lv ${level.toLowerCase()}`} title={`${level} creator`} aria-label={`${level} creator`}><Icon name="gem" size={13} /></i>
+              <i className="st" title={`${streak}-day streak`} aria-label={`${streak}-day streak`}><Icon name="flame" size={13} />{streak}</i>
               <button type="button" className="ap-story" onClick={onStory}><Icon name="video" size={13} width={2.4} /> Story</button>
             </span>
           </span>

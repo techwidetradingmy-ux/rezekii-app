@@ -8,6 +8,7 @@ import { PlatformIcon } from "@/components/creator2/bits";
 import { CREATOR, SOCIALS } from "@/lib/mock";
 import { AddressSheet } from "@/components/account/address-fields";
 import { addressOk, useAddress } from "@/lib/address";
+import { loadProfile } from "@/lib/live-rewards";
 
 type App = "TikTok" | "Instagram" | "Facebook" | "Threads" | "rights";
 type Item = { key: string; app: App; label: string; unit: string };
@@ -35,7 +36,12 @@ const RIGHTS_TIP = 180;
 const rm = (n: number) => `RM ${n.toLocaleString("en-MY")}`;
 /** The quote on a shared card holds for 7 days from today (owner, 29 Oct 2026). Preview date: 28 Oct 2026. */
 const QUOTE = { from: "28 Oct 2026", until: "4 Nov 2026", days: 7 };
-const ACCOUNTS = SOCIALS.filter((s) => s.linked) as { name: "TikTok" | "Instagram" | "Facebook" | "Threads"; handle: string }[];
+const untilDay = () => new Date(Date.now() + QUOTE.days * 86_400_000).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kuala_Lumpur" });
+type Account = { name: "TikTok" | "Instagram" | "Facebook" | "Threads"; handle: string };
+const ACCOUNTS = SOCIALS.filter((s) => s.linked) as Account[];
+const LEVEL: Record<string, string> = { bronze: "Bronze", silver: "Silver", gold: "Gold" };
+/** What the shared card shows about her: sample data, or (signed in) her own WhatsApp, level, connected apps and TikTok link. */
+type Who = { whatsapp: string; level: string; accounts: Account[]; link: string; linkLabel: string };
 const num = (s: string) => Math.round(Number(s) || 0);
 // In a package, usage rights are counted in days; everything else in pieces.
 const unitOf = (it: Item, q: number) => (it.key === "rights" ? `${q} days` : `${q} ${it.unit.replace("per ", "")}${q === 1 ? "" : "s"}`);
@@ -107,7 +113,7 @@ function Icn({ app }: { app: App }) {
  */
 export function RateCard() {
   const you = useWho();
-  const { toast } = useDemo();
+  const { toast, live: signedIn, me } = useDemo();
   const [rates, setRates] = useState<Record<string, Rate>>(() => Object.fromEntries(ITEMS.map((it) => [it.key, { on: ["tt-video", "tt-live", "ig-reel", "fb-reel", "rights"].includes(it.key), price: "", ...(it.key === "rights" ? { days: RIGHTS_TIP } : {}) }])));
   const [sharing, setSharing] = useState(false);
   // A delivery address is required before saving or sharing (owner, 29 Oct 2026): sellers send products for paid reviews to it.
@@ -117,6 +123,36 @@ export function RateCard() {
   const [packs, setPacks] = useState<Pack[]>([]);
   const [show, setShow] = useState<Show>("Both");
   const [tried, setTried] = useState(false);
+
+  // Signed in (owner, 31 Oct 2026): her saved card, and her own details for the shared card.
+  const [busy, setBusy] = useState(false);
+  const [mine, setMine] = useState<{ whatsapp: string; accounts: Account[] }>({ whatsapp: "", accounts: [] });
+  useEffect(() => {
+    if (!signedIn) return;
+    fetch("/api/v2/rate-card", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { card: { rates: Record<string, Rate>; packs: Pack[]; show: Show } | null } | null) => {
+        if (!d?.card) return;
+        setRates((r) => ({ ...r, ...d.card!.rates }));
+        setPacks(d.card.packs);
+        setShow(d.card.show);
+      })
+      .catch(() => {});
+    loadProfile<{ whatsapp?: string }>("creator").then((d) => setMine((m) => ({ ...m, whatsapp: d.profile?.details.whatsapp ?? "" }))).catch(() => {});
+    const APPS: Record<string, Account["name"]> = { tiktok: "TikTok", instagram: "Instagram", facebook: "Facebook", threads: "Threads" };
+    fetch("/api/v2/publish?part=setup&side=creator", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { channels?: { app: string; name: string }[] } | null) => {
+        const seen = new Set<string>();
+        const accounts = (d?.channels ?? []).filter((c) => APPS[c.app] && !seen.has(c.app) && seen.add(c.app)).map((c) => ({ name: APPS[c.app], handle: c.name }));
+        setMine((m) => ({ ...m, accounts }));
+      })
+      .catch(() => {});
+  }, [signedIn]);
+  const tiktok = you.handle.replace(/^@/, "");
+  const who: Who = signedIn
+    ? { whatsapp: mine.whatsapp, level: LEVEL[me?.level ?? "bronze"], accounts: mine.accounts, link: tiktok ? `https://www.tiktok.com/@${tiktok}` : "https://rezekii.com", linkLabel: tiktok ? `tiktok.com/@${tiktok}` : "rezekii.com" }
+    : { whatsapp: CREATOR.whatsapp, level: CREATOR.level, accounts: ACCOUNTS, link: `https://rezekii.com/c/${tiktok}`, linkLabel: `rezekii.com/c/${tiktok}` };
 
   const live = ITEMS.filter((it) => rates[it.key].on);
   const setRate = (key: string, patch: Partial<Rate>) => setRates((r) => ({ ...r, [key]: { ...r[key], ...patch } }));
@@ -164,7 +200,12 @@ export function RateCard() {
     if (problems.length) return;
     if (!checked && !addressOk(address)) return setNeedAddr("save");
     setTried(false);
-    toast("Rate card saved");
+    if (!signedIn) return toast("Rate card saved");
+    setBusy(true);
+    fetch("/api/v2/rate-card", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ rates, packs, show }) })
+      .then((r) => toast(r.ok ? "Rate card saved" : "Didn't save. Please try again."))
+      .catch(() => toast("Didn't save. Please try again."))
+      .finally(() => setBusy(false));
   }
   const share = (checked = false) => {
     if (!(ready.length || priced.length)) return toast("Add your prices first");
@@ -287,7 +328,7 @@ export function RateCard() {
         </div>
       )}
       <div className="rc-acts">
-        <button type="button" className="np-btn rc-save-btn" onClick={() => save()}>Save Rate Card</button>
+        <button type="button" className="np-btn rc-save-btn" disabled={busy} onClick={() => save()}>{busy ? <span className="sl-spin" /> : "Save Rate Card"}</button>
         <button type="button" className="btn-outline rc-save-btn" onClick={() => share()}><Icon name="share" size={17} /> Share Rate Card</button>
       </div>
       {!addressOk(address) && <p className="v2-small" style={{ margin: 0 }}>You&apos;ll add a delivery address before saving. Sellers send products for paid reviews to it.</p>}
@@ -304,12 +345,12 @@ export function RateCard() {
           big=""
           label="Rate card"
           lines={[]}
-          caption={`My rate card for TikTok, Instagram and Facebook videos. Book me on Rezekii: rezekii.com/c/${you.handle.replace(/^@/, "")}`}
-          card={<RateShare packs={show === "À la carte" ? [] : ready} best={best} items={show === "Packages" ? [] : priced} line={packLine} price={(it) => rm(num(rates[it.key].price))} unit={rightsFor} showOn={showOn} />}
+          caption={signedIn ? `My rate card for paid videos.${who.whatsapp ? ` WhatsApp me: ${who.whatsapp}.` : ""} ${who.linkLabel}` : `My rate card for TikTok, Instagram and Facebook videos. Book me on Rezekii: ${who.linkLabel}`}
+          card={<RateShare packs={show === "À la carte" ? [] : ready} best={best} items={show === "Packages" ? [] : priced} line={packLine} price={(it) => rm(num(rates[it.key].price))} unit={rightsFor} showOn={showOn} who={who} live={signedIn} />}
           extra={
             <div className="rcs-pick" role="group" aria-label="Show on the card">
               <b>Show on the card</b>
-              {([["whatsapp", "WhatsApp", CREATOR.whatsapp], ["email", "Email", you.email], ["accounts", "Social accounts", ACCOUNTS.map((a) => a.name).join(", ")]] as const).map(([k, l, v]) => (
+              {([["whatsapp", "WhatsApp", who.whatsapp || "Not in your profile"], ["email", "Email", you.email], ["accounts", "Social accounts", who.accounts.map((a) => a.name).join(", ") || "None connected"]] as const).map(([k, l, v]) => (
                 <label key={k}><input type="checkbox" checked={showOn[k]} onChange={(e) => setShowOn((s) => ({ ...s, [k]: e.target.checked }))} /><span><b>{l}</b><small>{v}</small></span></label>
               ))}
             </div>
@@ -324,9 +365,10 @@ export function RateCard() {
  * Her rate card as a 9:16 image to send to clients (owner, 29 Oct 2026), with the Rezekii logo and her booking QR. Packages
  * come first; prices only, never sales.
  */
-function RateShare({ packs, best, items, line, price, unit, showOn }: { packs: Pack[]; best: Pack | null; items: Item[]; line: (p: Pack) => string; price: (it: Item) => string; unit: (it: Item) => string; showOn: { whatsapp: boolean; email: boolean; accounts: boolean } }) {
+function RateShare({ packs, best, items, line, price, unit, showOn, who, live }: { packs: Pack[]; best: Pack | null; items: Item[]; line: (p: Pack) => string; price: (it: Item) => string; unit: (it: Item) => string; showOn: { whatsapp: boolean; email: boolean; accounts: boolean }; who: Who; live: boolean }) {
   const you = useWho();
-  const contacts = (showOn.whatsapp ? 1 : 0) + (showOn.email ? 1 : 0);
+  const wa = showOn.whatsapp && !!who.whatsapp;
+  const contacts = (wa ? 1 : 0) + (showOn.email ? 1 : 0);
   return (
     <div className="rcs" role="img" aria-label={`Rate card for ${you.handle}`}>
       <span className="rcs-band">
@@ -340,9 +382,9 @@ function RateShare({ packs, best, items, line, price, unit, showOn }: { packs: P
       <span className="rcs-me">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={you.photo} alt="" />
-        <span><b>{you.handle}</b><small>{CREATOR.level} creator on Rezekii</small></span>
+        <span><b>{you.handle}</b><small>{who.level} creator on Rezekii</small></span>
       </span>
-      {showOn.accounts && <span className="rcs-socials">{ACCOUNTS.map((a) => <PlatformIcon key={a.name} name={a.name} size={18} />)}</span>}
+      {showOn.accounts && who.accounts.length > 0 && <span className="rcs-socials">{who.accounts.map((a) => <PlatformIcon key={a.name} name={a.name} size={18} />)}</span>}
       </span>
       {packs.slice(0, 3).map((p) => (
         <span key={p.id} className={`rcs-pack${p === best ? " best" : ""}`}>
@@ -358,14 +400,14 @@ function RateShare({ packs, best, items, line, price, unit, showOn }: { packs: P
       )}
       {contacts > 0 && (
         <span className="rcs-contact">
-          {showOn.whatsapp && <span><Icon name="whatsapp" size={12} />{CREATOR.whatsapp}</span>}
+          {wa && <span><Icon name="whatsapp" size={12} />{who.whatsapp}</span>}
           {showOn.email && <span><Icon name="inbox" size={12} />{you.email}</span>}
         </span>
       )}
-      <span className="rcs-valid">Quote valid {QUOTE.days} days · until {QUOTE.until}</span>
+      <span className="rcs-valid">Quote valid {QUOTE.days} days · until {live ? untilDay() : QUOTE.until}</span>
       <span className="rcs-foot">
-        <span><b>Book me on Rezekii</b><small>rezekii.com/c/{you.handle.replace(/^@/, "")}</small></span>
-        <Qr />
+        <span><b>{live ? "Find me on TikTok" : "Book me on Rezekii"}</b><small>{who.linkLabel}</small></span>
+        {live ? <Qr value={who.link} /> : <Qr />}
       </span>
     </div>
   );
