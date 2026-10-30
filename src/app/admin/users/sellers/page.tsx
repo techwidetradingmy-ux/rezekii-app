@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/admin.css";
+import { LiveSellers } from "@/components/admin/live-business";
 import { useState } from "react";
 import { useDemo } from "@/components/demo";
 import { Sheet, Title } from "@/components/ui";
@@ -13,7 +14,7 @@ const TONE: Record<string, Tone> = { Active: "ok", Waiting: "info", Paused: "mut
 
 /** Every seller account: where they are, local or cross-border, status and how many products are live. */
 export default function SellersList() {
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const [list, setList] = useState(SELLERS);
   const [q, setQ] = useState("");
   const [type, setType] = useState<Type>("All");
@@ -22,6 +23,8 @@ export default function SellersList() {
   const [freezing, setFreezing] = useState(false);
   const [reason, setReason] = useState<string | null>(null);
   const [note, setNote] = useState("");
+  // Signed in (owner, 31 Oct 2026): real data.
+  if (live) return <LiveSellers />;
 
   const shown = list.filter(
     (s) => (type === "All" || s.type === type) && (status === "Any status" || s.status === status) && (!q || `${s.shop} ${s.state} ${s.country}`.toLowerCase().includes(q.toLowerCase())),

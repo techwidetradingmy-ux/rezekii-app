@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/admin.css";
+import { LiveOpenCampaigns } from "@/components/admin/live-business";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -17,12 +18,14 @@ const message = (c: Camp, shop: string) =>
 
 /** TAP campaigns open for registration now, to recommend to merchants. */
 export default function OpenCampaigns() {
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const cats = ["All", ...Array.from(new Set(OPEN_CAMPAIGNS.map((c) => c.category)))];
   const [cat, setCat] = useState("All");
   const [invite, setInvite] = useState<Camp | null>(null);
   const [shop, setShop] = useState("");
   const [text, setText] = useState("");
+  // Signed in (owner, 31 Oct 2026): real data.
+  if (live) return <LiveOpenCampaigns />;
   const list = OPEN_CAMPAIGNS.filter((c) => cat === "All" || c.category === cat);
 
   const openInvite = (c: Camp) => {

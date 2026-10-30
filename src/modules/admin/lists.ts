@@ -95,3 +95,25 @@ export async function setFeedbackStatus(id: string, status: "new" | "handled", a
 
 /** Who has admin access, as Settings keeps it. */
 export const adminList = listAdmins;
+
+/** Every Seller Center shop connected to Rezekii, who connected it, and its TAP products by stage. */
+export async function sellerList() {
+  const shops = await rows<{ shop_id: string; shop_name: string; shop_code: string | null; region: string | null; connected_at: string; updated_at: string; connected_by: string | null }>(
+    "seller_connections?select=shop_id,shop_name,shop_code,region,connected_at,updated_at,connected_by&order=connected_at.desc&limit=1000",
+  );
+  const subs = await rows<{ shop_id: string; status: string }>("tap_submissions?select=shop_id,status&limit=10000");
+  const names = await namesOf(shops.map((s) => s.connected_by ?? "").filter(Boolean));
+  const contacts = new Map<string, { contact?: string; phone?: string }>();
+  const ids = shops.map((s) => s.connected_by).filter((x): x is string => !!x && /^[0-9a-f-]{36}$/.test(x));
+  if (ids.length) for (const p of await rows<{ user_id: string; details: { contact?: string; phone?: string } }>(`profiles?side=eq.seller&user_id=in.(${[...new Set(ids)].join(",")})&select=user_id,details`)) contacts.set(p.user_id, p.details);
+  return shops.map((s) => {
+    const mine = subs.filter((x) => x.shop_id === s.shop_id);
+    const c = s.connected_by ? contacts.get(s.connected_by) : undefined;
+    return {
+      id: s.shop_id, name: s.shop_name, code: s.shop_code, region: s.region, connected: s.connected_at,
+      owner: s.connected_by ? names.get(s.connected_by)?.name ?? null : null, contact: c?.contact ?? null, phone: c?.phone ?? null,
+      live: mine.filter((x) => x.status === "live").length, open: mine.filter((x) => ["submitted", "in_review", "approved", "with_tiktok"].includes(x.status)).length,
+      declined: mine.filter((x) => x.status === "not_approved").length,
+    };
+  });
+}
