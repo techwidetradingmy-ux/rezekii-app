@@ -15,10 +15,12 @@ export async function loadNotes(side: Side): Promise<{ notes: LiveNote[]; unread
 /** Marks one read (id) or all of them (null), and tells the bell. */
 export async function markNote(side: Side, id: string | null): Promise<void> {
   await fetch("/api/v2/notifications", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(id ? { side, id } : { side, all: true }) }).catch(() => null);
-  window.dispatchEvent(new Event(NOTES_CHANGED));
+  notesChanged();
 }
 
 const NOTES_CHANGED = "rz-notes-changed";
+/** Tells the bell to count again (after she reads some or changes what she wants to see). */
+export const notesChanged = () => window.dispatchEvent(new Event(NOTES_CHANGED));
 const MYT = 8 * 3_600_000;
 const dayNo = (t: number) => Math.floor((t + MYT) / 86_400_000);
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

@@ -15,6 +15,11 @@ export type Note = {
   urgent: string | null;
 };
 export type Feed = { notes: (Note & { unread: boolean })[]; unread: number };
+/** What she can switch off in Settings (owner, 31 Oct 2026). Connection reminders always show: things stop working without them. */
+export type Topic = "samples" | "chances" | "posts" | "rewards";
+export type Prefs = Partial<Record<Topic, boolean>>;
+const TOPIC: [string, Topic][] = [["l:", "rewards"], ["j:", "rewards"], ["p:", "posts"], ["s:", "posts"], ["r:", "samples"], ["sub:", "samples"], ["w:", "chances"]];
+const topicOf = (id: string): Topic | null => TOPIC.find(([p]) => id.startsWith(p))?.[1] ?? null;
 
 const DAY = 86_400_000;
 const enc = encodeURIComponent;
@@ -133,29 +138,46 @@ export async function notesFor(userId: string, side: Side): Promise<Note[]> {
   return notes.sort((a, b) => (a.at < b.at ? 1 : -1));
 }
 
-type State = { seen_at: string; read_ids: string[] };
+type State = { seen_at: string; read_ids: string[]; prefs: Prefs };
 async function stateOf(userId: string, side: Side): Promise<State> {
-  const [row] = await rows<State>(`notification_state?user_id=eq.${userId}&side=eq.${side}&select=seen_at,read_ids&limit=1`);
-  return row ?? { seen_at: new Date(0).toISOString(), read_ids: [] };
+  const [row] = await rows<State>(`notification_state?user_id=eq.${userId}&side=eq.${side}&select=seen_at,read_ids,prefs&limit=1`);
+  return row ?? { seen_at: new Date(0).toISOString(), read_ids: [], prefs: {} };
 }
+const upsertState = (body: Record<string, unknown>) =>
+  supabaseRest("notification_state?on_conflict=user_id,side", {
+    method: "POST",
+    headers: { "content-type": "application/json", prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({ ...body, updated_at: new Date().toISOString() }),
+  });
 
 /** Her notifications with what's unread: anything after she last marked all as read that she hasn't opened. */
 export async function feedFor(userId: string, side: Side): Promise<Feed> {
   const [notes, state] = await Promise.all([notesFor(userId, side), stateOf(userId, side)]);
   const read = new Set(state.read_ids);
-  const out = notes.map((n) => ({ ...n, unread: n.at > state.seen_at && !read.has(n.id) }));
+  const shown = notes.filter((n) => { const t = topicOf(n.id); return !t || state.prefs[t] !== false; });
+  const out = shown.map((n) => ({ ...n, unread: n.at > state.seen_at && !read.has(n.id) }));
   return { notes: out, unread: out.filter((n) => n.unread).length };
 }
 
 /** Marks one notification read, or all of them (everything up to now). */
 export async function markRead(userId: string, side: Side, id: string | null): Promise<void> {
   const state = await stateOf(userId, side);
-  const body = id
-    ? { user_id: userId, side, seen_at: state.seen_at, read_ids: [id, ...state.read_ids.filter((x) => x !== id)].slice(0, 300), updated_at: new Date().toISOString() }
-    : { user_id: userId, side, seen_at: new Date().toISOString(), read_ids: [], updated_at: new Date().toISOString() };
-  await supabaseRest("notification_state?on_conflict=user_id,side", {
-    method: "POST",
-    headers: { "content-type": "application/json", prefer: "resolution=merge-duplicates,return=minimal" },
-    body: JSON.stringify(body),
-  });
+  await upsertState(
+    id
+      ? { user_id: userId, side, seen_at: state.seen_at, read_ids: [id, ...state.read_ids.filter((x) => x !== id)].slice(0, 300) }
+      : { user_id: userId, side, seen_at: new Date().toISOString(), read_ids: [] },
+  );
+}
+
+/** Which topics she wants in the app (all on until she changes one). */
+export async function prefsOf(userId: string, side: Side): Promise<Record<Topic, boolean>> {
+  const p = (await stateOf(userId, side)).prefs;
+  return { samples: p.samples !== false, chances: p.chances !== false, posts: p.posts !== false, rewards: p.rewards !== false };
+}
+export async function savePrefs(userId: string, side: Side, prefs: Prefs): Promise<Record<Topic, boolean>> {
+  const clean: Prefs = {};
+  for (const t of ["samples", "chances", "posts", "rewards"] as Topic[]) if (typeof prefs[t] === "boolean") clean[t] = prefs[t];
+  const state = await stateOf(userId, side);
+  await upsertState({ user_id: userId, side, seen_at: state.seen_at, read_ids: state.read_ids, prefs: { ...state.prefs, ...clean } });
+  return prefsOf(userId, side);
 }

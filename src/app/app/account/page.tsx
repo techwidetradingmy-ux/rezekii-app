@@ -26,6 +26,7 @@ import { MyWishes } from "@/components/creator1/my-wishes";
 import { ACCOUNT_TABS, type AccountTab } from "@/lib/account-tabs";
 import { applyTheme, readTheme, type Theme } from "@/lib/theme";
 import { loadProfile, loadWallet, saveProfile } from "@/lib/live-rewards";
+import { notesChanged } from "@/lib/live-notes";
 import "@/app/creator2.css";
 
 const TYPES = ["Affiliate", "UGC", "Artist", "Influencer"] as const;
@@ -50,6 +51,18 @@ function prettyNum(cc: string, d: string) {
 }
 
 /** My account: profile, connections, samples & delivery, rate card and settings, grouped like iOS Settings. Nothing is saved. */
+
+/** Loads her notification choices once (signed in). */
+function LoadPrefs({ onLoad }: { onLoad: (p: Record<string, boolean>) => void }) {
+  useEffect(() => {
+    fetch("/api/v2/notifications?side=creator&part=prefs", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { prefs?: Record<string, boolean> } | null) => onLoad(d?.prefs ?? { samples: true, chances: true, posts: true, rewards: true }))
+      .catch(() => onLoad({ samples: true, chances: true, posts: true, rewards: true }));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return null;
+}
+
 export default function Account() {
   const you = useWho();
   const { linked, setLinked, toast, consent, waVerified: verified, setWaVerified: setVerified, live, me, refreshMe } = useDemo();
@@ -106,6 +119,8 @@ export default function Account() {
   const [addrTried, setAddrTried] = useState(false);
   const [conn, setConn] = useState<Record<string, boolean>>(Object.fromEntries(SOCIALS.map((s) => [s.name, s.linked])));
   const [notify, setNotify] = useState<Record<string, [boolean, boolean]>>({ samples: [true, true], chances: [true, true], posts: [true, false], rewards: [true, false] });
+  // Signed in (owner, 31 Oct 2026): the in-app switches decide what shows in Notifications. No email alerts are sent yet.
+  const [inApp, setInApp] = useState<Record<string, boolean> | null>(null);
   const [pwSheet, setPwSheet] = useState(false);
   const [hasPw, setHasPw] = useState(true);
   const [googleOn, setGoogleOn] = useState(true);
@@ -593,6 +608,7 @@ export default function Account() {
           <h2>Notifications</h2>
           <div className="cr2-cells">
             <div className="cr2-notifyhead"><span>Tell me about</span><span>In-app</span><span>Email</span></div>
+            {live && !inApp && <LoadPrefs onLoad={setInApp} />}
             {NOTIFY.map((n) => (
               <div key={n.key} className="cr2-notify">
                 <span>
@@ -600,7 +616,7 @@ export default function Account() {
                   <small>{n.note}</small>
                 </span>
                 {[0, 1].map((ch) => {
-                  const on = notify[n.key][ch];
+                  const on = live ? ch === 0 && (inApp?.[n.key] ?? true) : notify[n.key][ch];
                   return (
                     <button
                       key={ch}
@@ -609,11 +625,21 @@ export default function Account() {
                       aria-checked={on}
                       aria-label={`${n.label} by ${ch === 0 ? "in-app" : "email"}`}
                       className={`np-switch ${on ? "on" : ""}`}
-                      onClick={() => setNotify((s) => {
-                        const next: [boolean, boolean] = [...s[n.key]] as [boolean, boolean];
-                        next[ch] = !next[ch];
-                        return { ...s, [n.key]: next };
-                      })}
+                      disabled={live && (ch === 1 || !inApp)}
+                      onClick={() => {
+                        if (live) {
+                          setInApp((s) => ({ ...s, [n.key]: !on }));
+                          fetch("/api/v2/notifications", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ side: "creator", prefs: { [n.key]: !on } }) })
+                            .then((r) => { if (!r.ok) throw new Error(); notesChanged(); })
+                            .catch(() => { setInApp((s) => ({ ...s, [n.key]: on })); toast("Didn't save. Please try again."); });
+                          return;
+                        }
+                        setNotify((s) => {
+                          const next: [boolean, boolean] = [...s[n.key]] as [boolean, boolean];
+                          next[ch] = !next[ch];
+                          return { ...s, [n.key]: next };
+                        });
+                      }}
                     >
                       <span />
                     </button>
@@ -622,7 +648,7 @@ export default function Account() {
               </div>
             ))}
           </div>
-          <p>No marketing messages unless you ask.</p>
+          <p>{live ? "Email alerts aren't on yet; everything shows in Notifications. Reminders to reconnect an account always show." : "No marketing messages unless you ask."}</p>
         </section>
 
         <section className="cr2-group">

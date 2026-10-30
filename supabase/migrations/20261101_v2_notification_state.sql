@@ -5,6 +5,8 @@ create table if not exists notification_state (
   side text not null check (side in ('creator', 'seller')),
   seen_at timestamptz not null default 'epoch',
   read_ids text[] not null default '{}',
+  -- Topics she switched off in Settings, e.g. {"posts": false}.
+  prefs jsonb not null default '{}'::jsonb,
   updated_at timestamptz not null default now(),
   primary key (user_id, side)
 );
