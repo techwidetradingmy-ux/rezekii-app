@@ -304,25 +304,33 @@ function Threads({ caption, comment, commentImage, video, who, theme, topic: top
   );
 }
 
-/** Shopee Video: a full-screen vertical video with the account, the caption and, when a product is attached, its tag. */
+/**
+ * Shopee Video, laid out like Shopee's own preview in Seller Centre (Live & Video → Upload Video, checked 31 Oct 2026): the
+ * Discover · Video · Live · For You tabs, the side rail, @name and the caption (tap more), and the Shopee app's bottom bar.
+ */
 function Shopee({ caption, video, who, product }: PreviewProps) {
+  const [open, setOpen] = useState(false);
   const c = clamp(caption, `400 ${14.5 * PT}px ${tiktokSans.style.fontFamily}`, 280 - 98 * PT, 2, " more");
+  const handle = who.name.startsWith("@") ? who.name : `@${who.name}`;
   return (
-    <div className={`pv-scr pv-tt ${tiktokSans.variable}`}>
+    <div className={`pv-scr pv-tt pv-sp ${tiktokSans.variable}`}>
       <StatusBar color="#fff" />
       <div className="pv-vid" style={{ bottom: "calc(83 * var(--p))" }}><Video src={video} /></div>
+      <div className="pv-sp-top pv-sh"><span className="ic"><Ic n="user" s={22} /><Ic n="search" s={22} /></span><div className="tabs"><span>Discover</span><b>Video</b><span>Live</span><span>For You</span></div><span className="ic"><Ic n="plus" s={22} /></span></div>
       <div className="pv-rail pv-sh" style={{ "--rr": 25 } as CSSProperties}>
-        <span className="it" style={{ top: "55.2%" }}><span className="pv-tt-av"><Pic src={who.avatar} /></span></span>
-        <span className="it" style={{ top: "64%" }}><Ic n="heartF" s={35} /><span>0</span></span>
-        <span className="it" style={{ top: "72%" }}><Ic n="cmtF" s={33} /><span>0</span></span>
-        <span className="it" style={{ top: "80%" }}><Ic n="shareF" s={32} /><span>0</span></span>
+        <span className="it" style={{ top: "47%" }}><span className="pv-tt-av pv-sp-av"><Pic src={who.avatar} /><i>+</i></span></span>
+        <span className="it" style={{ top: "57%" }}><Ic n="heartF" s={30} /><span>0</span></span>
+        <span className="it" style={{ top: "65%" }}><Ic n="cmtF" s={28} /><span>0</span></span>
+        <span className="it" style={{ top: "73%" }}><Ic n="shareF" s={28} /><span>Share</span></span>
       </div>
-      <div className="pv-tt-txt pv-sh">
-        {product && <div className="snd"><Ic n="bag" s={13} /><span>{product}</span></div>}
-        <div className="nm">{who.name}</div>
-        <div className="cp"><Rich text={c.text} tags="bold" at="bold" />{c.cut && " … more"}</div>
+      {open && <div className="pv-dim" onClick={() => setOpen(false)} />}
+      <div className={`pv-tt-txt pv-sh${open ? " open" : ""}`}>
+        {product && <div className="pv-sp-prod"><Ic n="bag" s={13} /><span>{product}</span></div>}
+        <div className="nm">{handle}</div>
+        {open ? <div className="cp" onClick={() => setOpen(false)}><Rich text={caption} tags="bold" at="bold" /> <More label={<b>less</b>} onClick={() => setOpen(false)} /></div>
+          : <div className="cp"><Rich text={c.text} tags="bold" at="bold" />{c.cut && <> <More label={<b>more</b>} onClick={() => setOpen(true)} /></>}</div>}
       </div>
-      <div className="pv-bar pv-tt-bar"><Nav n="homeF" label="Home" /><Nav n="reels" label="Video" on /><Nav n="bell" label="Notifications" /><Nav n="user" label="Me" /></div>
+      <div className="pv-bar pv-tt-bar pv-sp-bar"><Nav n="homeO" label="Home" s={22} /><Nav n="store" label="New Products" s={22} /><Nav n="reels" label="Live & Video" on s={22} /><Nav n="bell" label="Notification" s={22} /><Nav n="user" label="Me" s={22} /></div>
       <span className="pv-hi" style={{ color: "#fff" }} />
     </div>
   );

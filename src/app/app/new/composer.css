@@ -157,6 +157,16 @@
 .pv-tt-txt .cp { font-size: calc(14.5 * var(--p)); line-height: 1.35; white-space: pre-wrap; word-break: break-word; }
 .pv-tt-txt .snd { font-size: calc(14 * var(--p)); display: flex; gap: calc(6 * var(--p)); align-items: center; white-space: nowrap; overflow: hidden; }
 .pv-tt-bar { height: calc(83 * var(--p)); background: #000000; padding-top: calc(8 * var(--p)); }
+/* Shopee Video preview (Shopee's own layout in Seller Centre): top tabs, orange follow badge, product tag, the app's bottom bar. */
+.pv-sp-top { position: absolute; top: calc(54 * var(--p)); left: calc(12 * var(--p)); right: calc(12 * var(--p)); height: calc(36 * var(--p)); z-index: 5; display: flex; align-items: center; justify-content: space-between; }
+.pv-sp-top .ic { display: flex; gap: calc(10 * var(--p)); }
+.pv-sp-top .tabs { display: flex; gap: calc(14 * var(--p)); font-size: calc(14 * var(--p)); font-weight: 600; }
+.pv-sp-top .tabs span { opacity: 0.68; }
+.pv-sp-top .tabs b { position: relative; font-weight: 700; }
+.pv-sp-top .tabs b::after { content: ""; position: absolute; left: 50%; bottom: calc(-6 * var(--p)); transform: translateX(-50%); width: calc(18 * var(--p)); height: calc(2.5 * var(--p)); border-radius: 3px; background: #ffffff; }
+.pv-sp-av i { background: #ee4d2d; }
+.pv-sp-prod { display: inline-flex; align-items: center; gap: calc(5 * var(--p)); justify-self: start; max-width: 100%; padding: calc(4 * var(--p)) calc(9 * var(--p)); border-radius: calc(6 * var(--p)); background: #ee4d2d; font-size: calc(12.5 * var(--p)); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pv-sp-bar .b span { font-size: calc(10 * var(--p)); }
 .pv-tt-create { width: calc(44 * var(--p)); height: calc(30 * var(--p)); border-radius: calc(9 * var(--p)); background: #ffffff; box-shadow: calc(-3 * var(--p)) 0 0 #25f4ee, calc(3 * var(--p)) 0 0 #fe2c55; display: grid; place-items: center; color: #000000; margin-top: calc(2 * var(--p)); }
 /* Instagram */
 .pv-ig-top { position: absolute; top: calc(54 * var(--p)); left: 0; right: 0; height: calc(40 * var(--p)); z-index: 5; display: flex; align-items: center; justify-content: center; gap: calc(18 * var(--p)); font-size: calc(17 * var(--p)); }
