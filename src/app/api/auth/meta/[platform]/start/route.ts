@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest, { params }: { params: Promise<{ platform: string }> }) {
   const { platform } = await params;
   const from = req.nextUrl.searchParams.get("from");
-  const back = from === "seller" ? "/seller/app/publish" : from === "account" ? "/app/account" : "/app/publish";
+  const back = from === "seller" ? "/seller/app/publish" : from === "seller-account" ? "/seller/app/account" : from === "account" ? "/app/account" : "/app/publish";
   if (!isPlatform(platform)) return NextResponse.redirect(`${appBase(req)}${back}`);
   const moved = canonicalRedirect(req);
   if (moved) return moved;
@@ -37,6 +37,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ plat
   }
   const res = NextResponse.redirect(url);
   res.cookies.set(metaCookie(platform), state, OAUTH_COOKIE_OPTIONS);
-  res.cookies.set(META_BACK, from === "seller" ? "seller" : from === "account" ? "account" : "creator", OAUTH_COOKIE_OPTIONS);
+  res.cookies.set(META_BACK, from === "seller" ? "seller" : from === "seller-account" ? "seller-account" : from === "account" ? "account" : "creator", OAUTH_COOKIE_OPTIONS);
   return res;
 }

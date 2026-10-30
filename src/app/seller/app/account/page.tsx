@@ -11,6 +11,7 @@ import { ConnectSocialSheet, useSellerSocials } from "@/components/seller/connec
 import { SELLER } from "@/lib/mock";
 import { TERMS_VERSION, tidyPhone, type Platform } from "@/lib/mock-seller";
 import { loadProfile, saveProfile } from "@/lib/live-rewards";
+import { LiveSellerHelp, LiveSellerNotify, LiveSellerSecurity, LiveSellerSocials, LiveShopAuth } from "@/components/seller/live-account";
 
 const NOTIFY: [string, string, boolean][] = [
   ["Product status", "Approved, live or not approved", true],
@@ -22,7 +23,7 @@ const NOTIFY: [string, string, boolean][] = [
 
 /** Shop authorisation, contact, social accounts, notifications, security, help and billing. */
 export default function SellerAccount() {
-  const { linked, setLinked, toast, live } = useDemo();
+  const { linked, setLinked, toast, live, me } = useDemo();
   const { socials, connect, disconnect } = useSellerSocials();
   const [contact, setContact] = useState({ name: SELLER.contact, dial: "60", raw: "0123456789" });
   const [edit, setEdit] = useState<typeof contact | null>(null);
@@ -67,9 +68,10 @@ export default function SellerAccount() {
 
   return (
     <div className="v2-stack v2-in v2-narrow">
-      <Title title="Account" sub={`${SELLER.shop} · ${SELLER.state}, ${SELLER.country}`} />
+      <Title title="Account" sub={live ? me?.sellerShop ?? "No shop connected yet" : `${SELLER.shop} · ${SELLER.state}, ${SELLER.country}`} />
       <ConnBanner />
 
+      {live ? <LiveShopAuth /> : (
       <section className="v2-card">
         <h2 className="v2-h2">Shop Authorisation</h2>
         <div className="sl-set">
@@ -84,6 +86,7 @@ export default function SellerAccount() {
           {reconnecting ? <span className="sl-spin" /> : <Icon name="refresh" size={18} />} Reconnect
         </button>
       </section>
+      )}
 
       <section className="v2-card">
         <div className="v2-card-h"><h2 className="v2-h2">Contact &amp; Phone</h2><button type="button" className="v2-link" onClick={() => { setEdit(contact); setTried(false); }}>Edit</button></div>
@@ -91,6 +94,7 @@ export default function SellerAccount() {
         <div className="sl-set"><span><small>Phone</small><b>{phone.ok ? phone.pretty : contact.raw || "Not added yet"}</b></span>{!live && <span className="badge">Verified</span>}{live && !saved && <span className="badge badge-amber">Add it</span>}</div>
       </section>
 
+      {live ? <LiveSellerSocials /> : (
       <section className="v2-card">
         <h2 className="v2-h2">Social Accounts</h2>
         <p className="v2-small" style={{ margin: 0 }}>For posting from Publish.</p>
@@ -106,7 +110,9 @@ export default function SellerAccount() {
           ))}
         </div>
       </section>
+      )}
 
+      {live ? <LiveSellerNotify /> : (
       <section className="v2-card">
         <h2 className="v2-h2">Notifications</h2>
         <div>
@@ -118,7 +124,9 @@ export default function SellerAccount() {
           ))}
         </div>
       </section>
+      )}
 
+      {live ? <LiveSellerSecurity /> : (
       <section className="v2-card">
         <h2 className="v2-h2">Login &amp; Security</h2>
         <div className="sl-set"><span><b>Signed in with Google</b><small>meiling@seriliving.my</small></span></div>
@@ -129,12 +137,14 @@ export default function SellerAccount() {
           <Link href="/seller" className="v2-link" style={{ color: "#d92d20" }} onClick={(e) => { if (!live) return; e.preventDefault(); fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/seller"; }); }}>Sign out</Link>
         </div>
       </section>
+      )}
 
       <section className="v2-card">
         <h2 className="v2-h2">Sample Allocation Terms</h2>
-        <div className="sl-set"><span><b>You agreed on 12 Sep 2026</b><small>{TERMS_VERSION}. We&apos;ll ask again if they change.</small></span><button type="button" className="v2-link" onClick={() => setTerms(true)}>Read</button></div>
+        <div className="sl-set"><span><b>{live ? "Sample terms for TAP products" : "You agreed on 12 Sep 2026"}</b><small>{TERMS_VERSION}.{live ? " They apply to every product you send to TAP." : " We'll ask again if they change."}</small></span><button type="button" className="v2-link" onClick={() => setTerms(true)}>Read</button></div>
       </section>
 
+      {live ? <LiveSellerHelp /> : (
       <section className="v2-card">
         <h2 className="v2-h2">Help &amp; Feedback</h2>
         <div className="v2-chips">
@@ -148,6 +158,7 @@ export default function SellerAccount() {
           <span className="v2-small">Or WhatsApp +60 3-2789 4410</span>
         </div>
       </section>
+      )}
 
       <section className="v2-card">
         <div className="v2-card-h"><h2 className="v2-h2">Billing</h2><span className="badge badge-gray">Later</span></div>

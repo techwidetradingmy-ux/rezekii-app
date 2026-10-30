@@ -10,7 +10,7 @@ export const META_BACK = "rz_meta_back";
 export const metaCallbackUrl = (req: NextRequest, p: Platform) => `${appBase(req)}/api/auth/meta/${p}/callback`;
 export const composerPath = (req: NextRequest) => {
   const back = req.cookies.get(META_BACK)?.value;
-  return back === "seller" ? "/seller/app/publish" : back === "account" ? "/app/account" : "/app/publish";
+  return back === "seller" ? "/seller/app/publish" : back === "seller-account" ? "/seller/app/account" : back === "account" ? "/app/account" : "/app/publish";
 };
 
 /** Back where she started (New Post or My Account) with the result, e.g. ?channel=instagram&connect=ok (shown as a message). */
