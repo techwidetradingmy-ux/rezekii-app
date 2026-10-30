@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { supabaseRest } from "@/integrations/supabase/rest.ts";
 import { linesBetween, productImages } from "@/modules/sales/frames.ts";
@@ -31,7 +31,7 @@ const channelOf = (t: string | null) => (/LIVE/i.test(t ?? "") ? 1 : /VIDEO/i.te
  * number is counted from her order lines; nothing is estimated. `extra` = commission on Techwide's TAP orders above what the
  * open plan pays for those products.
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
   const user = await currentUser();
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   const now = Date.now();
@@ -80,6 +80,28 @@ export async function GET() {
       other: r2(ranked.slice(5).reduce((a, b) => a + b.commission, 0)),
     };
   };
+
+  // Her own dates from the calendar (?from=YYYY-MM-DD&to=YYYY-MM-DD, Malaysia days): the same numbers for exactly those days,
+  // compared with the same number of days before.
+  const q = req.nextUrl.searchParams;
+  const day = (v: string | null) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? Date.parse(`${v}T00:00:00Z`) - MYT : null);
+  const cFrom = day(q.get("from")), cTo = day(q.get("to"));
+  if (cFrom !== null && cTo !== null && cTo >= cFrom) {
+    const n = Math.round((cTo - cFrom) / DAY) + 1;
+    const end = Math.min(cTo + DAY, now + 1);
+    const cur = sum(cFrom, end);
+    const prev = sum(cFrom - n * DAY, cFrom);
+    const change = (a: number, b: number) => (b ? Math.round(((a - b) / b) * 100) : null);
+    const lv = cur.channel[1];
+    const note = !cur.orders ? "No orders in these days." : `${lv >= 30 ? `LIVE brought ${lv}% of your commission. ` : ""}Cancels and returns: ${cur.cancel}% of orders.`;
+    const chart = n <= 31
+      ? { unit: "day" as const, points: Array.from({ length: n }, (_, i) => { const d = cFrom + i * DAY; return [label(d), sum(d, d + DAY).est] as [string, number]; }) }
+      : { unit: "week" as const, points: Array.from({ length: Math.ceil(n / 7) }, (_, i) => { const d = cFrom + i * 7 * DAY; return [label(d), sum(d, Math.min(d + 7 * DAY, end)).est] as [string, number]; }) };
+    const ids = cur.byProduct.map((b) => b.productId);
+    const imgs = await productImages(user.id, ids).catch(() => new Map<string, string | null>());
+    const products = Object.fromEntries(ids.map((id) => [id, { ...(names.get(id) ?? { name: "Product", shop: "" }), img: imgs.get(id) ?? null }]));
+    return NextResponse.json({ range: { ...cur, gmvChange: change(cur.gmv, prev.gmv), ordersChange: change(cur.orders, prev.orders), note }, chart, products }, { headers: { "cache-control": "private, no-store" } });
+  }
 
   const ranges: Record<string, unknown> = {};
   const charts: Record<string, { unit: "day" | "week" | "month"; points: [string, number][] }> = {};

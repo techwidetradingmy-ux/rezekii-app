@@ -6,7 +6,7 @@ import { linesBetween } from "@/modules/sales/frames.ts";
 export const dynamic = "force-dynamic";
 
 const DAY = 86_400_000;
-const SLOTS: [string, number, number][] = [["6–9 AM", 6, 9], ["9–12 PM", 9, 12], ["12–3 PM", 12, 15], ["3–6 PM", 15, 18], ["6–9 PM", 18, 21], ["9 PM–12 AM", 21, 24], ["12–6 AM", 0, 6]];
+const SLOTS: [string, number, number][] = [["6–9 AM", 6, 9], ["9 AM–12 PM", 9, 12], ["12–3 PM", 12, 15], ["3–6 PM", 15, 18], ["6–9 PM", 18, 21], ["9 PM–12 AM", 21, 24], ["12–6 AM", 0, 6]];
 const slotOf = (iso: string) => { const h = new Date(Date.parse(iso) + 8 * 3_600_000).getUTCHours(); return SLOTS.findIndex(([, a, b]) => h >= a && h < b); };
 
 /**

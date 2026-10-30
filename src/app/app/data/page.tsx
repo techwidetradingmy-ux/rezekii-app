@@ -9,12 +9,13 @@ import { useDemo } from "@/components/demo";
 import { AiHead, Bars, Count, Lock, Progress, RemoveWarn, Seg, Stat, Tip, Title } from "@/components/ui";
 import { product, rm, short } from "@/lib/mock";
 import { productHref } from "@/lib/product-view";
-import { loadAnalytics, type LiveAnalytics } from "@/lib/live";
+import { loadAnalytics, loadAnalyticsRange, type LiveAnalytics } from "@/lib/live";
 import { ACTIONS, CHARTS, POST_TIMES, RANGES, RANGE_DATA, SHORT, WATCH, type RangeKey } from "@/lib/mock-creator2";
 import { FLAGGED } from "@/components/creator1/rating-scan";
 import { CommissionChart } from "@/components/creator2/commission-chart";
 import "@/app/creator2.css";
 import { useKept } from "@/lib/keep";
+import { shortName } from "@/lib/live-perf";
 import { LiveActionPlan, LiveAiSummary, LiveBestTime, useAnalyticsSignals } from "@/components/creator2/live-analytics";
 
 // A real account can have no orders yet, so nothing divides by zero.
@@ -48,14 +49,20 @@ export default function DataOverview() {
   // Own dates from the calendar; this preview shows the sample data of the closest preset.
   const [custom, setCustom] = useState<[string, string] | null>(null);
   const [from, to] = custom ?? (live ? liveSpan(range) : SPAN[range]);
+  // Signed in, her own dates show exactly those days (owner, 31 Oct 2026); the sample preview uses the closest preset.
+  const [picked, setPicked] = useState<Awaited<ReturnType<typeof loadAnalyticsRange>>>(null);
+  useEffect(() => {
+    setPicked(null);
+    if (live && custom) loadAnalyticsRange(custom[0], custom[1]).then(setPicked);
+  }, [live, custom]);
   const [split, setSplit] = useKept<"By channel" | "By product">("data-split", "By channel");
   const [removed, setRemoved] = useState<string[]>([]);
   const [ticked, setTicked] = useState<string[]>([]);
   const [allPlan, setAllPlan] = useState(false);
-  const d = real?.ranges[range] ?? RANGE_DATA[range];
-  const chart = real?.charts[range] ?? CHARTS[range];
+  const d = (custom && picked?.range) || (real?.ranges[range] ?? RANGE_DATA[range]);
+  const chart = (custom && picked?.chart) || (real?.charts[range] ?? CHARTS[range]);
   const since = live ? (real?.first ? new Date(real.first).toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "Asia/Kuala_Lumpur" }) : null) : "March 2026";
-  const span = range === "Lifetime" ? (since ? `since ${since}` : "all time") : `last ${range}`;
+  const span = live && custom ? `${dayName(from)} – ${dayName(to)}` : range === "Lifetime" ? (since ? `since ${since}` : "all time") : `last ${range}`;
   const synced = real?.syncedAt ? new Date(real.syncedAt) : null;
   const updated = !live ? "Updated today 09:12" : !real ? "Loading your orders…" : synced
     ? `Updated ${myt(synced.getTime()) === today ? "today" : synced.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" })} ${synced.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kuala_Lumpur" })}`
@@ -63,7 +70,7 @@ export default function DataOverview() {
 
   const ranked = [...d.byProduct].sort((a, b) => b.commission - a.commission);
   const top2 = (ranked[0]?.commission ?? 0) + (ranked[1]?.commission ?? 0);
-  const nameOf = (id: string) => SHORT[id] ?? product(id).name;
+  const nameOf = (id: string) => SHORT[id] ?? (live ? shortName(product(id).name) : product(id).name);
   const highCancel = d.cancel > 10;
   const bestTime = POST_TIMES.reduce((a, b) => (b[1] > a[1] ? b : a));
   const avgViews = POST_TIMES.reduce((a, [, v]) => a + v, 0) / POST_TIMES.length;
@@ -149,7 +156,7 @@ export default function DataOverview() {
           <h2 className="v2-h2">Commission <Tip label="About this chart" text={`Estimated, by the ${chart.unit} the order was placed. The latest ${chart.unit} is still in progress.`} /></h2>
         </div>
         <Lock what="your commission over time">
-          <CommissionChart key={range} points={chart.points} unit={chart.unit} range={rangeLabel.toLowerCase()} />
+          <CommissionChart key={`${range}${custom ? custom.join() : ""}${picked ? "r" : ""}`} points={chart.points} unit={chart.unit} range={rangeLabel.toLowerCase()} />
         </Lock>
       </section>
 
@@ -224,7 +231,7 @@ export default function DataOverview() {
                 {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
                 <img className="pv-open" src={p.img} alt="" onClick={() => router.push(productHref(p.id))} />
                 <span>
-                  <strong><Link href={productHref(p.id)} className="pv-open">{p.name}</Link></strong>
+                  <strong><Link href={productHref(p.id)} className="pv-open">{live ? shortName(p.name) : p.name}</Link></strong>
                   <small>#{i + 1} · {b.orders} orders · {pct(b.commission, d.est)}% of commission</small>
                 </span>
                 <span className="v2-acts"><b className="v2-num">{rm(b.commission)}</b></span>

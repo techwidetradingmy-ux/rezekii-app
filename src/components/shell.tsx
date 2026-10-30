@@ -34,11 +34,12 @@ const WHO: Record<AppKind, { name: string; initials: string; label: string; phot
 
 /** The preview strip: sample data notice, and quick jumps between the three apps. */
 export function DemoStrip() {
-  const { linked, setLinked, bronze, setBronze } = useDemo();
+  const { linked, setLinked, bronze, setBronze, live } = useDemo();
   return (
     <div className="v2-demo">
       <div className="site-wrap">
-        <span>Rezekii 2.0 preview · sample data, nothing is saved</span>
+        {/* Signed in, every screen shows her real data (owner, 31 Oct 2026); the sample switches are for the signed-out preview. */}
+        <span>{live ? "Rezekii 2.0 preview · your real data" : "Rezekii 2.0 preview · sample data, nothing is saved"}</span>
         <span style={{ flex: 1 }} />
         <Link href="/">Creator site</Link>
         <Link href="/app">Creator app</Link>
@@ -48,12 +49,16 @@ export function DemoStrip() {
         <Link href="/tour">All pages</Link>
         <Link href="/compare">Compare views</Link>
         <DeskSwitch />
-        <button type="button" className="v2-demo-toggle" onClick={() => setLinked(!linked)}>
-          {linked ? "Show as not linked" : "Show as linked"}
-        </button>
-        <button type="button" className="v2-demo-toggle" onClick={() => setBronze(!bronze)}>
-          {bronze ? "Show as Silver" : "Show as Bronze"}
-        </button>
+        {!live && (
+          <>
+            <button type="button" className="v2-demo-toggle" onClick={() => setLinked(!linked)}>
+              {linked ? "Show as not linked" : "Show as linked"}
+            </button>
+            <button type="button" className="v2-demo-toggle" onClick={() => setBronze(!bronze)}>
+              {bronze ? "Show as Silver" : "Show as Bronze"}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

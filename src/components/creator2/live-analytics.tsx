@@ -58,7 +58,7 @@ export function LiveAiSummary({ sig, span, cancel, lead }: { sig: Signals; span:
             <span className={`cr2-risk ${risk.level.toLowerCase()}`} title="Rezekii's risk level, from your product ratings and cancelled orders">
               <small>Risk level</small>
               <span className="cr2-risk-bar" aria-hidden="true">{["Low", "Watch", "High"].map((l) => <i key={l} className={l === risk.level ? "on" : ""} />)}</span>
-              <b>{risk.level} <Tip label="About risk level" text={`Rezekii's own check of the first ${ratings.total} products in your showcase: ${risk.under3} under 3★, ${risk.under4} at 3–3.9★, ${cancel}% of your orders cancelled. TikTok's own account health is in your TikTok Shop app.`} /></b>
+              <b>{risk.level} <Tip label="About risk level" text={`Rezekii's own check of the first ${ratings.total} products in your showcase: ${risk.under3} under 3★, ${risk.under4} at 3–3.9★, ${Math.round(cancel * 10) / 10}% of your orders cancelled. TikTok's own account health is in your TikTok Shop app.`} /></b>
             </span>
           )}
         </div>
@@ -119,7 +119,7 @@ export function LiveActionPlan({ sig, cancel }: { sig: Signals; cancel: number }
   const steps: Step[] = [
     ...(ratings && !ratings.linked ? [{ id: "link", tag: "Fix now" as const, short: "Connect TikTok Shop", why: "Rezekii needs your TikTok Shop to check your showcase and orders.", href: "/app/account#connections" }] : []),
     ...(under3 ? [{ id: "under3", tag: "Fix now" as const, short: `Remove ${under3} under-3★ product${under3 === 1 ? "" : "s"} in TikTok`, why: "Buyers rated them under 3★. Low-rated products in your showcase can hurt your TikTok account.", href: "/app/data/risk" }] : []),
-    ...(cancel > 10 ? [{ id: "cancel", tag: "Fix now" as const, short: `${cancel}% of orders cancelled: check why`, why: "Many cancelled orders can hurt your TikTok account. See which products get cancelled most.", href: "/app/data/risk" }] : []),
+    ...(cancel > 10 ? [{ id: "cancel", tag: "Fix now" as const, short: `${Math.round(cancel * 10) / 10}% of orders cancelled: check why`, why: "Many cancelled orders can hurt your TikTok account. See which products get cancelled most.", href: "/app/data/risk" }] : []),
     ...(flagged.length > under3 ? [{ id: "under4", tag: "This week" as const, short: `Check ${flagged.length - under3} product${flagged.length - under3 === 1 ? "" : "s"} rated 3–3.9★`, why: "Not in the danger zone yet, but buyers aren't happy with them.", href: "/app/data/risk" }] : []),
     ...(slot && best?.basis === "views" ? [{ id: "time", tag: "This week" as const, short: `Post at ${slot[0]}`, why: "Your videos posted in this time slot got the most views on average in the last 60 days.", href: "/app/publish/plan" }] : []),
     ...(wish ? [{ id: "wish", tag: "Grow" as const, short: `Ask for a better rate: ${shortName(wish.name)}`, why: `Your best seller not on Rezekii yet (${wish.sold} sold in 30 days). Add it to your Wish List and we ask the seller.`, href: productHref(wish.id) }] : []),

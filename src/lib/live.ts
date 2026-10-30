@@ -101,6 +101,15 @@ export function loadAnalytics(): Promise<LiveAnalytics | null> {
   return analytics;
 }
 
+/** Her real numbers for exactly the days she picked in the calendar (YYYY-MM-DD, Malaysia days). */
+export async function loadAnalyticsRange(from: string, to: string): Promise<{ range: import("./mock-creator2").RangeData; chart: import("./mock-creator2").Chart } | null> {
+  const d = await fetch(`/api/v2/analytics?from=${from}&to=${to}`, { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  if (!d?.range) return null;
+  for (const [id, x] of Object.entries(d.products as Record<string, { name: string; shop: string; img: string | null }>))
+    if (!LIVE_PRODUCTS.has(id)) LIVE_PRODUCTS.set(id, { id, name: x.name, shop: x.shop, img: x.img ?? "/avatars/blank.svg", price: 0, category: "", publicRate: 0, partnerRate: 0, tapRate: 0, sold: 0, rating: 0, samples: null });
+  return { range: d.range, chart: d.chart };
+}
+
 /** One real Marketplace product by id (a page opened straight from a link, before the list has loaded). */
 export async function loadProduct(id: string, level: "bronze" | "silver" | "gold"): Promise<Product | null> {
   if (LIVE_PRODUCTS.has(id)) return LIVE_PRODUCTS.get(id) ?? null;
