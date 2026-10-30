@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/admin.css";
+import { LiveWorkbench } from "@/components/admin/live-workbench";
 import Link from "next/link";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
@@ -14,12 +15,14 @@ const SHORT: Record<string, string> = { "Lim Wei Jie": "Wei Jie", "Nadia Kamal":
 
 /** Business (BD) workbench: my QR and links, who I brought in and how far they got, follow-ups due. */
 export default function BusinessHome() {
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const [who, setWho] = useState<string>(BD_STAFF[0]);
   const [event, setEvent] = useState<(typeof EVENTS)[number]>("KL Expo");
   const [expo, setExpo] = useState(false);
   const [tab, setTab] = useState<"Merchants" | "Creators">("Merchants");
   const [done, setDone] = useState<string[]>([]);
+  // Signed in (owner, 31 Oct 2026): your real links, invites and merchants.
+  if (live) return <LiveWorkbench />;
   const tag = event === "General" ? "" : `?at=${event.toLowerCase().replace(/\s+/g, "-")}`;
   const short = SHORT[who] ?? who;
   const first = short.toLowerCase().replace(/\s+/g, "");
