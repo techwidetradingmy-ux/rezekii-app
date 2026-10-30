@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/admin.css";
+import { LiveReconcile } from "@/components/admin/live-reconcile";
 import Link from "next/link";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
@@ -15,11 +16,13 @@ const n = (x: number) => x.toLocaleString("en-MY");
 
 /** Daily reconciliation: credits issued vs used vs referral rewards vs ledger totals; Partner commission vs TikTok. */
 export default function Reconcile() {
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const [days, setDays] = useState<Day[]>(RECON);
   const [open, setOpen] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [why, setWhy] = useState("");
+  // Signed in (owner, 31 Oct 2026): the real ledger checks.
+  if (live) return <LiveReconcile />;
 
   const creditDiff = (d: Day) => d.wallets - d.ledger;
   const partnerDiff = (d: Day) => Math.round((d.partnerOurs - d.partnerTikTok) * 100) / 100;
