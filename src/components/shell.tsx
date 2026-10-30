@@ -21,6 +21,7 @@ import { ACCOUNT, HOME, MENUS, pageFor, sectionFor, type AppKind } from "@/lib/m
 import { CREATOR, MY_SAMPLES, REFERRAL_REWARD, SELLER } from "@/lib/mock";
 import { DeskRail } from "./desk-rail";
 import { setDesk, useDesk, type Desk } from "@/lib/desk-layout";
+import { useUnreadNotes } from "@/lib/live-notes";
 
 const WHO: Record<AppKind, { name: string; initials: string; label: string; photo?: string; sub: string }> = {
   creator: { name: CREATOR.first, initials: CREATOR.initials, label: "Account", photo: CREATOR.photo, sub: `${CREATOR.level} creator` },
@@ -96,7 +97,9 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
   useScrollMemory(path);
   const section = sectionFor(app, path);
   const page = section ? pageFor(section, path) : null;
-  const { me } = useDemo();
+  const { me, live } = useDemo();
+  // The bell shows her real unread count when signed in (owner, 31 Oct 2026); nothing when there are none.
+  const unreadNotes = useUnreadNotes(app === "seller" ? "seller" : "creator", live && app !== "admin");
   // Signed in with a Seller Center shop: the seller app shows that shop's name (owner, 30 Oct 2026).
   const shopName = app === "seller" ? me?.sellerShop : null;
   const shopInitials = (shopName ?? "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
@@ -276,7 +279,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
           )}
           <Link href={app === "admin" ? "/admin" : app === "seller" ? "/seller/app/notifications" : "/app/notifications"} className="v2-iconbtn" aria-label="Notifications">
             <Icon name="bell" size={20} />
-            <b>3</b>
+            {live && app !== "admin" ? !!unreadNotes && <b>{unreadNotes > 99 ? "99+" : unreadNotes}</b> : <b>3</b>}
           </Link>
           <Link href={ACCOUNT[app]} className={`v2-acct${ring}`} aria-label={storyNew && app === "creator" ? "Watch your Daily Story" : undefined} onClick={(e) => { if (app === "creator" && storyNew) { e.preventDefault(); setStory(true); return; } if (app === "creator" && window.matchMedia("(max-width: 760px)").matches) { e.preventDefault(); setAcctOpen(true); } }}>
             {who.photo ? (
