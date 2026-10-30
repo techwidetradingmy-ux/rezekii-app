@@ -9,6 +9,7 @@ import { Count, Stat, Title } from "@/components/ui";
 import { Ava, Pips, Source } from "@/components/seller/seller-ui";
 import { product } from "@/lib/mock";
 import { DESTINATIONS, SAMPLE_SUMMARY, type Dest } from "@/lib/mock-seller";
+import { LiveSamples } from "@/components/seller/live-samples";
 import { sellerProductHref } from "@/lib/product-pages";
 
 const FILTERS = ["All", "Delivered", "On time", "Overdue"] as const;
@@ -19,8 +20,9 @@ type Filter = (typeof FILTERS)[number];
  * 1 sample = at least 1 video by the due date; most creators post more (owner, 29 Oct 2026). Only 0 videos past due is overdue.
  */
 export default function SamplesWent() {
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const [filter, setFilter] = useState<Filter>("All");
+  if (live) return <LiveSamples />;
   const s = SAMPLE_SUMMARY;
   const dots = [...Array(s.delivered).fill("d"), ...Array(s.onTime).fill("t"), ...Array(s.overdue).fill("o")] as string[];
   const shown = DESTINATIONS.filter((d) => filter === "All" || d.state === filter);

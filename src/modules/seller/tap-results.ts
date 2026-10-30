@@ -3,11 +3,15 @@ import { listCampaignProductStats, listProductCreators } from "../../integration
 import { sellerAccessFor } from "../marketplace/seller-connection.ts";
 import { storedSessions } from "../refresh/sessions.ts";
 import { amount } from "../tap/golden.ts";
+import { sampleStage } from "../tap/stages.ts";
 
 export type ProductResult = { id: string; name: string; img: string | null; gmv: number; orders: number; creators: number; selling: number; samples: number; videos: number; lives: number };
 export type CreatorResult = { handle: string; name: string; avatar: string | null; followers: number; gmv: number; videos: number; lives: number };
+/** A free sample one creator asked for: TikTok's step (-1 not approved, 1 asked, 2 approved, 3 shipped, 4 received, 5 done). */
+export type SampleResult = { handle: string; productId: string; product: string; stage: number; videos: number; lives: number };
 export type TapResults = {
   linked: boolean;
+  samples: SampleResult[];
   totals: { gmv: number; orders: number; creators: number; videos: number; lives: number; live: number };
   products: ProductResult[];
   creators: CreatorResult[];
@@ -25,7 +29,7 @@ export async function tapResults(user: { id: string; role: string }): Promise<Ta
   const access = await sellerAccessFor(user);
   if (!access) return null;
   const subs = (await (await supabaseRest(`tap_submissions?shop_id=eq.${access.shop.id}&status=eq.live&campaign_id=not.is.null&select=product_id,product_name,product_image,campaign_id`)).json()) as Sub[];
-  const empty: TapResults = { linked: true, totals: { gmv: 0, orders: 0, creators: 0, videos: 0, lives: 0, live: 0 }, products: [], creators: [], asOf: null };
+  const empty: TapResults = { linked: true, samples: [], totals: { gmv: 0, orders: 0, creators: 0, videos: 0, lives: 0, live: 0 }, products: [], creators: [], asOf: null };
   if (!subs.length) return empty;
 
   const s = await storedSessions().partner();
@@ -58,6 +62,7 @@ export async function tapResults(user: { id: string; role: string }): Promise<Ta
 
   // Who promotes each product: sales through their links, videos and LIVEs.
   const creators = new Map<string, CreatorResult>();
+  const samples: SampleResult[] = [];
   for (const p of products.values()) {
     if (!p.creators) continue;
     const campaignId = mine.get(p.id)!.campaign_id;
@@ -74,6 +79,8 @@ export async function tapResults(user: { id: string; role: string }): Promise<Ta
         row.gmv += amount(c.paid_amount?.amount);
         row.videos += c.video_count ?? 0;
         row.lives += c.room_count ?? 0;
+        const stage = sampleStage(c.free_sample_status ?? "");
+        if (stage !== 0) samples.push({ handle, productId: p.id, product: p.name, stage, videos: c.video_count ?? 0, lives: c.room_count ?? 0 });
       }
       pageToken = r.data?.next_page_token || undefined;
       if (!pageToken) break;
@@ -84,6 +91,7 @@ export async function tapResults(user: { id: string; role: string }): Promise<Ta
   const sum = (k: "gmv" | "orders" | "videos" | "lives") => list.reduce((t, p) => t + p[k], 0);
   return {
     linked: true,
+    samples: samples.sort((a, b) => b.stage - a.stage || b.videos - a.videos),
     totals: { gmv: Math.round(sum("gmv") * 100) / 100, orders: sum("orders"), creators: creators.size, videos: sum("videos"), lives: sum("lives"), live: subs.length },
     products: list,
     creators: [...creators.values()].sort((a, b) => b.gmv - a.gmv || b.videos - a.videos).slice(0, 20),

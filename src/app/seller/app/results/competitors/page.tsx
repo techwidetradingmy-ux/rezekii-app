@@ -29,6 +29,22 @@ export default function Competitors() {
     return () => window.clearTimeout(t);
   }, [cat, period]);
 
+  // Signed in (owner, 31 Oct 2026): TikTok's best-seller lists aren't read for sellers yet, so no sample competitors are shown.
+  const { live } = useDemo();
+  if (live) {
+    return (
+      <div className="v2-stack v2-in">
+        <Title ai title="AI Competitors" />
+        <section className="v2-card flat" style={{ alignItems: "flex-start" }}>
+          <span className="badge badge-amber">Coming soon</span>
+          <b>Competitor analysis for your categories</b>
+          <p className="v2-muted" style={{ margin: 0 }}>It will compare your products with TikTok Shop&apos;s best-sellers in the same categories, and show which creators and videos sell them. Until then, see how your own products are doing.</p>
+          <Link href="/seller/app/results" className="np-btn v2-btn-sm">See TAP Performance</Link>
+        </section>
+      </div>
+    );
+  }
+
   const prods = COMP_PRODUCTS[cat];
   const vids = COMP_VIDEOS[cat];
   const creators = COMP_CREATORS[cat];

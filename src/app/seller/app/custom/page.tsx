@@ -35,7 +35,9 @@ const BUDGETS = ["Under RM 1,000", "RM 1,000–3,000", "RM 3,000–10,000", "RM 
  * No prices here; the team replies on WhatsApp with a plan and a quote.
  */
 export default function CustomServicePage() {
-  const { toast } = useDemo();
+  const { toast, live, me } = useDemo();
+  const [busy, setBusy] = useState(false);
+  const shopName = live ? me?.sellerShop ?? "my shop" : SELLER.shop;
   const formRef = useRef<HTMLElement>(null);
   const [picked, setPicked] = useState<string[]>([]);
   const [budget, setBudget] = useState<string | null>(null);
@@ -47,12 +49,21 @@ export default function CustomServicePage() {
   const ph = tidyPhone(phone.raw, phone.dial);
   const toggle = (s: string) => setPicked((p) => (p.includes(s) ? p.filter((x) => x !== s) : [...p, s]));
 
-  const submit = () => {
-    setTried(true);
-    if (!picked.length || !ph.ok) return;
+  const done = () => {
     setSent(true);
     toast("Request sent · we'll WhatsApp you within 1 working day");
     formRef.current?.scrollIntoView({ block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  };
+  const submit = () => {
+    setTried(true);
+    if (!picked.length || !ph.ok) return;
+    if (!live) return done();
+    // Signed in (owner, 31 Oct 2026): the request is saved for our team.
+    setBusy(true);
+    fetch("/api/v2/seller/custom", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ services: picked, budget, goal, whatsapp: ph.pretty }) })
+      .then(async (r) => (r.ok ? done() : toast(((await r.json().catch(() => ({}))) as { error?: string }).error ?? "Didn't send. Please try again.")))
+      .catch(() => toast("Didn't send. Please try again."))
+      .finally(() => setBusy(false));
   };
   const reset = () => { setPicked([]); setBudget(null); setGoal(""); setTried(false); setSent(false); };
 
@@ -66,7 +77,7 @@ export default function CustomServicePage() {
         <p>Pick the services you want. We WhatsApp you within 1 working day with a plan and a quote. You see every result here in Rezekii.</p>
         <span className="cs-hero-acts">
           <a href="#request" className="cs-jump">Send a request <Icon name="arrow" size={16} /></a>
-          <a href={waLink(SELLER.shop)} target="_blank" rel="noopener noreferrer" className="cs-jump cs-wa"><Icon name="whatsapp" size={16} /> Chat on WhatsApp</a>
+          <a href={waLink(shopName)} target="_blank" rel="noopener noreferrer" className="cs-jump cs-wa"><Icon name="whatsapp" size={16} /> Chat on WhatsApp</a>
         </span>
       </section>
 
@@ -120,8 +131,8 @@ export default function CustomServicePage() {
               </label>
               <PhoneField dial={phone.dial} raw={phone.raw} onChange={(dial, raw) => setPhone({ dial, raw })} showError={tried} label="WhatsApp number" />
               {tried && !picked.length && <p className="sl-err"><Icon name="alert" size={16} /> Pick at least 1 service.</p>}
-              <button type="button" className="np-btn" onClick={submit}>Send request <Icon name="send" size={17} /></button>
-              <small className="v2-small">No payment now. We quote first. Prefer to chat? <a href={waLink(SELLER.shop)} target="_blank" rel="noopener noreferrer" className="v2-link">WhatsApp us</a>.</small>
+              <button type="button" className="np-btn" disabled={busy} onClick={submit}>{busy ? <span className="sl-spin" /> : <>Send request <Icon name="send" size={17} /></>}</button>
+              <small className="v2-small">No payment now. We quote first. Prefer to chat? <a href={waLink(shopName)} target="_blank" rel="noopener noreferrer" className="v2-link">WhatsApp us</a>.</small>
             </>
           )}
         </section>

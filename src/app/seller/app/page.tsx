@@ -163,9 +163,12 @@ export default function SellerHome() {
       </div>
 
       <div className="v2-split">
-        <section className="v2-card">
-          <JoinBoard title="Who's Joining" />
-        </section>
+        {/* The joining ticker is sample data; signed in it's left out until there's a real feed (owner, 31 Oct 2026). */}
+        {!signedIn && (
+          <section className="v2-card">
+            <JoinBoard title="Who's Joining" />
+          </section>
+        )}
         {/* Custom Service (owner, 29 Oct 2026): a small way in to what our team can run for the shop. */}
         <section className="v2-card cs-home">
           <h2 className="v2-h2">Want Our Team to Run It?</h2>
