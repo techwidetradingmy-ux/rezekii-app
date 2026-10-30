@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 
+/** Answers that mention our policies link to them (owner, 30 Oct 2026). */
+const LINKS: Record<string, string> = { "Privacy Policy": "https://rezekii.com/privacy", "Terms of Service": "https://rezekii.com/terms" };
+const linkify = (a: string) => a.split(/(Privacy Policy|Terms of Service)/).map((part, i) => (LINKS[part] ? <a key={i} href={LINKS[part]} target="_blank" rel="noreferrer">{part}</a> : part));
+
 /** FAQ on the landing pages (owner, 29 Oct 2026: short page): the first few questions, the rest behind More Questions. */
 export function Faqs({ items, show = 4 }: { items: [string, string][]; show?: number }) {
   const [all, setAll] = useState(false);
@@ -12,7 +16,7 @@ export function Faqs({ items, show = 4 }: { items: [string, string][]; show?: nu
       {list.map(([q, a]) => (
         <details key={q} className="hm-faq">
           <summary>{q}<Icon name="plus" size={20} /></summary>
-          <p>{a}</p>
+          <p>{linkify(a)}</p>
         </details>
       ))}
       {items.length > show && (
