@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/admin.css";
+import { LivePerformance } from "@/components/admin/live-performance";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -11,8 +12,10 @@ import { rm, short } from "@/lib/mock";
 
 /** Live collaboration performance per merchant: what to show a merchant when you call them. */
 export default function BusinessPerformance() {
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const [shop, setShop] = useState(MERCHANT_PERF[0].shop);
+  // Signed in (owner, 31 Oct 2026): real results per merchant.
+  if (live) return <LivePerformance />;
   const m = MERCHANT_PERF.find((x) => x.shop === shop) ?? MERCHANT_PERF[0];
   const trend = m.daily[m.daily.length - 1] >= m.daily[0];
 

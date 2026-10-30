@@ -51,9 +51,9 @@ export async function tapResults(user: { id: string; role: string }): Promise<Ta
           orders: Number(k?.paid_order_num ?? k?.actual_order_num ?? 0) || 0, creators: x.promoted_creator_num ?? 0, selling: x.creator_sales_num ?? 0,
           samples: x.sample_requested_creator_num ?? 0, videos: 0, lives: 0,
         });
-        // TikTok's update time is unix seconds as text ("0" when it has none).
+        // TikTok's update time is unix time as text, in seconds or milliseconds ("0" when it has none).
         const sec = Number(x.data_update_time);
-        if (sec > 0) { const at = new Date(sec * 1000).toISOString(); if (!asOf || at > asOf) asOf = at; }
+        if (sec > 0) { const at = new Date(sec > 1e12 ? sec : sec * 1000).toISOString(); if (!asOf || at > asOf) asOf = at; }
       }
       pageToken = r.data?.next_page_token || undefined;
       if (!pageToken || products.size === mine.size) break;
