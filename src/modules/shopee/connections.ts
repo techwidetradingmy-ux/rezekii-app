@@ -67,7 +67,7 @@ export const RECONNECT_SHOPEE = "This Shopee account needs reconnecting in Rezek
  */
 export async function renewShopee(c: ShopeeConnection): Promise<string> {
   try {
-    const t = await refreshShopeeToken(decryptToken(c.refresh_token_enc), { userId: c.shopee_user_id, shopId: c.role === "seller" ? c.shop_id : null });
+    const t = await refreshShopeeToken(decryptToken(c.refresh_token_enc), c.shopee_user_id);
     await supabaseRest(`shopee_connections?id=eq.${c.id}`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ ...tokenFields(t), status: "active", updated_at: iso() }) });
     return t.accessToken;
   } catch (err) {

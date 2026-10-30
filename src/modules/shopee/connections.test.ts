@@ -51,15 +51,20 @@ test("sellers sign in as their shop, affiliates as a user, on the sandbox sign-i
   assert.equal(new URL(shopeeAuthUrl("affiliate", "https://rezekii.com/x", "s")).searchParams.get("auth_type"), "user");
 });
 
-test("a seller's code is exchanged with its shop_id, signed, and both ids come back", async () => {
+test("a seller's code is exchanged on its own (no shop_id, so Video calls work), signed, and both ids come back", async () => {
   shopee = { status: 200, body: { error: "", access_token: "a", refresh_token: "r", expire_in: 14400, shop_id_list: [5001], user_id_list: [9001] } };
-  const t = await exchangeShopeeCode("code1", { shopId: "5001" });
+  const t = await exchangeShopeeCode("code1");
   assert.deepEqual(t, { userId: "9001", shopId: "5001", accessToken: "a", refreshToken: "r", expiresIn: 14400 });
   const [c] = shopeeCalls();
   const u = new URL(c.url);
   assert.equal(u.origin + u.pathname, "https://openplatform.sandbox.test-stable.shopee.sg/api/v2/auth/token/get");
   assert.equal(u.searchParams.get("sign"), shopeeSign("test-partner-key", 1250555, "/api/v2/auth/token/get", u.searchParams.get("timestamp")!));
-  assert.deepEqual(JSON.parse(String(c.init.body)), { code: "code1", partner_id: 1250555, shop_id: 5001 });
+  assert.deepEqual(JSON.parse(String(c.init.body)), { code: "code1", partner_id: 1250555 });
+});
+
+test("a sign-in without a user_id is refused", async () => {
+  shopee = { status: 200, body: { error: "", access_token: "a", refresh_token: "r", expire_in: 14400, shop_id_list: [5001] } };
+  await assert.rejects(exchangeShopeeCode("code3"), (err) => err instanceof ShopeeError && err.code === "no_account");
 });
 
 test("an affiliate's code gives only a user_id; an expiry sent as a Unix time is read as seconds from now", async () => {
@@ -94,10 +99,10 @@ test("a token about to run out is renewed: an affiliate by user_id, and both new
   assert.equal(saved.status, "active");
 });
 
-test("a seller's token is renewed with its shop_id", async () => {
+test("a seller's token is renewed with its user_id too, not its shop_id (Video calls are made as the user)", async () => {
   shopee = { status: 200, body: { error: "", access_token: "n", refresh_token: "m", expire_in: 14400 } };
   await freshShopeeToken(conn({ role: "seller", shop_id: "5001", access_expires_at: new Date(Date.now() - 1).toISOString() }));
-  assert.deepEqual(JSON.parse(String(shopeeCalls()[0].init.body)), { refresh_token: "old-refresh", partner_id: 1250555, shop_id: 5001 });
+  assert.deepEqual(JSON.parse(String(shopeeCalls()[0].init.body)), { refresh_token: "old-refresh", partner_id: 1250555, user_id: 777 });
 });
 
 test("Shopee refusing the refresh token marks the channel Reconnect", async () => {

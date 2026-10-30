@@ -73,25 +73,25 @@ export type ShopeeTokens = { userId: string; shopId: string | null; accessToken:
 const seconds = (n: number | undefined) => (!n ? 4 * 3600 : n > 1e9 ? Math.max(60, n - Math.floor(Date.now() / 1000)) : n);
 
 /**
- * The code from the sign-in page for the first access and refresh tokens. A shop account also sends back its shop_id, a
- * seller's main account its main_account_id; the first shop signed in is used.
+ * The code from the sign-in page for the first access and refresh tokens. Only the code is sent (Video guide 706 →
+ * Livestream guide 669): sending a seller's shop_id too gives a shop-only sign-in that Video calls refuse. A seller gets
+ * back its shop_id and user_id (in the same order), an affiliate only its user_id.
  */
-export async function exchangeShopeeCode(code: string, from: { shopId?: string | null; mainAccountId?: string | null } = {}): Promise<ShopeeTokens> {
+export async function exchangeShopeeCode(code: string): Promise<ShopeeTokens> {
   const { partnerId } = shopeeApp();
   const r = await call<{ access_token: string; refresh_token: string; expire_in?: number; user_id_list?: number[]; shop_id_list?: number[] }>("/api/v2/auth/token/get", {
-    body: { code, partner_id: partnerId, ...(from.shopId ? { shop_id: Number(from.shopId) } : from.mainAccountId ? { main_account_id: Number(from.mainAccountId) } : {}) },
+    body: { code, partner_id: partnerId },
   });
   const userId = r.user_id_list?.[0];
-  const shop = r.shop_id_list?.[0] ?? (from.shopId ? Number(from.shopId) : undefined);
-  if (!userId && !shop) throw new ShopeeError("Shopee didn't say which account signed in.", "no_account");
-  return { userId: String(userId ?? shop), shopId: shop ? String(shop) : null, accessToken: r.access_token, refreshToken: r.refresh_token, expiresIn: seconds(r.expire_in) };
+  const shop = r.shop_id_list?.[0];
+  if (!userId) throw new ShopeeError("Shopee didn't say which account signed in.", "no_account");
+  return { userId: String(userId), shopId: shop ? String(shop) : null, accessToken: r.access_token, refreshToken: r.refresh_token, expiresIn: seconds(r.expire_in) };
 }
 
-/** A new access token (4 hours) and refresh token (30 days); each refresh token works once. */
-export async function refreshShopeeToken(refreshToken: string, who: { userId?: string | null; shopId?: string | null }): Promise<Omit<ShopeeTokens, "userId" | "shopId">> {
+/** A new access token (4 hours) and refresh token (30 days), by user_id: Video calls are made as the user, seller or affiliate. */
+export async function refreshShopeeToken(refreshToken: string, userId: string): Promise<Omit<ShopeeTokens, "userId" | "shopId">> {
   const { partnerId } = shopeeApp();
-  const id = who.shopId ? { shop_id: Number(who.shopId) } : { user_id: Number(who.userId) };
-  const r = await call<{ access_token: string; refresh_token: string; expire_in?: number }>("/api/v2/auth/access_token/get", { body: { refresh_token: refreshToken, partner_id: partnerId, ...id } });
+  const r = await call<{ access_token: string; refresh_token: string; expire_in?: number }>("/api/v2/auth/access_token/get", { body: { refresh_token: refreshToken, partner_id: partnerId, user_id: Number(userId) } });
   return { accessToken: r.access_token, refreshToken: r.refresh_token, expiresIn: seconds(r.expire_in) };
 }
 
