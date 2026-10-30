@@ -10,6 +10,8 @@ import { ConnBanner, ContactSheet, Source } from "@/components/seller/seller-ui"
 import { JoinBoard } from "@/components/join-board";
 import { SELLER, SELLER_RESULTS, rm } from "@/lib/mock";
 import { RESULTS, SHOP_ITEMS } from "@/lib/mock-seller";
+import { useDemo } from "@/components/demo";
+import { LiveActivity, LiveHello, LiveNext, LiveSummary, useSellerHome } from "@/components/seller/live-home";
 
 type StageKey = "new" | "fix" | "waiting" | "running";
 
@@ -28,8 +30,13 @@ const QUICK: [string | null, string, string, IconName, string][] = [
   [null, "Ask our team", "WhatsApp us", "whatsapp", "linear-gradient(135deg,#ff7aa8,#e8005a)"],
 ];
 
-/** Seller home: one "do this first" card by stage, quick actions, a small results summary, recent activity. */
+/**
+ * Seller home: one "do this first" card by stage, quick actions, a small results summary, recent activity. Signed in (owner,
+ * 31 Oct 2026) the hello, the card, the results and the activity come from her real shop; the rest is the same page.
+ */
 export default function SellerHome() {
+  const { live: signedIn } = useDemo();
+  const real = useSellerHome(signedIn);
   const [stage, setStage] = useState<StageKey>("fix");
   const [talk, setTalk] = useState(false);
   const [fixed, setFixed] = useState(false);
@@ -40,14 +47,19 @@ export default function SellerHome() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 22 }}>
-      <div className="sl-hello">
-        <h1>Good morning, {SELLER.contact.split(" ")[0]}</h1>
-        <p className="v2-muted">{SELLER.shop} · <b>{live}</b> products live in TAP · <b>{SELLER_RESULTS.creators}</b> creators selling this month</p>
-      </div>
+      {signedIn ? (
+        <LiveHello items={real.items} totals={real.totals} />
+      ) : (
+        <div className="sl-hello">
+          <h1>Good morning, {SELLER.contact.split(" ")[0]}</h1>
+          <p className="v2-muted">{SELLER.shop} · <b>{live}</b> products live in TAP · <b>{SELLER_RESULTS.creators}</b> creators selling this month</p>
+        </div>
+      )}
 
       <ConnBanner />
+      {signedIn && <LiveNext items={real.items} />}
 
-      {stage === "fix" && broken && !fixed && (
+      {!signedIn && stage === "fix" && broken && !fixed && (
         <section className="v2-next red">
           <small>Do this first</small>
           <h2>1 Product Not Approved: 0 Samples</h2>
@@ -58,7 +70,7 @@ export default function SellerHome() {
           </div>
         </section>
       )}
-      {stage === "waiting" && (
+      {!signedIn && stage === "waiting" && (
         <section className="v2-next">
           <small>On its way</small>
           <h2>{waiting} products waiting on TikTok</h2>
@@ -75,7 +87,7 @@ export default function SellerHome() {
           </div>
         </section>
       )}
-      {stage === "new" && (
+      {!signedIn && stage === "new" && (
         <section className="v2-next">
           <small>Start here</small>
           <h2>Submit Your First Products</h2>
@@ -86,7 +98,7 @@ export default function SellerHome() {
           </div>
         </section>
       )}
-      {stage === "running" && (
+      {!signedIn && stage === "running" && (
         <section className="v2-next">
           <small>All good</small>
           <h2>All {live} products are live</h2>
@@ -97,12 +109,12 @@ export default function SellerHome() {
           </div>
         </section>
       )}
-      <div className="sl-stages" aria-label="Preview other states">
+      {!signedIn && <div className="sl-stages" aria-label="Preview other states">
         <span>Preview:</span>
         {([["new", "New shop"], ["fix", "Needs a fix"], ["waiting", "Waiting"], ["running", "All live"]] as [StageKey, string][]).map(([k, l]) => (
           <button key={k} type="button" className={stage === k ? "on" : ""} onClick={() => { setStage(k); if (k === "fix") setFixed(false); }}>{l}</button>
         ))}
-      </div>
+      </div>}
 
       <section className="v2-quick" aria-label="Quick actions">
         {QUICK.map(([href, label, note, icon, bg]) => {
@@ -118,7 +130,7 @@ export default function SellerHome() {
       </section>
 
       <div className="v2-split">
-        <section className="v2-card">
+        {signedIn ? <LiveSummary totals={real.totals} failed={real.failed} /> : <section className="v2-card">
           <div className="v2-card-h">
             <h2 className="v2-h2">Last 30 Days in TAP</h2>
             <Link href="/seller/app/results">See all</Link>
@@ -131,9 +143,9 @@ export default function SellerHome() {
             <Stat label="Videos" value={<Count value={SELLER_RESULTS.videos} />} />
           </div>
           <div className="sl-cols"><Columns values={RESULTS["30 days"].daily.slice(-14)} labels={["15 Oct", "", "", "", "", "", "", "22 Oct", "", "", "", "", "", "Today"]} /></div>
-        </section>
+        </section>}
 
-        <section className="v2-card">
+        {signedIn ? <LiveActivity /> : <section className="v2-card">
           <div className="v2-card-h">
             <h2 className="v2-h2">Recent Activity</h2>
             <Link href="/seller/app/notifications">All</Link>
@@ -147,7 +159,7 @@ export default function SellerHome() {
               </Link>
             ))}
           </div>
-        </section>
+        </section>}
       </div>
 
       <div className="v2-split">
