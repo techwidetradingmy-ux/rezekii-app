@@ -51,9 +51,10 @@ export default function ProductPage() {
   // Samples asked for and left, kept live (the preview moves one along now and then).
   const [taken, setTaken] = useState(0);
   useEffect(() => {
+    if (live) return;
     const t = window.setInterval(() => setTaken((n) => n + 1), 20000);
     return () => window.clearInterval(t);
-  }, []);
+  }, [live]);
 
   // ?sample=1 jumps to the free sample, ?join=1 opens the wish list form (from Marketplace, AI Picks and Most Wanted).
   useEffect(() => {
@@ -80,7 +81,11 @@ export default function ProductPage() {
   const wish = mine(p.id);
   // The link check follows the preview's "Show as not linked" switch; unmet ones she can fix send her to My Account.
   const hasSample = !!m && m.samples !== null;
-  const conds = (m && hasSample ? sampleConditions(m) : []).map((c) => (c.fix === "/app/account#connections" ? { ...c, ok: linked, you: linked ? c.you : "Link TikTok Shop" } : c));
+  // Signed in (owner, 31 Oct 2026): TikTok decides on the sample against the seller's own requirements; the only condition
+  // Rezekii knows for sure is a linked TikTok Shop, so that's the one shown.
+  const conds = live
+    ? hasSample ? [{ label: "TikTok Shop linked", ok: !!me?.shop, you: me?.shop ? `Linked as @${me.shop.handle}` : "Link TikTok Shop", fix: "/app/account#connections" }] : []
+    : (m && hasSample ? sampleConditions(m) : []).map((c) => (c.fix === "/app/account#connections" ? { ...c, ok: linked, you: linked ? c.you : "Link TikTok Shop" } : c));
   const unmet = conds.filter((c) => !c.ok);
   const canSample = !!m && canRequest(m);
   const base = sampleCount(p.id);
@@ -228,12 +233,16 @@ export default function ProductPage() {
             {/* Owner, 29 Oct 2026: how many asked and how many are left (live), then whether she can apply. Nothing about after. */}
             <div className="pp-sh">
               <h2 className="v2-h2">Free Sample</h2>
-              <span className="pp-live"><i /> Live</span>
+              {!live && <span className="pp-live"><i /> Live</span>}
             </div>
-            <div className="pp-count">
-              <span className="v2-meter"><i style={{ width: `${(count.applied / count.total) * 100}%` }} /></span>
-              <small><b>{count.applied}</b> applied · <b>{count.left}</b> left</small>
-            </div>
+            {live ? (
+              <p className="v2-small" style={{ margin: 0 }}>TikTok shows a free sample you can request. When you apply, TikTok checks your account against the seller&apos;s requirements.</p>
+            ) : (
+              <div className="pp-count">
+                <span className="v2-meter"><i style={{ width: `${(count.applied / count.total) * 100}%` }} /></span>
+                <small><b>{count.applied}</b> applied · <b>{count.left}</b> left</small>
+              </div>
+            )}
             <h3 className="pp-sub">Can You Apply?</h3>
             <ul className="cr1-conds">
               {conds.map((c) => (
