@@ -43,9 +43,21 @@ export function InViewCount({ value, format = (n: number) => Math.round(n).toLoc
   return <span ref={ref} className="v2-num">{format(n)}</span>;
 }
 
-/** Shown when the Seller Center connection has expired (the preview strip's "Show as not linked"). */
-export function ConnBanner() {
+/**
+ * Shown when the Seller Center connection has expired (the preview strip's "Show as not linked"). Signed in, `shop` says
+ * whether this account has a Seller Center shop authorized, and Connect goes to Seller Center (owner, 30 Oct 2026).
+ */
+export function ConnBanner({ shop }: { shop?: boolean } = {}) {
   const { linked, setLinked, toast } = useDemo();
+  if (shop !== undefined) {
+    if (shop) return null;
+    return (
+      <div className="v2-alert red">
+        <span>Seller Center not connected. Connect it to see your products.</span>
+        <button type="button" onClick={() => { window.location.href = "/api/auth/tiktokshop/start?as=seller"; }}>Connect</button>
+      </div>
+    );
+  }
   if (linked) return null;
   return (
     <div className="v2-alert red">

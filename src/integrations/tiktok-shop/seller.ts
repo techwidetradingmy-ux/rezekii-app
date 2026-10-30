@@ -104,3 +104,32 @@ export function getMarketplaceCreator(accessToken: string, cipher: string, openI
     query: { shop_cipher: cipher },
   });
 }
+
+export type ProductStatus = "ALL" | "DRAFT" | "PENDING" | "FAILED" | "ACTIVATE" | "SELLER_DEACTIVATED" | "PLATFORM_DEACTIVATED" | "FREEZE" | "DELETED";
+export type ShopProductSku = { id: string; seller_sku?: string; price?: { currency?: string; tax_exclusive_price?: string; sale_price?: string }; inventory?: { quantity?: number }[] };
+export type ShopProduct = { id: string; title: string; status: ProductStatus; skus?: ShopProductSku[]; create_time?: number; update_time?: number };
+
+/** The shop's own products (Product Basic scope), one page; `status` filters by the live version's status. No photos here. */
+export function searchShopProducts(accessToken: string, cipher: string, opts: { status?: ProductStatus; pageSize?: number; pageToken?: string } = {}) {
+  return callApi<{ products?: ShopProduct[]; next_page_token?: string; total_count?: number }>({
+    method: "POST",
+    path: "/product/202502/products/search",
+    accessToken,
+    query: { shop_cipher: cipher, page_size: String(opts.pageSize ?? 100), ...(opts.pageToken ? { page_token: opts.pageToken } : {}) },
+    body: { status: opts.status ?? "ALL" },
+  });
+}
+
+export type ShopProductDetail = {
+  id: string;
+  title?: string;
+  status?: ProductStatus;
+  main_images?: { urls?: string[]; thumb_urls?: string[] }[];
+  category_chains?: { id: string; local_name?: string; is_leaf?: boolean; parent_id?: string }[];
+  update_time?: number;
+};
+
+/** One of the shop's products in full: photos and category. */
+export function getShopProduct(accessToken: string, cipher: string, productId: string) {
+  return callApi<ShopProductDetail>({ method: "GET", path: `/product/202309/products/${productId}`, accessToken, query: { shop_cipher: cipher } });
+}

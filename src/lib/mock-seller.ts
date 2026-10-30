@@ -31,6 +31,14 @@ export type ShopItem = {
   /** Dates for each pipeline step reached. */
   dates?: Partial<Record<Exclude<Stage, "Not submitted" | "Not approved">, string>>;
   note?: string;
+  /** A real product from the seller's shop (owner, 30 Oct 2026): it has no sample product page. */
+  real?: boolean;
+  /** TikTok's listing: ACTIVATE = buyers can see it; PENDING = TikTok is still reviewing it, so it can't join TAP yet. */
+  listing?: "ACTIVATE" | "PENDING";
+  /** No API gives this product's sales, so no sales line is shown. */
+  salesUnknown?: boolean;
+  /** Second-level category, for creator conditions. */
+  sub?: string;
 };
 
 const fromMock = (id: string, extra: Omit<ShopItem, "id" | "name" | "img" | "price" | "category" | "publicRate" | "sold">): ShopItem => {

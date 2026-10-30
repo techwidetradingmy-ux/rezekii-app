@@ -1,4 +1,6 @@
 import { LIVE_PRODUCTS, type Product, type Raise } from "./mock";
+import type { ShopItem, Stage } from "./mock-seller";
+import type { LiveShopProduct } from "@/modules/marketplace/shop-products.ts";
 
 /**
  * Real data for the screens (owner, 30 Oct 2026: plug real data, keep the design). The server's answers are turned into the
@@ -107,4 +109,39 @@ export async function loadProduct(id: string, level: "bronze" | "silver" | "gold
 export async function requestSample(productId: string): Promise<{ deeplink?: string; phoneUrl?: string; error?: string }> {
   const r = await fetch("/api/tap/samples", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ productId }) });
   return r.json().catch(() => ({ error: "Couldn't reach TikTok Shop." }));
+}
+
+const STAGE: Record<string, Stage> = { submitted: "Submitted", in_review: "Under review", with_tiktok: "Submitted to TikTok", live: "Live", not_approved: "Not approved" };
+/** "30 Oct", Malaysia time. */
+export const myDay = (t: string | number | Date = Date.now()) => new Date(t).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" });
+
+/** A real shop product in the sample data's shape. Live in TAP comes from Techwide's campaigns; the rest from requests made here. */
+export function fromLiveShop(p: LiveShopProduct): ShopItem {
+  const stage: Stage = p.tap ? "Live" : (p.request && STAGE[p.request.status]) || "Not submitted";
+  return {
+    id: p.id, name: p.name, img: p.image ?? "/avatars/blank.svg", price: p.price ?? 0, category: p.category || "Other", sub: p.sub,
+    publicRate: p.tap?.openRate != null ? p.tap.openRate / 100 : null,
+    sold: p.tap?.sold ?? 0, salesUnknown: p.tap?.sold == null,
+    stage, tapRate: p.tap?.totalRate != null ? p.tap.totalRate / 100 : undefined,
+    samples: p.request?.samples,
+    reason: p.request?.status === "not_approved" ? p.request.reason ?? undefined : undefined,
+    dates: p.request ? { Submitted: myDay(p.request.at) } : undefined,
+    note: p.listing === "PENDING" ? "TikTok is reviewing this listing" : undefined,
+    real: true, listing: p.listing,
+  };
+}
+
+/** The seller's real products, or null when no Seller Center shop is authorized for this account. */
+export async function loadShop(): Promise<{ shop: string; items: ShopItem[]; notLive: number; at: string } | null> {
+  const r = await fetch("/api/v2/seller/products");
+  const d = await r.json().catch(() => ({ error: "Couldn't reach TikTok Shop. Please try again." }));
+  if (!r.ok) throw new Error(d.error ?? "Couldn't reach TikTok Shop. Please try again.");
+  if (!d.linked) return null;
+  return { shop: d.shop, items: (d.items as LiveShopProduct[]).map(fromLiveShop), notLive: d.notLive, at: d.at };
+}
+
+/** Submit products to Techwide's TAP; each waits for Techwide's review. */
+export async function submitToTap(body: { productIds: string[]; raise: number; samples: number; conditions: Record<string, unknown> }): Promise<{ submitted?: { id: string }[]; skipped?: { id: string; why: string }[]; error?: string }> {
+  const r = await fetch("/api/v2/seller/submissions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  return r.json().catch(() => ({ error: "Couldn't reach Rezekii. Please try again." }));
 }

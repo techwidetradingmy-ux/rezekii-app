@@ -47,7 +47,8 @@ export async function GET(req: NextRequest) {
     }
     const tokens = tokenReply.data;
     if (tokens.user_type === 3) return finish(await connectPartner(tokens));
-    if (tokens.user_type === 0) return finish(await connectSeller(tokens));
+    // The Rezekii account signed in while authorizing the shop sees it in the seller app (owner, 30 Oct 2026).
+    if (tokens.user_type === 0) return finish(await connectSeller(tokens, (await userForSession(req.cookies.get(SESSION_COOKIE)?.value).catch(() => null))?.id));
 
     const profileReply = await getCreatorProfile(tokens.access_token);
     if (profileReply.code !== 0 || !profileReply.data) {
@@ -93,7 +94,7 @@ async function connectPartner(tokens: TokenSet): Promise<string> {
 }
 
 /** Seller Center login (a seller shop such as Zemvello Wellness, for marketplace creator data). Returns the /connected result. */
-async function connectSeller(tokens: TokenSet): Promise<string> {
+async function connectSeller(tokens: TokenSet, userId?: string): Promise<string> {
   const reply = await getAuthorizedShops(tokens.access_token);
   const shops = reply.data?.shops ?? [];
   if (reply.code !== 0 || !shops.length) {
@@ -102,6 +103,6 @@ async function connectSeller(tokens: TokenSet): Promise<string> {
   }
   const allowed = shops.filter((s) => isAllowedSellerDuringProof(s.name));
   if (!allowed.length) return "seller-not-allowed&id=" + encodeURIComponent(shops.map((s) => s.name).join(", "));
-  for (const shop of allowed) await saveSellerConnection(shop, tokens);
+  for (const shop of allowed) await saveSellerConnection(shop, tokens, userId);
   return "seller-connected";
 }

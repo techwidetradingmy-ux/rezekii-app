@@ -3,7 +3,7 @@
 import "@/app/seller.css";
 import "@/app/product-page.css";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Sheet, Title } from "@/components/ui";
@@ -12,6 +12,7 @@ import { SELLER, rm, short } from "@/lib/mock";
 import { SHOP_ITEMS, UPDATED, listStatus, type ShopItem } from "@/lib/mock-seller";
 import { sellerProductHref } from "@/lib/product-pages";
 import { useKept } from "@/lib/keep";
+import { loadShop } from "@/lib/live";
 
 const FILTERS = ["All", "Not submitted", "Under review", "Live", "Not approved"] as const;
 type Filter = (typeof FILTERS)[number];
@@ -19,8 +20,11 @@ const BADGE: Record<Exclude<Filter, "All">, string> = { "Not submitted": "badge-
 
 /** Every product in the connected shop, with its status in Techwide's TAP. */
 export default function ShopProducts() {
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const [items, setItems] = useState<ShopItem[]>(SHOP_ITEMS);
+  // Signed in (owner, 30 Oct 2026): the real products of the shop this account authorized in Seller Center.
+  const [shop, setShop] = useState<{ name: string; at: string; notLive: number } | null>(null);
+  const [noShop, setNoShop] = useState(false);
   const [filter, setFilter] = useKept<Filter>("sp-filter", "All");
   const [q, setQ] = useKept("sp-q", "");
   const [syncing, setSyncing] = useState(false);
@@ -30,21 +34,41 @@ export default function ShopProducts() {
   const count = (f: Filter) => (f === "All" ? items.length : items.filter((i) => listStatus(i.stage) === f).length);
   const shown = items.filter((i) => (filter === "All" || listStatus(i.stage) === filter) && i.name.toLowerCase().includes(q.trim().toLowerCase()));
 
+  const loadReal = (said: boolean) => {
+    setSyncing(true);
+    loadShop()
+      .then((s) => {
+        setNoShop(!s);
+        setShop(s && { name: s.shop, at: s.at, notLive: s.notLive });
+        setItems(s?.items ?? []);
+        if (s && said) toast(`Synced · ${s.items.length} product${s.items.length === 1 ? "" : "s"}`);
+      })
+      .catch((e: Error) => toast(e.message))
+      .finally(() => setSyncing(false));
+  };
+  useEffect(() => {
+    if (!live) return;
+    setItems([]);
+    loadReal(false);
+  }, [live]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const sync = () => {
+    if (live) return loadReal(true);
     setSyncing(true);
     window.setTimeout(() => { setSyncing(false); toast(`Synced · ${items.length} products, nothing new`); }, 1000);
   };
+  const syncedAt = (t: string) => `today ${new Date(t).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kuala_Lumpur" })}`;
 
   return (
     <div className="v2-stack v2-in">
-      <Title title="Shop Products" sub={<>{SELLER.shop} · synced {UPDATED}</>}>
+      <Title title="Shop Products" sub={!live ? <>{SELLER.shop} · synced {UPDATED}</> : shop ? <>{shop.name} · synced {syncedAt(shop.at)}{shop.notLive ? ` · ${shop.notLive} not live in Seller Center` : ""}</> : noShop ? "No Seller Center shop connected" : "Loading your shop…"}>
         <button type="button" className="btn-outline" onClick={sync} disabled={syncing}>
           {syncing ? <span className="sl-spin" /> : <Icon name="refresh" size={18} />} Sync now
         </button>
         <Link href="/seller/app/submit" className="np-btn v2-btn-sm" style={{ height: 42 }}>Submit products</Link>
       </Title>
 
-      <ConnBanner />
+      <ConnBanner shop={live ? !noShop : undefined} />
 
       <div className="sl-chipline" role="group" aria-label="Filter by status">
         {FILTERS.map((f) => (
@@ -62,13 +86,19 @@ export default function ShopProducts() {
             return (
               <div key={p.id} className="sl-prow">
                 {/* Product (owner, 29 Oct 2026): the photo and name open the product's page; the row's buttons stay. */}
-                <Link href={sellerProductHref(p.id)} className="pg-rowimg" aria-label={`Open ${p.name}`} tabIndex={-1}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p.img} alt="" />
-                </Link>
+                {/* A real product has no sample product page yet, so its photo and name don't open one. */}
+                {p.real ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <span className="pg-rowimg"><img src={p.img} alt="" /></span>
+                ) : (
+                  <Link href={sellerProductHref(p.id)} className="pg-rowimg" aria-label={`Open ${p.name}`} tabIndex={-1}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={p.img} alt="" />
+                  </Link>
+                )}
                 <span className="sl-pinfo">
-                  <strong><Link href={sellerProductHref(p.id)} className="pg-name">{p.name}</Link></strong>
-                  <small>{rm(p.price)} · {p.sold ? `${short(p.sold)} sold` : "No sales yet"} · Public {p.publicRate === null ? "unknown" : `${p.publicRate}%`}</small>
+                  <strong>{p.real ? p.name : <Link href={sellerProductHref(p.id)} className="pg-name">{p.name}</Link>}</strong>
+                  <small>{rm(p.price)}{p.salesUnknown ? "" : ` · ${p.sold ? `${short(p.sold)} sold` : "No sales yet"}`} · Public {p.publicRate === null ? "unknown" : `${p.publicRate}%`}</small>
                   {(p.fromSellerCenter || p.note) && (
                     <span className="v2-row">
                       {p.fromSellerCenter && <span className="badge badge-blue">From Seller Center</span>}
@@ -79,21 +109,23 @@ export default function ShopProducts() {
                 </span>
                 <span className="sl-pside">
                   <span className={`badge ${BADGE[st]}`}>{st}</span>
-                  {st === "Live" && (
+                  {st === "Live" && p.tapRate !== undefined && (
                     <span className="sl-rate">{p.publicRate}% <Icon name="arrow" size={12} /> <b>{p.tapRate}%</b> in TAP</span>
                   )}
                   {st === "Under review" && (
                     <small className="v2-small">{p.stage === "Submitted to TikTok" ? `With TikTok since ${p.dates?.["Submitted to TikTok"]}` : p.stage === "Under review" ? "Our review" : "Submitted"}</small>
                   )}
-                  {st === "Not submitted" && <Link href="/seller/app/submit" className="np-btn v2-btn-sm">Submit</Link>}
-                  {st === "Not approved" && <button type="button" className="np-btn v2-btn-sm" onClick={() => setFix(p)}>Fix</button>}
+                  {st === "Not submitted" && p.listing !== "PENDING" && <Link href={p.real ? `/seller/app/submit?p=${p.id}` : "/seller/app/submit"} className="np-btn v2-btn-sm">Submit</Link>}
+                  {st === "Not approved" && (p.real
+                    ? <Link href={`/seller/app/submit?p=${p.id}`} className="np-btn v2-btn-sm">Fix</Link>
+                    : <button type="button" className="np-btn v2-btn-sm" onClick={() => setFix(p)}>Fix</button>)}
                   {st === "Live" && <Link href="/seller/app/changes" className="v2-link" style={{ fontSize: 13.5 }}>Change</Link>}
                   {st === "Under review" && <Link href="/seller/app/progress" className="v2-link" style={{ fontSize: 13.5 }}>Progress</Link>}
                 </span>
               </div>
             );
           })}
-          {shown.length === 0 && <p className="v2-muted" style={{ margin: "8px 0" }}>No products match.</p>}
+          {shown.length === 0 && <p className="v2-muted" style={{ margin: "8px 0" }}>{live && syncing && !items.length ? "Loading your products…" : live && noShop ? "Connect Seller Center to see your products." : live && !items.length ? "No products live or in TikTok review yet." : "No products match."}</p>}
         </div>
       </section>
 
