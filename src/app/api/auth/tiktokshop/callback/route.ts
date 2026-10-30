@@ -20,9 +20,16 @@ export const maxDuration = 60;
 
 const CREATOR_RESULTS = new Set(["connected", "waiting", "waitlist", "taken", "denied", "expired", "error"]);
 
+/** Fixed places a Rezekii 2.0 sign-in may go on to; nothing else is forwarded. Our own states never contain a dot. */
+const V2_FORWARD: [string, string][] = [["v2.", "https://rezekii-v2-preview.vercel.app"], ["v2l.", "http://localhost:3020"]];
+
 /** TikTok Shop returns here after the creator approves (the one registered return address). */
 export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
+  // Rezekii 2.0 shares this one return address while it's tested (owner, 30 Oct 2026). Sign-ins it started carry a state of
+  // "v2." (the preview site) or "v2l." (the preview on the owner's computer) and go on to it with TikTok's reply unchanged.
+  const forward = V2_FORWARD.find(([prefix]) => params.get("state")?.startsWith(prefix));
+  if (forward) return NextResponse.redirect(`${forward[1]}/api/auth/tiktokshop/callback?${params}`);
   // Whoever linked their TikTok Shop (admins too) goes back to Getting set up; Techwide's partner and shop logins keep /connected.
   const finish = async (result: string) => {
     const user = CREATOR_RESULTS.has(result) ? await userForSession(req.cookies.get(SESSION_COOKIE)?.value).catch(() => null) : null;
