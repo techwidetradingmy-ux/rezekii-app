@@ -10,6 +10,7 @@ import { Seg, Title } from "@/components/ui";
 import { Ava } from "@/components/seller/seller-ui";
 import { COMP_AI, COMP_CATEGORIES, COMP_CREATORS, COMP_PRODUCTS, COMP_VIDEOS, PERIODS, SHOP_ITEMS, type CompCategory, type Period } from "@/lib/mock-seller";
 import { sellerProductHref } from "@/lib/product-pages";
+import { LiveCompetitors } from "@/components/seller/live-competitors";
 
 const SOON = "Invites coming soon";
 /** Rough scale so the three periods don't show identical ranges. */
@@ -18,7 +19,7 @@ const TREND_K: Record<Period, number> = { "1 day": 0.4, "7 days": 1, "30 days": 
 /** AI competitor analysis from TikTok's public best-seller lists, for the categories this shop sells in. */
 export default function Competitors() {
   const router = useRouter();
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const [cat, setCat] = useState<CompCategory>("Home & Kitchen");
   const [period, setPeriod] = useState<Period>("7 days");
   const [scanning, setScanning] = useState(true);
@@ -29,21 +30,8 @@ export default function Competitors() {
     return () => window.clearTimeout(t);
   }, [cat, period]);
 
-  // Signed in (owner, 31 Oct 2026): TikTok's best-seller lists aren't read for sellers yet, so no sample competitors are shown.
-  const { live } = useDemo();
-  if (live) {
-    return (
-      <div className="v2-stack v2-in">
-        <Title ai title="AI Competitors" />
-        <section className="v2-card flat" style={{ alignItems: "flex-start" }}>
-          <span className="badge badge-amber">Coming soon</span>
-          <b>Competitor analysis for your categories</b>
-          <p className="v2-muted" style={{ margin: 0 }}>It will compare your products with TikTok Shop&apos;s best-sellers in the same categories, and show which creators and videos sell them. Until then, see how your own products are doing.</p>
-          <Link href="/seller/app/results" className="np-btn v2-btn-sm">See TAP Performance</Link>
-        </section>
-      </div>
-    );
-  }
+  // Signed in (owner, 31 Oct 2026): real competitors from Techwide's TAP catalog in her categories.
+  if (live) return <LiveCompetitors />;
 
   const prods = COMP_PRODUCTS[cat];
   const vids = COMP_VIDEOS[cat];

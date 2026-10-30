@@ -14,6 +14,8 @@ export type LiveShopProduct = {
   price: number | null;
   category: string;
   sub: string;
+  /** TikTok's most specific category for it (as the TAP catalog names categories). */
+  leaf: string;
   /** ACTIVATE = buyers can see it; PENDING = TikTok is reviewing the listing. */
   listing: "ACTIVATE" | "PENDING";
   /** Units sold in the last 90 days (TikTok Shop Analytics), null when TikTok didn't send it. */
@@ -28,7 +30,7 @@ export type LiveShopProduct = {
 
 export type ShopProducts = { shop: string; items: LiveShopProduct[]; notLive: number; at: string };
 
-type Detail = { image: string | null; category: string; sub: string };
+type Detail = { image: string | null; category: string; sub: string; leaf: string };
 // Photos and categories only change when the product does, so they are kept per product version.
 const details = new Map<string, Detail>();
 
@@ -39,7 +41,7 @@ async function detailFor(token: string, cipher: string, p: ShopProduct): Promise
   const r = await getShopProduct(token, cipher, p.id);
   const chain = r.data?.category_chains ?? [];
   const img = r.data?.main_images?.[0];
-  const d: Detail = { image: img?.thumb_urls?.[0] ?? img?.urls?.[0] ?? null, category: chain[0]?.local_name ?? "", sub: chain[1]?.local_name ?? "" };
+  const d: Detail = { image: img?.thumb_urls?.[0] ?? img?.urls?.[0] ?? null, category: chain[0]?.local_name ?? "", sub: chain[1]?.local_name ?? "", leaf: chain.find((c) => c.is_leaf)?.local_name ?? chain.at(-1)?.local_name ?? "" };
   if (r.code === 0) details.set(key, d);
   return d;
 }
@@ -142,6 +144,7 @@ export async function shopProducts(user: { id: string; role: string }): Promise<
       price: lowestPrice(p),
       category: info[i].category,
       sub: info[i].sub,
+      leaf: info[i].leaf,
       listing: p.status === "PENDING" ? "PENDING" : "ACTIVATE",
       sold90: sales.size ? sales.get(p.id) ?? 0 : null,
       openRate: rates.get(p.id) ?? null,
