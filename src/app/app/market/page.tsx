@@ -13,6 +13,7 @@ import { productHref, requestedSamples } from "@/lib/product-view";
 import { addOne, loadMarket } from "@/lib/live";
 import "@/app/creator1.css";
 import { useKept } from "@/lib/keep";
+import { useDesk } from "@/lib/desk-layout";
 
 const WITH_SAMPLES = PRODUCTS.filter((p) => p.samples !== null);
 /** Free samples she can request right now (her streak is long enough). */
@@ -84,6 +85,16 @@ export default function Marketplace() {
     };
   }, [live, me?.level, q, cat, sort, onlySamples, page]);
 
+  // Desktop option C (mock-up, 31 Oct 2026): a product opens beside the list instead of on its own page.
+  const desk = useDesk();
+  const side = desk === "c";
+  const [pick, setPick] = useState<string | null>(null);
+  const openBeside = (id: string) => (e: React.MouseEvent) => {
+    if (!side || !window.matchMedia("(min-width: 1200px)").matches) return;
+    e.preventDefault();
+    setPick(id);
+  };
+
   const term = q.trim().toLowerCase();
   const list = live && real ? real.items : PRODUCTS.filter((p) => (!onlySamples || CAN_GET.includes(p)) && (cat === "All" || p.category === cat) && (!term || `${p.name} ${p.shop}`.toLowerCase().includes(term))).sort((a, b) => {
     if (sort === "rate") return mine(b) - mine(a);
@@ -109,6 +120,7 @@ export default function Marketplace() {
     setAdded((a) => [...a, p.id]);
     toast(`Added at ${mine(p)}%: ${p.name}`);
   };
+  const shown = side ? list.find((p) => p.id === pick) ?? list[0] : null;
   return (
     <div className="v2-stack v2-in mk-page" style={{ gap: 20 }}>
       <Title title="Marketplace" sub="Better rates than TikTok's open plan. Free Samples on many.">
@@ -165,6 +177,7 @@ export default function Marketplace() {
         </span>
       </p>
 
+      <div className={side ? "mk-split" : "mk-nosplit"}>
       <div className={`mk-grid${view === "list" ? " list" : ""}`}>
         {list.map((p, i) => {
           const left = SAMPLE_LEFT[p.id] ?? 10;
@@ -176,14 +189,14 @@ export default function Marketplace() {
           const asked = requested.includes(p.id);
           // Option A, clean grid (owner, 28 Oct 2026): name, open → Rezekii rate, what she earns, Add and a gift button.
           return (
-            <article key={p.id} className="mk-card mka" style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}>
-              <Link href={productHref(p.id)} className="mk-img" aria-label={p.name}>
+            <article key={p.id} className={`mk-card mka${shown?.id === p.id ? " picked" : ""}`} style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}>
+              <Link href={productHref(p.id)} className="mk-img" aria-label={p.name} onClick={openBeside(p.id)}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={p.img} alt="" />
                 {p.samples !== null && <SampleTag streak={p.samples} label={false} />}
                 {asked && <span className="cr1-reqd"><Icon name="check" size={13} width={3} /> Requested</span>}
               </Link>
-              <Link href={productHref(p.id)} className="mka-name"><strong>{p.name}</strong></Link>
+              <Link href={productHref(p.id)} className="mka-name" onClick={openBeside(p.id)}><strong>{p.name}</strong></Link>
               <small className="mk-meta">{rm(p.price)} · {p.sold >= 1e6 ? `${(p.sold / 1e6).toFixed(1)}M` : `${Math.round(p.sold / 1e3)}K`} sold</small>
               {better ? (
                 <span className="mka-rate" aria-label={`${now.plan} ${now.rate}%, Rezekii ${mine(p)}%`}><s>{now.rate}%</s><Icon name="arrow" size={13} /><b><Hidden>{mine(p)}%</Hidden></b>{now.plan === "Target plan" && <em className="mka-target">Target</em>}{rateFor(p).special && <em className="mka-special">Special</em>}</span>
@@ -212,6 +225,25 @@ export default function Marketplace() {
             </article>
           );
         })}
+      </div>
+      {shown && (
+        <aside className="mk-detail v2-card" aria-label={shown.name}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={shown.img} alt="" />
+          <strong>{shown.name}</strong>
+          <small className="mk-meta">{shown.shop} · {rm(shown.price)} · {shown.sold >= 1e6 ? `${(shown.sold / 1e6).toFixed(1)}M` : `${Math.round(shown.sold / 1e3)}K`} sold</small>
+          <div className="mk-detail-rates">
+            <span><small>Open plan</small><b>{bestRate(shown).rate}%</b></span>
+            <span className="on"><small>With Rezekii</small><b>{Math.max(bestRate(shown).rate, mine(shown))}%</b></span>
+            <span><small>Earn per sale</small><b>{rm((shown.price * Math.max(bestRate(shown).rate, mine(shown))) / 100)}</b></span>
+          </div>
+          <div className="mk-detail-acts">
+            <button type="button" className="np-btn" disabled={added.includes(shown.id)} onClick={() => addToShowcase(shown)}><Icon name={added.includes(shown.id) ? "check" : "plus"} size={16} /> {added.includes(shown.id) ? "Added" : "Add to Showcase"}</button>
+            {shown.samples !== null && <button type="button" className="btn-outline" onClick={() => requireWa(() => router.push(productHref(shown.id, { sample: true })))}><Icon name="gift" size={16} /> Free Sample</button>}
+          </div>
+          <Link href={productHref(shown.id)} className="v2-link">Open full page <Icon name="arrow" size={14} /></Link>
+        </aside>
+      )}
       </div>
       {live && real && real.items.length < real.total && (
         <button type="button" className="btn-outline" style={{ alignSelf: "center" }} onClick={() => setPage((n) => n + 1)}>Show more products</button>

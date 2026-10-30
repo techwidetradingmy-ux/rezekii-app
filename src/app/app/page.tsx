@@ -10,8 +10,8 @@ import "@/app/creator1.css";
 export default function CreatorHome() {
   const you = useWho();
   return (
-    <div className="v2-stack v2-in" style={{ gap: 22 }}>
-      <div>
+    <div className="v2-stack v2-in home-desk" style={{ gap: 22 }}>
+      <div className="home-hi">
         <h1 style={{ margin: 0, fontSize: 30, fontWeight: 800, letterSpacing: "-0.02em" }}>Good morning, {you.first}</h1>
       </div>
       <ScanHub />

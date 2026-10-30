@@ -19,6 +19,8 @@ import { useSideScroll } from "./side-scroll";
 import { useScrollMemory } from "@/lib/keep";
 import { ACCOUNT, HOME, MENUS, pageFor, sectionFor, type AppKind } from "@/lib/menus";
 import { CREATOR, MY_SAMPLES, REFERRAL_REWARD, SELLER } from "@/lib/mock";
+import { DeskRail } from "./desk-rail";
+import { setDesk, useDesk, type Desk } from "@/lib/desk-layout";
 
 const WHO: Record<AppKind, { name: string; initials: string; label: string; photo?: string; sub: string }> = {
   creator: { name: CREATOR.first, initials: CREATOR.initials, label: "Account", photo: CREATOR.photo, sub: `${CREATOR.level} creator` },
@@ -41,6 +43,7 @@ export function DemoStrip() {
         <Link href="/admin">Admin</Link>
         <Link href="/tour">All pages</Link>
         <Link href="/compare">Compare views</Link>
+        <DeskSwitch />
         <button type="button" className="v2-demo-toggle" onClick={() => setLinked(!linked)}>
           {linked ? "Show as not linked" : "Show as linked"}
         </button>
@@ -49,6 +52,18 @@ export function DemoStrip() {
         </button>
       </div>
     </div>
+  );
+}
+
+/** The desktop layout mock-ups to pick from (owner, 31 Oct 2026); wide screens only. */
+function DeskSwitch() {
+  const desk = useDesk();
+  const opts: [Desk, string, string][] = [["now", "Now", "Today's layout"], ["a", "A", "Wider canvas"], ["b", "B", "Dashboard with a side panel"], ["c", "C", "List and detail"]];
+  return (
+    <span className="v2-desk" role="group" aria-label="Desktop layout">
+      <small>Desktop</small>
+      {opts.map(([k, l, t]) => <button key={k} type="button" title={t} aria-pressed={desk === k} className={desk === k ? "on" : undefined} onClick={() => setDesk(k)}>{l}</button>)}
+    </span>
   );
 }
 
@@ -74,6 +89,7 @@ function Chest() {
 }
 
 export function Shell({ app, children, banner }: { app: AppKind; children: React.ReactNode; banner?: React.ReactNode }) {
+  const desk = useDesk();
   const you = useWho();
   const path = usePathname();
   // Back returns to the same scroll on every page (owner, 29 Oct 2026); open sections come back through useKept.
@@ -287,8 +303,17 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
       {acctOpen && <AccountPanel onClose={() => setAcctOpen(false)} onStory={() => { setAcctOpen(false); setStory(true); }} />}
       {story && <DailyStory day={storyDay} onClose={() => { setStory(false); setStoryNew(false); }} />}
       <main className="site-wrap v2-main">
-        {banner}
-        {children}
+        {desk === "b" && app !== "admin" ? (
+          <div className="dk-row">
+            <div className="dk-col">{banner}{children}</div>
+            <DeskRail app={app} />
+          </div>
+        ) : (
+          <>
+            {banner}
+            {children}
+          </>
+        )}
       </main>
       <footer className="site-foot">
         <div className="site-wrap">
