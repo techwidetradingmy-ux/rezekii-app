@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/admin.css";
+import { LiveSettings } from "@/components/admin/live-settings";
 import Link from "next/link";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
@@ -24,7 +25,7 @@ function Stepper({ value, onChange, min = 0, max = 99, suffix = "", label }: { v
 
 /** Settings and presets: commission uplift, AI rule by product heat, sample quantities, activity tiers, terms, WhatsApp, feature flags. */
 export default function SystemSettings() {
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const [dirty, setDirty] = useState(false);
   const touch = <T,>(fn: (v: T) => void) => (v: T) => { fn(v); setDirty(true); };
 
@@ -42,6 +43,8 @@ export default function SystemSettings() {
   const [flags, setFlags] = useState(FLAGS);
   const [terms, setTerms] = useState({ v: 2, since: "24 Oct 2026", agreed: 41 });
   const [perChannel, setPerChannel] = useState(POST_CREDITS);
+  // Signed in (owner, 31 Oct 2026): the real settings and what's running.
+  if (live) return <LiveSettings />;
 
   const addUplift = () => {
     const n = Math.round(Number(newUp));
