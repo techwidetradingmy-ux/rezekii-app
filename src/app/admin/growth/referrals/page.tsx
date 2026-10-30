@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/admin.css";
+import { LiveReferrals } from "@/components/admin/live-lists";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -16,7 +17,7 @@ const PAIRS = ["Creator → Creator", "Seller → Seller"];
 
 /** Who invited whom, by role pair, with suspected abuse held for a person to check. */
 export default function GrowthReferrals() {
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const [list, setList] = useState<Ref[]>(REFERRALS);
   const [filter, setFilter] = useState<Filter>("All");
   const [open, setOpen] = useState<string | null>(null);
@@ -24,6 +25,8 @@ export default function GrowthReferrals() {
   const [reason, setReason] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [give, setGive] = useState({ inviter: String(REFERRAL_REWARD.inviter), friend: String(REFERRAL_REWARD.friend) });
+  // Signed in (owner, 31 Oct 2026): real data.
+  if (live) return <LiveReferrals />;
 
   const held = list.filter((r) => r.status.startsWith("Held"));
   const qualified = list.filter((r) => r.status.startsWith("Reward paid") || r.status.startsWith("Qualified"));

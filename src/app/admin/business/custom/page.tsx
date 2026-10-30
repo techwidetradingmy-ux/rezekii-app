@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/admin.css";
+import { LiveCustom } from "@/components/admin/live-lists";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -15,11 +16,13 @@ type Filter = "Open" | "Done or declined";
 
 /** Custom service: sellers who want the team to run it for them. */
 export default function CustomService() {
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const [list, setList] = useState<Req[]>(CUSTOM);
   const [filter, setFilter] = useState<Filter>("Open");
   const [open, setOpen] = useState<string | null>(null);
   const [reply, setReply] = useState("");
+  // Signed in (owner, 31 Oct 2026): real data.
+  if (live) return <LiveCustom />;
   const isOpen = (r: Req) => r.status !== "Done" && r.status !== "Declined";
   const shown = list.filter((r) => (filter === "Open" ? isOpen(r) : !isOpen(r)));
   const r = list.find((x) => x.id === open) ?? null;

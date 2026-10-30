@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/admin.css";
+import { LiveAudit } from "@/components/admin/live-lists";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -12,9 +13,11 @@ type Who = "Everyone" | "Super Admin" | "Ops" | "Business" | "Growth" | "Finance
 
 /** Audit log: who did what, when, with the value before and after. Read-only. */
 export default function AuditLog() {
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const [q, setQ] = useState("");
   const [who, setWho] = useState<Who>("Everyone");
+  // Signed in (owner, 31 Oct 2026): real data.
+  if (live) return <LiveAudit />;
   const shown = AUDIT.filter((a) => (who === "Everyone" || a.role === who) && (!q || `${a.who} ${a.action} ${a.target} ${a.before} ${a.after}`.toLowerCase().includes(q.toLowerCase())));
   const roles: Who[] = ["Everyone", "Super Admin", "Ops", "Business", "Growth", "Finance", "System"];
 

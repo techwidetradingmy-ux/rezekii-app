@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/admin.css";
+import { LiveWaitlist } from "@/components/admin/live-lists";
 import "@/app/ai-video.css";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
@@ -18,10 +19,12 @@ type Sort = "Most Videos" | "Newest";
  * from here, up to the trial size; the rest stay on the list for later batches.
  */
 export default function AiVideoWaitlist() {
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const [list, setList] = useState<WaitlistEntry[]>(WAITLIST);
   const [filter, setFilter] = useState<Filter>("All");
   const [sort, setSort] = useState<Sort>("Most Videos");
+  // Signed in (owner, 31 Oct 2026): real data.
+  if (live) return <LiveWaitlist />;
 
   const picked = list.filter((c) => c.picked).length;
   const shown = list
