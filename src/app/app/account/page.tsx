@@ -5,7 +5,7 @@ import { SUPPORT } from "@/lib/support";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
-import { useDemo } from "@/components/demo";
+import { useDemo, useWho } from "@/components/demo";
 import { Seg, Sheet, Title } from "@/components/ui";
 import { useSideScroll } from "@/components/side-scroll";
 import { PlatformIcon } from "@/components/creator2/bits";
@@ -50,12 +50,13 @@ function prettyNum(cc: string, d: string) {
 
 /** My account: profile, connections, samples & delivery, rate card and settings, grouped like iOS Settings. Nothing is saved. */
 export default function Account() {
-  const { linked, setLinked, toast, consent, waVerified: verified, setWaVerified: setVerified } = useDemo();
+  const you = useWho();
+  const { linked, setLinked, toast, consent, waVerified: verified, setWaVerified: setVerified, live } = useDemo();
   const [unlink, setUnlink] = useState(false);
   const [tab, setTab] = useState<TabKey>("profile");
   const tabsRef = useRef<HTMLDivElement>(null);
   useSideScroll(tabsRef, tab);
-  const [email, setEmail] = useState(CREATOR.email);
+  const [email, setEmail] = useState(you.email);
   const [emailSheet, setEmailSheet] = useState(false);
   const [newEmail, setNewEmail] = useState("");
   const [delSheet, setDelSheet] = useState(false);
@@ -79,7 +80,7 @@ export default function Account() {
     window.dispatchEvent(new HashChangeEvent("hashchange"));
   };
 
-  const [name, setName] = useState(CREATOR.name);
+  const [name, setName] = useState(you.name);
   const [state, setState] = useState(CREATOR.state);
   const [cc, setCc] = useState("+60");
   const [phone, setPhone] = useState("12-345 6789");
@@ -159,10 +160,10 @@ export default function Account() {
         {tab !== "referral" && (
         <div className="cr2-cells">
           <div className="cr2-profile">
-            <LevelFace lv={linked ? CREATOR.tiktokLevel : null} size={76} img={CREATOR.photo} name={CREATOR.name} />
+            <LevelFace lv={linked ? CREATOR.tiktokLevel : null} size={76} img={you.photo} name={you.name} />
             <span>
               <strong className="cr2-name">
-                {name || CREATOR.name}
+                {name || you.name}
                 {linked && (
                   <span className="cr2-tick" title="TikTok Shop account linked and approved" aria-label="Verified TikTok Shop account">
                     <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
@@ -173,7 +174,7 @@ export default function Account() {
                   </span>
                 )}
               </strong>
-              <span className="v2-small">{CREATOR.handle}</span>
+              <span className="v2-small">{you.handle}</span>
               {/* Level and streak as two small stat tiles (owner, 29 Oct 2026, option C). */}
               <span className="cr2-mstats">
                 <span><i className={`lv ${CREATOR.level.toLowerCase()}`}><Icon name="gem" size={15} /></i><b>{CREATOR.level}</b><small>Level</small></span>
@@ -374,8 +375,8 @@ export default function Account() {
               <span className="lbl">How you sign in</span>
               <div className="si-methods">
                 {([
-                  ["TikTok", `Signed in as ${CREATOR.handle}`, true, "tt"],
-                  ["Google", googleOn ? `Linked to ${CREATOR.email}` : "Not linked", googleOn, "gg"],
+                  ["TikTok", `Signed in as ${you.handle}`, true, "tt"],
+                  ["Google", googleOn ? `Linked to ${you.email}` : "Not linked", googleOn, "gg"],
                   ["Email and password", hasPw ? `${email} · password changed 3 Mar 2026` : `${email} · no password yet`, hasPw, "em"],
                 ] as [string, string, boolean, string][]).map(([label, detail, on, key]) => (
                   <span key={key} className={`si-m ${on ? "on" : ""}`}>
@@ -394,7 +395,7 @@ export default function Account() {
                 ))}
               </div>
             </div>
-            <Link href="/signin?in=1" className="cr2-cell cr2-cellbtn acc-signout">Sign out</Link>
+            <Link href="/signin?in=1" className="cr2-cell cr2-cellbtn acc-signout" onClick={(e) => { if (!live) return; e.preventDefault(); fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/signin?in=1"; }); }}>Sign out</Link>
           </div>
         </section>
 

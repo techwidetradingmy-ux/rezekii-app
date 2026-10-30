@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Fragment, useState } from "react";
 import { Icon } from "@/components/icons";
-import { useDemo } from "@/components/demo";
+import { useDemo, useWho } from "@/components/demo";
 import { Qr, Tip } from "@/components/ui";
 import { ShareButton } from "@/components/creator2/bits";
 import { BrandLogo } from "@/components/brand-logos";
@@ -24,6 +24,7 @@ const TONES = ["#00c073", "#2f80ed", "#8b5cf6"];
  * history, so the list shows names and status only.
  */
 export function Referral() {
+  const you = useWho();
   const { toast } = useDemo();
   const [qr, setQr] = useState(false);
   const done = INVITES.filter((i) => i.linked && i.details).length;
@@ -42,7 +43,7 @@ export function Referral() {
         <div className="rf-chain" aria-hidden="true">
           <span className="rf-node me">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={CREATOR.photo} alt="" />
+            <img src={you.photo} alt="" />
           </span>
           {CHAIN.map((n, i) => (
             <Fragment key={n.name}>
@@ -88,7 +89,7 @@ export function Referral() {
             <span className="me"><b>+{REFERRAL_REWARD.inviter}</b><small>Credits for you</small></span>
             <span className="friend"><b>+{REFERRAL_REWARD.friend}</b><small>Credits for your friend</small></span>
           </div>
-          <ShareButton primary="Share Invite" big="Join me on Rezekii" label="Better commission for your TikTok Shop showcase" lines={[`Use my code ${CODE}: +${REFERRAL_REWARD.friend} credits`, "Free for creators"]} moment="invite" invite={{ code: CODE, reward: REFERRAL_REWARD.friend, link: LINK, photo: CREATOR.photo, tag: "Free for creators" }} />
+          <ShareButton primary="Share Invite" big="Join me on Rezekii" label="Better commission for your TikTok Shop showcase" lines={[`Use my code ${CODE}: +${REFERRAL_REWARD.friend} credits`, "Free for creators"]} moment="invite" invite={{ code: CODE, reward: REFERRAL_REWARD.friend, link: LINK, photo: you.photo, tag: "Free for creators" }} />
           <div className="rf-acts two">
             <button type="button" className="btn-outline v2-btn-sm" onClick={() => copy(`https://${LINK}`, "Link")}>Copy Link</button>
             <button type="button" className="btn-outline v2-btn-sm" aria-expanded={qr} onClick={() => setQr((q) => !q)}><Icon name="qr" size={16} /> QR</button>

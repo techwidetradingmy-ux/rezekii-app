@@ -1,8 +1,11 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { CREATOR } from "@/lib/mock";
 
 export type Role = "creator" | "seller";
+/** The real signed-in account (owner, 30 Oct 2026: plug real data, keep the design). Null = signed out, sample data shows. */
+export type Me = { id: string; name: string | null; email: string | null; role: "admin" | "creator"; photo: string | null; handle: string | null; shop: { handle: string; access: string | null } | null };
 /** Who agreed to what and when, kept as evidence (the real one also stores IP, device and TikTok's grant id). */
 export type Consent = { role: Role; at: string; terms: string; privacy: string; unlinkedAt?: string };
 
@@ -30,8 +33,12 @@ type Demo = {
   /** Show the creator as Bronze (owner, 28 Oct 2026: to preview the "Unlock at Silver" tab). */
   bronze: boolean;
   setBronze: (on: boolean) => void;
+  /** The real account when signed in; `live` is true then and screens read real data. */
+  me: Me | null;
+  live: boolean;
+  refreshMe: () => void;
 };
-const Ctx = createContext<Demo>({ linked: true, setLinked: () => {}, toast: () => {}, consent: null, recordConsent: () => {}, asking: null, agree: () => {}, cancelLink: () => {}, waVerified: false, setWaVerified: () => {}, requireWa: () => {}, waAsking: false, waDone: () => {}, waCancel: () => {}, bronze: false, setBronze: () => {} });
+const Ctx = createContext<Demo>({ linked: true, setLinked: () => {}, toast: () => {}, consent: null, recordConsent: () => {}, asking: null, agree: () => {}, cancelLink: () => {}, waVerified: false, setWaVerified: () => {}, requireWa: () => {}, waAsking: false, waDone: () => {}, waCancel: () => {}, bronze: false, setBronze: () => {}, me: null, live: false, refreshMe: () => {} });
 
 const now = () => new Date().toLocaleString("en-MY", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kuala_Lumpur" });
 /** Aisyah agreed when she linked during sign-up. */
@@ -45,6 +52,16 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   const [waVerified, setWaVerified] = useState(false);
   const [waNext, setWaNext] = useState<(() => void) | null>(null);
   const [bronze, setBronzeState] = useState(false);
+  const [me, setMe] = useState<Me | null>(null);
+
+  // Signed in for real? Then the TikTok Shop link is the real one too.
+  const refreshMe = useCallback(() => {
+    fetch("/api/v2/me", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : { me: null }))
+      .then((d: { me: Me | null }) => setMe(d.me))
+      .catch(() => setMe(null));
+  }, []);
+  useEffect(() => refreshMe(), [refreshMe]);
 
   useEffect(() => {
     try {
@@ -78,11 +95,21 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   const setLinked = (on: boolean) => {
     if (on && (!consent || consent.unlinkedAt)) return setAsking("creator");
     if (!on && consent && !consent.unlinkedAt) save({ ...consent, unlinkedAt: now() });
+    if (me) {
+      // Real account: linking goes to TikTok Shop; unlinking removes the real link.
+      if (on) window.location.href = "/api/auth/tiktokshop/start";
+      else fetch("/api/account/tiktokshop/unlink", { method: "POST" }).finally(refreshMe);
+      return;
+    }
     store(on);
   };
   const agree = () => {
     recordConsent(asking ?? "creator");
     setAsking(null);
+    if (me) {
+      window.location.href = "/api/auth/tiktokshop/start";
+      return;
+    }
     store(true);
     toast("TikTok Shop linked. Consent saved.");
   };
@@ -90,7 +117,8 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   return (
     <Ctx.Provider
       value={{
-        linked, setLinked, toast, consent, recordConsent, asking, agree, cancelLink: () => setAsking(null),
+        linked: me ? !!me.shop : linked, setLinked, toast, consent, recordConsent, asking, agree, cancelLink: () => setAsking(null),
+        me, live: !!me, refreshMe,
         waVerified, setWaVerified,
         requireWa: (then) => (waVerified ? then() : setWaNext(() => then)),
         waAsking: !!waNext,
@@ -116,3 +144,19 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
 }
 
 export const useDemo = () => useContext(Ctx);
+
+/** Her name, photo and handle on every screen: the real account when signed in (owner, 30 Oct 2026), else the sample creator. */
+export function useWho() {
+  const { me } = useContext(Ctx);
+  if (!me) return { name: CREATOR.name, first: CREATOR.first, photo: CREATOR.photo, initials: CREATOR.initials, handle: CREATOR.handle, email: CREATOR.email };
+  const name = me.name?.trim() || me.email?.split("@")[0] || "You";
+  const handle = me.shop?.handle ?? me.handle;
+  return {
+    name,
+    first: name.split(/\s+/)[0],
+    photo: me.photo || "/avatars/blank.svg",
+    initials: name.split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join(""),
+    handle: handle ? `@${handle.replace(/^@/, "")}` : "",
+    email: me.email ?? "",
+  };
+}

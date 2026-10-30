@@ -1,0 +1,240 @@
+import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import type { Lang } from "../../lib/i18n/lang.ts";
+import { translate } from "../../lib/i18n/translate.ts";
+import { lookupProducts } from "../../integrations/tiktok-shop/creator.ts";
+import { approvedCreatorToken } from "../creator-accounts/access.ts";
+import { fetchOwnVideos } from "../admin/videos.ts";
+import { lineCommission, lineEarned, lineGmv, linePartner, techwideCampaigns, type OrderLine, type Source } from "./summary.ts";
+
+/** Sales time frames (owner's list), plus any calendar month as "m:YYYY-MM". */
+export const FRAME_KEYS = ["yesterday", "7d", "14d", "30d", "60d", "90d", "month", "lastmonth", "1y", "all"] as const;
+export type Compare = "none" | "prev" | "year";
+export type Range = { key: string; from: number; to: number; unit: "hour" | "day" | "month"; buckets: number; label: string; dates: string };
+
+const DAY = 86400_000;
+const MYT = 8 * 3600_000;
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const FULL = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+/** Midnight in Malaysia (as a UTC time) of the day containing `t`. */
+const dayStart = (t: number) => Math.floor((t + MYT) / DAY) * DAY - MYT;
+/** Midnight in Malaysia of the first day of the month `add` months after the month containing `t`. */
+const monthStart = (t: number, add = 0) => { const d = new Date(t + MYT); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + add, 1) - MYT; };
+const ymd = (t: number) => { const d = new Date(t + MYT); return { y: d.getUTCFullYear(), m: d.getUTCMonth(), d: d.getUTCDate() }; };
+// Dates in the reader's language: "7 Oct", "Oct 2026", "October", "7 Oct 2026" or "10月7日", "2026年10月", "10月", "2026年10月7日".
+const dayLabel = (t: number, lang: Lang = "en") => { const x = ymd(t); return lang === "zh" ? `${x.m + 1}月${x.d}日` : `${x.d} ${MONTHS[x.m]}`; };
+const monthLabel = (t: number, lang: Lang = "en") => { const x = ymd(t); return lang === "zh" ? `${x.y}年${x.m + 1}月` : `${MONTHS[x.m]} ${x.y}`; };
+const monthName = (m: number, lang: Lang) => (lang === "zh" ? `${m + 1}月` : FULL[m]);
+const fullDay = (t: number, lang: Lang) => { const x = ymd(t); return lang === "zh" ? `${x.y}年${x.m + 1}月${x.d}日` : `${x.d} ${MONTHS[x.m]} ${x.y}`; };
+const monthsBetween = (a: number, b: number) => { const x = ymd(a), y = ymd(b); return (y.y - x.y) * 12 + (y.m - x.m); };
+
+/**
+ * The date range, chart unit and words for a time frame, in Malaysia time. `first`: the creator's first order (for all time).
+ * `lang`: the language of the words and dates.
+ */
+export function frameRange(key: string, now: number, first: number | null, lang: Lang = "en"): Range | null {
+  const today = dayStart(now), end = today + DAY;
+  const w = (en: string) => translate(lang, en);
+  const days = (n: number, label: string): Range => ({ key, from: today - (n - 1) * DAY, to: end, unit: "day", buckets: n, label, dates: `${dayLabel(today - (n - 1) * DAY, lang)} – ${dayLabel(today, lang)}` });
+  switch (key) {
+    case "yesterday": return { key, from: today - DAY, to: today, unit: "hour", buckets: 24, label: translate(lang, "Yesterday"), dates: dayLabel(today - DAY, lang) };
+    case "7d": return days(7, translate(lang, "7 days"));
+    case "14d": return days(14, translate(lang, "14 days"));
+    case "30d": return days(30, translate(lang, "30 days"));
+    case "60d": return days(60, translate(lang, "60 days"));
+    case "90d": return days(90, translate(lang, "90 days"));
+    case "month": { const from = monthStart(now); return { key, from, to: end, unit: "day", buckets: Math.round((end - from) / DAY), label: translate(lang, "This month"), dates: `${dayLabel(from, lang)} – ${dayLabel(today, lang)}` }; }
+    case "lastmonth": { const from = monthStart(now, -1), to = monthStart(now); return { key, from, to, unit: "day", buckets: Math.round((to - from) / DAY), label: translate(lang, "Last month"), dates: monthName(ymd(from).m, lang) }; }
+    case "1y": { const from = monthStart(now, -11); return { key, from, to: end, unit: "month", buckets: 12, label: translate(lang, "1 year"), dates: `${monthLabel(from, lang)} – ${monthLabel(today, lang)}` }; }
+    case "all": { const from = monthStart(first ?? now, 0); return { key, from, to: end, unit: "month", buckets: monthsBetween(from, today) + 1, label: translate(lang, "All time"), dates: first ? translate(lang, "Since {date}", { date: fullDay(first, lang) }) : translate(lang, "No orders yet") }; }
+  }
+  // A custom range from the calendar: c:YYYY-MM-DD:YYYY-MM-DD (both days included).
+  const c = /^c:(\d{4}-\d{2}-\d{2}):(\d{4}-\d{2}-\d{2})$/.exec(key);
+  if (c) {
+    const a = Date.parse(`${c[1]}T00:00:00Z`) - MYT, b = Date.parse(`${c[2]}T00:00:00Z`) - MYT;
+    if (Number.isNaN(a) || Number.isNaN(b)) return null;
+    const from = Math.min(a, b), to = Math.min(Math.max(a, b) + DAY, end);
+    if (from >= to) return null;
+    const n = Math.round((to - from) / DAY);
+    // Long ranges are charted per month, like 1 year.
+    if (n > 120) return { key, from: monthStart(from), to, unit: "month", buckets: monthsBetween(from, to - DAY) + 1, label: translate(lang, "Custom dates"), dates: `${fullDay(from, lang)} – ${fullDay(to - DAY, lang)}` };
+    return { key, from, to, unit: "day", buckets: n, label: translate(lang, "Custom dates"), dates: n === 1 ? dayLabel(from, lang) : `${dayLabel(from, lang)} – ${dayLabel(to - DAY, lang)}` };
+  }
+  const m = /^m:(\d{4})-(\d{2})$/.exec(key);
+  if (!m) return null;
+  const from = Date.UTC(Number(m[1]), Number(m[2]) - 1, 1) - MYT;
+  if (from > now) return null;
+  const to = Math.min(monthStart(from, 1), end);
+  return { key, from, to, unit: "day", buckets: Math.round((to - from) / DAY), label: lang === "zh" ? `${m[1]}年${Number(m[2])}月` : `${FULL[Number(m[2]) - 1]} ${m[1]}`, dates: w("Whole month") };
+}
+
+/** The range a time frame is compared with: the same length just before, or the same dates a year earlier. */
+export function compareRange(r: Range, how: Compare, lang: Lang = "en"): Range | null {
+  if (how === "none" || (how === "prev" && r.key === "all")) return null;
+  if (how === "year") {
+    const back = (t: number) => { const d = new Date(t + MYT); return Date.UTC(d.getUTCFullYear() - 1, d.getUTCMonth(), d.getUTCDate(), d.getUTCHours()) - MYT; };
+    return { ...r, from: back(r.from), to: back(r.to), label: translate(lang, "Same time last year"), dates: r.unit === "month" ? `${monthLabel(back(r.from), lang)} – ${monthLabel(back(r.to - DAY), lang)}` : `${dayLabel(back(r.from), lang)} – ${dayLabel(back(r.to - 1), lang)}` };
+  }
+  if ((r.unit === "month" && !r.key.startsWith("c:")) || r.key === "lastmonth" || r.key.startsWith("m:")) {
+    const months = r.unit === "month" ? r.buckets : 1;
+    const from = monthStart(r.from, -months), to = r.from;
+    return { ...r, from, to, buckets: r.unit === "month" ? months : Math.round((to - from) / DAY), label: translate(lang, "The period before"), dates: r.unit === "month" ? `${monthLabel(from, lang)} – ${monthLabel(to - DAY, lang)}` : monthName(ymd(from).m, lang) };
+  }
+  const len = r.to - r.from;
+  return { ...r, from: r.from - len, to: r.from, label: translate(lang, "The period before"), dates: r.unit === "hour" ? dayLabel(r.from - len, lang) : `${dayLabel(r.from - len, lang)} – ${dayLabel(r.from - 1, lang)}` };
+}
+
+export type StatusKey = "settled" | "toSettle" | "awaiting" | "refunded" | "ineligible";
+export const statusOf = (s: string | null): StatusKey =>
+  /REFUND|RETURN/i.test(s ?? "") ? "refunded" : /INELIGIBLE|INVALID|CANCEL/i.test(s ?? "") ? "ineligible" : /TO.?SETTLE/i.test(s ?? "") ? "toSettle" : /SETTLED|COMPLETED/i.test(s ?? "") ? "settled" : "awaiting";
+
+/** Orders, sales and commission per status. Refunded and ineligible orders earn nothing: their commission is what was lost. */
+export type StatusRow = { key: StatusKey; orders: number; gmv: number; commission: number; earned: number };
+export type FrameStats = {
+  gmv: number; orders: number; items: number; refunded: number;
+  commission: number; earned: number; partnerShare: number;
+  buckets: number[];
+  status: StatusRow[];
+  /** `earned`: the full commission (what TikTok shows when it pays the creator's agency); `image` added by salesFrame. */
+  products: { productId: string; name: string; shop: string; gmv: number; orders: number; commission: number; earned: number; image?: string | null }[];
+  /** Sales per video and per LIVE (content id): the top 10 of each, best first. `at`: the first order's time. */
+  content: { id: string; type: string; gmv: number; orders: number; at: string }[];
+  techwideGmv: number; otherGmv: number;
+};
+
+const round = (v: number) => Math.round(v * 100) / 100;
+const kept = (l: OrderLine) => Number(l.commission_actual ?? l.commission_estimated ?? 0);
+const earnedRaw = (l: OrderLine) => Number(l.commission_earned_actual ?? l.commission_earned_estimated ?? l.commission_actual ?? l.commission_estimated ?? 0);
+
+/** Totals for one range of the creator's order lines (`source`: all shops, Techwide's TAP campaigns, or the rest). */
+export function frameStats(lines: OrderLine[], r: Range, techwide: Set<string>, source: Source = "all"): FrameStats {
+  const pick = (l: OrderLine) => source === "all" || (source === "techwide") === (!!l.campaign_id && techwide.has(l.campaign_id));
+  const inRange = lines.filter((l) => { const t = Date.parse(l.created_at); return t >= r.from && t < r.to && pick(l); });
+  const buckets = new Array(r.buckets).fill(0);
+  const at = (t: number) => (r.unit === "hour" ? Math.floor((t - r.from) / 3600_000) : r.unit === "day" ? Math.floor((t - r.from) / DAY) : monthsBetween(r.from, t));
+  const keys: StatusKey[] = ["settled", "toSettle", "awaiting", "refunded", "ineligible"];
+  const status = new Map(keys.map((k) => [k, { key: k, orders: new Set<string>(), gmv: 0, commission: 0, earned: 0 }]));
+  const products = new Map<string, FrameStats["products"][number]>();
+  const content = new Map<string, FrameStats["content"][number]>();
+  let techwideGmv = 0;
+  for (const l of inRange) {
+    const g = lineGmv(l);
+    const i = at(Date.parse(l.created_at));
+    if (i >= 0 && i < buckets.length) buckets[i] += g;
+    if (l.campaign_id && techwide.has(l.campaign_id)) techwideGmv += g;
+    const st = status.get(statusOf(l.status))!;
+    st.orders.add(l.order_id);
+    st.gmv += Number(l.price) * l.quantity;
+    const lost = st.key === "refunded" || st.key === "ineligible";
+    st.commission += lost ? Number(l.commission_estimated ?? 0) || earnedRaw(l) : kept(l);
+    st.earned += earnedRaw(l);
+    const key = l.product_id ?? l.product_name ?? "?";
+    const p = products.get(key) ?? { productId: l.product_id ?? "", name: (l.product_name ?? "TikTok Shop product").replace(/\s+/g, " ").trim(), shop: l.shop_name ?? "", gmv: 0, orders: 0, commission: 0, earned: 0 };
+    p.gmv += g;
+    p.orders += 1;
+    p.commission += lineCommission(l);
+    p.earned += lineEarned(l);
+    products.set(key, p);
+    if (l.content_id) {
+      const c = content.get(l.content_id) ?? { id: l.content_id, type: l.content_type ?? "VIDEO", gmv: 0, orders: 0, at: l.created_at };
+      c.gmv += g;
+      c.orders += 1;
+      if (l.created_at < c.at) c.at = l.created_at;
+      content.set(l.content_id, c);
+    }
+  }
+  const gmv = inRange.reduce((a, l) => a + lineGmv(l), 0);
+  const ranked = [...content.values()].sort((a, b) => b.gmv - a.gmv);
+  const isLive = (c: { type: string }) => /LIVE/i.test(c.type);
+  return {
+    gmv: round(gmv),
+    orders: new Set(inRange.map((l) => l.order_id)).size,
+    items: inRange.reduce((a, l) => a + (/REFUND/i.test(l.status ?? "") ? 0 : Math.max(0, l.quantity - l.refunded_quantity - l.returned_quantity)), 0),
+    refunded: round(inRange.filter((l) => /REFUND/i.test(l.status ?? "")).reduce((a, l) => a + Number(l.price) * l.quantity, 0)),
+    commission: round(inRange.reduce((a, l) => a + lineCommission(l), 0)),
+    earned: round(inRange.reduce((a, l) => a + lineEarned(l), 0)),
+    partnerShare: round(inRange.reduce((a, l) => a + linePartner(l), 0)),
+    buckets: buckets.map(round),
+    status: keys.map((k) => { const s = status.get(k)!; return { key: k, orders: s.orders.size, gmv: round(s.gmv), commission: round(s.commission), earned: round(s.earned) }; }),
+    products: [...products.values()].sort((a, b) => b.gmv - a.gmv).slice(0, 10).map((p) => ({ ...p, gmv: round(p.gmv), commission: round(p.commission), earned: round(p.earned) })),
+    content: [...ranked.filter((c) => /VIDEO/i.test(c.type)).slice(0, 10), ...ranked.filter(isLive).slice(0, 10)].map((c) => ({ ...c, gmv: round(c.gmv) })),
+    techwideGmv: round(techwideGmv),
+    otherGmv: round(gmv - techwideGmv),
+  };
+}
+
+const COLUMNS = "order_id,product_id,product_name,shop_name,price,quantity,refunded_quantity,returned_quantity,commission_estimated,commission_actual,commission_earned_estimated,commission_earned_actual,partner_share,campaign_id,content_type,content_id,status,created_at,synced_at";
+
+/** The creator's order lines created in [from, to), read 1,000 at a time, 8 pages at once (busy creators have 50,000+). */
+export async function linesBetween(userId: string, from: number, to: number): Promise<OrderLine[]> {
+  const base = `creator_orders?user_id=eq.${userId}&created_at=gte.${new Date(from).toISOString()}&created_at=lt.${new Date(to).toISOString()}&select=${COLUMNS}&order=created_at.desc,order_id,line_id`;
+  const head = await supabaseRest(`${base}&limit=1`, { headers: { prefer: "count=exact" } });
+  const total = Number(head.headers.get("content-range")?.split("/")[1] ?? 0);
+  const pages = Array.from({ length: Math.ceil(total / 1000) }, (_, i) => i * 1000);
+  const out: OrderLine[] = [];
+  const num = (v: unknown) => (v === null || v === undefined ? null : Number(v));
+  for (let i = 0; i < pages.length; i += 8) {
+    const got = await Promise.all(pages.slice(i, i + 8).map(async (offset) => (await (await supabaseRest(`${base}&offset=${offset}&limit=1000`)).json()) as OrderLine[]));
+    for (const page of got)
+      for (const l of page)
+        out.push({ ...l, price: Number(l.price), commission_estimated: num(l.commission_estimated), commission_actual: num(l.commission_actual), commission_earned_estimated: num(l.commission_earned_estimated), commission_earned_actual: num(l.commission_earned_actual), partner_share: num(l.partner_share) });
+  }
+  return out;
+}
+
+export type FrameData = {
+  range: Range;
+  stats: FrameStats;
+  compare: { range: Range; gmv: number; buckets: number[] } | null;
+  /** Titles and covers for the creator's own videos that made sales. */
+  videos: Record<string, { title: string | null; cover: string | null; url: string | null }>;
+  first: string | null;
+  now: number;
+};
+
+/** Product photos already looked up, so switching time frames doesn't ask TikTok again. */
+const photos = new Map<string, string | null>();
+
+/** A photo for each product (up to 100 looked up at a time): the Marketplace catalog first, then TikTok Shop's Product Lookup with the creator's sign-in. */
+export async function productImages(userId: string, ids: string[]): Promise<Map<string, string | null>> {
+  const want = [...new Set(ids.filter((id) => /^\d{15,21}$/.test(id) && !photos.has(id)))];
+  if (want.length) {
+    const rows = (await (await supabaseRest(`tap_catalog?product_id=in.(${want.join(",")})&select=product_id,image`)).json()) as { product_id: string; image: string | null }[];
+    for (const r of rows) if (r.image) photos.set(r.product_id, r.image);
+    const rest = want.filter((id) => !photos.has(id)).slice(0, 100);
+    const token = rest.length ? await approvedCreatorToken(userId) : null;
+    if (token)
+      await Promise.all(Array.from({ length: Math.ceil(rest.length / 20) }, async (_, i) => {
+        const part = rest.slice(i * 20, i * 20 + 20);
+        const r = await lookupProducts(token, part).catch(() => null);
+        for (const x of r?.data?.products ?? []) photos.set(x.id, x.main_image_url ?? null);
+        if (r?.code === 0) for (const id of part) if (!photos.has(id)) photos.set(id, null);
+      }));
+  }
+  return photos;
+}
+
+/** Everything the Sales page shows for one time frame, source and comparison. */
+export async function salesFrame(userId: string, key: string, source: Source, how: Compare, now = Date.now(), lang: Lang = "en"): Promise<FrameData | null> {
+  const [firstRow] = (await (await supabaseRest(`creator_orders?user_id=eq.${userId}&select=created_at&order=created_at.asc&limit=1`)).json()) as { created_at: string }[];
+  const first = firstRow ? Date.parse(firstRow.created_at) : null;
+  const range = frameRange(key, now, first, lang);
+  if (!range) return null;
+  const cmp = compareRange(range, how, lang);
+  const [lines, techwide] = await Promise.all([linesBetween(userId, Math.min(range.from, cmp?.from ?? range.from), range.to), techwideCampaigns()]);
+  const stats = frameStats(lines, range, techwide, source);
+  const compare = cmp ? (() => { const c = frameStats(lines, cmp, techwide, source); return { range: cmp, gmv: c.gmv, buckets: c.buckets }; })() : null;
+  const ids = stats.content.filter((c) => !/LIVE/i.test(c.type)).map((c) => c.id).filter((id) => /^\d{5,25}$/.test(id));
+  const videos: FrameData["videos"] = {};
+  const pics = await productImages(userId, stats.products.slice(0, 6).map((p) => p.productId)).catch(() => photos);
+  for (const p of stats.products) p.image = pics.get(p.productId) ?? null;
+  if (ids.length) {
+    const rows = (await (await supabaseRest(`tiktok_videos?video_id=in.(${ids.join(",")})&select=video_id,title,cover,share_url`)).json()) as { video_id: string; title: string | null; cover: string | null; share_url: string | null }[];
+    const have = new Set(rows.map((r) => r.video_id));
+    rows.push(...(await fetchOwnVideos(userId, ids.filter((id) => !have.has(id))).catch(() => [])));
+    // Covers through Rezekii (TikTok's cover addresses stop working within a day); for every video, with or without a saved
+    // record, as the cover route falls back to the product's photo (owner, 16 Oct 2026).
+    const byId = new Map(rows.map((r) => [r.video_id, r]));
+    for (const id of ids) { const r = byId.get(id); videos[id] = { title: r ? r.title || translate(lang, "Untitled video") : null, cover: `/api/img/v/${id}`, url: r?.share_url ?? null }; }
+  }
+  return { range, stats, compare, videos, first: firstRow?.created_at ?? null, now };
+}

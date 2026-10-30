@@ -132,6 +132,9 @@ export default function SignIn() {
     if (r) setRefCode(r.toUpperCase().slice(0, 20));
     const u = q.get("u");
     if (u && /^[a-z0-9._]{2,24}$/i.test(u)) setHandle(u.toLowerCase());
+    // A real sign-in that didn't finish comes back with ?error=.
+    const err = q.get("error");
+    if (err) toast(err === "denied" ? "Sign-in was cancelled." : err === "config" ? "This sign-in isn't set up yet." : "Sign-in didn't finish. Please try again.");
   }, []);
   const kindError = !kinds.length ? "Pick at least one" : kinds.includes("Others") && !otherKind.trim() ? "Tell us which one" : "";
 
@@ -189,10 +192,9 @@ export default function SignIn() {
 
   function oauth(p: keyof typeof PROVIDER) {
     setProvider(p);
-    setName(PROVIDER[p].who);
     setStep("oauth");
-    // Signing in goes straight in; only a new account fills in the rest (owner, 30 Oct 2026).
-    window.setTimeout(() => (entry === "in" ? finish(`Welcome back, ${PROVIDER[p].who.split(" ")[0]}`) : setStep("profile")), 1100);
+    // Real sign-in (owner, 30 Oct 2026): Google or TikTok, then back into the app with a session.
+    window.location.href = p === "Google" ? "/api/auth/google/start" : "/api/auth/tiktok/start";
   }
 
   function typeBirthday(raw: string) {

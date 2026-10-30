@@ -1,5 +1,6 @@
 "use client";
 
+import { useWho } from "@/components/demo";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
@@ -22,6 +23,7 @@ const mask = (s: string | undefined, hide: boolean) => (s && hide ? s.replace(/R
 
 /** One story page as a 9:16 card: Rimau up top, the news below, her handle and the Rezekii mark at the foot. */
 export function StoryCard({ page, hide = false, date }: { page: StoryPage; hide?: boolean; date: string }) {
+  const you = useWho();
   const h = hide && page.money;
   return (
     <div className={`dsc dsc-${page.tone}`} role="img" aria-label={`${page.kick}: ${mask(page.big, !!h)} ${mask(page.head, !!h)}`}>
@@ -59,8 +61,8 @@ export function StoryCard({ page, hide = false, date }: { page: StoryPage; hide?
           <b>rezekii.com</b>
           <span className="dsc-me">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={CREATOR.photo} alt="" />
-            {CREATOR.handle}
+            <img src={you.photo} alt="" />
+            {you.handle}
           </span>
         </span>
       </div>
@@ -73,6 +75,7 @@ export function StoryCard({ page, hide = false, date }: { page: StoryPage; hide?
  * side for back, hold to pause. Each page has its own button and Share.
  */
 export function DailyStory({ day = "good", onClose }: { day?: SampleDay; onClose: () => void }) {
+  const you = useWho();
   const pages = storyFor(day);
   const last = pages.length - 1;
   const [i, setI] = useState(0);
@@ -148,7 +151,7 @@ export function DailyStory({ day = "good", onClose }: { day?: SampleDay; onClose
           <div className="ss-head">
             <span className="ss-ring ds-ring"><Rimau pose="wave" motion="pop" /></span>
             <b>Rimau&apos;s Daily Story</b>
-            <small>{CREATOR.handle} · {left ? `ends in ${left}h` : "today"}</small>
+            <small>{you.handle} · {left ? `ends in ${left}h` : "today"}</small>
             <button type="button" className="ss-x" aria-label="Close" onClick={onClose}><Icon name="x" size={20} width={2.4} /></button>
           </div>
 

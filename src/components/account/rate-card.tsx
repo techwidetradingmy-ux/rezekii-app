@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
-import { useDemo } from "@/components/demo";
+import { useDemo, useWho } from "@/components/demo";
 import { Portal, Qr, Seg, ShareSheet, Tip } from "@/components/ui";
 import { PlatformIcon } from "@/components/creator2/bits";
 import { CREATOR, SOCIALS } from "@/lib/mock";
@@ -106,6 +106,7 @@ function Icn({ app }: { app: App }) {
  * choice of what sellers see. Prices can change any time; sellers see the card when they invite her.
  */
 export function RateCard() {
+  const you = useWho();
   const { toast } = useDemo();
   const [rates, setRates] = useState<Record<string, Rate>>(() => Object.fromEntries(ITEMS.map((it) => [it.key, { on: ["tt-video", "tt-live", "ig-reel", "fb-reel", "rights"].includes(it.key), price: "", ...(it.key === "rights" ? { days: RIGHTS_TIP } : {}) }])));
   const [sharing, setSharing] = useState(false);
@@ -303,12 +304,12 @@ export function RateCard() {
           big=""
           label="Rate card"
           lines={[]}
-          caption={`My rate card for TikTok, Instagram and Facebook videos. Book me on Rezekii: rezekii.com/c/${CREATOR.handle.replace(/^@/, "")}`}
+          caption={`My rate card for TikTok, Instagram and Facebook videos. Book me on Rezekii: rezekii.com/c/${you.handle.replace(/^@/, "")}`}
           card={<RateShare packs={show === "À la carte" ? [] : ready} best={best} items={show === "Packages" ? [] : priced} line={packLine} price={(it) => rm(num(rates[it.key].price))} unit={rightsFor} showOn={showOn} />}
           extra={
             <div className="rcs-pick" role="group" aria-label="Show on the card">
               <b>Show on the card</b>
-              {([["whatsapp", "WhatsApp", CREATOR.whatsapp], ["email", "Email", CREATOR.email], ["accounts", "Social accounts", ACCOUNTS.map((a) => a.name).join(", ")]] as const).map(([k, l, v]) => (
+              {([["whatsapp", "WhatsApp", CREATOR.whatsapp], ["email", "Email", you.email], ["accounts", "Social accounts", ACCOUNTS.map((a) => a.name).join(", ")]] as const).map(([k, l, v]) => (
                 <label key={k}><input type="checkbox" checked={showOn[k]} onChange={(e) => setShowOn((s) => ({ ...s, [k]: e.target.checked }))} /><span><b>{l}</b><small>{v}</small></span></label>
               ))}
             </div>
@@ -324,9 +325,10 @@ export function RateCard() {
  * come first; prices only, never sales.
  */
 function RateShare({ packs, best, items, line, price, unit, showOn }: { packs: Pack[]; best: Pack | null; items: Item[]; line: (p: Pack) => string; price: (it: Item) => string; unit: (it: Item) => string; showOn: { whatsapp: boolean; email: boolean; accounts: boolean } }) {
+  const you = useWho();
   const contacts = (showOn.whatsapp ? 1 : 0) + (showOn.email ? 1 : 0);
   return (
-    <div className="rcs" role="img" aria-label={`Rate card for ${CREATOR.handle}`}>
+    <div className="rcs" role="img" aria-label={`Rate card for ${you.handle}`}>
       <span className="rcs-band">
       <span className="rcs-head">
         <span className="rcs-brand">
@@ -337,8 +339,8 @@ function RateShare({ packs, best, items, line, price, unit, showOn }: { packs: P
       </span>
       <span className="rcs-me">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={CREATOR.photo} alt="" />
-        <span><b>{CREATOR.handle}</b><small>{CREATOR.level} creator on Rezekii</small></span>
+        <img src={you.photo} alt="" />
+        <span><b>{you.handle}</b><small>{CREATOR.level} creator on Rezekii</small></span>
       </span>
       {showOn.accounts && <span className="rcs-socials">{ACCOUNTS.map((a) => <PlatformIcon key={a.name} name={a.name} size={18} />)}</span>}
       </span>
@@ -357,12 +359,12 @@ function RateShare({ packs, best, items, line, price, unit, showOn }: { packs: P
       {contacts > 0 && (
         <span className="rcs-contact">
           {showOn.whatsapp && <span><Icon name="whatsapp" size={12} />{CREATOR.whatsapp}</span>}
-          {showOn.email && <span><Icon name="inbox" size={12} />{CREATOR.email}</span>}
+          {showOn.email && <span><Icon name="inbox" size={12} />{you.email}</span>}
         </span>
       )}
       <span className="rcs-valid">Quote valid {QUOTE.days} days · until {QUOTE.until}</span>
       <span className="rcs-foot">
-        <span><b>Book me on Rezekii</b><small>rezekii.com/c/{CREATOR.handle.replace(/^@/, "")}</small></span>
+        <span><b>Book me on Rezekii</b><small>rezekii.com/c/{you.handle.replace(/^@/, "")}</small></span>
         <Qr />
       </span>
     </div>

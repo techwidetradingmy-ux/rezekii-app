@@ -1,5 +1,6 @@
 "use client";
 
+import { useWho } from "@/components/demo";
 import { FeedbackForm } from "@/components/feedback-form";
 import { DailyStory } from "@/components/daily-story";
 import { STORY_SEEN, storyDayKey, type SampleDay } from "@/lib/daily-story";
@@ -73,12 +74,13 @@ function Chest() {
 }
 
 export function Shell({ app, children, banner }: { app: AppKind; children: React.ReactNode; banner?: React.ReactNode }) {
+  const you = useWho();
   const path = usePathname();
   // Back returns to the same scroll on every page (owner, 29 Oct 2026); open sections come back through useKept.
   useScrollMemory(path);
   const section = sectionFor(app, path);
   const page = section ? pageFor(section, path) : null;
-  const who = WHO[app];
+  const who = app === "creator" ? { ...WHO.creator, name: you.first, initials: you.initials, photo: you.photo } : WHO[app];
   const [more, setMore] = useState(false);
   const menu = MENUS[app];
   // Where the top menu's pill sits: measured from the open section's link, again on resize.
@@ -340,8 +342,9 @@ const AiSpark = ({ label }: { label: string }) => (AI_PAGES.includes(label) ? <s
 
 /** Every account section in a panel from the right (phones), with her photo, level and streak on top. */
 function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory: () => void }) {
+  const you = useWho();
   const path = usePathname();
-  const { toast, linked } = useDemo();
+  const { toast, linked, live } = useDemo();
   // Language, theme, support and feedback live here on phones (owner, 29 Oct 2026), not in Settings.
   // Theme is one icon (owner, 29 Oct 2026): each tap moves Light → Dark → Auto, and the icon shows the current one.
   const [theme, setTheme] = useState<Theme>("Auto");
@@ -368,9 +371,9 @@ function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory: () =
       <aside className="ap-panel" role="dialog" aria-modal="true" aria-label="My Account">
         <div className="ap-me">
           {/* Her TikTok level frame, the same as on My Account (owner, 29 Oct 2026). */}
-          <LevelFace lv={linked ? CREATOR.tiktokLevel : null} size={56} img={CREATOR.photo} name={CREATOR.name} />
+          <LevelFace lv={linked ? CREATOR.tiktokLevel : null} size={56} img={you.photo} name={you.name} />
           <span>
-            <b>{CREATOR.name}</b><small>{CREATOR.handle}</small>
+            <b>{you.name}</b><small>{you.handle}</small>
             <span className="ap-chips">
               <i className={`lv ${CREATOR.level.toLowerCase()}`} title={`${CREATOR.level} creator`} aria-label={`${CREATOR.level} creator`}><Icon name="gem" size={13} /></i>
               <i className="st" title={`${CREATOR.streak}-day streak`} aria-label={`${CREATOR.streak}-day streak`}><Icon name="flame" size={13} />{CREATOR.streak}</i>
@@ -402,7 +405,7 @@ function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory: () =
           </Sheet>
         )}
         {/* Sign out lives in the panel on phones, not in Settings (owner, 29 Oct 2026). */}
-        <Link href="/signin?in=1" className="ap-signout" onClick={onClose}><Icon name="back" size={17} /> Sign out</Link>
+        <Link href="/signin?in=1" className="ap-signout" onClick={(e) => { if (!live) return onClose(); e.preventDefault(); fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/signin?in=1"; }); }}><Icon name="back" size={17} /> Sign out</Link>
         {/* Legal and contact sit at the foot of the panel on phones (owner, 29 Oct 2026). */}
         <footer className="ap-foot">
           <span className="ap-links">

@@ -1,5 +1,6 @@
 "use client";
 
+import { useWho } from "@/components/demo";
 import { useEffect, useRef, useState } from "react";
 import { Icon, type IconName } from "@/components/icons";
 import { Emblem, type Level } from "@/components/emblems";
@@ -65,6 +66,7 @@ type Share = { big: string; label: string; lines: string[]; level?: Level; kicke
  * emblems, the Highly active honour, and a sticker wall of badges. Everything can be shared as a card.
  */
 export function LevelBadges() {
+  const you = useWho();
   const card = useRef<HTMLDivElement>(null);
   const [burst, setBurst] = useState(0);
   const [pick, setPick] = useState(LEVELS.findIndex((l) => l.name === CREATOR.level));
@@ -113,7 +115,7 @@ export function LevelBadges() {
             onPointerLeave={rest}
             onClick={() => setBurst((b) => b + 1)}
             role="img"
-            aria-label={`Creator card: ${CREATOR.handle}, ${CREATOR.level}, TikTok Shop Lv.${CREATOR.tiktokLevel}, ${got} badges`}
+            aria-label={`Creator card: ${you.handle}, ${CREATOR.level}, TikTok Shop Lv.${CREATOR.tiktokLevel}, ${got} badges`}
           >
             <span className="lb-holo" aria-hidden="true" />
             <span className="lb-glare" aria-hidden="true" />
@@ -125,7 +127,7 @@ export function LevelBadges() {
             </span>
             <Emblem level={mine} size={132} animate />
             <span className="lb-tier">{CREATOR.level.toUpperCase()}</span>
-            <strong className="lb-name">{CREATOR.handle}</strong>
+            <strong className="lb-name">{you.handle}</strong>
             <span className="lb-stats">
               <span><b>Lv.{CREATOR.tiktokLevel}</b>TikTok Shop</span>
               <span><b>{CREATOR.streak}</b>day streak</span>
