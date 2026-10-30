@@ -97,9 +97,12 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     if (on && (!consent || consent.unlinkedAt)) return setAsking("creator");
     if (!on && consent && !consent.unlinkedAt) save({ ...consent, unlinkedAt: now() });
     if (me) {
-      // Real account: linking goes to TikTok Shop; unlinking removes the real link.
+      // Real account: linking goes to TikTok Shop; unlinking removes the real link and withdraws the consent on record.
       if (on) window.location.href = "/api/auth/tiktokshop/start";
-      else fetch("/api/account/tiktokshop/unlink", { method: "POST" }).finally(refreshMe);
+      else {
+        void fetch("/api/v2/consent", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ role: "creator", action: "withdrawn" }) }).catch(() => null);
+        fetch("/api/account/tiktokshop/unlink", { method: "POST" }).finally(refreshMe);
+      }
       return;
     }
     store(on);
@@ -108,6 +111,8 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     recordConsent(asking ?? "creator");
     setAsking(null);
     if (me) {
+      // Kept on record (owner, 31 Oct 2026) for the admin Consent Log; keepalive lets it finish as the page moves on.
+      void fetch("/api/v2/consent", { method: "POST", keepalive: true, headers: { "content-type": "application/json" }, body: JSON.stringify({ role: asking ?? "creator", action: "agreed" }) }).catch(() => null);
       window.location.href = "/api/auth/tiktokshop/start";
       return;
     }

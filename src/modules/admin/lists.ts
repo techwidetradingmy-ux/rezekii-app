@@ -117,3 +117,26 @@ export async function sellerList() {
     };
   });
 }
+
+/**
+ * The consent log: every agreement and withdrawal, newest first, with the TikTok Shop link it led to. Accounts linked before
+ * the log started (31 Oct 2026) are counted separately; they have no record.
+ */
+export async function consentList() {
+  const [list, links] = await Promise.all([
+    rows<{ id: string; user_id: string; role: string; action: string; terms: string; privacy: string; ip: string | null; user_agent: string | null; created_at: string }>(
+      "consents?select=id,user_id,role,action,terms,privacy,ip,user_agent,created_at&order=created_at.desc&limit=2000",
+    ),
+    rows<{ user_id: string | null; username: string | null; connected_at: string }>("affiliate_connections?user_id=not.is.null&select=user_id,username,connected_at&limit=5000"),
+  ]);
+  const names = await namesOf(list.map((r) => r.user_id));
+  const linkOf = new Map(links.map((l) => [l.user_id!, l]));
+  const recorded = new Set(list.map((r) => r.user_id));
+  return {
+    entries: list.map((r) => {
+      const l = linkOf.get(r.user_id);
+      return { ...r, who: names.get(r.user_id)?.name ?? "Someone", handle: names.get(r.user_id)?.handle ?? null, linked: l ? { shop: l.username, at: l.connected_at } : null };
+    }),
+    before: links.filter((l) => l.user_id && !recorded.has(l.user_id)).length,
+  };
+}

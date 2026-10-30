@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/admin.css";
+import { LiveConsent } from "@/components/admin/live-consent";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -13,10 +14,12 @@ const PILL: Record<ConsentRow["status"], string> = { Active: "ok", Unlinked: "wa
 
 /** Consent log: every agreement to the Terms and Privacy Policy before linking TikTok Shop, with evidence and what happened after. Read-only. */
 export default function ConsentLog() {
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const [q, setQ] = useState("");
   const [show, setShow] = useState<Show>("All");
   const [open, setOpen] = useState<ConsentRow | null>(null);
+  // Signed in (owner, 31 Oct 2026): the real consent log.
+  if (live) return <LiveConsent />;
   const shown = CONSENTS.filter((c) => (show === "All" || c.status === show) && (!q || `${c.who} ${c.id} ${c.grant}`.toLowerCase().includes(q.toLowerCase())));
   const count = (s: Show) => CONSENTS.filter((c) => s === "All" || c.status === s).length;
 
