@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { creatorsPage } from "@/modules/admin/creators.ts";
 import { postsBetween } from "@/modules/admin/posts.ts";
+import { missionsReport } from "@/modules/admin/missions-report.ts";
+import { analyticsV2 } from "@/modules/admin/analytics-v2.ts";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -10,10 +12,12 @@ const DAY = 86_400_000;
 const PARTS = {
   creators: async () => (await creatorsPage()).creators,
   review: creatorsPage,
+  missions: missionsReport,
+  analytics: analyticsV2,
   posts: () => postsBetween(new Date(Date.now() - 14 * DAY).toISOString(), new Date(Date.now() + 14 * DAY).toISOString()),
 } as const;
 
-/** Admin data from Rezekii's own records (admins only; owner, 31 Oct 2026): ?part=creators|review|posts. */
+/** Admin data from Rezekii's own records (admins only; owner, 31 Oct 2026): ?part=creators|review|missions|analytics|posts. */
 export async function GET(req: NextRequest) {
   const user = await currentUser();
   if (user?.role !== "admin") return NextResponse.json({ error: "Admins only." }, { status: 403 });

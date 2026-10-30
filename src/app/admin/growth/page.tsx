@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/admin.css";
+import { LiveMissions } from "@/components/admin/live-growth";
 import { useState } from "react";
 import { Icon, type IconName } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -38,10 +39,12 @@ const estimate = (m: MissionDef) => Math.round(((VOLUME[m.trigger] ?? 200) * fir
 
 /** Missions and rewards, set up without code: trigger, goal, tiers, caps, deadline after sign-up, late rule, card. */
 export default function GrowthMissions() {
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const [who, setWho] = useState<"Creators" | "Sellers">("Creators");
   const [list, setList] = useState<Def[]>(MISSION_DEFS);
   const [edit, setEdit] = useState<Def | null>(null);
+  // Signed in (owner, 31 Oct 2026): real data.
+  if (live) return <LiveMissions />;
   const shown = list.filter((m) => m.who === (who === "Creators" ? "Creator" : "Seller"));
   const issued = shown.filter((m) => m.status === "Live").reduce((a, m) => a + estimate(m), 0);
 

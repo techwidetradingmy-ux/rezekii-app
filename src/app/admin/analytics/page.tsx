@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/admin.css";
+import { LiveAnalytics } from "@/components/admin/live-growth";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -14,11 +15,13 @@ const SCALE: Record<Range, number> = { "Last 7 days": 0.24, "Last 30 days": 1, "
 
 /** Platform-wide analytics: funnels, events by day, and one person's activity timeline. Every chart says its range, time zone and source. */
 export default function Analytics() {
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const [range, setRange] = useState<Range>("Last 30 days");
   const [who, setWho] = useState<"Creators" | "Sellers">("Creators");
   const [ev, setEv] = useState("Sign-ups");
   const [q, setQ] = useState("@farah.home");
+  // Signed in (owner, 31 Oct 2026): real data.
+  if (live) return <LiveAnalytics />;
   const s = SCALE[range];
   const steps = FUNNEL[who].map(([l, v]) => [l, Math.round(v * s)] as [string, number]);
   const series = EVENTS[ev];

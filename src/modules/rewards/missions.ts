@@ -215,3 +215,15 @@ export async function claim(user: { id: string; created_at: string }, side: Side
   }
   return { board: (await build(user, side)).board, gained, chest, tier };
 }
+
+/** Every mission as defined in code, for the admin pages (owner, 31 Oct 2026: missions aren't edited in admin yet). */
+export function missionCatalog(): { side: Side; id: string; title: string; reward: number; kind: "Daily" | "Starter" | "Milestone" }[] {
+  const out: ReturnType<typeof missionCatalog> = [];
+  const add = (side: Side, kind: "Daily" | "Starter" | "Milestone", defs: Def[]) => { for (const d of defs) out.push({ side, id: d.id, title: TITLES[side][d.id] ?? d.id, reward: d.reward, kind }); };
+  add("creator", "Daily", CREATOR_DAILY);
+  add("creator", "Starter", CREATOR_STARTER);
+  add("seller", "Daily", SELLER_DAILY);
+  add("seller", "Starter", SELLER_STARTER);
+  add("seller", "Milestone", SELLER_MILESTONES);
+  return out;
+}

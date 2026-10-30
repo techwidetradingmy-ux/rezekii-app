@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/admin.css";
+import { LiveProgress } from "@/components/admin/live-growth";
 import Link from "next/link";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
@@ -13,12 +14,14 @@ type View = "Per person" | "Per mission";
 
 /** Progress per person (where each creator or seller is in each mission) and per mission (where people get stuck). */
 export default function GrowthProgress() {
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const [view, setView] = useState<View>("Per person");
   const [q, setQ] = useState("");
   const [who, setWho] = useState(PROGRESS_PEOPLE[0].key);
   const withFunnel = MISSION_DEFS.filter((m) => MISSION_FUNNELS[m.id]);
   const [mid, setMid] = useState(withFunnel[0].id);
+  // Signed in (owner, 31 Oct 2026): real data.
+  if (live) return <LiveProgress />;
 
   const matches = PROGRESS_PEOPLE.filter((p) => !q || `${p.key} ${p.who}`.toLowerCase().includes(q.toLowerCase()));
   const person = PROGRESS_PEOPLE.find((p) => p.key === who) ?? PROGRESS_PEOPLE[0];

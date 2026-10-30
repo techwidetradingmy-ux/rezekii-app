@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Title } from "@/components/ui";
-import { Av, Chips } from "@/components/admin/bits";
+import { Av, Chips, Pill } from "@/components/admin/bits";
 import { day, useList, when } from "@/components/admin/live-lists";
 
 type Waiting = { id: string; handle: string; name: string; signIn: string; shopAccount: string | null; access: string; reason: string | null; requestedAt: string | null };
@@ -96,13 +96,19 @@ export function LiveReview() {
 
 type Fb = { id: string; kind: string; message: string; mood: number | null; reply_by: string; page: string | null; status: "new" | "handled"; created_at: string; shot: boolean; who: { name: string; handle: string | null; email: string | null } };
 const FACES = ["😞", "😕", "😐", "🙂", "😍"];
+/** The form's four types (owner, 31 Oct 2026: the inbox is sorted by them). */
+const TYPES = ["All types", "Something's broken", "Question", "Idea", "Compliment"] as const;
+type FType = (typeof TYPES)[number];
+const TYPE_TONE: Record<string, "bad" | "warn" | "info" | "ok"> = { "Something's broken": "bad", Question: "warn", Idea: "info", Compliment: "ok" };
 /** Support › Feedback Inbox on real data: what creators and sellers sent from the Feedback form. */
 export function LiveFeedback() {
   const { toast } = useDemo();
   const [items, err, load] = useList<Fb>("feedback");
   const [filter, setFilter] = useState<"New" | "Handled">("New");
+  const [type, setType] = useState<FType>("All types");
   const [shot, setShot] = useState<string | null>(null);
-  const shown = (items ?? []).filter((f) => (filter === "New" ? f.status === "new" : f.status === "handled"));
+  const inStatus = (items ?? []).filter((f) => (filter === "New" ? f.status === "new" : f.status === "handled"));
+  const shown = inStatus.filter((f) => type === "All types" || f.kind === type);
   const mark = async (f: Fb, status: Fb["status"]) => {
     const r = await fetch("/api/v2/admin/lists", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ feedback: f.id, status }) }).catch(() => null);
     if (!r?.ok) return toast("Didn't save. Please try again.");
@@ -120,13 +126,14 @@ export function LiveFeedback() {
       {!items ? <p className="v2-muted">{err ?? "Loading…"}</p> : (
         <>
           <Chips label="Filter" value={filter} onChange={setFilter} options={[["New", items.filter((f) => f.status === "new").length], ["Handled", items.filter((f) => f.status === "handled").length]]} />
+          <Chips<FType> label="Type" value={type} onChange={setType} options={TYPES.map((t) => [t, t === "All types" ? inStatus.length : inStatus.filter((f) => f.kind === t).length])} />
           <section className="v2-card" style={{ padding: "6px 20px" }}>
             <div className="ad-list">
               {shown.map((f) => (
                 <div key={f.id} className="ad-row" style={{ alignItems: "flex-start" }}>
                   <Av name={f.who.name} />
                   <span className="main">
-                    <b>{f.kind} · {f.who.handle ? `@${f.who.handle}` : f.who.name}{f.mood ? ` ${FACES[f.mood - 1]}` : ""}</b>
+                    <b><Pill tone={TYPE_TONE[f.kind] ?? "info"}>{f.kind}</Pill> {f.who.handle ? `@${f.who.handle}` : f.who.name}{f.mood ? ` ${FACES[f.mood - 1]}` : ""}</b>
                     <small style={{ whiteSpace: "pre-wrap" }}>{f.message}</small>
                     <small>{when(f.created_at)}{f.page ? ` · ${f.page}` : ""} · reply by {f.reply_by}{f.reply_by === "Email" && f.who.email ? ` (${f.who.email})` : ""}</small>
                   </span>
