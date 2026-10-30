@@ -5,6 +5,7 @@ import { connectionForUser } from "@/modules/creator-accounts/affiliate-connecti
 import { sellerShopName } from "@/modules/marketplace/seller-connection.ts";
 import { levelOf } from "@/modules/levels/store.ts";
 import { myPhoto } from "@/modules/photos/store.ts";
+import { supabaseRest } from "@/integrations/supabase/rest.ts";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,11 @@ const NO_STORE = { headers: { "cache-control": "private, no-store" } };
 export async function GET() {
   const user = await currentUser();
   if (!user) return NextResponse.json({ me: null }, NO_STORE);
-  const [link, access, level, sellerShop] = await Promise.all([connectionForUser(user.id).catch(() => null), accessFor(user.id).catch(() => null), levelOf(user.id).catch(() => "bronze" as const), sellerShopName(user).catch(() => null)]);
+  const [link, access, level, sellerShop, tt] = await Promise.all([
+    connectionForUser(user.id).catch(() => null), accessFor(user.id).catch(() => null), levelOf(user.id).catch(() => "bronze" as const), sellerShopName(user).catch(() => null),
+    // Her TikTok Shop creator level, read by the refresh queue after linking (owner, 14 Oct 2026).
+    supabaseRest(`affiliate_connections?user_id=eq.${user.id}&select=tt_level&limit=1`).then((r) => r.json() as Promise<{ tt_level: number | null }[]>).catch(() => []),
+  ]);
   return NextResponse.json(
     {
       me: {
@@ -29,6 +34,7 @@ export async function GET() {
         handle: user.tiktok_username,
         level,
         shop: link ? { handle: link.username, access: access?.status ?? null } : null,
+        ttLevel: link ? tt[0]?.tt_level ?? null : null,
         // The Seller Center shop this account authorized, for the seller app (owner, 30 Oct 2026).
         sellerShop,
       },

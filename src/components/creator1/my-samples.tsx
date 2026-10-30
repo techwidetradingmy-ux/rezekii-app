@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Celebrate, Progress, Seg, ShareSheet, Sheet } from "@/components/ui";
@@ -283,6 +283,74 @@ export function MySamples() {
       {share && (
         <ShareSheet onClose={() => setShare(null)} big="3 / 3" label="Sample delivered on time" lines={[product(share.productId).name, "Free sample through Rezekii"]} moment="sample" />
       )}
+    </div>
+  );
+}
+
+type LiveSample = { id: string; productId: string; name: string; shop: string; image: string | null; stage: number; videos: number; via: string; note: string | null };
+/** TikTok's step as the screen's status: -1 not approved, 1 applied, 2 approved, 3 shipped, 4 received (video due), 5 done. */
+const STATUS: Record<number, SampleStatus> = { [-1]: "Not approved", 1: "Applied", 2: "Approved", 3: "Shipped", 4: "Posting", 5: "Done" };
+
+/**
+ * Samples & Delivery on real data (owner, 31 Oct 2026): her free samples with TikTok's own steps, through Techwide's TAP campaigns
+ * or straight from sellers. TikTok handles delivery and her videos; Rezekii shows where each one is.
+ */
+export function LiveSamples() {
+  const router = useRouter();
+  const [rows, setRows] = useState<LiveSample[] | null | "error">(null);
+  const [tab, setTab] = useKept<Tab>("samples-tab", "In progress");
+  useEffect(() => {
+    fetch("/api/v2/samples", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((d: { samples: LiveSample[] }) => setRows(d.samples))
+      .catch(() => setRows("error"));
+  }, []);
+  if (rows === null) return <p className="v2-muted">Loading your samples…</p>;
+  if (rows === "error") return <p className="v2-muted">Couldn&apos;t load your samples. Please refresh.</p>;
+  const list = rows.map((r) => ({ ...r, status: STATUS[r.stage] ?? "Applied" }));
+  const tabOfLive = (s: { status: SampleStatus }) => (s.status === "Done" ? "Done" : s.status === "Not approved" ? "Not approved" : "In progress");
+  const count = (t: Tab) => list.filter((s) => tabOfLive(s) === t).length;
+  const labels = TABS.map((t) => `${t} (${count(t)})`);
+  const shown = list.filter((s) => tabOfLive(s) === tab);
+  return (
+    <div className="v2-stack v2-in" style={{ gap: 20 }}>
+      <div className="cr1-segwrap cr1-segbar">
+        <Seg value={labels[TABS.indexOf(tab)]} options={labels} onChange={(v) => setTab(TABS[labels.indexOf(v)])} />
+        <Link href="/app/market" className="v2-iconbtn" aria-label="Open Marketplace" title="Marketplace"><Icon name="store" size={18} /></Link>
+      </div>
+      <div className="v2-stack" style={{ gap: 14 }}>
+        {shown.map((s) => (
+          <article key={s.id} className={`v2-card cr1-sample ${s.status === "Not approved" ? "bad" : ""}`}>
+            <div className="cr1-sample-top">
+              {s.image ? (
+                // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
+                <img className="pv-open" src={s.image} alt="" onClick={() => router.push(productHref(s.productId))} />
+              ) : <span className="cr1-parcel-ico"><Icon name="box" size={20} /></span>}
+              <span>
+                <strong><Link href={productHref(s.productId)} className="pv-open">{s.name}</Link></strong>
+                <span className="cr1-shopline"><small>{[s.shop, s.via].filter(Boolean).join(" · ")}</small></span>
+              </span>
+            </div>
+            <StepBar status={s.status} videos={s.videos} />
+            {s.status === "Posting" && <p className="cr1-bonus"><Icon name="video" size={16} /> Received. Post your video with the product in your yellow basket.</p>}
+            {(s.status === "Posting" || s.status === "Done") && s.videos > 0 && <p className="v2-small" style={{ margin: 0 }}>{s.videos} video{s.videos === 1 ? "" : "s"} counted by TikTok</p>}
+            {s.note && <p className="v2-small" style={{ margin: 0 }}>{s.note}</p>}
+            {s.status === "Not approved" && (
+              <div className="v2-row">
+                <Link href="/app/market" className="np-btn v2-btn-sm">See Free Samples</Link>
+              </div>
+            )}
+          </article>
+        ))}
+        {shown.length === 0 && (
+          <div className="v2-card flat" style={{ alignItems: "flex-start" }}>
+            <b>Nothing here</b>
+            <span className="v2-muted">{tab === "Not approved" ? "No rejected requests." : "Request a free sample to start."}</span>
+            <Link href="/app/market" className="np-btn v2-btn-sm">Browse samples</Link>
+          </div>
+        )}
+      </div>
+      <p className="v2-small" style={{ margin: 0 }}>TikTok ships your samples to the address in your TikTok account.</p>
     </div>
   );
 }

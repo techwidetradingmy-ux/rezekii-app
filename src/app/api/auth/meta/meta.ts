@@ -8,11 +8,15 @@ export const metaCookie = (p: Platform) => `rz_oauth_meta_${p}`;
 export const META_BACK = "rz_meta_back";
 /** The return address registered in the Meta app for each channel. */
 export const metaCallbackUrl = (req: NextRequest, p: Platform) => `${appBase(req)}/api/auth/meta/${p}/callback`;
-export const composerPath = (req: NextRequest) => (req.cookies.get(META_BACK)?.value === "seller" ? "/seller/app/publish" : "/app/publish");
+export const composerPath = (req: NextRequest) => {
+  const back = req.cookies.get(META_BACK)?.value;
+  return back === "seller" ? "/seller/app/publish" : back === "account" ? "/app/account" : "/app/publish";
+};
 
-/** Back to New Post with the result, e.g. ?channel=instagram&connect=ok (shown there as a message). */
+/** Back where she started (New Post or My Account) with the result, e.g. ?channel=instagram&connect=ok (shown as a message). */
 export function backToComposer(req: NextRequest, p: Platform, result: string): NextResponse {
-  const res = NextResponse.redirect(`${appBase(req)}${composerPath(req)}?channel=${p}&connect=${result}`);
+  const path = composerPath(req);
+  const res = NextResponse.redirect(`${appBase(req)}${path}?channel=${p}&connect=${result}${path === "/app/account" ? "#connections" : ""}`);
   res.cookies.set(metaCookie(p), "", { ...OAUTH_COOKIE_OPTIONS, maxAge: 0 });
   res.cookies.set(META_BACK, "", { ...OAUTH_COOKIE_OPTIONS, maxAge: 0 });
   return res;

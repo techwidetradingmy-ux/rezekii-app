@@ -3,14 +3,14 @@
 import { FeedbackForm } from "@/components/feedback-form";
 import { SUPPORT } from "@/lib/support";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo, useWho } from "@/components/demo";
 import { Seg, Sheet, Title } from "@/components/ui";
 import { useSideScroll } from "@/components/side-scroll";
 import { PlatformIcon } from "@/components/creator2/bits";
 import { CREATOR, MY_SAMPLES, SOCIALS } from "@/lib/mock";
-import { MySamples } from "@/components/creator1/my-samples";
+import { LiveSamples, MySamples } from "@/components/creator1/my-samples";
 import { LevelFace } from "@/components/level-face";
 import { LevelBadges } from "@/components/account/level-badges";
 import { Referral } from "@/components/account/referral";
@@ -121,6 +121,29 @@ export default function Account() {
   }, []);
   const pickTheme = (t: Theme) => { setTheme(t); applyTheme(t); };
 
+  // Signed in (owner, 31 Oct 2026): her real channels for Connections, and a message when she comes back from connecting one.
+  type Chan = { key: string; app: "tiktok" | "facebook" | "instagram" | "threads"; name: string; sub: string; status: "active" | "reconnect" };
+  const [chans, setChans] = useState<Chan[] | null>(null);
+  const loadChans = () => fetch("/api/v2/publish?part=setup&side=creator", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d: { channels?: Chan[] } | null) => setChans(d?.channels ?? [])).catch(() => setChans([]));
+  useEffect(() => {
+    if (!live) return;
+    void loadChans();
+    const q = new URLSearchParams(window.location.search);
+    const result = q.get("connect");
+    if (result) {
+      const app = ({ tiktok: "TikTok", facebook: "Facebook", instagram: "Instagram", threads: "Threads" } as Record<string, string>)[q.get("channel") ?? ""] ?? "The app";
+      toast(result === "ok" ? `${app} connected.` : result === "no_pages" ? "No Facebook Pages were picked. Connect again and tick your Pages." : result === "personal" ? "That Instagram account is personal. Switch it to a Business or Creator account, then connect again." : result === "cancelled" ? `${app} sign-in was cancelled.` : `${app} didn't connect. Please try again.`);
+      window.history.replaceState(null, "", `${window.location.pathname}${window.location.hash}`);
+    }
+  }, [live]); // eslint-disable-line react-hooks/exhaustive-deps
+  const connectApp = (app: Chan["app"]) => { window.location.href = app === "tiktok" ? "/api/auth/tiktok/start" : `/api/auth/meta/${app}/start?from=account`; };
+  const disconnect = async (c: Chan) => {
+    const r = await fetch(c.app === "tiktok" ? `/api/account/tiktok/${encodeURIComponent(c.key.replace(/^tiktok:/, ""))}` : `/api/social/accounts/${c.key}`, { method: "DELETE" }).catch(() => null);
+    if (!r?.ok) return toast("Couldn't disconnect. Try again.");
+    toast(c.app === "tiktok" ? `${c.name} disconnected. Its scheduled posts moved to drafts.` : `${c.name} disconnected. Its scheduled posts were cancelled.`);
+    void loadChans();
+  };
+
   // Signed in (owner, 31 Oct 2026): her saved profile, or an empty one to fill in once; and her real streak.
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -202,7 +225,7 @@ export default function Account() {
         {tab !== "referral" && (
         <div className="cr2-cells">
           <div className="cr2-profile">
-            <LevelFace lv={linked ? CREATOR.tiktokLevel : null} size={76} img={you.photo} name={you.name} />
+            <LevelFace lv={live ? me?.ttLevel ?? null : linked ? CREATOR.tiktokLevel : null} size={76} img={you.photo} name={you.name} />
             <span>
               <strong className="cr2-name">
                 {name || you.name}
@@ -233,7 +256,7 @@ export default function Account() {
           {TABS.map(([k, label, icon]) => (
             <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? "on" : undefined} onClick={() => go(k)}>
               <Icon name={icon} size={17} /> {label}
-              {k === "samples" && <span className="badge badge-amber">{active}</span>}
+              {k === "samples" && !live && <span className="badge badge-amber">{active}</span>}
             </button>
           ))}
           {/* Sign out at the end of the side menu, in red, on wide screens (owner, 31 Oct 2026). Phones have it in the account panel. */}
@@ -369,7 +392,47 @@ export default function Account() {
           </>
         )}
 
-        {tab === "connections" && (
+        {tab === "connections" && live && (
+        <section className="cr2-group">
+          <h2>Connections</h2>
+          <div className="cr2-cells">
+            <div className="cr2-cell row">
+              <BrandLogo name="TikTok Shop" size={34} className="cr2-pi" />
+              <span className="cr2-conn"><b>TikTok Shop</b><small>{me?.shop ? `@${me.shop.handle}${me.shop.access && me.shop.access !== "approved" ? " · waiting for approval" : ""}` : "Not linked"}</small></span>
+              {me?.shop ? <button type="button" className="btn-outline v2-btn-sm" onClick={() => setUnlink(true)}>Unlink</button> : <button type="button" className="np-btn v2-btn-sm" onClick={() => setLinked(true)}>Link</button>}
+            </div>
+            {chans === null && <p className="v2-muted" style={{ margin: "8px 0" }}>Loading your accounts…</p>}
+            {chans !== null && (["tiktok", "facebook", "instagram", "threads"] as const).map((app) => {
+              const label = { tiktok: "TikTok account", facebook: "Facebook Page", instagram: "Instagram", threads: "Threads" }[app];
+              const icon = { tiktok: "TikTok", facebook: "Facebook", instagram: "Instagram", threads: "Threads" }[app] as "TikTok" | "Facebook" | "Instagram" | "Threads";
+              const mine = chans.filter((c) => c.app === app);
+              return (
+                <Fragment key={app}>
+                  {mine.map((c) => (
+                    <div key={c.key} className="cr2-cell row">
+                      <PlatformIcon name={icon} size={34} />
+                      <span className="cr2-conn"><b>{c.name}</b><small>{c.sub}{c.status === "reconnect" ? " · needs reconnecting" : ""}</small></span>
+                      {c.status === "reconnect" && <button type="button" className="np-btn v2-btn-sm" onClick={() => connectApp(app)}><Icon name="refresh" size={15} /> Reconnect</button>}
+                      <button type="button" className="btn-outline v2-btn-sm" onClick={() => void disconnect(c)}>Disconnect</button>
+                    </div>
+                  ))}
+                  <div className="cr2-cell row">
+                    <PlatformIcon name={icon} size={34} />
+                    <span className="cr2-conn"><b>{mine.length ? `Add another ${label}` : label}</b><small>{mine.length ? "Connect one more" : "Not connected"}</small></span>
+                    <button type="button" className={mine.length ? "btn-outline v2-btn-sm" : "np-btn v2-btn-sm"} onClick={() => connectApp(app)}>Connect</button>
+                  </div>
+                </Fragment>
+              );
+            })}
+            <div className="cr2-cell row">
+              <BrandLogo name="Shopee" size={34} className="cr2-pi" />
+              <span className="cr2-conn"><b>Shopee</b><small>Shopee Affiliate, on the way</small></span>
+              <span className="badge badge-amber">Coming soon</span>
+            </div>
+          </div>
+        </section>
+        )}
+        {tab === "connections" && !live && (
         <section className="cr2-group">
           <h2>Connections</h2>
           <div className="cr2-cells">
@@ -410,7 +473,7 @@ export default function Account() {
         {tab === "level" && <LevelBadges />}
         {tab === "wallet" && <Wallet />}
         {tab === "referral" && <Referral />}
-        {tab === "samples" && <MySamples />}
+        {tab === "samples" && (live ? <LiveSamples /> : <MySamples />)}
         {tab === "wish" && <MyWishes />}
 
         {tab === "rate-card" && <RateCard />}

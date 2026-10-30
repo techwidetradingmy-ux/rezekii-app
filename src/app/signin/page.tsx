@@ -145,7 +145,7 @@ export default function SignIn() {
     if (u && /^[a-z0-9._]{2,24}$/i.test(u)) setHandle(u.toLowerCase());
     // A real sign-in that didn't finish comes back with ?error=.
     const err = q.get("error");
-    if (err) toast(err === "denied" ? "Sign-in was cancelled." : err === "config" ? "This sign-in isn't set up yet." : "Sign-in didn't finish. Please try again.");
+    if (err) toast(err === "denied" ? "Sign-in was cancelled." : err === "config" ? "This sign-in isn't set up yet." : err === "taken" ? "That TikTok account is already connected to another Rezekii account." : "Sign-in didn't finish. Please try again.");
   }, []);
   // Her name from Google or TikTok, ready to change.
   useEffect(() => {

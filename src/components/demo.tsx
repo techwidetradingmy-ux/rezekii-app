@@ -5,7 +5,7 @@ import { CREATOR } from "@/lib/mock";
 
 export type Role = "creator" | "seller";
 /** The real signed-in account (owner, 30 Oct 2026: plug real data, keep the design). Null = signed out, sample data shows. */
-export type Me = { id: string; name: string | null; email: string | null; role: "admin" | "creator"; photo: string | null; handle: string | null; level: "bronze" | "silver" | "gold"; shop: { handle: string; access: string | null } | null; sellerShop: string | null };
+export type Me = { id: string; name: string | null; email: string | null; role: "admin" | "creator"; photo: string | null; handle: string | null; level: "bronze" | "silver" | "gold"; shop: { handle: string; access: string | null } | null; sellerShop: string | null; ttLevel?: number | null };
 /** Who agreed to what and when, kept as evidence (the real one also stores IP, device and TikTok's grant id). */
 export type Consent = { role: Role; at: string; terms: string; privacy: string; unlinkedAt?: string };
 
@@ -120,7 +120,8 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         linked: me ? !!me.shop : linked, setLinked, toast, consent, recordConsent, asking, agree, cancelLink: () => setAsking(null),
         me, live: !!me, refreshMe,
         waVerified, setWaVerified,
-        requireWa: (then) => (waVerified ? then() : setWaNext(() => then)),
+        // WhatsApp checks aren't connected yet, so real accounts aren't asked to verify (owner, 31 Oct 2026).
+        requireWa: (then) => (me || waVerified ? then() : setWaNext(() => then)),
         waAsking: !!waNext,
         waDone: () => { setWaVerified(true); const t = waNext; setWaNext(null); t?.(); },
         waCancel: () => setWaNext(null),

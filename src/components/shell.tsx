@@ -373,7 +373,7 @@ const AiSpark = ({ label }: { label: string }) => (AI_PAGES.includes(label) ? <s
 function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory: () => void }) {
   const you = useWho();
   const path = usePathname();
-  const { toast, linked, live } = useDemo();
+  const { toast, linked, live, me } = useDemo();
   // Language, theme, support and feedback live here on phones (owner, 29 Oct 2026), not in Settings.
   // Theme is one icon (owner, 29 Oct 2026): each tap moves Light → Dark → Auto, and the icon shows the current one.
   const [theme, setTheme] = useState<Theme>("Auto");
@@ -400,7 +400,7 @@ function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory: () =
       <aside className="ap-panel" role="dialog" aria-modal="true" aria-label="My Account">
         <div className="ap-me">
           {/* Her TikTok level frame, the same as on My Account (owner, 29 Oct 2026). */}
-          <LevelFace lv={linked ? CREATOR.tiktokLevel : null} size={56} img={you.photo} name={you.name} />
+          <LevelFace lv={live ? me?.ttLevel ?? null : linked ? CREATOR.tiktokLevel : null} size={56} img={you.photo} name={you.name} />
           <span>
             <b>{you.name}</b><small>{you.handle}</small>
             <span className="ap-chips">
