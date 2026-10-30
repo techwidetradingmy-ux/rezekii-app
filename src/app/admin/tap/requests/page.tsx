@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/admin.css";
+import { LiveWishAdmin } from "@/components/admin/live-wishes";
 import "@/app/product-page.css";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -23,7 +24,7 @@ const n = (v: number) => v.toLocaleString("en-MY");
  */
 export default function WishListAdmin() {
   const router = useRouter();
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const [list, setList] = useState<Wanted[]>(WANTED);
   const [filter, setFilter] = useState<Filter>("All");
   const [line, setLine] = useState(READY);
@@ -31,6 +32,8 @@ export default function WishListAdmin() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [reply, setReply] = useState<Reply | null>(null);
   const [raise, setRaise] = useState(1);
+  // Signed in (owner, 31 Oct 2026): the real wish list.
+  if (live) return <LiveWishAdmin />;
 
   const ready = (w: Wanted) => w.status === "New" && isReady(w, line);
   const closed = (w: Wanted) => ["Joined", "Bonus", "Declined"].includes(w.status);

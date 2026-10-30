@@ -98,3 +98,39 @@ export async function wantedOne(productId: string): Promise<BoardItem | null> {
   if (!/^\d{15,21}$/.test(productId)) return null;
   return (await board()).find((b) => b.id === productId) ?? null;
 }
+
+/** One creator's wish as admins see it: who, what they commit, and their note. */
+export type AdminWish = { handle: string; name: string; videos: number; lives: number; rights: number; months: number; note: string | null; at: string };
+/** The board for admins (owner, 31 Oct 2026): every product still wished for, with each creator's commitment. */
+export async function adminBoard(): Promise<(BoardItem & { wishes: AdminWish[]; declined: boolean; raise: number | null })[]> {
+  const rows = (await (await supabaseRest(`wishes?select=user_id,${COLS}&order=created_at.asc&limit=5000`)).json()) as (Row & { user_id: string })[];
+  const live = new Set((await allProducts()).map((p) => p.id));
+  const ids = [...new Set(rows.map((r) => r.user_id))];
+  const users = new Map<string, { display_name: string | null; tiktok_username: string | null; email: string | null }>();
+  for (let i = 0; i < ids.length; i += 150) {
+    const page = (await (await supabaseRest(`app_users?id=in.(${ids.slice(i, i + 150).join(",")})&select=id,display_name,tiktok_username,email`)).json()) as { id: string; display_name: string | null; tiktok_username: string | null; email: string | null }[];
+    for (const u of page) users.set(u.id, u);
+  }
+  const weekAgo = new Date(Date.now() - 7 * DAY).toISOString();
+  const by = new Map<string, BoardItem & { wishes: AdminWish[]; declined: boolean; raise: number | null }>();
+  for (const r of rows) {
+    if (live.has(r.product_id)) continue;
+    const b = by.get(r.product_id) ?? by.set(r.product_id, { ...product(r), creators: 0, videos: 0, lives: 0, rights: 0, week: 0, first: r.created_at, wishes: [], declined: !!r.declined_at, raise: r.raise === null ? null : Number(r.raise) }).get(r.product_id)!;
+    const u = users.get(r.user_id);
+    b.creators += 1;
+    b.videos += r.videos;
+    b.lives += r.lives;
+    if (r.rights > 0) b.rights += 1;
+    if (r.created_at >= weekAgo) b.week += 1;
+    b.wishes.push({ handle: u?.tiktok_username ? `@${u.tiktok_username}` : "", name: u?.display_name ?? u?.email?.split("@")[0] ?? "Creator", videos: r.videos, lives: r.lives, rights: r.rights, months: r.months, note: r.note, at: r.created_at });
+  }
+  return [...by.values()].sort((a, b) => Number(a.declined) - Number(b.declined) || b.creators - a.creators);
+}
+
+/** The seller's answer for every wish on one product: no (it leaves the board), or the extra rate agreed for creators. */
+export async function decideWish(productId: string, d: { declined: boolean } | { raise: number }): Promise<boolean> {
+  if (!/^\d{15,21}$/.test(productId)) return false;
+  const body = "declined" in d ? { declined_at: d.declined ? new Date().toISOString() : null } : { raise: d.raise };
+  const res = await supabaseRest(`wishes?product_id=eq.${productId}`, { method: "PATCH", headers: { "content-type": "application/json", prefer: "return=minimal" }, body: JSON.stringify({ ...body, updated_at: new Date().toISOString() }) });
+  return res.ok;
+}
