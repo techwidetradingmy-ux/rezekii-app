@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/admin.css";
+import { LiveProduct } from "@/components/admin/live-product";
 import "@/app/creator1.css";
 import "@/app/product-page.css";
 import Link from "next/link";
@@ -34,6 +35,9 @@ const wishPill = (w: Wanted): [string, Tone] =>
  */
 export default function AdminProductPage() {
   const { id } = useParams<{ id: string }>();
+  const { live } = useDemo();
+  // Signed in (owner, 31 Oct 2026): the real product, its creators, wishes and the seller's request.
+  if (live) return <LiveProduct id={id} />;
   const m = PRODUCTS.find((p) => p.id === id) ?? null;
   const w = WANTED.find((x) => x.id === id) ?? null;
   const v = productView(id);
