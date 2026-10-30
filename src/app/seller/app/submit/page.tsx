@@ -12,7 +12,7 @@ import { rm, short } from "@/lib/mock";
 import { SHOP_ITEMS, TAP_INVITE, TODAY, heat, listStatus, type ShopItem } from "@/lib/mock-seller";
 import { HOT_RAISE, MIN_RAISE, hotFor } from "@/lib/mock-showcase";
 import { sellerProductHref } from "@/lib/product-pages";
-import { loadShop, myDay, submitToTap } from "@/lib/live";
+import { sellerCenterCampaign, loadShop, myDay, submitToTap } from "@/lib/live";
 
 type Raise = "2" | "ai" | "8" | "custom";
 type Presets = { end: string; extend: boolean; niche: string; subs: string[]; level: string; gmv: string; format: string; gender: string };
@@ -99,6 +99,8 @@ export default function SubmitProducts() {
   const [talk, setTalk] = useState(false);
   const [tried, setTried] = useState(false);
   const [done, setDone] = useState<{ item: ShopItem; plus: number }[] | null>(null);
+  // Straight to Seller Center (owner, 31 Oct 2026): the campaign to register them in, or why it isn't ready yet.
+  const [sent, setSent] = useState<{ campaignId?: string; handOff?: string }>({});
 
   const sel = open.filter((p) => picked.includes(p.id));
   const pickOf = (p: ShopItem) => (p.real ? p.ai : heat(p.sold));
@@ -135,6 +137,7 @@ export default function SubmitProducts() {
       const ok = new Set((r.submitted ?? []).map((s) => s.id));
       if (!ok.size) return;
       setDone(sel.filter((p) => ok.has(p.id)).map((item) => ({ item, plus: plusFor(item) })));
+      setSent({ campaignId: r.campaignId, handOff: r.handOff });
       loadReal();
     } else setDone(sel.map((item) => ({ item, plus: plusFor(item) })));
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -155,7 +158,12 @@ export default function SubmitProducts() {
         <section className="v2-card sl-done">
           <span className="sl-check"><Icon name="check" size={38} width={2.8} /></span>
           <h2>{done.length} product{done.length > 1 ? "s" : ""} submitted</h2>
-          <p className="v2-muted" style={{ margin: 0, maxWidth: 460, lineHeight: 1.55 }}>{live ? "Techwide reviews them next." : <>We&apos;ll WhatsApp you when they&apos;re live.</>}</p>
+          <p className="v2-muted" style={{ margin: 0, maxWidth: 460, lineHeight: 1.55 }}>
+            {!live ? <>We&apos;ll WhatsApp you when they&apos;re live.</> : sent.campaignId ? "Last step: register them in Techwide's campaign in Seller Center, with the commission and samples below. Techwide approves them there." : sent.handOff ? `Saved. Techwide will send you the Seller Center link shortly (${sent.handOff}).` : "Techwide reviews them next."}
+          </p>
+          {live && sent.campaignId && (
+            <a href={sellerCenterCampaign(sent.campaignId)} target="_blank" rel="noreferrer" className="np-btn" style={{ height: 48 }}>Register in Seller Center <Icon name="arrow" size={18} /></a>
+          )}
           <div className="sl-done-list v2-divide">
             {done.map(({ item, plus }) => (
               <div key={item.id} className="sl-prow">
@@ -168,12 +176,21 @@ export default function SubmitProducts() {
               </div>
             ))}
           </div>
-          <div className="sl-track" style={{ width: "100%", maxWidth: 520, marginTop: 6 }}>
-            <div className="done"><i><Icon name="check" size={14} width={3} /></i><b>Submitted</b><small>Now</small></div>
-            <div className="now"><i /><b>Our review</b><small>Within 1 working day</small></div>
-            <div className="later"><i /><b>With TikTok</b><small>1–3 working days</small></div>
-            <div className="later"><i /><b>Live</b><small>Creators can apply</small></div>
-          </div>
+          {live && sent.campaignId ? (
+            <div className="sl-track" style={{ width: "100%", maxWidth: 520, marginTop: 6 }}>
+              <div className="done"><i><Icon name="check" size={14} width={3} /></i><b>Picked on Rezekii</b><small>Now</small></div>
+              <div className="now"><i /><b>Register in Seller Center</b><small>You, today</small></div>
+              <div className="later"><i /><b>Techwide approves</b><small>On TikTok</small></div>
+              <div className="later"><i /><b>Live</b><small>Creators can apply</small></div>
+            </div>
+          ) : (
+            <div className="sl-track" style={{ width: "100%", maxWidth: 520, marginTop: 6 }}>
+              <div className="done"><i><Icon name="check" size={14} width={3} /></i><b>Submitted</b><small>Now</small></div>
+              <div className="now"><i /><b>Our review</b><small>Within 1 working day</small></div>
+              <div className="later"><i /><b>With TikTok</b><small>1–3 working days</small></div>
+              <div className="later"><i /><b>Live</b><small>Creators can apply</small></div>
+            </div>
+          )}
           <div className="v2-row" style={{ justifyContent: "center", marginTop: 6 }}>
             {live ? <Link href="/seller/app/products" className="np-btn">See in Shop Products</Link> : <Link href="/seller/app/progress" className="np-btn">See progress</Link>}
             <button type="button" className="btn-outline" style={{ height: 48 }} onClick={() => { setDone(null); setPicked([]); setTried(false); }}>Submit more</button>

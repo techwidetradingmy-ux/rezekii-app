@@ -181,7 +181,7 @@ async function fetchShop(): Promise<LiveShop | null> {
 }
 
 /** Submit products to Techwide's TAP; each waits for Techwide's review. */
-export async function submitToTap(body: { productIds: string[]; raise: number; samples: number; conditions: Record<string, unknown> }): Promise<{ submitted?: { id: string }[]; skipped?: { id: string; why: string }[]; error?: string }> {
+export async function submitToTap(body: { productIds: string[]; raise: number; samples: number; conditions: Record<string, unknown> }): Promise<{ submitted?: { id: string }[]; skipped?: { id: string; why: string }[]; error?: string; campaignId?: string; handOff?: string }> {
   shopCache = null;
   const r = await fetch("/api/v2/seller/submissions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
   return r.json().catch(() => ({ error: "Couldn't reach Rezekii. Please try again." }));

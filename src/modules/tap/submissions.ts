@@ -2,12 +2,14 @@ import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { getShopProduct } from "../../integrations/tiktok-shop/seller.ts";
 import { openRates } from "../marketplace/shop-products.ts";
 import { sellerAccessFor } from "../marketplace/seller-connection.ts";
+import { handOff } from "./pipeline.ts";
 
 /** The least extra commission above the public rate a product joins Techwide's TAP with. */
 export const MIN_RAISE = 2;
 
 export type SubmitInput = { productIds: string[]; raise: number; samples: number; conditions: Record<string, unknown> };
-export type SubmitResult = { submitted: { id: string; name: string; image: string | null }[]; skipped: { id: string; why: string }[] };
+/** `campaignId`: the shop's Techwide campaign to register the products in, in Seller Center; `handOff`: why that isn't ready yet. */
+export type SubmitResult = { submitted: { id: string; name: string; image: string | null }[]; skipped: { id: string; why: string }[]; campaignId?: string; handOff?: string };
 
 /**
  * A seller asks to put products into Techwide's TAP (owner, 30 Oct 2026). Each request waits for Techwide's review; nothing
@@ -47,6 +49,12 @@ export async function submitToTap(user: { id: string; role: string }, input: Sub
       if (!dup) console.error("[tap] submission save failed", err instanceof Error ? err.message : err);
       result.skipped.push({ id, why: dup ? "Already submitted." : "Couldn't save it. Please try again." });
     }
+  }
+  // Straight on to Seller Center (owner, 31 Oct 2026): the seller registers them there now; Techwide reviews them in TikTok.
+  if (result.submitted.length) {
+    const h = await handOff(shop.id, result.submitted.map((x) => x.id)).catch((err) => ({ ok: false as const, error: err instanceof Error ? err.message : "Couldn't reach TikTok." }));
+    if (h.ok) result.campaignId = h.campaignId;
+    else result.handOff = h.error;
   }
   return result;
 }
