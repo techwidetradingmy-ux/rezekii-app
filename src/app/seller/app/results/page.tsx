@@ -12,6 +12,7 @@ import { product, rm } from "@/lib/mock";
 import { BY_PRODUCT, RANGES, RESULTS, TOP_CREATORS, type Range } from "@/lib/mock-seller";
 import { sellerProductHref } from "@/lib/product-pages";
 import { recordResults } from "@/lib/live-rewards";
+import { LiveResults } from "@/components/seller/live-results";
 
 /** How the shop's products are doing in Techwide's TAP campaigns: charts, top creators, per product. */
 export default function Results() {
@@ -22,6 +23,7 @@ export default function Results() {
     if (live) void recordResults();
   }, [live]);
   const [range, setRange] = useState<Range>("30 days");
+  if (live) return <LiveResults />;
   const r = RESULTS[range];
   const k = r.gmv / RESULTS["30 days"].gmv;
 
