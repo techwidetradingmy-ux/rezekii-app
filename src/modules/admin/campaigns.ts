@@ -167,3 +167,19 @@ export async function publish(campaignId: string, name: string, actor: string): 
   await logActivity(actor, "TAP", `published the TAP campaign ${name.slice(0, 60)}`);
   return { ok: true };
 }
+
+/**
+ * Moves a campaign's end (and registration end) to the latest day TikTok allows: 360 days after it started. For "Extend all
+ * ending in 14 days" (owner, 31 Oct 2026), so a campaign doesn't end by accident.
+ */
+export async function extendCampaign(campaignId: string, actor: string): Promise<{ ok: true; end: string } | { ok: false; error: string }> {
+  const cur = await campaignOverview(campaignId);
+  if (!cur.ok) return cur;
+  if (cur.data.status === "CLOSED") return { ok: false, error: "It has already ended. TikTok allows no changes after that." };
+  const start = cur.data.form.startAt;
+  if (!start) return { ok: false, error: "TikTok didn't send the campaign's start time." };
+  const end = lastEndDay(start);
+  if (end <= cur.data.form.end) return { ok: true, end: cur.data.form.end };
+  const r = await saveCampaign({ ...cur.data.form, end, regEnd: end }, campaignId, actor);
+  return r.ok ? { ok: true, end } : r;
+}

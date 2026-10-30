@@ -9,6 +9,7 @@ import { useDemo } from "@/components/demo";
 import { Title } from "@/components/ui";
 import { Chips, Pill, Switch } from "@/components/admin/bits";
 import { TapInvites } from "@/components/admin/tap-invite";
+import { LiveCampaigns } from "@/components/admin/live-campaigns";
 import { CAMPAIGNS, LONGEST_END, type Campaign } from "@/lib/mock-admin";
 import { rm } from "@/lib/mock";
 import { adminProductHref, productIdByImg } from "@/lib/product-pages";
@@ -18,11 +19,13 @@ type Outcome = { total: number; ok: string[]; failed: [string, string][] };
 
 /** Techwide TAP campaigns: invites to sellers, end dates, auto-extend, and one batch to extend everything ending soon. */
 export default function TapCampaigns() {
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const [list, setList] = useState<Campaign[]>(CAMPAIGNS);
   const [filter, setFilter] = useState<Filter>("All live");
   const [busy, setBusy] = useState(false);
   const [out, setOut] = useState<Outcome | null>(null);
+  // Signed in (owner, 31 Oct 2026): Techwide's real campaigns, made and changed here instead of Partner Center.
+  if (live) return <LiveCampaigns />;
 
   const soon = (c: Campaign) => c.status === "Live" && c.days >= 0 && c.days <= 14 && c.end !== LONGEST_END;
   const ending = list.filter(soon);

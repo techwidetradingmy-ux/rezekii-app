@@ -2,8 +2,22 @@ import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { actorName } from "@/modules/admin/admins.ts";
 import { saveCampaign, type CampaignForm } from "@/modules/admin/campaigns.ts";
+import { tapOverview } from "@/modules/admin/tap.ts";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
+/** Techwide's TAP campaigns for the admin list: TikTok's newest read live, with each campaign's products and sales (admins only). */
+export async function GET() {
+  const user = await currentUser();
+  if (user?.role !== "admin") return NextResponse.json({ error: "Admins only." }, { status: 403 });
+  try {
+    return NextResponse.json(await tapOverview(), { headers: { "cache-control": "private, no-store" } });
+  } catch (err) {
+    console.error("[campaigns] list failed", err instanceof Error ? err.message : err);
+    return NextResponse.json({ error: "TikTok Shop didn't answer. Please try again." }, { status: 502 });
+  }
+}
 
 /** Create a TAP campaign (admins only). It stays hidden from shops until it is published. */
 export async function POST(req: NextRequest) {
