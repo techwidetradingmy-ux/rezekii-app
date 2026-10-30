@@ -170,7 +170,6 @@ export function SellerLanding() {
             <AiHead title="A Week With Rezekii" sub="Watch Rezekii AI and our team do the work." />
           </div>
           <SellerWeek />
-          <p className="hm-fine">Screens show sample products, creators and numbers. Results vary.</p>
         </Reveal>
 
         <Reveal id="features" className="section" label="Features">
@@ -266,6 +265,7 @@ export function SellerLanding() {
           <a href="#" onClick={(e) => { e.preventDefault(); setTalk(true); }}>Talk to us</a>
           <a href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a>
           <a href={SUPPORT.waLink} target="_blank" rel="noreferrer">WhatsApp {SUPPORT.wa}</a>
+          <small className="ft-note">Screens show sample products, creators and numbers. Results vary.</small>
         </div>
       </footer>
       {talk && <ContactSheet onClose={() => setTalk(false)} />}

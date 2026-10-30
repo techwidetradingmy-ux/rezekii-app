@@ -756,7 +756,7 @@ a[href*="/product/"] { text-decoration: none; }
 .v2-sheet > * { flex-shrink: 0; }
 .ft-short { display: none; }
 @media (max-width: 760px) {
-  .site-foot .site-wrap { flex-wrap: nowrap; gap: 14px; white-space: nowrap; }
+  .v2-frame .site-foot .site-wrap { flex-wrap: nowrap; gap: 14px; white-space: nowrap; }
   .site-foot .ft-long { display: none; }
   .site-foot .ft-short { display: inline; }
 }
@@ -887,8 +887,9 @@ a[href*="/product/"] { text-decoration: none; }
 .ap-chips i.st { color: #ffffff; background: linear-gradient(145deg, #ffb347, #ff6a1a); }
 /* AI pages in the switcher: just the sparkle, in the AI violet (owner, 29 Oct 2026). */
 .v2-pgai { flex-shrink: 0; color: #7c5cff; }
-/* Phones: no page footer; Privacy, Terms and Support live in My Account › Settings (owner, 29 Oct 2026). */
-@media (max-width: 760px) { .site-foot { display: none; } }
+/* Phones: no page footer inside the app; Privacy, Terms and Support live in My Account › Settings (owner, 29 Oct 2026).
+   The public landing pages keep theirs (owner, 30 Oct 2026). */
+@media (max-width: 760px) { .v2-frame .site-foot { display: none; } }
 .ap-foot { margin-top: auto; display: grid; gap: 8px; justify-items: center; padding-top: 12px; text-align: center; }
 .ap-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; }
 .ap-links a { font-size: 13px; font-weight: 800; color: var(--gink); text-decoration: none; }

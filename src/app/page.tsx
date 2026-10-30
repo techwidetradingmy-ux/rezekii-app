@@ -123,7 +123,6 @@ export default function Landing() {
             <AiHead title="A Day With Rezekii" sub="Watch Rezekii AI do the small jobs, hour by hour." />
           </div>
           <CreatorDay />
-          <p className="hm-fine">Screens show sample products and numbers. Results vary.</p>
         </Reveal>
 
         <Reveal id="features" className="section" label="Features">
@@ -197,6 +196,8 @@ export default function Landing() {
           <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer">Terms of Service</a>
           <a href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a>
           <a href={SUPPORT.waLink} target="_blank" rel="noreferrer">WhatsApp {SUPPORT.wa}</a>
+          {/* Small print lives in the footer, not between sections (owner, 30 Oct 2026). */}
+          <small className="ft-note">Screens show sample products and numbers. Results vary.</small>
         </div>
       </footer>
     </>
