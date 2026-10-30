@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Icon, type IconName } from "@/components/icons";
-import { CREATOR, MISSIONS, PRODUCTS, REFERRAL_REWARD, product, short, type Product } from "@/lib/mock";
+import { AI_PICKS, CREATOR, MISSIONS, PRODUCTS, REFERRAL_REWARD, product, short, type Product } from "@/lib/mock";
 import { NOT_YET, WANTED } from "@/lib/mock-showcase";
 import { NICHE_BEST, VIDEOS, daily } from "@/lib/mock-creator2";
 import { AiMark, Tip } from "@/components/ui";
@@ -29,8 +29,8 @@ const example = (id: string) => { const p = product(id); return { ...p, tapRate:
 /** Every rate example on the page uses one product (owner, 29 Oct 2026): the RM 159.90 pot, 9% open plan, 10% on Rezekii. */
 const POT = example("p08");
 const TRACK = product("p01");
-/** The free-sample example: a best seller that really offers samples (owner, 30 Oct 2026: not the track pants). */
-const SAMPLE_PICK = product("p11");
+/** Free-sample examples: best sellers that really offer samples (owner, 30 Oct 2026: not the track pants, and show more). */
+const SAMPLE_PICKS = ["p11", "p13", "p21"].map(product);
 const POST_TODAY = MISSIONS.find((m) => m.id === "m7")!;
 const WISH = NOT_YET[0];
 const WANTED_N = WANTED[0].creators;
@@ -478,9 +478,14 @@ const USPS: Usp[] = [
     demo: (
       // A best seller with no free sample on TikTok flips to a free sample on Rezekii (owner, 30 Oct 2026).
       <div className="lp-u-samp">
-        <span className="lp-u-prod">
-          <Thumb src={SAMPLE_PICK.img} size={56} />
-          <span><b>{SAMPLE_PICK.name}</b><small>{short(SAMPLE_PICK.sold)} sold · Best seller</small></span>
+        <span className="lp-u-trio">
+          {SAMPLE_PICKS.map((p, i) => (
+            <span key={p.id} className="lp-u-tile" style={v({ i })}>
+              <Thumb src={p.img} size={52} />
+              <small>{short(p.sold)} sold</small>
+              <em><Icon name="gift" size={11} width={2.6} /> Free</em>
+            </span>
+          ))}
         </span>
         <span className="lp-u-flipbox">
           <span className="no"><Icon name="lock" size={14} width={2.4} /> On TikTok: no free sample</span>
@@ -600,13 +605,21 @@ export function CreatorStrip() {
  * ratings and refunds per product and video (not TikTok's own health score, which no API gives), weekly sold counts, live
  * orders from TikTok Shop.
  */
+/** Lowest-rated products in her showcase, with how many of her videos sell them (sample). */
+const RISK_ROWS = [{ p: product("p17"), videos: 2 }, { p: product("p22"), videos: 1 }, { p: product("p23"), videos: 1 }];
+const WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+/** Ideas from Rezekii AI: products that fit her account best, with the match score from AI Picks (sample). */
+const FIT_PICKS = AI_PICKS.slice(0, 3);
 const HOT = NICHE_BEST[0];
 const HOT_P = product(HOT.productId);
-const IDEAS = NICHE_BEST.filter((x) => x.idea).slice(0, 2);
+const WAVE = ((d) => d.map((x) => Math.round((x / Math.max(...d)) * 100)))(daily(HOT.weekSold, HOT.trend));
 const TT_FEED = ["try-on", "pov-demo", "review", "expert", "drama", "home-demo"].map((x) => `/ai-videos/${x}.jpg`);
 // Winner in the middle, a good one and a weak one either side, so the gap between videos is plain to see.
 const BY_EARN = [...VIDEOS].sort((x, y) => y.commission - x.commission);
-const VID_ROW = [BY_EARN[1], BY_EARN[0], BY_EARN[BY_EARN.length - 1]];
+const SEEN = BY_EARN.filter((x) => x.views !== null);
+const VID_ROW = [SEEN[1], SEEN[0], SEEN[SEEN.length - 1]];
+/** Video covers that look like TikTok videos, not product photos (owner, 30 Oct 2026). Sample. */
+const VID_COVERS = ["/ai-videos/home-demo.jpg", "/ai-videos/pov-demo.jpg", "/ai-videos/review.jpg"];
 type Pain = { key: string; tint: string; pain: string; why: string; fix: string; art: React.ReactNode };
 const PAINS: Pain[] = [
   {
@@ -615,10 +628,16 @@ const PAINS: Pain[] = [
     why: "Violations can mean low traffic, a shadow ban, even frozen commission you can't withdraw.",
     fix: "Rezekii AI flags risky products and the videos selling them, so you fix them early.",
     art: (
+      // The low-rated products behind the risk (owner, 30 Oct 2026), flagged one by one.
       <div className="lp-pa-risk">
-        <span className="lp-pa-tag">Showcase risk · <b>Watch</b></span>
-        <div className="lp-pa-row bad"><Thumb src={RISKY.img} size={36} /><span>{RISKY.name}<small>★ {RISKY.rating} · high refunds</small></span></div>
-        <div className="lp-pa-row"><Icon name="video" size={16} width={2.2} /><span>Linked to 2 of your videos<small>Remove it in one tap</small></span></div>
+        <span className="lp-pa-tag">Showcase risk · <b>{RISK_ROWS.length} products</b></span>
+        {RISK_ROWS.map((r, i) => (
+          <div key={r.p.id} className="lp-pa-row lp-pa-rk" style={v({ i })}>
+            <Thumb src={r.p.img} size={36} />
+            <span>{r.p.name}<small>★ {r.p.rating.toFixed(1)} · in {r.videos} of your videos</small></span>
+            <em className={r.p.rating < 3 ? "high" : "watch"}>{r.p.rating < 3 ? "High risk" : "Watch"}</em>
+          </div>
+        ))}
       </div>
     ),
   },
@@ -630,7 +649,14 @@ const PAINS: Pain[] = [
     art: (
       <div className="lp-pa-chart">
         <span className="lp-pa-tag"><Thumb src={HOT_P.img} size={28} /> {short(HOT.weekSold)} sold this week <b>↑</b></span>
-        <span className="lp-pa-bars">{daily(HOT.weekSold, HOT.trend).map((d, i, a) => <i key={i} style={v({ h: `${Math.round((d / Math.max(...a)) * 100)}%`, i })} />)}</span>
+        <span className="lp-pa-bars lp-pa-wave">
+          {WAVE.map((h, i) => <i key={i} className={i === 1 ? "early" : undefined} style={v({ h: `${h}%`, i })} />)}
+          {/* The label sits above the chart, with a line down to the exact green bar (owner, 30 Oct 2026). */}
+          <span className="pin-line" style={{ bottom: `${WAVE[1]}%` }} />
+          <em className="pin early">✦ Rezekii AI spots it</em>
+          <em className="pin late">Everyone else</em>
+        </span>
+        <span className="lp-pa-days">{WEEK.map((d) => <i key={d}>{d}</i>)}</span>
         <small>Rising early, before the wave</small>
       </div>
     ),
@@ -647,12 +673,20 @@ const PAINS: Pain[] = [
           <div>{[...TT_FEED, ...TT_FEED].map((src, i) => <Thumb key={i} src={src} size={60} />)}</div>
           <span className="lp-pa-tag"><Icon name="clock" size={14} width={2.4} /> 2 hours of scrolling…</span>
         </div>
+        {/* Ideas from AI analysis, scored by how well each product fits her (owner, 30 Oct 2026): a better fit, a better chance to go FYP. */}
         <div className="lp-pa-ideas">
-          <span className="lp-pa-tag">Made for your account</span>
-          {IDEAS.map((x) => {
-            const p = product(x.productId);
-            return <div key={x.productId} className="lp-pa-row"><Thumb src={p.img} size={36} /><span>“{x.idea}”<small>{p.name}</small></span></div>;
+          <span className="lp-pa-tag"><Icon name="spark" size={14} width={2.4} /> Rezekii AI checked your videos and buyers</span>
+          {FIT_PICKS.map((a, i) => {
+            const p = product(a.productId);
+            return (
+              <div key={a.productId} className="lp-pa-row lp-pa-fit" style={v({ i, m: `${a.match}%` })}>
+                <Thumb src={p.img} size={36} />
+                <span>{p.name}<small><i className="lp-pa-meter"><b /></i>Fits you {a.match}%</small></span>
+                {i === 0 && <em>Best fit</em>}
+              </div>
+            );
           })}
+          <small className="lp-pa-note">A better fit means a better chance to go FYP.</small>
         </div>
       </div>
     ),
@@ -667,15 +701,17 @@ const PAINS: Pain[] = [
       // Option 1A (owner, 30 Oct 2026): three video covers, commission bars filling up, the winner crowned and worth reposting.
       <div className="lp-pa-risk">
         <div className="lp-pa-vids">
-          {VID_ROW.map((x) => {
+          {VID_ROW.map((x, i) => {
             const top = x.id === BY_EARN[0].id;
             return (
               <div key={x.id} className={`lp-pa-vid${top ? " top" : ""}`} style={v({ h: `${Math.round((x.commission / BY_EARN[0].commission) * 100)}%` })}>
                 {top && <span className="lp-pa-crown">Top earner</span>}
                 <span className="lp-pa-cover">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={product(x.productId).img} alt="" />
-                  <Icon name="video" size={15} width={2.4} />
+                  <img src={VID_COVERS[i]} alt="" />
+                  <span className="lp-pa-play" />
+                  <span className="lp-pa-acts"><svg viewBox="0 0 24 24" width="13" height="13"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.3 3 4.5 6.7 4.5c2 0 3.6 1.1 4.3 2.6.7-1.5 2.3-2.6 4.3-2.6 3.7 0 5.8 3.8 4.3 7.3C19.5 16.4 12 21 12 21z" fill="#ffffff" /></svg><svg viewBox="0 0 24 24" width="13" height="13"><path d="M12 3C6.5 3 2 6.9 2 11.6c0 2.4 1.2 4.6 3.1 6.1L4.5 21l3.9-1.9c1.1.3 2.3.5 3.6.5 5.5 0 10-3.9 10-8.6S17.5 3 12 3z" fill="#ffffff" /></svg></span>
+                  <span className="lp-pa-views">▶ {short(x.views ?? 0)}</span>
                 </span>
                 <span className="lp-pa-bar"><i /></span>
                 <b>RM {Math.round(x.commission)}</b>
@@ -692,7 +728,7 @@ const PAINS: Pain[] = [
     pain: "Posting Whenever You Can?",
     why: "Copying others' posting time rarely works. The right time for your own account does far better.",
     fix: "Plan the week in Content Calendar, timed to your golden hours.",
-    // Posting time as a clock (owner, 29 Oct 2026): her golden 8–10 pm lit up, then the posts lined up for it.
+    // Posting time as a clock (owner, 29 Oct 2026): her golden windows lit up; there can be more than one (owner, 30 Oct 2026).
     art: (
       <div className="lp-pa-clock">
         <svg viewBox="0 0 200 200" width="170" height="170">
@@ -702,12 +738,13 @@ const PAINS: Pain[] = [
             const [x, y] = pt(d, 58);
             return <text key={t} x={x.toFixed(2)} y={(y + 5).toFixed(2)} textAnchor="middle">{t}</text>;
           })}
+          <path d={arc(0, 1)} className="arc" />
           <path d={arc(8, 10)} className="arc" />
           <line x1="100" y1="100" x2="100" y2="56" className="hand h" />
           <line x1="100" y1="100" x2="100" y2="36" className="hand m" />
           <circle cx="100" cy="100" r="5" className="pin" />
         </svg>
-        <span className="lp-pa-tag">Your golden time: 8–10 pm · 4 posts lined up</span>
+        <span className="lp-pa-tag">Your golden times: 12–1 pm · 8–10 pm</span>
       </div>
     ),
   },
