@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { createHash, randomBytes } from "node:crypto";
 import { encryptToken } from "../creator-accounts/token-crypto.ts";
 import type { SocialPostRow } from "../social/store.ts";
-import { checkShopee, FIRST_POST, publishShopee } from "./posting.ts";
+import { checkShopee, FIRST_POST, publishShopee, shopeeStillLive } from "./posting.ts";
 
 process.env.SUPABASE_URL = "https://db.test";
 process.env.SUPABASE_SECRET_KEY = "secret";
@@ -107,4 +107,13 @@ test("covers not ready yet (Shopee: upload video less than 1 min) means wait, no
     "/api/v2/video/get_cover_list": { error: "error_param", message: "upload video less than 1 min" },
   };
   assert.deepEqual(await checkShopee(post({ container_id: "sg-v1" })), { kind: "waiting" });
+});
+
+test("a posted video deleted in Shopee counts as gone: status 400 or Shopee's \"no record\" answer", async () => {
+  shopee = { "/api/v2/video/get_video_detail": { error: "", response: { status: 300 } } };
+  assert.equal(await shopeeStillLive(post({ status: "posted", external_post_id: "POST1" })), true);
+  shopee = { "/api/v2/video/get_video_detail": { error: "", response: { status: 400 } } };
+  assert.equal(await shopeeStillLive(post({ status: "posted", external_post_id: "POST1" })), false);
+  shopee = { "/api/v2/video/get_video_detail": { error: "error_param", message: "post_id is illegal,no record in database." } };
+  assert.equal(await shopeeStillLive(post({ status: "posted", external_post_id: "POST1" })), false);
 });

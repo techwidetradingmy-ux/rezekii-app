@@ -77,9 +77,14 @@ export async function checkShopee(p: SocialPostRow): Promise<ShopeeOutcome> {
   }
 }
 
-/** Whether a posted Shopee video still exists (deleted in Shopee: 400). */
+/** Whether a posted Shopee video still exists. Deleted in Shopee: status 400, or (seen 31 Oct 2026) "no record in database". */
 export async function shopeeStillLive(p: SocialPostRow): Promise<boolean> {
   const c = await connectionOf(p);
   if (!c || c.status !== "active" || !p.external_post_id) return true;
-  return (await shopeeVideoStatus(await freshShopeeToken(c), c.shopee_user_id, p.external_post_id)) !== 400;
+  try {
+    return (await shopeeVideoStatus(await freshShopeeToken(c), c.shopee_user_id, p.external_post_id)) !== 400;
+  } catch (err) {
+    if (err instanceof ShopeeError && /no record/i.test(err.message)) return false;
+    throw err;
+  }
 }
