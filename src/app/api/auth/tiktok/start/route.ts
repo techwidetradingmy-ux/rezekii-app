@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { tiktokAuthUrl } from "@/integrations/tiktok/login.ts";
 import { newState } from "../../tiktokshop/state.ts";
-import { OAUTH_COOKIE_OPTIONS, callbackUrl, canonicalRedirect, oauthCookie, toSignin } from "../../oauth.ts";
+import { keepNext, OAUTH_COOKIE_OPTIONS, callbackUrl, canonicalRedirect, oauthCookie, toSignin } from "../../oauth.ts";
 
 export const dynamic = "force-dynamic";
 
@@ -19,5 +19,6 @@ export async function GET(req: NextRequest) {
   }
   const res = NextResponse.redirect(url);
   res.cookies.set(oauthCookie("tiktok"), state, OAUTH_COOKIE_OPTIONS);
+  keepNext(req, res);
   return res;
 }

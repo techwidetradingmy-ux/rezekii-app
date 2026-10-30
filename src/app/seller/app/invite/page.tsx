@@ -3,7 +3,7 @@
 import "@/app/seller.css";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Title } from "@/components/ui";
@@ -18,11 +18,14 @@ import { sellerProductHref } from "@/lib/product-pages";
  */
 export default function TapInvite() {
   const router = useRouter();
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const open = SHOP_ITEMS.filter((p) => p.stage === "Not submitted");
   const [picked, setPicked] = useState<string[]>(I.products);
   const [done, setDone] = useState(false);
   const [declined, setDeclined] = useState(false);
+  // Signed in (owner, 31 Oct 2026): invites are a link to Submit Products now (see Open Campaigns in admin).
+  useEffect(() => { if (live) router.replace("/seller/app/submit"); }, [live, router]);
+  if (live) return null;
   const sel = open.filter((p) => picked.includes(p.id));
 
   if (declined) {

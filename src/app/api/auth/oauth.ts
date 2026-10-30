@@ -26,14 +26,26 @@ export function toSignin(req: NextRequest, error: "denied" | "expired" | "failed
   return res;
 }
 
+/** Where to go after signing in, kept while the provider's page is open (owner, 31 Oct 2026: sellers return to their onboarding). */
+export const NEXT_COOKIE = "rz_next";
+export const nextPath = (v: string | null | undefined) => (v && /^\/seller(\/[a-z/-]*)?$/.test(v) ? v : null);
+/** Keeps ?next= (seller pages only) for after the provider's sign-in. */
+export function keepNext(req: NextRequest, res: NextResponse): void {
+  const next = nextPath(req.nextUrl.searchParams.get("next"));
+  if (next) res.cookies.set(NEXT_COOKIE, next, { ...OAUTH_COOKIE_OPTIONS });
+}
+
 /** Starts a session for the account and sends them into the app. A new account joins whoever invited it. */
 export async function signedIn(req: NextRequest, userId: string, p: Provider, to = "/app"): Promise<NextResponse> {
   const { token, expires } = await createSession(userId);
+  const next = nextPath(req.cookies.get(NEXT_COOKIE)?.value);
+  if (next) to = next;
   // Details not filled in yet (Google and TikTok skip the sign-up form): the same form, once, before the app (owner, 31 Oct 2026).
   const details = to === "/app" && (await needsDetails(userId).catch(() => false));
   const res = NextResponse.redirect(`${appBase(req)}${details ? "/signin?details=1" : to}`);
   res.cookies.set(SESSION_COOKIE, token, sessionCookieOptions(expires));
   res.cookies.set(oauthCookie(p), "", { ...OAUTH_COOKIE_OPTIONS, maxAge: 0 });
+  if (next) res.cookies.set(NEXT_COOKIE, "", { ...OAUTH_COOKIE_OPTIONS, maxAge: 0 });
   await joinInviter(req, res, userId);
   return res;
 }

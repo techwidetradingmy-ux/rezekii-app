@@ -12,6 +12,7 @@ import { SELLER, SELLER_RESULTS, rm } from "@/lib/mock";
 import { RESULTS, SHOP_ITEMS } from "@/lib/mock-seller";
 import { useDemo } from "@/components/demo";
 import { LiveActivity, LiveHello, LiveNext, LiveSummary, useSellerHome } from "@/components/seller/live-home";
+import { useConnectResult } from "@/components/seller/live-connect";
 
 type StageKey = "new" | "fix" | "waiting" | "running";
 
@@ -37,6 +38,7 @@ const QUICK: [string | null, string, string, IconName, string][] = [
 export default function SellerHome() {
   const { live: signedIn } = useDemo();
   const real = useSellerHome(signedIn);
+  useConnectResult();
   const [stage, setStage] = useState<StageKey>("fix");
   const [talk, setTalk] = useState(false);
   const [fixed, setFixed] = useState(false);
