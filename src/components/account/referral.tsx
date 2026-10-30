@@ -1,18 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Qr, Tip } from "@/components/ui";
 import { ShareButton } from "@/components/creator2/bits";
-import { INVITES, REFERRAL_REWARD } from "@/lib/mock";
+import { CREATOR, INVITES, REFERRAL_REWARD } from "@/lib/mock";
 import "@/app/creator2.css";
 
 const LINK = "rezekii.com/r/aisyah";
 const CODE = "AISYAH8";
 /** Friends to set up for the referral bonus (sample goal; admin sets it). */
 const GOAL = 5;
+/** The friends she brought in who are set up: they make the chain on the story card. */
+const CHAIN = INVITES.filter((i) => i.linked && i.details).slice(0, 3);
+const TONES = ["#00c073", "#2f80ed", "#8b5cf6"];
 
 /**
  * Referral (owner, 29 Oct 2026, option C): progress toward the next bonus with Share as the main button on top, then who joined
@@ -32,33 +35,78 @@ export function Referral() {
 
   return (
     <div className="v2-stack" style={{ gap: 16 }}>
-      {/* One short card, not a big poster (owner, 30 Oct 2026, option A): Rimau, what you both get, progress and Invite. */}
-      <section className="v2-card rf-strip">
-        <div className="rf-strip-top">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="rf-rimau" src="/mascot/rimau-party.webp" alt="" />
-          <span className="rf-strip-main">
-            <b>Invite Friends</b>
-            <small><span>You both get <em>+{REFERRAL_REWARD.inviter}</em></span> <Tip text="Your friend counts once they link TikTok Shop and fill in their details. Your link lasts 14 days, and the last link they tap wins, so share early." /></small>
+      {/* Our story first (owner, 30 Oct 2026): a community that grows by sharing. The chain is her, the friends she brought and an
+          open seat for the next one; credits travel along it. */}
+      <section className="rf-story">
+        <div className="rf-chain" aria-hidden="true">
+          <span className="rf-node me">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={CREATOR.photo} alt="" />
           </span>
-          <ShareButton primary="Invite" big="Join me on Rezekii" label="Better commission for your TikTok Shop showcase" lines={[`Use my code ${CODE}: +${REFERRAL_REWARD.friend} credits`, "Free for creators"]} moment="invite" />
+          {CHAIN.map((n, i) => (
+            <Fragment key={n.name}>
+              <i className="rf-link" style={{ ["--d" as string]: `${i * 0.5}s` }}><b /></i>
+              <span className="rf-node" style={{ ["--c" as string]: TONES[i % TONES.length], ["--i" as string]: i + 1 }}>{n.name.replace("@", "").slice(0, 2).toUpperCase()}</span>
+            </Fragment>
+          ))}
+          <i className="rf-link" style={{ ["--d" as string]: `${CHAIN.length * 0.5}s` }}><b /></i>
+          <span className="rf-node next"><Icon name="plus" size={18} width={2.6} /></span>
         </div>
-        <div className="rf-goal">
-          <b>{Math.min(done, GOAL)} of {GOAL} Friends</b>
-          <small>{done >= GOAL ? "Bonus unlocked" : `${GOAL - done} more for a bonus`}</small>
+        <div className="rf-story-body">
+          <span>
+            <small>Our Community</small>
+            <h2>Good rezeki is meant to be <em>shared.</em></h2>
+            <p>We built Rezekii so every creator, big or small, earns what they deserve. Know a friend who&apos;s still guessing? Bring them along and let&apos;s grow together.</p>
+          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="rf-story-rimau" src="/mascot/rimau-love.webp" alt="" />
         </div>
-        <div className="rf-segs" aria-hidden="true">{Array.from({ length: GOAL }, (_, i) => <i key={i} className={i < done ? "on" : undefined} />)}</div>
-        <div className="rf-acts">
-          <button type="button" className="btn-outline v2-btn-sm" onClick={() => copy(`https://${LINK}`, "Link")}>Copy Link</button>
-          <button type="button" className="btn-outline v2-btn-sm" onClick={() => copy(CODE, "Code")}>Copy Code</button>
-          <button type="button" className="btn-outline v2-btn-sm" aria-expanded={qr} onClick={() => setQr((q) => !q)}><Icon name="qr" size={16} /> QR</button>
+      </section>
+
+      {/* Her invite code up front, like a pass (owner, 30 Oct 2026). */}
+      <section className="v2-card rf-pass">
+        <div className="rf-pass-top">
+          <span>
+            <small>Your Invite Code</small>
+            <b>{CODE}</b>
+          </span>
+          <button type="button" className="rf-pass-copy" onClick={() => copy(CODE, "Code")}>Copy</button>
         </div>
-        {qr && (
-          <div className="rf-qr">
-            <Qr />
-            <span className="v2-small">Scan to join · {LINK} · code {CODE}</span>
+        <div className="rf-pass-cut" aria-hidden="true" />
+        <div className="rf-pass-body">
+          <div className="rf-pass-gets">
+            <span><b>+{REFERRAL_REWARD.inviter}</b> for you</span>
+            <span><b>+{REFERRAL_REWARD.friend}</b> for your friend</span>
+            <Tip text="Your friend counts once they link TikTok Shop and fill in their details within 14 days. Your link lasts 14 days, and the last link they tap wins, so share early." />
           </div>
-        )}
+          <ShareButton primary="Share Invite" big="Join me on Rezekii" label="Better commission for your TikTok Shop showcase" lines={[`Use my code ${CODE}: +${REFERRAL_REWARD.friend} credits`, "Free for creators"]} moment="invite" />
+          <div className="rf-acts two">
+            <button type="button" className="btn-outline v2-btn-sm" onClick={() => copy(`https://${LINK}`, "Link")}>Copy Link</button>
+            <button type="button" className="btn-outline v2-btn-sm" aria-expanded={qr} onClick={() => setQr((q) => !q)}><Icon name="qr" size={16} /> QR</button>
+          </div>
+          {qr && (
+            <div className="rf-qr">
+              <Qr />
+              <span className="v2-small">Scan to join · {LINK} · code {CODE}</span>
+            </div>
+          )}
+          <div className="rf-goal">
+            <b>{Math.min(done, GOAL)} of {GOAL} Friends</b>
+            <small>{done >= GOAL ? "Bonus unlocked" : `${GOAL - done} more for a bonus`}</small>
+          </div>
+          <div className="rf-segs" aria-hidden="true">{Array.from({ length: GOAL }, (_, i) => <i key={i} className={i < done ? "on" : undefined} />)}</div>
+        </div>
+      </section>
+
+      {/* What the credits are for (owner, 30 Oct 2026). Only tools the app has; AI Video is not launched yet. */}
+      <section className="v2-card rf-uses">
+        <h2 className="v2-h2">What Credits Get You</h2>
+        <div className="rf-use-grid">
+          <span><i><Icon name="spark" size={18} /></i><b>AI Scripts</b><small>Video ideas and scripts</small></span>
+          <span><i><Icon name="send" size={18} /></i><b>Post Everywhere</b><small>One video, many apps</small></span>
+          <span><i><Icon name="video" size={18} /></i><b>AI Video</b><small>Coming soon</small></span>
+        </div>
+        <small className="rf-use-note">Credits aren&apos;t cash.</small>
       </section>
 
       <section className="v2-card">

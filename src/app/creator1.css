@@ -1606,6 +1606,10 @@ li.sc-row { cursor: default; }
 .su-pick-list i { display: grid; place-items: center; width: 20px; height: 20px; flex-shrink: 0; border-radius: 6px; border: 1.5px solid var(--border); color: #ffffff; }
 .su-pick-list [aria-selected="true"] i { background: var(--btn); border-color: transparent; }
 .su-pick-list > .su-pick-done { position: sticky; bottom: -6px; justify-content: center; margin-top: 4px; border-top: 1px solid var(--line); border-radius: 0 0 10px 10px; background: var(--surface); color: var(--gink); font-weight: 900; }
+.su-opt { color: var(--muted); font-weight: 600; }
+.su-ref { position: relative; display: block; }
+.su-ref .np-input { padding-right: 40px; background: var(--gsoft); color: var(--gink); font-weight: 900; letter-spacing: 0.08em; cursor: not-allowed; }
+.su-ref svg { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--gink); }
 .su-wait { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: color-mix(in srgb, var(--bg) 72%, transparent); backdrop-filter: blur(6px); }
 .su-wait .cr1-wait { width: min(340px, 100%); padding: 26px 20px; border-radius: 24px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-lg); }
 .su-wait .cr1-wait p { color: var(--body); }

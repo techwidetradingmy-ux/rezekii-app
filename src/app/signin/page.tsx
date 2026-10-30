@@ -121,6 +121,8 @@ export default function SignIn() {
   const [addr, setAddr] = useState<Address>(EMPTY_ADDRESS);
   // Came from someone's invite link (owner, 28 Oct 2026): show what the friend gets. The code is kept for sign-up.
   const [refCode, setRefCode] = useState("");
+  // No link: she can still type a friend's code (owner, 30 Oct 2026).
+  const [typedRef, setTypedRef] = useState("");
   // Came from the landing checker (owner, 29 Oct 2026): keep the TikTok username she typed.
   const [handle, setHandle] = useState("");
   useEffect(() => {
@@ -322,6 +324,22 @@ export default function SignIn() {
     </div>
   );
 
+  // Referral code (owner, 30 Oct 2026): from a friend's invite link it's filled in and can't be changed.
+  const refField = (
+    <label className="v2-field">
+      <span>Referral code{!refCode && <small className="su-opt"> · optional</small>}</span>
+      {refCode ? (
+        <span className="su-ref">
+          <input className="np-input" value={refCode} readOnly aria-readonly="true" aria-describedby="su-ref-note" />
+          <Icon name="lock" size={16} />
+        </span>
+      ) : (
+        <input className="np-input" placeholder="Friend's code" autoCapitalize="characters" value={typedRef} onChange={(e) => setTypedRef(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 20))} />
+      )}
+      {refCode && <small id="su-ref-note" className="cr1-okline"><Icon name="gift" size={14} width={2.4} /> From your friend&apos;s invite: +{REFERRAL_REWARD.friend} credits once you link TikTok Shop</small>}
+    </label>
+  );
+
   // Optional here; if she starts filling it in, it has to be complete.
   const addrStarted = Object.values(addr).some((v) => v.trim());
   const addrBad = showAddr && addrStarted && !addressOk(addr);
@@ -419,12 +437,6 @@ export default function SignIn() {
                 <h1>Create your account</h1>
                 <p>Free to join. No minimum followers.</p>
               </div>
-              {refCode && (
-                <p className="si-ref">
-                  <Icon name="gift" size={18} />
-                  <span>Invited with code <b>{refCode}</b>. Get <b>+{REFERRAL_REWARD.friend} credits</b>: link TikTok Shop and scan within 14 days.</span>
-                </p>
-              )}
               {handle && (
                 <p className="si-ref si-handle">
                   <Icon name="scan" size={18} />
@@ -464,6 +476,7 @@ export default function SignIn() {
                 {kindField}
                 {nicheField}
               </div>
+              {refField}
               {addressField}
               <button type="submit" className="np-btn np-submit">Create account</button>
               <p className="cr1-center si-switch">
