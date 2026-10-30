@@ -5,6 +5,7 @@ import { wallet } from "@/modules/rewards/ledger.ts";
 import { claim, missionBoard, recordEvent, type Side } from "@/modules/rewards/missions.ts";
 import { codeFor, friendsOf, settleReferrals } from "@/modules/rewards/referrals.ts";
 import { REFERRAL_DAYS, REFERRAL_REWARD } from "@/modules/rewards/rules.ts";
+import { settlePostRefunds } from "@/modules/rewards/post-credits.ts";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -28,8 +29,11 @@ export async function GET(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   const q = req.nextUrl.searchParams;
   const side = sideOf(q.get("side"));
-  // Friends who became successful get paid whenever either side looks.
-  await settleReferrals(user.id).catch((e) => console.error("[referrals] settle", e instanceof Error ? e.message : e));
+  // Friends who became successful get paid, and failed or cancelled posts get their credits back, whenever she looks.
+  await Promise.all([
+    settleReferrals(user.id).catch((e) => console.error("[referrals] settle", e instanceof Error ? e.message : e)),
+    settlePostRefunds(user.id).catch((e) => console.error("[post credits] refunds", e instanceof Error ? e.message : e)),
+  ]);
   const part = q.get("part");
   if (part === "wallet") return NextResponse.json(await wallet(user.id, side), NO_STORE);
   if (part === "referral") {

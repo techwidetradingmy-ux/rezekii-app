@@ -3,7 +3,8 @@ import { currentUser } from "@/app/current-user";
 import { queryCreatorInfo, type PrivacyLevel } from "@/integrations/tiktok/posting.ts";
 import { postingHours } from "@/modules/posting/times.ts";
 import { nextRecommendedSlot, postProblems, type PostChoice } from "@/modules/posting/rules.ts";
-import { freshTikTokToken, insertPost, listPosts, markTikTokReconnect, RECONNECT_TIKTOK, scheduledTimes, TIKTOK_LOST, userTikTokOpenId } from "@/modules/posting/store.ts";
+import { freshTikTokToken, insertPost, listPosts, markTikTokReconnect, RECONNECT_TIKTOK, scheduledTimes, TIKTOK_LOST, updatePost, userTikTokOpenId } from "@/modules/posting/store.ts";
+import { canPay, chargePosts, postSide } from "@/modules/rewards/post-credits.ts";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ export async function GET() {
   return NextResponse.json({ posts: await listPosts(user.id) });
 }
 
-type Body = Partial<PostChoice> & { source?: "upload" | "link"; storagePath?: string; linkUrl?: string; when?: string; consent?: boolean; account?: string; staged?: boolean };
+type Body = Partial<PostChoice> & { source?: "upload" | "link"; storagePath?: string; linkUrl?: string; when?: string; consent?: boolean; account?: string; staged?: boolean; side?: string };
 const bad = (error: string | string[]) => NextResponse.json({ error }, { status: 400 });
 
 /**
@@ -70,6 +71,10 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Post Everywhere costs credits per channel from the creator or seller wallet; drafts are free.
+  const side = postSide(b.side);
+  if (scheduledAt && !b.staged && !(await canPay(user.id, side, 1))) return NextResponse.json({ error: "Not enough credits for TikTok. Earn more or save as a draft." }, { status: 402 });
+
   const post = await insertPost({
     user_id: user.id,
     tiktok_open_id: openId,
@@ -90,5 +95,12 @@ export async function POST(req: NextRequest) {
     scheduled_at: scheduledAt?.toISOString() ?? null,
     next_attempt_at: scheduledAt?.toISOString() ?? null,
   });
+  if (post.status === "scheduled") {
+    const paid = await chargePosts(user.id, side, [{ id: post.id, app: "tiktok" }]);
+    if (!paid.ok) {
+      await updatePost(post.id, { status: "cancelled", next_attempt_at: null });
+      return NextResponse.json({ error: paid.error }, { status: 402 });
+    }
+  }
   return NextResponse.json({ post }, { status: 201 });
 }

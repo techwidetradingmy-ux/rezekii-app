@@ -11,27 +11,35 @@ import { POST_CREDITS, type MyPost, type PostStatus, type PostTarget, type Publi
 import { product } from "@/lib/mock";
 import { IDEA_DRAFTS, type IdeaDraft } from "@/components/creator1/shoot-today";
 import { openPost, takeEdits } from "./post-edits";
+import { cancelChannel, loadPosts, retryChannel } from "@/lib/live-publish";
 import { ICON, NAMES, type Channel } from "./rules";
 import "@/app/creator2.css";
 import "@/app/publish.css";
 
-/** Today in the preview: Wednesday 28 October 2026, 9:15 AM Malaysia time. */
-const TODAY = "2026-10-28";
+/** Today in the sample preview: Wednesday 28 October 2026, 9:15 AM Malaysia time. */
+const SAMPLE_TODAY = "2026-10-28";
 const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const WEEK = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const add = (s: string, n: number) => { const d = new Date(`${s}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 const dow = (s: string) => new Date(`${s}T00:00:00Z`).getUTCDay();
-const dayLabel = (s: string) => (s === TODAY ? "Today" : s === add(TODAY, 1) ? "Tomorrow" : s === add(TODAY, -1) ? "Yesterday" : `${DOW[dow(s)]} ${dayName(s)}`);
+const dayLabelOn = (s: string, today: string) => (s === today ? "Today" : s === add(today, 1) ? "Tomorrow" : s === add(today, -1) ? "Yesterday" : `${DOW[dow(s)]} ${dayName(s)}`);
+/** Today in Malaysia, for real posts (owner, 31 Oct 2026). */
+const mytToday = () => new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10);
 const clock = (t: string) => { const [h, m] = t.split(":").map(Number); return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`; };
 const views = (n = 0) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}K` : String(n));
 
 const PRESETS: [string, string][] = [["around", "Last 7 & next 7 days"], ["today", "Today"], ["next7", "Next 7 days"], ["week", "This week"], ["last7", "Last 7 days"], ["month", "This month"], ["last30", "Last 30 days"]];
-const MONDAY = add(TODAY, -((dow(TODAY) + 6) % 7));
-const RANGE: Record<string, [string, string]> = {
-  around: [add(TODAY, -7), add(TODAY, 7)], today: [TODAY, TODAY], next7: [TODAY, add(TODAY, 6)], week: [MONDAY, add(MONDAY, 6)],
-  last7: [add(TODAY, -6), TODAY], month: ["2026-10-01", "2026-10-31"], last30: [add(TODAY, -29), TODAY],
-};
+/** The date presets around a given today. */
+function rangesFor(t: string): Record<string, [string, string]> {
+  const monday = add(t, -((dow(t) + 6) % 7));
+  const [y, m] = t.split("-").map(Number);
+  const monthEnd = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
+  return {
+    around: [add(t, -7), add(t, 7)], today: [t, t], next7: [t, add(t, 6)], week: [monday, add(monday, 6)],
+    last7: [add(t, -6), t], month: [`${t.slice(0, 7)}-01`, monthEnd], last30: [add(t, -29), t],
+  };
+}
 
 /** How a post is doing overall, which decides its group and colour. */
 type Group = "fail" | "live" | "sched" | "draft" | "done";
@@ -61,6 +69,8 @@ function statusText(s: PostStatus, app: Channel) {
     case "posted": return "Posted · live";
     case "inbox": return "In your TikTok drafts";
     case "failed": return "Failed";
+    case "removed": return "Deleted after posting";
+    case "pagedraft": return "Draft on your Page";
   }
 }
 /** The steps a post goes through, for the little progress track. */
@@ -75,6 +85,12 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
   const { toast } = useDemo();
   const router = useRouter();
   const [posts, setPosts] = useState(start);
+  // Signed in (owner, 31 Oct 2026): her real posts, real dates, and Cancel / Try again that really happen.
+  const live = !!setup.live;
+  const TODAY = live ? mytToday() : SAMPLE_TODAY;
+  const RANGE = rangesFor(TODAY);
+  const dayLabel = (s: string) => dayLabelOn(s, TODAY);
+  const reload = () => loadPosts().then(setPosts).catch(() => toast("Couldn't refresh your posts."));
   // Changes saved on the New Post page replace the old version of each post (owner, 28 Oct 2026).
   useEffect(() => {
     const { edits, message } = takeEdits();
@@ -86,13 +102,13 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
     try {
       const drafts: IdeaDraft[] = JSON.parse(sessionStorage.getItem(IDEA_DRAFTS) ?? "[]");
       const first = setup.channels.find((c) => c.status === "active");
-      if (!drafts.length || !first || !newPost.startsWith("/app/")) return;
+      if (live || !drafts.length || !first || !newPost.startsWith("/app/")) return;
       setPosts((all) => [
         ...drafts.filter((d) => !all.some((p) => p.id === d.id)).map((d) => ({ id: d.id, date: "", time: "", caption: d.idea, comment: "", cover: product(d.productId).img, seconds: 0, targets: [{ key: first.key, status: "draft" as const }] })),
         ...all,
       ]);
     } catch {}
-  }, [setup.channels, newPost]);
+  }, [setup.channels, newPost, live]);
   const [preset, setPreset] = useState<string | null>("around");
   const [[from, to], setRange] = useState<[string, string]>(RANGE.around);
   const [only, setOnly] = useState<Group | null>(null);
@@ -105,8 +121,14 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
 
   // Posts going out move one step every couple of seconds, like V1's status updates while TikTok works on them.
   const moving = posts.some((p) => p.targets.some((t) => MOVING.includes(t.status)));
+  // Real posts: while one is going out, check its status again every 15 seconds.
   useEffect(() => {
-    if (!moving) return;
+    if (!live || !moving) return;
+    const id = window.setInterval(reload, 15_000);
+    return () => window.clearInterval(id);
+  }, [live, moving]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (live || !moving) return;
     const id = window.setInterval(() => {
       setPosts((all) => all.map((p) => {
         if (!p.targets.some((t) => MOVING.includes(t.status))) return p;
@@ -117,7 +139,7 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
       }));
     }, 3500);
     return () => window.clearInterval(id);
-  }, [moving]);
+  }, [moving, live]);
 
   const chan = (key: string) => setup.channels.find((c) => c.key === key);
   const appOf = (t: PostTarget): Channel => chan(t.key)?.app ?? "facebook";
@@ -136,10 +158,22 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
     setPosts((all) => all.map((p) => (p.id !== postId ? p : { ...p, targets: p.targets.map((t) => (t.key === key ? { ...t, ...patch } : t)) })));
   const fix = (p: MyPost, t: PostTarget) => {
     const name = `${NAMES[appOf(t)]} ${chan(t.key)?.name ?? ""}`.trim();
+    if (live && t.postId) {
+      retryChannel(appOf(t), t.postId).then(() => { toast(`Trying ${name} again. ${POST_CREDITS} credits`); reload(); }).catch((e: unknown) => toast(e instanceof Error ? e.message : "Couldn't try again."));
+      return;
+    }
     toast(`${t.fix === "Reconnect" ? `${name} reconnected. Posting again…` : `Trying ${name} again…`} ${POST_CREDITS} credits`);
     setTarget(p.id, t.key, { status: "uploading", reason: undefined, fix: undefined });
   };
   const cancel = (p: MyPost) => {
+    if (live) {
+      const go = p.targets.filter((t) => t.canCancel && t.postId);
+      Promise.all(go.map((t) => cancelChannel(appOf(t), t.postId!)))
+        .then(() => toast("Cancelled. Its credits come back to your wallet."))
+        .catch((e: unknown) => toast(e instanceof Error ? e.message : "Couldn't cancel."))
+        .finally(() => { setCancelling(null); reload(); });
+      return;
+    }
     setPosts((all) => all.map((x) => (x.id !== p.id ? x : { ...x, date: "", time: "", targets: x.targets.map((t) => ({ ...t, status: "draft" as const })) })));
     setCancelling(null);
     toast(`Cancelled. ${p.targets.length * POST_CREDITS} credits refunded; moved to drafts.`);
@@ -153,12 +187,14 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
 
   const row = (p: MyPost) => {
     const g = groupOf(p);
-    const editable = g === "sched" || g === "draft";
+    // Real posts can be cancelled here while scheduled; editing them comes later.
+    const editable = live ? g === "sched" && p.targets.some((t) => t.canCancel) : g === "sched" || g === "draft";
+    const link = p.targets.find((t) => t.permalink)?.permalink;
     return (
       <li key={p.id} className={`sq-post ${g}`}>
         <span className="sq-cover">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={p.cover} alt="" />
+          {p.cover ? <img src={p.cover} alt="" /> : <span style={{ display: "grid", placeItems: "center", width: "100%", height: "100%" }}><Icon name="video" size={22} /></span>}
           {p.seconds > 0 && <small>{Math.floor(p.seconds / 60)}:{String(p.seconds % 60).padStart(2, "0")}</small>}
         </span>
         <span className="sq-body">
@@ -180,8 +216,8 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
                   {t.status === "posted" && t.views ? <small className="sq-views"><Icon name="eye" size={13} /> {views(t.views)} views</small> : null}
                   {t.status === "failed" && (
                     <span className="sq-why">
-                      <small>{t.reason} · {POST_CREDITS} credits returned</small>
-                      <button type="button" className={t.fix === "Reconnect" ? "np-btn v2-btn-sm" : "btn-outline v2-btn-sm"} onClick={() => fix(p, t)}>{t.fix ?? "Retry"}</button>
+                      <small>{t.reason}{t.fix || !live ? ` · ${POST_CREDITS} credits returned` : ""}</small>
+                      {(t.fix || !live) && <button type="button" className={t.fix === "Reconnect" ? "np-btn v2-btn-sm" : "btn-outline v2-btn-sm"} onClick={() => fix(p, t)}>{t.fix ?? "Retry"}</button>}
                     </span>
                   )}
                 </span>
@@ -196,11 +232,12 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
             </span>
           ) : (
             <span className="sq-acts">
-              <button type="button" className="btn-outline v2-btn-sm" onClick={() => { openPost(p); router.push(`${newPost}?edit=${encodeURIComponent(p.id)}`); }}><Icon name="edit" size={15} /> Edit</button>
+              {!live && <button type="button" className="btn-outline v2-btn-sm" onClick={() => { openPost(p); router.push(`${newPost}?edit=${encodeURIComponent(p.id)}`); }}><Icon name="edit" size={15} /> Edit</button>}
               <button type="button" className="sq-ghost v2-btn-sm" onClick={() => setCancelling(p.id)}>{g === "draft" ? "Delete" : "Cancel"}</button>
             </span>
           ))}
-          {g === "done" && <span className="sq-acts"><button type="button" className="sq-ghost v2-btn-sm" onClick={() => toast("Preview: opens the post in the app")}>View post <Icon name="arrow" size={14} /></button></span>}
+          {g === "done" && !live && <span className="sq-acts"><button type="button" className="sq-ghost v2-btn-sm" onClick={() => toast("Preview: opens the post in the app")}>View post <Icon name="arrow" size={14} /></button></span>}
+          {g === "done" && live && link && <span className="sq-acts"><a className="sq-ghost v2-btn-sm" href={link} target="_blank" rel="noopener noreferrer">View post <Icon name="arrow" size={14} /></a></span>}
         </span>
       </li>
     );
@@ -214,8 +251,8 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
           label={label}
           sub={`${dayName(from)} – ${dayName(to)}`}
           today={TODAY}
-          first="2026-09-01"
-          last="2026-12-31"
+          first={live ? add(TODAY, -180) : "2026-09-01"}
+          last={live ? add(TODAY, 90) : "2026-12-31"}
           from={from}
           to={to}
           onRange={(a, b) => choose(a, b, null)}
@@ -247,14 +284,14 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
         ))}
       </div>
 
-      <div className="sq-srcbar">
+      {!live && <div className="sq-srcbar">
         <div className="v2-chips" role="group" aria-label="Posted from">
           {([["all", "All posts"], ["rezekii", "Via Rezekii"], ["phone", "From phone"]] as const).map(([k, l]) => (
             <button key={k} type="button" className={`v2-chip${src === k ? " on" : ""}`} aria-pressed={src === k} onClick={() => setSrc(k)}>{k === "phone" && <Icon name="phone" size={15} />}{l}</button>
           ))}
         </div>
         <span className="v2-small">Phone posts sync every 30 minutes.</span>
-      </div>
+      </div>}
 
       <section className="v2-card sq-map">
         <div className="sq-map-h">
@@ -308,7 +345,7 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
           <a href={newPost} className="np-btn v2-btn-sm">New Post</a>
         </section>
       )}
-      <p className="v2-small" style={{ margin: 0 }}>You can edit or cancel until a post starts sending.</p>
+      <p className="v2-small" style={{ margin: 0 }}>{live ? "You can cancel until a post starts sending." : "You can edit or cancel until a post starts sending."}</p>
 
       {filterOpen && (
         <Sheet title="Show" onClose={() => setFilterOpen(false)}>

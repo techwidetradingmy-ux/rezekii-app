@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { canUseSocial } from "@/modules/social/access.ts";
 import { cleanUpGroup, getUserSocialPost, updateSocialPost, videoStillStored } from "@/modules/social/store.ts";
+import { chargeRetry } from "@/modules/rewards/post-credits.ts";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (action === "retry") {
     if (post.status !== "failed") return NextResponse.json({ error: "Only a failed post can be tried again." }, { status: 409 });
     if (post.storage_path && !(await videoStillStored(post.storage_path))) return NextResponse.json({ error: "The video for this post isn't stored any more. Make a new post with it." }, { status: 409 });
+    // Its credits came back when it failed; trying again costs them again.
+    if (!(await chargeRetry(user.id, { id: post.id, app: post.platform }, "creator"))) return NextResponse.json({ error: "Not enough credits to try again." }, { status: 402 });
     await updateSocialPost(id, { status: "scheduled", next_attempt_at: new Date().toISOString(), attempts: 0, last_error: null, container_id: null });
     return NextResponse.json({ ok: true });
   }

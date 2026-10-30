@@ -44,8 +44,12 @@ export default function SellerWallet() {
 
       <section className="v2-card flat" style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap" }}>
         <span className="sl-ico blue"><Icon name="spark" size={18} /></span>
-        <span style={{ flex: "1 1 220px", minWidth: 0 }}><b>Coming soon: spend credits</b><br /><span className="v2-muted">AI captions and extra competitor reports.</span></span>
-        <Link href="/seller/app/rewards" className="btn-outline" style={{ height: 40 }}>Earn more</Link>
+        {w ? (
+          <span style={{ flex: "1 1 220px", minWidth: 0 }}><b>Post Everywhere</b><br /><span className="v2-muted">One video to all your accounts at once.</span></span>
+        ) : (
+          <span style={{ flex: "1 1 220px", minWidth: 0 }}><b>Coming soon: spend credits</b><br /><span className="v2-muted">AI captions and extra competitor reports.</span></span>
+        )}
+        <Link href={w ? "/seller/app/publish" : "/seller/app/rewards"} className="btn-outline" style={{ height: 40 }}>{w ? "Post" : "Earn more"}</Link>
       </section>
 
       <section className="v2-card">

@@ -27,6 +27,8 @@ export type PublishSetup = {
   /** Wallet balance, and where to earn more credits. */
   credits: number;
   earn: string;
+  /** Signed in (owner, 31 Oct 2026): her real channels, posts go out for real, from this wallet. */
+  live?: "creator" | "seller";
 };
 
 const ch = (key: string, app: Channel, name: string, sub: string, initials: string, color: string, status: PubChannel["status"] = "active"): PubChannel => ({ key, app, name, sub, initials, color, status });
@@ -89,8 +91,12 @@ export const SELLER_SETUP: PublishSetup = {
 /* ---------------- Content calendar ---------------- */
 
 /** One channel's state, V1's live statuses: Draft → Scheduled → Uploading → Sending/Publishing → Processing → Posted. */
-export type PostStatus = "draft" | "scheduled" | "uploading" | "sending" | "processing" | "posted" | "inbox" | "failed";
-export type PostTarget = { key: string; status: PostStatus; reason?: string; fix?: "Retry" | "Reconnect"; views?: number };
+export type PostStatus = "draft" | "scheduled" | "uploading" | "sending" | "processing" | "posted" | "inbox" | "failed" | "removed" | "pagedraft";
+export type PostTarget = {
+  key: string; status: PostStatus; reason?: string; fix?: "Retry" | "Reconnect"; views?: number;
+  /** A real post: this channel's own post id, whether it can still be cancelled, and its link once posted. */
+  postId?: string; canCancel?: boolean; permalink?: string | null;
+};
 export type MyPost = {
   id: string;
   /** ISO date and 24-hour time, Malaysia time; empty for a draft with no time yet. */
@@ -103,6 +109,8 @@ export type MyPost = {
   targets: PostTarget[];
   /** Posted from her phone in the app itself (owner, 28 Oct 2026). Rezekii reads these from each connected account; missing = posted with Rezekii. */
   source?: "phone";
+  /** One of her real posts (signed in). */
+  real?: boolean;
 };
 
 const t = (key: string, status: PostStatus, more: Partial<PostTarget> = {}): PostTarget => ({ key, status, ...more });

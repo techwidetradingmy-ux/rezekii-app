@@ -9,7 +9,8 @@ import { canUseSocial } from "@/modules/social/access.ts";
 import { NAMES, channelProblems, facebookAsReel } from "@/modules/social/rules.ts";
 import { cleanSettings, settingsProblems } from "@/modules/social/settings.ts";
 import { fileInUse } from "@/modules/posting/edit.ts";
-import { copyUpload, insertSocialPosts, listSocialPosts, postsInDay, type NewSocialPost } from "@/modules/social/store.ts";
+import { copyUpload, insertSocialPosts, listSocialPosts, postsInDay, updateSocialPost, type NewSocialPost } from "@/modules/social/store.ts";
+import { canPay, chargePosts, postSide } from "@/modules/rewards/post-credits.ts";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,7 @@ export async function GET() {
 }
 
 type ChannelIn = { accountId?: string; caption?: string; firstComment?: string; settings?: unknown };
-type Body = { source?: "upload" | "link"; storagePath?: string; linkUrl?: string; durationSec?: number; when?: string; tiktokPostId?: string; commentImagePath?: string; channels?: ChannelIn[]; staged?: boolean };
+type Body = { source?: "upload" | "link"; storagePath?: string; linkUrl?: string; durationSec?: number; when?: string; tiktokPostId?: string; commentImagePath?: string; channels?: ChannelIn[]; staged?: boolean; side?: string };
 const bad = (error: string | string[], status = 400) => NextResponse.json({ error }, { status });
 
 /**
@@ -76,6 +77,11 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Post Everywhere costs credits per channel from the creator or seller wallet; drafts are free.
+  const side = postSide(b.side);
+  if (scheduledAt && !b.staged && !(await canPay(user.id, side, channels.length)))
+    return bad("Not enough credits for these channels. Earn more or save as a draft.", 402);
+
   // With TikTok in the post, the channels get their own copy of the upload (TikTok deletes its file once it has posted). An
   // edit copies the video and comment image it kept too: the old post's files go once it is replaced.
   let storagePath: string | null = b.source === "upload" ? (b.storagePath as string) : null;
@@ -115,5 +121,14 @@ export async function POST(req: NextRequest) {
       settings,
     };
   });
-  return NextResponse.json({ posts: await insertSocialPosts(rows) }, { status: 201 });
+  const posts = await insertSocialPosts(rows);
+  const due = posts.filter((p) => p.status === "scheduled");
+  if (due.length) {
+    const paid = await chargePosts(user.id, side, due.map((p) => ({ id: p.id, app: p.platform })));
+    if (!paid.ok) {
+      for (const p of due) await updateSocialPost(p.id, { status: "cancelled", next_attempt_at: null });
+      return bad(paid.error, 402);
+    }
+  }
+  return NextResponse.json({ posts }, { status: 201 });
 }

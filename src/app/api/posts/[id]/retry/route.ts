@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { getUserPost, updatePost } from "@/modules/posting/store.ts";
+import { chargeRetry } from "@/modules/rewards/post-credits.ts";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const post = await getUserPost(user.id, (await params).id);
   if (!post) return NextResponse.json({ error: "Post not found." }, { status: 404 });
   if (post.status !== "failed") return NextResponse.json({ error: "Only a failed post can be tried again." }, { status: 409 });
+  // Its credits came back when it failed; trying again costs them again.
+  if (!(await chargeRetry(user.id, { id: post.id, app: "tiktok" }, "creator"))) return NextResponse.json({ error: "Not enough credits to try again." }, { status: 402 });
   await updatePost(post.id, { status: "scheduled", next_attempt_at: new Date().toISOString(), attempts: 0, last_error: null });
   return NextResponse.json({ ok: true });
 }

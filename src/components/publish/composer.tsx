@@ -9,6 +9,7 @@ import { Sheet, Tip } from "@/components/ui";
 import { PlatformIcon } from "@/components/creator2/bits";
 import { POST_CREDITS, type MyPost, type PubBrand, type PubChannel, type PublishSetup } from "@/lib/mock-publish";
 import { postToEdit, saveEdit } from "./post-edits";
+import { creatorInfo, sendPost, upload, type CreatorInfo } from "@/lib/live-publish";
 import { PhonePreview, type Who } from "./phone-previews";
 import {
   APPS, CAPTION_MAX, COLLABORATORS_MAX, COMMENT_MAX, ICON, NAMES, PRIVACY, REPLY_CONTROLS, TAGS_MAX, UNIT,
@@ -41,6 +42,12 @@ function pretty(v: string) {
 }
 
 const isTikTok = (c?: PubChannel) => c?.app === "tiktok";
+/** A real TikTok channel's key is "tiktok:<open_id>". */
+const openIdOf = (key: string) => key.replace(/^tiktok:/, "");
+/** An ISO time as Malaysia time for pretty(). */
+const mytLocal = (iso: string) => new Date(Date.parse(iso) + 8 * 3600_000).toISOString().slice(0, 16);
+/** Now, as the date picker's minimum (the browser's own time). */
+const nowLocal = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset() + 2); return d.toISOString().slice(0, 16); };
 
 /** A profile picture: initials in the account's colour, with the app's icon in the corner. */
 function Face({ ch, badge = true }: { ch: Pick<PubChannel, "app" | "initials" | "color">; badge?: boolean }) {
@@ -116,6 +123,11 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   const [flash, setFlash] = useState<Sec | "">("");
   const [check, setCheck] = useState<"" | "busy" | "ok">("");
   const [done, setDone] = useState<{ summary: string; when: When; at: string; cost: number } | null>(null);
+  // Signed in (owner, 31 Oct 2026): real channels, real sending from this wallet.
+  const liveSide = setup.live;
+  const [credits, setCredits] = useState(setup.credits);
+  const [sendError, setSendError] = useState("");
+  const [info, setInfo] = useState<{ acct: string; info?: CreatorInfo; error?: string } | null>(null);
 
   const byKey = useMemo(() => new Map(channels.map((c) => [c.key, c])), [channels]);
   const connected = useMemo(() => new Set(channels.filter((c) => c.status === "active").map((c) => c.key)), [channels]);
@@ -146,6 +158,19 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
 
   const ttKey = [...picked].find((k) => connected.has(k) && isTikTok(byKey.get(k)));
   const metaPicked = channels.filter((c) => picked.has(c.key) && c.status === "active" && c.app !== "tiktok");
+  // TikTok requires its rules for the account to be asked fresh each time it's picked for a post.
+  useEffect(() => {
+    if (!liveSide || !ttKey) return;
+    const acct = openIdOf(ttKey);
+    let on = true;
+    creatorInfo(acct)
+      .then((i) => { if (on) setInfo({ acct, info: i }); })
+      .catch((e: unknown) => { if (on) setInfo({ acct, error: e instanceof Error ? e.message : "Couldn't reach TikTok." }); });
+    return () => { on = false; };
+  }, [liveSide, ttKey]);
+  const ttInfo = liveSide && ttKey && info?.acct === openIdOf(ttKey) ? info : null;
+  const privacyOptions = ttInfo?.info ? PRIVACY.filter(([p]) => ttInfo.info!.privacy_level_options.includes(p)) : PRIVACY;
+  const lockAllow = { comments: !!ttInfo?.info?.comment_disabled, duet: !!ttInfo?.info?.duet_disabled, stitch: !!ttInfo?.info?.stitch_disabled };
   const keys = [...(ttKey ? [ttKey] : []), ...metaPicked.map((c) => c.key)];
   const chOf = (key: string): Channel => byKey.get(key)?.app ?? "facebook";
   const apps = APPS.filter((p) => keys.some((k) => chOf(k) === p));
@@ -199,8 +224,14 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
       if (c.list.length > COLLABORATORS_MAX) out.push([`Instagram allows up to ${COLLABORATORS_MAX} collaborators.`, "settings"]);
       if (g.bad.length) out.push([`Instagram tagged people: "${g.bad[0]}" isn't an Instagram username.`, "settings"]);
     }
+    if (liveSide && ttKey && when !== "draft" && mode === "direct") {
+      if (ttInfo?.error) out.push([`TikTok: ${ttInfo.error}`, "tiktok"]);
+      else if (!ttInfo?.info) out.push(["Checking your TikTok account. Try again in a moment.", "tiktok"]);
+      else if (privacy && !ttInfo.info.privacy_level_options.includes(privacy)) out.push(["Pick who can view from TikTok's list for this account.", "tiktok"]);
+      else if (durationSec && ttInfo.info.max_video_post_duration_sec && durationSec > ttInfo.info.max_video_post_duration_sec) out.push([`TikTok: this account can post videos up to ${ttInfo.info.max_video_post_duration_sec} seconds.`, "video"]);
+    }
     if (when === "pick" && !pickAt) out.push(["Pick a date and time.", "when"]);
-    if (cost > setup.credits) out.push([`Not enough credits: needs ${cost}, you have ${setup.credits.toLocaleString("en-MY")}. Earn more or save as draft.`, "when"]);
+    if (cost > credits) out.push([`Not enough credits: needs ${cost}, you have ${credits.toLocaleString("en-MY")}. Earn more or save as draft.`, "when"]);
     return out;
   })();
   const shown = tried ? problems : [];
@@ -210,6 +241,41 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     ...apps.flatMap((p) => channelWarnings(p, captionOf(p))),
     ...apps.filter((p) => hasLinkOrCta(captionOf(p), cta)).map((p) => `${NAMES[p]} caption has a link or call to action. Move it to the first comment.`),
   ];
+
+  /** Real accounts: TikTok connects through TikTok sign-in; the other apps aren't open in this preview yet. */
+  function connectReal(app: Channel) {
+    if (app === "tiktok") { window.location.href = "/api/auth/tiktok/start"; return; }
+    say(`${NAMES[app]} can't be connected in this preview yet.`);
+  }
+  async function checkReal(c: PubChannel) {
+    const r = await fetch("/api/channels/check", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ key: c.key }) }).catch(() => null);
+    const x = (await r?.json().catch(() => ({}))) as { status?: "active" | "reconnect"; error?: string } | undefined;
+    if (!r?.ok || !x?.status) return say(x?.error || "Couldn't check. Try again.");
+    const status = x.status;
+    setChannels((l) => l.map((y) => (y.key === c.key ? { ...y, status } : y)));
+    say(status === "active" ? `${c.name} is connected and working.` : `${c.name} needs reconnecting.`);
+  }
+  async function disconnectReal(c: PubChannel) {
+    const r = await fetch(c.app === "tiktok" ? `/api/account/tiktok/${encodeURIComponent(openIdOf(c.key))}` : `/api/social/accounts/${c.key}`, { method: "DELETE" }).catch(() => null);
+    if (!r?.ok) return say("Couldn't disconnect. Try again.");
+    setChannels((l) => l.filter((x) => x.key !== c.key));
+    setPicked((s) => new Set([...s].filter((k) => k !== c.key)));
+    say(c.app === "tiktok" ? `${c.name} disconnected. Its scheduled posts moved to drafts.` : `${c.name} disconnected. Its scheduled posts were cancelled.`);
+  }
+  async function saveBrandReal(b: PubBrand) {
+    const isNew = !/^[0-9a-f-]{36}$/.test(b.id);
+    const r = await fetch(isNew ? "/api/social/brands" : `/api/social/brands/${b.id}`, { method: isNew ? "POST" : "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: b.name, channels: b.channels }) }).catch(() => null);
+    const d = (await r?.json().catch(() => ({}))) as { brand?: PubBrand; error?: string } | undefined;
+    if (!r?.ok || !d?.brand) return say(d?.error || "Couldn't save the brand. Try again.");
+    const saved = d.brand;
+    setBrands((list) => [...list.filter((x) => x.id !== saved.id), saved].sort((x, y) => x.name.localeCompare(y.name)));
+    say("Brand saved.");
+  }
+  async function deleteBrandReal(id: string) {
+    const r = await fetch(`/api/social/brands/${id}`, { method: "DELETE" }).catch(() => null);
+    if (!r?.ok) return say("Couldn't delete the brand. Try again.");
+    setBrands((list) => list.filter((x) => x.id !== id));
+  }
 
   function sameAsLast() {
     const next = new Set(setup.last.filter((k) => connected.has(k)));
@@ -267,9 +333,34 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     }
   }, []);
 
+  /** Real sending: upload, then TikTok, then the other apps as one group; each scheduled channel takes credits. */
+  async function sendLive(side: "creator" | "seller") {
+    setSendError("");
+    try {
+      let storagePath: string | undefined;
+      if (source === "upload" && file) storagePath = await upload(file, (pct) => setBusy(`Uploading video… ${pct}%`));
+      setBusy(when === "draft" ? "Saving…" : "Scheduling…");
+      const at = when === "pick" ? new Date(pickAt).toISOString() : when;
+      const settingsFor = (p: Channel): Record<string, unknown> => (p === "facebook" ? { draft: fbDraft } : p === "instagram" ? { feed: igFeed, collaborators, tags: tagged, trial: igTrial } : { replies, topic });
+      const r = await sendPost({
+        side, when: at, durationSec,
+        video: { source, storagePath, linkUrl: source === "link" ? linkUrl : undefined },
+        tiktok: ttKey ? { account: openIdOf(ttKey), choice: { mode, caption: captionOf("tiktok"), privacyLevel: privacy || null, allowComments: allow.comments && !lockAllow.comments, allowDuet: allow.duet && !lockAllow.duet, allowStitch: allow.stitch && !lockAllow.stitch, promo: promo.on, brandOrganic: promo.own, brandedContent: promo.branded, isAigc, durationSec } } : undefined,
+        others: metaPicked.map((c) => ({ accountId: c.key, caption: captionOf(c.app), firstComment: c.app === "facebook" && fbDraft ? "" : commentOf(c.app), settings: settingsFor(c.app) })),
+      });
+      setCredits((n) => n - cost);
+      setDone({ summary: summary(), when, at: r.at ? pretty(mytLocal(r.at)) : RECOMMENDED, cost });
+    } catch (e) {
+      setSendError(e instanceof Error ? e.message : "Didn't go through. Please try again.");
+    } finally {
+      setBusy("");
+    }
+  }
+
   function submit() {
     setTried(true);
     if (problems.length) return jump(problems[0][1]);
+    if (liveSide) return void sendLive(liveSide);
     if (editing) {
       const [date, time] = when === "draft" ? ["", ""] : when === "pick" ? pickAt.split("T") : when === "now" ? ["2026-10-28", "09:20"] : ["2026-10-28", "20:00"];
       const comment = apps.filter((p) => p !== "tiktok").map(commentOf)[0] ?? ownComment.trim();
@@ -324,7 +415,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     <>
       <div className="pb-top">
         <p className="pb-legend"><Req /> Required</p>
-        <button type="button" className="btn-outline v2-btn-sm" onClick={fillSample}>✦ Use a sample</button>
+        {!liveSide && <button type="button" className="btn-outline v2-btn-sm" onClick={fillSample}>✦ Use a sample</button>}
       </div>
       <form className="pb" onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate>
         <div className="pb-col">
@@ -492,14 +583,15 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
               </div>
               {mode === "direct" && (
                 <>
+                  {ttInfo?.info?.creator_nickname && <p className="np-muted" style={{ margin: 0 }}>Posting as <b>{ttInfo.info.creator_nickname}</b></p>}
                   <label htmlFor="pb-privacy"><b>Who can view this post <Req /></b></label>
                   <select id="pb-privacy" className="np-input" value={privacy} onChange={(e) => setPrivacy(e.target.value as Privacy)} required>
                     <option value="" disabled>Choose who can view</option>
-                    {PRIVACY.map(([p, l]) => <option key={p} value={p} disabled={p === "SELF_ONLY" && promo.on && promo.branded}>{l}{p === "SELF_ONLY" && promo.on && promo.branded ? " (not allowed for branded content)" : ""}</option>)}
+                    {privacyOptions.map(([p, l]) => <option key={p} value={p} disabled={p === "SELF_ONLY" && promo.on && promo.branded}>{l}{p === "SELF_ONLY" && promo.on && promo.branded ? " (not allowed for branded content)" : ""}</option>)}
                   </select>
                   <div className="np-checks">
                     {([["comments", "Allow Comment"], ["duet", "Allow Duet"], ["stitch", "Allow Stitch"]] as const).map(([k, label]) => (
-                      <label key={k} className="np-check"><input type="checkbox" checked={allow[k]} onChange={(e) => setAllow((a) => ({ ...a, [k]: e.target.checked }))} />{label}</label>
+                      <label key={k} className="np-check"><input type="checkbox" checked={allow[k] && !lockAllow[k]} disabled={lockAllow[k]} onChange={(e) => setAllow((a) => ({ ...a, [k]: e.target.checked }))} />{label}{lockAllow[k] && <small>Turned off for this account in TikTok.</small>}</label>
                     ))}
                   </div>
                   <div className="np-switchrow">
@@ -618,11 +710,11 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
           <section id="pb-s-when" className={`${secClass("when")} pb-when`}>
             <h2>When <Req /> <Tip text="Malaysia time. All channels post together. Drafts stay here until you schedule them." /></h2>
             <div className="np-when" role="radiogroup" aria-label="When to post">
-              {([["now", "Post now"], ["recommended", `Recommended · ${RECOMMENDED}`], ["pick", "Pick a time"], ["draft", "Save as draft"]] as [When, string][]).map(([v, label]) => (
+              {([["now", "Post now"], ["recommended", liveSide ? "Recommended time" : `Recommended · ${RECOMMENDED}`], ["pick", "Pick a time"], ["draft", "Save as draft"]] as [When, string][]).map(([v, label]) => (
                 <label key={v} className={when === v ? "np-radio on" : "np-radio"}><input type="radio" name="pb-when" value={v} checked={when === v} onChange={() => setWhen(v)} />{label}</label>
               ))}
             </div>
-            {when === "pick" && <input className="np-input" type="datetime-local" value={pickAt} min="2026-10-28T09:15" onChange={(e) => setPickAt(e.target.value)} aria-label="Date and time (Malaysia time)" />}
+            {when === "pick" && <input className="np-input" type="datetime-local" value={pickAt} min={liveSide ? nowLocal() : "2026-10-28T09:15"} onChange={(e) => setPickAt(e.target.value)} aria-label="Date and time (Malaysia time)" />}
             {secErr("when")}
           </section>
           {shown.length > 0 && (
@@ -631,13 +723,14 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
               {shown.map(([t, s]) => <button key={t} type="button" onClick={() => jump(s)}><span>{t}</span><Icon name="arrow" size={14} /></button>)}
             </div>
           )}
+          {sendError && <div className="pb-fix" role="alert"><b>Not sent</b><span style={{ padding: "4px 0" }}>{sendError}</span></div>}
           {ttKey && mode === "direct" && when !== "draft" && <p className="np-consent">{consentLine(promo.on, promo.branded)}</p>}
           <button type="submit" className="np-btn np-submit" disabled={!!busy}>
             {busy || editing ? busy || `Save changes${when === "draft" ? "" : ` · ${cost} credits`}` : `${when === "draft" ? "Save draft" : when === "now" ? "Post now" : "Schedule"} · ${keys.length === 1 ? "1 channel" : `${keys.length} channels`}${when === "draft" ? "" : ` · ${cost} credits`}`}
           </button>
           <p className="pb-cost">
             <Icon name="wallet" size={14} />
-            <span><b>{setup.credits.toLocaleString("en-MY")}</b> credits</span>
+            <span><b>{credits.toLocaleString("en-MY")}</b> credits</span>
             <Tip text={`${POST_CREDITS} credits per channel. Drafts are free. Refunded if a channel fails or is cancelled.`} />
             <Link href={setup.earn}>Earn more</Link>
           </p>
@@ -649,9 +742,11 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
           channels={channels}
           connectable={missing}
           onConnect={connectApp}
-          onReconnect={(c) => { setChannels((l) => l.map((x) => (x.key === c.key ? { ...x, status: "active" } : x))); say(`${c.name} reconnected`); }}
-          onCheck={(c) => say(c.status === "active" ? `${c.name} is working.` : `${c.name} needs reconnecting.`)}
+          onConnectApp={liveSide ? connectReal : undefined}
+          onReconnect={(c) => { if (liveSide) return connectReal(c.app); setChannels((l) => l.map((x) => (x.key === c.key ? { ...x, status: "active" } : x))); say(`${c.name} reconnected`); }}
+          onCheck={(c) => (liveSide ? void checkReal(c) : say(c.status === "active" ? `${c.name} is working.` : `${c.name} needs reconnecting.`))}
           onDisconnect={(c) => {
+            if (liveSide) return void disconnectReal(c);
             setChannels((l) => l.filter((x) => x.key !== c.key));
             setPicked((s) => new Set([...s].filter((k) => k !== c.key)));
             say(c.app === "tiktok" ? `${c.name} disconnected. Its scheduled posts moved to drafts.` : `${c.name} disconnected. Its scheduled posts were cancelled.`);
@@ -665,8 +760,8 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
           channels={channels}
           byKey={byKey}
           connected={connected}
-          onSaved={(b) => setBrands((list) => [...list.filter((x) => x.id !== b.id), b].sort((x, y) => x.name.localeCompare(y.name)))}
-          onDeleted={(id) => setBrands((list) => list.filter((x) => x.id !== id))}
+          onSaved={(b) => (liveSide ? void saveBrandReal(b) : setBrands((list) => [...list.filter((x) => x.id !== b.id), b].sort((x, y) => x.name.localeCompare(y.name))))}
+          onDeleted={(id) => (liveSide ? void deleteBrandReal(id) : setBrands((list) => list.filter((x) => x.id !== id)))}
           onClose={() => setSheet("")}
         />
       )}
@@ -725,7 +820,7 @@ function Tabs<T extends string>({ value, set, items, label }: { value: T; set: (
 }
 
 /** Channels: everything connected, grouped by app. Each can be checked, reconnected when the app stopped accepting it, or disconnected. */
-function ChannelsSheet({ channels, connectable, onConnect, onReconnect, onCheck, onDisconnect, onClose }: { channels: PubChannel[]; connectable: PubChannel[]; onConnect: (c: PubChannel) => void; onReconnect: (c: PubChannel) => void; onCheck: (c: PubChannel) => void; onDisconnect: (c: PubChannel) => void; onClose: () => void }) {
+function ChannelsSheet({ channels, connectable, onConnect, onConnectApp, onReconnect, onCheck, onDisconnect, onClose }: { channels: PubChannel[]; connectable: PubChannel[]; onConnect: (c: PubChannel) => void; onConnectApp?: (p: Channel) => void; onReconnect: (c: PubChannel) => void; onCheck: (c: PubChannel) => void; onDisconnect: (c: PubChannel) => void; onClose: () => void }) {
   const { toast } = useDemo();
   const [q, setQ] = useState("");
   const s = q.trim().toLowerCase();
@@ -754,7 +849,7 @@ function ChannelsSheet({ channels, connectable, onConnect, onReconnect, onCheck,
               <div className="pb-ch">
                 <PlatformIcon name={ICON[p]} size={34} />
                 <span><b>{list.length ? `Add ${UNIT[p]}` : `Connect ${NAMES[p]}`}</b><small>{p === "facebook" ? "Pick Pages after sign-in" : p === "instagram" ? "Business or Creator account" : p === "threads" ? "Your Threads profile" : "Your TikTok account"}</small></span>
-                <button type="button" className="np-btn v2-btn-sm" onClick={() => (add ? onConnect(add) : toast(`Preview: ${NAMES[p]} sign-in opens here`))}>Connect</button>
+                <button type="button" className="np-btn v2-btn-sm" onClick={() => (onConnectApp ? onConnectApp(p) : add ? onConnect(add) : toast(`Preview: ${NAMES[p]} sign-in opens here`))}>Connect</button>
               </div>
             )}
           </div>
