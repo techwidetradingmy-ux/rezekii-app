@@ -46,12 +46,14 @@ export function Tip({ text, label = "What's this?", big = false }: { text: React
  * Page title row: large title, optional actions on the right. The explanation (`sub`) hides behind a small ⓘ next to the
  * title and shows on tap (owner, 28 Oct 2026: no explaining on the page itself).
  */
-export function Title({ title, sub, children }: { title: string; sub?: React.ReactNode; children?: React.ReactNode }) {
+export function Title({ title, sub, ai = false, children }: { title: string; sub?: React.ReactNode; ai?: boolean; children?: React.ReactNode }) {
   // Same floating bubble as every other ⓘ, so it stays on screen and on top (owner, 29 Oct 2026: the title tip couldn't be seen).
   return (
     <div className="v2-title">
       <div className="v2-title-main">
         <h1>
+          {/* AI tool pages lead with the AI mark (owner, 30 Oct 2026). */}
+          {ai && <AiMark size={34} />}
           {title}
           {sub && <Tip big text={sub} label={`About ${title}`} />}
         </h1>

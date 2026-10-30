@@ -91,8 +91,8 @@ export default function AiVideo() {
   };
 
   return (
-    <div className="v2-stack v2-in" style={{ gap: 16 }}>
-      <Title title="AI Video" sub="Short product videos made with AI, for you to check and post. Not launched yet." />
+    <div className="v2-stack v2-in av-page" style={{ gap: 16 }}>
+      <Title ai title="AI Video" sub="Short product videos made with AI, for you to check and post. Not launched yet." />
 
       <section className="v2-card v2-aicard av-hero">
         <AiHead title="Product Link to Video" sub="Turn a product link into short videos to post" tip={<Tip text="We're still building it. Paste a TikTok Shop product link, pick a type of video, and it makes a few short ones. You check each video and post it yourself. People on the waitlist try it first." />}>

@@ -16,7 +16,7 @@ export default function PublishPlan() {
   const [tab, setTab] = useKept<Tab>("ideas-tab", "Marketplace");
   return (
     <div className="v2-stack v2-in" style={{ gap: 16 }}>
-      <Title title="Today's Ideas" sub="Made this morning from your videos and sales">
+      <Title ai title="Today's Ideas" sub="Made this morning from your videos and sales">
         <ViewSwitch view={view} onChange={setView} />
       </Title>
       <section className="v2-card v2-aicard td-one">

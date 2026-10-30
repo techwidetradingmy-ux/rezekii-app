@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { AiMark, AiTag, Count, Flow, Hidden, Sheet } from "@/components/ui";
-import { CREATOR, KEPT_TARGET, PRODUCTS, RAISES, SIMILAR, bestRate, product, type Raise, rateFor } from "@/lib/mock";
+import { CREATOR, PRODUCTS, RAISES, SIMILAR, bestRate, product, type Raise, rateFor } from "@/lib/mock";
 import { NEW_ON_RESCAN, SILVER_UNLOCKS } from "@/lib/mock-creator1";
 import { LEVELS } from "@/lib/mock-creator2";
 import { productHref } from "@/lib/product-view";
@@ -366,7 +366,6 @@ export function ScanHub() {
                   );
                 })}
                 {list.length === 0 && <li className="sh-empty">All added. We re-check your showcase every day.</li>}
-                {view === "same" && KEPT_TARGET.length > 0 && <li className="sh-empty sh-kept"><Icon name="shield" size={14} /> {KEPT_TARGET.length} left out: your target plan already pays more.</li>}
               </ul>
             )}
 

@@ -126,8 +126,6 @@ const SCANNED: Raise[] = [
 const beats = (r: Raise) => r.tapRate > (r.nowRate ?? now(r.productId));
 /** Same listing in the creator's showcase, better through Techwide's TAP campaign. Only real raises: never lower than her rate now. */
 export const RAISES: Raise[] = SCANNED.filter(beats);
-/** Scanned but left out: her target plan already pays the same or more. */
-export const KEPT_TARGET: Raise[] = SCANNED.filter((r) => !beats(r));
 /** Similar products (different listing) in Techwide's TAP campaigns, added straight to the showcase. */
 export const SIMILAR = ["p14", "p11", "p18", "p05"];
 

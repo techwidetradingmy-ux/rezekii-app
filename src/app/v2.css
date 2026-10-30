@@ -79,7 +79,8 @@ a[href*="/product/"] { text-decoration: none; }
 .v2-subwrap { border-bottom: 1px solid var(--line); background: var(--bg); }
 .v2-subwrap .sub-menu { padding-block: 12px; }
 .v2-main { padding-block: 28px 56px; display: flex; flex-direction: column; gap: 22px; min-width: 0; }
-.v2-narrow { max-width: 860px; }
+/* Narrow pages sit in the middle on desktop (owner, 30 Oct 2026). */
+.v2-narrow { width: 100%; max-width: 860px; margin-inline: auto; }
 @media (max-width: 760px) {
   .v2-menu { display: none; }
   .v2-acct > span:not(.v2-av) { display: none; }
@@ -1057,3 +1058,9 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { display
 .v2-aihead-t { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .v2-aihead-t .v2-h2 { margin: 0; display: inline-flex; align-items: center; gap: 4px; }
 .v2-aihead small { font-size: 13px; font-weight: 600; line-height: 1.4; color: var(--muted); }
+/* AI mark on AI pages in every menu and title (owner, 30 Oct 2026). */
+.v2-title h1 .v2-aimark { margin-right: 10px; vertical-align: -0.12em; }
+.v2-side-sub a, .sub-menu a { gap: 6px; }
+.v2-side-sub a .v2-pgai, .sub-menu a .v2-pgai { width: 15px; height: 15px; }
+.sub-menu a.on .v2-pgai { color: #b3a8ff; }
+.v2-pgpick b svg.v2-pgai { transform: none; color: #7c5cff; }

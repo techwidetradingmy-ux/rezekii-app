@@ -160,7 +160,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
                 {on && s.pages.length > 1 && (
                   <div className="v2-side-sub">
                     {s.pages.map(([href, label]) => (
-                      <Link key={href} href={href} className={page === href ? "on" : undefined} aria-current={page === href ? "page" : undefined}>{label}</Link>
+                      <Link key={href} href={href} className={page === href ? "on" : undefined} aria-current={page === href ? "page" : undefined}>{label}<AiSpark label={label} /></Link>
                     ))}
                   </div>
                 )}
@@ -193,7 +193,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
             <span className="v2-pgpick">
               <button type="button" aria-haspopup="menu" aria-expanded={pgOpen} onClick={() => setPgOpen((o) => !o)}>
                 <small>{pick.title}</small>
-                <b><span>{pick.items.find((x) => x.on)?.label ?? pick.title}</span><Icon name="updown" size={14} width={2.4} /></b>
+                <b><span>{pick.items.find((x) => x.on)?.label ?? pick.title}</span><AiSpark label={pick.items.find((x) => x.on)?.label ?? ""} /><Icon name="updown" size={14} width={2.4} /></b>
               </button>
               {pgOpen && (
                 <>
@@ -210,7 +210,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
                         onClick={(e) => { if (x.hash) { e.preventDefault(); window.location.hash = x.hash; } setPgOpen(false); }}
                       >
                         {/* AI-made pages carry the AI mark so the feature stands out (owner, 29 Oct 2026). */}
-                        <span>{x.label}</span>{AI_PAGES.includes(x.label) && <svg className="v2-pgai" viewBox="0 0 24 24" width="17" height="17" aria-label="AI"><path d="M11 3Q12 11 20 12Q12 13 11 21Q10 13 2 12Q10 11 11 3Z" fill="currentColor" /><path d="M19 1.5Q19.3 4.7 22.5 5Q19.3 5.3 19 8.5Q18.7 5.3 15.5 5Q18.7 4.7 19 1.5Z" fill="currentColor" /></svg>}{x.on && <Icon name="check" size={16} />}
+                        <span>{x.label}</span><AiSpark label={x.label} />{x.on && <Icon name="check" size={16} />}
                       </Link>
                     ))}
                   </span>
@@ -272,7 +272,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
           <nav ref={subRef} className="site-wrap sub-menu nv-noscroll" aria-label={`${section.label} pages`}>
             {section.pages.map(([href, label]) => (
               <Link key={href} href={href} className={page === href ? "on" : undefined} aria-current={page === href ? "page" : undefined}>
-                {label}
+                {label}<AiSpark label={label} />
               </Link>
             ))}
           </nav>
@@ -334,8 +334,9 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
   );
 }
 
-/** Pages made by Rezekii AI; they get the AI mark in the page switcher. */
-const AI_PAGES = ["AI Picks", "Today's Ideas", "AI Competitors"];
+/** Pages made by Rezekii AI; they get the AI mark in every menu, on phones and desktop (owner, 30 Oct 2026). */
+const AI_PAGES = ["AI Picks", "Today's Ideas", "AI Video", "AI Competitors"];
+const AiSpark = ({ label }: { label: string }) => (AI_PAGES.includes(label) ? <svg className="v2-pgai" viewBox="0 0 24 24" width="17" height="17" aria-label="AI"><path d="M11 3Q12 11 20 12Q12 13 11 21Q10 13 2 12Q10 11 11 3Z" fill="currentColor" /><path d="M19 1.5Q19.3 4.7 22.5 5Q19.3 5.3 19 8.5Q18.7 5.3 15.5 5Q18.7 4.7 19 1.5Z" fill="currentColor" /></svg> : null);
 
 /** Every account section in a panel from the right (phones), with her photo, level and streak on top. */
 function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory: () => void }) {

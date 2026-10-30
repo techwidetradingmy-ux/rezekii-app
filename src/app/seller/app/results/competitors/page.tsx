@@ -35,7 +35,7 @@ export default function Competitors() {
 
   return (
     <div className="v2-stack v2-in">
-      <Title title="AI Competitors" sub="What's selling in your categories, and who's selling it." />
+      <Title ai title="AI Competitors" sub="What's selling in your categories, and who's selling it." />
 
       <div className="v2-stack" style={{ gap: 10 }}>
         <div className="sl-chipline" role="group" aria-label="Category">
