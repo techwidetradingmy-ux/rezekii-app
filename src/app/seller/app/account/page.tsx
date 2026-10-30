@@ -126,7 +126,7 @@ export default function SellerAccount() {
         <div className="sl-set"><span><b>iPhone</b><small>Rezekii in Safari · Kuala Lumpur · 2 days ago</small></span></div>
         <div className="v2-row">
           <button type="button" className="btn-outline" onClick={() => toast("Signed out of your other devices")}>Sign out other devices</button>
-          <Link href="/seller" className="v2-link">Sign out</Link>
+          <Link href="/seller" className="v2-link" style={{ color: "#d92d20" }} onClick={(e) => { if (!live) return; e.preventDefault(); fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/seller"; }); }}>Sign out</Link>
         </div>
       </section>
 

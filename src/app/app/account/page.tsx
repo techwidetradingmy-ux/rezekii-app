@@ -236,6 +236,10 @@ export default function Account() {
               {k === "samples" && <span className="badge badge-amber">{active}</span>}
             </button>
           ))}
+          {/* Sign out at the end of the side menu, in red, on wide screens (owner, 31 Oct 2026). Phones have it in the account panel. */}
+          <Link href="/signin?in=1" className="acc-out" onClick={(e) => { if (!live) return; e.preventDefault(); fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/signin?in=1"; }); }}>
+            <Icon name="back" size={17} /> Sign out
+          </Link>
         </div>
         </aside>
 
@@ -282,7 +286,7 @@ export default function Account() {
                   </span>
                 )}
                 <span className="pf-sub">
-                  {!local && !locked ? <span className="cr2-red" style={{ fontWeight: 700 }}>{cc === "+60" ? "Enter a Malaysian mobile number, e.g. 12-345 6789" : "Enter a mobile number"}</span> : null}
+                  {!local && !locked && (tried || phone.trim()) ? <span className="cr2-red" style={{ fontWeight: 700 }}>{cc === "+60" ? "Enter a Malaysian mobile number, e.g. 12-345 6789" : "Enter a mobile number"}</span> : null}
                   {verified ? (
                     <span className="badge"><Icon name="check" size={13} width={3} /> Verified</span>
                   ) : live ? null : (
@@ -441,7 +445,6 @@ export default function Account() {
                 ))}
               </div>
             </div>
-            <Link href="/signin?in=1" className="cr2-cell cr2-cellbtn acc-signout" onClick={(e) => { if (!live) return; e.preventDefault(); fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/signin?in=1"; }); }}>Sign out</Link>
           </div>
         </section>
 
