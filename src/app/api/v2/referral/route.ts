@@ -1,8 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { cleanCode, ownerOf, REF_COOKIE, type RefCookie } from "@/modules/rewards/referrals.ts";
+import { cleanCode, ownerOf, readRefCookie, REF_COOKIE, type RefCookie } from "@/modules/rewards/referrals.ts";
 import { refCookieOptions } from "./link";
 
 export const dynamic = "force-dynamic";
+
+/** The invite this browser came with, if any, so sign-up can show what the friend gets. */
+export async function GET(req: NextRequest) {
+  const ref = readRefCookie(req.cookies.get(REF_COOKIE)?.value);
+  return NextResponse.json({ code: ref?.c ?? null }, { headers: { "cache-control": "private, no-store" } });
+}
 
 /**
  * A friend's code typed at sign-up (owner, 30 Oct 2026): { code, side }. Checks it's real and keeps it for the sign-up that

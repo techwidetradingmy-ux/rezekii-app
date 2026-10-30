@@ -131,6 +131,8 @@ export default function SignIn() {
     if (q.get("in")) setEntry("in");
     const r = q.get("ref");
     if (r) setRefCode(r.toUpperCase().slice(0, 20));
+    // Came from an invite link through the landing page: the invite is remembered for 14 days.
+    else fetch("/api/v2/referral", { cache: "no-store" }).then((x) => x.json()).then((d: { code?: string | null }) => { if (d.code) setRefCode(d.code); }).catch(() => {});
     const u = q.get("u");
     if (u && /^[a-z0-9._]{2,24}$/i.test(u)) setHandle(u.toLowerCase());
     // A real sign-in that didn't finish comes back with ?error=.
