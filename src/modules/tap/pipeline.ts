@@ -137,14 +137,15 @@ export async function act(id: string, a: Action, actor: string): Promise<{ ok: t
         commission = Number(a.commission);
         if (!(commission > 1 && commission < 80)) return { ok: false, error: "Set the campaign commission: more than 1% and less than 80%." };
         const shop = (await shopsById([r.shop_id])).get(r.shop_id);
-        if (!shop?.code) return { ok: false, error: "The shop's code is missing. Ask the seller to connect Seller Center again." };
+        if (!shop) return { ok: false, error: "The shop isn't connected any more. Ask the seller to connect Seller Center again." };
         const contact = await techwideContact();
         if (!contact) return { ok: false, error: "Couldn't read Techwide's campaign contact details from TikTok. Please try again." };
         const today = toDay(Math.floor(Date.now() / 1000));
-        // The longest TikTok allows (360 days), open to this shop only.
+        // The longest TikTok allows (360 days). Public like all of Techwide's campaigns (owner, 31 Oct 2026): any local or
+        // cross-border seller can register; the shop's name is in the title so it's easy to track.
         const end = lastEndDay(startTime(today, Date.now()));
         const title = `Techwide X ${shop.name}`.slice(0, 49);
-        const saved = await saveCampaign({ name: title, description: `Techwide's TAP campaign for ${shop.name} on Rezekii.`, start: today, end, regEnd: end, commission, local: false, crossBorder: false, shopCodes: [shop.code], ...contact }, null, actor);
+        const saved = await saveCampaign({ name: title, description: `Techwide's TAP campaign for ${shop.name} on Rezekii.`, start: today, end, regEnd: end, commission, local: true, crossBorder: true, shopCodes: [], ...contact }, null, actor);
         if (!saved.ok) return saved;
         const pub = await publish(saved.id, title, actor);
         if (!pub.ok) return { ok: false, error: pub.error ?? "TikTok didn't publish the campaign." };
