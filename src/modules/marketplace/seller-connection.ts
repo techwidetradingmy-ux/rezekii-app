@@ -73,3 +73,10 @@ export async function sellerAccessFor(user: { id: string; role: string }): Promi
   await saveSellerConnection(shop, r.data);
   return { shop, token: r.data.access_token };
 }
+
+/** The name of the shop this person sees in the seller app (as sellerAccessFor picks it), or null. No TikTok call. */
+export async function sellerShopName(user: { id: string; role: string }): Promise<string | null> {
+  const mine = user.role === "admin" ? "" : `connected_by=eq.${user.id}&`;
+  const [row] = (await (await supabaseRest(`seller_connections?${mine}select=shop_name&order=updated_at.desc&limit=1`)).json()) as { shop_name: string }[];
+  return row?.shop_name ?? null;
+}

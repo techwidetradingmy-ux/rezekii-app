@@ -36,7 +36,7 @@ export default function ShopProducts() {
 
   const loadReal = (said: boolean) => {
     setSyncing(true);
-    loadShop()
+    loadShop(said)
       .then((s) => {
         setNoShop(!s);
         setShop(s && { name: s.shop, at: s.at, notLive: s.notLive });
@@ -86,19 +86,13 @@ export default function ShopProducts() {
             return (
               <div key={p.id} className="sl-prow">
                 {/* Product (owner, 29 Oct 2026): the photo and name open the product's page; the row's buttons stay. */}
-                {/* A real product has no sample product page yet, so its photo and name don't open one. */}
-                {p.real ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <span className="pg-rowimg"><img src={p.img} alt="" /></span>
-                ) : (
-                  <Link href={sellerProductHref(p.id)} className="pg-rowimg" aria-label={`Open ${p.name}`} tabIndex={-1}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={p.img} alt="" />
-                  </Link>
-                )}
+                <Link href={sellerProductHref(p.id)} className="pg-rowimg" aria-label={`Open ${p.name}`} tabIndex={-1}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={p.img} alt="" />
+                </Link>
                 <span className="sl-pinfo">
-                  <strong>{p.real ? p.name : <Link href={sellerProductHref(p.id)} className="pg-name">{p.name}</Link>}</strong>
-                  <small>{rm(p.price)}{p.salesUnknown ? "" : ` · ${p.sold ? `${short(p.sold)} sold` : "No sales yet"}`} · Public {p.publicRate === null ? "unknown" : `${p.publicRate}%`}</small>
+                  <strong><Link href={sellerProductHref(p.id)} className="pg-name">{p.name}</Link></strong>
+                  <small>{rm(p.price)}{p.soldLabel ? ` · ${p.soldLabel}` : p.salesUnknown ? "" : ` · ${p.sold ? `${short(p.sold)} sold` : "No sales yet"}`} · Public {p.publicRate === null ? "unknown" : `${p.publicRate}%`}</small>
                   {(p.fromSellerCenter || p.note) && (
                     <span className="v2-row">
                       {p.fromSellerCenter && <span className="badge badge-blue">From Seller Center</span>}
@@ -120,7 +114,8 @@ export default function ShopProducts() {
                     ? <Link href={`/seller/app/submit?p=${p.id}`} className="np-btn v2-btn-sm">Fix</Link>
                     : <button type="button" className="np-btn v2-btn-sm" onClick={() => setFix(p)}>Fix</button>)}
                   {st === "Live" && <Link href="/seller/app/changes" className="v2-link" style={{ fontSize: 13.5 }}>Change</Link>}
-                  {st === "Under review" && <Link href="/seller/app/progress" className="v2-link" style={{ fontSize: 13.5 }}>Progress</Link>}
+                  {st === "Under review" && p.register && <a href={p.register} target="_blank" rel="noopener noreferrer" className="np-btn v2-btn-sm">Register in Seller Center</a>}
+                  {st === "Under review" && !p.register && <Link href="/seller/app/progress" className="v2-link" style={{ fontSize: 13.5 }}>Progress</Link>}
                 </span>
               </div>
             );

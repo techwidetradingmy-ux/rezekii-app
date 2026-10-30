@@ -3,12 +3,13 @@
 import "@/app/seller.css";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Sheet, Title } from "@/components/ui";
 import { SHOP_ITEMS, type ShopItem, type Stage } from "@/lib/mock-seller";
 import { sellerProductHref } from "@/lib/product-pages";
+import { loadShop } from "@/lib/live";
 
 const STEPS: [Exclude<Stage, "Not submitted" | "Not approved">, string, string][] = [
   ["Submitted", "Submitted", ""],
@@ -45,8 +46,17 @@ function Tracker({ item }: { item: ShopItem }) {
 /** Every product submitted to Techwide's TAP, and where it is now. */
 export default function Progress() {
   const router = useRouter();
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
   const [items, setItems] = useState(SHOP_ITEMS.filter((s) => s.stage !== "Not submitted"));
+  // Signed in (owner, 30 Oct 2026): the real requests of the shop this account authorized; null while loading.
+  const [loaded, setLoaded] = useState<"no-shop" | "ok" | null>(null);
+  useEffect(() => {
+    if (!live) return;
+    setItems([]);
+    loadShop()
+      .then((s) => { setItems((s?.items ?? []).filter((p) => p.stage !== "Not submitted")); setLoaded(s ? "ok" : "no-shop"); })
+      .catch((e: Error) => { toast(e.message); setLoaded("ok"); });
+  }, [live]); // eslint-disable-line react-hooks/exhaustive-deps
   const [filter, setFilter] = useState<Filter>("All");
   const [fix, setFix] = useState<ShopItem | null>(null);
   const [samples, setSamples] = useState(40);
@@ -76,7 +86,7 @@ export default function Progress() {
                 <img className="pv-open" src={p.img} alt="" onClick={() => router.push(sellerProductHref(p.id))} />
                 <span className="sl-pinfo">
                   <strong><Link href={sellerProductHref(p.id)} className="pv-open">{p.name}</Link></strong>
-                  <small>Public {p.publicRate ?? "?"}% → TAP {p.tapRate}% · {p.samples} samples per SKU</small>
+                  <small>Public {p.publicRate ?? "?"}% → {p.tapRate !== undefined ? `TAP ${p.tapRate}%` : `+${p.raise ?? 0}%`} · {p.samples} samples per SKU</small>
                   {p.fromSellerCenter && <span className="v2-row"><span className="badge badge-blue">From Seller Center</span></span>}
                 </span>
                 <span className="sl-pside">
@@ -84,10 +94,16 @@ export default function Progress() {
                 </span>
               </div>
               <Tracker item={p} />
+              {p.register && (
+                <div className="v2-alert">
+                  <span>Techwide&apos;s campaign is ready. Register this product in it in Seller Center, then we approve it.</span>
+                  <button type="button" onClick={() => window.open(p.register, "_blank", "noopener")}>Register in Seller Center</button>
+                </div>
+              )}
               {p.stage === "Not approved" && (
                 <div className="v2-alert red">
                   <span><b>Why:</b> {p.reason}</span>
-                  <button type="button" onClick={() => setFix(p)}>Fix and resubmit</button>
+                  <button type="button" onClick={() => (p.real ? router.push(`/seller/app/submit?p=${p.id}`) : setFix(p))}>Fix and resubmit</button>
                 </div>
               )}
               {p.note && <p className="v2-small" style={{ margin: 0, display: "flex", gap: 8 }}><Icon name="doc" size={16} /> {p.note}</p>}
@@ -96,6 +112,7 @@ export default function Progress() {
         })}
       </div>
 
+      {live && shown.length === 0 && <p className="v2-muted" style={{ margin: 0 }}>{loaded === null ? "Loading your requests…" : loaded === "no-shop" ? "Connect Seller Center to see your requests." : "Nothing submitted yet."}</p>}
       <p className="v2-small" style={{ margin: 0 }}>Most rejections: <b>0 samples</b>, or commission <b>less than +2%</b> above the public rate.</p>
 
       {fix && (

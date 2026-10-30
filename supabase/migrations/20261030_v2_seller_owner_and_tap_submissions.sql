@@ -21,3 +21,20 @@ create table if not exists tap_submissions (
 create unique index if not exists tap_submissions_one_open on tap_submissions (shop_id, product_id) where status in ('submitted', 'in_review', 'with_tiktok', 'live');
 create index if not exists tap_submissions_shop on tap_submissions (shop_id, created_at desc);
 alter table tap_submissions enable row level security;
+
+-- Admin TAP pipeline on real requests (same day). approved = Techwide's review passed, waiting to be sent to TikTok.
+alter table tap_submissions drop constraint if exists tap_submissions_status_check;
+alter table tap_submissions add constraint tap_submissions_status_check check (status in ('submitted', 'in_review', 'approved', 'with_tiktok', 'live', 'not_approved', 'withdrawn'));
+drop index if exists tap_submissions_one_open;
+create unique index tap_submissions_one_open on tap_submissions (shop_id, product_id) where status in ('submitted', 'in_review', 'approved', 'with_tiktok', 'live');
+-- The shop's Techwide TAP campaign, the commission proposed in it (%), and TikTok's total rate once approved (×100).
+alter table tap_submissions add column if not exists campaign_id text;
+alter table tap_submissions add column if not exists commission_pct numeric(5,2);
+alter table tap_submissions add column if not exists total_rate integer;
+alter table tap_submissions add column if not exists owner_name text;
+alter table tap_submissions add column if not exists notes jsonb not null default '[]'::jsonb;
+-- Each step: { at, stage, what, who }.
+alter table tap_submissions add column if not exists history jsonb not null default '[]'::jsonb;
+
+-- The product's public (open plan) commission when the seller submitted it, ×100. Null when it had none.
+alter table tap_submissions add column if not exists public_rate integer;

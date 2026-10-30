@@ -3,7 +3,7 @@
 import "@/app/admin.css";
 import "@/app/product-page.css";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Sheet, Title } from "@/components/ui";
@@ -11,6 +11,7 @@ import { Av, Kv, Pill, Reasons, Sec, type Tone } from "@/components/admin/bits";
 import { COLS, ME, TICKETS, type Col, type ExtTask, type Ticket } from "@/lib/mock-admin";
 import { adminProductHref, productIdByName } from "@/lib/product-pages";
 import { useKept } from "@/lib/keep";
+import { toTickets } from "@/lib/live-admin";
 
 const NOW = "28 Oct 10:45";
 const COL_TONE: Record<Col, Tone> = { New: "info", "In review": "warn", "To submit": "warn", "Waiting on TikTok": "info", "Not approved": "bad", Live: "ok" };
@@ -26,8 +27,30 @@ const whyNot = (t: Ticket) =>
 
 /** TAP pipeline: kanban by business status; each card also shows how its external (TikTok) tasks are doing. */
 export default function TapPipeline() {
-  const { toast } = useDemo();
+  const { toast, live, me } = useDemo();
   const [tickets, setTickets] = useState<Ticket[]>(TICKETS);
+  // An admin signed in (owner, 30 Oct 2026): sellers' real requests, and the real admins who can own them.
+  const admin = live && me?.role === "admin";
+  const [team, setTeam] = useState<{ admins: string[]; me: string } | null>(null);
+  const loadReal = () =>
+    fetch("/api/v2/admin/tap")
+      .then((r) => r.json())
+      .then((d) => { if (d.error) return toast(d.error); setTickets(toTickets(d.requests)); setTeam({ admins: d.admins, me: d.me }); })
+      .catch(() => toast("Couldn't load the requests. Please try again."));
+  useEffect(() => {
+    if (!admin) return;
+    setTickets([]);
+    loadReal();
+  }, [admin]); // eslint-disable-line react-hooks/exhaustive-deps
+  /** One step on a real request; reloads the pipeline after. */
+  const actReal = async (id: string, body: Record<string, unknown>): Promise<boolean> => {
+    const r = await fetch("/api/v2/admin/tap", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id, ...body }) })
+      .then((x) => x.json())
+      .catch(() => ({ ok: false, error: "Couldn't reach Rezekii. Please try again." }));
+    if (!r.ok) { toast(r.error ?? "That didn't work. Please try again."); return false; }
+    await loadReal();
+    return true;
+  };
   const [mine, setMine] = useKept("tap-mine", false);
   const [overdue, setOverdue] = useKept("tap-overdue", false);
   const [sel, setSel] = useState<string[]>([]);
@@ -60,7 +83,26 @@ export default function TapPipeline() {
     };
   };
 
-  const runBatch = () => {
+  const runBatch = async () => {
+    if (admin) {
+      // Real: each request goes to TikTok one by one; a shop without a campaign needs its commission set in the request first.
+      const chosen = tickets.filter((t) => sel.includes(t.id));
+      const can = chosen.filter((t) => t.col === "To submit" && (t.real?.hasCampaign || t.real?.suggest != null));
+      const skipped = chosen.filter((t) => !can.includes(t)).map((t) => [`${t.id} ${t.shop}`, t.col === "To submit" ? "set the campaign commission in the request first" : whyNot(t)] as [string, string]);
+      setRunning(true);
+      const ok: string[] = [], failed: [string, string][] = [];
+      for (const t of can) {
+        const r = await fetch("/api/v2/admin/tap", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: t.real!.id, action: "submit", commission: t.real!.suggest }) })
+          .then((x) => x.json()).catch(() => ({ ok: false, error: "Couldn't reach Rezekii." }));
+        if (r.ok) ok.push(t.id); else failed.push([t.id, r.error ?? "TikTok didn't take it"]);
+      }
+      await loadReal();
+      setResult({ selected: chosen.length, run: can.length, skipped, ok, failed });
+      setSel([]);
+      setRunning(false);
+      toast(`${ok.length} sent to TikTok${failed.length ? ` · ${failed.length} failed` : ""}`);
+      return;
+    }
     const chosen = tickets.filter((t) => sel.includes(t.id));
     const can = chosen.filter((t) => t.col === "To submit" && !t.block);
     const skipped = chosen.filter((t) => !can.includes(t)).map((t) => [`${t.id} ${t.shop}`, whyNot(t)] as [string, string]);
@@ -205,13 +247,25 @@ export default function TapPipeline() {
         </div>
       )}
 
-      {ticket && <TicketSheet t={ticket} onClose={() => setOpen(null)} update={(fn) => update(ticket.id, fn)} submit={() => update(ticket.id, (x) => submitOne(x, x.batchFail))} extId={extId} />}
+      {ticket && <TicketSheet t={ticket} onClose={() => setOpen(null)} update={(fn) => update(ticket.id, fn)} submit={() => update(ticket.id, (x) => submitOne(x, x.batchFail))} extId={extId} real={admin && ticket.real ? { act: (body) => actReal(ticket.real!.id, body), reload: loadReal, admins: team?.admins ?? [], me: team?.me ?? "" } : undefined} />}
     </div>
   );
 }
 
-function TicketSheet({ t, onClose, update, submit, extId }: { t: Ticket; onClose: () => void; update: (fn: (t: Ticket) => Ticket) => void; submit: () => void; extId: () => string }) {
+type RealSteps = { act: (body: Record<string, unknown>) => Promise<boolean>; reload: () => Promise<unknown>; admins: string[]; me: string };
+
+function TicketSheet({ t, onClose, update, submit, extId, real }: { t: Ticket; onClose: () => void; update: (fn: (t: Ticket) => Ticket) => void; submit: () => void; extId: () => string; real?: RealSteps }) {
   const { toast } = useDemo();
+  const [busyStep, setBusyStep] = useState(false);
+  const [commission, setCommission] = useState(t.real?.suggest != null ? String(t.real.suggest) : "");
+  /** A real step: shows the toast only when it worked. */
+  const step = async (body: Record<string, unknown>, done: string) => {
+    setBusyStep(true);
+    const ok = await real!.act(body);
+    setBusyStep(false);
+    if (ok) toast(done);
+    return ok;
+  };
   const [note, setNote] = useState("");
   const [marking, setMarking] = useState<string | null>(null);
   const [record, setRecord] = useState("");
@@ -258,7 +312,7 @@ function TicketSheet({ t, onClose, update, submit, extId }: { t: Ticket; onClose
       <div className="v2-row" style={{ gap: 8, marginTop: -6 }}>
         <Pill tone={COL_TONE[t.col]}>{t.col}</Pill>
         {t.synced && <span className="ad-tag">Seller Center sync</span>}
-        {t.late && <span className="ad-tag red">2 days overdue</span>}
+        {t.late && <span className="ad-tag red">{t.lateBy ?? "2 days overdue"}</span>}
         {t.block && <span className="ad-tag amber">Reconnect needed</span>}
       </div>
 
@@ -267,26 +321,44 @@ function TicketSheet({ t, onClose, update, submit, extId }: { t: Ticket; onClose
 
       {/* Main action for this status */}
       <div className="v2-row">
-        {t.col === "New" && (
+        {t.col === "New" && real && <button type="button" className="np-btn v2-btn-sm" disabled={busyStep} onClick={() => step({ action: "start" }, "Moved to In review · assigned to you")}>Start review</button>}
+        {t.col === "New" && !real && (
           <button type="button" className="np-btn v2-btn-sm" onClick={() => { update((x) => ({ ...x, col: "In review", owner: x.owner ?? ME, what: `${products} products · ${x.owner ?? ME}`, history: [...x.history, log("Review started")] })); toast("Moved to In review · assigned to you"); }}>Start review</button>
         )}
         {t.col === "In review" && !rejecting && (
           <>
-            <button type="button" className="np-btn v2-btn-sm" onClick={() => { update((x) => ({ ...x, col: "To submit", late: false, what: `${products} products · ready`, history: [...x.history, log("Review passed")] })); toast("Review passed · moved to To submit"); }}>Pass review</button>
-            <button type="button" className="ad-btn-ghost" onClick={() => toast("Change requested · seller notified")}>Ask seller to change</button>
+            <button type="button" className="np-btn v2-btn-sm" disabled={busyStep} onClick={() => { if (real) return void step({ action: "pass" }, "Review passed · moved to To submit"); update((x) => ({ ...x, col: "To submit", late: false, what: `${products} products · ready`, history: [...x.history, log("Review passed")] })); toast("Review passed · moved to To submit"); }}>Pass review</button>
+            {!real && <button type="button" className="ad-btn-ghost" onClick={() => toast("Change requested · seller notified")}>Ask seller to change</button>}
             <button type="button" className="ad-btn-ghost danger" onClick={() => setRejecting(true)}>Not approve</button>
           </>
         )}
         {t.col === "To submit" && needsPerson(t) && !hasFail(t) && (
           <span className="v2-small">API steps done. Finish the manual step below.</span>
         )}
-        {t.col === "To submit" && (!needsPerson(t) || hasFail(t)) && (
+        {t.col === "To submit" && real && (
+          <>
+            {/* The shop's first request creates Techwide's campaign for it, open to this shop only, for the longest TikTok allows. */}
+            {!t.real?.hasCampaign && (
+              <label className="sl-custom" style={{ flex: "1 1 100%" }}>
+                <span style={{ fontWeight: 800 }}>Campaign commission</span>
+                <input className="np-input" inputMode="decimal" style={{ maxWidth: 90 }} value={commission} onChange={(e) => setCommission(e.target.value)} aria-label="Campaign commission, percent" />
+                <span style={{ fontWeight: 800 }}>%</span>
+              </label>
+            )}
+            <button type="button" className="np-btn v2-btn-sm" disabled={busyStep || (!t.real?.hasCampaign && !(Number(commission) > 1 && Number(commission) < 80))} onClick={() => step({ action: "submit", commission: Number(commission) }, t.real?.hasCampaign ? "Sent to TikTok · seller can register it now" : "Campaign created and published · seller can register it now")}>
+              <Icon name="send" size={16} /> {busyStep ? "Sending…" : "Submit to TikTok"}
+            </button>
+          </>
+        )}
+        {t.col === "To submit" && !real && (!needsPerson(t) || hasFail(t)) && (
           <button type="button" className="np-btn v2-btn-sm" disabled={!!t.block} onClick={() => { submit(); toast(t.batchFail ? "TikTok returned an error" : "Sent to TikTok"); }}>
             <Icon name="send" size={16} /> Submit to TikTok
           </button>
         )}
-        {t.col === "Waiting on TikTok" && <button type="button" className="ad-btn-ghost" onClick={() => toast("Still waiting · next check 11:00")}><Icon name="refresh" size={16} /> Check now</button>}
-        {t.col === "Not approved" && <button type="button" className="ad-btn-ghost" onClick={() => toast("Seller reminded in app and by email")}>Remind seller</button>}
+        {t.col === "Waiting on TikTok" && real && t.real?.pendingOnTikTok && <button type="button" className="np-btn v2-btn-sm" disabled={busyStep} onClick={() => step({ action: "approve" }, "Approved on TikTok · live")}><Icon name="check" size={16} /> Approve on TikTok</button>}
+        {t.col === "Waiting on TikTok" && real && !t.real?.pendingOnTikTok && <button type="button" className="ad-btn-ghost" onClick={() => real.reload().then(() => toast("Checked TikTok"))}><Icon name="refresh" size={16} /> Check now</button>}
+        {t.col === "Waiting on TikTok" && !real && <button type="button" className="ad-btn-ghost" onClick={() => toast("Still waiting · next check 11:00")}><Icon name="refresh" size={16} /> Check now</button>}
+        {t.col === "Not approved" && !real && <button type="button" className="ad-btn-ghost" onClick={() => toast("Seller reminded in app and by email")}>Remind seller</button>}
         {t.col === "Live" && <Link href="/admin/tap/campaigns" className="ad-btn-ghost">End date & auto-extend</Link>}
       </div>
 
@@ -296,13 +368,17 @@ function TicketSheet({ t, onClose, update, submit, extId }: { t: Ticket; onClose
           <span className="v2-small">Seller sees this.</span>
           <Reasons options={["Samples are 0", "Commission under +2%", "Product not allowed in TAP", "Other"]} value={why} onChange={setWhy} note={whyNote} onNote={setWhyNote} notePlaceholder="What should the seller change?" />
           <div className="v2-row">
-            <button type="button" className="np-btn v2-btn-sm ad-btn-danger" disabled={!why} onClick={() => { update((x) => ({ ...x, col: "Not approved", late: false, reason: `${why}${whyNote ? `: ${whyNote}` : ""}. Seller notified.`, what: why ?? "", history: [...x.history, log(`Not approved: ${why}`)] })); setRejecting(false); toast("Not approved · seller notified · logged"); }}>Confirm not approved</button>
+            <button type="button" className="np-btn v2-btn-sm ad-btn-danger" disabled={!why || busyStep} onClick={() => { if (real) { void step({ action: "reject", reason: `${why}${whyNote ? `: ${whyNote}` : ""}` }, "Not approved · the seller sees why").then((ok) => ok && setRejecting(false)); return; } update((x) => ({ ...x, col: "Not approved", late: false, reason: `${why}${whyNote ? `: ${whyNote}` : ""}. Seller notified.`, what: why ?? "", history: [...x.history, log(`Not approved: ${why}`)] })); setRejecting(false); toast("Not approved · seller notified · logged"); }}>Confirm not approved</button>
             <button type="button" className="ad-btn-ghost" onClick={() => setRejecting(false)}>Cancel</button>
           </div>
         </div>
       )}
 
-      <Sec right={<button type="button" className="ad-btn-ghost" onClick={() => toast(`Copied ${6 + products * 4} fields for Partner Center`)}><Icon name="doc" size={15} /> Copy all</button>}>Submitted data</Sec>
+      <Sec right={<button type="button" className="ad-btn-ghost" onClick={() => {
+        if (!real) return toast(`Copied ${6 + products * 4} fields for Partner Center`);
+        const text = [`Shop: ${t.shop}`, `Shop code: ${t.shopId}`, `Campaign: ${t.campaign}`, ...t.items.map((i) => `${i.name} · ${i.rateLabel ?? `${i.rate}%`} · ${i.samples} samples per SKU`)].join("\n");
+        navigator.clipboard.writeText(text).then(() => toast("Copied"), () => toast("Couldn't copy. Select the text instead."));
+      }}><Icon name="doc" size={15} /> Copy all</button>}>Submitted data</Sec>
       <Kv rows={[
         ["Shop", t.shop],
         ["Shop ID", <span key="id" className="ad-mono">{t.shopId}</span>],
@@ -322,7 +398,7 @@ function TicketSheet({ t, onClose, update, submit, extId }: { t: Ticket; onClose
                 <strong>{i.name}</strong>
                 <small>{i.samples} samples · public {i.publicRate === null ? "unknown" : `${i.publicRate}%`}</small>
               </span>
-              <span className="v2-rate"><b>{i.rate}%</b></span>
+              <span className="v2-rate"><b>{i.rateLabel ?? `${i.rate}%`}</b></span>
             </>
           );
           // Product (owner, 29 Oct 2026): items that are on Rezekii open the product page.
@@ -403,9 +479,9 @@ function TicketSheet({ t, onClose, update, submit, extId }: { t: Ticket; onClose
         {t.owner ? <><Av name={t.owner} size={30} /><b>{t.owner}</b></> : <span className="v2-muted">Unassigned</span>}
         <span className="sp" />
         <div className="v2-chips">
-          {["Aina", "Kumar", "Hazwan"].map((n) => (
-            <button key={n} type="button" className={`v2-chip ${t.owner === n ? "on" : ""}`} style={{ height: 34, fontSize: 13 }} onClick={() => { update((x) => ({ ...x, owner: n, history: [...x.history, log(`Assigned to ${n}`)] })); toast(`Assigned to ${n}`); }}>
-              {n === ME ? "Me" : n}
+          {(real ? real.admins : ["Aina", "Kumar", "Hazwan"]).map((n) => (
+            <button key={n} type="button" className={`v2-chip ${t.owner === n ? "on" : ""}`} style={{ height: 34, fontSize: 13 }} onClick={() => { if (real) return void step({ action: "assign", name: n }, `Assigned to ${n}`); update((x) => ({ ...x, owner: n, history: [...x.history, log(`Assigned to ${n}`)] })); toast(`Assigned to ${n}`); }}>
+              {n === (real ? real.me : ME) ? "Me" : n}
             </button>
           ))}
         </div>
@@ -417,7 +493,7 @@ function TicketSheet({ t, onClose, update, submit, extId }: { t: Ticket; onClose
       ))}
       <div className="v2-row" style={{ alignItems: "flex-end" }}>
         <textarea className="np-input" rows={2} style={{ flex: "1 1 220px" }} value={note} placeholder="Only staff see notes" onChange={(e) => setNote(e.target.value)} />
-        <button type="button" className="ad-btn-ghost" disabled={!note.trim()} onClick={() => { update((x) => ({ ...x, notes: [...x.notes, { who: ME, when: "Now", text: note.trim() }] })); setNote(""); }}>Add note</button>
+        <button type="button" className="ad-btn-ghost" disabled={!note.trim() || busyStep} onClick={() => { if (real) { void step({ action: "note", text: note.trim() }, "Note added").then((ok) => ok && setNote("")); return; } update((x) => ({ ...x, notes: [...x.notes, { who: ME, when: "Now", text: note.trim() }] })); setNote(""); }}>Add note</button>
       </div>
 
       <Sec>History</Sec>

@@ -46,13 +46,17 @@ export type Col = (typeof COLS)[number];
 
 export type TaskState = "Success" | "Failed" | "Person" | "Waiting" | "Done by hand" | "Running";
 export type ExtTask = { id: string; name: string; state: TaskState; extId?: string; at?: string; message?: string; retry?: [number, number]; nextRetry?: string; why?: string };
-export type TicketItem = { name: string; img?: string; publicRate: number | null; rate: number; samples: number };
+export type TicketItem = { name: string; img?: string; publicRate: number | null; rate: number; samples: number; /** Shown instead of the rate when the public rate is unknown, e.g. "+2%". */ rateLabel?: string };
 export type Ticket = {
   id: string; col: Col; shop: string; what: string; age: string; late?: boolean; fail?: boolean;
   shopId: string; source: string; synced?: boolean; owner: string | null; campaign: string; dates: string;
   items: TicketItem[]; tasks: ExtTask[]; history: { when: string; what: string; who: string }[];
   notes: { who: string; when: string; text: string }[];
   reason?: string; block?: string; batchFail?: string;
+  /** How long an overdue request has waited. */
+  lateBy?: string;
+  /** A seller's real request (owner, 30 Oct 2026): its id, whether the shop has a Techwide campaign, the commission to propose, and whether TikTok shows it registered. */
+  real?: { id: string; hasCampaign: boolean; suggest: number | null; pendingOnTikTok: boolean };
 };
 
 const P = (id: string, samples: number): TicketItem => {

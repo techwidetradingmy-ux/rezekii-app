@@ -1,9 +1,10 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
-import { getShopProduct, searchShopProducts, type ProductStatus, type ShopProduct } from "../../integrations/tiktok-shop/seller.ts";
+import { getShopProduct, searchOpenCollaborations, searchShopProducts, shopProductSales, type ProductStatus, type ShopProduct } from "../../integrations/tiktok-shop/seller.ts";
 import { sellerAccessFor } from "./seller-connection.ts";
 
 /** A TAP request's status, as tap_submissions stores it. */
-export type RequestStatus = "submitted" | "in_review" | "with_tiktok" | "live" | "not_approved" | "withdrawn";
+/** approved = Techwide's review passed, waiting to be sent to TikTok (the seller still sees "Our review"). */
+export type RequestStatus = "submitted" | "in_review" | "approved" | "with_tiktok" | "live" | "not_approved" | "withdrawn";
 
 /** One of the seller's products for Shop Products and Submit Products. Rates ×100 (500 = 5%). */
 export type LiveShopProduct = {
@@ -15,10 +16,14 @@ export type LiveShopProduct = {
   sub: string;
   /** ACTIVATE = buyers can see it; PENDING = TikTok is reviewing the listing. */
   listing: "ACTIVATE" | "PENDING";
+  /** Units sold in the last 90 days (TikTok Shop Analytics), null when TikTok didn't send it. */
+  sold90: number | null;
+  /** The shop's own public (open plan) commission for it, ×100; null when it has none or TikTok didn't send it. */
+  openRate: number | null;
   /** In one of Techwide's TAP campaigns (approved), from tap_catalog. */
   tap: { openRate: number | null; totalRate: number | null; sold: number | null } | null;
   /** The latest request to join Techwide's TAP made on Rezekii. */
-  request: { status: RequestStatus; raise: number; samples: number; reason: string | null; at: string } | null;
+  request: { status: RequestStatus; raise: number; samples: number; reason: string | null; at: string; campaignId: string | null; totalRate: number | null; steps: { at: string; stage?: RequestStatus }[] } | null;
 };
 
 export type ShopProducts = { shop: string; items: LiveShopProduct[]; notLive: number; at: string };
@@ -43,6 +48,41 @@ async function detailFor(token: string, cipher: string, p: ShopProduct): Promise
 async function inBatches<T, R>(items: T[], n: number, fn: (t: T) => Promise<R>): Promise<R[]> {
   const out: R[] = [];
   for (let i = 0; i < items.length; i += n) out.push(...(await Promise.all(items.slice(i, i + n).map(fn))));
+  return out;
+}
+
+/** Shop days (YYYY-MM-DD, Malaysia) for the last `days` days, ending today (TikTok's end is exclusive). */
+const lastDays = (days: number) => {
+  const day = (t: number) => new Date(t + 8 * 3_600_000).toISOString().slice(0, 10);
+  return { start: day(Date.now() - days * 86_400_000), end: day(Date.now()) };
+};
+
+/** Units sold per product in the last 90 days; empty when TikTok refuses (e.g. Analytics not authorized). */
+async function salesByProduct(token: string, cipher: string): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  const range = lastDays(90);
+  let pageToken: string | undefined;
+  for (let page = 0; page < 20; page++) {
+    const r = await shopProductSales(token, cipher, { ...range, pageToken });
+    if (r.code !== 0) break;
+    for (const p of r.data?.products ?? []) out.set(p.id, Number(p.overall_performance?.items_sold ?? 0));
+    pageToken = r.data?.next_page_token || undefined;
+    if (!pageToken) break;
+  }
+  return out;
+}
+
+/** The shop's public commission per product (×100); empty when TikTok refuses. */
+export async function openRates(token: string, cipher: string): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  let pageToken: string | undefined;
+  for (let page = 0; page < 20; page++) {
+    const r = await searchOpenCollaborations(token, cipher, { pageToken });
+    if (r.code !== 0) break;
+    for (const o of r.data?.open_collaborations ?? []) if (o.product?.id && o.current_commission?.rate != null) out.set(o.product.id, o.current_commission.rate);
+    pageToken = r.data?.next_page_token || undefined;
+    if (!pageToken) break;
+  }
   return out;
 }
 
@@ -77,14 +117,16 @@ export async function shopProducts(user: { id: string; role: string }): Promise<
   const ids = products.map((p) => p.id);
 
   type TapRow = { product_id: string; open_rate: number | null; total_rate: number | null; sold: number | null };
-  type ReqRow = { product_id: string; status: RequestStatus; raise_pct: number; samples_per_sku: number; reason: string | null; created_at: string };
+  type ReqRow = { product_id: string; status: RequestStatus; raise_pct: number; samples_per_sku: number; reason: string | null; created_at: string; campaign_id: string | null; total_rate: number | null; history: { at: string; stage?: RequestStatus }[] };
   const tapRows: TapRow[] = [];
   for (let i = 0; i < ids.length; i += 150) {
     tapRows.push(...((await (await supabaseRest(`tap_catalog?product_id=in.(${ids.slice(i, i + 150).join(",")})&select=product_id,open_rate,total_rate,sold`)).json()) as TapRow[]));
   }
-  const [info, reqRows] = await Promise.all([
+  const [info, reqRows, sales, rates] = await Promise.all([
     inBatches(products, 8, (p) => detailFor(token, shop.cipher, p)),
-    supabaseRest(`tap_submissions?shop_id=eq.${shop.id}&status=neq.withdrawn&select=product_id,status,raise_pct,samples_per_sku,reason,created_at&order=created_at.desc`).then((r) => r.json() as Promise<ReqRow[]>),
+    supabaseRest(`tap_submissions?shop_id=eq.${shop.id}&status=neq.withdrawn&select=product_id,status,raise_pct,samples_per_sku,reason,created_at,campaign_id,total_rate,history&order=created_at.desc`).then((r) => r.json() as Promise<ReqRow[]>),
+    salesByProduct(token, shop.cipher).catch(() => new Map<string, number>()),
+    openRates(token, shop.cipher).catch(() => new Map<string, number>()),
   ]);
   const tap = new Map(tapRows.map((t) => [t.product_id, t]));
   const latest = new Map<string, ReqRow>();
@@ -101,8 +143,10 @@ export async function shopProducts(user: { id: string; role: string }): Promise<
       category: info[i].category,
       sub: info[i].sub,
       listing: p.status === "PENDING" ? "PENDING" : "ACTIVATE",
+      sold90: sales.size ? sales.get(p.id) ?? 0 : null,
+      openRate: rates.get(p.id) ?? null,
       tap: t ? { openRate: t.open_rate, totalRate: t.total_rate, sold: t.sold } : null,
-      request: q ? { status: q.status, raise: Number(q.raise_pct), samples: q.samples_per_sku, reason: q.reason, at: q.created_at } : null,
+      request: q ? { status: q.status, raise: Number(q.raise_pct), samples: q.samples_per_sku, reason: q.reason, at: q.created_at, campaignId: q.campaign_id, totalRate: q.total_rate, steps: (q.history ?? []).map((h) => ({ at: h.at, stage: h.stage })) } : null,
     };
   });
   return { shop: shop.name, items, notLive: Math.max(0, (all.data?.total_count ?? products.length) - products.length), at: new Date().toISOString() };

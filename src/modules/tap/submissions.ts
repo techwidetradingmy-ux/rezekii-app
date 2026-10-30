@@ -1,5 +1,6 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { getShopProduct } from "../../integrations/tiktok-shop/seller.ts";
+import { openRates } from "../marketplace/shop-products.ts";
 import { sellerAccessFor } from "../marketplace/seller-connection.ts";
 
 /** The least extra commission above the public rate a product joins Techwide's TAP with. */
@@ -23,6 +24,8 @@ export async function submitToTap(user: { id: string; role: string }, input: Sub
 
   const inTap = new Set(((await (await supabaseRest(`tap_catalog?product_id=in.(${ids.join(",")})&select=product_id`)).json()) as { product_id: string }[]).map((r) => r.product_id));
   const result: SubmitResult = { submitted: [], skipped: [] };
+  // Each product's public commission now, kept with the request so Techwide's review sees it.
+  const rates = await openRates(token, shop.cipher).catch(() => new Map<string, number>());
   for (const id of ids) {
     if (inTap.has(id)) { result.skipped.push({ id, why: "Already in TAP." }); continue; }
     // TikTok answers only for this shop's own products, so this also checks the product is theirs.
@@ -35,7 +38,7 @@ export async function submitToTap(user: { id: string; role: string }, input: Sub
       await supabaseRest("tap_submissions", {
         method: "POST",
         headers: { prefer: "return=minimal" },
-        body: JSON.stringify({ shop_id: shop.id, product_id: id, product_name: name, product_image: image, submitted_by: user.id, raise_pct: input.raise, samples_per_sku: input.samples, creator_conditions: input.conditions }),
+        body: JSON.stringify({ shop_id: shop.id, product_id: id, product_name: name, product_image: image, submitted_by: user.id, raise_pct: input.raise, samples_per_sku: input.samples, creator_conditions: input.conditions, public_rate: rates.get(id) ?? null }),
       });
       result.submitted.push({ id, name, image });
     } catch (err) {

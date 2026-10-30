@@ -1,4 +1,4 @@
-import { LIVE_PRODUCTS, type Product, type Raise } from "./mock";
+import { LIVE_PRODUCTS, short, type Product, type Raise } from "./mock";
 import type { ShopItem, Stage } from "./mock-seller";
 import type { LiveShopProduct } from "@/modules/marketplace/shop-products.ts";
 
@@ -111,28 +111,67 @@ export async function requestSample(productId: string): Promise<{ deeplink?: str
   return r.json().catch(() => ({ error: "Couldn't reach TikTok Shop." }));
 }
 
-const STAGE: Record<string, Stage> = { submitted: "Submitted", in_review: "Under review", with_tiktok: "Submitted to TikTok", live: "Live", not_approved: "Not approved" };
+const STAGE: Record<string, Stage> = { submitted: "Submitted", in_review: "Under review", approved: "Under review", with_tiktok: "Submitted to TikTok", live: "Live", not_approved: "Not approved" };
 /** "30 Oct", Malaysia time. */
 export const myDay = (t: string | number | Date = Date.now()) => new Date(t).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" });
+
+/** Seller Center, where the seller registers a product in Techwide's TAP campaign (Affiliate). */
+export const SELLER_CENTER_TAP = "https://seller-my.tiktok.com/affiliate/platform/homepage?shop_region=MY";
+
+/**
+ * Rezekii's AI pick from a product's real units sold in the last 90 days (our reading of TikTok's numbers, not TikTok's): no
+ * sales needs the most, a few sales a little more, a seller already selling well the least.
+ */
+export function salesPick(sold90: number): { label: string; raise: number; why: string } {
+  if (sold90 === 0) return { label: "No sales in 90 days", raise: 10, why: "it had no sales in the last 90 days, so creators need a bigger reason to try it" };
+  if (sold90 < 300) return { label: `${short(sold90)} sold in 90 days`, raise: 8, why: `it sold ${short(sold90)} in the last 90 days, and a little more helps it take off` };
+  return { label: `${short(sold90)} sold in 90 days`, raise: 5, why: `it already sold ${short(sold90)} in the last 90 days, so creators say yes easily` };
+}
 
 /** A real shop product in the sample data's shape. Live in TAP comes from Techwide's campaigns; the rest from requests made here. */
 export function fromLiveShop(p: LiveShopProduct): ShopItem {
   const stage: Stage = p.tap ? "Live" : (p.request && STAGE[p.request.status]) || "Not submitted";
+  // The day each step was reached, from the request's history.
+  const reached = (s: string) => p.request?.steps.find((x) => x.stage === s)?.at;
+  const dates: ShopItem["dates"] = p.request ? { Submitted: myDay(p.request.at) } : undefined;
+  if (dates) {
+    const review = reached("in_review"), sent = reached("with_tiktok"), live = reached("live");
+    if (review) dates["Under review"] = myDay(review);
+    if (sent) dates["Submitted to TikTok"] = myDay(sent);
+    if (live) dates.Live = myDay(live);
+  }
+  const total = p.tap?.totalRate ?? p.request?.totalRate ?? null;
+  // The shop's own open plan rate first (current), else the one TikTok shows in Techwide's campaign.
+  const publicRate = p.openRate != null ? p.openRate / 100 : p.tap?.openRate != null ? p.tap.openRate / 100 : null;
   return {
     id: p.id, name: p.name, img: p.image ?? "/avatars/blank.svg", price: p.price ?? 0, category: p.category || "Other", sub: p.sub,
-    publicRate: p.tap?.openRate != null ? p.tap.openRate / 100 : null,
-    sold: p.tap?.sold ?? 0, salesUnknown: p.tap?.sold == null,
-    stage, tapRate: p.tap?.totalRate != null ? p.tap.totalRate / 100 : undefined,
+    publicRate,
+    sold: p.sold90 ?? 0, salesUnknown: p.sold90 == null,
+    soldLabel: p.sold90 == null ? undefined : p.sold90 ? `${short(p.sold90)} sold in 90 days` : "No sales in 90 days",
+    ai: p.sold90 == null ? undefined : salesPick(p.sold90),
+    // TikTok's total rate once live; before that, what the seller asked for (public + their extra), when the public rate is known.
+    stage, tapRate: total != null ? total / 100 : p.request && stage !== "Not approved" && publicRate != null ? publicRate + p.request.raise : undefined, raise: p.request?.raise,
+    register: stage === "Submitted to TikTok" && p.request?.campaignId ? SELLER_CENTER_TAP : undefined,
     samples: p.request?.samples,
     reason: p.request?.status === "not_approved" ? p.request.reason ?? undefined : undefined,
-    dates: p.request ? { Submitted: myDay(p.request.at) } : undefined,
+    dates,
     note: p.listing === "PENDING" ? "TikTok is reviewing this listing" : undefined,
     real: true, listing: p.listing,
   };
 }
 
-/** The seller's real products, or null when no Seller Center shop is authorized for this account. */
-export async function loadShop(): Promise<{ shop: string; items: ShopItem[]; notLive: number; at: string } | null> {
+type LiveShop = { shop: string; items: ShopItem[]; notLive: number; at: string };
+let shopCache: { at: number; data: LiveShop | null } | null = null;
+
+/** The seller's real products, or null when no Seller Center shop is authorized for this account. Kept 1 minute unless `fresh`. */
+export async function loadShop(fresh = false): Promise<LiveShop | null> {
+  if (!fresh && shopCache && Date.now() - shopCache.at < 60_000) return shopCache.data;
+  const data = await fetchShop();
+  shopCache = { at: Date.now(), data };
+  return data;
+}
+
+async function fetchShop(): Promise<LiveShop | null> {
   const r = await fetch("/api/v2/seller/products");
   const d = await r.json().catch(() => ({ error: "Couldn't reach TikTok Shop. Please try again." }));
   if (!r.ok) throw new Error(d.error ?? "Couldn't reach TikTok Shop. Please try again.");
@@ -142,6 +181,7 @@ export async function loadShop(): Promise<{ shop: string; items: ShopItem[]; not
 
 /** Submit products to Techwide's TAP; each waits for Techwide's review. */
 export async function submitToTap(body: { productIds: string[]; raise: number; samples: number; conditions: Record<string, unknown> }): Promise<{ submitted?: { id: string }[]; skipped?: { id: string; why: string }[]; error?: string }> {
+  shopCache = null;
   const r = await fetch("/api/v2/seller/submissions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
   return r.json().catch(() => ({ error: "Couldn't reach Rezekii. Please try again." }));
 }

@@ -79,8 +79,10 @@ export default function SubmitProducts() {
         setReal(items);
         const id = new URLSearchParams(window.location.search).get("p");
         if (id && items.some((p) => p.id === id && canPick(p))) setPicked([id]);
-        const first = items.find(canPick) ?? items[0];
+        // Creator conditions start from the picked product's category (the first one ready to submit otherwise).
+        const first = items.find((p) => p.id === id && canPick(p)) ?? items.find(canPick) ?? items[0];
         if (first) setPresets((x) => ({ ...x, niche: first.category, subs: [] }));
+        setRaise(items.some((p) => p.ai) ? "ai" : "2");
       })
       .catch((e: Error) => { toast(e.message); setReal([]); });
   };
@@ -99,11 +101,14 @@ export default function SubmitProducts() {
   const [done, setDone] = useState<{ item: ShopItem; plus: number }[] | null>(null);
 
   const sel = open.filter((p) => picked.includes(p.id));
+  const pickOf = (p: ShopItem) => (p.real ? p.ai : heat(p.sold));
+  // Real products show the AI pick only when TikTok sent their sales.
+  const aiOn = !live || open.some((p) => p.ai);
   // Products our creators want most start at +5%; everything else at +2%.
   const floorFor = (p: ShopItem) => (hotFor(p.id) ? HOT_RAISE : MIN_RAISE);
-  const plusFor = (p: ShopItem) => Math.max(floorFor(p), raise === "ai" ? heat(p.sold).raise : raise === "custom" ? Number(custom) : Number(raise));
+  const plusFor = (p: ShopItem) => Math.max(floorFor(p), raise === "ai" ? pickOf(p)?.raise ?? MIN_RAISE : raise === "custom" ? Number(custom) : Number(raise));
   const hot = sel.filter((p) => hotFor(p.id));
-  const aiRaises = Array.from(new Set(sel.map((p) => heat(p.sold).raise)));
+  const aiRaises = Array.from(new Set(sel.map((p) => pickOf(p)?.raise ?? MIN_RAISE)));
   const aiLabel = aiRaises.length === 1 ? `+${aiRaises[0]}%` : sel.length ? "Per product" : "+5%";
   const nSamples = samples === "custom" ? Number(samplesCustom) : Number(samples);
 
@@ -155,8 +160,8 @@ export default function SubmitProducts() {
             {done.map(({ item, plus }) => (
               <div key={item.id} className="sl-prow">
                 {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
-                <img className={item.real ? "" : "pv-open"} src={item.img} alt="" onClick={() => !item.real && router.push(sellerProductHref(item.id))} />
-                <span className="sl-pinfo"><strong>{item.real ? item.name : <Link href={sellerProductHref(item.id)} className="pv-open">{item.name}</Link>}</strong><small>{nSamples} samples per SKU · submitted {live ? myDay() : TODAY}</small></span>
+                <img className="pv-open" src={item.img} alt="" onClick={() => router.push(sellerProductHref(item.id))} />
+                <span className="sl-pinfo"><strong><Link href={sellerProductHref(item.id)} className="pv-open">{item.name}</Link></strong><small>{nSamples} samples per SKU · submitted {live ? myDay() : TODAY}</small></span>
                 <span className="sl-pside">
                   <span className="sl-rate">{item.publicRate === null ? "Public ?" : `${item.publicRate}%`} <Icon name="arrow" size={12} /> <b>{item.publicRate === null ? `+${plus}%` : `${item.publicRate + plus}%`}</b></span>
                 </span>
@@ -200,10 +205,10 @@ export default function SubmitProducts() {
                 <input type="checkbox" checked={on} onChange={() => toggle(p.id)} />
                 {/* The photo and name open the product; the rest of the row ticks it. */}
                 {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
-                <img className={p.real ? "" : "pv-open"} src={p.img} alt="" onClick={(e) => { if (p.real) return; e.preventDefault(); router.push(sellerProductHref(p.id)); }} />
+                <img className="pv-open" src={p.img} alt="" onClick={(e) => { e.preventDefault(); router.push(sellerProductHref(p.id)); }} />
                 <span className="sl-pinfo">
-                  <strong>{p.real ? p.name : <Link href={sellerProductHref(p.id)} className="pv-open">{p.name}</Link>}</strong>
-                  <small>{rm(p.price)}{p.real ? (p.salesUnknown ? "" : ` · ${short(p.sold)} sold`) : ` · ${h.label}`}</small>
+                  <strong><Link href={sellerProductHref(p.id)} className="pv-open">{p.name}</Link></strong>
+                  <small>{rm(p.price)}{p.real ? (p.soldLabel ? ` · ${p.soldLabel}` : "") : ` · ${h.label}`}</small>
                   {hotFor(p.id) && <span className="sl-hot"><Icon name="flame" size={12} /> {hotFor(p.id)!.creators} creators want it</span>}
                 </span>
                 <span className="sl-pick-rate">
@@ -228,8 +233,8 @@ export default function SubmitProducts() {
               <div key={p.id} className="sl-pick off" aria-disabled="true">
                 <input type="checkbox" disabled checked={false} readOnly aria-label="Already submitted" />
                 {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
-                <img className={p.real ? "" : "pv-open"} src={p.img} alt="" onClick={() => !p.real && router.push(sellerProductHref(p.id))} />
-                <span className="sl-pinfo"><strong>{p.real ? p.name : <Link href={sellerProductHref(p.id)} className="pv-open">{p.name}</Link>}</strong><small>{p.salesUnknown ? "" : `${short(p.sold)} sold · `}already submitted</small></span>
+                <img className="pv-open" src={p.img} alt="" onClick={() => router.push(sellerProductHref(p.id))} />
+                <span className="sl-pinfo"><strong><Link href={sellerProductHref(p.id)} className="pv-open">{p.name}</Link></strong><small>{p.soldLabel ? `${p.soldLabel} · ` : p.salesUnknown ? "" : `${short(p.sold)} sold · `}already submitted</small></span>
                 <span className="sl-pick-rate"><span className={`badge ${listStatus(p.stage) === "Live" ? "" : listStatus(p.stage) === "Not approved" ? "badge-red" : "badge-amber"}`}>{listStatus(p.stage)}</span></span>
               </div>
             ))}
@@ -242,7 +247,7 @@ export default function SubmitProducts() {
         <div className="sl-step-h"><span className="n">2</span><h2>Extra Commission</h2><span className="v2-small">At least +{MIN_RAISE}%</span></div>
         <div className="v2-chips">
           <button type="button" className={`v2-chip ${raise === "2" ? "on" : ""}`} onClick={() => setRaise("2")}>+2% <small>minimum</small></button>
-          {!live && <button type="button" className={`v2-chip ${raise === "ai" ? "on" : ""}`} onClick={() => setRaise("ai")}><Icon name="spark" size={15} /> {aiLabel} <small>AI pick</small></button>}
+          {aiOn && <button type="button" className={`v2-chip ${raise === "ai" ? "on" : ""}`} onClick={() => setRaise("ai")}><Icon name="spark" size={15} /> {aiLabel} <small>AI pick</small></button>}
           <button type="button" className={`v2-chip ${raise === "8" ? "on" : ""}`} onClick={() => setRaise("8")}>+8%</button>
           <button type="button" className={`v2-chip ${raise === "custom" ? "on" : ""}`} onClick={() => setRaise("custom")}>Custom</button>
         </div>
@@ -259,12 +264,12 @@ export default function SubmitProducts() {
         {hot.length > 0 && (
           <p className="sl-hotnote"><Icon name="flame" size={16} /> {hot.map((p) => p.name).join(", ")} {hot.length === 1 ? "is" : "are"} wanted by our creators, so {hot.length === 1 ? "it starts" : "they start"} at +{HOT_RAISE}%.</p>
         )}
-        {!live && sel.length > 0 && (
+        {aiOn && sel.some((p) => pickOf(p)) && (
           <div className="sl-ai">
             <Icon name="spark" size={18} />
             <span>
-              {sel.map((p, k) => {
-                const h = heat(p.sold);
+              {sel.filter((p) => pickOf(p)).map((p, k) => {
+                const h = pickOf(p)!;
                 return (
                   <span key={p.id} style={{ display: "block", marginTop: k ? 4 : 0 }}>
                     AI suggests <b>+{h.raise}%</b> for {p.name} because {h.why}.

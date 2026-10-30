@@ -5,7 +5,7 @@ import "@/app/creator1.css";
 import "@/app/product-page.css";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Progress, Tip } from "@/components/ui";
@@ -14,6 +14,7 @@ import { SELLER, rm, short } from "@/lib/mock";
 import { BY_PRODUCT, DESTINATIONS, SHOP_ITEMS, heat, listStatus, type ShopItem } from "@/lib/mock-seller";
 import { HOT_RAISE, MIN_RAISE, commitText, hotFor } from "@/lib/mock-showcase";
 import { BONUSES, PARTNER_ID, mostWantedRank, sellerWanted, weekLine } from "@/lib/product-pages";
+import { loadShop } from "@/lib/live";
 
 const BADGE = { "Not submitted": "badge-gray", "Under review": "badge-amber", Live: "", "Not approved": "badge-red" } as const;
 const n = (v: number) => v.toLocaleString("en-MY");
@@ -26,7 +27,15 @@ const n = (v: number) => v.toLocaleString("en-MY");
  */
 export default function SellerProductPage() {
   const { id } = useParams<{ id: string }>();
-  const found = SHOP_ITEMS.find((s) => s.id === id) ?? null;
+  const { live } = useDemo();
+  // Signed in (owner, 30 Oct 2026): one of the shop's real products; "wait" while it loads.
+  const [real, setReal] = useState<ShopItem | null | "wait">("wait");
+  useEffect(() => {
+    if (!live) return;
+    loadShop().then((s) => setReal(s?.items.find((p) => p.id === id) ?? null)).catch(() => setReal(null));
+  }, [live, id]);
+  const found = live ? (real === "wait" ? null : real) : SHOP_ITEMS.find((s) => s.id === id) ?? null;
+  if (live && real === "wait") return <div className="v2-stack v2-in"><p className="v2-muted">Loading the product…</p></div>;
   if (!found) {
     return (
       <div className="v2-stack v2-in">
@@ -42,7 +51,7 @@ export default function SellerProductPage() {
 
 function SellerProduct({ item }: { item: ShopItem }) {
   const router = useRouter();
-  const { toast } = useDemo();
+  const { toast, me } = useDemo();
   const [p, setP] = useState(item);
   const [fixOpen, setFixOpen] = useState(false);
   const [samples, setSamples] = useState(40);
@@ -53,9 +62,10 @@ function SellerProduct({ item }: { item: ShopItem }) {
   const st = listStatus(p.stage);
   const wanted = sellerWanted(p.id);
   const rank = wanted ? mostWantedRank(wanted) : null;
-  const h = heat(p.sold);
+  // A real product's AI pick comes from its real 90-day sales; without them, the minimum.
+  const h = p.real ? p.ai ?? { label: "", raise: MIN_RAISE, why: `every product starts at +${MIN_RAISE}% or more` } : heat(p.sold);
   const raise = Math.max(hotFor(p.id) ? HOT_RAISE : MIN_RAISE, h.raise);
-  const week = weekLine(p.id, p.sold);
+  const week = p.real ? null : weekLine(p.id, p.sold);
   const res = BY_PRODUCT.find((b) => b.id === p.id);
   const dests = DESTINATIONS.filter((d) => d.item === p.id);
   const low = p.samples !== undefined && p.samplesLeft !== undefined && p.samplesLeft < p.samples * 0.25;
@@ -75,12 +85,17 @@ function SellerProduct({ item }: { item: ShopItem }) {
         {wanted && <button type="button" className="btn-outline" onClick={() => go("wanted")}><Icon name="users" size={18} /> See Creators Who Want It</button>}
       </>
     ) : st === "Under review" ? (
-      <Link href="/seller/app/progress" className="np-btn"><Icon name="clock" size={18} /> Track Progress</Link>
+      <>
+        {p.register && <a href={p.register} target="_blank" rel="noopener noreferrer" className="np-btn"><Icon name="link" size={18} /> Register in Seller Center</a>}
+        <Link href="/seller/app/progress" className={p.register ? "btn-outline" : "np-btn"}><Icon name="clock" size={18} /> Track Progress</Link>
+      </>
     ) : st === "Live" ? (
       <>
         <Link href="/seller/app/results" className="np-btn"><Icon name="chart" size={18} /> See Results</Link>
         <Link href="/seller/app/changes" className="btn-outline"><Icon name="edit" size={18} /> Change or End</Link>
       </>
+    ) : p.real ? (
+      <Link href={`/seller/app/submit?p=${p.id}`} className="np-btn"><Icon name="edit" size={18} /> Fix and Resubmit</Link>
     ) : fixOpen ? null : (
       <button type="button" className="np-btn" onClick={() => { setFixOpen(true); go("fix"); }}><Icon name="edit" size={18} /> Fix and Resubmit</button>
     );
@@ -95,10 +110,11 @@ function SellerProduct({ item }: { item: ShopItem }) {
 
       <div className="pp-info">
         <h1 className="pp-name">{p.name}</h1>
-        <p className="pp-meta">{SELLER.shop} · {rm(p.price)} · {p.sold ? `${short(p.sold)} sold` : "No sales yet"}</p>
+        <p className="pp-meta">{p.real ? me?.sellerShop ?? "Your shop" : SELLER.shop} · {rm(p.price)}{p.real ? (p.soldLabel ? ` · ${p.soldLabel}` : "") : ` · ${p.sold ? `${short(p.sold)} sold` : "No sales yet"}`}</p>
         <div className="pp-chips">
           <span className={`badge ${BADGE[st]}`}>{st}</span>
-          <span className="pp-chip muted">{h.label}</span>
+          {h.label && <span className="pp-chip muted">{h.label}</span>}
+          {p.note && <span className="pp-chip muted">{p.note}</span>}
           {p.fromSellerCenter && <span className="badge badge-blue">From Seller Center</span>}
           {wanted && <span className="pp-chip">{wanted.creators} Creators Want It</span>}
         </div>
@@ -126,9 +142,9 @@ function SellerProduct({ item }: { item: ShopItem }) {
         {buy && <div className="pp-buy">{buy}</div>}
 
         <section className="v2-card pp-card">
-          {week ? <Trend points={week} label="Sales, last 7 days" /> : <p className="pg-line">No sales yet. New listing.</p>}
+          {week ? <Trend points={week} label="Sales, last 7 days" /> : !p.real && <p className="pg-line">No sales yet. New listing.</p>}
           <div className="pp-facts">
-            <span><small>Total sold</small><b>{p.sold ? short(p.sold) : "0"}</b></span>
+            {p.real ? (!p.salesUnknown && <span><small>Sold, last 90 days</small><b>{short(p.sold)}</b></span>) : <span><small>Total sold</small><b>{p.sold ? short(p.sold) : "0"}</b></span>}
             <span><small>Category</small><b>{p.category}</b></span>
             {st === "Live" && p.dates?.Live && <span><small>Live since</small><b>{p.dates.Live}</b></span>}
             {st === "Under review" && (p.stage === "Submitted to TikTok"
@@ -144,7 +160,7 @@ function SellerProduct({ item }: { item: ShopItem }) {
               </>
             )}
           </div>
-          {p.note && st !== "Not submitted" && <p className="v2-small" style={{ margin: 0 }}>{p.note}</p>}
+          {p.note && !p.real && st !== "Not submitted" && <p className="v2-small" style={{ margin: 0 }}>{p.note}</p>}
         </section>
 
         {st === "Live" && p.samples !== undefined && (

@@ -133,3 +133,28 @@ export type ShopProductDetail = {
 export function getShopProduct(accessToken: string, cipher: string, productId: string) {
   return callApi<ShopProductDetail>({ method: "GET", path: `/product/202309/products/${productId}`, accessToken, query: { shop_cipher: cipher } });
 }
+
+export type ProductSales = { id: string; overall_performance?: { items_sold?: number; orders?: number; gmv?: { amount?: string } } };
+
+/** Units sold, orders and GMV per product over [start, end) shop days (TikTok Shop Analytics scope; about 4 months back at most). */
+export function shopProductSales(accessToken: string, cipher: string, opts: { start: string; end: string; pageToken?: string }) {
+  return callApi<{ products?: ProductSales[]; next_page_token?: string; total_count?: number; latest_available_date?: string }>({
+    method: "GET",
+    path: "/analytics/202509/shop_products/performance",
+    accessToken,
+    query: { shop_cipher: cipher, start_date_ge: opts.start, end_date_lt: opts.end, page_size: "100", ...(opts.pageToken ? { page_token: opts.pageToken } : {}) },
+  });
+}
+
+export type OpenCollaboration = { id: string; status?: string; current_commission?: { rate?: number }; product?: { id: string; title?: string } };
+
+/** The shop's open collaborations (its public commission per product, ×100), optionally for one product (Read Seller Affiliate Collaboration scope). */
+export function searchOpenCollaborations(accessToken: string, cipher: string, opts: { productId?: string; pageToken?: string } = {}) {
+  return callApi<{ open_collaborations?: OpenCollaboration[]; next_page_token?: string }>({
+    method: "POST",
+    path: "/affiliate_seller/202412/open_collaborations/search",
+    accessToken,
+    query: { shop_cipher: cipher, page_size: "100", ...(opts.pageToken ? { page_token: opts.pageToken } : {}) },
+    body: opts.productId ? { keyword: opts.productId, keyword_type: "PRODUCT_ID" } : {},
+  });
+}

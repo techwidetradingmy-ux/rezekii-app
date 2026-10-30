@@ -39,6 +39,14 @@ export type ShopItem = {
   salesUnknown?: boolean;
   /** Second-level category, for creator conditions. */
   sub?: string;
+  /** Extra commission above the public rate the seller asked for (real requests). */
+  raise?: number;
+  /** Where the seller registers it in Techwide's campaign, once Techwide sent it to TikTok. */
+  register?: string;
+  /** The sales line for a real product, with its period (e.g. "12 sold in 90 days"). */
+  soldLabel?: string;
+  /** Rezekii's AI pick for a real product, from its real 90-day sales. */
+  ai?: { label: string; raise: number; why: string };
 };
 
 const fromMock = (id: string, extra: Omit<ShopItem, "id" | "name" | "img" | "price" | "category" | "publicRate" | "sold">): ShopItem => {

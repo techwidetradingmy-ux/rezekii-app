@@ -80,7 +80,11 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
   useScrollMemory(path);
   const section = sectionFor(app, path);
   const page = section ? pageFor(section, path) : null;
-  const who = app === "creator" ? { ...WHO.creator, name: you.first, initials: you.initials, photo: you.photo } : WHO[app];
+  const { me } = useDemo();
+  // Signed in with a Seller Center shop: the seller app shows that shop's name (owner, 30 Oct 2026).
+  const shopName = app === "seller" ? me?.sellerShop : null;
+  const shopInitials = (shopName ?? "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+  const who = app === "creator" ? { ...WHO.creator, name: you.first, initials: you.initials, photo: you.photo } : shopName ? { ...WHO.seller, name: shopName, initials: shopInitials || "S" } : WHO[app];
   const [more, setMore] = useState(false);
   const menu = MENUS[app];
   // Where the top menu's pill sits: measured from the open section's link, again on resize.
