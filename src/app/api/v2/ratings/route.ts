@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
-import { getShowcaseProducts, selectProducts } from "@/integrations/tiktok-shop/creator.ts";
 import { approvedCreatorToken } from "@/modules/creator-accounts/access.ts";
+import { ratingsOf, showcaseOf } from "@/modules/picks/mine.ts";
 import { linesBetween } from "@/modules/sales/frames.ts";
 
 export const dynamic = "force-dynamic";
@@ -24,23 +24,8 @@ export async function GET(req: NextRequest) {
   const token = await approvedCreatorToken(user.id);
   if (!token) return NextResponse.json({ linked: false, total: 0, checked: 0, more: false, flagged: [], at: new Date().toISOString() } satisfies Result);
 
-  const items: { id: string; name: string; img: string | null }[] = [];
-  let pageToken: string | undefined;
-  for (let page = 0; page < 10; page++) {
-    const r = await getShowcaseProducts(token, pageToken);
-    if (r.code !== 0) break;
-    for (const p of r.data?.products ?? []) items.push({ id: p.id, name: p.title ?? "Product", img: p.main_images?.[0]?.url ?? null });
-    pageToken = r.data?.next_page_token || undefined;
-    if (!pageToken) break;
-  }
-  const ratings = new Map<string, { score: number; count: number }>();
-  for (let i = 0; i < items.length; i += 20) {
-    const r = await selectProducts(token, items.slice(i, i + 20).map((p) => p.id));
-    for (const p of r.data?.products ?? []) {
-      const score = Number(p.review?.overall_score);
-      if (Number.isFinite(score) && score > 0) ratings.set(p.id, { score, count: p.review?.count ?? 0 });
-    }
-  }
+  const { items, more } = await showcaseOf(token);
+  const ratings = await ratingsOf(token, items.map((p) => p.id));
   const lines = await linesBetween(user.id, Date.now() - 30 * 86_400_000, Date.now()).catch(() => []);
   const seen = new Map<string, { orders: Set<string>; bad: Set<string>; back: Set<string> }>();
   for (const l of lines) {
@@ -58,7 +43,7 @@ export async function GET(req: NextRequest) {
       return { ...p, rating: ratings.get(p.id)!.score, reviews: ratings.get(p.id)!.count, orders, cancel: orders ? Math.round(((s?.bad.size ?? 0) / orders) * 1000) / 10 : 0, returned: s?.back.size ?? 0 };
     })
     .sort((a, b) => a.rating - b.rating);
-  const r: Result = { linked: true, total: items.length, checked: ratings.size, more: !!pageToken, flagged, at: new Date().toISOString() };
+  const r: Result = { linked: true, total: items.length, checked: ratings.size, more, flagged, at: new Date().toISOString() };
   cache.set(user.id, { at: Date.now(), r });
   return NextResponse.json(r, { headers: { "cache-control": "private, no-store" } });
 }

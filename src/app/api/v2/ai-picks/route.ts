@@ -1,16 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
-import { getShowcaseProducts, lookupProducts } from "@/integrations/tiktok-shop/creator.ts";
 import { approvedCreatorToken } from "@/modules/creator-accounts/access.ts";
-import { linesBetween } from "@/modules/sales/frames.ts";
-import { lineEarned, lineGmv } from "@/modules/sales/summary.ts";
+import { salesProfile, showcaseOf } from "@/modules/picks/mine.ts";
 import { productsFor } from "@/modules/tap/for-creator.ts";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const DAY = 86_400_000;
-const kind = (t: string | null) => (/LIVE/i.test(t ?? "") ? "live" : /VIDEO/i.test(t ?? "") ? "video" : "other");
 const pct = (part: number, all: number) => (all > 0 ? Math.round((part / all) * 100) : 0);
 
 type Pick = {
@@ -44,68 +40,20 @@ export async function GET(req: NextRequest) {
   const none: Result = { linked: false, profile: { categories: [], video: 0, price: null, aov: 0, orders: 0, days: 30 }, compared: 0, picks: [], at: new Date().toISOString() };
   if (!token) return NextResponse.json(none);
 
-  // Her sales: per product, how much and through video or LIVE.
-  const lines = await linesBetween(user.id, Date.now() - 30 * DAY, Date.now()).catch(() => []);
-  const mine = new Map<string, { gmv: number; earned: number; video: number; live: number }>();
-  const orders = new Set<string>();
-  const units: number[] = [];
-  let gmv = 0, video = 0, live = 0;
-  for (const l of lines) {
-    const g = lineGmv(l);
-    const e = lineEarned(l);
-    if (g <= 0) continue;
-    orders.add(l.order_id);
-    gmv += g;
-    for (let i = 0; i < Math.min(l.quantity, 20); i++) units.push(Number(l.price));
-    const k = kind(l.content_type);
-    if (k === "video") video += e || g;
-    if (k === "live") live += e || g;
-    if (!l.product_id) continue;
-    const m = mine.get(l.product_id) ?? mine.set(l.product_id, { gmv: 0, earned: 0, video: 0, live: 0 }).get(l.product_id)!;
-    m.gmv += g;
-    m.earned += e;
-    if (k === "video") m.video += e || g;
-    if (k === "live") m.live += e || g;
-  }
-
-  // Her categories: TikTok's category for her best-selling products (top 60).
-  const top = [...mine.entries()].sort((a, b) => b[1].gmv - a[1].gmv).slice(0, 60);
-  const catOf = new Map<string, string>();
-  for (let i = 0; i < top.length; i += 20) {
-    const r = await lookupProducts(token, top.slice(i, i + 20).map(([id]) => id)).catch(() => null);
-    for (const p of r?.data?.products ?? []) {
-      const c = p.category_chains?.find((x) => x.is_leaf)?.local_name ?? p.category_chains?.at(-1)?.local_name;
-      if (c) catOf.set(p.id, c);
-    }
-  }
-  const cats = new Map<string, { gmv: number; video: number; live: number }>();
-  for (const [id, m] of top) {
-    const c = catOf.get(id);
-    if (!c) continue;
-    const s = cats.get(c) ?? cats.set(c, { gmv: 0, video: 0, live: 0 }).get(c)!;
-    s.gmv += m.gmv;
-    s.video += m.video;
-    s.live += m.live;
-  }
-  const catGmv = [...cats.values()].reduce((s, c) => s + c.gmv, 0);
-  const share = new Map([...cats.entries()].map(([c, s]) => [c, catGmv ? s.gmv / catGmv : 0]));
+  // Her sales: categories, video or LIVE and prices, and what's already in her showcase.
+  const [prof, showcase] = await Promise.all([salesProfile(user.id, token), showcaseOf(token)]);
+  const mine = prof.products;
+  const cats = prof.categories;
+  const share = new Map([...cats.entries()].map(([c, s]) => [c, s.share]));
   const topShare = Math.max(0, ...share.values());
+  const { video, live, units, gmv, orders } = prof;
 
   // Her price range: the middle 80% of the items she sold.
-  units.sort((a, b) => a - b);
   const lo = units.length >= 5 ? units[Math.floor(units.length * 0.1)] : null;
   const hi = units.length >= 5 ? units[Math.min(units.length - 1, Math.ceil(units.length * 0.9) - 1)] : null;
 
   // Products she can't add again: already in her showcase.
-  const inShowcase = new Set<string>();
-  let pageToken: string | undefined;
-  for (let page = 0; page < 10; page++) {
-    const r = await getShowcaseProducts(token, pageToken).catch(() => null);
-    if (!r || r.code !== 0) break;
-    for (const p of r.data?.products ?? []) inShowcase.add(p.id);
-    pageToken = r.data?.next_page_token || undefined;
-    if (!pageToken) break;
-  }
+  const inShowcase = new Set(showcase.items.map((p) => p.id));
 
   const all = await productsFor(user.id);
   const rankIn = new Map<string, number>();
@@ -154,8 +102,8 @@ export async function GET(req: NextRequest) {
       categories: [...share.entries()].filter(([, s]) => s >= 0.01).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([c, s]) => [c, Math.round(s * 100)]),
       video: allSplit ? pct(video, allSplit) : 0,
       price: lo !== null && hi !== null ? `RM ${Math.round(lo)}–${Math.round(hi)}` : null,
-      aov: orders.size ? Math.round((gmv / orders.size) * 100) / 100 : 0,
-      orders: orders.size,
+      aov: orders ? Math.round((gmv / orders) * 100) / 100 : 0,
+      orders,
       days: 30,
     },
     compared: pool.length,

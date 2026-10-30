@@ -13,6 +13,8 @@ import { SAMPLE_LEFT } from "@/lib/mock-creator1";
 import { NICHE_BEST, TRY_TODAY, VIRAL, daily, type Trend } from "@/lib/mock-creator2";
 import { ON_IDS, ON_SOLD30 } from "@/lib/mock-showcase";
 import { useKept } from "@/lib/keep";
+import { addOne } from "@/lib/live";
+import { NO_PHOTO, shortName } from "@/lib/live-perf";
 
 /** Drafts made from Today's Ideas wait here until the Content Calendar picks them up (preview only: this browser tab). */
 export const IDEA_DRAFTS = "rz-idea-drafts";
@@ -211,53 +213,110 @@ export function ShootToday({ bare = false, view = "cards", inFrame = false }: { 
 /** Where a best-seller list comes from (owner, 29 Oct 2026): the TikTok Shop market, or her own showcase. Same order for both. */
 export type BestSource = "market" | "showcase";
 
+/** One row of /api/v2/best (signed in). */
+type LiveBest = {
+  id: string; name: string; img: string | null; category: string | null; rating: number | null; sold: number; today: number | null;
+  units7: number | null; units30: number | null; week: number[] | null; openRate: number | null; silverRate: number | null;
+};
+/** One best-seller row, the same for sample and real lists. */
+type BestRow = { productId: string; name: string; img: string; category: string; rating: number | null; line: string; rate: number; points: number[] | null; pointsLabel: string };
+
 /**
  * Best sellers (owner, 29 Oct 2026). Marketplace: public TikTok Shop products in her top categories that aren't in her showcase
  * yet, rated 4★+; + adds one to her showcase. Showcase: products already in her showcase; Plan a Video starts a post. Both are
  * ranked best-selling first (units sold this week). Tap a product to see it on Rezekii.
  */
 export function NicheBest({ view: shape = "list", inFrame = false, source = "market" }: { view?: IdeasView; inFrame?: boolean; source?: BestSource }) {
-  const { linked, setLinked, toast } = useDemo();
+  const { linked: demoLinked, setLinked, toast, live, me } = useDemo();
+  const linked = live ? !!me?.shop : demoLinked;
   const mine = source === "showcase";
   const week = (id: string) => NICHE_BEST.find((b) => b.productId === id)?.weekSold ?? Math.round(product(id).sold / 26);
-  const rows = (mine ? ON_IDS : NICHE_BEST.map((b) => b.productId).filter((id) => !ON_IDS.includes(id) && product(id).rating >= 4))
-    .map((id) => ({ productId: id, weekSold: week(id), trend: NICHE_BEST.find((b) => b.productId === id)?.trend ?? ("flat" as Trend) }))
-    .sort((x, y) => y.weekSold - x.weekSold);
+
+  // Signed in (owner, 31 Oct 2026): her real lists from /api/v2/best.
+  const [real, setReal] = useState<{ linked: boolean; rows: LiveBest[] } | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    if (!live || !linked) return;
+    let on = true;
+    fetch(`/api/v2/best?source=${source}`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (on) d ? setReal(d) : setFailed(true); })
+      .catch(() => on && setFailed(true));
+    return () => { on = false; };
+  }, [live, linked, source]);
+
+  const rows: BestRow[] = live
+    ? (real?.rows ?? []).map((b) => ({
+        productId: b.id, name: shortName(b.name), img: b.img ?? NO_PHOTO, category: b.category ?? "Other", rating: b.rating,
+        line: mine
+          ? `You sold ${b.units7 ?? 0} in 7 days${b.units30 ? ` · ${b.units30} in 30 days` : ""}`
+          : `${short(b.sold)} sold${b.today ? ` · ${short(b.today)} today` : ""}`,
+        rate: ((mine || me?.level === "bronze" ? b.openRate : b.silverRate ?? b.openRate) ?? 0) / 100,
+        points: b.week, pointsLabel: "Your sales, 7 days",
+      }))
+    : (mine ? ON_IDS : NICHE_BEST.map((b) => b.productId).filter((id) => !ON_IDS.includes(id) && product(id).rating >= 4))
+        .map((id) => ({ productId: id, weekSold: week(id), trend: NICHE_BEST.find((b) => b.productId === id)?.trend ?? ("flat" as Trend) }))
+        .sort((x, y) => y.weekSold - x.weekSold)
+        .map((b) => {
+          const p = product(b.productId);
+          return {
+            productId: p.id, name: p.name, img: p.img, category: p.category, rating: p.rating,
+            line: `${short(b.weekSold)} sold this week${mine && ON_SOLD30[p.id] ? ` · You sold ${ON_SOLD30[p.id]}` : ""}`,
+            rate: Math.max(mine ? rateFor(p).rate : 0, bestRate(p).rate), points: daily(b.weekSold, b.trend), pointsLabel: "Sales, 7 days",
+          };
+        });
   // Short tab names so the row fits a phone: "Home & Kitchen" shows as "Home".
   const short1 = (c: string) => c.split(" & ")[0];
-  const cats = ["All", ...Array.from(new Set(rows.map((b) => short1(product(b.productId).category))))];
+  const cats = ["All", ...Array.from(new Set(rows.map((b) => short1(b.category))))];
   const [cat, setCat] = useKept(`best-cat-${source}`, "All");
   const [added, setAdded] = useState<string[]>([]);
-  const shown = rows.filter((b) => cat === "All" || short1(product(b.productId).category) === cat);
+  const shown = rows.filter((b) => cat === "All" || short1(b.category) === cat);
   const { rail, at } = useRail<HTMLOListElement>(shape);
+  const add = (b: BestRow) => {
+    if (!linked) return setLinked(true);
+    if (!live) {
+      setAdded((a) => [...a, b.productId]);
+      return toast("Added to your showcase");
+    }
+    // For real: straight into her TikTok Shop showcase, or a TAP link to open when TikTok asks for one.
+    addOne(b.productId).then((r) => {
+      if (r.added) {
+        setAdded((a) => [...a, b.productId]);
+        toast("Added to your showcase");
+      } else if (r.link) window.open(r.link, "_blank", "noopener");
+      else toast(r.error ?? "TikTok Shop didn't add it. Please try again.");
+    });
+  };
   return (
     <section className={inFrame ? "nb-box nb-in" : "v2-card nb-box"} aria-label={mine ? "Best sellers in your showcase" : "Best sellers in your niche"}>
       {/* The card's AI header sits above the tabs (owner, 29 Oct 2026: one AI label per card); each tab just says where it's from. */}
-      {inFrame ? <p className="nb-src">{mine ? "Products in your showcase" : "Live on TikTok Shop, not in your showcase yet"}</p> : <AiHead title={mine ? "Best Sellers in Your Showcase" : "Best Sellers on TikTok Shop"} sub="Best-selling first, updated daily" />}
+      {inFrame ? <p className="nb-src">{mine ? (live ? "Products in your showcase, by your sales this week" : "Products in your showcase") : live ? "Rezekii campaign products in your categories, not in your showcase yet" : "Live on TikTok Shop, not in your showcase yet"}</p> : <AiHead title={mine ? "Best Sellers in Your Showcase" : "Best Sellers on TikTok Shop"} sub="Best-selling first, updated daily" />}
+      {live && linked && !real && !failed && <p className="v2-muted" style={{ margin: 0 }}>Loading your list…</p>}
+      {live && failed && <p className="v2-muted" style={{ margin: 0 }}>Couldn&apos;t load this list. Please try again later.</p>}
+      {live && real && !real.rows.length && <p className="v2-muted" style={{ margin: 0 }}>{mine ? "Your showcase is empty. Add products from the Marketplace." : "No products in your categories right now. Check again tomorrow."}</p>}
       <div className="nb-cats" role="group" aria-label="Category">
         {cats.map((c) => <button key={c} type="button" className={`v2-chip${c === cat ? " on" : ""}`} aria-pressed={c === cat} onClick={() => setCat(c)}>{c}</button>)}
       </div>
       <ol ref={rail} className={`nb-list ${shape}`} key={cat}>
         {shown.map((b) => {
-          const p = product(b.productId);
-          const on = added.includes(p.id);
+          const on = added.includes(b.productId);
           return (
-            <li key={p.id}>
+            <li key={b.productId}>
               <span className="nb-rank">{rows.indexOf(b) + 1}</span>
-              <Link href={productHref(p.id)} className="nb-view" aria-label={`View ${p.name}`}>
+              <Link href={productHref(b.productId)} className="nb-view" aria-label={`View ${b.name}`}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.img} alt="" />
+                <img src={b.img} alt="" />
                 <span className="nb-main">
-                  <b>{p.name}</b>
-                  <small>{short(b.weekSold)} sold this week · {mine && ON_SOLD30[p.id] ? <>You sold {ON_SOLD30[p.id]} · </> : null}Earn <Hidden>{Math.max(mine ? rateFor(p).rate : 0, bestRate(p).rate)}%</Hidden></small>
-                  <span className="nb-score"><Icon name="star" size={12} width={2.4} /> {p.rating.toFixed(1)}</span>
+                  <b>{b.name}</b>
+                  <small>{b.line}{b.rate > 0 && <> · Earn <Hidden>{b.rate}%</Hidden></>}</small>
+                  {b.rating !== null && <span className="nb-score"><Icon name="star" size={12} width={2.4} /> {b.rating.toFixed(1)}</span>}
                 </span>
-                <Trend points={daily(b.weekSold, b.trend)} label="Sales, 7 days" />
+                {b.points && b.points.some((v) => v > 0) && <Trend points={b.points} label={b.pointsLabel} />}
               </Link>
               {mine ? (
-                <Link href={`/app/publish?idea=${encodeURIComponent(`Show ${p.name}`)}`} className="nb-add" aria-label={`Plan a video for ${p.name}`}><Icon name="video" size={18} /></Link>
+                <Link href={`/app/publish?idea=${encodeURIComponent(`Show ${b.name}`)}`} className="nb-add" aria-label={`Plan a video for ${b.name}`}><Icon name="video" size={18} /></Link>
               ) : (
-              <button type="button" className={`nb-add${on ? " on" : ""}`} disabled={on} aria-label={on ? `${p.name} is in your showcase` : `Add ${p.name} to your showcase`} onClick={() => { if (!linked) return setLinked(true); setAdded((a) => [...a, p.id]); toast("Added to your showcase"); }}>
+              <button type="button" className={`nb-add${on ? " on" : ""}`} disabled={on} aria-label={on ? `${b.name} is in your showcase` : `Add ${b.name} to your showcase`} onClick={() => add(b)}>
                 <Icon name={on ? "check" : "plus"} size={18} />
               </button>
               )}
