@@ -4,16 +4,17 @@ import { SUPPORT } from "@/lib/support";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DemoStrip } from "@/components/shell";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { Seg, Tip } from "@/components/ui";
+import { Tip } from "@/components/ui";
 import { AddressFields } from "@/components/account/address-fields";
 import { GoogleMark, TikTokMark } from "@/components/creator1/brand";
 import { Otp } from "@/components/creator1/otp";
 import { MY_STATES, isEmail, tidyPhone } from "@/lib/mock-creator1";
 import { REFERRAL_REWARD } from "@/lib/mock";
+import { COUNTRIES, tidyPhone as tidyAnyPhone } from "@/lib/mock-seller";
 import { NICHES } from "@/lib/mock-creator2";
 import { EMPTY_ADDRESS, addressOk, birthdayError, saveAddress, saveSignup, type Address } from "@/lib/address";
 import "../creator1.css";
@@ -34,27 +35,73 @@ const PROVIDER = {
   TikTok: { who: "Aisyah Rahman", id: "@aisyah.glow" },
 };
 
+const KINDS = ["TikTok Affiliate", "Shopee Affiliate", "Lazada Affiliate", "Threads Affiliate", "Others"];
+const GENDERS = ["Female", "Male", "Others"];
+
+/** A compact dropdown that takes more than one pick (owner, 30 Oct 2026: the chips made sign-up too long). */
+function MultiPick({ label, options, value, onChange, max, invalid }: { label: string; options: string[]; value: string[]; onChange: (v: string[]) => void; max?: number; invalid?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: PointerEvent) => {
+      if (!box.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("pointerdown", away);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("pointerdown", away);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [open]);
+  return (
+    <div className="su-pick" ref={box}>
+      <button type="button" className="np-input su-pick-btn" aria-label={label} aria-haspopup="listbox" aria-expanded={open} aria-invalid={invalid} onClick={() => setOpen((o) => !o)}>
+        <span className={value.length ? undefined : "ph"}>{value.length ? value[0] : max ? `Up to ${max}` : "Choose"}</span>
+        {value.length > 1 && <em>+{value.length - 1}</em>}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+      </button>
+      {open && (
+        <div className="su-pick-list" role="listbox" aria-multiselectable="true" aria-label={label}>
+          {options.map((o) => {
+            const on = value.includes(o);
+            return (
+              <button key={o} type="button" role="option" aria-selected={on} disabled={!on && !!max && value.length >= max} onClick={() => onChange(on ? value.filter((x) => x !== o) : [...value, o])}>
+                <i>{on && <Icon name="check" size={13} width={3.2} />}</i>
+                {o}
+              </button>
+            );
+          })}
+          <button type="button" className="su-pick-done" onClick={() => setOpen(false)}>Done</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /**
- * Sign in or sign up (blueprint 7.2/7.3): Google, TikTok or email. Email sign-up is one form plus a 6-digit code; Google and
- * TikTok ask one screen. Owner, 29 Oct 2026: sign-up asks everything her Profile needs (name, birthday, gender, state, WhatsApp,
- * creator type, niches) so there's nothing to fill in after joining; the delivery address is optional here and only required
- * for the Rate Card. Password sign-in and Forgot password are here too. Sample only: any code works.
+ * Sign up first, then sign in (owner, 30 Oct 2026). Sign-up is its own short page: Google or TikTok on top, or the email
+ * form below, in dropdowns so it fits about one screen. Email sign-up confirms the address with a 6-digit code; Google and
+ * TikTok skip the code. Signing in stays on the small card and goes straight to the app. Sample only: any code works.
  */
 export default function SignIn() {
   const router = useRouter();
   const { toast } = useDemo();
   const [step, setStep] = useState<Step>("start");
   const [forgotFrom, setForgotFrom] = useState<Step>("password");
-  // Sign up first, sign in for people who already have an account (owner, 30 Oct 2026). ?in=1 opens Sign in.
+  // ?in=1 opens Sign in; everything else opens Sign up.
   const [entry, setEntry] = useState<"up" | "in">("up");
   const [provider, setProvider] = useState<keyof typeof PROVIDER>("Google");
-  const [mode, setMode] = useState<"New here" | "I have an account">("New here");
   const [purpose, setPurpose] = useState<Purpose>("signup");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  // Country for later markets (owner, 30 Oct 2026). Malaysia picks from its states; others type theirs.
+  const [country, setCountry] = useState("MY");
   const [state, setState] = useState("");
   const [phone, setPhone] = useState("");
   const [phoneTouched, setPhoneTouched] = useState(false);
+  const [dial, setDial] = useState("60");
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -63,9 +110,10 @@ export default function SignIn() {
   const [codeState, setCodeState] = useState<"busy" | "ok" | undefined>();
   const [wait, setWait] = useState(0);
   const [welcome, setWelcome] = useState("");
-  // Owner, 28 Oct 2026: which kind of affiliate creator they are, picked at sign-up. More than one is fine.
   const [kinds, setKinds] = useState<string[]>([]);
   const [otherKind, setOtherKind] = useState("");
+  // Typed as DD/MM/YYYY (owner, 30 Oct 2026); kept as yyyy-mm-dd, or "bad" for a date that doesn't exist.
+  const [bdText, setBdText] = useState("");
   const [birthday, setBirthday] = useState("");
   const [gender, setGender] = useState("");
   const [niches, setNiches] = useState<string[]>([]);
@@ -85,7 +133,11 @@ export default function SignIn() {
   }, []);
   const kindError = !kinds.length ? "Pick at least one" : kinds.includes("Others") && !otherKind.trim() ? "Tell us which one" : "";
 
-  const tel = tidyPhone(phone);
+  const tel = (() => {
+    if (dial === "60") return tidyPhone(phone);
+    const r = tidyAnyPhone(phone, dial);
+    return { pretty: r.ok ? r.pretty.replace(`+${dial} `, "") : phone, e164: r.ok ? r.pretty : "", error: r.ok ? null : phone.trim() ? r.error ?? "Check the number" : "Enter your WhatsApp number" };
+  })();
   const go = (s: Step) => {
     setTried(false);
     setStep(s);
@@ -137,136 +189,26 @@ export default function SignIn() {
     setProvider(p);
     setName(PROVIDER[p].who);
     setStep("oauth");
-    window.setTimeout(() => setStep("profile"), 1100);
+    // Signing in goes straight in; only a new account fills in the rest (owner, 30 Oct 2026).
+    window.setTimeout(() => (entry === "in" ? finish(`Welcome back, ${PROVIDER[p].who.split(" ")[0]}`) : setStep("profile")), 1100);
   }
 
-  const phoneField = (
-    <label className="v2-field">
-      WhatsApp number
-      <span className="cr1-phone">
-        <span>+60</span>
-        <input
-          className="np-input"
-          inputMode="tel"
-          autoComplete="tel-national"
-          placeholder="12-345 6789"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          onBlur={() => {
-            setPhoneTouched(true);
-            if (!tel.error) setPhone(tel.pretty);
-          }}
-          aria-invalid={(phoneTouched || tried) && !!tel.error}
-        />
-      </span>
-      {(phoneTouched || tried) && tel.error ? (
-        <small className="cr1-err">{tel.error}</small>
-      ) : !tel.error ? (
-        <small className="cr1-okline"><Icon name="check" size={14} width={3} /> Saved as {tel.e164}</small>
-      ) : (
-        <small>e.g. 012-345 6789</small>
-      )}
-    </label>
-  );
-
-  const stateField = (
-    <label className="v2-field">
-      State
-      <select className="np-input cr1-select" value={state} onChange={(e) => setState(e.target.value)} aria-invalid={tried && !state}>
-        <option value="">Choose your state</option>
-        {Object.entries(MY_STATES).map(([group, list]) => (
-          <optgroup key={group} label={group}>
-            {list.map((s) => <option key={s} value={s}>{s}</option>)}
-          </optgroup>
-        ))}
-      </select>
-      {tried && !state ? <small className="cr1-err">Choose your state</small> : <small>Malaysia only. Sellers never see your address.</small>}
-    </label>
-  );
-
-  const kindField = (
-    <div className="v2-field">
-      Creator type
-      <div className="v2-chips cr1-kinds" role="group" aria-label="Kind of creator">
-        {["TikTok Affiliate", "Shopee Affiliate", "Threads Affiliate", "Others"].map((k) => {
-          const on = kinds.includes(k);
-          return (
-            <button key={k} type="button" className={`v2-chip ${on ? "on" : ""}`} aria-pressed={on} onClick={() => setKinds((l) => (on ? l.filter((x) => x !== k) : [...l, k]))}>
-              {on && <Icon name="check" size={14} width={3} />}{k}
-            </button>
-          );
-        })}
-      </div>
-      {kinds.includes("Others") && (
-        <input className="np-input" placeholder="e.g. Lazada Affiliate, UGC creator" value={otherKind} onChange={(e) => setOtherKind(e.target.value)} aria-label="Other kind of creator" aria-invalid={tried && !otherKind.trim()} />
-      )}
-      {tried && kindError ? <small className="cr1-err">{kindError}</small> : <small>Pick all that fit.</small>}
-    </div>
-  );
+  function typeBirthday(raw: string) {
+    const d = raw.replace(/\D/g, "").slice(0, 8);
+    setBdText(d.length > 4 ? `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4)}` : d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d);
+    if (d.length < 8) return setBirthday("");
+    const [dd, mm, yy] = [Number(d.slice(0, 2)), Number(d.slice(2, 4)), Number(d.slice(4))];
+    const real = new Date(yy, mm - 1, dd);
+    setBirthday(real.getFullYear() === yy && real.getMonth() === mm - 1 && real.getDate() === dd ? `${d.slice(4)}-${d.slice(2, 4)}-${d.slice(0, 2)}` : "bad");
+  }
 
   const nameField = (
     <label className="v2-field">
-      Your name
-      <input className="np-input" autoComplete="name" placeholder="e.g. Aisyah Rahman" value={name} onChange={(e) => setName(e.target.value)} aria-invalid={tried && name.trim().length < 2} />
-      {tried && name.trim().length < 2 ? <small className="cr1-err">Enter your name</small> : <small>As on your IC, for payouts.</small>}
+      Full name
+      <input className="np-input" autoComplete="name" placeholder="Your real name, for verification" value={name} onChange={(e) => setName(e.target.value)} aria-invalid={tried && name.trim().length < 2} />
+      {tried && name.trim().length < 2 && <small className="cr1-err">Enter your name</small>}
     </label>
   );
-
-  // TikTok Shop affiliates must be 18 or older.
-  const today = new Date();
-  const maxBirth = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate()).toLocaleDateString("en-CA");
-  const bErr = birthdayError(birthday);
-  const birthdayField = (
-    <label className="v2-field">
-      Birthday
-      <input className="np-input" type="date" min="1920-01-01" max={maxBirth} value={birthday} onChange={(e) => setBirthday(e.target.value)} aria-invalid={tried && !!bErr} />
-      {tried && bErr ? <small className="cr1-err">{bErr}</small> : <small>For birthday rewards and the 18+ check.</small>}
-    </label>
-  );
-
-  const genderField = (
-    <div className="v2-field">
-      Gender
-      <div className="v2-chips" role="group" aria-label="Gender">
-        {["Female", "Male"].map((g) => <button key={g} type="button" className={`v2-chip ${gender === g ? "on" : ""}`} aria-pressed={gender === g} onClick={() => setGender(g)}>{g}</button>)}
-      </div>
-      {tried && !gender && <small className="cr1-err">Choose one</small>}
-    </div>
-  );
-
-  const nicheField = (
-    <div className="v2-field">
-      Your niches
-      <div className="v2-chips cr1-kinds" role="group" aria-label="Your niches">
-        {NICHES.map((n) => {
-          const on = niches.includes(n);
-          return (
-            <button key={n} type="button" className={`v2-chip ${on ? "on" : ""}`} aria-pressed={on} disabled={!on && niches.length >= 3} onClick={() => setNiches((l) => (on ? l.filter((x) => x !== n) : [...l, n]))}>
-              {on && <Icon name="check" size={14} width={3} />}{n}
-            </button>
-          );
-        })}
-      </div>
-      {tried && !niches.length ? <small className="cr1-err">Pick at least one</small> : <small>Up to 3. The first is your main niche.</small>}
-    </div>
-  );
-
-  // Optional here; if she starts filling it in, it has to be complete.
-  const addrStarted = Object.values(addr).some((v) => v.trim());
-  const addrBad = showAddr && addrStarted && !addressOk(addr);
-  const addressField = showAddr ? (
-    <div className="v2-field">
-      <span className="cr1-addr-h">Delivery address <small>· optional</small> <Tip text="Only needed for your Rate Card, so sellers can send products for paid reviews. Free Samples use your TikTok address." /></span>
-      <AddressFields value={addr} onChange={setAddr} tried={tried && addrStarted} />
-    </div>
-  ) : (
-    <button type="button" className="cr1-addaddr" onClick={() => setShowAddr(true)}><Icon name="plus" size={16} /> Add delivery address <small>(optional)</small></button>
-  );
-  const aboutBad = !!bErr || !gender || !niches.length || addrBad;
-  const keep = () => {
-    saveSignup({ birthday, niches });
-    if (addressOk(addr)) saveAddress(addr);
-  };
 
   const emailField = (
     <label className="v2-field">
@@ -276,44 +218,293 @@ export default function SignIn() {
     </label>
   );
 
+  const countryField = (
+    <label className="v2-field">
+      Country
+      <select
+        className="np-input cr1-select"
+        autoComplete="country"
+        value={country}
+        onChange={(e) => {
+          const c = COUNTRIES.find((x) => x.code === e.target.value);
+          setCountry(e.target.value);
+          setState("");
+          if (c) setDial(c.dial);
+          setPhoneTouched(false);
+        }}
+      >
+        {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
+      </select>
+    </label>
+  );
+
+  const stateField = (
+    <label className="v2-field">
+      State
+      {country === "MY" ? (
+        <select className="np-input cr1-select" value={state} onChange={(e) => setState(e.target.value)} aria-invalid={tried && !state}>
+          <option value="">Choose</option>
+          {Object.entries(MY_STATES).map(([group, list]) => (
+            <optgroup key={group} label={group}>
+              {list.map((s) => <option key={s} value={s}>{s}</option>)}
+            </optgroup>
+          ))}
+        </select>
+      ) : (
+        <input className="np-input" autoComplete="address-level1" placeholder="State / Province" value={state} onChange={(e) => setState(e.target.value)} aria-invalid={tried && !state.trim()} />
+      )}
+      {tried && !state.trim() && <small className="cr1-err">Choose your state</small>}
+    </label>
+  );
+
+  const phoneField = (
+    <label className="v2-field">
+      WhatsApp number
+      <span className="cr1-phone">
+        <select aria-label="Country code" value={dial} onChange={(e) => { setDial(e.target.value); setPhoneTouched(false); }}>
+          {COUNTRIES.map((c) => <option key={c.code} value={c.dial}>{c.code} +{c.dial}</option>)}
+        </select>
+        <input
+          className="np-input"
+          inputMode="tel"
+          autoComplete="tel-national"
+          placeholder={dial === "60" ? "12-345 6789" : "Phone number"}
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          onBlur={() => {
+            setPhoneTouched(true);
+            if (!tel.error) setPhone(tel.pretty);
+          }}
+          aria-invalid={(phoneTouched || tried) && !!tel.error}
+        />
+      </span>
+      {(phoneTouched || tried) && tel.error && <small className="cr1-err">{tel.error}</small>}
+    </label>
+  );
+
+  // TikTok Shop affiliates must be 18 or older.
+  const bErr = bdText && !birthday ? "Use DD/MM/YYYY" : birthdayError(birthday);
+  const birthdayField = (
+    <label className="v2-field">
+      Birthday
+      <input className="np-input" inputMode="numeric" autoComplete="bday" placeholder="DD/MM/YYYY" maxLength={10} value={bdText} onChange={(e) => typeBirthday(e.target.value)} aria-invalid={tried && !!bErr} />
+      {tried && bErr && <small className="cr1-err">{bErr}</small>}
+    </label>
+  );
+
+  const genderField = (
+    <label className="v2-field">
+      Gender
+      <select className="np-input cr1-select" value={gender} onChange={(e) => setGender(e.target.value)} aria-invalid={tried && !gender}>
+        <option value="">Choose</option>
+        {GENDERS.map((g) => <option key={g} value={g}>{g}</option>)}
+      </select>
+      {tried && !gender && <small className="cr1-err">Choose one</small>}
+    </label>
+  );
+
+  const kindField = (
+    <div className="v2-field">
+      Creator type
+      <MultiPick label="Creator type" options={KINDS} value={kinds} onChange={setKinds} invalid={tried && !!kindError} />
+      {kinds.includes("Others") && (
+        <input className="np-input" placeholder="Which one?" value={otherKind} onChange={(e) => setOtherKind(e.target.value)} aria-label="Other kind of creator" aria-invalid={tried && !otherKind.trim()} />
+      )}
+      {tried && kindError && <small className="cr1-err">{kindError}</small>}
+    </div>
+  );
+
+  const nicheField = (
+    <div className="v2-field">
+      Niches
+      <MultiPick label="Niches" options={NICHES} value={niches} onChange={setNiches} max={3} invalid={tried && !niches.length} />
+      {tried && !niches.length && <small className="cr1-err">Pick at least one</small>}
+    </div>
+  );
+
+  // Optional here; if she starts filling it in, it has to be complete.
+  const addrStarted = Object.values(addr).some((v) => v.trim());
+  const addrBad = showAddr && addrStarted && !addressOk(addr);
+  const addressField = showAddr ? (
+    <div className="v2-field">
+      <span className="cr1-addr-h">Sample delivery address <small>· optional</small> <Tip text="Where sellers send your free samples. You can add or change it later in My Account." /></span>
+      <AddressFields value={addr} onChange={setAddr} tried={tried && addrStarted} />
+    </div>
+  ) : (
+    <button type="button" className="cr1-addaddr" onClick={() => setShowAddr(true)}><Icon name="plus" size={16} /> Add sample delivery address <small>(optional)</small></button>
+  );
+  const signupBad = name.trim().length < 2 || !state.trim() || !!tel.error || !!kindError || !!bErr || !gender || !niches.length || addrBad;
+  const keep = () => {
+    saveSignup({ birthday, niches });
+    if (addressOk(addr)) saveAddress(addr);
+  };
+
   const back = (to: Step, label = "Back") => (
     <button type="button" className="cr1-back" onClick={() => go(to)}><Icon name="back" size={18} /> {label}</button>
   );
+
+  const codeView = (
+    <>
+      <span className="cr1-mail"><Icon name="inbox" size={28} /></span>
+      <div className="cr1-center">
+        <h1>{purpose === "reset" ? "Check your email" : "Enter the code"}</h1>
+        {purpose === "reset" ? (
+          <p>If <b>{email.trim()}</b> has an account, we sent a code.</p>
+        ) : purpose === "signup" ? (
+          <p>We sent a 6-digit code to <b>{email.trim()}</b> to confirm it&apos;s your email.</p>
+        ) : (
+          <p>We sent a code to <b>{email.trim()}</b>.</p>
+        )}
+      </div>
+      <Otp value={code} onChange={setCode} state={codeState} />
+      <div className="cr1-center cr1-small" aria-live="polite">
+        {codeState === "busy" ? (
+          <span className="cr1-inline"><span className="cr1-spin sm" aria-hidden="true" /> Checking…</span>
+        ) : codeState === "ok" ? (
+          <span className="cr1-inline cr1-okline"><Icon name="check" size={16} width={3} /> Code accepted</span>
+        ) : (
+          <>
+            Valid for 10 minutes.{" "}
+            {wait > 0 ? (
+              <span>Resend in {wait}s</span>
+            ) : (
+              <button type="button" className="v2-link" onClick={() => { setWait(60); toast("New code sent"); }}>Resend code</button>
+            )}
+          </>
+        )}
+      </div>
+      <p className="cr1-center cr1-fine">Preview: any 6 digits work.</p>
+    </>
+  );
+
+  // Sign-up is a page of its own, not the floating card (owner, 30 Oct 2026).
+  const linked = step === "profile";
+  if (entry === "up" && (step === "start" || step === "oauth" || linked || (step === "code" && purpose === "signup"))) {
+    const unlink = () => {
+      setName("");
+      go("start");
+    };
+    return (
+      <>
+        <DemoStrip />
+        <main className="su-page">
+          <header className="su-top">
+            {linked ? (
+              <button type="button" className="su-back" onClick={unlink} aria-label="Back"><Icon name="back" size={20} /></button>
+            ) : step === "code" ? (
+              <button type="button" className="su-back" onClick={() => go("start")} aria-label="Change email"><Icon name="back" size={20} /></button>
+            ) : (
+              <Link href="/" className="su-back" aria-label="Back to home"><Icon name="back" size={20} /></Link>
+            )}
+            <Link href="/" className="su-brand">
+              <Image src="/master-logo-transparent.png" alt="" width={30} height={30} />
+              Rezekii
+            </Link>
+          </header>
+          {step === "code" ? (
+            <div key="code" className="cr1-form su-body su-code">{codeView}</div>
+          ) : (
+            <form
+              className="cr1-form su-body"
+              onSubmit={(e) => {
+                e.preventDefault();
+                setTried(true);
+                if (signupBad || (!linked && !isEmail(email))) return;
+                keep();
+                if (linked) finish(`Welcome to Rezekii, ${name.trim().split(" ")[0]}`);
+                else sendCode("signup");
+              }}
+            >
+              <div className="su-head">
+                <h1>Create your account</h1>
+                <p>Free to join. No minimum followers.</p>
+              </div>
+              {refCode && (
+                <p className="si-ref">
+                  <Icon name="gift" size={18} />
+                  <span>Invited with code <b>{refCode}</b>. Get <b>+{REFERRAL_REWARD.friend} credits</b>: link TikTok Shop and scan within 30 days.</span>
+                </p>
+              )}
+              {handle && (
+                <p className="si-ref si-handle">
+                  <Icon name="scan" size={18} />
+                  <span>Your scan for <b>@{handle}</b> is one step away. Sign up, then link TikTok Shop to see your rates.</span>
+                </p>
+              )}
+              {linked ? (
+                <div className="cr1-who">
+                  <span className="v2-av">AR</span>
+                  <span>
+                    <b>{PROVIDER[provider].who}</b>
+                    <small>{provider} · {provider === "TikTok" && handle ? `@${handle}` : PROVIDER[provider].id}</small>
+                  </span>
+                  <Icon name="check" size={18} stroke="#00c073" width={3} />
+                </div>
+              ) : (
+                <>
+                  <div className="su-social">
+                    <button type="button" className="btn-google cr1-authbtn" onClick={() => oauth("Google")} aria-label="Sign up with Google"><GoogleMark /> Google</button>
+                    <button type="button" className="btn-tiktok cr1-authbtn" onClick={() => oauth("TikTok")} aria-label="Sign up with TikTok"><TikTokMark /> TikTok</button>
+                  </div>
+                  <p className="su-or"><span>or sign up with email</span></p>
+                </>
+              )}
+              {nameField}
+              {!linked && emailField}
+              <div className="cr1-pair">
+                {countryField}
+                {stateField}
+              </div>
+              {phoneField}
+              <div className="cr1-pair">
+                {birthdayField}
+                {genderField}
+              </div>
+              <div className="cr1-pair su-picks">
+                {kindField}
+                {nicheField}
+              </div>
+              {addressField}
+              <button type="submit" className="np-btn np-submit">Create account</button>
+              <p className="cr1-center si-switch">
+                Already have an account? <button type="button" className="v2-link" onClick={() => { setEntry("in"); go("start"); }}>Sign in</button>
+              </p>
+              <p className="cr1-center cr1-fine">By continuing you agree to Rezekii&apos;s Terms of Service and Privacy Policy.</p>
+            </form>
+          )}
+          {step === "oauth" && (
+            <div className="su-wait" role="status">
+              <div className="cr1-wait">
+                <span className="cr1-provider">{provider === "Google" ? <GoogleMark /> : <TikTokMark size={26} />}</span>
+                <span className="cr1-spin" aria-hidden="true" />
+                <b>Signing up with {provider}…</b>
+                <p>Approve in {provider}&apos;s window.</p>
+              </div>
+            </div>
+          )}
+        </main>
+      </>
+    );
+  }
 
   let card: React.ReactNode;
   if (step === "start") {
     card = (
       <>
         <div className="cr1-center">
-          <h1>{entry === "up" ? "Create your account" : "Welcome back"}</h1>
-          <p>{entry === "up" ? "Free to join. No minimum followers." : "Sign in to your Rezekii account."}</p>
+          <h1>Welcome back</h1>
+          <p>Sign in to your Rezekii account.</p>
         </div>
-        {refCode && (
-          <p className="si-ref">
-            <Icon name="gift" size={18} />
-            <span>Invited with code <b>{refCode}</b>. Get <b>+{REFERRAL_REWARD.friend} credits</b>: link TikTok Shop and scan within 30 days.</span>
-          </p>
-        )}
-        {handle && (
-          <p className="si-ref si-handle">
-            <Icon name="scan" size={18} />
-            <span>Your scan for <b>@{handle}</b> is one step away. Sign up, then link TikTok Shop to see your rates.</span>
-          </p>
-        )}
-        <button type="button" className={`btn-google cr1-authbtn`} onClick={() => oauth("Google")}><GoogleMark /> {entry === "up" ? "Sign up" : "Sign in"} with Google</button>
-        <button type="button" className="btn-tiktok cr1-authbtn" onClick={() => oauth("TikTok")}><TikTokMark /> {entry === "up" ? "Sign up" : "Sign in"} with TikTok</button>
-        <button type="button" className="btn-email cr1-authbtn" onClick={() => { setMode(entry === "up" ? "New here" : "I have an account"); go("email"); }}><Icon name="inbox" size={20} /> {entry === "up" ? "Sign up" : "Sign in"} with email</button>
-        {entry === "in" && (
-          <p className="cr1-center cr1-small">
-            Have a password? <button type="button" className="v2-link" onClick={() => go("password")}>Sign in with password</button>
-            {" · "}
-            <button type="button" className="v2-link" onClick={() => { setForgotFrom("start"); go("forgot"); }}>Forgot password?</button>
-          </p>
-        )}
+        <button type="button" className={`btn-google cr1-authbtn`} onClick={() => oauth("Google")}><GoogleMark /> Sign in with Google</button>
+        <button type="button" className="btn-tiktok cr1-authbtn" onClick={() => oauth("TikTok")}><TikTokMark /> Sign in with TikTok</button>
+        <button type="button" className="btn-email cr1-authbtn" onClick={() => go("email")}><Icon name="inbox" size={20} /> Sign in with email</button>
+        <p className="cr1-center cr1-small">
+          Have a password? <button type="button" className="v2-link" onClick={() => go("password")}>Sign in with password</button>
+          {" · "}
+          <button type="button" className="v2-link" onClick={() => { setForgotFrom("start"); go("forgot"); }}>Forgot password?</button>
+        </p>
         <p className="cr1-center si-switch">
-          {entry === "up"
-            ? <>Already have an account? <button type="button" className="v2-link" onClick={() => setEntry("in")}>Sign in</button></>
-            : <>New to Rezekii? <button type="button" className="v2-link" onClick={() => setEntry("up")}>Create an account</button></>}
+          New to Rezekii? <button type="button" className="v2-link" onClick={() => { setEntry("up"); go("start"); }}>Create an account</button>
         </p>
         <p className="cr1-center cr1-fine">By continuing you agree to Rezekii&apos;s Terms of Service and Privacy Policy.</p>
       </>
@@ -327,46 +518,7 @@ export default function SignIn() {
         <p>Approve in {provider}&apos;s window.</p>
       </div>
     );
-  } else if (step === "profile") {
-    card = (
-      <form
-        className="cr1-form"
-        onSubmit={(e) => {
-          e.preventDefault();
-          setTried(true);
-          if (name.trim().length < 2 || !state || tel.error || kindError || aboutBad) return;
-          keep();
-          finish(`Welcome to Rezekii, ${name.trim().split(" ")[0]}`);
-        }}
-      >
-        {back("start")}
-        <div className="cr1-who">
-          <span className="v2-av">AR</span>
-          <span>
-            <b>{PROVIDER[provider].who}</b>
-            <small>Signed in with {provider} · {provider === "TikTok" && handle ? `@${handle}` : PROVIDER[provider].id}</small>
-          </span>
-          <Icon name="check" size={18} stroke="#00c073" width={3} />
-        </div>
-        <div>
-          <h1>About You</h1>
-          <p className="cr1-sub">Once only. You won&apos;t need to fill this in again.</p>
-        </div>
-        {nameField}
-        <div className="cr1-pair">
-          {birthdayField}
-          {genderField}
-        </div>
-        {stateField}
-        {phoneField}
-        {kindField}
-        {nicheField}
-        {addressField}
-        <button type="submit" className="np-btn np-submit">Continue <Icon name="arrow" size={18} /></button>
-      </form>
-    );
   } else if (step === "email") {
-    const isNew = mode === "New here";
     card = (
       <form
         className="cr1-form"
@@ -374,62 +526,23 @@ export default function SignIn() {
           e.preventDefault();
           setTried(true);
           if (!isEmail(email)) return;
-          if (isNew && (name.trim().length < 2 || !state || tel.error || kindError || aboutBad)) return;
-          if (isNew) keep();
-          sendCode(isNew ? "signup" : "signin");
+          sendCode("signin");
         }}
       >
         {back("start")}
-        <h1>{isNew ? "Create your account" : "Sign in with email"}</h1>
-        <Seg value={mode} options={["New here", "I have an account"] as const} onChange={(m) => { setMode(m); setTried(false); }} />
-        {isNew && nameField}
+        <h1>Sign in with email</h1>
         {emailField}
-        {isNew && birthdayField}
-        {isNew && genderField}
-        {isNew && stateField}
-        {isNew && phoneField}
-        {isNew && kindField}
-        {isNew && nicheField}
-        {isNew && addressField}
         <button type="submit" className="np-btn np-submit">Send code</button>
-        {!isNew && (
-          <p className="cr1-center cr1-small">
-            <button type="button" className="v2-link" onClick={() => go("password")}>Use password</button>
-          </p>
-        )}
+        <p className="cr1-center cr1-small">
+          <button type="button" className="v2-link" onClick={() => go("password")}>Use password</button>
+        </p>
       </form>
     );
   } else if (step === "code") {
     card = (
       <div className="cr1-form">
         {back(purpose === "reset" ? "forgot" : "email", purpose === "reset" ? "Back" : "Change email")}
-        <span className="cr1-mail"><Icon name="inbox" size={28} /></span>
-        <div className="cr1-center">
-          <h1>{purpose === "reset" ? "Check your email" : "Enter the code"}</h1>
-          {purpose === "reset" ? (
-            <p>If <b>{email.trim()}</b> has an account, we sent a code.</p>
-          ) : (
-            <p>We sent a code to <b>{email.trim()}</b>.</p>
-          )}
-        </div>
-        <Otp value={code} onChange={setCode} state={codeState} />
-        <div className="cr1-center cr1-small" aria-live="polite">
-          {codeState === "busy" ? (
-            <span className="cr1-inline"><span className="cr1-spin sm" aria-hidden="true" /> Checking…</span>
-          ) : codeState === "ok" ? (
-            <span className="cr1-inline cr1-okline"><Icon name="check" size={16} width={3} /> Code accepted</span>
-          ) : (
-            <>
-              Valid for 10 minutes.{" "}
-              {wait > 0 ? (
-                <span>Resend in {wait}s</span>
-              ) : (
-                <button type="button" className="v2-link" onClick={() => { setWait(60); toast("New code sent"); }}>Resend code</button>
-              )}
-            </>
-          )}
-        </div>
-        <p className="cr1-center cr1-fine">Preview: any 6 digits work.</p>
+        {codeView}
       </div>
     );
   } else if (step === "password") {
@@ -457,7 +570,7 @@ export default function SignIn() {
         <button type="button" className="v2-link cr1-forgot" onClick={() => { setForgotFrom("password"); go("forgot"); }}>Forgot password?</button>
         <button type="submit" className="np-btn np-submit">Sign in</button>
         <p className="cr1-center cr1-small">
-          No password yet? <button type="button" className="v2-link" onClick={() => { setMode("I have an account"); go("email"); }}>Get a code by email</button>
+          No password yet? <button type="button" className="v2-link" onClick={() => go("email")}>Get a code by email</button>
         </p>
       </form>
     );
