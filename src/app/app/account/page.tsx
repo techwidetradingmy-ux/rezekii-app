@@ -394,7 +394,7 @@ export default function Account() {
                 ))}
               </div>
             </div>
-            <Link href="/signin" className="cr2-cell cr2-cellbtn acc-signout">Sign out</Link>
+            <Link href="/signin?in=1" className="cr2-cell cr2-cellbtn acc-signout">Sign out</Link>
           </div>
         </section>
 

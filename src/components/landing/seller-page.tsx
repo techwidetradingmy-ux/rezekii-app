@@ -264,7 +264,6 @@ export function SellerLanding() {
           <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer">Terms of Service</a>
           <a href="#" onClick={(e) => { e.preventDefault(); setTalk(true); }}>Talk to us</a>
           <a href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a>
-          <a href={SUPPORT.waLink} target="_blank" rel="noreferrer">WhatsApp {SUPPORT.wa}</a>
           <small className="ft-note">Screens show sample products, creators and numbers. Results vary.</small>
         </div>
       </footer>

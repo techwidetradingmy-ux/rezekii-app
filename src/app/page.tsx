@@ -69,7 +69,7 @@ export default function Landing() {
           <a href="#faq">FAQ</a>
           <span className="site-spacer" />
           <Link href="/seller" className="lp-keep">For Sellers</Link>
-          <Link href="/signin" className="site-signin">Sign In</Link>
+          <Link href="/signin?in=1" className="site-signin">Sign In</Link>
         </nav>
         {/* Pain, then hope, then the product working, big (owner, 29 Oct 2026, option A1). Phones: words, picture, then the box. */}
         <div className="site-wrap lp-hero-grid scan">
@@ -192,11 +192,10 @@ export default function Landing() {
           <span>© 2026 Rezekii</span>
           <span className="site-spacer" />
           <Link href="/seller">For sellers</Link>
-          <Link href="/signin">Sign in</Link>
+          <Link href="/signin?in=1">Sign in</Link>
           <a href="https://rezekii.com/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>
           <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer">Terms of Service</a>
           <a href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a>
-          <a href={SUPPORT.waLink} target="_blank" rel="noreferrer">WhatsApp {SUPPORT.wa}</a>
           {/* Small print lives in the footer, not between sections (owner, 30 Oct 2026). */}
           <small className="ft-note">Screens show sample products and numbers. Results vary.</small>
         </div>

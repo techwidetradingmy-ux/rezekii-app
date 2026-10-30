@@ -44,6 +44,9 @@ export default function SignIn() {
   const router = useRouter();
   const { toast } = useDemo();
   const [step, setStep] = useState<Step>("start");
+  const [forgotFrom, setForgotFrom] = useState<Step>("password");
+  // Sign up first, sign in for people who already have an account (owner, 30 Oct 2026). ?in=1 opens Sign in.
+  const [entry, setEntry] = useState<"up" | "in">("up");
   const [provider, setProvider] = useState<keyof typeof PROVIDER>("Google");
   const [mode, setMode] = useState<"New here" | "I have an account">("New here");
   const [purpose, setPurpose] = useState<Purpose>("signup");
@@ -74,6 +77,7 @@ export default function SignIn() {
   const [handle, setHandle] = useState("");
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
+    if (q.get("in")) setEntry("in");
     const r = q.get("ref");
     if (r) setRefCode(r.toUpperCase().slice(0, 20));
     const u = q.get("u");
@@ -281,8 +285,8 @@ export default function SignIn() {
     card = (
       <>
         <div className="cr1-center">
-          <h1>Sign in to Rezekii</h1>
-          <p>New or returning, use the same buttons.</p>
+          <h1>{entry === "up" ? "Create your account" : "Welcome back"}</h1>
+          <p>{entry === "up" ? "Free to join. No minimum followers." : "Sign in to your Rezekii account."}</p>
         </div>
         {refCode && (
           <p className="si-ref">
@@ -296,11 +300,20 @@ export default function SignIn() {
             <span>Your scan for <b>@{handle}</b> is one step away. Sign up, then link TikTok Shop to see your rates.</span>
           </p>
         )}
-        <button type="button" className={`btn-google cr1-authbtn`} onClick={() => oauth("Google")}><GoogleMark /> Continue with Google</button>
-        <button type="button" className="btn-tiktok cr1-authbtn" onClick={() => oauth("TikTok")}><TikTokMark /> Continue with TikTok</button>
-        <button type="button" className="btn-email cr1-authbtn" onClick={() => { setMode("New here"); go("email"); }}><Icon name="inbox" size={20} /> Continue with email</button>
-        <p className="cr1-center cr1-small">
-          Have a password? <button type="button" className="v2-link" onClick={() => go("password")}>Sign in with password</button>
+        <button type="button" className={`btn-google cr1-authbtn`} onClick={() => oauth("Google")}><GoogleMark /> {entry === "up" ? "Sign up" : "Sign in"} with Google</button>
+        <button type="button" className="btn-tiktok cr1-authbtn" onClick={() => oauth("TikTok")}><TikTokMark /> {entry === "up" ? "Sign up" : "Sign in"} with TikTok</button>
+        <button type="button" className="btn-email cr1-authbtn" onClick={() => { setMode(entry === "up" ? "New here" : "I have an account"); go("email"); }}><Icon name="inbox" size={20} /> {entry === "up" ? "Sign up" : "Sign in"} with email</button>
+        {entry === "in" && (
+          <p className="cr1-center cr1-small">
+            Have a password? <button type="button" className="v2-link" onClick={() => go("password")}>Sign in with password</button>
+            {" · "}
+            <button type="button" className="v2-link" onClick={() => { setForgotFrom("start"); go("forgot"); }}>Forgot password?</button>
+          </p>
+        )}
+        <p className="cr1-center si-switch">
+          {entry === "up"
+            ? <>Already have an account? <button type="button" className="v2-link" onClick={() => setEntry("in")}>Sign in</button></>
+            : <>New to Rezekii? <button type="button" className="v2-link" onClick={() => setEntry("up")}>Create an account</button></>}
         </p>
         <p className="cr1-center cr1-fine">By continuing you agree to Rezekii&apos;s Terms of Service and Privacy Policy.</p>
       </>
@@ -441,7 +454,7 @@ export default function SignIn() {
           </span>
           {tried && !pw && <small className="cr1-err">Enter your password</small>}
         </label>
-        <button type="button" className="v2-link cr1-forgot" onClick={() => go("forgot")}>Forgot password?</button>
+        <button type="button" className="v2-link cr1-forgot" onClick={() => { setForgotFrom("password"); go("forgot"); }}>Forgot password?</button>
         <button type="submit" className="np-btn np-submit">Sign in</button>
         <p className="cr1-center cr1-small">
           No password yet? <button type="button" className="v2-link" onClick={() => { setMode("I have an account"); go("email"); }}>Get a code by email</button>
@@ -459,11 +472,13 @@ export default function SignIn() {
           sendCode("reset");
         }}
       >
-        {back("password")}
+        {back(forgotFrom)}
         <h1>Reset your password</h1>
         <p>We&apos;ll email you a 6-digit code. Works for Google and TikTok sign-ups too.</p>
         {emailField}
         <button type="submit" className="np-btn np-submit">Send code</button>
+        {/* Still stuck: our team helps recover the account (owner, 30 Oct 2026). */}
+        <p className="cr1-center cr1-small">Can&apos;t get in? Email <a className="v2-link" href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a> and we&apos;ll help you recover your account.</p>
       </form>
     );
   } else if (step === "newpass") {
@@ -514,6 +529,7 @@ export default function SignIn() {
     <>
       <DemoStrip />
       <main className="rz-splash cr1-splash">
+        <Link href="/" className="rz-back" aria-label="Back to home"><Icon name="back" size={20} /></Link>
         <div className="rz-tiles" aria-hidden="true">
           {TILES.map(([pos, bg, fg, rot, d], i) => (
             <span key={i} className="rz-tile" style={{ ...pos, animationDelay: `${-i * 0.7}s` }}>
@@ -534,12 +550,8 @@ export default function SignIn() {
         <p className="rz-name">Rezekii</p>
         <p className="rz-tag">CONNECTING AFFILIATES</p>
         <div key={step} className="rz-card cr1-auth">{card}</div>
-        <div className="cr1-authnote">
-          <Icon name="link" size={18} />
-          <span>You link TikTok Shop after you sign in.</span>
-        </div>
         <p className="rz-foot">
-          <Link href="/">Back to home</Link> · <a href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a> · <a href={SUPPORT.waLink} target="_blank" rel="noreferrer">WhatsApp {SUPPORT.wa}</a>
+          Need help? <a href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a>
         </p>
       </main>
     </>

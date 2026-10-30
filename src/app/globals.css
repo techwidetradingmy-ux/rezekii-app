@@ -511,3 +511,9 @@ textarea.np-input { resize: vertical; line-height: 1.5; }
   .mp-chip { font-size: 13px; }
   .tt-card small { font-size: 13px; }
 }
+/* Sign-in: back to the home page (owner, 30 Oct 2026). */
+.rz-back { position: absolute; top: 14px; left: 14px; z-index: 3; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; background: var(--surface); border: 1px solid var(--line); color: var(--text); box-shadow: var(--shadow); }
+.si-switch { margin: 4px 0 0; padding-top: 12px; border-top: 1px solid var(--line); font-size: 15px; font-weight: 700; color: var(--muted); }
+.si-switch .v2-link { font-weight: 900; }
+/* The card sits above the floating background icons. */
+.rz-splash .rz-card { position: relative; z-index: 2; }

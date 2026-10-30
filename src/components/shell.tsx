@@ -292,7 +292,6 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
           <a href="https://rezekii.com/privacy" target="_blank" rel="noreferrer">Privacy<span className="ft-long"> Policy</span></a>
           <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer">Terms<span className="ft-long"> of Service</span></a>
           <a href={`mailto:${SUPPORT.email}`} title={SUPPORT.email}><span className="ft-long">{SUPPORT.email}</span><span className="ft-short">Email</span></a>
-          <a href={SUPPORT.waLink} target="_blank" rel="noreferrer" title={`WhatsApp ${SUPPORT.wa}`}><span className="ft-long">WhatsApp {SUPPORT.wa}</span><span className="ft-short">WhatsApp</span></a>
         </div>
       </footer>
       </div>
@@ -402,14 +401,13 @@ function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory: () =
           </Sheet>
         )}
         {/* Sign out lives in the panel on phones, not in Settings (owner, 29 Oct 2026). */}
-        <Link href="/signin" className="ap-signout" onClick={onClose}><Icon name="back" size={17} /> Sign out</Link>
+        <Link href="/signin?in=1" className="ap-signout" onClick={onClose}><Icon name="back" size={17} /> Sign out</Link>
         {/* Legal and contact sit at the foot of the panel on phones (owner, 29 Oct 2026). */}
         <footer className="ap-foot">
           <span className="ap-links">
             <a href="https://rezekii.com/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>
             <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer">Terms of Service</a>
             <a href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a>
-            <a href={SUPPORT.waLink} target="_blank" rel="noreferrer">WhatsApp {SUPPORT.wa}</a>
           </span>
           <small>© 2026 Rezekii · Built by Techwide</small>
         </footer>
