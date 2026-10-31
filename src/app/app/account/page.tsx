@@ -24,7 +24,7 @@ import { MY_STATES, NICHES, NOTIFY } from "@/lib/mock-creator2";
 import { GoogleMark, TikTokMark } from "@/components/creator1/brand";
 import { BrandLogo } from "@/components/brand-logos";
 import { MyWishes } from "@/components/creator1/my-wishes";
-import { ACCOUNT_TABS, type AccountTab } from "@/lib/account-tabs";
+import { ACCOUNT_TABS, tabFor, type AccountTab } from "@/lib/account-tabs";
 import { applyTheme, readTheme, type Theme } from "@/lib/theme";
 import { loadProfile, loadWallet, saveProfile } from "@/lib/live-rewards";
 import { notesChanged } from "@/lib/live-notes";
@@ -80,18 +80,18 @@ export default function Account() {
 
   useEffect(() => {
     const read = () => {
-      const h = window.location.hash.slice(1);
-      const hit = TABS.find(([k]) => k === h);
-      if (hit) setTab(hit[0]);
+      const hit = tabFor(window.location.hash.slice(1));
+      if (hit) setTab(hit);
     };
     read();
     window.addEventListener("hashchange", read);
     return () => window.removeEventListener("hashchange", read);
   }, []);
 
-  const go = (k: TabKey) => {
+  const go = (k: TabKey, at?: "streak") => {
     setTab(k);
-    window.history.replaceState(null, "", `#${k}`);
+    window.history.replaceState(null, "", `#${at ?? k}`);
+    if (at) requestAnimationFrame(() => document.getElementById(at)?.scrollIntoView({ behavior: "smooth", block: "start" }));
     // replaceState fires no hashchange; tell the top bar's page switcher too.
     window.dispatchEvent(new HashChangeEvent("hashchange"));
   };
@@ -294,14 +294,23 @@ export default function Account() {
               <span className="v2-small">{you.handle}</span>
               {/* Level and streak as two small stat tiles (owner, 29 Oct 2026, option C). */}
               <span className="cr2-mstats">
-                <span><i className={`lv ${lvName.toLowerCase()}`}><Icon name="gem" size={15} /></i><b>{lvName}</b><small>Level</small></span>
-                <span><i className="st"><Icon name="flame" size={15} /></i><b>{streak === null ? "–" : `${streak} day${streak === 1 ? "" : "s"}`}</b><small>Streak</small></span>
+                {/* Each tile opens its section (owner, 1 Nov 2026): Level and Streak, both in Level, Streak & Badges. */}
+                <button type="button" onClick={() => go("level")} aria-label={`${lvName} level. Open Level, Streak & Badges`}><i className={`lv ${lvName.toLowerCase()}`}><Icon name="gem" size={15} /></i><b>{lvName}</b><small>Level</small></button>
+                <button type="button" onClick={() => go("level", "streak")} aria-label="Open your streak"><i className="st"><Icon name="flame" size={15} /></i><b>{streak === null ? "–" : `${streak} day${streak === 1 ? "" : "s"}`}</b><small>Streak</small></button>
               </span>
               {/* WhatsApp checks aren't connected yet, so real accounts don't see Verify. */}
               {!verified && !live && <span className="cr2-chips"><button type="button" className="cr2-wachip" onClick={() => setWaSheet(true)}>Verify WhatsApp</button></span>}
             </span>
           </div>
         </div>
+        )}
+        {/* Her user ID on every section (owner, 1 Nov 2026), to quote to support. */}
+        {live && me && (
+          <p className="acc-uid">
+            <span>User ID</span>
+            <code>{me.id}</code>
+            <button type="button" className="v2-iconbtn" aria-label="Copy user ID" onClick={() => navigator.clipboard.writeText(me.id).then(() => toast("User ID copied"), () => toast(me.id))}><Icon name="doc" size={15} /></button>
+          </p>
         )}
 
         <div ref={tabsRef} className="acc-tabs nv-noscroll" role="tablist" aria-label="Account sections">
@@ -313,7 +322,7 @@ export default function Account() {
           ))}
           {/* Sign out at the end of the side menu, in red, on wide screens (owner, 31 Oct 2026). Phones have it in the account panel. */}
           <Link href="/signin?in=1" className="acc-out" onClick={(e) => { if (!live) return; e.preventDefault(); fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/signin?in=1"; }); }}>
-            <Icon name="back" size={17} /> Sign out
+            <Icon name="back" size={17} /> Sign Out
           </Link>
         </div>
         </aside>
@@ -701,14 +710,13 @@ export default function Account() {
           <h2>Help & Feedback</h2>
           <div className="cr2-cells">
             {/* The page footer is hidden on phones, so its links live here (owner, 29 Oct 2026). */}
-            <a className="cr2-cell acc-link" href={`mailto:${SUPPORT.email}`}><span className="lbl">Contact support</span><span className="v2-small">{SUPPORT.email}</span><Icon name="arrow" size={16} /></a>
-            <a className="cr2-cell acc-link" href={SUPPORT.waLink} target="_blank" rel="noreferrer"><span className="lbl">WhatsApp us</span><span className="v2-small">{SUPPORT.wa}</span><Icon name="arrow" size={16} /></a>
+            <a className="cr2-cell acc-link" href={SUPPORT.waLink} target="_blank" rel="noreferrer"><span className="lbl">Contact Support</span><span className="v2-small">WhatsApp {SUPPORT.wa}</span><Icon name="arrow" size={16} /></a>
             <a className="cr2-cell acc-link" href="https://rezekii.com/privacy" target="_blank" rel="noreferrer"><span className="lbl">Privacy Policy</span><Icon name="arrow" size={16} /></a>
             <a className="cr2-cell acc-link" href="https://rezekii.com/terms" target="_blank" rel="noreferrer"><span className="lbl">Terms of Service</span><Icon name="arrow" size={16} /></a>
             {/* The same full feedback form as the account panel (owner, 30 Oct 2026). */}
             <button type="button" className="cr2-cell cr2-cellbtn acc-link" onClick={() => setFeedback(true)}><span className="lbl">Send feedback</span><span className="v2-small">Ideas, bugs, questions</span><Icon name="arrow" size={16} /></button>
-            <a href="mailto:support@rezekii.com" className="cr2-cell cr2-cellbtn" onClick={(e) => { e.preventDefault(); toast("support@rezekii.com · we reply within 1 working day"); }}>
-              <span className="lbl">Email support</span>
+            <a href={`mailto:${SUPPORT.email}`} className="cr2-cell cr2-cellbtn">
+              <span className="lbl">Email Support</span>
               <span className="chev">support@rezekii.com <Icon name="arrow" size={16} /></span>
             </a>
             <Link href="/tour" className="cr2-cell cr2-cellbtn">

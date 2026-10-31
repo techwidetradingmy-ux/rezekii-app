@@ -104,7 +104,7 @@ export function LiveSettings() {
           <SellerCampaignCard value={d.campaign} />
 
           <section className="v2-card" style={{ padding: "8px 12px" }}>
-            <div className="v2-card-h" style={{ padding: "0 8px" }}><h2 className="v2-h2">Level Benefits</h2><span className="v2-small">What creators see on Level & Badges</span></div>
+            <div className="v2-card-h" style={{ padding: "0 8px" }}><h2 className="v2-h2">Level Benefits</h2><span className="v2-small">What creators see on Level, Streak &amp; Badges</span></div>
             <div className="v2-tablewrap">
               <table className="v2-table ad-table">
                 <thead><tr><th>Benefit</th><th>Bronze</th><th>Silver</th><th>Gold</th></tr></thead>

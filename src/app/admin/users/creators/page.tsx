@@ -48,7 +48,7 @@ export default function CreatorDirectory() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 16 }}>
-      <Title title="Creators" sub={`${people.length} creators · ${people.filter((x) => x.activity === "Highly active").length} Highly active · ${people.filter((x) => x.level === "Gold").length} Gold`} />
+      <Title title="Creators" sub={`${people.length} creators · ${people.filter((x) => x.level === "Gold").length} Gold`} />
 
       <div className="ad-bar">
         <Search value={q} onChange={setQ} placeholder="Search handle or name" />
@@ -56,7 +56,7 @@ export default function CreatorDirectory() {
           {["Any state", ...uniq(people.map((x) => x.state))].map((x) => <option key={x}>{x}</option>)}
         </select>
         <select className="np-input ad-select" aria-label="Activity tier" value={activity} onChange={(e) => setActivity(e.target.value)}>
-          {["Any activity", "New", "Active", "Highly active"].map((x) => <option key={x}>{x}</option>)}
+          {["Any activity", "New", "Active"].map((x) => <option key={x}>{x}</option>)}
         </select>
         <select className="np-input ad-select" aria-label="TikTok level" value={tt} onChange={(e) => setTt(e.target.value)}>
           {["Any TikTok level", "Lv.1–2", "Lv.3–4", "Lv.5+"].map((x) => <option key={x}>{x}</option>)}

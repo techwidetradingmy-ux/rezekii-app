@@ -94,7 +94,7 @@ export const CREATOR = {
   state: "Selangor",
   level: "Silver" as CreatorLevel,
   tiktokLevel: 4,
-  activity: "Active" as "New" | "Active" | "Highly active",
+  activity: "Active" as "New" | "Active",
   streak: 16,
   credits: 1250,
   showcaseSize: 1248,
@@ -231,11 +231,10 @@ export const MISSIONS: Mission[] = [
 ];
 
 export const BADGES = [
-  { name: "First scan", got: true },
-  { name: "Link master", got: true },
-  { name: "7-day streak", got: true },
-  { name: "Sample star", got: true },
-  { name: "Highly active", got: false, honour: true },
+  { name: "First Scan", got: true },
+  { name: "Link Master", got: true },
+  { name: "7-Day Streak", got: true },
+  { name: "Sample Star", got: true },
   { name: "First RM 1,000", got: true },
   { name: "Silver", got: true },
   { name: "Gold", got: false },
@@ -326,8 +325,8 @@ export const SAMPLE_REVIEW = [
 
 export const PEOPLE = [
   { handle: "@aisyah.glow", name: "Aisyah Rahman", state: "Selangor", level: "Silver", tt: 4, activity: "Active", streak: 16, gmv30: 18420, status: "Approved", mcn: false },
-  { handle: "@kak.ros.kitchen", name: "Rosnah Ismail", state: "Johor", level: "Gold", tt: 6, activity: "Highly active", streak: 42, gmv30: 64210, status: "Approved", mcn: true },
-  { handle: "@mei.ling.deals", name: "Tan Mei Ling", state: "Kuala Lumpur", level: "Silver", tt: 5, activity: "Highly active", streak: 31, gmv30: 22880, status: "Approved", mcn: false },
+  { handle: "@kak.ros.kitchen", name: "Rosnah Ismail", state: "Johor", level: "Gold", tt: 6, activity: "Active", streak: 42, gmv30: 64210, status: "Approved", mcn: true },
+  { handle: "@mei.ling.deals", name: "Tan Mei Ling", state: "Kuala Lumpur", level: "Silver", tt: 5, activity: "Active", streak: 31, gmv30: 22880, status: "Approved", mcn: false },
   { handle: "@farah.home", name: "Farah Aziz", state: "Penang", level: "Bronze", tt: 3, activity: "Active", streak: 11, gmv30: 3410, status: "Approved", mcn: false },
   { handle: "@mira.new", name: "Amira Zulkifli", state: "Perak", level: "Bronze", tt: 1, activity: "New", streak: 0, gmv30: 0, status: "Waiting", mcn: false },
   { handle: "@hafiz.tech", name: "Hafiz Roslan", state: "Selangor", level: "Bronze", tt: 2, activity: "New", streak: 2, gmv30: 420, status: "Waiting", mcn: false },

@@ -732,7 +732,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
           {sendError && <div className="pb-fix" role="alert"><b>Not sent</b><span style={{ padding: "4px 0" }}>{sendError}</span></div>}
           {ttKey && mode === "direct" && when !== "draft" && <p className="np-consent">{consentLine(promo.on, promo.branded)}</p>}
           <button type="submit" className="np-btn np-submit" disabled={!!busy}>
-            {busy || editing ? busy || `Save changes${when === "draft" ? "" : ` · ${cost} credits`}` : `${when === "draft" ? "Save draft" : when === "now" ? "Post now" : "Schedule"} · ${keys.length === 1 ? "1 channel" : `${keys.length} channels`}${when === "draft" ? "" : ` · ${cost} credits`}`}
+            {busy || editing ? busy || `Save changes${when === "draft" ? "" : ` · ${cost} credits`}` : !keys.length ? `Pick a Channel${when === "draft" ? "" : ` · ${POST_CREDITS} credits each`}` : `${when === "draft" ? "Save draft" : when === "now" ? "Post now" : "Schedule"} · ${keys.length === 1 ? "1 channel" : `${keys.length} channels`}${when === "draft" ? "" : ` · ${cost} credits`}`}
           </button>
           <p className="pb-cost">
             <Icon name="wallet" size={14} />

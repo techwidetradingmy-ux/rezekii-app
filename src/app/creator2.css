@@ -1141,3 +1141,8 @@ button.rf-pill { border: 0; cursor: pointer; font: inherit; font-size: 12.5px; f
   .pf-card.locked .pf-f:nth-child(2) { border-top: 0; }
   .pf-card.locked .pf-f:nth-child(even) { border-left: 1px solid var(--line); }
 }
+
+/* The Level and Streak tiles open their sections (owner, 1 Nov 2026). */
+.cr2-mstats > button { display: grid; grid-template-columns: 30px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 8px; align-items: center; padding: 8px 10px; border-radius: 14px; border: 0; background: var(--surface2); color: var(--text); font: inherit; text-align: left; cursor: pointer; transition: transform 0.12s var(--ease), background-color 0.15s; }
+.cr2-mstats > button:hover { background: var(--line); }
+.cr2-mstats > button:active { transform: scale(0.97); }

@@ -53,6 +53,7 @@ export default function Missions() {
   return (
     <MissionsBoard
       key={b ? "live" : "sample"}
+      streakHref="/app/account#streak"
       daily={l?.daily ?? DAILY}
       starter={l?.starter ?? STARTER}
       credits={b?.credits ?? CREATOR.credits}

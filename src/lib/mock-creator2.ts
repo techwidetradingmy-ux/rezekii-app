@@ -32,7 +32,7 @@ export type RangeData = {
   /** Videos / LIVE / Showcase share of commission, percent. */
   channel: [number, number, number];
   byProduct: { productId: string; commission: number; orders: number }[];
-  /** Commission of everything outside the top five products. */
+  /** Commission of everything outside the top products listed (ten for real accounts). */
   other: number;
   /** Second sentence of the AI summary, written from this range's numbers. */
   note: string;
@@ -350,11 +350,10 @@ export const LEVELS = [
 ] as const;
 
 export const BADGE_INFO: Record<string, string> = {
-  "First scan": "Ran your first showcase scan.",
-  "Link master": "Linked TikTok Shop, your TikTok account and one more platform.",
-  "7-day streak": "Post every day for 7 days in a row.",
-  "Sample star": "Posted 3 videos for a sample.",
-  "Highly active": "A 30-day streak. The rarest badge on Rezekii.",
+  "First Scan": "Ran your first showcase scan.",
+  "Link Master": "Linked TikTok Shop, your TikTok account and one more platform.",
+  "7-Day Streak": "Kept a 7-day streak: checked in or finished a daily mission 7 days in a row.",
+  "Sample Star": "Posted 3 videos for a sample.",
   "First RM 1,000": "Earned your first RM 1,000 of commission through TikTok Shop.",
   Silver: "Reached Silver: 10 sample videos and RM1,000 sales through Rezekii in a month.",
   Gold: "Gold is by invitation from Techwide.",

@@ -73,13 +73,13 @@ export async function GET(req: NextRequest) {
       }
     }
     const ranked = [...byProduct.values()].sort((a, b) => b.commission - a.commission);
-    const top = ranked.slice(0, 5);
+    const top = ranked.slice(0, 10);
     return {
       gmv: r2(gmv), orders: orders.size, est: r2(est), paid: r2(paid),
       cancel: orders.size ? r2((cancelledOrders.size / orders.size) * 100) : 0,
       channel: (est > 0 ? ch.map((v) => Math.round((v / est) * 100)) : [0, 0, 0]) as [number, number, number],
       byProduct: top.map((b) => ({ productId: b.productId, commission: r2(b.commission), orders: b.orders.size })),
-      other: r2(ranked.slice(5).reduce((a, b) => a + b.commission, 0)),
+      other: r2(ranked.slice(10).reduce((a, b) => a + b.commission, 0)),
     };
   };
 

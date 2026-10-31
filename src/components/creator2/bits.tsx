@@ -24,23 +24,6 @@ export function ShareButton({ big, label, lines, moment, primary, invite }: { bi
   );
 }
 
-/** The Highly active honour badge: grey until earned; `lit` plays the light-up. */
-export function Honour({ state, size = 120 }: { state: "off" | "on" | "lit"; size?: number }) {
-  return (
-    <span className={`cr2-honour ${state}`} style={{ ["--s" as string]: `${size}px` }} aria-label={state === "off" ? "Highly active badge, not earned yet" : "Highly active badge"}>
-      <span className="cr2-rays" />
-      <span className="halo" />
-      <span className="ripple" />
-      <span className="ripple" />
-      <span className="disc">
-        <svg width={size * 0.46} height={size * 0.46} viewBox="0 0 24 24" fill="#ffffff" stroke="#8a5600" strokeWidth={1.3} strokeLinejoin="round" aria-hidden="true">
-          <path d="m12 2.8 2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3-4.6-4.4 6.3-.9z" />
-        </svg>
-      </span>
-    </span>
-  );
-}
-
 /** Small status dot with an icon (ok / warn / bad / scheduled). */
 export function Dot({ kind }: { kind: "ok" | "warn" | "bad" | "sched" }) {
   return (

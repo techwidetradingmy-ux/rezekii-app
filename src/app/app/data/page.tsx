@@ -10,8 +10,9 @@ import { useDemo } from "@/components/demo";
 import { AiHead, Bars, Count, Lock, Progress, RemoveWarn, Seg, Stat, Tip, Title } from "@/components/ui";
 import { product, rm, short } from "@/lib/mock";
 import { productHref } from "@/lib/product-view";
-import { loadAnalytics, loadAnalyticsRange, type LiveAnalytics } from "@/lib/live";
-import { ACTIONS, CHARTS, POST_TIMES, RANGES, RANGE_DATA, SHORT, WATCH, type RangeKey } from "@/lib/mock-creator2";
+import { loadAnalytics, loadAnalyticsRange, retryAnalytics, type LiveAnalytics } from "@/lib/live";
+import { CANCEL_TIP, cancelLevel } from "@/lib/cancel";
+import { ACTIONS, CHARTS, POST_TIMES, RANGES, RANGE_DATA, SHORT, WATCH, type Chart, type RangeData, type RangeKey } from "@/lib/mock-creator2";
 import { FLAGGED } from "@/components/creator1/rating-scan";
 import { CommissionChart } from "@/components/creator2/commission-chart";
 import "@/app/creator2.css";
@@ -30,6 +31,9 @@ const back = (n: number) => { const d = new Date(Date.UTC(2026, 9, 28 - n)); ret
 const DAYS_IN: Record<RangeKey, number> = { "3 days": 3, "7 days": 7, "14 days": 14, "30 days": 30, "90 days": 90, Lifetime: between(JOINED, TODAY) };
 const SPAN: Record<RangeKey, [string, string]> = Object.fromEntries(RANGES.map((r) => [r, r === "Lifetime" ? [JOINED, TODAY] : [back(DAYS_IN[r] - 1), TODAY]])) as Record<RangeKey, [string, string]>;
 const PRESETS: [string, string][] = RANGES.map((r) => [r, r === "Lifetime" ? "Lifetime" : `Last ${r}`]);
+/** Nothing loaded yet: zeros for the sums, while the screen shows loading instead of numbers. */
+const BLANK: RangeData = { gmv: 0, orders: 0, est: 0, paid: 0, cancel: 0, gmvChange: null, ordersChange: null, channel: [0, 0, 0], byProduct: [], other: 0, note: "" };
+type Picked = { status: "idle" | "loading" | "failed"; data: { range: RangeData; chart: Chart } | null };
 
 /** Analytics overview: the numbers for any range, an AI summary with low-rated products to avoid, an action plan, and where the money comes from. */
 export default function DataOverview() {
@@ -38,9 +42,15 @@ export default function DataOverview() {
   const [range, setRange] = useKept<RangeKey>("data-range", "30 days");
   // Signed in (owner, 30 Oct 2026): her real orders replace the sample numbers.
   const [real, setReal] = useState<LiveAnalytics | null>(null);
+  const [realFailed, setRealFailed] = useState(false);
+  const [realTry, setRealTry] = useState(0);
   useEffect(() => {
-    if (live) loadAnalytics().then(setReal);
-  }, [live]);
+    if (!live) return;
+    let on = true;
+    setRealFailed(false);
+    loadAnalytics().then((x) => { if (!on) return; setReal(x); setRealFailed(!x); });
+    return () => { on = false; };
+  }, [live, realTry]);
   const sig = useAnalyticsSignals(live);
   // Signed in: today and her first order in Malaysia time bound the calendar (owner, 31 Oct 2026).
   const myt = (ms: number) => new Date(ms + 8 * 3_600_000).toISOString().slice(0, 10);
@@ -51,17 +61,28 @@ export default function DataOverview() {
   const [custom, setCustom] = useState<[string, string] | null>(null);
   const [from, to] = custom ?? (live ? liveSpan(range) : SPAN[range]);
   // Signed in, her own dates show exactly those days (owner, 31 Oct 2026); the sample preview uses the closest preset.
-  const [picked, setPicked] = useState<Awaited<ReturnType<typeof loadAnalyticsRange>>>(null);
+  // Only the latest pick shows (owner, 1 Nov 2026): an earlier, slower answer is ignored, and nothing else fills in meanwhile.
+  const [picked, setPicked] = useState<Picked>({ status: "idle", data: null });
+  const [pickTry, setPickTry] = useState(0);
   useEffect(() => {
-    setPicked(null);
-    if (live && custom) loadAnalyticsRange(custom[0], custom[1]).then(setPicked);
-  }, [live, custom]);
+    if (!live || !custom) return setPicked({ status: "idle", data: null });
+    let on = true;
+    setPicked({ status: "loading", data: null });
+    loadAnalyticsRange(custom[0], custom[1]).then((x) => { if (on) setPicked(x ? { status: "idle", data: x } : { status: "failed", data: null }); });
+    return () => { on = false; };
+  }, [live, custom, pickTry]);
   const [split, setSplit] = useKept<"By channel" | "By product">("data-split", "By channel");
   const [removed, setRemoved] = useState<string[]>([]);
   const [ticked, setTicked] = useState<string[]>([]);
   const [allPlan, setAllPlan] = useState(false);
-  const d = (custom && picked?.range) || (real?.ranges[range] ?? RANGE_DATA[range]);
-  const chart = (custom && picked?.chart) || (real?.charts[range] ?? CHARTS[range]);
+  // Signed in, a range shows its own numbers or a loading state, never another range's numbers or the sample (owner, 1 Nov 2026).
+  const d: RangeData | null = !live ? RANGE_DATA[range] : custom ? picked.data?.range ?? null : real?.ranges[range] ?? null;
+  const chart: Chart | null = !live ? CHARTS[range] : custom ? picked.data?.chart ?? null : real?.charts[range] ?? null;
+  const failed = live && (custom ? picked.status === "failed" : realFailed);
+  const retry = () => { if (custom) setPickTry((n) => n + 1); else { retryAnalytics(); setRealTry((n) => n + 1); } };
+  const dd = d ?? BLANK;
+  const wait = (x: React.ReactNode) => (d ? x : <span className="an-wait" aria-label="Loading" />);
+  const [topN, setTopN] = useState<5 | 10>(5);
   const since = live ? (real?.first ? new Date(real.first).toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "Asia/Kuala_Lumpur" }) : null) : "March 2026";
   const span = live && custom ? `${dayName(from)} – ${dayName(to)}` : range === "Lifetime" ? (since ? `since ${since}` : "all time") : `last ${range}`;
   const synced = real?.syncedAt ? new Date(real.syncedAt) : null;
@@ -69,13 +90,15 @@ export default function DataOverview() {
     ? `Updated ${myt(synced.getTime()) === today ? "today" : synced.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" })} ${synced.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kuala_Lumpur" })}`
     : "No orders yet";
 
-  const ranked = [...d.byProduct].sort((a, b) => b.commission - a.commission);
+  const ranked = [...dd.byProduct].sort((a, b) => b.commission - a.commission);
   const top2 = (ranked[0]?.commission ?? 0) + (ranked[1]?.commission ?? 0);
   const nameOf = (id: string) => SHORT[id] ?? (live ? shortName(product(id).name) : product(id).name);
-  const highCancel = d.cancel > 10;
+  const cancelAt = cancelLevel(dd.cancel);
   const bestTime = POST_TIMES.reduce((a, b) => (b[1] > a[1] ? b : a));
   const avgViews = POST_TIMES.reduce((a, [, v]) => a + v, 0) / POST_TIMES.length;
-  const change = (n: number | null) => (n === null ? "New" : <><Icon name="trend" size={14} width={2.4} /> {n}%</>);
+  // Drops in red with a down arrow, rises in green with an up arrow (owner, 1 Nov 2026).
+  const change = (n: number | null) => (n === null ? "New" : <><span className={n < 0 ? "an-down" : undefined}><Icon name="trend" size={14} width={2.4} /></span> {n > 0 ? "+" : ""}{n}%</>);
+  const tone = (n: number | null) => (n !== null && n < 0 ? "down" : "up");
   const rangeLabel = custom ? `${dayName(from)} – ${dayName(to)}` : PRESETS.find(([k]) => k === range)![1];
 
   // Removing asks first: she sees the risk and confirms (owner, 28 Oct 2026).
@@ -94,12 +117,15 @@ export default function DataOverview() {
   // TikTok doesn't share its account health score with apps, so we never show one.
   const under3 = FLAGGED.filter((p) => p.rating < 3 && !removed.includes(p.id)).length;
   const under4 = FLAGGED.filter((p) => p.rating >= 3).length;
-  const risk = under3 >= 3 || d.cancel > 15 ? "High" : under3 > 0 || d.cancel > 10 ? "Watch" : "Low";
+  const risk = under3 >= 3 || dd.cancel > 15 ? "High" : under3 > 0 || dd.cancel > 10 ? "Watch" : "Low";
 
-  const channelRows = (["Videos", "LIVE", "Showcase"] as const).map((label, i) => ({ label, value: d.channel[i], display: `${d.channel[i]}%` }));
+  const channelRows = (["Videos", "LIVE", "Showcase"] as const).map((label, i) => ({ label, value: dd.channel[i], display: `${dd.channel[i]}%` }));
+  // By product (owner, 1 Nov 2026): ranked most to least, Top 5 (or Top 10 when opened), each name opening its product, then
+  // everything below them as Others. Opening Top 10 moves products 6–10 out of Others, so its share gets smaller.
+  const others = dd.other + ranked.slice(topN).reduce((a, b) => a + b.commission, 0);
   const productRows = [
-    ...ranked.map((b) => ({ label: SHORT[b.productId] ?? product(b.productId).name, value: pct(b.commission, d.est), display: `${pct(b.commission, d.est)}%`, href: productHref(b.productId) })),
-    { label: "Other products", value: pct(d.other, d.est), display: `${pct(d.other, d.est)}%`, tone: "blue" as const },
+    ...ranked.slice(0, topN).map((b, i) => ({ label: `${i + 1}. ${product(b.productId).name}`, value: pct(b.commission, dd.est), display: `${pct(b.commission, dd.est)}%`, href: productHref(b.productId) })),
+    ...(others > 0 ? [{ label: `Others · #${topN + 1} and below`, value: pct(others, dd.est), display: `${pct(others, dd.est)}%`, tone: "blue" as const }] : []),
   ];
 
   return (
@@ -128,13 +154,14 @@ export default function DataOverview() {
       <Lock what="your sales and commission">
         <div className="v2-stack" style={{ gap: 10 }}>
           <p className="an-range"><b>{rangeLabel}</b>{range !== "Lifetime" && <span>vs the {custom ? `${between(from, to)} days` : range} before</span>}</p>
+          {failed && <p className="an-failed"><Icon name="alert" size={16} /> Couldn&apos;t load these days. <button type="button" className="v2-link" onClick={retry}>Try again</button></p>}
           <div className="cr2-stats">
-            <Stat label="GMV" value={<Count key={`g${range}`} value={d.gmv} format={(n) => rm(n, 0)} />} note={change(d.gmvChange)} tone="up" />
-            <Stat label="Orders" value={<Count key={`o${range}`} value={d.orders} />} note={change(d.ordersChange)} tone="up" />
-            <Stat label={<>Est. commission <Tip label="About commission" text="Your income from TikTok Shop, not the product's profit. It stays estimated until TikTok settles each order." /></>} value={<Count key={`c${range}`} value={d.est} format={(n) => rm(n)} />} note={`Paid ${rm(d.paid)}`} />
+            <Stat label="GMV" value={wait(<Count key={`g${range}${from}${to}`} value={dd.gmv} format={(n) => rm(n, 0)} />)} note={d ? change(dd.gmvChange) : undefined} tone={tone(dd.gmvChange)} />
+            <Stat label="Orders" value={wait(<Count key={`o${range}${from}${to}`} value={dd.orders} />)} note={d ? change(dd.ordersChange) : undefined} tone={tone(dd.ordersChange)} />
+            <Stat label={<>Est. commission <Tip label="About commission" text="Your income from TikTok Shop, not the product's profit. It stays estimated until TikTok settles each order." /></>} value={wait(<Count key={`c${range}${from}${to}`} value={dd.est} format={(n) => rm(n)} />)} note={d ? `Paid ${rm(dd.paid)}` : undefined} />
             <div className="v2-stat">
-              <small>Cancel rate <Tip label="About cancel rate" text="Green is under 10%. Red means too many cancelled orders." /></small>
-              <b className={highCancel ? "cr2-red" : "cr2-green-v"}><i className={`an-dot ${highCancel ? "bad" : "ok"}`} aria-hidden="true" />{d.cancel.toFixed(1)}%</b>
+              <small>Cancel rate <Tip label="About cancel rate" text={CANCEL_TIP} /></small>
+              {d ? <b className={cancelAt === "high" ? "cr2-red" : cancelAt === "watch" ? "cr2-orange-v" : "cr2-green-v"}><i className={`an-dot ${cancelAt === "high" ? "bad" : cancelAt}`} aria-hidden="true" />{dd.cancel.toFixed(1)}%</b> : <b>{wait(null)}</b>}
             </div>
           </div>
         </div>
@@ -148,26 +175,36 @@ export default function DataOverview() {
         <Seg value={split} options={["By channel", "By product"] as const} onChange={setSplit} />
         <Lock what="where your commission comes from">
           <div style={{ paddingTop: 4 }}>
-            {split === "By channel" ? <Bars key="ch" rows={channelRows} /> : <Bars key="pr" rows={productRows} />}
+            {!d ? <p className="v2-muted an-loading">{failed ? "Couldn't load these days." : "Loading…"}</p> : split === "By channel" ? <Bars key="ch" rows={channelRows} /> : (
+              <>
+                <Bars key={`pr${topN}`} rows={productRows} />
+                {ranked.length > 5 && (
+                  <div className="an-topn">
+                    <button type="button" className="v2-link" onClick={() => setTopN((n) => (n === 5 ? 10 : 5))}>{topN === 5 ? `Show Top ${Math.min(10, ranked.length)}` : "Show Top 5"}</button>
+                    <small>{topN === 5 ? "Others is every product ranked 6th and below." : `Others is now every product ranked ${Math.min(10, ranked.length) + 1}th and below, so its share is smaller.`}</small>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </Lock>
       </section>
 
       <section className="v2-card an-chart">
         <div className="v2-card-h">
-          <h2 className="v2-h2">Commission <Tip label="About this chart" text={`Estimated, by the ${chart.unit} the order was placed. The latest ${chart.unit} is still in progress.`} /></h2>
+          <h2 className="v2-h2">Commission <Tip label="About this chart" text={`Estimated, by the ${chart?.unit ?? "day"} the order was placed. The latest ${chart?.unit ?? "day"} is still in progress.`} /></h2>
         </div>
         <Lock what="your commission over time">
-          <CommissionChart key={`${range}${custom ? custom.join() : ""}${picked ? "r" : ""}`} points={chart.points} unit={chart.unit} range={rangeLabel.toLowerCase()} />
+          {chart ? <CommissionChart key={`${range}${custom ? custom.join() : ""}`} points={chart.points} unit={chart.unit} range={rangeLabel.toLowerCase()} /> : <p className="v2-muted an-loading">{failed ? "Couldn't load these days." : "Loading…"}</p>}
         </Lock>
       </section>
 
       {/* Signed in (owner, 31 Oct 2026): the AI cards read her own ratings, videos, orders and connections. */}
-      {live ? <LiveAiSummary sig={sig} span={span} cancel={d.cancel} lead={ranked.length >= 2 ? <li><Icon name="trend" size={18} width={2.2} /><span><b>{pct(top2, d.est)}%</b> from {nameOf(ranked[0].productId)} + {nameOf(ranked[1].productId)}</span></li> : null} /> : (
+      {live ? <LiveAiSummary sig={sig} span={span} cancel={dd.cancel} lead={ranked.length >= 2 ? <li><Icon name="trend" size={18} width={2.2} /><span><b>{pct(top2, dd.est)}%</b> from {nameOf(ranked[0].productId)} + {nameOf(ranked[1].productId)}</span></li> : null} /> : (
       <section className="v2-aicard cr2-aisum" aria-label="AI summary">
         <AiHead title="AI Summary" sub={`From your TikTok Shop sales, ${span}`} />
         <ul className="an-lines">
-          {ranked.length >= 2 && <li><Icon name="trend" size={18} width={2.2} /><span><b>{pct(top2, d.est)}%</b> from {nameOf(ranked[0].productId)} + {nameOf(ranked[1].productId)}</span></li>}
+          {ranked.length >= 2 && <li><Icon name="trend" size={18} width={2.2} /><span><b>{pct(top2, dd.est)}%</b> from {nameOf(ranked[0].productId)} + {nameOf(ranked[1].productId)}</span></li>}
           <li><Icon name="clock" size={18} /><span><b>{bestTime[0]}</b> best time to post</span></li>
           <li className={watching.length ? "warn" : undefined}><Icon name={watching.length ? "alert" : "check"} size={18} /><span>{watching.length ? <><b>{watching.length} product{watching.length === 1 ? "" : "s"}</b> to avoid</> : <b>No products to avoid</b>}</span></li>
         </ul>
@@ -180,7 +217,7 @@ export default function DataOverview() {
             <span className={`cr2-risk ${risk.toLowerCase()}`} title="Rezekii's risk level, from your product ratings and cancelled orders">
               <small>Risk level</small>
               <span className="cr2-risk-bar" aria-hidden="true">{["Low", "Watch", "High"].map((l) => <i key={l} className={l === risk ? "on" : ""} />)}</span>
-              <b>{risk} <Tip label="About risk level" text={`Rezekii's own check: ${under3} product${under3 === 1 ? "" : "s"} under 3★, ${under4} under 4★, ${d.cancel}% of orders cancelled. TikTok's own account health is in your TikTok Shop app.`} /></b>
+              <b>{risk} <Tip label="About risk level" text={`Rezekii's own check: ${under3} product${under3 === 1 ? "" : "s"} under 3★, ${under4} under 4★, ${dd.cancel}% of orders cancelled. TikTok's own account health is in your TikTok Shop app.`} /></b>
             </span>
           </div>
           {WATCH.map((w) => {
@@ -234,7 +271,7 @@ export default function DataOverview() {
                 <img className="pv-open" src={p.img} alt="" onClick={() => router.push(productHref(p.id))} />
                 <span>
                   <strong><Link href={productHref(p.id)} className="pv-open">{live ? shortName(p.name) : p.name}</Link></strong>
-                  <small>#{i + 1} · {b.orders} orders · {pct(b.commission, d.est)}% of commission</small>
+                  <small>#{i + 1} · {b.orders} orders · {pct(b.commission, dd.est)}% of commission</small>
                 </span>
                 <span className="v2-acts"><b className="v2-num">{rm(b.commission)}</b></span>
               </div>
@@ -243,7 +280,7 @@ export default function DataOverview() {
         </div>
       </section>
 
-      {live ? <LiveActionPlan sig={sig} cancel={real?.ranges["30 days"]?.cancel ?? d.cancel} /> : (
+      {live ? <LiveActionPlan sig={sig} cancel={real?.ranges["30 days"]?.cancel ?? dd.cancel} /> : (
       <section className="v2-card cr2-plan" aria-label="Your action plan">
         <div className="v2-card-h">
           <h2 className="v2-h2">Your Action Plan</h2>

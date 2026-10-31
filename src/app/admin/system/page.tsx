@@ -7,7 +7,7 @@ import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Title } from "@/components/ui";
-import { Pill, Switch } from "@/components/admin/bits";
+import { Switch } from "@/components/admin/bits";
 import { FLAGS } from "@/lib/mock-admin";
 import { POST_CREDITS } from "@/lib/mock-publish";
 
@@ -38,7 +38,6 @@ export default function SystemSettings() {
   ]);
   const [qty, setQty] = useState([30, 40, 50]);
   const [newQty, setNewQty] = useState("");
-  const [high, setHigh] = useState(30);
   const [wa, setWa] = useState({ verify: true, replies: true, link: true });
   const [flags, setFlags] = useState(FLAGS);
   const [terms, setTerms] = useState({ v: 2, since: "24 Oct 2026", agreed: 41 });
@@ -130,16 +129,6 @@ export default function SystemSettings() {
       </section>
 
       <div className="v2-grid2">
-        <section className="v2-card">
-          <h2 className="v2-h2">Highly Active Badge</h2>
-          <div className="ad-set">
-            <b>Highly active</b>
-            <small>An honour badge only. Samples don't use tiers: a seller can ask for a posting streak instead.</small>
-            <div className="v2-row"><Stepper label="Highly active days" value={high} min={3} max={90} onChange={touch(setHigh)} /><span className="v2-muted">days in a row, and</span><Pill tone="ok">100% delivery</Pill></div>
-          </div>
-          <span className="v2-small">Any video counts. A missed day or an overdue sample removes the badge.</span>
-        </section>
-
         <section className="v2-card">
           <h2 className="v2-h2">Sample Terms for Sellers</h2>
           <div className="v2-row">

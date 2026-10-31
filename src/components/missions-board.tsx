@@ -8,7 +8,7 @@ import { Celebrate, ShareSheet, Sheet, Title, type MomentKind } from "@/componen
 import "@/app/rewards.css";
 
 /** Streak tiers: each one an honour emblem in its own colour, with bonus credits when it's reached. */
-const TIERS = [
+export const TIERS = [
   { days: 3, name: "Spark", metal: "Bronze", bonus: 20, c1: "#f8c39b", c2: "#b8642f" },
   { days: 7, name: "Flame", metal: "Silver", bonus: 50, c1: "#f1f4f8", c2: "#8593a6" },
   { days: 14, name: "Blaze", metal: "Gold", bonus: 100, c1: "#ffe38f", c2: "#cf9312" },
@@ -16,7 +16,7 @@ const TIERS = [
   { days: 60, name: "Legend", metal: "Amethyst", bonus: 600, c1: "#c4b9ff", c2: "#5340d8" },
   { days: 100, name: "Mythic", metal: "Ruby", bonus: 1000, c1: "#ff9ccb", c2: "#d4004f" },
 ];
-const tierOf = (d: number) => [...TIERS].reverse().find((t) => d >= t.days) ?? null;
+export const tierOf = (d: number) => [...TIERS].reverse().find((t) => d >= t.days) ?? null;
 
 /** One mission: a general action with one button. `share` opens the share card; `ready` can be claimed now. */
 export type Mission = { id: string; icon: IconName; title: string; reward: number; cta: string; href?: string; share?: boolean; progress?: [number, number]; state: "todo" | "ready" | "done"; left?: string; counts?: string };
@@ -30,7 +30,7 @@ export type ClaimResult = {
 type Moment = { title: string; line: string; cheer: string; icon: "gift" | "trophy" | "flame"; share?: { big: string; label: string; lines: string[]; moment: MomentKind } };
 
 /** A streak emblem: a shield in the tier's colours with a flame; grey and locked until reached. */
-function Emblem({ tier, size = 44, locked = false }: { tier: (typeof TIERS)[number]; size?: number; locked?: boolean }) {
+export function Emblem({ tier, size = 44, locked = false }: { tier: (typeof TIERS)[number]; size?: number; locked?: boolean }) {
   const id = `mx-g-${tier.days}`;
   return (
     <svg className={`mx-emblem${locked ? " locked" : ""}`} width={size} height={size * 1.1} viewBox="0 0 40 44" aria-hidden="true">
@@ -56,6 +56,8 @@ export function MissionsBoard(p: {
   sub: string; starterNote: string; handle?: string; children?: ReactNode;
   /** Real accounts: this week's counted days, whether today counts yet, and the claim that pays on the server. */
   week?: { on: boolean[]; today: number }; countedToday?: boolean; onClaim?: (m: Mission) => Promise<ClaimResult>;
+  /** Creators: the streak strip opens the Streak section in Level, Streak & Badges (owner, 1 Nov 2026). */
+  streakHref?: string;
 }) {
   const { toast } = useDemo();
   const [week, setWeek] = useState(p.week);
@@ -174,7 +176,24 @@ export function MissionsBoard(p: {
       ) : null}
     </li>
   );
-  const ordered = (l: Mission[]) => [...l.filter((m) => m.state !== "done"), ...l.filter((m) => m.state === "done")];
+  // The streak strip on top of the daily missions that keep it.
+  const stripLook = { ["--c1" as string]: tier?.c1 ?? "#f8c39b", ["--c2" as string]: tier?.c2 ?? "#b8642f" };
+  const strip = (
+    <>
+      <span className="mx-strip-em">{tier ? <Emblem tier={tier} size={34} /> : <Emblem tier={TIERS[0]} size={34} locked />}<b>{streak}</b></span>
+      <span className="mx-strip-txt">
+        <b>{streak}-day streak</b>
+        <small>{checkedToday ? "Today counted" : "Check in or finish a mission today to keep it"} · {Math.max(0, next.days - streak)} days to {next.name} +{next.bonus}</small>
+      </span>
+      <span className="mx-strip-week" aria-hidden="true">
+        {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => <i key={i} className={week ? (week.on[i] ? "on" : i === week.today ? "today" : "") : i < 2 || (i === 2 && checkedToday) ? "on" : i === 2 ? "today" : ""} />)}
+      </span>
+      <Icon name="arrow" size={16} />
+    </>
+  );
+  // Claimable first, then still to do, then done at the bottom (owner, 1 Nov 2026), in every list.
+  const RANK_STATE = { ready: 0, todo: 1, done: 2 } as const;
+  const ordered = (l: Mission[]) => l.map((m, i) => [m, i] as const).sort((a, b) => RANK_STATE[a[0].state] - RANK_STATE[b[0].state] || a[1] - b[1]).map(([m]) => m);
 
   return (
     <div className="v2-stack v2-in mx-page" style={{ gap: 18 }}>
@@ -189,17 +208,10 @@ export function MissionsBoard(p: {
           <span className="v2-small">Resets at midnight</span>
         </div>
         {/* The streak sits on top of the missions that keep it; tap for the tiers. */}
-        <button type="button" className="mx-strip" style={{ ["--c1" as string]: tier?.c1 ?? "#f8c39b", ["--c2" as string]: tier?.c2 ?? "#b8642f" }} onClick={() => setStreakOpen(true)} aria-label={`${streak}-day streak. See tiers`}>
-          <span className="mx-strip-em">{tier ? <Emblem tier={tier} size={34} /> : <Emblem tier={TIERS[0]} size={34} locked />}<b>{streak}</b></span>
-          <span className="mx-strip-txt">
-            <b>{streak}-day streak</b>
-            <small>{checkedToday ? "Today counted" : "Check in or finish a mission today to keep it"} · {Math.max(0, next.days - streak)} days to {next.name} +{next.bonus}</small>
-          </span>
-          <span className="mx-strip-week" aria-hidden="true">
-            {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => <i key={i} className={week ? (week.on[i] ? "on" : i === week.today ? "today" : "") : i < 2 || (i === 2 && checkedToday) ? "on" : i === 2 ? "today" : ""} />)}
-          </span>
-          <Icon name="arrow" size={16} />
-        </button>
+        {/* Creators open the Streak section in Level, Streak & Badges (owner, 1 Nov 2026); sellers get the tiers in a sheet. */}
+        {p.streakHref
+          ? <Link href={p.streakHref} className="mx-strip" style={stripLook} aria-label={`${streak}-day streak. See your streak`}>{strip}</Link>
+          : <button type="button" className="mx-strip" style={stripLook} onClick={() => setStreakOpen(true)} aria-label={`${streak}-day streak. See tiers`}>{strip}</button>}
         <p className="mx-rule"><Icon name="check" size={14} width={3} /> Credits come only once the action is done.</p>
         <div className="mx-today">
           <span className="mx-today-h"><b>{earnedToday} / {maxToday} credits today</b><small>{doneToday} of {daily.length} done</small></span>
@@ -208,7 +220,7 @@ export function MissionsBoard(p: {
             {chests.map((c) => <span key={c.at} className={`mx-chest${doneToday >= c.at ? " open" : ""}`} style={{ left: `${(c.at / daily.length) * 100}%` }} title={`+${c.bonus} bonus at ${c.at} missions`}><Icon name={doneToday >= c.at ? "check" : "gift"} size={13} width={2.4} /><small>+{c.bonus}</small></span>)}
           </span>
         </div>
-        <ul className="mx-list">{daily.map(row("daily"))}</ul>
+        <ul className="mx-list">{ordered(daily).map(row("daily"))}</ul>
       </section>
 
       {starter.length > 0 && (

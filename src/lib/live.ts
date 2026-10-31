@@ -89,6 +89,8 @@ export type LiveAnalytics = {
 };
 
 let analytics: Promise<LiveAnalytics | null> | null = null;
+/** Forget a failed read so Try again asks again. */
+export const retryAnalytics = () => { analytics = null; };
 export function loadAnalytics(): Promise<LiveAnalytics | null> {
   analytics ??= fetch("/api/v2/analytics", { cache: "no-store" })
     .then((r) => (r.ok ? (r.json() as Promise<LiveAnalytics>) : null))

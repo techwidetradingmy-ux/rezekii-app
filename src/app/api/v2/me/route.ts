@@ -6,6 +6,7 @@ import { sellerShopName } from "@/modules/marketplace/seller-connection.ts";
 import { levelOf } from "@/modules/levels/store.ts";
 import { myPhoto } from "@/modules/photos/store.ts";
 import { supabaseRest } from "@/integrations/supabase/rest.ts";
+import { profileOf, type CreatorDetails } from "@/modules/rewards/profiles.ts";
 
 export const dynamic = "force-dynamic";
 
@@ -18,10 +19,12 @@ const NO_STORE = { headers: { "cache-control": "private, no-store" } };
 export async function GET() {
   const user = await currentUser();
   if (!user) return NextResponse.json({ me: null }, NO_STORE);
-  const [link, access, level, sellerShop, tt] = await Promise.all([
+  const [link, access, level, sellerShop, tt, profile] = await Promise.all([
     connectionForUser(user.id).catch(() => null), accessFor(user.id).catch(() => null), levelOf(user.id).catch(() => "bronze" as const), sellerShopName(user).catch(() => null),
     // Her TikTok Shop creator level, read by the refresh queue after linking (owner, 14 Oct 2026).
     supabaseRest(`affiliate_connections?user_id=eq.${user.id}&select=tt_level&limit=1`).then((r) => r.json() as Promise<{ tt_level: number | null }[]>).catch(() => []),
+    // The name she gave at sign-up is the one the app uses everywhere (owner, 1 Nov 2026), not her Google or TikTok name.
+    profileOf<CreatorDetails>(user.id, "creator").catch(() => null),
   ]);
   // How she can sign in (owner, 31 Oct 2026: Settings shows the real ways in). No secrets leave the server.
   const [ways] = (await supabaseRest(`app_users?id=eq.${user.id}&select=google_sub,tiktok_open_id,tiktok_username,password_hash,login_email,email&limit=1`).then((r) => r.json()).catch(() => [])) as { google_sub: string | null; tiktok_open_id: string | null; tiktok_username: string | null; password_hash: string | null; login_email: string | null; email: string | null }[];
@@ -29,7 +32,7 @@ export async function GET() {
     {
       me: {
         id: user.id,
-        name: user.display_name,
+        name: profile?.details.name?.trim() || user.display_name,
         email: user.email,
         role: user.role,
         photo: myPhoto(user) ?? user.avatar_url,

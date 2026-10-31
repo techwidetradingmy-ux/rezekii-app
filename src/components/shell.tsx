@@ -14,7 +14,7 @@ import { useDemo } from "./demo";
 import { Portal, Sheet } from "./ui";
 import { applyTheme, readTheme, type Theme } from "@/lib/theme";
 import { LevelFace } from "./level-face";
-import { ACCOUNT_TABS, OPEN_ACCOUNT_MENU } from "@/lib/account-tabs";
+import { ACCOUNT_TABS, OPEN_ACCOUNT_MENU, PANEL_MORE, tabFor } from "@/lib/account-tabs";
 import { useSideScroll } from "./side-scroll";
 import { useScrollMemory } from "@/lib/keep";
 import { ACCOUNT, HOME, MENUS, pageFor, sectionFor, type AppKind } from "@/lib/menus";
@@ -115,12 +115,24 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
   // Page switcher (owner, 29 Oct 2026, option G): on phones the open page's name sits in the top bar and lists the section's pages.
   const [pgOpen, setPgOpen] = useState(false);
   useLayoutEffect(() => setPgOpen(false), [path]);
+  // Closes on a tap anywhere outside it or on Escape (owner, 1 Nov 2026). The old backdrop was trapped inside the frosted top bar.
+  const pgRef = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (!pgOpen) return;
+    const away = (e: PointerEvent) => { if (!pgRef.current?.contains(e.target as Node)) setPgOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setPgOpen(false); };
+    const moved = () => setPgOpen(false);
+    document.addEventListener("pointerdown", away);
+    document.addEventListener("keydown", esc);
+    window.addEventListener("hashchange", moved);
+    return () => { document.removeEventListener("pointerdown", away); document.removeEventListener("keydown", esc); window.removeEventListener("hashchange", moved); };
+  }, [pgOpen]);
   // My Account uses the same switcher for its sections (owner, 29 Oct 2026); the open one lives in the address (#wallet).
   const acctPage = app === "creator" && path === ACCOUNT[app];
   const [acctTab, setAcctTab] = useState("profile");
   useLayoutEffect(() => {
     if (!acctPage) return;
-    const read = () => setAcctTab(window.location.hash.slice(1) || "profile");
+    const read = () => setAcctTab(tabFor(window.location.hash.slice(1)) ?? "profile");
     read();
     window.addEventListener("hashchange", read);
     return () => window.removeEventListener("hashchange", read);
@@ -186,15 +198,13 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
           </Link>
           {app !== "creator" && <span className="v2-workspace">{app === "seller" ? "Seller" : "Admin"}</span>}
           {pick && (
-            <span className="v2-pgpick">
+            <span className="v2-pgpick" ref={pgRef}>
               <button type="button" aria-haspopup="menu" aria-expanded={pgOpen} onClick={() => setPgOpen((o) => !o)}>
                 <small>{pick.title}</small>
                 <b><span>{pick.items.find((x) => x.on)?.label ?? pick.title}</span><AiSpark label={pick.items.find((x) => x.on)?.label ?? ""} /><Icon name="updown" size={14} width={2.4} /></b>
               </button>
-              {pgOpen && (
-                <>
-                  <span className="v2-pgback" onClick={() => setPgOpen(false)} aria-hidden="true" />
-                  <span className="v2-pgmenu" role="menu" aria-label={`${pick.title} pages`}>
+              {/* Always there, so it can fade and slide both ways (owner, 1 Nov 2026). */}
+              <span className={`v2-pgmenu${pgOpen ? " open" : ""}`} role="menu" aria-label={`${pick.title} pages`} aria-hidden={!pgOpen}>
                     {pick.items.map((x) => (
                       <Link
                         key={x.href}
@@ -209,9 +219,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
                         <span>{x.label}</span><AiSpark label={x.label} />{x.on && <Icon name="check" size={16} />}
                       </Link>
                     ))}
-                  </span>
-                </>
-              )}
+              </span>
             </span>
           )}
           <div className="v2-menu" ref={menuRef}>
@@ -378,40 +386,75 @@ function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory?: () 
     document.addEventListener("keydown", key);
     return () => document.removeEventListener("keydown", key);
   }, [onClose]);
-  const here = (k: string) => path === "/app/account" && (hash || "profile") === k;
+  const here = (k: string) => path === "/app/account" && (tabFor(hash) ?? "profile") === k;
+  // Wish List, Connections and Rate Card sit under More (owner, 1 Nov 2026); it stays open if she opened it last time.
+  const [more, setMore] = useState(false);
+  useLayoutEffect(() => {
+    let open = PANEL_MORE.includes(tabFor(window.location.hash.slice(1)) ?? "profile");
+    try { open = open || localStorage.getItem("rz2_ap_more") === "1"; } catch {}
+    setMore(open);
+  }, []);
+  const toggleMore = () => {
+    setMore(!more);
+    try { localStorage.setItem("rz2_ap_more", more ? "0" : "1"); } catch {}
+  };
+  /** Opens a section of My Account; on My Account itself it only changes the address. */
+  const open = (k: string) => (e: React.MouseEvent) => {
+    if (path === "/app/account") { e.preventDefault(); window.location.hash = k; }
+    onClose();
+  };
+  const row = ([k, label, icon]: (typeof ACCOUNT_TABS)[number]) => (
+    <Link key={k} href={`/app/account#${k}`} className={here(k) ? "on" : undefined} aria-current={here(k) ? "page" : undefined} onClick={open(k)}>
+      <span className={`ap-ic ${k}`}><Icon name={icon} size={16} /></span>
+      <span>{label}</span>
+      {k === "wallet" && !live && <small>{CREATOR.credits.toLocaleString("en-MY")}</small>}
+      {k === "samples" && !live && samples > 0 && <i className="badge badge-amber">{samples}</i>}
+      <Icon name="arrow" size={15} />
+    </Link>
+  );
   return (
     <Portal>
       <div className="ap-back" onClick={onClose} />
+      {/* Compact (owner, 1 Nov 2026): the whole panel fits one phone screen, with Sign out pinned at the bottom. */}
       <aside className="ap-panel" role="dialog" aria-modal="true" aria-label="My Account">
-        <div className="ap-me">
-          {/* Her TikTok level frame, the same as on My Account (owner, 29 Oct 2026). */}
-          <LevelFace lv={live ? me?.ttLevel ?? null : linked ? CREATOR.tiktokLevel : null} size={56} img={you.photo} name={you.name} />
-          <span>
-            <b>{you.name}</b><small>{you.handle}</small>
-            <span className="ap-chips">
-              <i className={`lv ${level.toLowerCase()}`} title={`${level} creator`} aria-label={`${level} creator`}><Icon name="gem" size={13} /></i>
-              <i className="st" title={`${streak}-day streak`} aria-label={`${streak}-day streak`}><Icon name="flame" size={13} />{streak}</i>
-              {onStory && <button type="button" className="ap-story" onClick={onStory}><Icon name="video" size={13} width={2.4} /> Story</button>}
+        <div className="ap-body">
+          <div className="ap-me">
+            {/* Her TikTok level frame, the same as on My Account (owner, 29 Oct 2026). */}
+            <LevelFace lv={live ? me?.ttLevel ?? null : linked ? CREATOR.tiktokLevel : null} size={50} img={you.photo} name={you.name} />
+            <span>
+              <b>{you.name}</b><small>{you.handle}</small>
+              <span className="ap-chips">
+                {/* The level opens Level, Streak & Badges; the flame opens its Streak section (owner, 1 Nov 2026). */}
+                <Link href="/app/account#level" className={`lv ${level.toLowerCase()}`} title={`${level} creator`} aria-label={`${level} creator. Open Level, Streak & Badges`} onClick={open("level")}><Icon name="gem" size={13} /></Link>
+                <Link href="/app/account#streak" className="st" title={`${streak}-day streak`} aria-label={`${streak}-day streak. Open your streak`} onClick={open("streak")}><Icon name="flame" size={13} />{streak}</Link>
+                {onStory && <button type="button" className="ap-story" onClick={onStory}><Icon name="video" size={13} width={2.4} /> Story</button>}
+              </span>
             </span>
-          </span>
-          <span className="ap-tools">
-            <button type="button" className="v2-iconbtn" aria-label={`Theme: ${theme}. Tap to change`} onClick={nextTheme}><Icon name={theme === "Light" ? "sun" : theme === "Dark" ? "moon" : "auto"} size={18} /></button>
-          </span>
-        </div>
-        <nav className="ap-list" aria-label="Account sections">
-          {ACCOUNT_TABS.map(([k, label, icon]) => (
-            <Link key={k} href={`/app/account#${k}`} className={here(k) ? "on" : undefined} aria-current={here(k) ? "page" : undefined} onClick={(e) => { if (path === "/app/account") { e.preventDefault(); window.location.hash = k; } onClose(); }}>
-              <span className={`ap-ic ${k}`}><Icon name={icon} size={17} /></span>
-              <span>{label}</span>
-              {k === "wallet" && !live && <small>{CREATOR.credits.toLocaleString("en-MY")}</small>}
-              {k === "samples" && !live && samples > 0 && <i className="badge badge-amber">{samples}</i>}
-              <Icon name="arrow" size={15} />
-            </Link>
-          ))}
-        </nav>
-        <div className="ap-list ap-prefs">
-          <a href="mailto:support@rezekii.com" className="ap-row"><span className="ap-ic support"><Icon name="inbox" size={17} /></span><span>Contact support</span><Icon name="arrow" size={15} /></a>
-          <button type="button" className="ap-row" onClick={() => setFeedback(true)}><span className="ap-ic feedback"><Icon name="edit" size={17} /></span><span>Send feedback</span><Icon name="arrow" size={15} /></button>
+            <span className="ap-tools">
+              <button type="button" className="v2-iconbtn" aria-label={`Theme: ${theme}. Tap to change`} onClick={nextTheme}><Icon name={theme === "Light" ? "sun" : theme === "Dark" ? "moon" : "auto"} size={18} /></button>
+            </span>
+          </div>
+          <nav className="ap-list" aria-label="Account sections">
+            {ACCOUNT_TABS.filter(([k]) => !PANEL_MORE.includes(k)).map(row)}
+            <button type="button" className={`ap-more${more ? " open" : ""}`} aria-expanded={more} onClick={toggleMore}>
+              <span>More</span><small>Wish List, Connections, Rate Card</small><Icon name="arrow" size={15} />
+            </button>
+            {more && ACCOUNT_TABS.filter(([k]) => PANEL_MORE.includes(k)).map(row)}
+          </nav>
+          {/* Support and feedback side by side (owner, 1 Nov 2026); Contact Support opens WhatsApp. */}
+          <div className="ap-help">
+            <a href={SUPPORT.waLink} target="_blank" rel="noreferrer" className="ap-hbtn"><span className="ap-ic support"><Icon name="whatsapp" size={15} /></span>Contact Support</a>
+            <button type="button" className="ap-hbtn" onClick={() => setFeedback(true)}><span className="ap-ic feedback"><Icon name="edit" size={15} /></span>Send Feedback</button>
+          </div>
+          {/* Legal and contact sit at the foot of the panel on phones (owner, 29 Oct 2026). */}
+          <footer className="ap-foot">
+            <span className="ap-links">
+              <a href="https://rezekii.com/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>
+              <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer">Terms of Service</a>
+              <a href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a>
+            </span>
+            <small>© 2026 Rezekii · Built by Techwide</small>
+          </footer>
         </div>
         {feedback && (
           <Sheet title="Send Feedback" onClose={() => setFeedback(false)}>
@@ -419,16 +462,7 @@ function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory?: () 
           </Sheet>
         )}
         {/* Sign out lives in the panel on phones, not in Settings (owner, 29 Oct 2026). */}
-        <Link href="/signin?in=1" className="ap-signout" onClick={(e) => { if (!live) return onClose(); e.preventDefault(); fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/signin?in=1"; }); }}><Icon name="back" size={17} /> Sign out</Link>
-        {/* Legal and contact sit at the foot of the panel on phones (owner, 29 Oct 2026). */}
-        <footer className="ap-foot">
-          <span className="ap-links">
-            <a href="https://rezekii.com/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>
-            <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer">Terms of Service</a>
-            <a href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a>
-          </span>
-          <small>© 2026 Rezekii · Built by Techwide</small>
-        </footer>
+        <Link href="/signin?in=1" className="ap-signout" onClick={(e) => { if (!live) return onClose(); e.preventDefault(); fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/signin?in=1"; }); }}><Icon name="back" size={17} /> Sign Out</Link>
       </aside>
     </Portal>
   );

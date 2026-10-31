@@ -72,6 +72,19 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       .finally(() => requestAnimationFrame(() => requestAnimationFrame(() => { delete document.documentElement.dataset.wait; })));
   }, []);
   useEffect(() => refreshMe(), [refreshMe]);
+  // Check again whenever the page comes back (owner, 1 Nov 2026: no more sample data after signing in): the Back button's saved
+  // page, a tab brought to the front after a while, or signing in or out in another tab.
+  useEffect(() => {
+    let last = Date.now();
+    const again = () => { last = Date.now(); refreshMe(); };
+    const shown = (e: PageTransitionEvent) => { if (e.persisted) again(); };
+    const seen = () => { if (document.visibilityState === "visible" && Date.now() - last > 15_000) again(); };
+    const other = (e: StorageEvent) => { if (e.key === "rz2_in") again(); };
+    window.addEventListener("pageshow", shown);
+    document.addEventListener("visibilitychange", seen);
+    window.addEventListener("storage", other);
+    return () => { window.removeEventListener("pageshow", shown); document.removeEventListener("visibilitychange", seen); window.removeEventListener("storage", other); };
+  }, [refreshMe]);
 
   useEffect(() => {
     try {

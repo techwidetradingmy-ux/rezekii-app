@@ -124,17 +124,17 @@ export const BY_PRODUCT = [
 export type Dest = { id: string; handle: string; item: string; videos: number; live: boolean; state: "Delivered" | "On time" | "Overdue"; due?: string; late?: number; reminded?: string; activity: string; sentOn: string };
 export const DESTINATIONS: Dest[] = [
   { id: "d01", handle: "@aisyah.glow", item: "p21", videos: 3, live: false, state: "Delivered", activity: "Active", sentOn: "14 Sep" },
-  { id: "d02", handle: "@kak.ros.kitchen", item: "p08", videos: 3, live: true, state: "Delivered", activity: "Highly active", sentOn: "18 Sep" },
-  { id: "d03", handle: "@mei.ling.deals", item: "p24", videos: 2, live: false, state: "Delivered", activity: "Highly active", sentOn: "20 Oct" },
+  { id: "d02", handle: "@kak.ros.kitchen", item: "p08", videos: 3, live: true, state: "Delivered", activity: "Active", sentOn: "18 Sep" },
+  { id: "d03", handle: "@mei.ling.deals", item: "p24", videos: 2, live: false, state: "Delivered", activity: "Active", sentOn: "20 Oct" },
   { id: "d04", handle: "@zara.home", item: "p18", videos: 0, live: false, state: "Overdue", late: 3, reminded: "Reminded 26 Oct and 27 Oct", activity: "Active", sentOn: "11 Oct" },
   { id: "d05", handle: "@dapur.wani", item: "p11", videos: 3, live: true, state: "Delivered", activity: "Active", sentOn: "26 Sep" },
-  { id: "d06", handle: "@nurul.beauty", item: "p21", videos: 3, live: false, state: "Delivered", activity: "Highly active", sentOn: "29 Sep" },
+  { id: "d06", handle: "@nurul.beauty", item: "p21", videos: 3, live: false, state: "Delivered", activity: "Active", sentOn: "29 Sep" },
   { id: "d07", handle: "@ahmad.fitlife", item: "p24", videos: 3, live: true, state: "Delivered", activity: "Active", sentOn: "8 Oct" },
   { id: "d08", handle: "@farah.home", item: "p08", videos: 0, live: false, state: "On time", due: "3 Nov", activity: "Active", sentOn: "24 Oct" },
   { id: "d09", handle: "@hana.masak", item: "p11", videos: 1, live: false, state: "Delivered", activity: "Active", sentOn: "21 Oct" },
   { id: "d10", handle: "@iqbal.gadget", item: "p18", videos: 0, live: false, state: "Overdue", late: 1, reminded: "Reminded today", activity: "New", sentOn: "17 Oct" },
   { id: "d11", handle: "@sofia.rumah", item: "p21", videos: 3, live: false, state: "Delivered", activity: "Active", sentOn: "2 Oct" },
-  { id: "d12", handle: "@kak.ros.kitchen", item: "p24", videos: 3, live: true, state: "Delivered", activity: "Highly active", sentOn: "9 Oct" },
+  { id: "d12", handle: "@kak.ros.kitchen", item: "p24", videos: 3, live: true, state: "Delivered", activity: "Active", sentOn: "9 Oct" },
 ];
 /** Delivered = at least 1 video posted. On time = no video yet, not due. Overdue = no video by the due date. */
 export const SAMPLE_SUMMARY = { sent: 48, delivered: 34, onTime: 9, overdue: 5, videos: 118, lives: 14 };
