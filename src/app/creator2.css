@@ -651,8 +651,10 @@ li.done .cr2-check { background: #00c073; border-color: #00c073; animation: v2Po
 .si-ico.em { background: var(--surface2); color: var(--body); }
 /* Analytics on desktop (owner, 28 Oct 2026: website first): numbers and the AI summary across the top, charts on the left, the action plan on the right. */
 @media (min-width: 1200px) {
-  .v2-stack.an-page { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); grid-template-areas: "title title" "kpi kpi" "src split" "chart ai" "top plan"; gap: 22px 22px; align-items: start; }
+  .v2-stack.an-page { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); grid-template-areas: "title title" "upd upd" "kpi kpi" "src split" "chart ai" "top plan"; gap: 22px 22px; align-items: start; }
   .an-page > .v2-title { grid-area: title; }
+  /* "Updated 3:42 pm" sits right under the title (owner, 31 Oct 2026). */
+  .an-page > .v2-upd { grid-area: upd; margin-top: -14px !important; }
   .an-page > .v2-stack { grid-area: kpi; }
   .an-page > .cr2-aisum { grid-area: ai; }
   .an-page > .cr2-plan { grid-area: plan; }
