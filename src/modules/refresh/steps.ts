@@ -1,5 +1,7 @@
 import type { ApiReply } from "../../integrations/tiktok-shop/api.ts";
-import { soldInLastDay } from "../picks/today.ts";
+import { listDay, soldInLastDay } from "../picks/today.ts";
+import { ideasFor, ideasKey, savedIdeas } from "../picks/ideas-cache.ts";
+import { levelOf } from "../levels/store.ts";
 import { allProducts } from "../tap/catalog.ts";
 import { showcaseOf } from "../picks/mine.ts";
 import { selectProducts } from "../../integrations/tiktok-shop/creator.ts";
@@ -14,6 +16,7 @@ import { pruneActivity } from "../admin/admins.ts";
 import { refreshVideos } from "../admin/videos.ts";
 import { refreshCommunity } from "../community/numbers.ts";
 import { approvedCreatorToken } from "../creator-accounts/access.ts";
+import { queuedPhotos } from "../photos/queue.ts";
 import { linkedCreators, syncCreatorOrders } from "../sales/orders.ts";
 import { buildRankings, rankings as builtRankings } from "../rankings/store.ts";
 import { productSums } from "../admin/tap.ts";
@@ -366,7 +369,9 @@ async function photos(t: TaskRow, { sessions, deadline }: Ctx): Promise<StepResu
   for (const rows of Object.values(b?.lives ?? {})) for (const r of rows) if (r[1]) users.add(r[1]);
   const saved = await savedPhotos(true);
   const cutoff = mytDay(Date.now(), PHOTO_DAYS);
-  const due = [...users].filter((u) => (saved.get(u.toLowerCase()) ?? "") < cutoff && (!t.cursor || u > t.cursor)).sort();
+  // Creators a screen is waiting on go first (owner, 1 Nov 2026: Creators Like You must show photos).
+  const queued = (await queuedPhotos().catch(() => [] as string[])).filter((u) => !saved.has(u));
+  const due = [...queued, ...[...users].filter((u) => !queued.includes(u.toLowerCase()) && (saved.get(u.toLowerCase()) ?? "") < cutoff && (!t.cursor || u > t.cursor)).sort()];
   const soon = (url: string | null | undefined) => (url && url.includes("googleusercontent.com") ? null : freshUrl(url, Date.now(), 10 * 60_000));
   // Rezekii's own creators: the profile picture TikTok Shop has for them now (owner, 31 Oct 2026: TikTok Shop photos only).
   const shopPhoto = new Map<string, string>();
@@ -375,7 +380,8 @@ async function photos(t: TaskRow, { sessions, deadline }: Ctx): Promise<StepResu
   // 30 creators at a time; when time runs out mid-way the group starts again next tick (photos saved meanwhile aren't due any more).
   for (let i = 0; i < due.length; i += 30) {
     const group = due.slice(i, i + 30);
-    const back = (waitMs: number): StepResult => ({ count, more: true, cursor: i ? due[i - 1] : t.cursor, waitMs });
+    // The queued creators come before the name order, so the place to carry on from is only ever a name-order one.
+    const back = (waitMs: number): StepResult => ({ count, more: true, cursor: i > queued.length ? due[i - 1] : t.cursor, waitMs });
     const src = new Map((await photoSources(group)).map((r) => [r.username, r]));
     const url = (u: string) => soon(shopPhoto.get(u)) ?? soon(src.get(u)?.da) ?? soon(src.get(u)?.ma) ?? soon(own.get(u)) ?? soon(team.get(u)?.avatar_url);
     // Addresses that still work: six downloads at once.
@@ -476,6 +482,34 @@ async function agency(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
   return { count: 1 };
 }
 
+/**
+ * Today's Ideas made ahead (owner, 1 Nov 2026): each linked creator's Marketplace and Showcase lists for TikTok's newest daily
+ * list, saved so the page opens at once. A list already saved for that day and her level is skipped. Carries on from `cursor`.
+ */
+async function ideas(t: TaskRow, { deadline }: Ctx): Promise<StepResult> {
+  const day = await listDay();
+  if (!day) return { count: 0 };
+  const ids = await linkedCreators();
+  let count = 0;
+  for (let i = t.cursor ? Number(t.cursor) : 0; i < ids.length; i++) {
+    if (Date.now() > deadline - 20_000) return { count, more: true, cursor: String(i) };
+    const token = await approvedCreatorToken(ids[i]);
+    if (!token) continue;
+    const level = await levelOf(ids[i]).catch(() => "bronze" as const);
+    for (const source of ["market", "showcase"] as const) {
+      const saved = await savedIdeas(ids[i], ideasKey(source, "all", null)).catch(() => null);
+      if (saved?.day === day && saved.level === level) continue;
+      try {
+        await ideasFor(ids[i], token, level, source, "all", null);
+        count++;
+      } catch (err) {
+        console.error("[ideas]", ids[i], err instanceof Error ? err.message : err);
+      }
+    }
+  }
+  return { count };
+}
+
 export const STEPS: Record<string, (t: TaskRow, ctx: Ctx) => Promise<StepResult>> = {
   best,
   tap_campaigns: tapCampaigns,
@@ -492,6 +526,7 @@ export const STEPS: Record<string, (t: TaskRow, ctx: Ctx) => Promise<StepResult>
   details,
   photos,
   sold,
+  ideas,
   marketplace,
   agency,
 };

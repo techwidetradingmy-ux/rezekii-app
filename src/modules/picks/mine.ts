@@ -67,6 +67,8 @@ export type SalesProfile = {
   video: number; live: number; gmv: number; orders: number;
   /** The price of every item she sold, low to high. */
   units: number[];
+  /** Her sales (GMV) by where they came from, over all her sales whatever the channel picked (owner, 1 Nov 2026). */
+  split: { video: number; live: number; other: number };
 };
 
 export type Channel = "all" | "video" | "live";
@@ -106,6 +108,8 @@ export async function salesProfile(userId: string, token: string, days = 30, cha
     if (ago >= 0 && ago < 7) m.daily[6 - ago] += n;
   }
   units.sort((a, b) => a - b);
+  const split = { video: 0, live: 0, other: 0 };
+  for (const l of all) split[kindOf(l.content_type)] += lineGmv(l);
 
   const top = [...products.entries()].sort((a, b) => b[1].gmv - a[1].gmv).slice(0, 60);
   const looked = await lookupOf(token, top.map(([id]) => id));
@@ -137,5 +141,5 @@ export async function salesProfile(userId: string, token: string, days = 30, cha
   const categories = new Map([...cats.entries()].map(([c, s]) => [c, { share: catGmv ? s.gmv / catGmv : 0, video: s.video, live: s.live }]));
   const mainGmv = [...mainSums.values()].reduce((s, c) => s + c.gmv, 0);
   const mains = new Map([...mainSums.entries()].map(([c, s]) => [c, { share: mainGmv ? s.gmv / mainGmv : 0, video: s.video, live: s.live }]));
-  return { lines, products, categoryOf, categories, mains, mainOf, leafIds, video, live, gmv, orders: orders.size, units };
+  return { lines, products, categoryOf, categories, mains, mainOf, leafIds, video, live, gmv, orders: orders.size, units, split };
 }

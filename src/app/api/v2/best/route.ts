@@ -3,35 +3,42 @@ import { detailsMissing } from "@/modules/rewards/profiles.ts";
 import { currentUser } from "@/app/current-user";
 import { approvedCreatorToken } from "@/modules/creator-accounts/access.ts";
 import { levelOf } from "@/modules/levels/store.ts";
-import { listDay, marketIdeas, showcaseIdeas, type TodayIdeas } from "@/modules/picks/today.ts";
+import { listDay, type Channel } from "@/modules/picks/today.ts";
+import { ideasFor, ideasKey, savedIdeas } from "@/modules/picks/ideas-cache.ts";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
-const cache = new Map<string, { at: number; r: TodayIdeas }>();
+const NO_STORE = { headers: { "cache-control": "private, no-store" } };
 
 /**
- * Today's Ideas (owner, 31 Oct 2026): ?source=market|showcase. What's selling most on TikTok Shop on the newest day TikTok has
- * published. A list is kept 30 minutes, and made again as soon as TikTok's newer list is saved; ?fresh=1 makes it again.
+ * Today's Ideas (owner, 31 Oct 2026): ?source=market|showcase&channel=all|video|others&cat=<category>. What's selling most on
+ * TikTok Shop on the newest day TikTok has published. Saved per creator and view (owner, 1 Nov 2026): prepared ahead by the daily
+ * refresh and shown at once until TikTok's next list; ?fresh=1 makes it again.
  */
 export async function GET(req: NextRequest) {
   const user = await currentUser();
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
-  const source = req.nextUrl.searchParams.get("source") === "showcase" ? "showcase" : "market";
+  const q = req.nextUrl.searchParams;
+  const source = q.get("source") === "showcase" ? "showcase" : "market";
   // Overall by default; Video from TikTok's top-selling videos (owner, 31 Oct 2026).
-  const q = req.nextUrl.searchParams.get("channel");
-  const channel = q === "video" || q === "others" ? q : "all";
-  const token = await approvedCreatorToken(user.id);
-  if (!token) return NextResponse.json({ linked: false, source, channel, day: null, listAt: null, rows: [], gold: false, at: new Date().toISOString() });
+  const c = q.get("channel");
+  const channel: Channel = c === "video" || c === "others" ? c : "all";
+  const cat = source === "market" ? (q.get("cat") || "").slice(0, 60) || null : null;
+  const blank = { source, channel, day: null, listAt: null, rows: [], gold: false, at: new Date().toISOString() };
+  const [token, missing, level, day, saved] = await Promise.all([
+    approvedCreatorToken(user.id),
+    detailsMissing(user.id).catch(() => null),
+    levelOf(user.id).catch(() => "bronze" as const),
+    listDay(),
+    savedIdeas(user.id, ideasKey(source, channel, cat)),
+  ]);
+  if (!token) return NextResponse.json({ linked: false, ...blank });
   // Locked until her details are complete (owner, 31 Oct 2026).
-  const missing = await detailsMissing(user.id).catch(() => null);
-  if (missing) return NextResponse.json({ linked: true, locked: missing, source, channel, day: null, listAt: null, rows: [], gold: false, at: new Date().toISOString() });
-  const key = `${user.id}:${source}:${channel}`;
-  const hit = cache.get(key);
-  // A newer TikTok list makes a new one at once (owner, 31 Oct 2026: "update as soon as TikTok publishes").
-  if (hit && !req.nextUrl.searchParams.get("fresh") && Date.now() - hit.at < 30 * 60_000 && hit.r.day === (await listDay())) return NextResponse.json({ linked: true, ...hit.r });
-  const gold = (await levelOf(user.id).catch(() => "bronze")) === "gold";
-  const r = source === "showcase" ? await showcaseIdeas(token, gold, channel) : await marketIdeas(token, gold, channel);
-  cache.set(key, { at: Date.now(), r });
-  return NextResponse.json({ linked: true, ...r }, { headers: { "cache-control": "private, no-store" } });
+  if (missing) return NextResponse.json({ linked: true, locked: missing, ...blank });
+  // The saved list while TikTok hasn't published a newer one, made for her current level.
+  if (saved && !q.get("fresh") && saved.day === day && saved.level === level)
+    return NextResponse.json({ linked: true, ...saved.data, saved: true }, NO_STORE);
+  const r = await ideasFor(user.id, token, level, source, channel, cat);
+  return NextResponse.json({ linked: true, ...r }, NO_STORE);
 }

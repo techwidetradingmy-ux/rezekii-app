@@ -16,6 +16,7 @@ import { NICHE_BEST, TRY_TODAY, VIRAL, daily, type Trend } from "@/lib/mock-crea
 import { ON_IDS, ON_SOLD30 } from "@/lib/mock-showcase";
 import { useKept } from "@/lib/keep";
 import { AddButton } from "@/components/add-button";
+import { GmvSpark } from "@/components/gmv-spark";
 import { NO_PHOTO, shortName } from "@/lib/live-perf";
 
 /** Drafts made from Today's Ideas wait here until the Content Calendar picks them up (preview only: this browser tab). */
@@ -220,10 +221,14 @@ type LiveSales = { kind: "gmv"; lo: number; hi: number; day: string } | { kind: 
 type LiveBest = {
   id: string; name: string; img: string | null; category: string | null; rating: number | null; price: number | null;
   openRate: number | null; silverRate: number | null; rezekii: boolean; sample: boolean; sales: LiveSales;
+  trend?: (number | null)[]; trendRange?: ([number, number] | null)[];
 };
-type LiveIdeas = { linked: boolean; locked?: "profile" | "race"; rows: LiveBest[]; day: string | null; listAt: string | null; gold: boolean; at: string };
+type LiveIdeas = { linked: boolean; locked?: "profile" | "race"; rows: LiveBest[]; day: string | null; listAt: string | null; gold: boolean; at: string; want?: number; cat?: string | null; cats?: string[] };
 /** One best-seller row, the same for sample and real lists. */
-type BestRow = { productId: string; name: string; img: string; category: string; rating: number | null; line: string; rate: number; points: number[] | null; pointsLabel: string; rezekii?: boolean; sample?: boolean };
+type BestRow = {
+  productId: string; name: string; img: string; category: string; rating: number | null; line: string; rate: number; points: number[] | null; pointsLabel: string; rezekii?: boolean; sample?: boolean;
+  trend?: (number | null)[]; trendRange?: ([number, number] | null)[];
+};
 
 const rm = (v: number) => (v >= 1e6 ? `${(v / 1e6).toFixed(1)}M` : v >= 1e3 ? `${Math.round(v / 1e3)}K` : String(Math.round(v)));
 const dayName = (d: string) => new Date(`${d}T12:00:00+08:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
@@ -244,18 +249,29 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
   const mine = source === "showcase";
   const week = (id: string) => NICHE_BEST.find((b) => b.productId === id)?.weekSold ?? Math.round(product(id).sold / 26);
 
-  // Signed in (owner, 31 Oct 2026): her real lists from /api/v2/best.
+  // Signed in (owner, 31 Oct 2026): her real lists from /api/v2/best. A category asks for that category's own TikTok list
+  // (owner, 1 Nov 2026), and the list says it's checking until it's back.
+  const [cat, setCat] = useKept(`best-cat-${source}`, "All");
   const [real, setReal] = useState<LiveIdeas | null>(null);
+  const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
+  const askCat = live && !mine && cat !== "All" ? cat : "";
   useEffect(() => {
     if (!live || !linked) return;
     let on = true;
-    fetch(`/api/v2/best?source=${source}&channel=${channel}`, { cache: "no-store" })
+    setLoading(true);
+    setFailed(false);
+    fetch(`/api/v2/best?source=${source}&channel=${channel}${askCat ? `&cat=${encodeURIComponent(askCat)}` : ""}`, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { if (on) d ? setReal(d) : setFailed(true); })
-      .catch(() => on && setFailed(true));
+      .catch(() => on && setFailed(true))
+      .finally(() => on && setLoading(false));
     return () => { on = false; };
-  }, [live, linked, source, channel]);
+  }, [live, linked, source, channel, askCat]);
+  // 10 at a time on a phone, 20 on a computer (owner, 1 Nov 2026).
+  const [per, setPer] = useState(10);
+  const [shownN, setShownN] = useState(10);
+  useEffect(() => { const n = window.matchMedia("(min-width: 761px)").matches ? 20 : 10; setPer(n); setShownN(n); }, [cat, source, channel]);
 
   const rows: BestRow[] = live
     ? (real?.rows ?? []).map((b) => ({
@@ -263,7 +279,7 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
         // Sales across the whole of TikTok, not hers (owner, 31 Oct 2026).
         line: salesLine(b.sales),
         rate: ((!b.rezekii || me?.level === "bronze" ? b.openRate : b.silverRate ?? b.openRate) ?? 0) / 100,
-        points: null, pointsLabel: "", rezekii: b.rezekii, sample: b.sample,
+        points: null, pointsLabel: "", rezekii: b.rezekii, sample: b.sample, trend: b.trend, trendRange: b.trendRange,
       }))
     : (mine ? ON_IDS : NICHE_BEST.map((b) => b.productId).filter((id) => !ON_IDS.includes(id) && product(id).rating >= 4))
         .map((id) => ({ productId: id, weekSold: week(id), trend: NICHE_BEST.find((b) => b.productId === id)?.trend ?? ("flat" as Trend) }))
@@ -278,9 +294,13 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
         });
   // Short tab names so the row fits a phone: "Home & Kitchen" shows as "Home".
   const short1 = (c: string) => c.split(" & ")[0];
-  const cats = ["All", ...Array.from(new Set(rows.map((b) => short1(b.category))))];
-  const [cat, setCat] = useKept(`best-cat-${source}`, "All");
-  const shown = rows.filter((b) => cat === "All" || short1(b.category) === cat);
+  // Signed in on the Marketplace, the chips are TikTok's categories (each with its own list); otherwise the rows' own.
+  const liveCats = live && !mine && real?.cats?.length;
+  const cats = liveCats ? ["All", ...real!.cats!] : ["All", ...Array.from(new Set(rows.map((b) => short1(b.category))))];
+  const all = liveCats ? rows : rows.filter((b) => cat === "All" || short1(b.category) === cat);
+  const shown = all.slice(0, shownN);
+  const want = real?.want ?? (real?.gold ? 30 : 10);
+  const lvl = me?.level ?? "bronze";
   const { rail, at } = useRail<HTMLOListElement>(shape);
   return (
     <section className={inFrame ? "nb-box nb-in" : "v2-card nb-box"} aria-label={mine ? "Best sellers in your showcase" : "Best sellers in your niche"}>
@@ -296,17 +316,22 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
           <Tip label="When this updates" text="TikTok publishes each day's best sellers the next afternoon, around 4 PM. This list updates as soon as it's out, so it's always the newest day." />
         </p>
       )}
-      {live && linked && !real && !failed && <p className="v2-muted" style={{ margin: 0 }}>Loading your list…</p>}
+      {live && linked && loading && !failed && (
+        <div className="nb-wait" role="status">
+          <p><span className="cr1-spin xs" aria-hidden="true" /> Checking which best sellers you can add…</p>
+          {Array.from({ length: 4 }, (_, i) => <span key={i} className="nb-wait-row"><i /><span><i /><i /></span></span>)}
+        </div>
+      )}
       {live && failed && <p className="v2-muted" style={{ margin: 0 }}>Couldn&apos;t load this list. Please try again later.</p>}
-      {live && real && !real.locked && !real.rows.length && <p className="v2-muted" style={{ margin: 0 }}>{mine ? (channel === "video" ? "None of your showcase products are in TikTok's top-selling videos this week." : channel === "others" ? "None of your showcase products are in TikTok's best-seller lists for this day." : "Your showcase is empty. Add products from the Marketplace.") : "TikTok hasn't published a best-seller list yet. Check again later."}</p>}
+      {live && real && !loading && !real.locked && !real.rows.length && <p className="v2-muted" style={{ margin: 0 }}>{mine ? (channel === "video" ? "None of your showcase products are in TikTok's top-selling videos this week." : channel === "others" ? "None of your showcase products are in TikTok's best-seller lists for this day." : "Your showcase is empty. Add products from the Marketplace.") : "TikTok hasn't published a best-seller list yet. Check again later."}</p>}
       <div className="nb-cats" role="group" aria-label="Category">
         {cats.map((c) => <button key={c} type="button" className={`v2-chip${c === cat ? " on" : ""}`} aria-pressed={c === cat} onClick={() => setCat(c)}>{c}</button>)}
       </div>
-      <ol ref={rail} className={`nb-list ${shape}`} key={cat}>
+      <ol ref={rail} className={`nb-list ${shape}${live && loading ? " nb-dim" : ""}`} key={cat}>
         {shown.map((b) => {
           return (
             <li key={b.productId}>
-              <span className="nb-rank">{rows.indexOf(b) + 1}</span>
+              <span className="nb-rank">{all.indexOf(b) + 1}</span>
               <Link href={productHref(b.productId)} className="nb-view" aria-label={`View ${b.name}`}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={b.img} alt="" />
@@ -317,6 +342,8 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
                   {b.rating !== null && <span className="nb-score"><Icon name="star" size={12} width={2.4} /> {b.rating.toFixed(1)}</span>}
                 </span>
                 {b.points && b.points.some((v) => v > 0) && <Trend points={b.points} label={b.pointsLabel} />}
+                {/* Its last 7 days of TikTok sales (owner, 1 Nov 2026), estimated from TikTok's daily ranges. */}
+                {b.trend && b.trend.some((v) => v != null) && <span className="nb-spark"><GmvSpark points={b.trend} ranges={b.trendRange} /><small>7 days</small></span>}
               </Link>
               {/* Rezekii campaign products can ask for a free sample (owner, 31 Oct 2026); TikTok's other products only add. */}
               {live && b.sample && <Link href={productHref(b.productId, { sample: true })} className="nb-add nb-sample" aria-label={`Request a free sample of ${b.name}`}><Icon name="gift" size={18} /></Link>}
@@ -330,8 +357,14 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
         })}
       </ol>
       {shape === "cards" && <span className="td-dots" aria-hidden="true">{shown.map((b, n) => <i key={b.productId} className={n === at ? "on" : undefined} />)}</span>}
-      {/* 10 a day; Gold creators see 30 (owner, 31 Oct 2026). */}
-      {live && real && real.rows.length > 0 && !real.gold && <p className="nb-gold"><Icon name="lock" size={14} /> Gold creators see 30 ideas a day</p>}
+      {all.length > shown.length && (
+        <button type="button" className="btn-outline v2-btn-sm nb-more" onClick={() => setShownN((n) => n + per)}>Show More · {all.length - shown.length} left</button>
+      )}
+      {live && real && real.rows.some((b) => b.trend?.some((v) => v != null)) && <p className="v2-small nb-est">Sales lines are estimated from TikTok&apos;s daily sales ranges.</p>}
+      {/* How deep she sees TikTok's top 100 (owner, 1 Nov 2026): Bronze 10, Silver 30, Gold all 100. */}
+      {live && real && real.rows.length > 0 && lvl !== "gold" && (
+        <p className="nb-gold"><Icon name="lock" size={14} /> You see the top {want}. {lvl === "bronze" ? "Silver creators see the top 30, Gold the full top 100." : "Gold creators see the full top 100."}</p>
+      )}
     </section>
   );
 }

@@ -15,7 +15,8 @@ import { AddButton } from "@/components/add-button";
 import { NO_PHOTO, shortName } from "@/lib/live-perf";
 
 type Fit = AiPick["fit"];
-const SORTS = ["Best match", "Best-selling", "Top commission", "Lowest price"] as const;
+// Title Case (owner, 1 Nov 2026).
+const SORTS = ["Best Match", "Best Selling", "Top Commission", "Lowest Price"] as const;
 type Sort = (typeof SORTS)[number];
 
 /** What the AI does, in order, with what it found at each step. */
@@ -27,6 +28,9 @@ const STEPS: [string, string][] = [
   ["Ranking picks", `${AI_PICKS.length} picks`],
 ];
 const STEP_MS = 650;
+/** How long her last real analysis took (owner, 1 Nov 2026: about a minute), so the steps keep pace with it. */
+const RUN_KEY = "rz2_ai_ms";
+const lastRunMs = () => { try { const n = Number(localStorage.getItem(RUN_KEY)); return n >= 3000 && n <= 180_000 ? n : 60_000; } catch { return 60_000; } };
 const COUNTED = [0, 380, 1460, AI_PROFILE.compared, AI_PROFILE.compared, AI_PROFILE.compared];
 const THUMBS = [...PRODUCTS, ...PRODUCTS];
 
@@ -45,14 +49,17 @@ type LivePicks = {
   locked?: "profile" | "race";
   profile: {
     categories: [string, number][]; video: number; price: string | null; aov: number; orders: number; days: number; gmv: number; commission: number;
+    sales?: { video: number; live: number; other: number };
     hours: [string, number][]; you: { gender: string | null; race: string | null } | null; audience: { female: number; male: number; age: string; places: string } | null;
   };
-  effort: { id: string; name: string; videos: number; lives: number; gmv: number; commission: number; perPost: number; hit: { gmv: number } | null }[];
+  effort: { id: string; name: string; videos: number; lives: number; gmv: number; commission: number; perPost: number; hit: { gmv: number } | null; per1k?: number | null; perLive?: number | null; gmvPerPost?: number }[];
   compared: number; picks: LivePick[];
   rising: { category: string; change: number }[];
   peers: { user: string; name: string; img: string | null; followers: number; lo: number; hi: number; video: number }[];
   swap: { count: number; items: { id: string; name: string; img: string | null }[] };
   at: string;
+  /** Saved picks shown straight away; `ms` is how long the analysis took. */
+  saved?: boolean; ms?: number;
 };
 const SOURCE: Record<LivePick["source"], string> = { tiktok: "TikTok best seller", market: "TikTok marketplace", rezekii: "Rezekii campaign" };
 
@@ -72,7 +79,7 @@ export function AiPicks() {
   const [run, setRun] = useState(0);
   const [phase, setPhase] = useState(0);
   const [fit, setFit] = useState<Fit>("video");
-  const [sort, setSort] = useState<Sort>("Best match");
+  const [sort, setSort] = useState<Sort>("Best Match");
   const router = useRouter();
   const [requested, setRequested] = useState<string[]>([]);
   useEffect(() => setRequested(requestedSamples()), []);
@@ -81,18 +88,34 @@ export function AiPicks() {
   const [failed, setFailed] = useState(false);
   const linked = live ? !!me?.shop : demoLinked;
 
+  // Signed in (owner, 1 Nov 2026): the steps keep pace with how long her last analysis took (about a minute at first), with a
+  // progress bar; the last step only shows done when the picks are really there. Saved picks show at once.
+  const [runMs, setRunMs] = useState(60_000);
+  const [started, setStarted] = useState(0);
+  const [now, setNow] = useState(0);
   useEffect(() => {
     if (!linked) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches && !live) return setPhase(STEPS.length);
     setPhase(0);
-    // Signed in, the last step waits for the real answer.
-    const timers = STEPS.map((_, i) => window.setTimeout(() => setPhase((p) => (live && i + 1 >= STEPS.length ? Math.max(p, STEPS.length - 1) : i + 1)), STEP_MS * (i + 1)));
-    return () => timers.forEach(clearTimeout);
-  }, [run, linked, live]);
+    if (!live) {
+      const timers = STEPS.map((_, i) => window.setTimeout(() => setPhase(i + 1), STEP_MS * (i + 1)));
+      return () => timers.forEach(clearTimeout);
+    }
+    const ms = lastRunMs();
+    setRunMs(ms);
+    const t0 = Date.now();
+    setStarted(t0);
+    setNow(t0);
+    // Steps 1 to 4 at their share of the expected time; step 5 waits for the answer.
+    const timers = STEPS.slice(0, -1).map((_, i) => window.setTimeout(() => setPhase((p) => Math.max(p, i + 1)), (ms * (i + 1)) / STEPS.length));
+    const tick = window.setInterval(() => setNow(Date.now()), 500);
+    return () => { timers.forEach(clearTimeout); clearInterval(tick); };
+  }, [run, linked, live, channel]);
 
   useEffect(() => {
     if (!live || !linked) return;
     let on = true;
+    // A tab shows its own progress, never another tab's or the sample's picks (owner, 1 Nov 2026).
     setReal(null);
     setFailed(false);
     fetch(`/api/v2/ai-picks?channel=${channel === "Video" ? "video" : channel === "LIVE" ? "live" : "all"}${run ? "&fresh=1" : ""}`, { cache: "no-store" })
@@ -100,6 +123,7 @@ export function AiPicks() {
       .then((d) => {
         if (!on) return;
         if (!d) return setFailed(true);
+        if (!d.saved && d.ms) { try { localStorage.setItem(RUN_KEY, String(d.ms)); } catch {} }
         setReal(d);
         setPhase(STEPS.length);
         if (d.locked) return;
@@ -109,6 +133,8 @@ export function AiPicks() {
       .catch(() => on && setFailed(true));
     return () => { on = false; };
   }, [run, live, linked, channel]);
+  const progress = live ? Math.min(0.95, started ? (now - started) / runMs : 0) : phase / STEPS.length;
+  const left = live ? Math.max(0, Math.round((runMs - (now - started)) / 1000)) : 0;
 
   const level = me?.level ?? "silver";
   const items: Item[] = live
@@ -141,9 +167,9 @@ export function AiPicks() {
   const count = (f: Fit) => items.filter((pk) => pk.fit === f).length;
   // Signed in, the Overall / Video / LIVE switch at the top decides; the sample keeps its video and LIVE tabs.
   const list = items.filter((pk) => live || pk.fit === fit).sort((a, b) => {
-    if (sort === "Best-selling") return b.sold - a.sold;
-    if (sort === "Top commission") return b.rate - a.rate || b.match - a.match;
-    if (sort === "Lowest price") return a.price - b.price;
+    if (sort === "Best Selling") return b.sold - a.sold;
+    if (sort === "Top Commission") return b.rate - a.rate || b.match - a.match;
+    if (sort === "Lowest Price") return a.price - b.price;
     return b.match - a.match;
   });
 
@@ -172,7 +198,7 @@ export function AiPicks() {
       <AiHead
         title="AI Picks"
         busy={!done && !failed}
-        sub={failed ? "Couldn't load your picks." : done ? (live ? `Your account, last 30 days · Updated ${at} · ${(real?.compared ?? 0).toLocaleString("en-MY")} products compared` : `What to sell next · Today 09:12 · ${AI_PROFILE.compared.toLocaleString("en-MY")} best-sellers compared`) : "Analysing your account. Takes a few seconds."}
+        sub={failed ? "Couldn't load your picks." : done ? (live ? `Your account, last 30 days · Updated ${at} · ${(real?.compared ?? 0).toLocaleString("en-MY")} products compared` : `What to sell next · Today 09:12 · ${AI_PROFILE.compared.toLocaleString("en-MY")} best-sellers compared`) : live ? "Analysing your account. This can take about a minute." : "Analysing your account. Takes a few seconds."}
       >
         {(done || failed) && (
           <button type="button" className="btn-outline v2-btn-sm" onClick={() => setRun((r) => r + 1)}>
@@ -185,10 +211,23 @@ export function AiPicks() {
         <div className="ai-channel">
           <Seg value={channel} options={["Overall", "Video", "LIVE"] as const} onChange={setChannel} />
           <small>{channel === "Overall" ? "All your sales" : channel === "Video" ? "Only your sales from videos, and products in TikTok's top-selling videos" : "Only your sales from LIVEs"}</small>
+          {/* Where her sales come from, under the tabs (owner, 1 Nov 2026). */}
+          {real?.profile.sales && real.profile.orders > 0 && (
+            <span className="ai-share" role="img" aria-label={`Your sales, last 30 days: video ${real.profile.sales.video}%, LIVE ${real.profile.sales.live}%, other ${real.profile.sales.other}%`}>
+              <span className="ai-share-bar"><i className="v" style={{ width: `${real.profile.sales.video}%` }} /><i className="l" style={{ width: `${real.profile.sales.live}%` }} /><i className="o" style={{ width: `${real.profile.sales.other}%` }} /></span>
+              <small><b>Video {real.profile.sales.video}%</b> · <b>LIVE {real.profile.sales.live}%</b>{real.profile.sales.other > 0 && <> · Other {real.profile.sales.other}%</>} of your sales</small>
+            </span>
+          )}
         </div>
       )}
       {failed ? null : !done ? (
         <div className="ai-run" aria-live="polite">
+          {live && (
+            <div className="ai-prog" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress * 100)} aria-label="Analysing your account">
+              <span><i style={{ width: `${Math.round(progress * 100)}%` }} /></span>
+              <small>{left > 0 ? `About ${left >= 60 ? "a minute" : `${left} seconds`} left` : "Almost done…"}</small>
+            </div>
+          )}
           <ol className="ai-steps">
             {steps.map(([t, found], i) => (
               <li key={t} className={i < phase ? "done" : i === phase ? "now" : undefined}>
@@ -232,13 +271,19 @@ export function AiPicks() {
               </div>
               {channel === "Overall" && <div>
                 <small>Where you sell more</small>
-                {prof.orders ? (
-                  <>
-                    <b>{prof.video >= 50 ? `Video ${prof.video}%` : `LIVE ${100 - prof.video}%`}</b>
-                    <span className="ai-split"><i style={{ width: `${prof.video}%` }} /></span>
-                    <em>{prof.video >= 50 ? `LIVE ${100 - prof.video}%` : `Video ${prof.video}%`} of your commission</em>
-                  </>
-                ) : (
+                {prof.orders ? (() => {
+                  // By sales (owner, 1 Nov 2026), video against LIVE.
+                  const s = prof.sales ?? { video: prof.video, live: 100 - prof.video, other: 0 };
+                  const vl = s.video + s.live || 1;
+                  const v = Math.round((s.video / vl) * 100);
+                  return (
+                    <>
+                      <b>{v >= 50 ? `Video ${s.video}%` : `LIVE ${s.live}%`}</b>
+                      <span className="ai-split"><i style={{ width: `${v}%` }} /></span>
+                      <em>{v >= 50 ? `LIVE ${s.live}%` : `Video ${s.video}%`} of your sales</em>
+                    </>
+                  );
+                })() : (
                   <em>No orders in the last 30 days</em>
                 )}
               </div>}
@@ -309,12 +354,20 @@ export function AiPicks() {
 
           {live && real && real.effort.length > 0 && (
             <div className="ai-more">
-              <h3>Worth your effort <Tip label="Worth your effort" text="Commission per video or LIVE for each product you sold in the last 30 days, best first. A star marks a single video or LIVE that took off. Only posts that made a sale are counted." /></h3>
+              <h3>Worth Your Effort <Tip label="Worth your effort" text="For each product you sold in the last 30 days: sales per 1,000 views on your videos (where TikTok gives Rezekii your views), and sales per LIVE (TikTok doesn't share how long a LIVE ran). Best sales per post first. A star marks a single video or LIVE that took off. Only posts that made a sale are counted." /></h3>
               <ol className="ai-effort">
                 {real.effort.map((e) => (
                   <li key={e.id}>
-                    <span><b>{shortName(e.name)}</b><small>{[e.videos && `${e.videos} video${e.videos === 1 ? "" : "s"}`, e.lives && `${e.lives} LIVE${e.lives === 1 ? "" : "s"}`].filter(Boolean).join(" · ")} · {rm(e.commission)} commission</small></span>
-                    <span className="ai-per"><b>{rm(e.perPost)}</b><small>per post</small></span>
+                    {/* Each row opens its product (owner, 1 Nov 2026). */}
+                    <Link href={productHref(e.id)} className="ai-effort-row">
+                      <span><b>{shortName(e.name)}</b><small>{[e.videos && `${e.videos} video${e.videos === 1 ? "" : "s"}`, e.lives && `${e.lives} LIVE${e.lives === 1 ? "" : "s"}`].filter(Boolean).join(" · ")} · {rm(e.commission)} commission</small></span>
+                      <span className="ai-per">
+                        {e.per1k != null && <span><b>{rm(e.per1k)}</b><small>per 1K views</small></span>}
+                        {e.perLive != null && <span><b>{rm(e.perLive)}</b><small>per LIVE</small></span>}
+                        {e.per1k == null && e.perLive == null && <span><b>{rm(e.gmvPerPost ?? e.perPost)}</b><small>per video</small></span>}
+                      </span>
+                      <Icon name="arrow" size={15} />
+                    </Link>
                     {e.hit && <i className="ai-hit"><Icon name="star" size={12} width={2.4} /> 1 post made {rm(e.hit.gmv)}</i>}
                   </li>
                 ))}
@@ -362,10 +415,6 @@ export function AiPicks() {
                       <span className="ai-match" style={{ "--m": it.match } as React.CSSProperties} title="Match with you, out of 100"><b>{it.match}</b></span>
                     </span>
                     <small className="ai-meta">{rm(it.price)} · {short(it.sold)} {it.soldLabel}{it.rankLabel ? ` · ${it.rankLabel}` : ""}</small>
-                    <span className="ai-conv">
-                      <span className={fit === "video" ? "on" : undefined}><Icon name="video" size={13} /> Video <b>{it.video}%</b></span>
-                      <span className={fit === "live" ? "on live" : undefined}><span className="ai-dot" /> LIVE <b>{it.live}%</b></span>
-                    </span>
                     {it.source && <i className={`ai-src${it.source === "Rezekii campaign" ? " rz" : ""}`}>{it.source}</i>}
                     <span className="ai-why">{it.why}</span>
                     <span className="ai-foot">
@@ -387,7 +436,7 @@ export function AiPicks() {
             <div className="ai-extras">
               {real.rising.length > 0 && (
                 <div className="ai-more">
-                  <h3>Rising in your niche</h3>
+                  <h3>Rising in Your Niche</h3>
                   {real.rising.map((r) => (
                     <p key={r.category} className="ai-rise"><b>{r.category}</b> <span className={r.change >= 0 ? "up" : "down"}>{r.change >= 0 ? "+" : ""}{r.change}%</span><small>TikTok&apos;s top 100 sales, last 7 days against the 7 before</small></p>
                   ))}
@@ -395,14 +444,17 @@ export function AiPicks() {
               )}
               {real.peers.length > 0 && (
                 <div className="ai-more">
-                  <h3>Creators like you <Tip label="Creators like you" text="TikTok's top creators in your main category over the last 30 days, with how much of their sales come from video." /></h3>
+                  <h3>Creators Like You <Tip label="Creators like you" text="TikTok's top creators in your main category over the last 30 days, with how much of their sales come from video." /></h3>
                   <ol className="ai-peers">
                     {real.peers.map((c) => (
                       <li key={c.user}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        {c.img ? <img src={c.img} alt="" referrerPolicy="no-referrer" /> : <span className="ai-av">{c.name.slice(0, 1)}</span>}
-                        <span><b>{c.name}</b><small>@{c.user} · {short(c.followers)} followers{c.video >= 0 ? ` · ${c.video >= 50 ? `video ${c.video}%` : `LIVE ${100 - c.video}%`}` : ""}</small></span>
-                        <em>RM {short(c.lo)}–{short(c.hi)}</em>
+                        {/* Each creator opens their TikTok profile (owner, 1 Nov 2026). */}
+                        <a href={`https://www.tiktok.com/@${encodeURIComponent(c.user)}`} target="_blank" rel="noreferrer" className="ai-peer" aria-label={`${c.name} on TikTok`}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          {c.img ? <img src={c.img} alt="" referrerPolicy="no-referrer" /> : <span className="ai-av">{c.name.slice(0, 1)}</span>}
+                          <span><b>{c.name}</b><small>@{c.user} · {short(c.followers)} followers{c.video >= 0 ? ` · ${c.video >= 50 ? `video ${c.video}%` : `LIVE ${100 - c.video}%`}` : ""}</small></span>
+                          <em>RM {short(c.lo)}–{short(c.hi)}</em>
+                        </a>
                       </li>
                     ))}
                   </ol>
@@ -410,7 +462,7 @@ export function AiPicks() {
               )}
               {real.swap.count > 0 && (
                 <div className="ai-more">
-                  <h3>Swap out <Tip label="Swap out" text="Products in your showcase with no orders from you in the last 30 days. Swap them for picks above. Low-rated products are in Risk Check." /></h3>
+                  <h3>Swap Out <Tip label="Swap out" text="Products in your showcase with no orders from you in the last 30 days. Swap them for picks above. Low-rated products are in Risk Check." /></h3>
                   <p className="v2-small" style={{ margin: 0 }}>{real.swap.count} product{real.swap.count === 1 ? "" : "s"} in your showcase didn&apos;t sell in 30 days, for example:</p>
                   <ol className="ai-swap">
                     {real.swap.items.map((x) => (
@@ -429,11 +481,11 @@ export function AiPicks() {
           {live ? (
             <p className="ai-fine">
               <b>Match</b>: fit with you, out of 100, from your categories (up to 35), your price range (20), how well it sells on TikTok (20), commission (15) and rating (10). Not a forecast.{" "}
-              <b>Video / LIVE</b>: where your own sales in that category came from, last 30 days. <b>Earn</b>: the product&apos;s commission; on Rezekii campaign products, your Rezekii rate.
+              <b>Earn</b>: the product&apos;s commission; on Rezekii campaign products, your Rezekii rate.
             </p>
           ) : (
             <p className="ai-fine">
-              <b>Match</b>: fit with you, out of 100. Not a forecast. <b>Video / LIVE</b>: orders per 100 viewers, last 7 days.{" "}
+              <b>Match</b>: fit with you, out of 100. Not a forecast.{" "}
               <b>Earn</b>: Techwide&apos;s rate, or your own rate if it&apos;s higher.
             </p>
           )}

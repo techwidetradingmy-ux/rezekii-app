@@ -1,6 +1,6 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { refreshTokens, type TokenSet } from "../../integrations/tiktok-shop/auth.ts";
-import { decryptToken, encryptToken } from "./token-crypto.ts";
+import { decryptToken, encryptToken, isEncryptedToken } from "./token-crypto.ts";
 
 /** During the v0.1 proof only these handles may connect (env PROOF_ALLOWED_HANDLES, comma-separated). */
 export function isAllowedDuringProof(username: string): boolean {
@@ -42,8 +42,12 @@ export type StoredConnection = {
   refreshToken: string;
 };
 
+/**
+ * A stored connection, or null when there's none or its tokens aren't real encrypted tokens (owner, 1 Nov 2026: the seeded demo
+ * account's placeholder broke every refresh tick with a decrypt error; it now simply counts as not linked).
+ */
 const toStored = (row: Record<string, string> | undefined): StoredConnection | null =>
-  row
+  row && isEncryptedToken(row.access_token_enc) && isEncryptedToken(row.refresh_token_enc)
     ? {
         openId: row.creator_user_open_id,
         username: row.username,
@@ -64,14 +68,7 @@ export async function getAffiliateConnection(username: string): Promise<StoredCo
     `affiliate_connections?username=eq.${encodeURIComponent(username.replace(/^@/, "").toLowerCase())}&select=*&limit=1`,
   );
   const [row] = (await res.json()) as Record<string, string>[];
-  if (!row) return null;
-  return {
-    openId: row.creator_user_open_id,
-    username: row.username,
-    accessToken: decryptToken(row.access_token_enc),
-    accessExpiresAt: new Date(row.access_token_expires_at),
-    refreshToken: decryptToken(row.refresh_token_enc),
-  };
+  return toStored(row);
 }
 
 /** A linked creator's TikTok Shop access token, renewed (and saved) when it expires within 10 minutes. */

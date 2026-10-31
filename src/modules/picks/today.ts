@@ -13,7 +13,8 @@ import { showcaseOf } from "./mine.ts";
  * - Showcase: products already in her showcase, ranked by their sales across TikTok (not her own sales): TikTok's GMV for the
  *   day when the product is in TikTok's daily top-100 lists, otherwise the units Rezekii saw it sell in the last day, otherwise
  *   its all-time units.
- * 10 a day; Gold creators see 30.
+ * How deep she sees TikTok's top 100 (owner, 1 Nov 2026): Bronze the top 10, Silver the top 30, Gold all 100. A category shows
+ * that category's own TikTok list. Each idea carries its 7-day sales line from TikTok's daily lists.
  */
 export type Sales =
   | { kind: "gmv"; lo: number; hi: number; day: string }
@@ -31,14 +32,23 @@ export type Idea = {
   /** Commission × 100: TikTok's open rate; for Rezekii campaign products, Rezekii's rate (Bronze gets the open rate). */
   openRate: number | null; silverRate: number | null;
   rezekii: boolean; sample: boolean; sales: Sales;
+  /** The last 7 Malaysia days, oldest first: the middle of TikTok's GMV range, null on a day it wasn't in a top 100. */
+  trend?: (number | null)[];
+  trendRange?: ([number, number] | null)[];
 };
 export type Channel = "all" | "video" | "others";
-export type TodayIdeas = { source: "market" | "showcase"; channel: Channel; day: string | null; listAt: string | null; rows: Idea[]; gold: boolean; at: string };
+export type TodayIdeas = {
+  source: "market" | "showcase"; channel: Channel; day: string | null; listAt: string | null; rows: Idea[]; gold: boolean; at: string;
+  /** How many she sees (10, 30 or 100), the category shown (null for all), and the categories with a TikTok list. */
+  want?: number; cat?: string | null; cats?: string[];
+};
 
 const MYT = 8 * 3_600_000;
 const enc = encodeURIComponent;
 export const IDEAS = 10;
 export const GOLD_IDEAS = 30;
+/** Ideas per level (owner, 1 Nov 2026): TikTok's lists hold 100. */
+export const IDEAS_FOR = { bronze: 10, silver: 30, gold: 100 } as const;
 
 type Hit = { id: string; name: string; shop: string | null; img: string | null; rating: number | null; cat: string | null; lo: number; hi: number };
 let lists: { day: string; at: string; checked: number; byId: Map<string, Hit> } | null = null;
@@ -74,14 +84,59 @@ export async function listDay(): Promise<string | null> {
   return (await newestLists().catch(() => null))?.day ?? null;
 }
 
-/** TikTok's product search for up to 20 IDs at a time: only products she can promote come back, with price, rate and sales. */
+/**
+ * TikTok's product search for up to 20 IDs a call: only products she can promote come back, with price, rate and sales. Four
+ * calls at a time (owner, 1 Nov 2026: faster).
+ */
 async function searchIds(token: string, ids: string[]): Promise<Map<string, SelectedProduct>> {
   const out = new Map<string, SelectedProduct>();
-  for (let i = 0; i < ids.length; i += 20) {
-    const r = await selectProducts(token, ids.slice(i, i + 20)).catch(() => null);
-    for (const p of r?.data?.products ?? []) out.set(p.id, p);
-  }
+  const batches: string[][] = [];
+  for (let i = 0; i < ids.length; i += 20) batches.push(ids.slice(i, i + 20));
+  for (let i = 0; i < batches.length; i += 4)
+    for (const r of await Promise.all(batches.slice(i, i + 4).map((b) => selectProducts(token, b).catch(() => null))))
+      for (const p of r?.data?.products ?? []) out.set(p.id, p);
   return out;
+}
+
+/** Goes through candidates 80 at a time (four searches at once), keeping those she can add, until `want` are found. */
+async function keepAddable<T>(token: string, cands: T[], idOf: (c: T) => string, want: number, take: (c: T, p: SelectedProduct) => Idea | null, max = 400): Promise<Idea[]> {
+  const rows: Idea[] = [];
+  for (let i = 0; i < cands.length && i < max && rows.length < want; i += 80) {
+    const batch = cands.slice(i, i + 80);
+    const found = await searchIds(token, batch.map(idOf));
+    for (const c of batch) {
+      const p = found.get(idOf(c));
+      if (!p || rows.length >= want || (p.stock?.quantity ?? 1) <= 0) continue;
+      const idea = take(c, p);
+      if (idea) rows.push(idea);
+    }
+  }
+  return rows;
+}
+
+/** The categories with a TikTok list on the newest day, best-selling first. */
+async function listCats(): Promise<string[]> {
+  const l = await newestLists();
+  if (!l) return [];
+  const sums = new Map<string, number>();
+  for (const h of l.byId.values()) if (h.cat) sums.set(h.cat, (sums.get(h.cat) ?? 0) + (h.lo + h.hi) / 2);
+  return [...sums.entries()].sort((a, b) => b[1] - a[1]).map(([c]) => c);
+}
+
+/** Each idea's last 7 days of sales from TikTok's daily lists (middle of the GMV range; null when not in a top 100). */
+export async function withTrends(rows: Idea[], days = 7): Promise<Idea[]> {
+  if (!rows.length) return rows;
+  const end = Date.now() + MYT;
+  const dayList = Array.from({ length: days }, (_, i) => new Date(end - (days - i) * 86_400_000).toISOString().slice(0, 10));
+  const r = await supabaseRest("rpc/product_daily_gmv", { method: "POST", body: JSON.stringify({ p_ids: rows.map((x) => x.id), p_from: dayList[0] }) }).catch(() => null);
+  const got = ((await r?.json().catch(() => [])) ?? []) as { product_id: string; day: string; lo: number; hi: number }[];
+  const by = new Map<string, Map<string, [number, number]>>();
+  for (const g of Array.isArray(got) ? got : []) (by.get(g.product_id) ?? by.set(g.product_id, new Map()).get(g.product_id)!).set(g.day, [Number(g.lo), Number(g.hi)]);
+  return rows.map((x) => {
+    const m = by.get(x.id);
+    const range = dayList.map((d) => m?.get(d) ?? null);
+    return { ...x, trend: range.map((v) => (v ? Math.round((v[0] + v[1]) / 2) : null)), trendRange: range };
+  });
 }
 
 const num = (v: unknown) => (v == null || v === "" || Number.isNaN(Number(v)) ? null : Number(v));
@@ -111,52 +166,38 @@ async function othersOf(): Promise<{ day: string | null; at: string | null; byId
 }
 
 /** Others view: products that sold most outside TikTok's top-selling videos (LIVE, showcase, search, shop page). */
-async function marketOthersIdeas(token: string, gold: boolean): Promise<TodayIdeas> {
-  const want = gold ? GOLD_IDEAS : IDEAS;
+async function marketOthersIdeas(token: string, want: number, cat: string | null): Promise<TodayIdeas> {
   const [o, show, tap] = await Promise.all([othersOf(), showcaseOf(token, 4).catch(() => ({ items: [], more: false })), allProducts().catch(() => [] as TapProduct[])]);
   const inShow = new Set(show.items.map((p) => p.id));
   const tapById = new Map(tap.map((p) => [p.id, p]));
-  const cands = [...o.byId.values()].filter((x) => !inShow.has(x.hit.id)).sort((a, b) => b.gmv - a.gmv);
-  const rows: Idea[] = [];
-  for (let i = 0; i < cands.length && i < 300 && rows.length < want; i += 20) {
-    const batch = cands.slice(i, i + 20);
-    const found = await searchIds(token, batch.map((x) => x.hit.id));
-    for (const x of batch) {
-      const p = found.get(x.hit.id);
-      if (p && rows.length < want && (p.stock?.quantity ?? 1) > 0) rows.push(fromSearch(p, x.hit, tapById.get(x.hit.id), { kind: "others", gmv: x.gmv, day: o.day! }));
-    }
-  }
-  return { source: "market", channel: "others", day: o.day, listAt: o.at, rows, gold, at: new Date().toISOString() };
+  const cands = [...o.byId.values()].filter((x) => !inShow.has(x.hit.id) && (!cat || x.hit.cat === cat)).sort((a, b) => b.gmv - a.gmv);
+  const rows = await keepAddable(token, cands, (x) => x.hit.id, want, (x, p) => fromSearch(p, x.hit, tapById.get(x.hit.id), { kind: "others", gmv: x.gmv, day: o.day! }));
+  return { source: "market", channel: "others", day: o.day, listAt: o.at, rows, gold: want >= 100, want, cat, at: new Date().toISOString() };
 }
 
 /**
  * Video view (owner, 31 Oct 2026): the products in TikTok's top-selling videos on the newest day TikTok has published, by the
  * sales of those videos; only ones she can add and doesn't have yet. (TikTok's LIVE lists don't say which products sold.)
  */
-async function marketVideoIdeas(token: string, gold: boolean): Promise<TodayIdeas> {
-  const want = gold ? GOLD_IDEAS : IDEAS;
+async function marketVideoIdeas(token: string, want: number, cat: string | null): Promise<TodayIdeas> {
   const [vids, show, tap, lists] = await Promise.all([videoProducts(1), showcaseOf(token, 4).catch(() => ({ items: [], more: false })), allProducts().catch(() => [] as TapProduct[]), newestLists()]);
   const inShow = new Set(show.items.map((p) => p.id));
   const tapById = new Map(tap.map((p) => [p.id, p]));
-  const cands = [...vids.entries()].filter(([id]) => !inShow.has(id)).sort((a, b) => b[1].lo + b[1].hi - (a[1].lo + a[1].hi));
-  const rows: Idea[] = [];
-  for (let i = 0; i < cands.length && rows.length < want; i += 20) {
-    const batch = cands.slice(i, i + 20);
-    const found = await searchIds(token, batch.map(([id]) => id));
-    for (const [id, v] of batch) {
-      const p = found.get(id);
-      if (p && rows.length < want && (p.stock?.quantity ?? 1) > 0) rows.push(fromSearch(p, lists?.byId.get(id), tapById.get(id), { kind: "video", lo: v.lo, hi: v.hi, day: v.day, videos: v.videos, week: false }));
-    }
-  }
+  const cands = [...vids.entries()].filter(([id]) => !inShow.has(id) && (!cat || lists?.byId.get(id)?.cat === cat)).sort((a, b) => b[1].lo + b[1].hi - (a[1].lo + a[1].hi));
+  const rows = await keepAddable(token, cands, ([id]) => id, want, ([id, v], p) => fromSearch(p, lists?.byId.get(id), tapById.get(id), { kind: "video", lo: v.lo, hi: v.hi, day: v.day, videos: v.videos, week: false }), 1000);
   const day = cands[0]?.[1].day ?? null;
-  return { source: "market", channel: "video", day, listAt: lists?.at ?? null, rows, gold, at: new Date().toISOString() };
+  return { source: "market", channel: "video", day, listAt: lists?.at ?? null, rows, gold: want >= 100, want, cat, at: new Date().toISOString() };
 }
 
 /** Marketplace ideas: TikTok's best sellers she can add, with Rezekii campaign products mixed in (3 of 10, 9 of 30). */
-export async function marketIdeas(token: string, gold: boolean, channel: Channel = "all"): Promise<TodayIdeas> {
-  if (channel === "video") return marketVideoIdeas(token, gold);
-  if (channel === "others") return marketOthersIdeas(token, gold);
-  const want = gold ? GOLD_IDEAS : IDEAS;
+export async function marketIdeas(token: string, want: number, channel: Channel = "all", cat: string | null = null): Promise<TodayIdeas> {
+  const [base, cats] = await Promise.all([marketIdeasFor(token, want, channel, cat), listCats().catch(() => [] as string[])]);
+  return { ...base, rows: await withTrends(base.rows).catch(() => base.rows), cats };
+}
+
+async function marketIdeasFor(token: string, want: number, channel: Channel, cat: string | null): Promise<TodayIdeas> {
+  if (channel === "video") return marketVideoIdeas(token, want, cat);
+  if (channel === "others") return marketOthersIdeas(token, want, cat);
   const [l, show, tap] = await Promise.all([newestLists(), showcaseOf(token, 4).catch(() => ({ items: [], more: false })), allProducts().catch(() => [] as TapProduct[])]);
   const inShow = new Set(show.items.map((p) => p.id));
   const tapById = new Map(tap.map((p) => [p.id, p]));
@@ -166,20 +207,13 @@ export async function marketIdeas(token: string, gold: boolean, channel: Channel
   const daily = await soldInLastDay(live.map((p) => ({ id: p.id, sold: p.sold, price: p.priceLo })));
   const salesOf = (p: TapProduct): Sales => (daily.has(p.id) ? { kind: "day", units: daily.get(p.id)! } : { kind: "total", units: p.sold });
   const ours = live.sort((a, b) => (daily.has(b.id) ? 1 : 0) - (daily.has(a.id) ? 1 : 0) || gmvOf(salesOf(b), b.priceLo) - gmvOf(salesOf(a), a.priceLo) || b.sold - a.sold);
-  const ourSlots = Math.min(Math.round(want * 0.3), ours.length);
+  // A category shows that category's own TikTok list (owner, 1 Nov 2026), without Rezekii's products mixed in.
+  const ourSlots = cat ? 0 : Math.min(Math.round(want * 0.3), ours.length);
 
-  const rows: Idea[] = [];
-  const cands = l ? [...l.byId.values()].filter((h) => !inShow.has(h.id)).sort((a, b) => b.lo + b.hi - (a.lo + a.hi)) : [];
-  for (let i = 0; i < cands.length && i < 300 && rows.length < want - ourSlots; i += 20) {
-    const batch = cands.slice(i, i + 20);
-    const found = await searchIds(token, batch.map((h) => h.id));
-    for (const h of batch) {
-      const p = found.get(h.id);
-      if (p && rows.length < want - ourSlots && (p.stock?.quantity ?? 1) > 0) rows.push(fromSearch(p, h, tapById.get(h.id), { kind: "gmv", lo: h.lo, hi: h.hi, day: l!.day }));
-    }
-  }
+  const cands = l ? [...l.byId.values()].filter((h) => !inShow.has(h.id) && (!cat || h.cat === cat)).sort((a, b) => b.lo + b.hi - (a.lo + a.hi)) : [];
+  const rows = await keepAddable(token, cands, (h) => h.id, want - ourSlots, (h, p) => fromSearch(p, h, tapById.get(h.id), { kind: "gmv", lo: h.lo, hi: h.hi, day: l!.day }), 1000);
   const have = new Set(rows.map((r) => r.id));
-  const extra = ours.filter((p) => !have.has(p.id)).slice(0, want - rows.length);
+  const extra = cat ? [] : ours.filter((p) => !have.has(p.id)).slice(0, want - rows.length);
   const found = await searchIds(token, extra.map((p) => p.id));
   for (const p of extra) {
     const s = found.get(p.id);
@@ -187,7 +221,7 @@ export async function marketIdeas(token: string, gold: boolean, channel: Channel
     rows.push(s ? fromSearch(s, undefined, p, sales) : { id: p.id, name: p.name, img: p.image, shop: p.shop, category: p.category, rating: null, price: p.priceLo, openRate: p.openRate, silverRate: p.silverRate, rezekii: true, sample: p.samples > 0, sales });
   }
   rows.sort((a, b) => gmvOf(b.sales, b.price) - gmvOf(a.sales, a.price) || (b.sales.kind === "total" ? b.sales.units : 0) - (a.sales.kind === "total" ? a.sales.units : 0));
-  return { source: "market", channel: "all", day: l?.day ?? null, listAt: l?.at ?? null, rows: rows.slice(0, want), gold, at: new Date().toISOString() };
+  return { source: "market", channel: "all", day: l?.day ?? null, listAt: l?.at ?? null, rows: rows.slice(0, want), gold: want >= 100, want, cat, at: new Date().toISOString() };
 }
 
 /** Saves each product's all-time units sold for today, and returns how many sold in about the last day where Rezekii knows. */
@@ -217,8 +251,13 @@ export async function soldInLastDay(products: { id: string; sold: number; price:
  * Showcase ideas: her showcase products (first 200) ranked by their sales across TikTok. Video view: those in TikTok's
  * top-selling videos over the last 7 days, by those videos' sales.
  */
-export async function showcaseIdeas(token: string, gold: boolean, channel: Channel = "all"): Promise<TodayIdeas> {
-  const want = gold ? GOLD_IDEAS : IDEAS;
+export async function showcaseIdeas(token: string, want: number, channel: Channel = "all"): Promise<TodayIdeas> {
+  const base = await showcaseIdeasFor(token, want, channel);
+  return { ...base, want, rows: await withTrends(base.rows).catch(() => base.rows) };
+}
+
+async function showcaseIdeasFor(token: string, want: number, channel: Channel): Promise<TodayIdeas> {
+  const gold = want >= 100;
   const [l, show, tap] = await Promise.all([newestLists(), showcaseOf(token, 4), allProducts().catch(() => [] as TapProduct[])]);
   if (channel === "others") {
     const o = await othersOf();

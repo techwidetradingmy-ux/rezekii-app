@@ -1,6 +1,6 @@
 /** What the daily refresh fetches, as a list of tasks. Pure: no network, no database. */
 
-export type TaskKind = "tap_campaigns" | "tap_products" | "tap_catalog" | "tap_samples" | "tap_samples_mine" | "tap_creators" | "levels" | "rankings" | "videos" | "orders" | "best" | "details" | "photos" | "marketplace" | "agency" | "community" | "sold";
+export type TaskKind = "tap_campaigns" | "tap_products" | "tap_catalog" | "tap_samples" | "tap_samples_mine" | "tap_creators" | "levels" | "rankings" | "videos" | "orders" | "best" | "details" | "photos" | "marketplace" | "agency" | "community" | "sold" | "ideas";
 export type PlannedTask = { key: string; kind: TaskKind; params: Record<string, unknown>; priority: number };
 
 const DAY = 86_400_000;
@@ -129,6 +129,8 @@ export function planDay(now: number, haveDays: Set<string>, newestBuilt = false,
   tasks.push({ key: "photos", kind: "photos", params: {}, priority: 5 });
   // each Rezekii product's and each creator's showcase products' all-time units sold, for Today's Ideas' daily sales
   tasks.push({ key: "sold", kind: "sold", params: {}, priority: 5 });
+  // each linked creator's Today's Ideas (Marketplace and Showcase), made ahead and saved so the page opens at once (owner, 1 Nov 2026)
+  tasks.push({ key: "ideas", kind: "ideas", params: {}, priority: 6 });
   // linked creators' agency status (every 2 weeks) and TikTok level (on the 1st): queues one task per creator who is due
   tasks.push({ key: "agency", kind: "agency", params: {}, priority: 6 });
   // On the 1st the marketplace search is also split by TikTok's creator level, so each creator's level comes with it (levels

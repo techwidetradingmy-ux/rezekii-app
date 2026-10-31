@@ -6,6 +6,7 @@ import { lineEarned, lineGmv } from "../sales/summary.ts";
 import { allProducts, type TapProduct } from "../tap/catalog.ts";
 import { profileOf, type CreatorDetails } from "../rewards/profiles.ts";
 import { ratingsOf, salesProfile, showcaseOf, type Channel } from "./mine.ts";
+import { queuePhotos } from "../photos/queue.ts";
 
 /**
  * AI Picks (owner, 31 Oct 2026): a deep look at her last 30 days, then the products on TikTok Shop that fit her best.
@@ -32,11 +33,21 @@ export type Pick = {
   match: number; parts: { category: number; price: number; rate: number; demand: number; rating: number };
   fit: "video" | "live"; video: number; live: number; why: string[];
 };
-export type Effort = { id: string; name: string; videos: number; lives: number; gmv: number; commission: number; perPost: number; hit: { gmv: number } | null };
+/**
+ * Worth your effort for one product (owner, 1 Nov 2026): videos are judged by sales per 1,000 views (from her TikTok account's view
+ * counts, where Rezekii has them); LIVEs by sales per LIVE, because TikTok doesn't give creators a LIVE's length. Ranked by sales
+ * per post (video or LIVE).
+ */
+export type Effort = {
+  id: string; name: string; videos: number; lives: number; gmv: number; commission: number; perPost: number; hit: { gmv: number } | null;
+  videoGmv: number; liveGmv: number; per1k: number | null; perLive: number | null; gmvPerPost: number;
+};
 export type AiResult = {
   linked: boolean;
   profile: {
     categories: [string, number][]; video: number; price: string | null; aov: number; orders: number; days: number; gmv: number; commission: number;
+    /** Her sales by channel, percent of GMV (owner, 1 Nov 2026). */
+    sales: { video: number; live: number; other: number };
     hours: [string, number][]; you: { gender: string | null; race: string | null } | null;
     audience: { female: number; male: number; age: string; places: string } | null;
   };
@@ -148,19 +159,38 @@ export async function aiPicks(userId: string, token: string, username: string | 
       p.gmv += g;
     }
   }
+  // Her videos' view counts, where her TikTok account gives them.
+  const vidIds = [...new Set([...per.values()].flatMap((a) => [...a.posts.entries()].filter(([, p]) => !p.live).map(([id]) => id)))];
+  const views = new Map<string, number>();
+  for (let i = 0; i < vidIds.length; i += 100)
+    for (const r of (await (await supabaseRest(`tiktok_videos?video_id=in.(${vidIds.slice(i, i + 100).join(",")})&views=not.is.null&select=video_id,views`)).json().catch(() => [])) as { video_id: string; views: number }[])
+      if (r.views > 0) views.set(r.video_id, r.views);
+  const r2 = (n: number) => Math.round(n * 100) / 100;
   const effort: Effort[] = [...per.entries()]
     .filter(([, a]) => a.posts.size > 0 && a.commission > 0)
     .map(([id, a]) => {
-      const posts = [...a.posts.values()];
-      const best = posts.reduce((m, p) => (p.gmv > m ? p.gmv : m), 0);
+      const posts = [...a.posts.entries()];
+      const best = posts.reduce((m, [, p]) => (p.gmv > m ? p.gmv : m), 0);
+      const vids = posts.filter(([, p]) => !p.live);
+      const lvs = posts.filter(([, p]) => p.live);
+      const videoGmv = vids.reduce((s, [, p]) => s + p.gmv, 0);
+      const liveGmv = lvs.reduce((s, [, p]) => s + p.gmv, 0);
+      // Sales per 1,000 views, from the videos whose views are known.
+      const seen = vids.filter(([vid]) => views.has(vid));
+      const seenViews = seen.reduce((s, [vid]) => s + (views.get(vid) ?? 0), 0);
+      const seenGmv = seen.reduce((s, [, p]) => s + p.gmv, 0);
       return {
-        id, name: a.name, videos: posts.filter((p) => !p.live).length, lives: posts.filter((p) => p.live).length, gmv: Math.round(a.gmv), commission: Math.round(a.commission * 100) / 100,
-        perPost: Math.round((a.commission / posts.length) * 100) / 100,
+        id, name: a.name, videos: vids.length, lives: lvs.length, gmv: Math.round(a.gmv), commission: r2(a.commission),
+        perPost: r2(a.commission / posts.length),
+        videoGmv: r2(videoGmv), liveGmv: r2(liveGmv),
+        per1k: seenViews >= 100 ? r2((seenGmv / seenViews) * 1000) : null,
+        perLive: lvs.length ? r2(liveGmv / lvs.length) : null,
+        gmvPerPost: r2((videoGmv + liveGmv) / posts.length),
         // One video or LIVE that took off: RM1,000+ in sales on its own, or nearly all of the product's sales from one post.
         hit: best >= 1000 || (posts.length >= 3 && best >= a.gmv * 0.7 && best >= 300) ? { gmv: Math.round(best) } : null,
       };
     })
-    .sort((a, b) => b.perPost - a.perPost)
+    .sort((a, b) => b.gmvPerPost - a.gmvPerPost)
     .slice(0, 8);
 
   // Candidates: TikTok's 30-day best sellers in her main categories, TikTok's marketplace search, Rezekii campaign products.
@@ -264,6 +294,9 @@ export async function aiPicks(userId: string, token: string, username: string | 
         .slice(0, 5)
         .map((r) => ({ user: r[1], name: r[2] || r[1], img: built.details[r[1]]?.a ?? null, followers: r[3], lo: r[5], hi: r[6], video: built.details[r[1]]?.vs ?? -1 }))
     : [];
+  // Every creator shows a photo (owner, 1 Nov 2026): any without a saved one go to the front of the daily photo task.
+  const noPhoto = peers.filter((c) => !c.img).map((c) => c.user);
+  if (noPhoto.length) await queuePhotos(noPhoto).catch(() => undefined);
 
   // Swap out: showcase products she had no orders for in 30 days (low ratings are in Risk Check).
   const idle = showcase.items.filter((p) => !mine.has(p.id));
@@ -275,6 +308,7 @@ export async function aiPicks(userId: string, token: string, username: string | 
     profile: {
       categories: mains.filter(([, s]) => s.share >= 0.01).slice(0, 4).map(([c, s]) => [CAT[c] ?? c, Math.round(s.share * 100)]),
       video: allSplit ? pct(video, allSplit) : 0,
+      sales: (() => { const t = prof.split.video + prof.split.live + prof.split.other; return { video: pct(prof.split.video, t), live: pct(prof.split.live, t), other: t ? 100 - pct(prof.split.video, t) - pct(prof.split.live, t) : 0 }; })(),
       price: lo !== null && hi !== null ? `RM ${Math.round(lo)}–${Math.round(hi)}` : null,
       aov: orders ? Math.round((gmv / orders) * 100) / 100 : 0, orders, days: 30, gmv: Math.round(gmv), commission: Math.round(commission * 100) / 100, hours,
       you: saved ? { gender: saved.details.gender ?? null, race: saved.details.race ?? null } : null,

@@ -11,6 +11,7 @@ import { Trend } from "@/components/creator1/shoot-today";
 import { WishForm, WishSteps, useWishes } from "@/components/creator1/wish";
 import { LIVE_STUBS, product, rm, short } from "@/lib/mock";
 import { AddButton } from "@/components/add-button";
+import { GmvSpark } from "@/components/gmv-spark";
 import { sampleCount } from "@/lib/mock-creator1";
 import { commitText } from "@/lib/mock-showcase";
 import { canRequest, markRequested, productView, requestedSamples, sampleConditions } from "@/lib/product-view";
@@ -54,6 +55,14 @@ export default function ProductPage() {
   // Opening TikTok's sample page takes a moment (owner, 1 Nov 2026): the button says so.
   const [opening, setOpening] = useState(false);
   const [fullName, setFullName] = useState(false);
+  // Its sales on TikTok over 28 days (owner, 1 Nov 2026), from TikTok's daily top-100 lists; estimated.
+  const [trend28, setTrend28] = useState<{ days: string[]; ranges: ([number, number] | null)[] } | null>(null);
+  useEffect(() => {
+    if (!live) return;
+    let on = true;
+    fetch(`/api/v2/product-trend?id=${encodeURIComponent(id)}`).then((r) => (r.ok ? r.json() : null)).then((d) => { if (on) setTrend28(d); }).catch(() => {});
+    return () => { on = false; };
+  }, [live, id]);
   const [warn, setWarn] = useState(false);
   const [wishOpen, setWishOpen] = useState(false);
   // Samples asked for and left, kept live (the preview moves one along now and then).
@@ -236,6 +245,17 @@ export default function ProductPage() {
 
         <section className="v2-card pp-card">
           {p.week.length > 0 && <Trend points={p.week} label="Sales, last 7 days" />}
+          {live && trend28 && (
+            <div className="pp-month">
+              <span className="pp-month-h"><b>Sales on TikTok, last 28 days</b><small>{trend28.ranges.filter(Boolean).length} of 28 days in TikTok&apos;s top 100</small></span>
+              {trend28.ranges.some(Boolean) ? (
+                <GmvSpark points={trend28.ranges.map((r) => (r ? (r[0] + r[1]) / 2 : null))} ranges={trend28.ranges} width={320} height={84} days={trend28.days} label="Sales on TikTok, last 28 days" />
+              ) : (
+                <p className="v2-small" style={{ margin: 0 }}>Not in TikTok&apos;s daily top 100 in the last 28 days.</p>
+              )}
+              <small className="pp-month-note">Estimated from TikTok&apos;s daily sales ranges. A gap is a day it wasn&apos;t in a top 100.</small>
+            </div>
+          )}
           <div className="pp-facts">
             {p.sold !== null && <span><small>Total sold</small><b>{short(p.sold)}</b></span>}
             {mySold !== null && <span><small>Your sales, 30 days</small><b>{mySold}</b></span>}

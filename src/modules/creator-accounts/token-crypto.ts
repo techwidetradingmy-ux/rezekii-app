@@ -8,6 +8,9 @@ function key(): Buffer {
   return buf;
 }
 
+/** True for a value encryptToken made ("iv.tag.ciphertext"); a placeholder (e.g. the seeded demo account) isn't. */
+export const isEncryptedToken = (stored: string | null | undefined): stored is string => typeof stored === "string" && stored.split(".").length === 3;
+
 /** Returns "iv.tag.ciphertext", each base64url. */
 export function encryptToken(plain: string): string {
   const iv = randomBytes(12);
