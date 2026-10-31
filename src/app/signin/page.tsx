@@ -14,7 +14,7 @@ import { GoogleMark, TikTokMark } from "@/components/creator1/brand";
 import { MY_STATES, isEmail, tidyPhone } from "@/lib/mock-creator1";
 import { REFERRAL_REWARD, WELCOME_CREDITS } from "@/lib/mock";
 import { COUNTRIES, tidyPhone as tidyAnyPhone } from "@/lib/mock-seller";
-import { DIAL_OPTIONS } from "@/lib/countries";
+import { DIAL_OPTIONS, RACES } from "@/lib/countries";
 import { NICHES } from "@/lib/mock-creator2";
 import { EMPTY_ADDRESS, addressOk, birthdayError, saveAddress, saveSignup, type Address } from "@/lib/address";
 import "../creator1.css";
@@ -120,6 +120,7 @@ export default function SignIn() {
   const [bdText, setBdText] = useState("");
   const [birthday, setBirthday] = useState("");
   const [gender, setGender] = useState("");
+  const [race, setRace] = useState("");
   const [niches, setNiches] = useState<string[]>([]);
   const [showAddr, setShowAddr] = useState(false);
   const [addr, setAddr] = useState<Address>(EMPTY_ADDRESS);
@@ -181,7 +182,7 @@ export default function SignIn() {
         }
       }
       await saveProfile("creator", {
-        name: name.trim(), birthday, country, state: state.trim(), whatsapp: tel.e164.replace(/\s/g, ""), gender,
+        name: name.trim(), birthday, country, state: state.trim(), whatsapp: tel.e164.replace(/\s/g, ""), gender, race,
         types: kinds.map((k) => (k === "Others" ? `Others: ${otherKind.trim()}` : k)), niches,
       });
       keep();
@@ -339,6 +340,15 @@ export default function SignIn() {
     </label>
   );
 
+  const raceField = (
+    <label className="v2-field">
+      Race <small className="cr1-small">(optional)</small>
+      <select className="np-input cr1-select" value={race} onChange={(e) => setRace(e.target.value)}>
+        <option value="">Choose</option>
+        {RACES.map((r) => <option key={r} value={r}>{r}</option>)}
+      </select>
+    </label>
+  );
   const genderField = (
     <label className="v2-field">
       Gender
@@ -485,6 +495,7 @@ export default function SignIn() {
                 {birthdayField}
                 {genderField}
               </div>
+              {raceField}
               <div className="cr1-pair su-picks">
                 {kindField}
                 {nicheField}

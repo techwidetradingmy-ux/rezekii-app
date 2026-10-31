@@ -1,5 +1,5 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
-import { addShowcaseByLink, getShowcaseProducts } from "../../integrations/tiktok-shop/creator.ts";
+import { addShowcaseById, addShowcaseByLink, getShowcaseProducts } from "../../integrations/tiktok-shop/creator.ts";
 import { approvedCreatorToken } from "../creator-accounts/access.ts";
 import { allProducts } from "./catalog.ts";
 import { levelOf } from "../levels/store.ts";
@@ -14,6 +14,8 @@ export type AddResult = { added: true } | { added: false; link?: string; error?:
 export async function addToShowcase(userId: string, productId: string, ctx?: { token: string | null; level: Awaited<ReturnType<typeof levelOf>>; bulk: true }): Promise<AddResult> {
   const token = ctx ? ctx.token : await approvedCreatorToken(userId);
   const tap = await makeTapLink(userId, productId, ctx?.level);
+  // Not in Rezekii's campaigns (owner, 31 Oct 2026: Today's Ideas and AI Picks show TikTok's whole marketplace): added as it is.
+  if (!tap.ok && tap.status === 404 && token) return addById(userId, token, productId, !ctx);
   if (!tap.ok) return { added: false, error: tap.error, status: tap.status };
   if (!token) return { added: false, link: tap.link, status: 200 };
   return addByTapLink(userId, token, tap.link, !ctx);
@@ -26,6 +28,17 @@ export async function addByTapLink(userId: string, token: string, link: string, 
   if (r.code !== 0 || failed) {
     console.error("[showcase add]", r.code, r.message, failed?.code, failed?.message);
     return { added: false, link, error: failed?.message || r.message || "TikTok Shop didn't add it. Open the link to add it in TikTok Shop.", status: 502 };
+  }
+  if (count) await countAdded(userId, 1);
+  return { added: true };
+}
+
+async function addById(userId: string, token: string, productId: string, count: boolean): Promise<AddResult> {
+  const r = await addShowcaseById(token, [productId]);
+  const failed = r.data?.errors?.[0];
+  if (r.code !== 0 || failed) {
+    console.error("[showcase add by id]", r.code, r.message, failed?.code, failed?.message);
+    return { added: false, error: failed?.message || r.message || "TikTok Shop didn't add it. Please try again.", status: 502 };
   }
   if (count) await countAdded(userId, 1);
   return { added: true };

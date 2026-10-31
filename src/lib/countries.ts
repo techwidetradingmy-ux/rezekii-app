@@ -74,3 +74,6 @@ export const dialOfNumber = (intl: string): string | null => {
 };
 
 export const countryName = (code: string) => COUNTRIES.find((c) => c.code === code)?.name ?? code;
+
+/** Race, asked once and optional (owner, 31 Oct 2026), for matching creators to products and campaigns. */
+export const RACES = ["Malay", "Chinese", "Indian", "Bumiputera Sabah", "Bumiputera Sarawak", "Others"] as const;

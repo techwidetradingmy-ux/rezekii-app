@@ -1621,3 +1621,13 @@ li.sc-row { cursor: default; }
 
 /* The 6-digit email code (owner, 31 Oct 2026). */
 .cr1-code { font-size: 22px; font-weight: 800; letter-spacing: 0.35em; text-align: center; }
+
+/* Today's Ideas labels (owner, 31 Oct 2026): where a product comes from, a free sample, and the Gold line. */
+.nb-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+.nb-tag { font-style: normal; font-size: 11px; font-weight: 800; padding: 1px 7px; border-radius: 99px; background: var(--gsoft); color: var(--gink); width: fit-content; }
+.nb-tag.gift { background: #fff3d6; color: #8a5a00; }
+.nb-sample { color: #a46a00; border-color: #f3d58a; background: #fff8e6; }
+.nb-gold { margin: 4px 0 0; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--muted); }
+/* A row with a free sample has two buttons: the list gives it a column, the cards put it left of the other one. */
+.nb-list li:has(.nb-sample) { grid-template-columns: 22px minmax(0, 1fr) 40px 40px; }
+.nb-list.cards .nb-sample { right: 62px; }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Updated } from "@/components/data-note";
+import { updatedWhen } from "@/components/data-note";
 import { useEffect, useRef, useState } from "react";
 import { useSideScroll } from "@/components/side-scroll";
 import { Icon } from "@/components/icons";
@@ -214,13 +214,21 @@ export function ShootToday({ bare = false, view = "cards", inFrame = false }: { 
 /** Where a best-seller list comes from (owner, 29 Oct 2026): the TikTok Shop market, or her own showcase. Same order for both. */
 export type BestSource = "market" | "showcase";
 
-/** One row of /api/v2/best (signed in). */
+/** One row of /api/v2/best (signed in): see modules/picks/today.ts. */
+type LiveSales = { kind: "gmv"; lo: number; hi: number; day: string } | { kind: "day"; units: number } | { kind: "total"; units: number };
 type LiveBest = {
-  id: string; name: string; img: string | null; category: string | null; rating: number | null; sold: number; today: number | null;
-  units7: number | null; units30: number | null; week: number[] | null; openRate: number | null; silverRate: number | null;
+  id: string; name: string; img: string | null; category: string | null; rating: number | null; price: number | null;
+  openRate: number | null; silverRate: number | null; rezekii: boolean; sample: boolean; sales: LiveSales;
 };
+type LiveIdeas = { linked: boolean; rows: LiveBest[]; day: string | null; listAt: string | null; gold: boolean; at: string };
 /** One best-seller row, the same for sample and real lists. */
-type BestRow = { productId: string; name: string; img: string; category: string; rating: number | null; line: string; rate: number; points: number[] | null; pointsLabel: string };
+type BestRow = { productId: string; name: string; img: string; category: string; rating: number | null; line: string; rate: number; points: number[] | null; pointsLabel: string; rezekii?: boolean; sample?: boolean };
+
+const rm = (v: number) => (v >= 1e6 ? `${(v / 1e6).toFixed(1)}M` : v >= 1e3 ? `${Math.round(v / 1e3)}K` : String(Math.round(v)));
+const dayName = (d: string) => new Date(`${d}T12:00:00+08:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+/** What a row's sales number means: TikTok's GMV for the day, units across TikTok in about the last day, or all-time units. */
+const salesLine = (s: LiveSales) =>
+  s.kind === "gmv" ? `RM ${rm(s.lo)}–${rm(s.hi)} sales on ${dayName(s.day)}` : s.kind === "day" ? `~${short(s.units)} sold on TikTok in the last day` : `${short(s.units)} sold on TikTok`;
 
 /**
  * Best sellers (owner, 29 Oct 2026). Marketplace: public TikTok Shop products in her top categories that aren't in her showcase
@@ -234,7 +242,7 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
   const week = (id: string) => NICHE_BEST.find((b) => b.productId === id)?.weekSold ?? Math.round(product(id).sold / 26);
 
   // Signed in (owner, 31 Oct 2026): her real lists from /api/v2/best.
-  const [real, setReal] = useState<{ linked: boolean; rows: LiveBest[]; at: string } | null>(null);
+  const [real, setReal] = useState<LiveIdeas | null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     if (!live || !linked) return;
@@ -249,11 +257,10 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
   const rows: BestRow[] = live
     ? (real?.rows ?? []).map((b) => ({
         productId: b.id, name: shortName(b.name), img: b.img ?? NO_PHOTO, category: b.category ?? "Other", rating: b.rating,
-        line: mine
-          ? `You sold ${b.units7 ?? 0} in 7 days${b.units30 ? ` · ${b.units30} in 30 days` : ""}`
-          : `${short(b.sold)} sold${b.today ? ` · ${short(b.today)} today` : ""}`,
-        rate: ((mine || me?.level === "bronze" ? b.openRate : b.silverRate ?? b.openRate) ?? 0) / 100,
-        points: b.week, pointsLabel: "Your sales, 7 days",
+        // Sales across the whole of TikTok, not hers (owner, 31 Oct 2026).
+        line: salesLine(b.sales),
+        rate: ((!b.rezekii || me?.level === "bronze" ? b.openRate : b.silverRate ?? b.openRate) ?? 0) / 100,
+        points: null, pointsLabel: "", rezekii: b.rezekii, sample: b.sample,
       }))
     : (mine ? ON_IDS : NICHE_BEST.map((b) => b.productId).filter((id) => !ON_IDS.includes(id) && product(id).rating >= 4))
         .map((id) => ({ productId: id, weekSold: week(id), trend: NICHE_BEST.find((b) => b.productId === id)?.trend ?? ("flat" as Trend) }))
@@ -291,11 +298,16 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
   return (
     <section className={inFrame ? "nb-box nb-in" : "v2-card nb-box"} aria-label={mine ? "Best sellers in your showcase" : "Best sellers in your niche"}>
       {/* The card's AI header sits above the tabs (owner, 29 Oct 2026: one AI label per card); each tab just says where it's from. */}
-      {inFrame ? <p className="nb-src">{mine ? (live ? "Products in your showcase, by your sales this week" : "Products in your showcase") : live ? "Rezekii campaign products in your categories, not in your showcase yet" : "Live on TikTok Shop, not in your showcase yet"}</p> : <AiHead title={mine ? "Best Sellers in Your Showcase" : "Best Sellers on TikTok Shop"} sub="Best-selling first, updated daily" />}
-      {live && real && <Updated at={real.at} />}
+      {inFrame ? <p className="nb-src">{mine ? (live ? "Products in your showcase, by their sales across TikTok" : "Products in your showcase") : live ? "Sold the most on TikTok Shop, all categories, with Rezekii campaign products · not in your showcase yet" : "Live on TikTok Shop, not in your showcase yet"}</p> : <AiHead title={mine ? "Best Sellers in Your Showcase" : "Best Sellers on TikTok Shop"} sub="Best-selling first, updated daily" />}
+      {live && real?.day && (
+        <p className="v2-small v2-upd">
+          <Icon name="clock" size={14} /> TikTok sales on {dayName(real.day)}{real.listAt ? ` · list updated ${updatedWhen(real.listAt)}` : ""}
+          <Tip label="When this updates" text="TikTok publishes each day's best sellers the next afternoon, around 4 PM. This list updates as soon as it's out, so it's always the newest day." />
+        </p>
+      )}
       {live && linked && !real && !failed && <p className="v2-muted" style={{ margin: 0 }}>Loading your list…</p>}
       {live && failed && <p className="v2-muted" style={{ margin: 0 }}>Couldn&apos;t load this list. Please try again later.</p>}
-      {live && real && !real.rows.length && <p className="v2-muted" style={{ margin: 0 }}>{mine ? "Your showcase is empty. Add products from the Marketplace." : "No products in your categories right now. Check again tomorrow."}</p>}
+      {live && real && !real.rows.length && <p className="v2-muted" style={{ margin: 0 }}>{mine ? "Your showcase is empty. Add products from the Marketplace." : "TikTok hasn't published a best-seller list yet. Check again later."}</p>}
       <div className="nb-cats" role="group" aria-label="Category">
         {cats.map((c) => <button key={c} type="button" className={`v2-chip${c === cat ? " on" : ""}`} aria-pressed={c === cat} onClick={() => setCat(c)}>{c}</button>)}
       </div>
@@ -309,12 +321,15 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={b.img} alt="" />
                 <span className="nb-main">
+                  {b.rezekii && <span className="nb-tags"><i className="nb-tag">Rezekii campaign</i>{b.sample && <i className="nb-tag gift">Free sample</i>}</span>}
                   <b>{b.name}</b>
                   <small>{b.line}{b.rate > 0 && <> · Earn <Hidden>{b.rate}%</Hidden></>}</small>
                   {b.rating !== null && <span className="nb-score"><Icon name="star" size={12} width={2.4} /> {b.rating.toFixed(1)}</span>}
                 </span>
                 {b.points && b.points.some((v) => v > 0) && <Trend points={b.points} label={b.pointsLabel} />}
               </Link>
+              {/* Rezekii campaign products can ask for a free sample (owner, 31 Oct 2026); TikTok's other products only add. */}
+              {live && b.sample && <Link href={productHref(b.productId, { sample: true })} className="nb-add nb-sample" aria-label={`Request a free sample of ${b.name}`}><Icon name="gift" size={18} /></Link>}
               {mine ? (
                 <Link href={`/app/publish?idea=${encodeURIComponent(`Show ${b.name}`)}`} className="nb-add" aria-label={`Plan a video for ${b.name}`}><Icon name="video" size={18} /></Link>
               ) : (
@@ -327,6 +342,8 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
         })}
       </ol>
       {shape === "cards" && <span className="td-dots" aria-hidden="true">{shown.map((b, n) => <i key={b.productId} className={n === at ? "on" : undefined} />)}</span>}
+      {/* 10 a day; Gold creators see 30 (owner, 31 Oct 2026). */}
+      {live && real && real.rows.length > 0 && !real.gold && <p className="nb-gold"><Icon name="lock" size={14} /> Gold creators see 30 ideas a day</p>}
     </section>
   );
 }

@@ -1,4 +1,5 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import { RACES } from "../../lib/countries.ts";
 
 /**
  * Saved details (owner, 31 Oct 2026: real data). The creator profile from My Account, or the seller's contact name and phone.
@@ -6,7 +7,7 @@ import { supabaseRest } from "../../integrations/supabase/rest.ts";
  */
 
 export type Side = "creator" | "seller";
-export type CreatorDetails = { name: string; birthday: string; country?: string; state: string; whatsapp: string; gender: "Female" | "Male" | "Others"; types: string[]; niches: string[] };
+export type CreatorDetails = { name: string; birthday: string; country?: string; state: string; whatsapp: string; gender: "Female" | "Male" | "Others"; race?: string; types: string[]; niches: string[] };
 export type SellerDetails = { contact: string; phone: string };
 export type Saved<T> = { details: T; complete: boolean; savedAt: string };
 
@@ -21,6 +22,8 @@ export function cleanCreator(v: Record<string, unknown>): CreatorDetails | null 
   const d: CreatorDetails = {
     name: text(v.name), birthday: text(v.birthday, 10), country: text(v.country, 2).toUpperCase() || "MY", state: text(v.state, 40), whatsapp: text(v.whatsapp, 16),
     gender: gender ?? "Female", types: list(v.types, 6), niches: list(v.niches, 3),
+    // Optional (owner, 31 Oct 2026).
+    ...((RACES as readonly string[]).includes(String(v.race)) ? { race: String(v.race) } : {}),
   };
   const age = (Date.now() - Date.parse(d.birthday)) / (365.25 * 86400_000);
   const ok = d.name.length >= 2 && DATE.test(d.birthday) && age >= 13 && age <= 100 && !!d.state && PHONE.test(d.whatsapp) && d.types.length > 0 && d.niches.length > 0 && !!gender;
@@ -46,7 +49,16 @@ export async function profileOf<T>(userId: string, side: Side): Promise<Saved<T>
 
 /** Saves the details once. A creator profile can't be changed here after that (support changes it); seller contacts can. */
 export async function saveProfile(userId: string, side: Side, details: CreatorDetails | SellerDetails): Promise<{ ok: true } | { ok: false; error: string }> {
-  if (side === "creator" && (await profileOf(userId, "creator"))?.complete) return { ok: false, error: "Your profile is saved. Ask support to change it." };
+  const had = side === "creator" ? await profileOf<CreatorDetails>(userId, "creator") : null;
+  if (had?.complete) {
+    // Race can still be added once when it was left empty (owner, 31 Oct 2026); anything else goes through support.
+    const race = (details as CreatorDetails).race;
+    if (!had.details.race && race) {
+      await supabaseRest(`profiles?user_id=eq.${userId}&side=eq.creator`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ details: { ...had.details, race } }) });
+      return { ok: true };
+    }
+    return { ok: false, error: "Your profile is saved. Ask support to change it." };
+  }
   await supabaseRest("profiles?on_conflict=user_id,side", {
     method: "POST",
     headers: { prefer: "resolution=merge-duplicates,return=minimal" },

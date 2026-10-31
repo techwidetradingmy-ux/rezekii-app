@@ -80,6 +80,11 @@ export function lookupProducts(accessToken: string, productIds: string[]) {
 /** What "Creator Select Affiliate Product" adds for a product (tested 14 Oct 2026): brand, rating, stock, all-time sold, shop rating. */
 export type SelectedProduct = {
   id: string;
+  title?: string;
+  main_image_url?: string;
+  price?: { floor_price?: string; ceiling_price?: string; currency?: string };
+  /** Rate × 100, e.g. 1500 = 15%. */
+  commission?: { rate?: number; amount?: string };
   brand_name?: string;
   review?: { count?: number; overall_score?: string };
   stock?: { quantity?: number };
@@ -107,6 +112,16 @@ export function addShowcaseByLink(accessToken: string, link: string) {
     path: "/affiliate_creator/202405/showcases/products/add",
     accessToken,
     body: { add_type: "PRODUCT_LINK", product_link: link },
+  });
+}
+
+/** Add to Showcase by product ID (open-collaboration products outside Rezekii's campaigns, owner 31 Oct 2026). Max 20. */
+export function addShowcaseById(accessToken: string, productIds: string[]) {
+  return callApi<ShowcaseAddResult>({
+    method: "POST",
+    path: "/affiliate_creator/202405/showcases/products/add",
+    accessToken,
+    body: { add_type: "PRODUCT_ID", product_ids: productIds },
   });
 }
 

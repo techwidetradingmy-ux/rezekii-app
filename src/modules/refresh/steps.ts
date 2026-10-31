@@ -1,4 +1,8 @@
 import type { ApiReply } from "../../integrations/tiktok-shop/api.ts";
+import { soldInLastDay } from "../picks/today.ts";
+import { allProducts } from "../tap/catalog.ts";
+import { showcaseOf } from "../picks/mine.ts";
+import { selectProducts } from "../../integrations/tiktok-shop/creator.ts";
 import { shopPhotos } from "../creator-accounts/photos.ts";
 import { campaignSampleProducts, checkCreatorSamples, offersSamples, sampleCheckToken, sampleOffers, saveSampleOffers } from "../tap/samples.ts";
 import { getSampleLabel } from "../../integrations/tiktok-shop/creator.ts";
@@ -165,6 +169,40 @@ async function rankings(t: TaskRow, { deadline }: Ctx): Promise<StepResult> {
   if (Date.now() > deadline - 40_000) return { count: 0, more: true, waitMs: 0 };
   const built = await buildRankings((t.params as { day: string }).day);
   return { count: built.creators["30D"].length };
+}
+
+/**
+ * Today's Ideas (owner, 31 Oct 2026): every Rezekii campaign product's and each linked creator's showcase products' all-time
+ * units sold on TikTok, read once a day, so the next read shows how many sold across TikTok in that day. Creator by creator.
+ */
+async function sold(t: TaskRow, { deadline }: Ctx): Promise<StepResult> {
+  let i = t.cursor ? Number(t.cursor) : -1;
+  let count = 0;
+  if (i < 0) {
+    const tap = await allProducts();
+    count += (await soldInLastDay(tap.map((p) => ({ id: p.id, sold: p.sold, price: p.priceLo })))).size;
+    i = 0;
+  }
+  const ids = await linkedCreators();
+  for (; i < ids.length; i++) {
+    if (Date.now() > deadline - 10_000) return { count, more: true, cursor: String(i) };
+    const token = await approvedCreatorToken(ids[i]);
+    if (!token) continue;
+    try {
+      const show = await showcaseOf(token, 4);
+      const found: { id: string; sold: number; price: number | null }[] = [];
+      for (let j = 0; j < show.items.length; j += 20) {
+        const r = await selectProducts(token, show.items.slice(j, j + 20).map((p) => p.id)).catch(() => null);
+        for (const p of r?.data?.products ?? []) found.push({ id: p.id, sold: p.market_performance?.historical_sold_quantity ?? 0, price: p.price?.floor_price ? Number(p.price.floor_price) : null });
+      }
+      count += (await soldInLastDay(found)).size;
+    } catch (err) {
+      console.error("[sold]", ids[i], err instanceof Error ? err.message : err);
+    }
+  }
+  // Reads older than 14 days aren't needed.
+  await supabaseRest(`product_sold_daily?day=lt.${new Date(Date.now() + 8 * 3_600_000 - 14 * 86_400_000).toISOString().slice(0, 10)}`, { method: "DELETE", headers: { prefer: "return=minimal" } });
+  return { count };
 }
 
 /** Each linked creator's own affiliate orders, creator by creator, carrying on from `cursor` when time runs out. */
@@ -452,6 +490,7 @@ export const STEPS: Record<string, (t: TaskRow, ctx: Ctx) => Promise<StepResult>
   orders,
   details,
   photos,
+  sold,
   marketplace,
   agency,
 };

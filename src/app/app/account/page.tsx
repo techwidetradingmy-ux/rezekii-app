@@ -1,7 +1,7 @@
 "use client";
 
 import { FeedbackForm } from "@/components/feedback-form";
-import { COUNTRIES, DIAL_OPTIONS, countryName, dialOfNumber } from "@/lib/countries";
+import { COUNTRIES, DIAL_OPTIONS, countryName, dialOfNumber, RACES } from "@/lib/countries";
 import { SUPPORT } from "@/lib/support";
 import Link from "next/link";
 import { Fragment, useEffect, useRef, useState } from "react";
@@ -104,6 +104,8 @@ export default function Account() {
   const [verifying, setVerifying] = useState(false);
   const [waSheet, setWaSheet] = useState(false);
   const [gender, setGender] = useState<"Female" | "Male">("Female");
+  const [race, setRace] = useState("");
+  const [raceSaved, setRaceSaved] = useState(false);
   const [types, setTypes] = useState<string[]>(["Affiliate", "UGC"]);
   const [niche, setNiche] = useState("Home Supplies");
   const [sub1, setSub1] = useState("Muslim Fashion");
@@ -201,13 +203,14 @@ export default function Account() {
     if (!live) return;
     setLoadingProfile(true);
     loadWallet("creator").then((w) => setStreak(w.streak)).catch(() => {});
-    loadProfile<{ name: string; birthday: string; country?: string; state: string; whatsapp: string; gender: "Female" | "Male"; types: string[]; niches: string[] }>("creator")
+    loadProfile<{ name: string; birthday: string; country?: string; state: string; whatsapp: string; gender: "Female" | "Male"; race?: string; types: string[]; niches: string[] }>("creator")
       .then(({ profile }) => {
         if (profile) {
           const d = profile.details;
           const code = `+${dialOfNumber(d.whatsapp) ?? "60"}`;
           setName(d.name); setBirthday(d.birthday); setCountry(d.country || "MY"); setState(d.state); setCc(code); setPhone(d.whatsapp.slice(code.length));
           setGender(d.gender); setTypes(d.types); setNiche(d.niches[0] ?? ""); setSub1(d.niches[1] ?? ""); setSub2(d.niches[2] ?? "");
+          setRace(d.race ?? ""); setRaceSaved(!!d.race);
           setLocked(true);
         } else {
           setName(me?.name ?? ""); setBirthday(""); setState(""); setPhone(""); setTypes([]); setNiche(""); setSub1(""); setSub2("");
@@ -220,7 +223,8 @@ export default function Account() {
   const saveReal = async () => {
     setSaving(true);
     try {
-      await saveProfile("creator", { name, birthday, country, state, whatsapp: intl, gender, types, niches: [niche, sub1, sub2].filter(Boolean) });
+      await saveProfile("creator", { name, birthday, country, state, whatsapp: intl, gender, race, types, niches: [niche, sub1, sub2].filter(Boolean) });
+      if (race) setRaceSaved(true);
       setLocked(true);
       setConfirmSave(false);
       toast("Profile saved");
@@ -381,6 +385,19 @@ export default function Account() {
               <div className="pf-f">
                 <span className="pf-l">Gender {!locked && <Req />}</span>
                 {locked ? <b className="pf-v">{gender}</b> : <Seg value={gender} options={["Female", "Male"] as const} onChange={setGender} />}
+              </div>
+              <div className="pf-f">
+                <span className="pf-l">Race</span>
+                {locked && raceSaved ? <b className="pf-v">{race}</b> : (
+                  <select className="np-input" style={{ maxWidth: 260 }} value={race} aria-label="Race (optional)" onChange={(e) => {
+                    setRace(e.target.value);
+                    // Saved profiles can still add it once (owner, 31 Oct 2026).
+                    if (locked && live && e.target.value) void saveProfile("creator", { name, birthday, country, state, whatsapp: intl, gender, race: e.target.value, types, niches: [niche, sub1, sub2].filter(Boolean) }).then(() => { setRaceSaved(true); toast("Race saved"); }).catch((err: Error) => toast(err.message));
+                  }}>
+                    <option value="">Choose (optional)</option>
+                    {RACES.map((r) => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                )}
               </div>
               <div className="pf-f">
                 <span className="pf-l">Creator type {!locked && <Req />}</span>
@@ -720,6 +737,7 @@ export default function Account() {
             <div><dt>State</dt><dd>{state}</dd></div>
             <div><dt>WhatsApp</dt><dd>{cc} {local ? prettyNum(cc, local) : ""}</dd></div>
             <div><dt>Gender</dt><dd>{gender}</dd></div>
+            <div><dt>Race</dt><dd>{race || "Not given"}</dd></div>
             <div><dt>Creator type</dt><dd>{types.join(", ")}</dd></div>
             <div><dt>Niches</dt><dd>{[niche, sub1, sub2].filter(Boolean).join(" · ")}</dd></div>
           </dl>
