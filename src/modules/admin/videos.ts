@@ -1,6 +1,7 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { listVideosPage, queryVideos, type TikTokVideo } from "../../integrations/tiktok/stats.ts";
 import { freshTikTokToken, markTikTokReconnect, TIKTOK_LOST } from "../posting/store.ts";
+import { noteRead } from "../creator-accounts/fresh.ts";
 
 const KEEP_DAYS = 90;
 const MAX_PAGES = 8;
@@ -33,43 +34,64 @@ export async function fetchOwnVideos(userId: string, ids: string[]): Promise<Ret
   return rows;
 }
 
+type Conn = { open_id: string; username: string | null; user_id: string | null; refresh_token_expires_at: string };
+
+/**
+ * One TikTok account's public videos posted after `oldest` (unix seconds), saved to tiktok_videos. Returns how many, or null when
+ * TikTok didn't answer. A read that worked becomes the time her videos were last updated.
+ */
+async function readAccount(c: Conn, oldest: number): Promise<number | null> {
+  let token: string;
+  try {
+    token = await freshTikTokToken(c.open_id);
+  } catch (err) {
+    console.error("[videos] token", c.username, err instanceof Error ? err.message : err);
+    return null;
+  }
+  let count = 0;
+  let cursor: number | undefined;
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const r = await listVideosPage(token, cursor);
+    if (r.error || !r.data) {
+      console.error("[videos] list", c.username, r.error);
+      // TikTok no longer accepts the connection: it shows "Reconnect" (the error reads "<code>: <message>").
+      if (r.error && TIKTOK_LOST.has(r.error.split(":")[0])) await markTikTokReconnect(c.open_id);
+      return null;
+    }
+    const recent = r.data.videos.filter((v) => (v.create_time ?? 0) >= oldest);
+    if (recent.length) {
+      const now = new Date().toISOString();
+      await saveVideoRows(recent.map((v) => videoRow(v, c, now)));
+      count += recent.length;
+    }
+    if (!r.data.has_more || !r.data.cursor || recent.length < r.data.videos.length) break;
+    cursor = r.data.cursor;
+  }
+  if (c.user_id) await noteRead(c.user_id, "videos").catch(() => undefined);
+  return count;
+}
+
+/** One creator's videos from the last 90 days, read now (when she links TikTok, or opens a page and they're old). */
+export async function syncMyVideos(userId: string): Promise<number> {
+  const conns = (await (await supabaseRest(`tiktok_connections?user_id=eq.${userId}&select=open_id,username,user_id,refresh_token_expires_at`)).json()) as Conn[];
+  let count = 0;
+  for (const c of conns) if (Date.parse(c.refresh_token_expires_at) > Date.now()) count += (await readAccount(c, Date.now() / 1000 - KEEP_DAYS * 86400)) ?? 0;
+  return count;
+}
+
 /**
  * Daily: every connected account's public videos from the last 90 days with their numbers, saved to tiktok_videos.
  * Goes account by account from `start`; returns where to carry on (`next`) when `stopAt` comes first. Older videos are dropped at the end.
  */
 export async function refreshVideos(start: number, stopAt: number): Promise<{ count: number; next: number | null }> {
-  const conns = (await (await supabaseRest("tiktok_connections?select=open_id,username,refresh_token_expires_at&order=open_id&limit=2000")).json()) as { open_id: string; username: string | null; refresh_token_expires_at: string }[];
+  const conns = (await (await supabaseRest("tiktok_connections?select=open_id,username,user_id,refresh_token_expires_at&order=open_id&limit=2000")).json()) as Conn[];
   const oldest = Date.now() / 1000 - KEEP_DAYS * 86400;
   let count = 0;
   for (let i = start; i < conns.length; i++) {
     if (Date.now() > stopAt) return { count, next: i };
     const c = conns[i];
     if (Date.parse(c.refresh_token_expires_at) < Date.now()) continue;
-    let token: string;
-    try {
-      token = await freshTikTokToken(c.open_id);
-    } catch (err) {
-      console.error("[videos] token", c.username, err instanceof Error ? err.message : err);
-      continue;
-    }
-    let cursor: number | undefined;
-    for (let page = 0; page < MAX_PAGES; page++) {
-      const r = await listVideosPage(token, cursor);
-      if (r.error || !r.data) {
-        console.error("[videos] list", c.username, r.error);
-        // TikTok no longer accepts the connection: it shows "Reconnect" (the error reads "<code>: <message>").
-        if (r.error && TIKTOK_LOST.has(r.error.split(":")[0])) await markTikTokReconnect(c.open_id);
-        break;
-      }
-      const recent = r.data.videos.filter((v) => (v.create_time ?? 0) >= oldest);
-      if (recent.length) {
-        const now = new Date().toISOString();
-        await saveVideoRows(recent.map((v) => videoRow(v, c, now)));
-        count += recent.length;
-      }
-      if (!r.data.has_more || !r.data.cursor || recent.length < r.data.videos.length) break;
-      cursor = r.data.cursor;
-    }
+    count += (await readAccount(c, oldest)) ?? 0;
   }
   await supabaseRest(`tiktok_videos?created_at=lt.${new Date(oldest * 1000).toISOString()}`, { method: "DELETE", headers: { prefer: "return=minimal" } });
   return { count, next: null };

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Updated } from "@/components/data-note";
 import { Icon } from "@/components/icons";
 import { CalendarPicker, dayName, iso } from "@/components/calendar-picker";
 import { Count, Flow, Lock, Seg, Stat, Tip, Title } from "@/components/ui";
@@ -62,10 +63,10 @@ export default function DataPayouts() {
     if (live) loadAnalytics().then(setReal);
   }, [live]);
   const { MONTHS, DAYS, RANGE, TODAY, FIRST } = useMemo(() => (real ? realData(real.months) : SAMPLE), [real]);
-  return <Payouts key={real ? "real" : "sample"} MONTHS={MONTHS} DAYS={DAYS} RANGE={RANGE} TODAY={TODAY} FIRST={FIRST} />;
+  return <Payouts key={real ? "real" : "sample"} MONTHS={MONTHS} DAYS={DAYS} RANGE={RANGE} TODAY={TODAY} FIRST={FIRST} updated={live ? real?.syncedAt : null} />;
 }
 
-function Payouts({ MONTHS, DAYS, RANGE, TODAY, FIRST }: typeof SAMPLE) {
+function Payouts({ MONTHS, DAYS, RANGE, TODAY, FIRST, updated }: typeof SAMPLE & { updated?: string | null }) {
   const [range, setRange] = useState<[string, string]>(RANGE.month);
   const [preset, setPreset] = useState<string | null>("month");
   const [view, setView] = useState<"Calendar" | "List">("Calendar");
@@ -96,6 +97,7 @@ function Payouts({ MONTHS, DAYS, RANGE, TODAY, FIRST }: typeof SAMPLE) {
   return (
     <div className="v2-stack v2-in" style={{ gap: 14 }}>
       <Title title="Payouts" sub="Your commission, and what you earned extra with us." />
+      <Updated at={updated} />
 
       <section className="v2-card flat pay-flow">
         <h2 className="cr2-h3">How Your Commission Moves <Tip label="About payouts" text="Real earnings only. No forecasts." /></h2>

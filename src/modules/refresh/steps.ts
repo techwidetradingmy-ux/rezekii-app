@@ -160,7 +160,7 @@ async function levels(t: TaskRow): Promise<StepResult> {
 
 /** The Rankings page data from the day's best-seller lists. Waits until every list (and older missing day) is saved, except lists TikTok hasn't published yet. */
 async function rankings(t: TaskRow, { deadline }: Ctx): Promise<StepResult> {
-  if (await openTaskCount(t.run_date, "best", WAITING)) return { count: 0, more: true, waitMs: 60_000 };
+  if (!(t.params as { manual?: boolean }).manual && (await openTaskCount(t.run_date, "best", WAITING))) return { count: 0, more: true, waitMs: 60_000 };
   // The full build and its three saves take about 35 seconds: start it only at the beginning of a tick, so it isn't cut off.
   if (Date.now() > deadline - 40_000) return { count: 0, more: true, waitMs: 0 };
   const built = await buildRankings((t.params as { day: string }).day);

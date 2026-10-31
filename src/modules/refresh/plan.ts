@@ -138,8 +138,15 @@ export function planDay(now: number, haveDays: Set<string>, newestBuilt = false,
       for (const [min, max] of FOLLOWER_BANDS)
         tasks.push({ key: `marketplace|lv${i}|${min}-${max ?? "up"}`, kind: "marketplace", params: { min, max, level }, priority: 6 });
   } else if (!levelPassOpen && mytWeekday(now) === MARKET_WEEKDAY) {
-    for (const [min, max] of FOLLOWER_BANDS)
-      tasks.push({ key: `marketplace|${min}-${max ?? "up"}`, kind: "marketplace", params: { min, max }, priority: 6 });
+    tasks.push(...creatorSearchTasks());
   }
   return tasks;
+}
+
+/**
+ * The Creator Marketplace search, one task per follower band. `run` makes the keys new, for a search an admin starts by hand
+ * (owner, 31 Oct 2026: paused, run only when an admin presses Refresh).
+ */
+export function creatorSearchTasks(run = ""): PlannedTask[] {
+  return FOLLOWER_BANDS.map(([min, max]) => ({ key: `marketplace|${min}-${max ?? "up"}${run}`, kind: "marketplace" as const, params: { min, max }, priority: 6 }));
 }

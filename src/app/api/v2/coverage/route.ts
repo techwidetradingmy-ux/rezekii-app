@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { keepFresh } from "@/modules/creator-accounts/fresh.ts";
 import { currentUser } from "@/app/current-user";
 import { approvedCreatorToken } from "@/modules/creator-accounts/access.ts";
 import { showcaseOf } from "@/modules/picks/mine.ts";
@@ -25,6 +26,7 @@ export async function GET() {
   const token = await approvedCreatorToken(user.id);
   if (!token) return NextResponse.json({ linked: false, count: 0, more: false, on: [], notYet: [], at: new Date().toISOString() } satisfies Result);
 
+  await keepFresh(user.id, ["orders"]);
   const [showcase, catalog, lines] = await Promise.all([
     showcaseOf(token),
     allProducts(),

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { updatedWhen } from "@/components/data-note";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
@@ -60,7 +61,7 @@ export function RatingScan() {
   const danger = live.filter((p) => p.rating < DANGER);
   const low = live.filter((p) => p.rating >= DANGER);
   const healthy = real ? Math.max(0, real.checked - real.flagged.length) : CREATOR.showcaseSize - FLAGGED.length;
-  const checkedAt = real ? new Date(real.at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kuala_Lumpur" }) : "09:12";
+  const checkedAt = real ? updatedWhen(real.at) : "09:12";
   // Removing asks first: she sees the risk and confirms (owner, 28 Oct 2026).
   const [ask, setAsk] = useState<string[] | null>(null);
   const remove = (ids: string[]) => {
@@ -120,7 +121,7 @@ export function RatingScan() {
         <section className={`sh-hub rc-hub ${scanning ? "busy" : ""}`} aria-label="Rating check">
           <span className="sh-grid" aria-hidden="true" />
           <div className="sh-left">
-            <span className="sh-kicker"><i />{scanning ? "Checking ratings…" : `Rating check · today ${checkedAt}`}</span>
+            <span className="sh-kicker"><i />{scanning ? "Checking ratings…" : real ? `Rating check · Updated ${checkedAt}` : `Rating check · today ${checkedAt}`}</span>
             <h2><b><Count key={`${run}-${real?.total ?? 0}`} value={real ? real.total : CREATOR.showcaseSize} ms={SCAN_MS - 200} /></b> products checked</h2>
             {real?.more && <small className="v2-small">The first {real.total} in your showcase</small>}
           </div>

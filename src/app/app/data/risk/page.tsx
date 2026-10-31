@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Updated } from "@/components/data-note";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
@@ -55,6 +56,7 @@ export default function DataRisk() {
   return (
     <div className="v2-stack v2-in" style={{ gap: 20 }}>
       <Title title="Risk Check" sub={live ? "Ratings, cancels and returns" : "Ratings, cancels and returns · updated today 09:12"} />
+      {live && <Updated at={perf && typeof perf === "object" ? perf.updated : null} />}
       <RatingScan />
       <h2 className="v2-h2" style={{ marginTop: 8 }}>Cancellations and Returns · Last 30 Days</h2>
 

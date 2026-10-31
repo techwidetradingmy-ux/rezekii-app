@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { DataNote } from "@/components/data-note";
+import { Updated } from "@/components/data-note";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
@@ -123,7 +123,7 @@ export default function DataOverview() {
           onPreset={(k) => { setRange(k as RangeKey); setCustom(null); }}
         />
       </Title>
-      {live && <DataNote latest={real?.syncedAt} what="Orders up to" every="Orders update daily at 1:00 am, and again when you open this page" />}
+      {live && <Updated at={real?.syncedAt} />}
 
       <Lock what="your sales and commission">
         <div className="v2-stack" style={{ gap: 10 }}>

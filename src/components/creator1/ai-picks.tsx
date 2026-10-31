@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { updatedWhen } from "@/components/data-note";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
@@ -157,14 +158,14 @@ export function AiPicks() {
     );
   }
 
-  const at = real ? new Date(real.at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kuala_Lumpur" }) : "09:12";
+  const at = real ? updatedWhen(real.at) : "09:12";
   const prof = real?.profile;
   return (
     <section id="ai-picks" className="v2-aicard ai-box" aria-label="AI picks">
       <AiHead
         title="AI Picks"
         busy={!done && !failed}
-        sub={failed ? "Couldn't load your picks." : done ? (live ? `What to sell next · Today ${at} · ${(real?.compared ?? 0).toLocaleString("en-MY")} Rezekii products compared` : `What to sell next · Today 09:12 · ${AI_PROFILE.compared.toLocaleString("en-MY")} best-sellers compared`) : "Analysing your account. Takes a few seconds."}
+        sub={failed ? "Couldn't load your picks." : done ? (live ? `What to sell next · Updated ${at} · ${(real?.compared ?? 0).toLocaleString("en-MY")} Rezekii products compared` : `What to sell next · Today 09:12 · ${AI_PROFILE.compared.toLocaleString("en-MY")} best-sellers compared`) : "Analysing your account. Takes a few seconds."}
       >
         {(done || failed) && (
           <button type="button" className="btn-outline v2-btn-sm" onClick={() => setRun((r) => r + 1)}>

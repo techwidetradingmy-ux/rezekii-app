@@ -1115,3 +1115,11 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { display
 html[data-wait="1"] .v2-main > * { visibility: hidden; }
 html[data-wait="1"] .v2-main::before { content: ""; display: block; width: 28px; height: 28px; margin: 40px auto; border-radius: 50%; border: 3px solid var(--line); border-top-color: #00c073; animation: v2Spin 0.8s linear infinite; }
 @keyframes v2Spin { to { transform: rotate(360deg); } }
+
+/* "Updated 3:42 pm" under a page title (owner, 31 Oct 2026). */
+.v2-upd { margin: 0; display: flex; align-items: center; gap: 6px; color: var(--muted); }
+
+/* Admin Rankings: what's saved and its Refresh button on one line (owner, 31 Oct 2026). */
+.rk-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; }
+.rk-bar > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rk-bar small { color: var(--muted); }

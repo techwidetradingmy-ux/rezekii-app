@@ -12,6 +12,8 @@ export type LivePerf = {
   names: Record<string, { name: string; img: string | null }>;
   totals: { orders: number; cancelled: number; returns: number; cancelRate: number; clawback: number };
   asOf: string;
+  /** When her orders and videos were last read from TikTok (the older of the two). */
+  updated: string | null;
 };
 
 /** A plain tile for a product without a photo. */

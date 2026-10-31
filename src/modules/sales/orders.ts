@@ -1,4 +1,5 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import { noteRead } from "../creator-accounts/fresh.ts";
 import { searchCreatorOrders, type AffiliateOrder, type OrderSku } from "../../integrations/tiktok-shop/creator.ts";
 
 /** "RM12.00" or "12.00" → 12. TikTok writes money as text with the currency in front. */
@@ -122,6 +123,12 @@ export async function historyDone(userId: string): Promise<boolean> {
  * were saved, or throws on a TikTok error.
  */
 export async function syncCreatorOrders(userId: string, token: string, stopAt: number): Promise<number> {
+  const saved = await readOrders(userId, token, stopAt);
+  await noteRead(userId, "orders").catch(() => undefined);
+  return saved;
+}
+
+async function readOrders(userId: string, token: string, stopAt: number): Promise<number> {
   const now = Math.floor(Date.now() / 1000);
   const history = await readHistory(userId);
   if (history?.done) return recent(userId, token, now, stopAt);

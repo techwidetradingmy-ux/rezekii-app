@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { keepFresh } from "@/modules/creator-accounts/fresh.ts";
 import { currentUser } from "@/app/current-user";
 import { approvedCreatorToken } from "@/modules/creator-accounts/access.ts";
 import { salesProfile, showcaseOf } from "@/modules/picks/mine.ts";
@@ -41,6 +42,7 @@ export async function GET(req: NextRequest) {
   if (!token) return NextResponse.json(none);
 
   // Her sales: categories, video or LIVE and prices, and what's already in her showcase.
+  await keepFresh(user.id, ["orders"]);
   const [prof, showcase] = await Promise.all([salesProfile(user.id, token), showcaseOf(token)]);
   const mine = prof.products;
   const cats = prof.categories;

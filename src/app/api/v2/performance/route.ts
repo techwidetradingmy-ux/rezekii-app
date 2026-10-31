@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { keepFresh } from "@/modules/creator-accounts/fresh.ts";
 import { currentUser } from "@/app/current-user";
 import { supabaseRest } from "@/integrations/supabase/rest.ts";
 import { linesBetween, productImages } from "@/modules/sales/frames.ts";
@@ -44,6 +45,7 @@ function add(g: Group, l: OrderLine) {
 export async function GET() {
   const user = await currentUser();
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  const read = await keepFresh(user.id);
   const now = Date.now();
   const [lines, before] = await Promise.all([linesBetween(user.id, now - 30 * DAY, now), linesBetween(user.id, now - 60 * DAY, now - 30 * DAY)]);
 
@@ -93,5 +95,7 @@ export async function GET() {
     names: Object.fromEntries([...names.entries()].map(([id, name]) => [id, { name, img: imgs.get(id) ?? null }])),
     totals: { orders: all.size, cancelled: bad.size, returns: back.size, cancelRate: pct(bad.size, all.size), clawback: r2(lost) },
     asOf: new Date(now).toISOString(),
+    // The older of her orders' and videos' last read: everything on the page is at least this new.
+    updated: [read.orders, read.videos].filter((t): t is string => !!t).sort()[0] ?? null,
   }, { headers: { "cache-control": "private, no-store" } });
 }

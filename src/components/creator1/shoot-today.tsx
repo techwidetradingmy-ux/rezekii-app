@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Updated } from "@/components/data-note";
 import { useEffect, useRef, useState } from "react";
 import { useSideScroll } from "@/components/side-scroll";
 import { Icon } from "@/components/icons";
@@ -233,7 +234,7 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
   const week = (id: string) => NICHE_BEST.find((b) => b.productId === id)?.weekSold ?? Math.round(product(id).sold / 26);
 
   // Signed in (owner, 31 Oct 2026): her real lists from /api/v2/best.
-  const [real, setReal] = useState<{ linked: boolean; rows: LiveBest[] } | null>(null);
+  const [real, setReal] = useState<{ linked: boolean; rows: LiveBest[]; at: string } | null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     if (!live || !linked) return;
@@ -291,6 +292,7 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
     <section className={inFrame ? "nb-box nb-in" : "v2-card nb-box"} aria-label={mine ? "Best sellers in your showcase" : "Best sellers in your niche"}>
       {/* The card's AI header sits above the tabs (owner, 29 Oct 2026: one AI label per card); each tab just says where it's from. */}
       {inFrame ? <p className="nb-src">{mine ? (live ? "Products in your showcase, by your sales this week" : "Products in your showcase") : live ? "Rezekii campaign products in your categories, not in your showcase yet" : "Live on TikTok Shop, not in your showcase yet"}</p> : <AiHead title={mine ? "Best Sellers in Your Showcase" : "Best Sellers on TikTok Shop"} sub="Best-selling first, updated daily" />}
+      {live && real && <Updated at={real.at} />}
       {live && linked && !real && !failed && <p className="v2-muted" style={{ margin: 0 }}>Loading your list…</p>}
       {live && failed && <p className="v2-muted" style={{ margin: 0 }}>Couldn&apos;t load this list. Please try again later.</p>}
       {live && real && !real.rows.length && <p className="v2-muted" style={{ margin: 0 }}>{mine ? "Your showcase is empty. Add products from the Marketplace." : "No products in your categories right now. Check again tomorrow."}</p>}

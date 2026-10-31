@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { keepFresh } from "@/modules/creator-accounts/fresh.ts";
 import { currentUser } from "@/app/current-user";
 import { approvedCreatorToken } from "@/modules/creator-accounts/access.ts";
 import { ratingsOf, showcaseOf } from "@/modules/picks/mine.ts";
@@ -24,6 +25,7 @@ export async function GET(req: NextRequest) {
   const token = await approvedCreatorToken(user.id);
   if (!token) return NextResponse.json({ linked: false, total: 0, checked: 0, more: false, flagged: [], at: new Date().toISOString() } satisfies Result);
 
+  await keepFresh(user.id, ["orders"]);
   const { items, more } = await showcaseOf(token);
   const ratings = await ratingsOf(token, items.map((p) => p.id));
   const lines = await linesBetween(user.id, Date.now() - 30 * 86_400_000, Date.now()).catch(() => []);

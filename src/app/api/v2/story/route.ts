@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { keepFresh } from "@/modules/creator-accounts/fresh.ts";
 import { currentUser } from "@/app/current-user";
 import { storyOf } from "@/modules/story/story.ts";
 
@@ -14,6 +15,7 @@ export async function GET(req: NextRequest) {
   const day = new Date(Date.now() + 8 * 3_600_000).toISOString().slice(0, 10);
   const hit = cache.get(user.id);
   if (hit?.day === day && !req.nextUrl.searchParams.get("fresh")) return NextResponse.json({ pages: hit.pages });
+  await keepFresh(user.id);
   const pages = await storyOf(user, req.nextUrl.origin);
   cache.set(user.id, { day, pages });
   return NextResponse.json({ pages }, { headers: { "cache-control": "private, no-store" } });

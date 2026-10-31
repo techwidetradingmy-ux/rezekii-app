@@ -1,4 +1,5 @@
-import type { NextRequest } from "next/server";
+import { after, type NextRequest } from "next/server";
+import { syncMyVideos } from "@/modules/admin/videos.ts";
 import { exchangeTikTokCode, getTikTokUser, type TikTokTokens } from "@/integrations/tiktok/login.ts";
 import { SESSION_COOKIE, userForSession } from "@/modules/accounts/session.ts";
 import { linkOrSignInTikTok, saveTikTokConnection } from "@/modules/accounts/users.ts";
@@ -33,6 +34,7 @@ export async function GET(req: NextRequest) {
     if ("taken" in result) return toSignin(req, "taken", "tiktok");
     const { user, linked } = result;
     await saveTikTokConnection(user.id, profile, tokens);
+    after(() => syncMyVideos(user.id).catch((err) => console.error("[tiktok] first video read", err instanceof Error ? err.message : err)));
     return signedIn(req, user.id, "tiktok", !linked ? "/app" : "/app/account?channel=tiktok&connect=ok#connections");
   } catch (err) {
     console.error("[tiktok] callback error", err instanceof Error ? err.message : err);

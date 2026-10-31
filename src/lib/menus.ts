@@ -39,7 +39,7 @@ export const MENUS: Record<AppKind, Section[]> = {
     { href: "/admin/users", label: "Users", icon: "users", pages: [["/admin/users", "Review"], ["/admin/users/sellers", "Sellers"], ["/admin/users/creators", "Creators"], ["/admin/users/access", "Admin Access"]] },
     { href: "/admin/growth", label: "Growth", icon: "gift", pages: [["/admin/growth", "Missions"], ["/admin/growth/progress", "Progress per Person"], ["/admin/growth/referrals", "Referrals"], ["/admin/growth/waitlist", "AI Video Waitlist"]] },
     { href: "/admin/accounts", label: "Accounts", icon: "wallet", pages: [["/admin/accounts", "Ledger"], ["/admin/accounts/reconcile", "Reconciliation"]] },
-    { href: "/admin/analytics", label: "Analytics", icon: "chart", pages: [["/admin/analytics", "Overview"], ["/admin/analytics/best", "TikTok Best Sellers"]] },
+    { href: "/admin/analytics", label: "Analytics", icon: "chart", pages: [["/admin/analytics", "Overview"], ["/admin/analytics/best", "TikTok Best Sellers"], ["/admin/analytics/rankings", "Rankings"]] },
     { href: "/admin/support", label: "Support", icon: "inbox", pages: [["/admin/support", "Disputes"], ["/admin/support/feedback", "Feedback Inbox"]] },
     { href: "/admin/system", label: "System", icon: "gear", pages: [["/admin/system", "Settings & Presets"], ["/admin/system/publishing", "Publishing Ops"], ["/admin/system/audit", "Audit Log"], ["/admin/system/consent", "Consent Log"]] },
   ],

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { keepFresh } from "@/modules/creator-accounts/fresh.ts";
 import { currentUser } from "@/app/current-user";
 import { supabaseRest } from "@/integrations/supabase/rest.ts";
 import { linesBetween } from "@/modules/sales/frames.ts";
@@ -16,6 +17,7 @@ const slotOf = (iso: string) => { const h = new Date(Date.parse(iso) + 8 * 3_600
 export async function GET() {
   const user = await currentUser();
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  await keepFresh(user.id);
   const conns = (await (await supabaseRest(`tiktok_connections?user_id=eq.${user.id}&select=open_id`)).json()) as { open_id: string }[];
   const since = new Date(Date.now() - 60 * DAY).toISOString();
   const videos = conns.length

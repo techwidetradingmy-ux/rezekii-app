@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { keepFresh } from "@/modules/creator-accounts/fresh.ts";
 import { currentUser } from "@/app/current-user";
 import { approvedCreatorToken } from "@/modules/creator-accounts/access.ts";
 import { lookupOf, ratingsOf, salesProfile, showcaseOf } from "@/modules/picks/mine.ts";
@@ -35,6 +36,7 @@ export async function GET(req: NextRequest) {
   const token = await approvedCreatorToken(user.id);
   if (!token) return NextResponse.json({ linked: false, source, categories: [], rows: [], at: new Date().toISOString() } satisfies Result);
 
+  await keepFresh(user.id, ["orders"]);
   const [prof, showcase] = await Promise.all([salesProfile(user.id, token), showcaseOf(token)]);
   let rows: Row[];
   if (source === "showcase") {

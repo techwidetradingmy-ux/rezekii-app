@@ -1,9 +1,8 @@
-import { after, NextResponse, type NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
+import { keepFresh } from "@/modules/creator-accounts/fresh.ts";
 import { currentUser } from "@/app/current-user";
 import { supabaseRest } from "@/integrations/supabase/rest.ts";
 import { linesBetween, productImages } from "@/modules/sales/frames.ts";
-import { syncCreatorOrders } from "@/modules/sales/orders.ts";
-import { approvedCreatorToken } from "@/modules/creator-accounts/access.ts";
 import { lineEarned, lineGmv, techwideCampaigns, type OrderLine } from "@/modules/sales/summary.ts";
 
 /**
@@ -37,6 +36,7 @@ export async function GET(req: NextRequest) {
   const user = await currentUser();
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   const now = Date.now();
+  const read = await keepFresh(user.id, ["orders"]);
   const [lines, techwide] = await Promise.all([linesBetween(user.id, 0, now + DAY), techwideCampaigns()]);
 
   // The open plan rate of each TAP product she sold, to count what Rezekii added.
@@ -48,10 +48,6 @@ export async function GET(req: NextRequest) {
   }
   const extraOf = (l: OrderLine) => (l.campaign_id && techwide.has(l.campaign_id) && l.product_id && openRate.has(l.product_id) ? Math.max(0, lineCommission(l) - lineGmv(l) * (openRate.get(l.product_id) ?? 0)) : 0);
 
-  // Her orders are read again from TikTok when the last read is over 30 minutes old (owner, 31 Oct 2026: real time), after this
-  // answer, so the next visit shows them; the daily refresh does the same for everyone.
-  const lastRead = lines.reduce((m, l) => Math.max(m, Date.parse(l.synced_at)), 0);
-  if (now - lastRead > 30 * 60_000) after(async () => { const token = await approvedCreatorToken(user.id); if (token) await syncCreatorOrders(user.id, token, Date.now() + 45_000).catch(() => 0); });
   const first = lines.length ? Math.min(...lines.map((l) => Date.parse(l.created_at))) : now;
   const names = new Map<string, { name: string; shop: string }>();
   for (const l of lines) if (l.product_id && !names.has(l.product_id)) names.set(l.product_id, { name: l.product_name ?? "Product", shop: l.shop_name ?? "" });
@@ -163,6 +159,7 @@ export async function GET(req: NextRequest) {
   const shown = [...new Set(Object.values(ranges).flatMap((r) => (r as { byProduct: { productId: string }[] }).byProduct.map((b) => b.productId)))];
   const imgs = await productImages(user.id, shown).catch(() => new Map<string, string | null>());
   const products = Object.fromEntries([...names].map(([id, x]) => [id, { ...x, img: imgs.get(id) ?? null }]));
-  const syncedAt = lines.reduce<string | null>((m, l) => (!m || l.synced_at > m ? l.synced_at : m), null);
+  // When her orders were last read from TikTok (owner, 31 Oct 2026: shown as "Updated 3:42 pm").
+  const syncedAt = read.orders ?? lines.reduce<string | null>((m, l) => (!m || l.synced_at > m ? l.synced_at : m), null);
   return NextResponse.json({ ranges, charts, months, products, lines: lines.length, first: lines.length ? new Date(first).toISOString() : null, syncedAt }, { headers: { "cache-control": "private, no-store" } });
 }
