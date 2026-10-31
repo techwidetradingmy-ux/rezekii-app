@@ -1,4 +1,5 @@
 import { after, NextResponse, type NextRequest } from "next/server";
+import { sendAdminAlerts } from "@/modules/admin/alerts.ts";
 import { checkProcessing, publishPost } from "@/modules/posting/publisher.ts";
 import { claimDuePosts, isTimerToken, processingPosts } from "@/modules/posting/store.ts";
 import { accountsForPictures, accountsToRenew, freshToken, refreshPicture } from "@/modules/social/accounts.ts";
@@ -21,7 +22,11 @@ export async function POST(req: NextRequest) {
   if (!(await isTimerToken(token))) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   // Every quarter hour (owner, 31 Oct 2026): decisions made in Partner Center on shops' own campaigns, so the shop is told.
-  if (new Date().getUTCMinutes() % 15 === 0) after(() => syncShopReviews().then(() => undefined).catch((err) => console.error("[shop reviews]", err instanceof Error ? err.message : err)));
+  if (new Date().getUTCMinutes() % 15 === 0) {
+    after(() => syncShopReviews().then(() => undefined).catch((err) => console.error("[shop reviews]", err instanceof Error ? err.message : err)));
+    // And an email to admins when something new needs them.
+    after(() => sendAdminAlerts().then(() => undefined).catch((err) => console.error("[admin alerts]", err instanceof Error ? err.message : err)));
+  }
   const [{ published, checked }, social] = await Promise.all([tiktokWork(), socialWork().catch((err) => ({ error: err instanceof Error ? err.message : String(err) }))]);
   return NextResponse.json({ published, checked, social });
 }

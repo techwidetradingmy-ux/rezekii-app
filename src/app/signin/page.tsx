@@ -20,7 +20,7 @@ import { EMPTY_ADDRESS, addressOk, birthdayError, saveAddress, saveSignup, type 
 import "../creator1.css";
 import { keepInviteCode, saveProfile } from "@/lib/live-rewards";
 
-type Step = "start" | "oauth" | "profile" | "email" | "password" | "create" | "forgot" | "welcome";
+type Step = "start" | "oauth" | "profile" | "email" | "password" | "create" | "forgot" | "verify" | "code" | "reset" | "welcome";
 
 const TILES: [React.CSSProperties, string, string, string, string][] = [
   [{ top: "14%", left: "8%" }, "#fe2c55", "#ffffff", "-10deg", "M4 5h16v14H4zM10 9l5 3-5 3z"],
@@ -106,6 +106,8 @@ export default function SignIn() {
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
   const [showPw, setShowPw] = useState(false);
+  // The 6-digit code from the email (owner, 31 Oct 2026: confirm a new account, sign in without a password, reset it).
+  const [code, setCode] = useState("");
   const [tried, setTried] = useState(false);
   // Continue with email (owner, 31 Oct 2026): what the email already has, and where to go after (e.g. /seller/connect).
   const [acct, setAcct] = useState<{ password: boolean; google: boolean } | null>(null);
@@ -210,7 +212,16 @@ export default function SignIn() {
     go(d.exists ? "password" : "create");
   });
   const signInEmail = () => withBusy(async () => land((await emailCall({ mode: "signin", email, password: pw })).details));
-  const signUpEmail = () => withBusy(async () => { await emailCall({ mode: "signup", email, password: pw, name: name.trim() }); land(true); });
+  const signUpEmail = () => withBusy(async () => { await emailCall({ mode: "signup", email, password: pw, name: name.trim(), code }); land(true); });
+  /** Emails a code for `purpose`, then shows the step that asks for it. */
+  const sendCode = (purpose: "signup" | "signin" | "reset", then: Step) => withBusy(async () => {
+    await emailCall({ mode: "code", email, purpose });
+    setCode("");
+    toast(`Code sent to ${email.trim()}`);
+    go(then);
+  });
+  const signInCode = () => withBusy(async () => land((await emailCall({ mode: "signin", email, code })).details));
+  const resetPassword = () => withBusy(async () => land((await emailCall({ mode: "reset", email, code, password: pw })).details));
 
   async function oauth(p: keyof typeof PROVIDER) {
     // A friend's code typed here is kept for the new account (owner, 31 Oct 2026); a wrong code stops so it can be fixed.
@@ -489,7 +500,18 @@ export default function SignIn() {
     );
   }
 
-  const newPw = step === "create";
+  const newPw = step === "create" || step === "reset";
+  const codeField = (
+    <label className="v2-field">
+      6-digit code
+      <input className="np-input cr1-code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} aria-invalid={tried && code.length !== 6} autoFocus />
+      {tried && code.length !== 6 && <small className="cr1-err">Enter the 6 digits from the email</small>}
+    </label>
+  );
+  const again = (purpose: "signup" | "signin" | "reset") => (
+    <button type="button" className="v2-link cr1-forgot" disabled={busy} onClick={() => void sendCode(purpose, step)}>Send a new code</button>
+  );
+  const sentTo = <p>We sent a 6-digit code to <b>{email.trim()}</b>. It works for 10 minutes.</p>;
   let card: React.ReactNode;
   if (step === "start") {
     // One way in for everyone (owner, 31 Oct 2026): new people are asked for their details after, returning people go straight in.
@@ -530,6 +552,7 @@ export default function SignIn() {
         <h1>Use Google for this email</h1>
         <p><b>{email.trim()}</b> signs in with Google.</p>
         <button type="button" className="btn-google cr1-authbtn" onClick={() => oauth("Google")}><GoogleMark /> Continue with Google</button>
+        <button type="button" className="v2-link" disabled={busy} onClick={() => void sendCode("signin", "code")}>Or email me a sign-in code</button>
       </div>
     ) : (
       <form className="cr1-form" onSubmit={(e) => { e.preventDefault(); setTried(true); if (pw) void signInEmail(); }}>
@@ -546,11 +569,12 @@ export default function SignIn() {
         </label>
         <button type="button" className="v2-link cr1-forgot" onClick={() => { setForgotFrom("password"); go("forgot"); }}>Forgot password?</button>
         <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? <span className="cr1-spin sm" /> : "Sign in"}</button>
+        <button type="button" className="v2-link" disabled={busy} onClick={() => void sendCode("signin", "code")}>Email me a sign-in code instead</button>
       </form>
     );
   } else if (step === "create") {
     card = (
-      <form className="cr1-form" onSubmit={(e) => { e.preventDefault(); setTried(true); if (name.trim().length >= 2 && pw.length >= 8) void signUpEmail(); }}>
+      <form className="cr1-form" onSubmit={(e) => { e.preventDefault(); setTried(true); if (name.trim().length >= 2 && pw.length >= 8) void sendCode("signup", "verify"); }}>
         {back("email")}
         <h1>Create your account</h1>
         <p className="cr1-small" style={{ margin: 0 }}><b>{email.trim()}</b> · <button type="button" className="v2-link" onClick={() => go("email")}>Change</button></p>
@@ -566,15 +590,57 @@ export default function SignIn() {
         <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? <span className="cr1-spin sm" /> : "Create account"}</button>
       </form>
     );
+  } else if (step === "verify") {
+    card = (
+      <form className="cr1-form" onSubmit={(e) => { e.preventDefault(); setTried(true); if (code.length === 6) void signUpEmail(); }}>
+        {back("create")}
+        <h1>Check your email</h1>
+        {sentTo}
+        {codeField}
+        <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? <span className="cr1-spin sm" /> : "Create account"}</button>
+        {again("signup")}
+      </form>
+    );
+  } else if (step === "code") {
+    card = (
+      <form className="cr1-form" onSubmit={(e) => { e.preventDefault(); setTried(true); if (code.length === 6) void signInCode(); }}>
+        {back("password")}
+        <h1>Check your email</h1>
+        {sentTo}
+        {codeField}
+        <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? <span className="cr1-spin sm" /> : "Sign in"}</button>
+        {again("signin")}
+      </form>
+    );
   } else if (step === "forgot") {
-    // No email service yet to send a reset code, so support resets it (owner, 31 Oct 2026).
+    // A reset code by email (owner, 31 Oct 2026), then a new password.
     card = (
       <div className="cr1-form">
         {back(forgotFrom)}
         <h1>Reset your password</h1>
-        <p>Email <a className="v2-link" href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a> from <b>{email.trim() || "your account's email"}</b> and we&apos;ll help you reset it.</p>
-        <button type="button" className="btn-google cr1-authbtn" onClick={() => oauth("Google")}><GoogleMark /> Or continue with Google</button>
+        <p>We&apos;ll email a 6-digit code to <b>{email.trim()}</b>. Then you choose a new password.</p>
+        <button type="button" className="np-btn np-submit" disabled={busy} onClick={() => void sendCode("reset", "reset")}>{busy ? <span className="cr1-spin sm" /> : "Send code"}</button>
+        <p className="cr1-small" style={{ margin: 0 }}>No access to this email? Write to <a className="v2-link" href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a>.</p>
       </div>
+    );
+  } else if (step === "reset") {
+    card = (
+      <form className="cr1-form" onSubmit={(e) => { e.preventDefault(); setTried(true); if (code.length === 6 && pw.length >= 8) void resetPassword(); }}>
+        {back("forgot")}
+        <h1>Choose a new password</h1>
+        {sentTo}
+        {codeField}
+        <label className="v2-field">
+          New password
+          <span className="cr1-pw">
+            <input className="np-input" type={showPw ? "text" : "password"} autoComplete={newPw ? "new-password" : "current-password"} value={pw} onChange={(e) => setPw(e.target.value)} aria-invalid={tried && (newPw ? pw.length < 8 : !pw)} />
+            <button type="button" onClick={() => setShowPw((x) => !x)} aria-label={showPw ? "Hide password" : "Show password"}><Icon name="eye" size={18} /></button>
+          </span>
+          {newPw ? <small className={pw.length >= 8 ? "cr1-okline" : tried ? "cr1-err" : undefined}>At least 8 characters</small> : tried && !pw ? <small className="cr1-err">Enter your password</small> : null}
+        </label>
+        <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? <span className="cr1-spin sm" /> : "Save and sign in"}</button>
+        {again("reset")}
+      </form>
     );
   } else {
     card = (

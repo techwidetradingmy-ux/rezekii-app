@@ -224,6 +224,27 @@ export async function setEmailLogin(userId: string, change: { email?: string | n
 }
 
 /**
+ * Signs in the account that uses this email, after she proved she owns it with an emailed code (owner, 31 Oct 2026). Its
+ * sign-in email first, then its Google email. A Google admin stays admin only while their email is on the admin list.
+ */
+export async function signInWithCode(email: string): Promise<EmailResult> {
+  const e = email.toLowerCase();
+  type Row = { id: string; role: AppUser["role"]; email: string | null; google_sub: string | null; login_email: string | null };
+  const list = (await (await supabaseRest(`app_users?or=${encodeURIComponent(`(login_email.eq."${e}",email.eq."${e}")`)}&select=id,role,email,google_sub,login_email&limit=2`)).json()) as Row[];
+  const row = list.find((r) => r.login_email === e) ?? list[0];
+  if (!row) return { ok: false, error: "No Rezekii account uses this email. Create one instead.", status: 404 };
+  const demoted = row.role === "admin" && !!row.google_sub && roleForGoogle(row.email ?? undefined, true, await addedAdmins()) !== "admin";
+  return { ok: true, user: await patch(row.id, { failed_logins: 0, locked_until: null, last_sign_in_at: now(), ...(demoted ? { role: "creator" } : {}) }) };
+}
+
+/** A new password for the account that signs in with this email, after a reset code. Unlocks it and signs her in. */
+export async function resetPassword(email: string, password: string): Promise<EmailResult> {
+  const [row] = (await (await supabaseRest(`app_users?login_email=eq.${encodeURIComponent(email.toLowerCase())}&password_hash=not.is.null&select=id&limit=1`)).json()) as { id: string }[];
+  if (!row) return { ok: false, error: "This email doesn't sign in with a password. Continue with Google, or ask for a sign-in code.", status: 404 };
+  return { ok: true, user: await patch(row.id, { password_hash: await hashPassword(password), failed_logins: 0, locked_until: null, last_sign_in_at: now() }) };
+}
+
+/**
  * Email sign-in. After 5 wrong passwords the account is locked for 15 minutes. Unknown emails take as long as wrong passwords.
  * A Google admin signing in with their password stays admin only while their email is on the admin list, as with Google.
  */

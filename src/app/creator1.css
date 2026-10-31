@@ -1618,3 +1618,6 @@ li.sc-row { cursor: default; }
 .su-wait .cr1-wait p { color: var(--body); }
 /* Target plans (owner, 30 Oct 2026): her own better rate is shown, never swapped down. */
 .mka-target { font-style: normal; font-size: 11px; font-weight: 800; padding: 2px 7px; border-radius: 99px; background: var(--bsoft); color: var(--blue); white-space: nowrap; }
+
+/* The 6-digit email code (owner, 31 Oct 2026). */
+.cr1-code { font-size: 22px; font-weight: 800; letter-spacing: 0.35em; text-align: center; }
