@@ -7,10 +7,11 @@ import { Icon, type IconName } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Title } from "@/components/ui";
 import { SELLER_NOTES } from "@/lib/mock-seller";
-import { loadNotes, markNote, noteDay, noteWhen } from "@/lib/live-notes";
+import { loadNotes, markNote, noteDay, noteWhen, type NoteCategory } from "@/lib/live-notes";
+import { CAT_LABEL, NoteFilter, passes, type NoteFilterValue } from "@/components/note-filter";
 
 const TONE: Record<string, string> = { alert: "red", x: "red", video: "blue", gift: "amber", link: "amber" };
-type Row = { id: string; icon: IconName; title: string; line: string; when: string; unread: boolean; href: string; today: boolean };
+type Row = { id: string; icon: IconName; title: string; line: string; when: string; unread: boolean; href: string; today: boolean; cat?: NoteCategory; urgent?: string | null };
 
 /** Seller notifications: newest first, tap to open. Signed in (owner, 31 Oct 2026): built from what happened on her account. */
 export default function SellerNotifications() {
@@ -22,13 +23,17 @@ export default function SellerNotifications() {
     setState("wait");
     loadNotes("seller").then((d) => {
       if (!d) return setState("failed");
-      setNotes(d.notes.map((n) => ({ id: n.id, icon: n.icon, title: n.title, line: n.urgent ? `${n.urgent} · ${n.line}` : n.line, when: noteWhen(n.at), unread: n.unread, href: n.href ?? "/seller/app", today: noteDay(n.at) === "Today" })));
+      setNotes(d.notes.map((n) => ({ id: n.id, icon: n.icon, title: n.title, line: n.line, when: noteWhen(n.at), unread: n.unread, href: n.href ?? "/seller/app/notifications", today: noteDay(n.at) === "Today", cat: n.cat, urgent: n.urgent })));
       setState("ok");
     });
   }, [live]);
   const unread = notes.filter((n) => n.unread).length;
-  const today = notes.filter((n) => n.today);
-  const earlier = notes.filter((n) => !n.today);
+  const [show, setShow] = useState<NoteFilterValue>("all");
+  const shown = notes.filter((n) => passes(n, show));
+  // Important ones first, whatever the day (owner, 31 Oct 2026).
+  const urgent = shown.filter((n) => n.urgent);
+  const today = shown.filter((n) => !n.urgent && n.today);
+  const earlier = shown.filter((n) => !n.urgent && !n.today);
   const readOne = (id: string) => {
     setNotes((all) => all.map((x) => (x.id === id ? { ...x, unread: false } : x)));
     if (live && notes.find((x) => x.id === id)?.unread) void markNote("seller", id);
@@ -38,7 +43,7 @@ export default function SellerNotifications() {
     const inner = (
       <>
         <span className={`sl-ico ${TONE[n.icon] ?? ""}`}><Icon name={n.icon} size={18} /></span>
-        <span><b>{n.title}</b><small>{n.line}</small><small>{n.when}</small></span>
+        <span>{(n.urgent || n.cat) && <span className="nt-tags">{n.urgent && <i className="cr1-note-tag">{n.urgent}</i>}{n.cat && <i className={`nt-cat ${n.cat}`}>{CAT_LABEL[n.cat]}</i>}</span>}<b>{n.title}</b><small>{n.line}</small><small>{n.when}</small></span>
         {n.unread ? <span className="sl-unread" aria-label="Unread" /> : <span />}
       </>
     );
@@ -55,7 +60,14 @@ export default function SellerNotifications() {
       <Title title="Notifications" sub={state === "wait" ? "Loading…" : state === "failed" ? "Couldn't load your notifications" : unread ? `${unread} unread` : "You're all caught up"}>
         <button type="button" className="btn-outline" disabled={!unread} onClick={() => { setNotes((all) => all.map((x) => ({ ...x, unread: false }))); if (live) void markNote("seller", null); toast("All marked as read"); }}>Mark all as read</button>
       </Title>
+      {live && notes.length > 0 && <NoteFilter notes={notes} value={show} onChange={setShow} />}
       <section className="v2-card">
+        {urgent.length > 0 && (
+          <>
+            <h3 className="sl-group-h" style={{ color: "#d92d20" }}>Needs you</h3>
+            <div>{list(urgent)}</div>
+          </>
+        )}
         {state === "ok" && !notes.length && <p className="v2-muted" style={{ margin: 0 }}>Nothing yet. Product reviews, missions, invites and posts show up here.</p>}
         {today.length > 0 && (
           <>

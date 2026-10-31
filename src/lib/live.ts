@@ -66,6 +66,7 @@ export async function loadMarket(o: { q: string; cat: string; sort: string; only
     total: Number(d.total ?? 0),
     cats: ((d.cats ?? []) as [string, number][]).filter(([c]) => c !== "All"),
     all: Number(d.all ?? 0),
+    asOf: (d.asOf as string | null) ?? null,
   };
 }
 

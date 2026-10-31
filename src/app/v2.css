@@ -1102,3 +1102,16 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { display
   .home-desk { display: grid; grid-template-columns: minmax(0, 1fr) 380px; align-items: start; }
   .home-desk > .home-hi { grid-column: 1 / -1; }
 }
+
+/* Notification labels (owner, 31 Oct 2026): every notification says what it's about; System and Account stand out. */
+.nt-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 2px; }
+.nt-cat { display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 999px; font-style: normal; font-size: 11px; font-weight: 800; letter-spacing: 0.02em; background: var(--surface2); color: var(--muted); width: fit-content; }
+.nt-cat.system { background: #fde8e7; color: #b42318; }
+.nt-cat.account { background: #fff3d6; color: #8a5a00; }
+.nt-cat.products { background: var(--gsoft); color: var(--gink); }
+.cr1-note-main .nt-cat { margin: 0 0 2px; }
+
+/* Signed in last time (owner, 31 Oct 2026): the page's content stays hidden until her account loads, so sample data never flashes. */
+html[data-wait="1"] .v2-main > * { visibility: hidden; }
+html[data-wait="1"] .v2-main::before { content: ""; display: block; width: 28px; height: 28px; margin: 40px auto; border-radius: 50%; border: 3px solid var(--line); border-top-color: #00c073; animation: v2Spin 0.8s linear infinite; }
+@keyframes v2Spin { to { transform: rotate(360deg); } }

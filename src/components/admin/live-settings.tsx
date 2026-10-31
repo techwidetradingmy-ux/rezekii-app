@@ -100,6 +100,7 @@ export function LiveSettings() {
             </div>
           </section>
 
+          <AnnouncementsCard />
           <SellerCampaignCard value={d.campaign} />
 
           <section className="v2-card" style={{ padding: "8px 12px" }}>
@@ -151,7 +152,7 @@ function SellerCampaignCard({ value }: { value: { name: string; commission: numb
   return (
     <section className="v2-card" style={{ gap: 12 }}>
       <div className="v2-card-h"><h2 className="v2-h2">New Seller Campaigns</h2><span className="v2-small">Made when a shop connects Seller Center</span></div>
-      <p className="v2-small" style={{ margin: 0 }}>Each shop gets its own public campaign. Every seller in Seller Center can see its name and description. {"{shop}"} becomes the shop&apos;s name; TikTok cuts names at 49 characters.</p>
+      <p className="v2-small" style={{ margin: 0 }}>Each shop gets its own public campaign. Every seller in Seller Center can see its name and description. {"{shop}"} becomes the shop&apos;s name and {"{creators}"} the number of creators linked on Rezekii; TikTok cuts names at 49 characters.</p>
       <label className="v2-small" style={{ display: "grid", gap: 6, maxWidth: 420 }}>Campaign name
         <input className="np-input" value={name} onChange={(e) => setName(e.target.value)} aria-label="Campaign name" />
       </label>
@@ -162,6 +163,63 @@ function SellerCampaignCard({ value }: { value: { name: string; commission: numb
         <textarea className="np-input" rows={7} maxLength={900} value={text} onChange={(e) => setText(e.target.value)} aria-label="Campaign description" />
       </label>
       <button type="button" className="np-btn v2-btn-sm" style={{ alignSelf: "flex-start" }} disabled={busy} onClick={() => void save()}>{busy ? "Saving…" : "Save"}</button>
+    </section>
+  );
+}
+
+type Ann = { id: string; title: string; body: string; level: "info" | "important"; audience: string; starts_at: string; ends_at: string | null; created_by: string | null };
+/**
+ * Announcements (owner, 31 Oct 2026): a message to everyone, e.g. when TikTok's data is late. It shows in every user's
+ * notifications under System until it's ended. Late or failed daily updates are announced on their own.
+ */
+function AnnouncementsCard() {
+  const { toast } = useDemo();
+  const [list, setList] = useState<Ann[] | null>(null);
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [level, setLevel] = useState<"info" | "important">("important");
+  const [audience, setAudience] = useState("all");
+  const [busy, setBusy] = useState(false);
+  const load = () => fetch("/api/v2/admin/announcements", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d) => setList(d?.list ?? [])).catch(() => setList([]));
+  useEffect(() => { void load(); }, []);
+  const send = async (method: "POST" | "PATCH", body: Record<string, string>) => {
+    setBusy(true);
+    const r = await fetch("/api/v2/admin/announcements", { method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).catch(() => null);
+    const x = (await r?.json().catch(() => null)) as { error?: string } | null;
+    setBusy(false);
+    if (!r?.ok) return toast(x?.error ?? "Didn't save. Please try again.");
+    toast(method === "POST" ? "Posted. Everyone sees it in Notifications." : "Ended");
+    if (method === "POST") { setTitle(""); setBody(""); }
+    void load();
+  };
+  const active = (a: Ann) => !a.ends_at || Date.parse(a.ends_at) > Date.now();
+  return (
+    <section className="v2-card" style={{ gap: 12 }}>
+      <div className="v2-card-h"><h2 className="v2-h2">Announcements</h2><span className="v2-small">Shown in Notifications under System</span></div>
+      <p className="v2-small" style={{ margin: 0 }}>Late or failed daily data updates are announced automatically after 2:00 AM.</p>
+      <input className="np-input" maxLength={80} placeholder="Title, e.g. TikTok data is late today" value={title} onChange={(e) => setTitle(e.target.value)} aria-label="Title" />
+      <textarea className="np-input" rows={3} maxLength={300} placeholder="Message" value={body} onChange={(e) => setBody(e.target.value)} aria-label="Message" />
+      <div className="v2-row" style={{ gap: 8, flexWrap: "wrap" }}>
+        <select className="np-input" style={{ width: 170 }} value={level} onChange={(e) => setLevel(e.target.value as "info" | "important")} aria-label="Level">
+          <option value="important">Important</option>
+          <option value="info">Info</option>
+        </select>
+        <select className="np-input" style={{ width: 170 }} value={audience} onChange={(e) => setAudience(e.target.value)} aria-label="Who sees it">
+          <option value="all">Everyone</option>
+          <option value="creator">Creators</option>
+          <option value="seller">Sellers</option>
+        </select>
+        <button type="button" className="np-btn v2-btn-sm" disabled={busy || title.trim().length < 3 || body.trim().length < 3} onClick={() => void send("POST", { title, body, level, audience })}>Post</button>
+      </div>
+      <div className="ad-list">
+        {(list ?? []).slice(0, 6).map((a) => (
+          <div key={a.id} className="ad-row">
+            <span className="main"><b>{a.title}</b><small>{a.body}</small><small>{a.level === "important" ? "Important" : "Info"} · {a.audience === "all" ? "Everyone" : a.audience === "creator" ? "Creators" : "Sellers"} · {when(a.starts_at)}{a.created_by ? ` · ${a.created_by}` : ""}</small></span>
+            {active(a) ? <button type="button" className="btn-outline v2-btn-sm" disabled={busy} onClick={() => void send("PATCH", { id: a.id })}>End</button> : <Pill tone="mute">Ended</Pill>}
+          </div>
+        ))}
+        {list && !list.length && <p className="v2-muted" style={{ margin: 0 }}>None yet.</p>}
+      </div>
     </section>
   );
 }

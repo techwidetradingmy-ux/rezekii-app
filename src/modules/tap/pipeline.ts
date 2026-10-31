@@ -164,14 +164,23 @@ export async function act(id: string, a: Action, actor: string): Promise<{ ok: t
  * The shop's Techwide campaign (owner, 31 Oct 2026: one per shop, public like all of Techwide's campaigns): reused when the shop
  * has one, otherwise created at `commission` percent and published, running as long as TikTok allows (360 days).
  */
-/** What every new shop's campaign starts with (Admin › Settings). `{shop}` in the name and description becomes the shop's name. */
+/**
+ * What every new shop's campaign starts with (Admin › Settings). `{shop}` becomes the shop's name and `{creators}` the number of
+ * creators who have linked TikTok Shop on Rezekii (owner, 31 Oct 2026: no sales figures).
+ */
 export type SellerCampaignSettings = { name: string; commission: number; description: string };
 export const SELLER_CAMPAIGN_DEFAULT: SellerCampaignSettings = {
   // Rezekii first, so sellers browsing campaigns in Seller Center see the platform's name (owner, 31 Oct 2026).
-  name: "🚀 Rezekii X {shop}",
+  name: "🤝 Rezekii X {shop}",
   commission: 10,
-  description: "🎉 Congrats {shop}, your Rezekii campaign is open! Register your products here so creators can start selling them. Other sellers: tired of chasing creators one by one? Rezekii connects your TikTok Shop to affiliate creators in about 3 minutes. You get your own campaign, your products shown to creators, and free samples, videos and sales tracked in one place, so you spend less time messaging and more time selling. Local and cross-border sellers welcome. Install Rezekii from the TikTok Shop App Store.",
+  description: "{shop} is on Rezekii 🤝 Rezekii gets affiliate creators selling your TikTok Shop products: your own campaign in minutes, creators who request free samples and post videos, and every sale tracked in one place. Local and cross-border sellers welcome. Join today at rezekii.com/seller",
 };
+/** Fills `{shop}` and `{creators}` in a campaign's name or description. */
+export async function campaignText(shop: string): Promise<(t: string) => string> {
+  const res = await supabaseRest("affiliate_connections?select=user_id", { headers: { prefer: "count=exact", range: "0-0" } });
+  const creators = Number((res.headers.get("content-range") ?? "*/0").split("/")[1]) || 0;
+  return (t: string) => t.replaceAll("{shop}", shop).replaceAll("{creators}", creators.toLocaleString("en-MY"));
+}
 export async function sellerCampaignSettings(): Promise<SellerCampaignSettings> {
   const [row] = (await (await supabaseRest("app_settings?key=eq.seller_campaign&select=value&limit=1")).json()) as { value: Partial<SellerCampaignSettings> }[];
   return { ...SELLER_CAMPAIGN_DEFAULT, ...(row?.value ?? {}) };
@@ -190,7 +199,8 @@ export async function ensureSellerCampaign(shopId: string, actor = "Rezekii"): P
   if (!conn) return { ok: false, error: "The shop isn't connected any more. Ask the seller to connect Seller Center again." };
   if (conn.campaign_id) return { ok: true, campaignId: conn.campaign_id };
   const set = await sellerCampaignSettings();
-  const c = await shopCampaign(shopId, set.commission, actor, { name: set.name.replaceAll("{shop}", conn.shop_name), description: set.description.replaceAll("{shop}", conn.shop_name).slice(0, 999) });
+  const fill = await campaignText(conn.shop_name);
+  const c = await shopCampaign(shopId, set.commission, actor, { name: fill(set.name), description: fill(set.description).slice(0, 999) });
   if (!c.ok) return c;
   await supabaseRest(`seller_connections?shop_id=eq.${shopId}`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ campaign_id: c.campaignId }) });
   return { ok: true, campaignId: c.campaignId };

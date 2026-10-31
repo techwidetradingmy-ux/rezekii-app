@@ -4,7 +4,10 @@ import { useEffect, useState } from "react";
 import type { IconName } from "@/components/icons";
 
 /** One notification from /api/v2/notifications (signed in). */
-export type LiveNote = { id: string; at: string; icon: IconName; title: string; line: string; href: string | null; cta: string | null; urgent: string | null; unread: boolean };
+export type NoteCategory = "system" | "account" | "products" | "posts" | "rewards" | "chances";
+export type LiveNote = { id: string; at: string; icon: IconName; title: string; line: string; href: string | null; cta: string | null; urgent: string | null; unread: boolean; cat: NoteCategory };
+/** Labels for the categories, in the order the filter shows them (owner, 31 Oct 2026). */
+export const NOTE_CATEGORIES: [NoteCategory, string][] = [["system", "System"], ["account", "Account"], ["products", "Products"], ["posts", "Posts"], ["rewards", "Rewards"], ["chances", "Chances"]];
 export type Side = "creator" | "seller";
 
 export async function loadNotes(side: Side): Promise<{ notes: LiveNote[]; unread: number } | null> {

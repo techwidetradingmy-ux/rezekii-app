@@ -11,7 +11,10 @@ export async function GET(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   const p = req.nextUrl.searchParams;
   // Free samples as this creator can request them (their own TikTok check).
-  const result = browse(await productsFor(user.id), {
+  const all = await productsFor(user.id);
+  // When the catalog was last read from TikTok (owner, 31 Oct 2026: show how new the data is).
+  const asOf = all.reduce<string | null>((m, x) => (x.asOf && (!m || x.asOf > m) ? x.asOf : m), null);
+  const result = browse(all, {
     q: (p.get("q") ?? "").slice(0, 80),
     cat: p.get("cat") || undefined,
     shop: p.get("shop") || undefined,
@@ -19,5 +22,5 @@ export async function GET(req: NextRequest) {
     sort: p.get("sort") ?? undefined,
     page: Number(p.get("page") ?? 1) || 1,
   });
-  return NextResponse.json(result, { headers: { "cache-control": "private, no-store" } });
+  return NextResponse.json({ ...result, asOf }, { headers: { "cache-control": "private, no-store" } });
 }

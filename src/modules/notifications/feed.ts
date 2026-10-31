@@ -1,6 +1,7 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { REASON_TEXT, type Review } from "../tap/reviews.ts";
 import { myWishes } from "../wishes/wishes.ts";
+import { systemNotes } from "./system.ts";
 
 export type Side = "creator" | "seller";
 export type Note = {
@@ -15,7 +16,11 @@ export type Note = {
   /** Short red tag for things that need her, e.g. "5 days left". */
   urgent: string | null;
 };
-export type Feed = { notes: (Note & { unread: boolean })[]; unread: number };
+/** The label each notification carries, so the important ones are easy to spot (owner, 31 Oct 2026). */
+export type Category = "system" | "account" | "products" | "posts" | "rewards" | "chances";
+const CATEGORY: [string, Category][] = [["sys:", "system"], ["a:", "account"], ["t:", "account"], ["shop:", "account"], ["rv:", "products"], ["sub:", "products"], ["r:", "products"], ["p:", "posts"], ["s:", "posts"], ["l:", "rewards"], ["j:", "rewards"], ["w:", "chances"]];
+const categoryOf = (id: string): Category => CATEGORY.find(([p]) => id.startsWith(p))?.[1] ?? "account";
+export type Feed = { notes: (Note & { unread: boolean; cat: Category })[]; unread: number };
 /** What she can switch off in Settings (owner, 31 Oct 2026). Connection reminders always show: things stop working without them. */
 export type Topic = "samples" | "chances" | "posts" | "rewards";
 export type Prefs = Partial<Record<Topic, boolean>>;
@@ -147,6 +152,10 @@ export async function notesFor(userId: string, side: Side): Promise<Note[]> {
   for (const s of samples) {
     notes.push({ id: `r:${s.id}`, at: s.created_at, icon: "box", title: `Sample requested: ${s.product_name ?? "a product"}`, line: "You'll see TikTok's steps (approved, shipped, received) in Samples & Delivery.", href: "/app/account#samples", cta: "See sample", urgent: null });
   }
+  // Techwide's announcements and late or failed data updates, for everyone.
+  for (const n of await systemNotes(side).catch(() => [])) {
+    notes.push({ id: n.id, at: n.at, icon: n.important ? "alert" : "check", title: n.title, line: n.line, href: null, cta: null, urgent: n.important ? "Important" : null });
+  }
   return notes.sort((a, b) => (a.at < b.at ? 1 : -1));
 }
 
@@ -167,7 +176,7 @@ export async function feedFor(userId: string, side: Side): Promise<Feed> {
   const [notes, state] = await Promise.all([notesFor(userId, side), stateOf(userId, side)]);
   const read = new Set(state.read_ids);
   const shown = notes.filter((n) => { const t = topicOf(n.id); return !t || state.prefs[t] !== false; });
-  const out = shown.map((n) => ({ ...n, unread: n.at > state.seen_at && !read.has(n.id) }));
+  const out = shown.map((n) => ({ ...n, cat: categoryOf(n.id), unread: n.at > state.seen_at && !read.has(n.id) }));
   return { notes: out, unread: out.filter((n) => n.unread).length };
 }
 

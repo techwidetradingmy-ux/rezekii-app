@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { saveCreatorPhoto } from "@/modules/photos/store.ts";
 import { exchangeTikTokCode, getTikTokUser, type TikTokTokens } from "@/integrations/tiktok/login.ts";
 import { SESSION_COOKIE, userForSession } from "@/modules/accounts/session.ts";
 import { linkOrSignInTikTok, saveTikTokConnection } from "@/modules/accounts/users.ts";
@@ -33,6 +34,8 @@ export async function GET(req: NextRequest) {
     if ("taken" in result) return toSignin(req, "taken", "tiktok");
     const { user, linked } = result;
     await saveTikTokConnection(user.id, profile, tokens);
+    // Her TikTok photo, saved at once so it shows everywhere (owner, 31 Oct 2026).
+    if (profile.avatar_url && (user.tiktok_username || profile.username)) await saveCreatorPhoto((user.tiktok_username ?? profile.username)!, profile.avatar_url).catch(() => false);
     return signedIn(req, user.id, "tiktok", !linked ? "/app" : "/app/account?channel=tiktok&connect=ok#connections");
   } catch (err) {
     console.error("[tiktok] callback error", err instanceof Error ? err.message : err);

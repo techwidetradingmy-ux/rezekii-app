@@ -52,6 +52,8 @@ const addedAdmins = async () => ((await (await supabaseRest("admin_emails?select
 export async function upsertGoogleUser(g: { sub: string; email?: string; email_verified?: boolean; name?: string; picture?: string }): Promise<AppUser> {
   const fields = { email: g.email ?? null, display_name: g.name ?? null, avatar_url: g.picture ?? null, role: roleForGoogle(g.email, g.email_verified, await addedAdmins()), last_sign_in_at: now() };
   const existing = await findBy("google_sub", g.sub);
+  // An account with TikTok keeps its TikTok photo (owner, 31 Oct 2026).
+  if (existing?.tiktok_username && existing.avatar_url) delete (fields as Partial<typeof fields>).avatar_url;
   return existing ? patch(existing.id, fields) : insert({ ...fields, google_sub: g.sub });
 }
 
@@ -110,7 +112,8 @@ export async function linkOrSignInTikTok(current: AppUser | null, t: TikTokProfi
     const user = await patch(current.id, {
       tiktok_open_id: t.open_id,
       tiktok_username: t.username?.toLowerCase() ?? current.tiktok_username,
-      ...(current.avatar_url ? {} : { avatar_url: t.avatar_url ?? null }),
+      // Her TikTok photo wins over a Google one (owner, 31 Oct 2026).
+      ...(t.avatar_url ? { avatar_url: t.avatar_url } : {}),
       ...(current.display_name ? {} : { display_name: t.display_name ?? null }),
       last_sign_in_at: now(),
     });

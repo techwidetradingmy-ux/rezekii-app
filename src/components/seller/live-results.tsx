@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { DataNote } from "@/components/data-note";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -74,6 +75,7 @@ export function LiveResults() {
       <Title title="TAP Performance" sub={<Source when={when(r.asOf)} />}>
         <button type="button" className="btn-outline" disabled={!r.products.length} onClick={() => { exportCsv(r); toast("Report saved as CSV"); }}><Icon name="doc" size={18} /> Export</button>
       </Title>
+      <DataNote latest={r.asOf} every="Read from TikTok when you open this page" what="TikTok's numbers as of" />
 
       <section className="v2-grid4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
         <Stat label="Sales (GMV)" value={<Count value={t.gmv} format={(n) => rm(n, 0)} />} note="Since each product went live" />

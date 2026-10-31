@@ -6,10 +6,11 @@ import { Icon, type IconName } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Title } from "@/components/ui";
 import { NOTES } from "@/lib/mock-creator1";
-import { loadNotes, markNote, noteBg, noteDay, noteWhen, type LiveNote } from "@/lib/live-notes";
+import { loadNotes, markNote, noteBg, noteDay, noteWhen, type LiveNote, type NoteCategory } from "@/lib/live-notes";
+import { CAT_LABEL, NoteFilter, passes, type NoteFilterValue } from "@/components/note-filter";
 import "../../creator1.css";
 
-type Row = { id: string; day: "Today" | "Earlier"; when: string; icon: IconName; bg: string; title: string; line: string; href?: string | null; cta?: string | null; urgent?: string | null; action?: "reconnect" };
+type Row = { id: string; day: "Today" | "Earlier"; when: string; icon: IconName; bg: string; title: string; line: string; href?: string | null; cta?: string | null; urgent?: string | null; action?: "reconnect"; cat?: NoteCategory };
 
 /** Notifications: samples, commission chances, missions and account health, newest first. Each one links to where you act. */
 export default function Notifications() {
@@ -39,10 +40,12 @@ export default function Notifications() {
   };
   // Phones show each one as a short row (owner, 29 Oct 2026); a tap opens the full text and its button, and marks it read.
   const [open, setOpen] = useState<string | null>(null);
+  const [show, setShow] = useState<NoteFilterValue>("all");
 
   const notes: Row[] = live
-    ? (real ?? []).map((n) => ({ id: n.id, day: noteDay(n.at), when: noteWhen(n.at), icon: n.icon, bg: noteBg(n.icon), title: n.title, line: n.line, href: n.href, cta: n.cta, urgent: n.urgent }))
+    ? (real ?? []).map((n) => ({ id: n.id, day: noteDay(n.at), when: noteWhen(n.at), icon: n.icon, bg: noteBg(n.icon), title: n.title, line: n.line, href: n.href, cta: n.cta, urgent: n.urgent, cat: n.cat }))
     : NOTES;
+  const shown = notes.filter((n) => passes(n, show));
 
   return (
     <div className="v2-stack v2-in v2-narrow" style={{ gap: 20 }}>
@@ -52,6 +55,8 @@ export default function Notifications() {
         </button>
       </Title>
 
+      {live && real && real.length > 0 && <NoteFilter notes={notes} value={show} onChange={setShow} />}
+
       {live && real && !real.length && (
         <section className="v2-card">
           <p className="v2-muted" style={{ margin: 0 }}>Nothing yet. Missions, invites, posts and samples show up here.</p>
@@ -60,7 +65,7 @@ export default function Notifications() {
 
       {/* Urgent first, in red, whatever the day (owner, 29 Oct 2026); then the rest by day. */}
       {(["Needs you", "Today", "Earlier"] as const).map((day) => {
-        const list = notes.filter((n) => (day === "Needs you" ? n.urgent && !(n.action === "reconnect" && reconnected) : !n.urgent || (n.action === "reconnect" && reconnected) ? n.day === day : false));
+        const list = shown.filter((n) => (day === "Needs you" ? n.urgent && !(n.action === "reconnect" && reconnected) : !n.urgent || (n.action === "reconnect" && reconnected) ? n.day === day : false));
         return list.length > 0 && (
         <section key={day} className={`v2-card${day === "Needs you" ? " cr1-urgent" : ""}`}>
           <h2 className="v2-h2">{day === "Needs you" && <Icon name="alert" size={18} />}{day}</h2>
@@ -77,6 +82,7 @@ export default function Notifications() {
                   </span>
                   <button type="button" className="cr1-note-main" aria-expanded={open === n.id} onClick={() => { setOpen(open === n.id ? null : n.id); read(n.id); }}>
                     {n.urgent && !done && <i className="cr1-note-tag">{n.urgent}</i>}
+                    {n.cat && <i className={`nt-cat ${n.cat}`}>{CAT_LABEL[n.cat]}</i>}
                     <b>{done ? "TikTok Shop reconnected" : n.title}</b>
                     <span>{done ? "Access renewed for another year." : n.line}</span>
                     <small>{n.when}</small>

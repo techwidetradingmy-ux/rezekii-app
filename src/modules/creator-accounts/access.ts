@@ -1,4 +1,5 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import { saveCreatorPhoto } from "../photos/store.ts";
 import type { TokenSet } from "../../integrations/tiktok-shop/auth.ts";
 import { logActivity } from "../admin/admins.ts";
 import { connectionForUser, freshCreatorToken, isAllowedDuringProof, saveAffiliateConnection } from "./affiliate-connections.ts";
@@ -61,6 +62,11 @@ export async function linkCreator(user: { id: string; role?: string; tiktok_user
   await saveAffiliateConnection({ ...profile, userId: user.id }, tokens);
   // An email or Google account takes the TikTok handle from TikTok Shop, so its TAP sales and samples show up.
   if (!user.tiktok_username) await supabaseRest(`app_users?id=eq.${user.id}&tiktok_username=is.null`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ tiktok_username: handle }) });
+  // Her TikTok photo, not a Google one (owner, 31 Oct 2026): kept on the account and saved at once.
+  if (profile.avatarUrl) {
+    await supabaseRest(`app_users?id=eq.${user.id}`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ avatar_url: profile.avatarUrl }) });
+    await saveCreatorPhoto(user.tiktok_username ?? handle, profile.avatarUrl).catch(() => false);
+  }
   // Accounts with admin access don't wait for approval.
   const approved = current?.status === "approved" || user.role === "admin" || isAllowedDuringProof(handle) || (await autoApprove());
   await supabaseRest("creator_access?on_conflict=user_id", json({

@@ -59,8 +59,13 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   const refreshMe = useCallback(() => {
     fetch("/api/v2/me", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : { me: null }))
-      .then((d: { me: Me | null }) => setMe(d.me))
-      .catch(() => setMe(null));
+      .then((d: { me: Me | null }) => {
+        setMe(d.me);
+        // Remembered so the next visit waits for her account instead of flashing the sample data (owner, 31 Oct 2026).
+        try { if (d.me) localStorage.setItem("rz2_in", "1"); else localStorage.removeItem("rz2_in"); } catch {}
+      })
+      .catch(() => setMe(null))
+      .finally(() => { delete document.documentElement.dataset.wait; });
   }, []);
   useEffect(() => refreshMe(), [refreshMe]);
 

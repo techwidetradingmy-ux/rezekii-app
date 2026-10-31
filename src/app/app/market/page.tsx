@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { DataNote } from "@/components/data-note";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
@@ -66,7 +67,7 @@ export default function Marketplace() {
   }, [router]);
 
   // Signed in (owner, 30 Oct 2026): the real Marketplace, Techwide's TAP products, 24 at a time.
-  const [real, setReal] = useState<{ items: Product[]; total: number; cats: [string, number][]; all: number } | null>(null);
+  const [real, setReal] = useState<{ items: Product[]; total: number; cats: [string, number][]; all: number; asOf: string | null } | null>(null);
   const [page, setPage] = useState(1);
   useEffect(() => setPage(1), [q, cat, sort, onlySamples]);
   useEffect(() => {
@@ -114,6 +115,7 @@ export default function Marketplace() {
       <Title title="Marketplace" sub="Better rates than TikTok's open plan. Free Samples on many.">
         <Link href="/app/account#samples" className="mk-mysamples" aria-label={live ? "My samples" : `My samples: ${MY_SAMPLES.filter((s) => !["Done", "Not approved"].includes(s.status)).length} in progress`} title="My samples"><Icon name="box" size={20} />{!live && <span className="badge">{MY_SAMPLES.filter((s) => !["Done", "Not approved"].includes(s.status)).length}</span>}</Link>
       </Title>
+      {live && <DataNote latest={real?.asOf} what="Products and rates from" />}
 
 
       <div className="mk-bar">
