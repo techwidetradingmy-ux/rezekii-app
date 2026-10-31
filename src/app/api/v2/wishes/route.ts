@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { approvedCreatorToken } from "@/modules/creator-accounts/access.ts";
-import { board, findProduct, myWishes, saveWish, wantedOne, type Commit } from "@/modules/wishes/wishes.ts";
+import { board, findProduct, findProductCached, myWishes, saveWish, wantedOne, type Commit } from "@/modules/wishes/wishes.ts";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -21,9 +21,10 @@ export async function GET(req: NextRequest) {
   if (part === "board") return NextResponse.json({ items: await board() }, NO_STORE);
   if (part === "product") {
     const id = q.get("id") ?? "";
-    const wanted = await wantedOne(id);
+    // The board, her sign-in and TikTok's facts (kept 30 minutes) at the same time (owner, 1 Nov 2026).
+    const [wanted, token] = await Promise.all([wantedOne(id), approvedCreatorToken(user.id)]);
     if (wanted) return NextResponse.json({ product: wanted, onRezekii: false, wanted }, NO_STORE);
-    const found = await findProduct(await approvedCreatorToken(user.id), id);
+    const found = await findProductCached(token, id);
     if ("error" in found) return NextResponse.json(found, { status: 404 });
     return NextResponse.json({ ...found, wanted: null }, NO_STORE);
   }

@@ -11,7 +11,7 @@ import { AiHead, Count, Hidden, Seg, Tip } from "@/components/ui";
 import { productHref, requestedSamples } from "@/lib/product-view";
 import { AI_PICKS, AI_PROFILE, PRODUCTS, bestRate, product, rateFor, rm, short, type AiPick } from "@/lib/mock";
 import { canGetSample } from "@/lib/mock-creator1";
-import { addOne } from "@/lib/live";
+import { AddButton } from "@/components/add-button";
 import { NO_PHOTO, shortName } from "@/lib/live-perf";
 
 type Fit = AiPick["fit"];
@@ -73,7 +73,6 @@ export function AiPicks() {
   const [phase, setPhase] = useState(0);
   const [fit, setFit] = useState<Fit>("video");
   const [sort, setSort] = useState<Sort>("Best match");
-  const [added, setAdded] = useState<string[]>([]);
   const router = useRouter();
   const [requested, setRequested] = useState<string[]>([]);
   useEffect(() => setRequested(requestedSamples()), []);
@@ -148,20 +147,6 @@ export function AiPicks() {
     return b.match - a.match;
   });
 
-  const add = (it: Item) => {
-    if (!live) {
-      setAdded((a) => [...a, it.id]);
-      return toast(`Added to showcase: ${it.name}`);
-    }
-    // For real: straight into her TikTok Shop showcase, or a TAP link to open when TikTok asks for one.
-    addOne(it.id).then((r) => {
-      if (r.added) {
-        setAdded((a) => [...a, it.id]);
-        toast(`Added to showcase: ${it.name}`);
-      } else if (r.link) window.open(r.link, "_blank", "noopener");
-      else toast(r.error ?? "TikTok Shop didn't add it. Please try again.");
-    });
-  };
 
   if (!linked || (live && real && !real.linked)) {
     return (
@@ -363,7 +348,6 @@ export function AiPicks() {
 
           <div className="ai-grid" key={`${fit}-${sort}-${run}`}>
             {list.map((it, i) => {
-              const isAdded = added.includes(it.id);
               const asked = requested.includes(it.id);
               return (
                 <article key={it.id} className="ai-item" style={{ animationDelay: `${Math.min(i, 12) * 45}ms` }}>
@@ -391,9 +375,7 @@ export function AiPicks() {
                           <Icon name={asked ? "check" : "gift"} size={14} width={asked ? 2.8 : 1.9} /> {asked ? "Requested" : "Free sample"}
                         </button>
                       )}
-                      <button type="button" className={`ai-btn ${isAdded ? "done" : ""}`} disabled={isAdded} onClick={() => add(it)}>
-                        <Icon name={isAdded ? "check" : "plus"} size={14} width={2.6} /> {isAdded ? "Added" : "Add"}
-                      </button>
+                      <AddButton id={it.id} name={it.name} rate={it.rate} size="sm" />
                     </span>
                   </span>
                 </article>

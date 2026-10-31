@@ -4,7 +4,7 @@ import { getSampleDeeplink, getSampleLabel, lookupProducts, searchSampleApplicat
 import { approvedCreatorToken } from "../creator-accounts/access.ts";
 import { linkedCreators } from "../sales/orders.ts";
 import { makeTapLink } from "./links.ts";
-import { addByTapLink } from "./showcase.ts";
+import { addByTapLink, showcaseIds } from "./showcase.ts";
 import { sampleStage } from "./stages.ts";
 
 /** A free sample a creator asked for on Rezekii. Since 14 Oct 2026 they submit it in TikTok themselves (status "applied"); older rows were Rezekii's own queue. */
@@ -230,7 +230,8 @@ export async function sampleLink(userId: string, productId: string): Promise<Sam
   if (t.samples <= 0) return { ok: false, error: "This product has no free samples through Rezekii.", status: 409 };
   // TikTok's live check and the TAP link together (making the link doesn't touch the showcase): the product goes into the
   // showcase only when TikTok really offers this creator the sample.
-  const [label, tap] = await Promise.all([patiently(() => getSampleLabel(token, productId)), makeTapLink(userId, productId)]);
+  // Her saved showcase too (owner, 1 Nov 2026): a product already there isn't added again first.
+  const [label, tap, have] = await Promise.all([patiently(() => getSampleLabel(token, productId)), makeTapLink(userId, productId), showcaseIds(userId)]);
   if (label.code !== 0) {
     console.error("[sample label]", label.code, label.message);
     if (label.code === DEAUTHORIZED) return { ok: false, error: RELINK, status: 401 };
@@ -239,11 +240,20 @@ export async function sampleLink(userId: string, productId: string): Promise<Sam
   const pick = sampleChoice(label.data?.label);
   if (!pick.ok) return pick;
   if (!tap.ok) return { ok: false, error: tap.error, status: tap.status };
-  // Re-adding a product that is already in the showcase is accepted by TikTok and binds it to the TAP link.
-  const added = await addByTapLink(userId, token, tap.link);
-  if (!added.added) return { ok: false, error: added.error || "Your showcase couldn't take this product, so the sample can't be requested yet.", status: added.status || 502 };
+  // TikTok needs the product in her showcase first; one already there is asked for straight away.
+  const add = async () => {
+    const added = await addByTapLink(userId, token, tap.link, true, productId);
+    return added.added ? null : { ok: false as const, error: added.error || "Your showcase couldn't take this product, so the sample can't be requested yet.", status: added.status || 502 };
+  };
+  const there = have.has(productId);
+  if (!there) {
+    const failed = await add();
+    if (failed) return failed;
+  }
   const ask = (redirect?: string) => patiently(() => getSampleDeeplink(token, { productId, skuId: pick.skuId, campaignId: t.campaign_id, redirect }));
   let r = await ask(BACK_TO_REZEKII);
+  // Her saved showcase can be out of date (removed in TikTok): add it, then ask again.
+  if (r.code !== 0 && there && !(await add())) r = await ask(BACK_TO_REZEKII);
   if (r.code !== 0) r = await ask();
   if (r.code !== 0 || !r.data?.deeplink) {
     console.error("[sample link]", r.code, r.message, r.request_id);

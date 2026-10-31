@@ -64,7 +64,12 @@ export const PRODUCTS: Product[] = [
 
 /** Real products met while signed in (owner, 30 Oct 2026), so product() and the product page find them too. */
 export const LIVE_PRODUCTS = new Map<string, Product>();
-export const product = (id: string) => PRODUCTS.find((p) => p.id === id) ?? LIVE_PRODUCTS.get(id) ?? PRODUCTS[0];
+/**
+ * Name-and-photo stand-ins for real products seen in Analytics and the scan (owner, 1 Nov 2026), kept apart from LIVE_PRODUCTS:
+ * lists can show them, but the product page always loads the full product (free sample, rates) instead.
+ */
+export const LIVE_STUBS = new Map<string, Product>();
+export const product = (id: string) => PRODUCTS.find((p) => p.id === id) ?? LIVE_PRODUCTS.get(id) ?? LIVE_STUBS.get(id) ?? PRODUCTS[0];
 
 /** A rate admin gives one creator for one product (owner, 29 Oct 2026). She sees it as her special rate. */
 export type CustomRate = { productId: string; handle: string; rate: number; until?: string };

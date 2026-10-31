@@ -11,7 +11,8 @@ import { SampleTag } from "@/components/creator1/brand";
 import { MY_SAMPLES, PRODUCTS, bestRate, rateFor, rm, type Product } from "@/lib/mock";
 import { SAMPLE_LEFT, canGetSample } from "@/lib/mock-creator1";
 import { productHref, requestedSamples } from "@/lib/product-view";
-import { addOne, loadMarket } from "@/lib/live";
+import { loadMarket } from "@/lib/live";
+import { AddButton } from "@/components/add-button";
 import "@/app/creator1.css";
 import { useKept } from "@/lib/keep";
 
@@ -42,7 +43,6 @@ export default function Marketplace() {
   const [cat, setCat] = useKept("mk-cat", "All");
   const [sort, setSort] = useKept<SortKey>("mk-sort", "sold");
   const [onlySamples, setOnlySamples] = useKept("mk-samples", false);
-  const [added, setAdded] = useState<string[]>([]);
   // Grid or list (owner, 28 Oct 2026: a list is easier to browse), remembered on this device.
   const [view, setView] = useKept<"grid" | "list">("mk-view", "grid");
   useEffect(() => {
@@ -94,22 +94,6 @@ export default function Marketplace() {
     if (sort === "samples") return (b.samples !== null ? SAMPLE_LEFT[b.id] ?? 10 : -1) - (a.samples !== null ? SAMPLE_LEFT[a.id] ?? 10 : -1);
     return b.sold - a.sold;
   });
-  const addToShowcase = (p: Product) => {
-    if (!linked) return setLinked(true);
-    if (live) {
-      // For real: straight into her TikTok Shop showcase, or a TAP link to open when TikTok asks for one.
-      addOne(p.id).then((r) => {
-        if (r.added) {
-          setAdded((a) => [...a, p.id]);
-          toast(`Added at ${mine(p)}%: ${p.name}`);
-        } else if (r.link) window.open(r.link, "_blank", "noopener");
-        else toast(r.error ?? "TikTok Shop didn't add it. Please try again.");
-      });
-      return;
-    }
-    setAdded((a) => [...a, p.id]);
-    toast(`Added at ${mine(p)}%: ${p.name}`);
-  };
   return (
     <div className="v2-stack v2-in mk-page" style={{ gap: 20 }}>
       <Title title="Marketplace" sub="Better rates than TikTok's open plan. Free Samples on many.">
@@ -171,7 +155,6 @@ export default function Marketplace() {
       <div className={`mk-grid${view === "list" ? " list" : ""}`}>
         {list.map((p, i) => {
           const left = SAMPLE_LEFT[p.id] ?? 10;
-          const isAdded = added.includes(p.id);
           const now = bestRate(p);
           // Kept only when a target plan really pays as much or more; a Rezekii rate equal to the open plan is just her rate.
           const better = now.rate < mine(p);
@@ -198,9 +181,7 @@ export default function Marketplace() {
               <span className="mka-earn">Earn <b><Hidden>{rm((p.price * Math.max(now.rate, mine(p))) / 100)}</Hidden></b></span>
               <span className="mka-acts">
                 {!kept ? (
-                  <button type="button" className={isAdded ? "mka-add done" : "mka-add"} disabled={isAdded} onClick={() => addToShowcase(p)}>
-                    <Icon name={isAdded ? "check" : "plus"} size={15} width={2.6} /> {isAdded ? "Added" : "Add"}
-                  </button>
+                  <AddButton id={p.id} name={p.name} rate={mine(p)} />
                 ) : (
                   <button type="button" className="mka-add done" disabled title="Your target plan pays more, so it stays as it is"><Icon name="shield" size={15} width={2.4} /> Kept</button>
                 )}

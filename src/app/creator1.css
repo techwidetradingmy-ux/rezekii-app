@@ -1719,3 +1719,31 @@ li.sc-row { cursor: default; }
 
 .nb-others { margin: 0; display: flex; gap: 6px; align-items: flex-start; color: var(--muted); line-height: 1.45; }
 .nb-others svg { flex: none; margin-top: 2px; }
+
+/* One Add button everywhere (owner, 1 Nov 2026, option A): green, + Add, Adding…, Added. */
+.rz-add { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 38px; padding: 0 14px; border: 0; border-radius: 12px; background: #00c073; color: #ffffff; font: inherit; font-size: 13.5px; font-weight: 800; white-space: nowrap; cursor: pointer; box-shadow: 0 6px 14px -8px rgba(0, 150, 90, 0.7); transition: transform 0.12s var(--ease), background-color 0.15s, box-shadow 0.15s; }
+.rz-add:hover { background: #00a862; }
+.rz-add:active { transform: scale(0.96); }
+.rz-add.sm { height: 32px; padding: 0 11px; border-radius: 10px; font-size: 12.5px; gap: 4px; }
+.rz-add.lg { width: 100%; height: 48px; border-radius: 14px; font-size: 15.5px; }
+.rz-add.busy { background: #00c073; opacity: 0.85; cursor: progress; }
+.rz-add.done { background: var(--gsoft); color: var(--gink); box-shadow: inset 0 0 0 1.5px #b8ead2; cursor: default; }
+.rz-add-spin { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.45); border-top-color: #ffffff; animation: v2Spin 0.7s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .rz-add-spin { animation-duration: 2s; } }
+.nb-list li { grid-template-columns: 22px minmax(0, 1fr) auto; }
+.nb-list li:has(.nb-sample) { grid-template-columns: 22px minmax(0, 1fr) 40px auto; }
+
+/* Product page, compact top on phones (owner, 1 Nov 2026): a shorter photo and a two-line name, so price, rate and buttons
+   show in one look; tap the name to read it all. A skeleton while it loads. */
+@media (max-width: 760px) {
+  .pp-photo { aspect-ratio: auto; height: min(62vw, 250px); }
+  .pp-photo img { object-fit: contain; }
+  .pp-name { font-size: 18px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
+  .pp-name.full { -webkit-line-clamp: unset; display: block; }
+  .pp-info { gap: 10px; }
+}
+.pp-sk { display: block; height: 16px; border-radius: 8px; background: linear-gradient(90deg, var(--surface2) 25%, var(--line) 50%, var(--surface2) 75%); background-size: 200% 100%; animation: ppSk 1.2s ease-in-out infinite; }
+.pp-wait .pp-photo { background: linear-gradient(90deg, var(--surface2) 25%, var(--line) 50%, var(--surface2) 75%); background-size: 200% 100%; animation: ppSk 1.2s ease-in-out infinite; }
+.pp-wait .pp-photo img { opacity: 0.9; }
+@keyframes ppSk { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) { .pp-sk, .pp-wait .pp-photo { animation: none; } }

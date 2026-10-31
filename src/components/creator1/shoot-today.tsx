@@ -15,7 +15,7 @@ import { SAMPLE_LEFT } from "@/lib/mock-creator1";
 import { NICHE_BEST, TRY_TODAY, VIRAL, daily, type Trend } from "@/lib/mock-creator2";
 import { ON_IDS, ON_SOLD30 } from "@/lib/mock-showcase";
 import { useKept } from "@/lib/keep";
-import { addOne } from "@/lib/live";
+import { AddButton } from "@/components/add-button";
 import { NO_PHOTO, shortName } from "@/lib/live-perf";
 
 /** Drafts made from Today's Ideas wait here until the Content Calendar picks them up (preview only: this browser tab). */
@@ -280,24 +280,8 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
   const short1 = (c: string) => c.split(" & ")[0];
   const cats = ["All", ...Array.from(new Set(rows.map((b) => short1(b.category))))];
   const [cat, setCat] = useKept(`best-cat-${source}`, "All");
-  const [added, setAdded] = useState<string[]>([]);
   const shown = rows.filter((b) => cat === "All" || short1(b.category) === cat);
   const { rail, at } = useRail<HTMLOListElement>(shape);
-  const add = (b: BestRow) => {
-    if (!linked) return setLinked(true);
-    if (!live) {
-      setAdded((a) => [...a, b.productId]);
-      return toast("Added to your showcase");
-    }
-    // For real: straight into her TikTok Shop showcase, or a TAP link to open when TikTok asks for one.
-    addOne(b.productId).then((r) => {
-      if (r.added) {
-        setAdded((a) => [...a, b.productId]);
-        toast("Added to your showcase");
-      } else if (r.link) window.open(r.link, "_blank", "noopener");
-      else toast(r.error ?? "TikTok Shop didn't add it. Please try again.");
-    });
-  };
   return (
     <section className={inFrame ? "nb-box nb-in" : "v2-card nb-box"} aria-label={mine ? "Best sellers in your showcase" : "Best sellers in your niche"}>
       {/* The card's AI header sits above the tabs (owner, 29 Oct 2026: one AI label per card); each tab just says where it's from. */}
@@ -320,7 +304,6 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
       </div>
       <ol ref={rail} className={`nb-list ${shape}`} key={cat}>
         {shown.map((b) => {
-          const on = added.includes(b.productId);
           return (
             <li key={b.productId}>
               <span className="nb-rank">{rows.indexOf(b) + 1}</span>
@@ -340,9 +323,7 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
               {mine ? (
                 <Link href={`/app/publish?idea=${encodeURIComponent(`Show ${b.name}`)}`} className="nb-add" aria-label={`Plan a video for ${b.name}`}><Icon name="video" size={18} /></Link>
               ) : (
-              <button type="button" className={`nb-add${on ? " on" : ""}`} disabled={on} aria-label={on ? `${b.name} is in your showcase` : `Add ${b.name} to your showcase`} onClick={() => add(b)}>
-                <Icon name={on ? "check" : "plus"} size={18} />
-              </button>
+              <AddButton id={b.productId} name={b.name} rate={b.rate > 0 ? b.rate : null} size="sm" />
               )}
             </li>
           );

@@ -6,8 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { AiMark, AiTag, Count, Flow, Hidden, Sheet } from "@/components/ui";
-import { CREATOR, LIVE_PRODUCTS, PRODUCTS, RAISES, SIMILAR, bestRate, product, type Raise, rateFor } from "@/lib/mock";
-import { addRaises, loadScan } from "@/lib/live";
+import { CREATOR, LIVE_PRODUCTS, LIVE_STUBS, PRODUCTS, RAISES, SIMILAR, bestRate, product, type Raise, rateFor } from "@/lib/mock";
+import { addRaises, loadScan, loadShowcaseCount } from "@/lib/live";
 import { NEW_ON_RESCAN, SILVER_UNLOCKS } from "@/lib/mock-creator1";
 import { LEVELS } from "@/lib/mock-creator2";
 import { productHref } from "@/lib/product-view";
@@ -35,7 +35,7 @@ const FLY = PRODUCTS.slice(0, 13).map((p) => p.img);
 const raiseItem = (r: Raise): Item => {
   const now = bestRate(product(r.productId));
   // A real scan gives her rate now from TikTok (target or open plan), so it's labelled "Now".
-  const fromLabel = LIVE_PRODUCTS.has(r.productId) ? "Now" : now.plan === "Target plan" ? "Target" : "Open";
+  const fromLabel = LIVE_STUBS.has(r.productId) || LIVE_PRODUCTS.has(r.productId) ? "Now" : now.plan === "Target plan" ? "Target" : "Open";
   return { id: r.id, productId: r.productId, kind: "same", from: r.nowRate ?? now.rate, fromLabel, to: r.tapRate, note: r.until ? `Until ${r.until}` : "" };
 };
 const similarItem = (id: string): Item => {
@@ -55,20 +55,21 @@ export function ScanHub() {
   const { linked, setLinked, toast, bronze, live } = useDemo();
   const [rows, setRows] = useState<Raise[]>(RAISES);
   // Signed in (owner, 30 Oct 2026): her real showcase scan replaces the sample.
-  const [checked, setChecked] = useState(CREATOR.showcaseSize);
+  // Her exact showcase size, every page counted (owner, 1 Nov 2026); null while it's being checked.
+  const [checked, setChecked] = useState<number | null>(CREATOR.showcaseSize);
   useEffect(() => {
     if (!live) return;
     // Signed in, no sample numbers ever: clear them while hers load. Not linked yet: nothing of hers to show.
     setRows([]);
     setSimilar([]);
-    setChecked(0);
+    setChecked(null);
     if (!linked) return;
     loadScan().then((s) => {
       if (!s) return;
       setRows(s.raises);
       setSimilar([]);
-      setChecked(s.checked);
     });
+    loadShowcaseCount().then((n) => setChecked(n ?? 0));
   }, [live, linked]);
   const [similar, setSimilar] = useState<string[]>(SIMILAR);
   const [tab, setTab] = useKept<Tab>("scan-tab", "same");
@@ -145,15 +146,16 @@ export function ScanHub() {
     setScanning(true);
     setScanKey((k) => k + 1);
     if (live) {
-      // A real scan of her showcase; the radar runs at least as long as the scan.
+      // A real scan of her showcase; the radar runs at least as long as the scan. The count is read again from TikTok.
       const started = Date.now();
+      setChecked(null);
+      loadShowcaseCount(true).then((n) => setChecked(n ?? 0));
       loadScan().then((s) => {
         later(() => {
           setScanning(false);
           setLast("just now");
           if (!s) return toast("Couldn't reach TikTok Shop. Please try again.");
           setRows(s.raises);
-          setChecked(s.checked);
           if (s.raises.length) {
             setTab("same");
             setOpen(true);
@@ -250,9 +252,13 @@ export function ScanHub() {
         <div className="sh-top">
           <div className="sh-left">
             <span className="sh-kicker"><AiMark size={22} busy={scanning} />{scanning ? "Scanning Your Showcase…" : "Showcase Scanner"} <AiTag label="Rezekii AI" bare /></span>
-            <h2>
-              <b><Count key={scanKey} value={linked ? checked : 0} ms={scanning ? SCAN_MS - 300 : 900} /></b> products checked
-            </h2>
+            {linked && checked === null ? (
+              <h2 className="sh-checking"><span className="cr1-spin xs" aria-hidden="true" /> Checking your showcase…</h2>
+            ) : (
+              <h2>
+                <b><Count key={scanKey} value={linked ? checked ?? 0 : 0} ms={scanning ? SCAN_MS - 300 : 900} /></b> products checked
+              </h2>
+            )}
             {!linked && <p>Link TikTok Shop and we check every product you promote</p>}
             <div className="sh-stats">
               <span><b>{linked ? same.length : "–"}</b><small>can pay more</small></span>

@@ -3,36 +3,42 @@ import { keepFresh } from "@/modules/creator-accounts/fresh.ts";
 import { currentUser } from "@/app/current-user";
 import { approvedCreatorToken } from "@/modules/creator-accounts/access.ts";
 import { supabaseRest } from "@/integrations/supabase/rest.ts";
-import { kindOf, ratingsOf, showcaseOf } from "@/modules/picks/mine.ts";
+import { kindOf, ratingsOf } from "@/modules/picks/mine.ts";
+import { readShowcase, saveRead, SHOWCASE_FRESH_MS } from "@/modules/tap/showcase.ts";
 import { linesBetween } from "@/modules/sales/frames.ts";
 import { lineGmv } from "@/modules/sales/summary.ts";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 90;
+export const maxDuration = 300;
 
 /** Her videos that sold a product: TikTok's link to open it, so she can decide in the TikTok app. */
 type Video = { id: string; title: string | null; cover: string | null; url: string; orders: number; gmv: number };
 type Flag = { id: string; name: string; img: string | null; rating: number; reviews: number; orders: number; cancel: number; returned: number; videos: Video[] };
 type Result = { linked: boolean; total: number; checked: number; more: boolean; flagged: Flag[]; at: string };
-const cache = new Map<string, { at: number; r: Result }>();
 const cancelled = (s: string | null) => /REFUND|RETURN|CANCEL|INELIGIBLE|INVALID/i.test(s ?? "");
 
 /**
- * Showcase health check (owner, 31 Oct 2026): every product in her showcase (up to 1,000) with TikTok's buyer rating. Under 4★
- * is flagged (slightly low under 4, low under 3.5, heavily low under 3), with her own orders for it in the last 30 days and her
- * videos that sold it. TikTok doesn't say which product a video carries, so videos with no sales of it can't be found.
- * Kept 30 minutes; ?fresh=1 checks again.
+ * Showcase health check (owner, 31 Oct 2026): every product in her showcase with TikTok's buyer rating. Under 4★ is flagged
+ * (slightly low under 4, low under 3.5, heavily low under 3), with her own orders for it in the last 30 days and her videos that
+ * sold it. TikTok doesn't say which product a video carries, so videos with no sales of it can't be found.
+ * Saved per account (owner, 1 Nov 2026): a reload shows the last check at once; it runs again after 6 hours or on ?fresh=1.
  */
 export async function GET(req: NextRequest) {
   const user = await currentUser();
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
-  const hit = cache.get(user.id);
-  if (hit && !req.nextUrl.searchParams.get("fresh") && Date.now() - hit.at < 30 * 60_000) return NextResponse.json(hit.r);
-  const token = await approvedCreatorToken(user.id);
+  const [token, [saved]] = await Promise.all([
+    approvedCreatorToken(user.id),
+    supabaseRest(`showcase_cache?user_id=eq.${user.id}&ratings_at=not.is.null&select=ratings,ratings_at&limit=1`).then((r) => r.json() as Promise<{ ratings: Result; ratings_at: string }[]>).catch(() => []),
+  ]);
+  if (token && saved && !req.nextUrl.searchParams.get("fresh") && Date.now() - Date.parse(saved.ratings_at) < SHOWCASE_FRESH_MS)
+    return NextResponse.json(saved.ratings, { headers: { "cache-control": "private, no-store" } });
   if (!token) return NextResponse.json({ linked: false, total: 0, checked: 0, more: false, flagged: [], at: new Date().toISOString() } satisfies Result);
 
-  await keepFresh(user.id, ["orders"]);
-  const { items, more } = await showcaseOf(token, 50);
+  // Every page of her showcase; the read also refreshes her saved showcase and its count.
+  const [, read] = await Promise.all([keepFresh(user.id, ["orders"]), readShowcase(token)]);
+  if (!read.ok && saved) return NextResponse.json(saved.ratings, { headers: { "cache-control": "private, no-store" } });
+  const { items, more } = read;
+  if (read.ok) await saveRead(user.id, read);
   const ratings = await ratingsOf(token, items.map((p) => p.id));
   const lines = await linesBetween(user.id, Date.now() - 30 * 86_400_000, Date.now()).catch(() => []);
   type Seen = { orders: Set<string>; bad: Set<string>; back: Set<string>; videos: Map<string, { orders: Set<string>; gmv: number }> };
@@ -68,6 +74,10 @@ export async function GET(req: NextRequest) {
     })
     .sort((a, b) => a.rating - b.rating);
   const r: Result = { linked: true, total: items.length, checked: ratings.size, more, flagged, at: new Date().toISOString() };
-  cache.set(user.id, { at: Date.now(), r });
+  await supabaseRest("showcase_cache?on_conflict=user_id", {
+    method: "POST",
+    headers: { prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({ user_id: user.id, ratings: r, ratings_at: r.at, updated_at: r.at }),
+  }).catch(() => undefined);
   return NextResponse.json(r, { headers: { "cache-control": "private, no-store" } });
 }

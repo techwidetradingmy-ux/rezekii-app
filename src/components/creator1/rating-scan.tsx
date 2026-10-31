@@ -84,17 +84,21 @@ export function RatingScan() {
     if (!ask) return;
     const ids = ask;
     setAsk(null);
-    // Signed in, TikTok takes them out of her real showcase (up to 200 a call).
-    if (real) {
-      toast("Removing from your TikTok showcase…");
-      for (let i = 0; i < ids.length; i += 200) {
-        const r = await removeFromShowcase(ids.slice(i, i + 200));
-        if (!r.ok) return toast(r.error);
-      }
-    }
+    // Gone from the list at once (owner, 1 Nov 2026: faster); if TikTok says no, they come back with the reason.
     setRemoved((r) => [...r, ...ids]);
     setPicked((p) => p.filter((x) => !ids.includes(x)));
     toast(ids.length > 1 ? `${ids.length} products removed from your showcase` : "Removed from your showcase");
+    // Signed in, TikTok takes them out of her real showcase (up to 200 a call); Rezekii forgets them too, so a reload agrees.
+    if (real) {
+      for (let i = 0; i < ids.length; i += 200) {
+        const part = ids.slice(i, i + 200);
+        const r = await removeFromShowcase(part);
+        if (!r.ok) {
+          setRemoved((x) => x.filter((id) => !ids.slice(i).includes(id)));
+          return toast(r.error);
+        }
+      }
+    }
   };
   const flip = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
 

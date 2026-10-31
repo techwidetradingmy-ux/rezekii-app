@@ -29,6 +29,18 @@ export async function findProduct(token: string | null, input: string): Promise<
   };
 }
 
+/** findProduct for a product page, kept 30 minutes per product (owner, 1 Nov 2026: a product opens fast the second time). */
+export async function findProductCached(token: string | null, id: string): Promise<{ product: WishProduct; onRezekii: boolean } | { error: string }> {
+  if (!/^\d{6,25}$/.test(id)) return findProduct(token, id);
+  const since = new Date(Date.now() - 30 * 60_000).toISOString();
+  const [hit] = (await (await supabaseRest(`product_facts_cache?product_id=eq.${id}&at=gte.${since}&select=data&limit=1`)).json().catch(() => [])) as { data: { product: WishProduct; onRezekii: boolean } }[];
+  if (hit) return hit.data;
+  const found = await findProduct(token, id);
+  if (!("error" in found))
+    await supabaseRest("product_facts_cache?on_conflict=product_id", { method: "POST", headers: { prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify({ product_id: id, data: found, at: new Date().toISOString() }) }).catch(() => null);
+  return found;
+}
+
 /** Her wishes, newest first, with where each one is now. */
 export async function myWishes(userId: string): Promise<MyWish[]> {
   const rows = (await (await supabaseRest(`wishes?user_id=eq.${userId}&select=${COLS}&order=created_at.desc&limit=200`)).json()) as Row[];

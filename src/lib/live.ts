@@ -1,4 +1,4 @@
-import { LIVE_PRODUCTS, short, type Product, type Raise } from "./mock";
+import { LIVE_PRODUCTS, LIVE_STUBS, short, type Product, type Raise } from "./mock";
 import type { ShopItem, Stage } from "./mock-seller";
 import type { LiveShopProduct } from "@/modules/marketplace/shop-products.ts";
 
@@ -14,21 +14,27 @@ export type LiveRaise = { productId: string; name: string; shop: string; image: 
 export function fromLiveRaise(r: LiveRaise): Raise {
   const now = r.nowRate / 100;
   const tap = r.tapRate / 100;
-  LIVE_PRODUCTS.set(r.productId, {
+  LIVE_STUBS.set(r.productId, {
     id: r.productId, name: r.name, shop: r.shop, img: r.image ?? "/avatars/blank.svg", price: r.price ?? 0, category: "",
     publicRate: now, partnerRate: tap, tapRate: tap, sold: 0, rating: 0, samples: null,
   });
   return { id: r.productId, productId: r.productId, nowRate: now, tapRate: tap, until: "", eligible: true };
 }
 
-/** Her real scan: better rates in her showcase, and how many showcase products were checked. */
-export async function loadScan(): Promise<{ raises: Raise[]; checked: number } | null> {
-  const [raises, count] = await Promise.all([
-    fetch("/api/tap/raises", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)),
-    fetch("/api/tap/showcase?count=1", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)),
-  ]);
+/** Her real scan: better rates in her showcase. */
+export async function loadScan(): Promise<{ raises: Raise[] } | null> {
+  const raises = await fetch("/api/tap/raises", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   if (!raises) return null;
-  return { raises: ((raises.raises ?? []) as LiveRaise[]).map(fromLiveRaise), checked: Number(count?.count ?? 0) };
+  return { raises: ((raises.raises ?? []) as LiveRaise[]).map(fromLiveRaise) };
+}
+
+/**
+ * How many products are in her showcase, every page counted (owner, 1 Nov 2026). The saved count comes back at once while it is
+ * under 6 hours old; `fresh` reads TikTok again. Null when it couldn't be read.
+ */
+export async function loadShowcaseCount(fresh = false): Promise<number | null> {
+  const d = await fetch(`/api/tap/showcase?count=1${fresh ? "&fresh=1" : ""}`, { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  return d?.linked ? Number(d.count ?? 0) : null;
 }
 
 /** Adds products to her showcase through Techwide's TAP campaign, for real. */
@@ -70,10 +76,11 @@ export async function loadMarket(o: { q: string; cat: string; sort: string; only
   };
 }
 
-/** + Showcase for one real product: added straight away, or a TAP link to open. */
-export async function addOne(productId: string): Promise<{ added: boolean; link?: string; error?: string }> {
-  const r = await fetch("/api/tap/showcase", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ productId }) });
-  return r.json().catch(() => ({ added: false, error: "Couldn't reach TikTok Shop." }));
+/** + Showcase for one real product: added straight away (`already`: it was there before), or a TAP link to open. */
+export async function addOne(productId: string): Promise<{ added: boolean; already?: boolean; link?: string; error?: string }> {
+  const r = await fetch("/api/tap/showcase", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ productId }) }).catch(() => null);
+  if (!r) return { added: false, error: "Couldn't reach TikTok Shop. Please try again." };
+  return r.json().catch(() => ({ added: false, error: "Couldn't reach TikTok Shop. Please try again." }));
 }
 
 /** Her Analytics and Payouts from her real orders, as /api/v2/analytics sends them (same shapes as the sample). */
@@ -97,7 +104,7 @@ export function loadAnalytics(): Promise<LiveAnalytics | null> {
     .then((d) => {
       if (!d) return null;
       for (const [id, x] of Object.entries(d.products))
-        if (!LIVE_PRODUCTS.has(id)) LIVE_PRODUCTS.set(id, { id, name: x.name, shop: x.shop, img: x.img ?? "/avatars/blank.svg", price: 0, category: "", publicRate: 0, partnerRate: 0, tapRate: 0, sold: 0, rating: 0, samples: null });
+        if (!LIVE_PRODUCTS.has(id)) LIVE_STUBS.set(id, { id, name: x.name, shop: x.shop, img: x.img ?? "/avatars/blank.svg", price: 0, category: "", publicRate: 0, partnerRate: 0, tapRate: 0, sold: 0, rating: 0, samples: null });
       return d;
     })
     .catch(() => null);
@@ -117,11 +124,11 @@ export async function loadAnalyticsRange(from: string, to: string): Promise<{ ra
   const d = await fetch(`/api/v2/analytics?from=${from}&to=${to}`, { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   if (!d?.range) return null;
   for (const [id, x] of Object.entries(d.products as Record<string, { name: string; shop: string; img: string | null }>))
-    if (!LIVE_PRODUCTS.has(id)) LIVE_PRODUCTS.set(id, { id, name: x.name, shop: x.shop, img: x.img ?? "/avatars/blank.svg", price: 0, category: "", publicRate: 0, partnerRate: 0, tapRate: 0, sold: 0, rating: 0, samples: null });
+    if (!LIVE_PRODUCTS.has(id)) LIVE_STUBS.set(id, { id, name: x.name, shop: x.shop, img: x.img ?? "/avatars/blank.svg", price: 0, category: "", publicRate: 0, partnerRate: 0, tapRate: 0, sold: 0, rating: 0, samples: null });
   return { range: d.range, chart: d.chart };
 }
 
-/** One real Marketplace product by id (a page opened straight from a link, before the list has loaded). */
+/** One real Marketplace product by id, in full (never a stand-in); kept 30 minutes by the browser. */
 export async function loadProduct(id: string, level: "bronze" | "silver" | "gold"): Promise<Product | null> {
   if (LIVE_PRODUCTS.has(id)) return LIVE_PRODUCTS.get(id) ?? null;
   const d = await fetch(`/api/tap/products/${encodeURIComponent(id)}`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
@@ -130,8 +137,9 @@ export async function loadProduct(id: string, level: "bronze" | "silver" | "gold
 
 /** Free sample through Techwide's TAP campaign: TikTok's one-time link to its sample request page. */
 export async function requestSample(productId: string): Promise<{ deeplink?: string; phoneUrl?: string; error?: string }> {
-  const r = await fetch("/api/tap/samples", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ productId }) });
-  return r.json().catch(() => ({ error: "Couldn't reach TikTok Shop." }));
+  const r = await fetch("/api/tap/samples", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ productId }) }).catch(() => null);
+  if (!r) return { error: "Couldn't reach TikTok Shop. Please try again." };
+  return r.json().catch(() => ({ error: "Couldn't reach TikTok Shop. Please try again." }));
 }
 
 const STAGE: Record<string, Stage> = { submitted: "Submitted", in_review: "Under review", approved: "Under review", with_tiktok: "Submitted to TikTok", live: "Live", not_approved: "Not approved" };

@@ -9,11 +9,12 @@ import { Hidden } from "@/components/ui";
 import { SampleTag } from "@/components/creator1/brand";
 import { Trend } from "@/components/creator1/shoot-today";
 import { WishForm, WishSteps, useWishes } from "@/components/creator1/wish";
-import { product, rm, short } from "@/lib/mock";
+import { LIVE_STUBS, product, rm, short } from "@/lib/mock";
+import { AddButton } from "@/components/add-button";
 import { sampleCount } from "@/lib/mock-creator1";
 import { commitText } from "@/lib/mock-showcase";
 import { canRequest, markRequested, productView, requestedSamples, sampleConditions } from "@/lib/product-view";
-import { addOne, loadProduct, requestSample } from "@/lib/live";
+import { loadProduct, requestSample } from "@/lib/live";
 import { loadOff } from "@/lib/live-wishes";
 import { useLivePerf } from "@/lib/live-perf";
 import "@/app/creator1.css";
@@ -31,21 +32,28 @@ export default function ProductPage() {
   const { mine } = useWishes();
   // Signed in (owner, 30 Oct 2026): a real product opened straight from a link is fetched first.
   // Not on Rezekii (owner, 31 Oct 2026): TikTok Shop's facts and the wish list numbers instead.
+  // Always the full product (owner, 1 Nov 2026): a name-and-photo stand-in from Analytics or the scan is never shown as the
+  // product. Rezekii's catalog and TikTok's facts are asked at the same time, and the page shows as soon as one has it.
   const [, setLoaded] = useState(0);
   const [missing, setMissing] = useState(false);
   useEffect(() => {
     if (!live || productView(id)) return;
+    let on = true;
     setMissing(false);
+    const off = loadOff(id).catch(() => false);
     loadProduct(id, me?.level ?? "bronze")
-      .then((x) => (x ? true : loadOff(id)))
-      .then((ok) => (ok ? setLoaded((n) => n + 1) : setMissing(true)));
+      .then(async (x) => (x ? true : off))
+      .then((ok) => { if (on) (ok ? setLoaded((n) => n + 1) : setMissing(true)); });
+    return () => { on = false; };
   }, [live, id, me?.level]);
   const p = productView(id);
   // Has she sold it? Signed in, from her own orders in the last 30 days; nothing shown until they've loaded.
   const perf = useLivePerf();
   const mySold = live ? (perf && typeof perf === "object" ? perf.products.find((x) => x.productId === id)?.orders ?? 0 : null) : p?.mySold ?? null;
-  const [added, setAdded] = useState(false);
   const [asked, setAsked] = useState(false);
+  // Opening TikTok's sample page takes a moment (owner, 1 Nov 2026): the button says so.
+  const [opening, setOpening] = useState(false);
+  const [fullName, setFullName] = useState(false);
   const [warn, setWarn] = useState(false);
   const [wishOpen, setWishOpen] = useState(false);
   // Samples asked for and left, kept live (the preview moves one along now and then).
@@ -66,7 +74,24 @@ export default function ProductPage() {
   }, [id]);
 
   if (!p) {
-    if (live && !missing) return <div className="v2-stack v2-in"><p className="v2-muted">Loading the product…</p></div>;
+    // A skeleton while it loads (owner, 1 Nov 2026), with the photo and name already known from the list she came from.
+    if (live && !missing) {
+      const stub = LIVE_STUBS.get(id);
+      return (
+        <div className="pp pp-wait" aria-busy="true" aria-label="Loading the product">
+          <button type="button" className="pp-back" onClick={() => (window.history.length > 1 ? router.back() : router.push("/app/market"))} aria-label="Back"><Icon name="back" size={20} /></button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <div className="pp-photo">{stub?.img && <img src={stub.img} alt="" />}</div>
+          <div className="pp-info">
+            {stub?.name ? <h1 className="pp-name">{stub.name}</h1> : <i className="pp-sk" style={{ width: "80%", height: 24 }} />}
+            <i className="pp-sk" style={{ width: "55%" }} />
+            <i className="pp-sk" style={{ height: 70, borderRadius: 16 }} />
+            <i className="pp-sk" style={{ height: 48, borderRadius: 14 }} />
+            <i className="pp-sk" style={{ height: 48, borderRadius: 14 }} />
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="v2-stack v2-in">
         <section className="v2-card flat" style={{ alignItems: "flex-start" }}>
@@ -98,22 +123,6 @@ export default function ProductPage() {
   const keepPlan = p.tapRate !== null && p.nowRate !== null && p.nowRate >= p.tapRate && p.nowPlan === "Target plan";
   const month = extra * (mySold || 100);
   const back = () => (window.history.length > 1 ? router.back() : router.push("/app/market"));
-  const addToShowcase = () => {
-    if (!linked) return setLinked(true);
-    if (live) {
-      // For real: into her TikTok Shop showcase through Techwide's TAP, or TikTok's link to open.
-      addOne(p.id).then((r) => {
-        if (r.added) {
-          setAdded(true);
-          toast(`Added at ${p.tapRate}%: ${p.name}`);
-        } else if (r.link) window.open(r.link, "_blank", "noopener");
-        else toast(r.error ?? "TikTok Shop didn't add it. Please try again.");
-      });
-      return;
-    }
-    setAdded(true);
-    toast(p.tapRate !== null ? `Added at ${p.tapRate}%: ${p.name}` : `Added to your showcase: ${p.name}`);
-  };
   const request = () => {
     if (!linked) return setLinked(true);
     requireWa(() => {
@@ -124,12 +133,19 @@ export default function ProductPage() {
       }
       if (live) {
         // For real: TikTok's own sample request page, where she confirms her address and applies (owner, 30 Oct 2026).
+        // It opens in this tab (owner, 1 Nov 2026), and the button says "Opening TikTok…" until it does.
+        if (opening) return;
+        setOpening(true);
         requestSample(p.id).then((r) => {
-          if (!r.deeplink) return toast(r.error ?? "TikTok Shop didn't open the sample request. Please try again.");
+          if (!r.deeplink) {
+            setOpening(false);
+            return toast(r.error ?? "TikTok Shop didn't open the sample request. Please try again.");
+          }
           markRequested(p.id);
           setAsked(true);
           setWarn(false);
-          window.open(r.deeplink, "_blank", "noopener");
+          window.location.href = r.deeplink;
+          window.setTimeout(() => setOpening(false), 4000);
         });
         return;
       }
@@ -148,16 +164,17 @@ export default function ProductPage() {
   const sampleBtn = m && hasSample && (
     asked
       ? <Link href="/app/account#samples" className="btn-outline"><Icon name="check" size={18} /> Sample Requested</Link>
-      : <button type="button" className="btn-outline" onClick={canSample ? request : () => document.getElementById("sample")?.scrollIntoView({ behavior: "smooth" })}><Icon name="gift" size={18} /> {canSample ? "Request Free Sample" : `Free Sample at ${m.samples}-Day Streak`}</button>
+      : opening
+        ? <button type="button" className="btn-outline" disabled aria-busy="true"><span className="cr1-spin xs" aria-hidden="true" /> Opening TikTok…</button>
+        : <button type="button" className="btn-outline" onClick={canSample ? request : () => document.getElementById("sample")?.scrollIntoView({ behavior: "smooth" })}><Icon name="gift" size={18} /> {canSample ? "Request Free Sample" : `Free Sample at ${m.samples}-Day Streak`}</button>
   );
   // One buy box for every product (owner, 30 Oct 2026): Add to Showcase, then Free Sample. The wish list is a small link at the end.
+  // Nothing says "In your showcase" until she taps Add on one that is (owner, 1 Nov 2026).
   const buy = (
     <>
-      {p.inShowcase || added
-        ? <button type="button" className="np-btn" disabled><Icon name="check" size={18} width={2.4} /> In Your Showcase</button>
-        : keepPlan
-          ? <button type="button" className="np-btn" disabled><Icon name="shield" size={18} width={2.4} /> Your Target Plan Pays More</button>
-          : <button type="button" className="np-btn" onClick={addToShowcase}><Icon name="plus" size={18} width={2.4} /> Add to Showcase</button>}
+      {keepPlan
+        ? <button type="button" className="np-btn" disabled><Icon name="shield" size={18} width={2.4} /> Your Target Plan Pays More</button>
+        : <AddButton id={p.id} name={p.name} rate={p.tapRate} size="lg" label="Add to Showcase" inShowcase={p.inShowcase} />}
       {sampleBtn}
     </>
   );
@@ -171,7 +188,7 @@ export default function ProductPage() {
       </div>
 
       <div className="pp-info">
-        <h1 className="pp-name">{p.name}</h1>
+        <h1 className={`pp-name${fullName ? " full" : ""}`} onClick={() => setFullName((f) => !f)} title={p.name}>{p.name}</h1>
         <p className="pp-meta">{p.shop} · {rm(p.price)}{p.sold !== null ? ` · ${short(p.sold)} sold` : ""}</p>
         {/* Has she sold it? (owner, 29 Oct 2026) From her TikTok Shop orders, and our campaign data for TAP products. */}
         {linked && (!live || mySold !== null) ? (
@@ -184,7 +201,6 @@ export default function ProductPage() {
           {p.rating !== null && <span className="pp-chip score"><Icon name="star" size={13} width={2.4} /> {p.rating.toFixed(1)}</span>}
           {m && m.samples !== null && <SampleTag streak={m.samples} />}
           {p.special && <span className="pp-chip special"><Icon name="star" size={13} width={2.4} /> Your Special Rate</span>}
-          {(p.inShowcase || added) && <span className="pp-chip">In Your Showcase</span>}
           {p.tapRate === null && <span className="pp-chip muted">Not on Rezekii Yet</span>}
         </div>
 
