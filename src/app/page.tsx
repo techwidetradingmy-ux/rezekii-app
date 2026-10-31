@@ -96,8 +96,8 @@ export default function Landing() {
         {/* What makes Rezekii different, and the three things to remember (owner, 31 Oct 2026). */}
         <Reveal id="why" className="section" label="Why Rezekii">
           <div className="lp-head">
-            <span className="eyebrow">WHY REZEKII IS DIFFERENT</span>
-            <h2>Analytics Made From Your Own Account</h2>
+            <span className="eyebrow">WHY REZEKII</span>
+            <h2>Your Data. Your To-Do List.</h2>
           </div>
           <CreatorFocus />
         </Reveal>
