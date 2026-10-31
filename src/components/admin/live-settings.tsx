@@ -152,7 +152,7 @@ function SellerCampaignCard({ value }: { value: { name: string; commission: numb
   return (
     <section className="v2-card" style={{ gap: 12 }}>
       <div className="v2-card-h"><h2 className="v2-h2">New Seller Campaigns</h2><span className="v2-small">Made when a shop connects Seller Center</span></div>
-      <p className="v2-small" style={{ margin: 0 }}>Each shop gets its own public campaign. Every seller in Seller Center can see its name and description. {"{shop}"} becomes the shop&apos;s name and {"{creators}"} the number of creators linked on Rezekii; TikTok cuts names at 49 characters.</p>
+      <p className="v2-small" style={{ margin: 0 }}>Each shop gets its own public campaign. Every seller in Seller Center can see its name and description. {"{shop}"} becomes the shop&apos;s name and {"{creators}"} the number of creators promoting Techwide&apos;s campaigns, rounded down to the hundred (write {"{creators}+"}); TikTok cuts names at 49 characters.</p>
       <label className="v2-small" style={{ display: "grid", gap: 6, maxWidth: 420 }}>Campaign name
         <input className="np-input" value={name} onChange={(e) => setName(e.target.value)} aria-label="Campaign name" />
       </label>

@@ -173,12 +173,16 @@ export const SELLER_CAMPAIGN_DEFAULT: SellerCampaignSettings = {
   // Rezekii first, so sellers browsing campaigns in Seller Center see the platform's name (owner, 31 Oct 2026).
   name: "🤝 Rezekii X {shop}",
   commission: 10,
-  description: "{shop} is on Rezekii 🤝 Rezekii gets affiliate creators selling your TikTok Shop products: your own campaign in minutes, creators who request free samples and post videos, and every sale tracked in one place. Local and cross-border sellers welcome. Join today at www.rezekii.com",
+  // Welcomes the shop, with the real number of creators in Techwide's campaigns (owner, 31 Oct 2026).
+  description: "Welcome to Rezekii, {shop}! 🤝 Rezekii gets {creators}+ affiliate creators selling your TikTok Shop products: your own campaign in minutes, free samples and videos from creators, and every sale tracked in one place. Local and cross-border sellers welcome. Join today at www.rezekii.com.",
 };
-/** Fills `{shop}` and `{creators}` in a campaign's name or description. */
+/**
+ * Fills `{shop}` and `{creators}` in a campaign's name or description. `{creators}` is how many creators promote products in
+ * Techwide's TAP campaigns, rounded down to the hundred (1,902 → "1,900"), so "{creators}+" is always true.
+ */
 export async function campaignText(shop: string): Promise<(t: string) => string> {
-  const res = await supabaseRest("affiliate_connections?select=user_id", { headers: { prefer: "count=exact", range: "0-0" } });
-  const creators = Number((res.headers.get("content-range") ?? "*/0").split("/")[1]) || 0;
+  const n = Number(await (await supabaseRest("rpc/tap_creator_count", { method: "POST", body: "{}" })).json()) || 0;
+  const creators = n >= 100 ? Math.floor(n / 100) * 100 : n;
   return (t: string) => t.replaceAll("{shop}", shop).replaceAll("{creators}", creators.toLocaleString("en-MY"));
 }
 export async function sellerCampaignSettings(): Promise<SellerCampaignSettings> {
