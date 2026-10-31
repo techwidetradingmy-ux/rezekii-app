@@ -117,7 +117,8 @@ export function RatingScan() {
       <button type="button" className={levelOf(p.rating) === "heavy" ? "np-btn v2-btn-sm" : "btn-outline v2-btn-sm"} onClick={() => remove([p.id])}>Remove</button>
     </li>
   );
-  const withVideos = left.filter((p) => p.videos?.length);
+  // Videos only for products under 3.0★ (owner, 31 Oct 2026); the rest she decides on from the lists above.
+  const withVideos = left.filter((p) => levelOf(p.rating) === "heavy" && p.videos?.length);
 
   return (
     <>
@@ -204,13 +205,12 @@ export function RatingScan() {
       {!scanning && real && withVideos.length > 0 && (
         <section className="v2-card rc-list rc-videos">
           <div className="v2-card-h">
-            <h2 className="v2-h2">Your Videos With These Products</h2>
+            <h2 className="v2-h2">Your Videos With Heavily Low Products</h2>
             <span className="badge badge-gray">{withVideos.reduce((n, p) => n + (p.videos?.length ?? 0), 0)}</span>
           </div>
           <div className="rc-advice">
             <b>Our advice</b>
-            <p>We only recommend deleting videos of heavily low products (under 3.0★): if you&apos;re worried they could hurt your account health and traffic, delete them before a violation happens.</p>
-            <p>For low and slightly low products, keep the videos and just avoid making new ones.</p>
+            <p>These products are rated under 3.0★. It&apos;s better to delete their videos, as they may affect your creator health rating.</p>
             <p>If a video already has a violation, don&apos;t delete it: TikTok needs the video to review your appeal, and without it the appeal can fail.</p>
             <p>This is advice only. Videos are deleted in the TikTok app, and a deleted video can&apos;t be recovered.</p>
           </div>
@@ -220,7 +220,7 @@ export function RatingScan() {
           </p>
           {withVideos.map((p) => (
             <div key={p.id} className="rc-vgroup">
-              <span className="rc-vhead"><span className={`rc-dot ${LEVELS.find((l) => l.key === levelOf(p.rating))!.dot}`} /> <b>{shortName(p.name)}</b> <small>{p.rating.toFixed(1)}★</small>{levelOf(p.rating) === "heavy" ? <i className="rc-tag del">Consider deleting</i> : <i className="rc-tag">Keep</i>}</span>
+              <span className="rc-vhead"><span className={`rc-dot ${LEVELS.find((l) => l.key === levelOf(p.rating))!.dot}`} /> <b>{shortName(p.name)}</b> <small>{p.rating.toFixed(1)}★</small><i className="rc-tag del">Better to delete</i></span>
               <ul>
                 {p.videos!.map((v) => (
                   <li key={v.id}>
