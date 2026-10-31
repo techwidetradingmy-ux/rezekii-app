@@ -425,7 +425,8 @@ const TILES: Tile[] = [
   { key: "invite", title: "Earn with Referral", icon: "users", tint: "linear-gradient(135deg,#ff7aa8,#e8005a)", size: "wide", tip: `Do a friend a favour: they can check their showcase too and may earn more. You each get ${REFERRAL_REWARD.inviter} credits once they get started.`, body: <InviteTile /> },
 ];
 export function CreatorBento() {
-  return <Bento tiles={TILES} label="Rezekii features" />;
+  // In order, a few at a time, on every screen (owner, 1 Nov 2026: not every feature in one frame on desktop).
+  return <Bento tiles={TILES} label="Rezekii features" slides />;
 }
 
 /* ---------------- Why Rezekii (USP banners) ---------------- */
@@ -620,7 +621,7 @@ const SEEN = BY_EARN.filter((x) => x.views !== null);
 const VID_ROW = [SEEN[1], SEEN[0], SEEN[SEEN.length - 1]];
 /** Video covers that look like TikTok videos, not product photos (owner, 30 Oct 2026). Sample. */
 const VID_COVERS = ["/ai-videos/home-demo.jpg", "/ai-videos/pov-demo.jpg", "/ai-videos/review.jpg"];
-type Pain = { key: string; tint: string; pain: string; why: string; fix: string; art: React.ReactNode };
+type Pain = { key: string; tint: string; pain: string; why: string; fix: string; art: React.ReactNode; tag?: string };
 const PAINS: Pain[] = [
   {
     key: "health", tint: "linear-gradient(160deg,#3b0d12,#b4232c)",
@@ -749,11 +750,12 @@ const PAINS: Pain[] = [
     ),
   },
 ];
-export function CreatorPains() {
+export function CreatorPains({ items = PAINS, label = "Affiliate problems Rezekii solves" }: { items?: Pain[]; label?: string } = {}) {
   return (
-    <AutoSlider label="Affiliate problems Rezekii solves" every={5000} className="three lp-pains">
-      {PAINS.map((x) => (
+    <AutoSlider label={label} every={5000} className="three lp-pains">
+      {items.map((x) => (
         <article key={x.key} className="lp-poster" style={{ background: x.tint }}>
+          {x.tag && <span className="lp-poster-tag">{x.tag}</span>}
           <h3>{x.pain}</h3>
           <p className="lp-poster-why">{x.why}</p>
           <div className="lp-poster-art" aria-hidden="true">{x.art}</div>
@@ -762,4 +764,32 @@ export function CreatorPains() {
       ))}
     </AutoSlider>
   );
+}
+
+/* ---------------- Your free report (owner, 1 Nov 2026, option D): the three main tools as the three parts of a free report ---------------- */
+
+const REPORT: Pain[] = [
+  {
+    key: "r-scan", tag: "Part 1 · Showcase Scanner", tint: "linear-gradient(160deg,#04291a,#00a862)",
+    pain: "Better Rates on What You Already Sell",
+    why: "Every product in your showcase, checked in one scan.",
+    fix: "Only higher rates, never lower. Add them all in one tap.",
+    art: (
+      <div className="lp-pa-risk">
+        <span className="lp-pa-tag">Scan done · <b>{SCAN.length} can pay more</b></span>
+        {SCAN.map((p, i) => (
+          <div key={p.id} className="lp-pa-row lp-pa-rk" style={v({ i })}>
+            <Thumb src={p.img} size={36} />
+            <span>{p.name}<small className="up">Already in your showcase</small></span>
+            <em className="up">{p.publicRate}% → {p.tapRate}%</em>
+          </div>
+        ))}
+      </div>
+    ),
+  },
+  { ...PAINS.find((x) => x.key === "ideas")!, key: "r-picks", tag: "Part 2 · AI Picks", tint: "linear-gradient(160deg,#1e1452,#6d5efc)", pain: "What to Sell Next, Picked for You", why: "From your own sales and videos, not copied from others.", fix: "Rezekii AI picks best sellers that fit your account." },
+  { ...PAINS.find((x) => x.key === "health")!, key: "r-health", tag: "Part 3 · Health Scanner", pain: "Risky Products, Found Early", why: "Low ratings can mean low traffic, a shadow ban, even frozen commission.", fix: "Remove products under 3.0★ in one tap, before they hurt your account." },
+];
+export function CreatorReport() {
+  return <CreatorPains items={REPORT} label="Your free report" />;
 }

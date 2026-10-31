@@ -25,10 +25,11 @@ export type Tile = {
 /**
  * "Everything in One App": small live widgets, each the real feature in miniature (a tile plays only while it is on screen).
  * Wide screens: a grid where a soft glow follows the mouse. Phones (owner, 29 Oct 2026, option A): one full card per slide.
+ * `slides` (owner, 1 Nov 2026): the slides on every screen, three at a time on wide ones, so they read in order.
  */
-export function Bento({ tiles, label }: { tiles: Tile[]; label: string }) {
+export function Bento({ tiles, label, slides = false }: { tiles: Tile[]; label: string; slides?: boolean }) {
   const phone = useMedia("(max-width: 720px)");
-  return phone ? <BentoSlides tiles={tiles} label={label} /> : <BentoGrid tiles={tiles} label={label} />;
+  return phone || slides ? <BentoSlides tiles={tiles} label={label} three={!phone} /> : <BentoGrid tiles={tiles} label={label} />;
 }
 
 function TileCard({ t, item = false }: { t: Tile; item?: boolean }) {
@@ -47,12 +48,12 @@ function TileCard({ t, item = false }: { t: Tile; item?: boolean }) {
   );
 }
 
-function BentoSlides({ tiles, label }: { tiles: Tile[]; label: string }) {
+function BentoSlides({ tiles, label, three = false }: { tiles: Tile[]; label: string; three?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   useLiveChildren(ref, ".lp-tile", 0.6);
   return (
     <div ref={ref} className="lp-bento-slides">
-      <AutoSlider label={label} every={5000}>
+      <AutoSlider label={label} every={5000} className={three ? "three" : undefined}>
         {tiles.map((t) => <TileCard key={t.key} t={t} />)}
       </AutoSlider>
     </div>

@@ -429,8 +429,9 @@ i.gold { background: radial-gradient(circle at 35% 30%, #fff3bf, #f5b81e 55%, #b
 .lp-usp[data-on] .lp-u-chart i { animation: lpGrowLoop 4.2s calc(var(--i) * 0.12s) var(--lp-ease) infinite; }
 
 /* ================= Without vs With ================= */
-.lp-cmp { max-width: 880px; display: grid; gap: 12px; padding: 16px; border-radius: var(--lp-r); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
-.lp-cmp-seg { position: relative; display: grid; grid-template-columns: 1fr 1fr; padding: 4px; border-radius: 16px; background: var(--surface2); border: 1px solid var(--line); width: min(100%, 400px); }
+/* Full width, lined up with the cards above (owner, 1 Nov 2026). */
+.lp-cmp { display: grid; gap: 12px; padding: 16px; border-radius: var(--lp-r); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.lp-cmp-seg { position: relative; display: grid; grid-template-columns: 1fr 1fr; padding: 4px; border-radius: 16px; background: var(--surface2); border: 1px solid var(--line); width: 100%; }
 .lp-cmp-seg button { position: relative; z-index: 1; height: 40px; border: 0; border-radius: 12px; background: none; color: var(--muted); font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; transition: color 0.3s; }
 .lp-cmp-seg button[aria-pressed="true"] { color: #ffffff; }
 .lp-cmp-seg i { position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc(50% - 4px); border-radius: 12px; background: #9aa8a1; transition: transform 0.5s var(--lp-spring), background-color 0.4s; }
@@ -1113,4 +1114,44 @@ button.lp-shotf { cursor: zoom-in; }
 @media (prefers-reduced-motion: reduce) {
   .lp-live, .lp-live *, .lp-live *::before, .lp-live *::after, .lp-usp *, .lp-hero-alerts *, .lp-story *, .lp-notes .lp-note, .lp-dots i::after { animation: none !important; transition: none !important; }
   .lp-cmp *, .lp-path *, .lp-path::after, .lp-trust li, .lp-tile, .lp-jr-step { transition: none !important; }
+}
+
+/* Your free report (owner, 1 Nov 2026, option D): Part tags on the posters, and the banner card to get it. */
+.lp-poster-tag { align-self: flex-start; padding: 4px 10px; border-radius: 99px; background: rgba(255, 255, 255, 0.16); color: #ffffff; font-size: 11.5px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+.lp-pa-rk em.up { background: #00c073; }
+.lp-pa-rk small.up { color: #00874f; }
+.lp-rbanner { position: relative; overflow: hidden; isolation: isolate; display: grid; justify-items: start; gap: 8px; margin-top: 4px; padding: 18px; border-radius: 24px; color: #ffffff;
+  background: radial-gradient(80% 120% at 100% 0%, rgba(255, 255, 255, 0.16), transparent 60%), linear-gradient(135deg, #0f5a3a, #0b3d27 60%, #062417); box-shadow: 0 24px 50px -30px rgba(0, 60, 35, 0.75); }
+.lp-rbanner-ic { position: absolute; right: -18px; top: -14px; z-index: -1; color: rgba(182, 255, 217, 0.1); transform: rotate(-12deg); }
+.lp-rcta-free { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 99px; background: #ffd34d; color: #4a2a00; font-size: 12px; font-weight: 900; }
+.lp-rbanner h3 { margin: 2px 0 0; font-size: 20px; line-height: 1.15; font-weight: 900; letter-spacing: -0.02em; text-wrap: balance; }
+.lp-rbanner-parts { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+.lp-rbanner-parts li { display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 99px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.16); font-size: 12px; font-weight: 800; color: #e8fff3; }
+.lp-rbanner-parts li svg { color: #5ef0ae; }
+.lp-rbanner-go { justify-self: stretch; height: 46px !important; margin-top: 4px; font-size: 15.5px !important; font-weight: 800 !important; border-radius: 14px !important; }
+/* Desktop: one wide banner, the words on the left and the button on the right. */
+@media (min-width: 761px) {
+  .lp-rbanner { grid-template-columns: minmax(0, 1fr) auto; column-gap: 28px; padding: 22px 28px; margin-top: 8px; }
+  .lp-rbanner > :not(.lp-rbanner-go):not(.lp-rbanner-ic) { grid-column: 1; }
+  .lp-rbanner h3 { font-size: 26px; }
+  .lp-rbanner-go { grid-column: 2; grid-row: 1 / span 3; align-self: center; justify-self: end; margin: 0; height: 52px !important; padding: 0 26px !important; font-size: 16px !important; }
+  .lp-rbanner-ic { right: auto; left: 46%; top: -30px; }
+}
+
+/* Desktop (owner, 1 Nov 2026): the steps side by side in one card, the line running across the nodes; and the FAQ full width. */
+@media (min-width: 861px) {
+  .lp-path { max-width: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0; padding: 26px 20px 24px; border-radius: var(--lp-r); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
+  .lp-path::before, .lp-path::after { top: 49px; bottom: auto; left: calc(20px + (100% - 40px) / (var(--n, 3) * 2)); right: calc(20px + (100% - 40px) / (var(--n, 3) * 2)); width: auto; height: 3px; }
+  .lp-path::after { background: linear-gradient(90deg, #22dc95, #00a862); transform-origin: left; }
+  .cr1-pre:not(.cr1-shown) .lp-path::after { transform: scaleX(0); }
+  .lp-path li { flex-direction: column; align-items: center; gap: 12px; padding: 0 16px; min-height: 0; text-align: center; }
+  .lp-path li > span:last-child { align-items: center; }
+  .lp-path strong { justify-content: center; font-size: 17px; }
+  .lp-path small { max-width: 32ch; }
+  .lp-faqs { max-width: none; }
+}
+/* Everything in One App, wide screens (owner, 1 Nov 2026): three slides at a time, all the same height. */
+@media (min-width: 721px) {
+  .lp-bento-slides .lp-tile { height: 100%; min-height: 440px; padding: 20px; gap: 12px; }
+  .lp-bento-slides .lp-tile h3 { font-size: 16.5px; }
 }

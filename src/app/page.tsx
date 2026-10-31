@@ -10,7 +10,7 @@ import { ShowcaseCheck } from "@/components/creator1/showcase-check";
 import { PartnerCard } from "@/components/partner-card";
 import { ForceLight } from "@/components/landing/force-light";
 import { AiEyebrow } from "@/components/landing/ai-eyebrow";
-import { CreatorBanner, CreatorBento, CreatorCompare, CreatorDay, CreatorHeroScan, CreatorPains, CreatorSee, CreatorStrip, CreatorUsps } from "@/components/landing/creator";
+import { CreatorBanner, CreatorBento, CreatorCompare, CreatorDay, CreatorHeroScan, CreatorPains, CreatorReport, CreatorSee, CreatorStrip, CreatorUsps } from "@/components/landing/creator";
 import { PartnerLine } from "@/components/landing/partner-line";
 import { AiText } from "@/components/landing/ai-text";
 import { Path, type PathStep } from "@/components/landing/path";
@@ -91,6 +91,24 @@ export default function Landing() {
 
       <main className="site-wrap site-main lp-main">
         <CreatorBanner />
+
+        {/* Your free report (owner, 1 Nov 2026, option D): the three main tools up top, then one banner to get it. */}
+        <Reveal id="report" className="section" label="Your free report">
+          <div className="lp-head">
+            <span className="eyebrow">YOUR FREE REPORT</span>
+            <h2>Your Account, Checked in 3 Parts</h2>
+          </div>
+          <CreatorReport />
+          <div className="lp-rbanner">
+            <span className="lp-rbanner-ic" aria-hidden="true"><Icon name="scan" size={120} /></span>
+            <span className="lp-rcta-free"><Icon name="gift" size={14} /> Free during Beta</span>
+            <h3>Get Your Own Report, Free Today</h3>
+            <ul className="lp-rbanner-parts">
+              {["Better rates", "AI Picks", "Health check"].map((x) => <li key={x}><Icon name="check" size={13} width={3} />{x}</li>)}
+            </ul>
+            <Link href="/signin" className="np-btn lp-rbanner-go">Get My Free Report <Icon name="arrow" size={19} /></Link>
+          </div>
+        </Reveal>
 
         <Reveal className="section" label="What you get">
           <div className="lp-head">
