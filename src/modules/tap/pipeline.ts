@@ -173,7 +173,7 @@ export const SELLER_CAMPAIGN_DEFAULT: SellerCampaignSettings = {
   // Rezekii first, so sellers browsing campaigns in Seller Center see the platform's name (owner, 31 Oct 2026).
   name: "🤝 Rezekii X {shop}",
   commission: 10,
-  description: "{shop} is on Rezekii 🤝 Rezekii gets affiliate creators selling your TikTok Shop products: your own campaign in minutes, creators who request free samples and post videos, and every sale tracked in one place. Local and cross-border sellers welcome. Join today at rezekii.com/seller",
+  description: "{shop} is on Rezekii 🤝 Rezekii gets affiliate creators selling your TikTok Shop products: your own campaign in minutes, creators who request free samples and post videos, and every sale tracked in one place. Local and cross-border sellers welcome. Join today at www.rezekii.com",
 };
 /** Fills `{shop}` and `{creators}` in a campaign's name or description. */
 export async function campaignText(shop: string): Promise<(t: string) => string> {

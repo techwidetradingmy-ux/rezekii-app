@@ -33,7 +33,8 @@ export function photoFor(user: string, url: string | null | undefined, saved: Ma
  * saved photos are refreshed. Anyone else (e.g. a Google sign-in) keeps their photo address.
  */
 export function myPhoto(user: { tiktok_username?: string | null; avatar_url?: string | null }): string | null {
-  if (!user.tiktok_username) return freshUrl(user.avatar_url);
+  // Photos are TikTok Shop profile pictures only (owner, 31 Oct 2026); without TikTok Shop, initials show.
+  if (!user.tiktok_username) return null;
   // The address changes with her photo (owner, 31 Oct 2026: a new photo showed late, kept by browsers), and every 14 days.
   let h = 0;
   for (const c of user.avatar_url ?? "") h = (h * 31 + c.charCodeAt(0)) | 0;

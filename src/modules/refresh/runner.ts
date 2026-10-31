@@ -58,14 +58,16 @@ export async function runRefresh(sessions: Sessions, deadline: number, now = Dat
   // The day's plan is marked by its first task, so yesterday's lists (planned on their own) don't count as the plan.
   if (mytHour(now) >= PLAN_HOUR && !(await hasTask(runDate, "tap_campaigns"))) {
     await pruneMarketData(runDate);
-    const tasks = planDay(now, await completeDailyDays(DAILY_LISTS), await rankingsBuilt(mytDay(now, DATA_LAG_DAYS)), await levelPassOpen());
+    // The newest lists aren't fetched again when they're already saved (the late check got them yesterday afternoon).
+    const have = await completeDailyDays(DAILY_LISTS);
+    const tasks = planDay(now, have, have.has(mytDay(now, DATA_LAG_DAYS)) || (await rankingsBuilt(mytDay(now, DATA_LAG_DAYS))), await levelPassOpen());
     await addTasks(runDate, tasks);
     planned = tasks.length;
   }
   // TikTok publishes yesterday's lists during the day: every 15 minutes check whether TikTok has them and, once it does, plan
   // that day as the newest too (its Rankings build waits for every list), and note when TikTok published them.
   const yesterday = mytDay(now, 1);
-  if (mytHour(now) >= LATE_HOUR && new Date(now).getUTCMinutes() % 15 === 0 && !(await hasTask(runDate, `rankings|${yesterday}`)) && (await listsOut(sessions, yesterday))) {
+  if (mytHour(now) >= LATE_HOUR && new Date(now).getUTCMinutes() % 15 === 0 && !(await hasTask(runDate, `best|lives|${yesterday}|1D|LOCAL`)) && (await listsOut(sessions, yesterday))) {
     const late = planNewest(yesterday);
     await addTasks(runDate, late);
     await notePublished(yesterday, new Date(now).toISOString()).catch(() => undefined);

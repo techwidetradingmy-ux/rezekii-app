@@ -65,18 +65,26 @@ function best(kind: string, date: string, timeSlot: string, currency: string, ex
  * The whole day's work. `haveDays` holds the data dates whose daily lists are already saved, so only missing days are fetched.
  * Order (priority): TAP campaigns, the newest lists, older missing days, then creator profiles. The marketplace pass runs alongside.
  */
+/**
+ * Paused (owner, 31 Oct 2026): the Rankings build and the Creator Marketplace search aren't shown in the new app. The best-seller
+ * lists keep coming, as soon as TikTok publishes them, for admins.
+ */
+export const RANKINGS = false;
+export const CREATOR_SEARCH = false;
+
 /** One data date as the newest: every period for every best-seller list, then the Rankings page data built from them. */
 export function planNewest(date: string): PlannedTask[] {
   const tasks: PlannedTask[] = [];
   for (const timeSlot of SLOTS)
     for (const currency of CURRENCIES) {
-      for (const authorType of AUTHOR_TYPES) tasks.push(best("creators", date, timeSlot, currency, { authorType }, 3));
-      for (const categoryId of CATEGORIES) tasks.push(best("products", date, timeSlot, currency, { categoryId }, 3));
-      tasks.push(best("videos", date, timeSlot, currency, {}, 3));
-      tasks.push(best("lives", date, timeSlot, currency, {}, 3));
+      // Admin-only (owner, 31 Oct 2026): after everything people see, so the 1:00 AM data is ready first.
+      for (const authorType of AUTHOR_TYPES) tasks.push(best("creators", date, timeSlot, currency, { authorType }, 7));
+      for (const categoryId of CATEGORIES) tasks.push(best("products", date, timeSlot, currency, { categoryId }, 7));
+      tasks.push(best("videos", date, timeSlot, currency, {}, 7));
+      tasks.push(best("lives", date, timeSlot, currency, {}, 7));
     }
   // the Rankings page data, once every best-seller list is saved
-  tasks.push({ key: `rankings|${date}`, kind: "rankings", params: { day: date }, priority: 5 });
+  if (RANKINGS) tasks.push({ key: `rankings|${date}`, kind: "rankings", params: { day: date }, priority: 5 });
   return tasks;
 }
 
@@ -111,8 +119,8 @@ export function planDay(now: number, haveDays: Set<string>, newestBuilt = false,
     const date = mytDay(now, n);
     if (haveDays.has(date)) continue;
     for (const currency of CURRENCIES) {
-      for (const authorType of AUTHOR_TYPES) tasks.push(best("creators", date, "1D", currency, { authorType }, 4));
-      for (const categoryId of CATEGORIES) tasks.push(best("products", date, "1D", currency, { categoryId }, 4));
+      for (const authorType of AUTHOR_TYPES) tasks.push(best("creators", date, "1D", currency, { authorType }, 8));
+      for (const categoryId of CATEGORIES) tasks.push(best("products", date, "1D", currency, { categoryId }, 8));
     }
   }
 
@@ -124,6 +132,7 @@ export function planDay(now: number, haveDays: Set<string>, newestBuilt = false,
   // On the 1st the marketplace search is also split by TikTok's creator level, so each creator's level comes with it (levels
   // change monthly). It takes more than a day, so it carries on past midnight and the usual search waits for it. The usual
   // search runs on Mondays.
+  if (!CREATOR_SEARCH) return tasks;
   if (mytDay(now).endsWith("-01")) {
     for (const [i, level] of TT_LEVELS.entries())
       for (const [min, max] of FOLLOWER_BANDS)

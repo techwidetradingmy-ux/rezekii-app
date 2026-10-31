@@ -1,4 +1,5 @@
 import type { ApiReply } from "../../integrations/tiktok-shop/api.ts";
+import { shopPhotos } from "../creator-accounts/photos.ts";
 import { campaignSampleProducts, checkCreatorSamples, offersSamples, sampleCheckToken, sampleOffers, saveSampleOffers } from "../tap/samples.ts";
 import { getSampleLabel } from "../../integrations/tiktok-shop/creator.ts";
 import { listCampaignProductStats, listCampaignProducts, listCampaigns, listProductCreators, type Campaign, type CampaignProduct, type CampaignProductStats } from "../../integrations/tiktok-shop/partner.ts";
@@ -327,14 +328,17 @@ async function photos(t: TaskRow, { sessions, deadline }: Ctx): Promise<StepResu
   const saved = await savedPhotos(true);
   const cutoff = mytDay(Date.now(), PHOTO_DAYS);
   const due = [...users].filter((u) => (saved.get(u.toLowerCase()) ?? "") < cutoff && (!t.cursor || u > t.cursor)).sort();
-  const soon = (url: string | null | undefined) => freshUrl(url, Date.now(), 10 * 60_000);
+  const soon = (url: string | null | undefined) => (url && url.includes("googleusercontent.com") ? null : freshUrl(url, Date.now(), 10 * 60_000));
+  // Rezekii's own creators: the profile picture TikTok Shop has for them now (owner, 31 Oct 2026: TikTok Shop photos only).
+  const shopPhoto = new Map<string, string>();
+  for (const u of await shopPhotos(rezekii.map((r) => r.tiktok_username)).catch(() => [])) shopPhoto.set(u.username, u.url);
   let count = 0, seller: Awaited<ReturnType<Sessions["seller"]>> | null = null;
   // 30 creators at a time; when time runs out mid-way the group starts again next tick (photos saved meanwhile aren't due any more).
   for (let i = 0; i < due.length; i += 30) {
     const group = due.slice(i, i + 30);
     const back = (waitMs: number): StepResult => ({ count, more: true, cursor: i ? due[i - 1] : t.cursor, waitMs });
     const src = new Map((await photoSources(group)).map((r) => [r.username, r]));
-    const url = (u: string) => soon(src.get(u)?.da) ?? soon(src.get(u)?.ma) ?? soon(own.get(u)) ?? soon(team.get(u)?.avatar_url);
+    const url = (u: string) => soon(shopPhoto.get(u)) ?? soon(src.get(u)?.da) ?? soon(src.get(u)?.ma) ?? soon(own.get(u)) ?? soon(team.get(u)?.avatar_url);
     // Addresses that still work: six downloads at once.
     const ready = group.filter(url);
     for (let k = 0; k < ready.length; k += 6) {
