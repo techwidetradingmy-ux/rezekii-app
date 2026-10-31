@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { cleanEmail, passwordProblem } from "@/modules/accounts/password.ts";
-import { SESSION_COOKIE, createSession, sessionCookieOptions } from "@/modules/accounts/session.ts";
+import { SESSION_COOKIE, SIGNED_IN_COOKIE, createSession, sessionCookieOptions, signedInCookieOptions } from "@/modules/accounts/session.ts";
 import { createEmailUser, emailAccount, emailSignIn, resetPassword, signInWithCode } from "@/modules/accounts/users.ts";
 import { sendCode, checkCode, type CodePurpose } from "@/modules/accounts/email-codes.ts";
 import { needsDetails } from "@/modules/rewards/profiles.ts";
@@ -68,6 +68,7 @@ export async function POST(req: NextRequest) {
   const { token, expires } = await createSession(result.user.id);
   const res = NextResponse.json({ ok: true, details: await needsDetails(result.user.id).catch(() => false) });
   res.cookies.set(SESSION_COOKIE, token, sessionCookieOptions(expires));
+  res.cookies.set(SIGNED_IN_COOKIE, "1", signedInCookieOptions(expires));
   await joinInviter(req, res, result.user.id);
   return res;
 }

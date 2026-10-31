@@ -62,10 +62,14 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       .then((d: { me: Me | null }) => {
         setMe(d.me);
         // Remembered so the next visit waits for her account instead of flashing the sample data (owner, 31 Oct 2026).
-        try { if (d.me) localStorage.setItem("rz2_in", "1"); else localStorage.removeItem("rz2_in"); } catch {}
+        try {
+          if (d.me) localStorage.setItem("rz2_in", "1");
+          else { localStorage.removeItem("rz2_in"); document.cookie = "rz_in=; path=/; max-age=0"; }
+        } catch {}
       })
       .catch(() => setMe(null))
-      .finally(() => { delete document.documentElement.dataset.wait; });
+      // After her real data has drawn (two frames), so the sample never shows in between.
+      .finally(() => requestAnimationFrame(() => requestAnimationFrame(() => { delete document.documentElement.dataset.wait; })));
   }, []);
   useEffect(() => refreshMe(), [refreshMe]);
 

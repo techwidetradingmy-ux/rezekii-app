@@ -12,6 +12,13 @@ export function sessionCookieOptions(expires: Date) {
   return { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" as const, path: "/", expires };
 }
 
+/**
+ * A marker the page can read before it draws (owner, 31 Oct 2026: right after signing in, the sample name and photo showed
+ * until her account loaded). It holds nothing secret: it only says "signed in", so the app waits for her real data.
+ */
+export const SIGNED_IN_COOKIE = "rz_in";
+export const signedInCookieOptions = (expires: Date) => ({ httpOnly: false, secure: process.env.NODE_ENV === "production", sameSite: "lax" as const, path: "/", expires });
+
 export async function createSession(userId: string): Promise<{ token: string; expires: Date }> {
   const token = randomBytes(32).toString("base64url");
   const expires = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);

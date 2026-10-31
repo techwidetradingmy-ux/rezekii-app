@@ -21,7 +21,7 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, them
  * Applies the Light / Dark choice from Account before the page paints (saved on this device only). The landing pages are
  * always light (owner, 30 Oct 2026).
  */
-const THEME_SCRIPT = `try{var p=location.pathname;if(p==="/"||p==="/seller"){document.documentElement.dataset.theme="light"}else{var t=localStorage.getItem("rz2_theme");if(t==="Light"||t==="Dark"){document.documentElement.dataset.theme=t.toLowerCase()}}if(localStorage.getItem("rz2_in")==="1"&&(p.indexOf("/app")===0||p.indexOf("/seller/app")===0||p.indexOf("/admin")===0)){document.documentElement.dataset.wait="1"}}catch(e){}`;
+const THEME_SCRIPT = `try{var p=location.pathname;if(p==="/"||p==="/seller"){document.documentElement.dataset.theme="light"}else{var t=localStorage.getItem("rz2_theme");if(t==="Light"||t==="Dark"){document.documentElement.dataset.theme=t.toLowerCase()}}if((localStorage.getItem("rz2_in")==="1"||document.cookie.indexOf("rz_in=1")>=0)&&(p.indexOf("/app")===0||p.indexOf("/seller/app")===0||p.indexOf("/admin")===0)){document.documentElement.dataset.wait="1"}}catch(e){}`;
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (

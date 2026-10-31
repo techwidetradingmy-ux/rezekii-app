@@ -1112,7 +1112,7 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { display
 .cr1-note-main .nt-cat { margin: 0 0 2px; }
 
 /* Signed in last time (owner, 31 Oct 2026): the page's content stays hidden until her account loads, so sample data never flashes. */
-html[data-wait="1"] .v2-main > * { visibility: hidden; }
+html[data-wait="1"] .v2-main > *, html[data-wait="1"] .v2-acct, html[data-wait="1"] .v2-iconbtn, html[data-wait="1"] .v2-demo .site-wrap { visibility: hidden; }
 html[data-wait="1"] .v2-main::before { content: ""; display: block; width: 28px; height: 28px; margin: 40px auto; border-radius: 50%; border: 3px solid var(--line); border-top-color: #00c073; animation: v2Spin 0.8s linear infinite; }
 @keyframes v2Spin { to { transform: rotate(360deg); } }
 

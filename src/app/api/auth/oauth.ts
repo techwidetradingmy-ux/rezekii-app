@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { SESSION_COOKIE, createSession, sessionCookieOptions } from "@/modules/accounts/session.ts";
+import { SESSION_COOKIE, createSession, sessionCookieOptions, SIGNED_IN_COOKIE, signedInCookieOptions } from "@/modules/accounts/session.ts";
 import { attachReferral, readRefCookie, REF_COOKIE } from "@/modules/rewards/referrals.ts";
 import { needsDetails } from "@/modules/rewards/profiles.ts";
 
@@ -44,6 +44,7 @@ export async function signedIn(req: NextRequest, userId: string, p: Provider, to
   const details = to === "/app" && (await needsDetails(userId).catch(() => false));
   const res = NextResponse.redirect(`${appBase(req)}${details ? "/signin?details=1" : to}`);
   res.cookies.set(SESSION_COOKIE, token, sessionCookieOptions(expires));
+  res.cookies.set(SIGNED_IN_COOKIE, "1", signedInCookieOptions(expires));
   res.cookies.set(oauthCookie(p), "", { ...OAUTH_COOKIE_OPTIONS, maxAge: 0 });
   if (next) res.cookies.set(NEXT_COOKIE, "", { ...OAUTH_COOKIE_OPTIONS, maxAge: 0 });
   await joinInviter(req, res, userId);

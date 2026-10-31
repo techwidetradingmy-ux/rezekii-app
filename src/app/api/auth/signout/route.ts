@@ -13,5 +13,6 @@ export async function POST(req: NextRequest) {
   }
   const res = NextResponse.redirect(`${appBase(req)}/`, 303);
   res.cookies.set(SESSION_COOKIE, "", { path: "/", maxAge: 0 });
+  res.cookies.set("rz_in", "", { path: "/", maxAge: 0 });
   return res;
 }
