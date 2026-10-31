@@ -1,5 +1,4 @@
 import Image from "next/image";
-import { CreatorFocus, CreatorHealth } from "@/components/landing/focus";
 import { SUPPORT } from "@/lib/support";
 import Link from "next/link";
 import { DemoStrip } from "@/components/shell";
@@ -92,19 +91,6 @@ export default function Landing() {
 
       <main className="site-wrap site-main lp-main">
         <CreatorBanner />
-
-        {/* What makes Rezekii different, and the three things to remember (owner, 31 Oct 2026). */}
-        <Reveal id="why" className="section" label="Why Rezekii">
-          <div className="lp-head">
-            <span className="eyebrow">WHY REZEKII</span>
-            <h2>Your Data. Your To-Do List.</h2>
-          </div>
-          <CreatorFocus />
-        </Reveal>
-
-        <Reveal id="health" className="section" label="TikTok Shop Health Scanner">
-          <CreatorHealth />
-        </Reveal>
 
         <Reveal className="section" label="What you get">
           <div className="lp-head">
