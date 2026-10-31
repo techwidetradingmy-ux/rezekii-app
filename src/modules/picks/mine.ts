@@ -26,13 +26,15 @@ export async function showcaseOf(token: string, pages = 10): Promise<{ items: Sh
 /** TikTok's buyer rating for each product (20 per call); products without one are left out. */
 export async function ratingsOf(token: string, ids: string[]): Promise<Map<string, { score: number; count: number }>> {
   const out = new Map<string, { score: number; count: number }>();
-  for (let i = 0; i < ids.length; i += 20) {
-    const r = await selectProducts(token, ids.slice(i, i + 20)).catch(() => null);
-    for (const p of r?.data?.products ?? []) {
-      const score = Number(p.review?.overall_score);
-      if (Number.isFinite(score) && score > 0) out.set(p.id, { score, count: p.review?.count ?? 0 });
-    }
-  }
+  const batches: string[][] = [];
+  for (let i = 0; i < ids.length; i += 20) batches.push(ids.slice(i, i + 20));
+  // Four calls at a time, so a 1,000-product showcase takes seconds, not a minute.
+  for (let i = 0; i < batches.length; i += 4)
+    for (const r of await Promise.all(batches.slice(i, i + 4).map((b) => selectProducts(token, b).catch(() => null))))
+      for (const p of r?.data?.products ?? []) {
+        const score = Number(p.review?.overall_score);
+        if (Number.isFinite(score) && score > 0) out.set(p.id, { score, count: p.review?.count ?? 0 });
+      }
   return out;
 }
 

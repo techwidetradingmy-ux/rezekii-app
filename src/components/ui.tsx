@@ -234,13 +234,14 @@ export function RemoveWarn({ items, onConfirm, onClose }: { items: { id: string;
         ))}
         {items.length > 4 && <small>+{items.length - 4} more</small>}
       </div>
+      {/* What removing means (owner, 31 Oct 2026), said plainly before she confirms. */}
       <ul className="rw-risk">
-        <li><Icon name="alert" size={16} /> TikTok may also remove {many ? "their links" : "its link"} from your videos and LIVE. Those videos could stop earning.</li>
-        <li><Icon name="alert" size={16} /> A locked commission rate may end.</li>
+        <li><Icon name="alert" size={16} /> Your videos keep their yellow bag for now. In future, TikTok may remove it from videos with {many ? "these products" : "this product"}, and Rezekii can&apos;t guarantee it won&apos;t.</li>
+        <li><Icon name="alert" size={16} /> Rezekii can&apos;t bring back a removed product. A locked commission rate may also end.</li>
       </ul>
       <label className="rw-ok">
         <input type="checkbox" checked={ok} onChange={(e) => setOk(e.target.checked)} />
-        <span>I understand the risk and take responsibility for this.</span>
+        <span>I understand. I decide to remove {many ? "them" : "it"}, and I&apos;m responsible for the result.</span>
       </label>
       <div className="v2-row" style={{ gap: 8 }}>
         <button type="button" className="btn-outline" style={{ flex: 1 }} onClick={onClose}>Keep</button>

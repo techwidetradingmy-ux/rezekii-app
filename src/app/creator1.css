@@ -1682,3 +1682,34 @@ li.sc-row { cursor: default; }
 .dl-lock small { color: var(--muted); font-size: 13px; line-height: 1.45; }
 .dl-ic { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--gsoft); color: var(--gink); }
 @media (max-width: 560px) { .dl-lock { grid-template-columns: 40px minmax(0, 1fr); } .dl-lock .np-btn { grid-column: 1 / -1; } }
+
+/* Showcase health check (owner, 31 Oct 2026): four bands, selecting, and her videos with low-rated products. */
+.rc-bands.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.rc-bands .mid b { color: #dc6803; }
+.rc-bar i.mid { background: #f79009; }
+.rc-dot.mid { background: #f79009; }
+.rc-list li { grid-template-columns: 20px 44px minmax(0, 1fr) auto auto; }
+.rc-pick { width: 18px; height: 18px; accent-color: #00a862; }
+.rc-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.rc-note { margin: 0; display: flex; gap: 8px; align-items: flex-start; font-size: 13.5px; color: var(--body); line-height: 1.5; }
+.rc-note svg { flex: none; margin-top: 2px; color: var(--muted); }
+.rc-selbar { position: sticky; top: 76px; z-index: 5; display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.rc-selbar .np-btn { margin-left: auto; }
+.rc-advice { display: grid; gap: 6px; padding: 12px 14px; border-radius: 14px; background: #fff8e6; color: #5c3d00; }
+.rc-advice p { margin: 0; font-size: 13.5px; line-height: 1.5; }
+.rc-vgroup { display: grid; gap: 6px; }
+.rc-vhead { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+.rc-vhead small { color: var(--muted); font-weight: 700; }
+.rc-videos li { grid-template-columns: 44px minmax(0, 1fr) auto; }
+@media (max-width: 640px) { .rc-bands.four { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.rc-list li.heavy .rc-stars { background: var(--rsoft); color: var(--red); }
+.rc-list li.low .rc-stars { background: #fff0e0; color: #c4540a; }
+.rc-list li.slight .rc-stars { background: var(--asoft); color: var(--amber); }
+.rc-list li.heavy .rc-name img, .rc-videos li img { width: 44px; height: 44px; border-radius: 11px; object-fit: cover; }
+@media (max-width: 560px) {
+  .rc-list li { grid-template-columns: 20px 40px minmax(0, 1fr) auto; }
+  .rc-list li > button { grid-column: 3 / -1; }
+  .rc-videos li { grid-template-columns: 40px minmax(0, 1fr); }
+  .rc-videos li > a { grid-column: 2 / -1; justify-self: start; }
+  .rc-bands.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
