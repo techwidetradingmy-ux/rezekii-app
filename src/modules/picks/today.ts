@@ -19,6 +19,11 @@ export type Sales =
   | { kind: "gmv"; lo: number; hi: number; day: string }
   /** Sales from TikTok's top-selling videos: on `day`, or over the last 7 days when `week`. */
   | { kind: "video"; lo: number; hi: number; day: string; videos: number; week: boolean }
+  /**
+   * Others (owner, 31 Oct 2026): the product's TikTok sales for `day` minus its sales from TikTok's top-100 videos that day. It
+   * covers LIVE, showcase, search and shop page, and videos outside the top 100. An estimate from the middle of TikTok's ranges.
+   */
+  | { kind: "others"; gmv: number; day: string }
   | { kind: "day"; units: number }
   | { kind: "total"; units: number };
 export type Idea = {
@@ -27,7 +32,8 @@ export type Idea = {
   openRate: number | null; silverRate: number | null;
   rezekii: boolean; sample: boolean; sales: Sales;
 };
-export type TodayIdeas = { source: "market" | "showcase"; channel: "all" | "video"; day: string | null; listAt: string | null; rows: Idea[]; gold: boolean; at: string };
+export type Channel = "all" | "video" | "others";
+export type TodayIdeas = { source: "market" | "showcase"; channel: Channel; day: string | null; listAt: string | null; rows: Idea[]; gold: boolean; at: string };
 
 const MYT = 8 * 3_600_000;
 const enc = encodeURIComponent;
@@ -88,7 +94,40 @@ function fromSearch(p: SelectedProduct, hit: Hit | undefined, tap: TapProduct | 
     openRate: tap?.openRate ?? p.commission?.rate ?? null, silverRate: tap?.silverRate ?? null, rezekii: !!tap, sample: (tap?.samples ?? 0) > 0, sales,
   };
 }
-const gmvOf = (s: Sales, price: number | null) => (s.kind === "gmv" || s.kind === "video" ? (s.lo + s.hi) / 2 : s.kind === "day" ? s.units * (price ?? 0) : 0);
+const gmvOf = (s: Sales, price: number | null) => (s.kind === "gmv" || s.kind === "video" ? (s.lo + s.hi) / 2 : s.kind === "others" ? s.gmv : s.kind === "day" ? s.units * (price ?? 0) : 0);
+
+/** Others for every product in the newest daily lists: its sales that day minus its sales in TikTok's top-100 videos that day. */
+async function othersOf(): Promise<{ day: string | null; at: string | null; byId: Map<string, { hit: Hit; gmv: number }> }> {
+  const l = await newestLists();
+  if (!l) return { day: null, at: null, byId: new Map() };
+  const vids = await videoProducts(1, l.day).catch(() => new Map<string, { lo: number; hi: number }>());
+  const byId = new Map<string, { hit: Hit; gmv: number }>();
+  for (const h of l.byId.values()) {
+    const v = vids.get(h.id);
+    const gmv = Math.max(0, (h.lo + h.hi) / 2 - (v ? (v.lo + v.hi) / 2 : 0));
+    if (gmv > 0) byId.set(h.id, { hit: h, gmv: Math.round(gmv) });
+  }
+  return { day: l.day, at: l.at, byId };
+}
+
+/** Others view: products that sold most outside TikTok's top-selling videos (LIVE, showcase, search, shop page). */
+async function marketOthersIdeas(token: string, gold: boolean): Promise<TodayIdeas> {
+  const want = gold ? GOLD_IDEAS : IDEAS;
+  const [o, show, tap] = await Promise.all([othersOf(), showcaseOf(token, 4).catch(() => ({ items: [], more: false })), allProducts().catch(() => [] as TapProduct[])]);
+  const inShow = new Set(show.items.map((p) => p.id));
+  const tapById = new Map(tap.map((p) => [p.id, p]));
+  const cands = [...o.byId.values()].filter((x) => !inShow.has(x.hit.id)).sort((a, b) => b.gmv - a.gmv);
+  const rows: Idea[] = [];
+  for (let i = 0; i < cands.length && i < 300 && rows.length < want; i += 20) {
+    const batch = cands.slice(i, i + 20);
+    const found = await searchIds(token, batch.map((x) => x.hit.id));
+    for (const x of batch) {
+      const p = found.get(x.hit.id);
+      if (p && rows.length < want && (p.stock?.quantity ?? 1) > 0) rows.push(fromSearch(p, x.hit, tapById.get(x.hit.id), { kind: "others", gmv: x.gmv, day: o.day! }));
+    }
+  }
+  return { source: "market", channel: "others", day: o.day, listAt: o.at, rows, gold, at: new Date().toISOString() };
+}
 
 /**
  * Video view (owner, 31 Oct 2026): the products in TikTok's top-selling videos on the newest day TikTok has published, by the
@@ -114,8 +153,9 @@ async function marketVideoIdeas(token: string, gold: boolean): Promise<TodayIdea
 }
 
 /** Marketplace ideas: TikTok's best sellers she can add, with Rezekii campaign products mixed in (3 of 10, 9 of 30). */
-export async function marketIdeas(token: string, gold: boolean, channel: "all" | "video" = "all"): Promise<TodayIdeas> {
+export async function marketIdeas(token: string, gold: boolean, channel: Channel = "all"): Promise<TodayIdeas> {
   if (channel === "video") return marketVideoIdeas(token, gold);
+  if (channel === "others") return marketOthersIdeas(token, gold);
   const want = gold ? GOLD_IDEAS : IDEAS;
   const [l, show, tap] = await Promise.all([newestLists(), showcaseOf(token, 4).catch(() => ({ items: [], more: false })), allProducts().catch(() => [] as TapProduct[])]);
   const inShow = new Set(show.items.map((p) => p.id));
@@ -177,9 +217,22 @@ export async function soldInLastDay(products: { id: string; sold: number; price:
  * Showcase ideas: her showcase products (first 200) ranked by their sales across TikTok. Video view: those in TikTok's
  * top-selling videos over the last 7 days, by those videos' sales.
  */
-export async function showcaseIdeas(token: string, gold: boolean, channel: "all" | "video" = "all"): Promise<TodayIdeas> {
+export async function showcaseIdeas(token: string, gold: boolean, channel: Channel = "all"): Promise<TodayIdeas> {
   const want = gold ? GOLD_IDEAS : IDEAS;
   const [l, show, tap] = await Promise.all([newestLists(), showcaseOf(token, 4), allProducts().catch(() => [] as TapProduct[])]);
+  if (channel === "others") {
+    const o = await othersOf();
+    const tapById = new Map(tap.map((p) => [p.id, p]));
+    const mine = show.items.filter((s) => o.byId.has(s.id)).sort((a, b) => o.byId.get(b.id)!.gmv - o.byId.get(a.id)!.gmv).slice(0, want);
+    const found = await searchIds(token, mine.map((s) => s.id));
+    const rows = mine.map((s): Idea => {
+      const x = o.byId.get(s.id)!;
+      const sales: Sales = { kind: "others", gmv: x.gmv, day: o.day! };
+      const p = found.get(s.id);
+      return p ? fromSearch(p, x.hit, tapById.get(s.id), sales) : { id: s.id, name: s.name, img: s.img, shop: null, category: x.hit.cat, rating: x.hit.rating, price: null, openRate: null, silverRate: null, rezekii: tapById.has(s.id), sample: false, sales };
+    });
+    return { source: "showcase", channel: "others", day: o.day, listAt: o.at, rows, gold, at: new Date().toISOString() };
+  }
   if (channel === "video") {
     const vids = await videoProducts(7);
     const tapById = new Map(tap.map((p) => [p.id, p]));

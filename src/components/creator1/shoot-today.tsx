@@ -216,7 +216,7 @@ export function ShootToday({ bare = false, view = "cards", inFrame = false }: { 
 export type BestSource = "market" | "showcase";
 
 /** One row of /api/v2/best (signed in): see modules/picks/today.ts. */
-type LiveSales = { kind: "gmv"; lo: number; hi: number; day: string } | { kind: "video"; lo: number; hi: number; day: string; videos: number; week: boolean } | { kind: "day"; units: number } | { kind: "total"; units: number };
+type LiveSales = { kind: "gmv"; lo: number; hi: number; day: string } | { kind: "video"; lo: number; hi: number; day: string; videos: number; week: boolean } | { kind: "others"; gmv: number; day: string } | { kind: "day"; units: number } | { kind: "total"; units: number };
 type LiveBest = {
   id: string; name: string; img: string | null; category: string | null; rating: number | null; price: number | null;
   openRate: number | null; silverRate: number | null; rezekii: boolean; sample: boolean; sales: LiveSales;
@@ -230,14 +230,15 @@ const dayName = (d: string) => new Date(`${d}T12:00:00+08:00`).toLocaleDateStrin
 /** What a row's sales number means: TikTok's GMV for the day, units across TikTok in about the last day, or all-time units. */
 const salesLine = (s: LiveSales) =>
   s.kind === "gmv" ? `RM ${rm(s.lo)}–${rm(s.hi)} sales on ${dayName(s.day)}` :
-  s.kind === "video" ? `RM ${rm(s.lo)}–${rm(s.hi)} from ${s.videos} top video${s.videos === 1 ? "" : "s"} ${s.week ? "this week" : `on ${dayName(s.day)}`}` : s.kind === "day" ? `~${short(s.units)} sold on TikTok in the last day` : `${short(s.units)} sold on TikTok`;
+  s.kind === "video" ? `RM ${rm(s.lo)}–${rm(s.hi)} from ${s.videos} top video${s.videos === 1 ? "" : "s"} ${s.week ? "this week" : `on ${dayName(s.day)}`}` :
+  s.kind === "others" ? `≈ RM ${rm(s.gmv)} outside top videos on ${dayName(s.day)}` : s.kind === "day" ? `~${short(s.units)} sold on TikTok in the last day` : `${short(s.units)} sold on TikTok`;
 
 /**
  * Best sellers (owner, 29 Oct 2026). Marketplace: public TikTok Shop products in her top categories that aren't in her showcase
  * yet, rated 4★+; + adds one to her showcase. Showcase: products already in her showcase; Plan a Video starts a post. Both are
  * ranked best-selling first (units sold this week). Tap a product to see it on Rezekii.
  */
-export function NicheBest({ view: shape = "list", inFrame = false, source = "market", channel = "all" }: { view?: IdeasView; inFrame?: boolean; source?: BestSource; channel?: "all" | "video" }) {
+export function NicheBest({ view: shape = "list", inFrame = false, source = "market", channel = "all" }: { view?: IdeasView; inFrame?: boolean; source?: BestSource; channel?: "all" | "video" | "others" }) {
   const { linked: demoLinked, setLinked, toast, live, me } = useDemo();
   const linked = live ? !!me?.shop : demoLinked;
   const mine = source === "showcase";
@@ -300,8 +301,11 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
   return (
     <section className={inFrame ? "nb-box nb-in" : "v2-card nb-box"} aria-label={mine ? "Best sellers in your showcase" : "Best sellers in your niche"}>
       {/* The card's AI header sits above the tabs (owner, 29 Oct 2026: one AI label per card); each tab just says where it's from. */}
-      {inFrame ? <p className="nb-src">{mine ? (live ? (channel === "video" ? "Products in your showcase that are in TikTok's top-selling videos this week" : "Products in your showcase, by their sales across TikTok") : "Products in your showcase") : live ? (channel === "video" ? "Products in TikTok's top-selling videos, all categories · not in your showcase yet" : "Sold the most on TikTok Shop, all categories, with Rezekii campaign products · not in your showcase yet") : "Live on TikTok Shop, not in your showcase yet"}</p> : <AiHead title={mine ? "Best Sellers in Your Showcase" : "Best Sellers on TikTok Shop"} sub="Best-selling first, updated daily" />}
+      {inFrame ? <p className="nb-src">{mine ? (live ? (channel === "video" ? "Products in your showcase that are in TikTok's top-selling videos this week" : channel === "others" ? "Products in your showcase that sold most outside TikTok's top videos" : "Products in your showcase, by their sales across TikTok") : "Products in your showcase") : live ? (channel === "video" ? "Products in TikTok's top-selling videos, all categories · not in your showcase yet" : channel === "others" ? "Sold most outside TikTok's top videos: LIVE, showcase, search and shop page · not in your showcase yet" : "Sold the most on TikTok Shop, all categories, with Rezekii campaign products · not in your showcase yet") : "Live on TikTok Shop, not in your showcase yet"}</p> : <AiHead title={mine ? "Best Sellers in Your Showcase" : "Best Sellers on TikTok Shop"} sub="Best-selling first, updated daily" />}
       {live && real?.locked && <DetailsLock missing={real.locked} what="Today's Ideas" />}
+      {live && channel === "others" && real && real.rows.length > 0 && (
+        <p className="v2-small nb-others"><Icon name="info" size={14} /> Others = a product&apos;s TikTok sales that day minus its sales in TikTok&apos;s top-100 videos. It includes people who buy from LIVEs, showcases, search and the shop page (and smaller videos), so it&apos;s an estimate.</p>
+      )}
       {live && real?.day && (
         <p className="v2-small v2-upd">
           <Icon name="clock" size={14} /> TikTok sales on {dayName(real.day)}{real.listAt ? ` · list updated ${updatedWhen(real.listAt)}` : ""}
@@ -310,7 +314,7 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
       )}
       {live && linked && !real && !failed && <p className="v2-muted" style={{ margin: 0 }}>Loading your list…</p>}
       {live && failed && <p className="v2-muted" style={{ margin: 0 }}>Couldn&apos;t load this list. Please try again later.</p>}
-      {live && real && !real.locked && !real.rows.length && <p className="v2-muted" style={{ margin: 0 }}>{mine ? (channel === "video" ? "None of your showcase products are in TikTok's top-selling videos this week." : "Your showcase is empty. Add products from the Marketplace.") : "TikTok hasn't published a best-seller list yet. Check again later."}</p>}
+      {live && real && !real.locked && !real.rows.length && <p className="v2-muted" style={{ margin: 0 }}>{mine ? (channel === "video" ? "None of your showcase products are in TikTok's top-selling videos this week." : channel === "others" ? "None of your showcase products are in TikTok's best-seller lists for this day." : "Your showcase is empty. Add products from the Marketplace.") : "TikTok hasn't published a best-seller list yet. Check again later."}</p>}
       <div className="nb-cats" role="group" aria-label="Category">
         {cats.map((c) => <button key={c} type="button" className={`v2-chip${c === cat ? " on" : ""}`} aria-pressed={c === cat} onClick={() => setCat(c)}>{c}</button>)}
       </div>

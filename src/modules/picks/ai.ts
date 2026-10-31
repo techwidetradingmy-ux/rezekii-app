@@ -59,8 +59,8 @@ const gmvOf = (x: Record<string, unknown>) => { const [lo = 0, hi = lo] = nums(x
  * Products in TikTok's daily top-100 selling videos over the newest `days` days, with the videos' sales (a video's GMV split
  * evenly between the products in it) and how many of those videos show each product.
  */
-export async function videoProducts(days: number): Promise<Map<string, { lo: number; hi: number; videos: number; name: string; day: string }>> {
-  const rows = (await (await supabaseRest(`market_snapshots?dataset=eq.videos&slot=eq.${enc("1D|LOCAL")}&select=as_of,items&order=as_of.desc&limit=${days}`)).json()) as { as_of: string; items: Record<string, unknown>[] }[];
+export async function videoProducts(days: number, day?: string): Promise<Map<string, { lo: number; hi: number; videos: number; name: string; day: string }>> {
+  const rows = (await (await supabaseRest(`market_snapshots?dataset=eq.videos&slot=eq.${enc("1D|LOCAL")}${day ? `&as_of=eq.${day}` : ""}&select=as_of,items&order=as_of.desc&limit=${days}`)).json()) as { as_of: string; items: Record<string, unknown>[] }[];
   const out = new Map<string, { lo: number; hi: number; videos: number; name: string; day: string }>();
   for (const r of rows)
     for (const v of r.items ?? []) {

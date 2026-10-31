@@ -19,7 +19,8 @@ export async function GET(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   const source = req.nextUrl.searchParams.get("source") === "showcase" ? "showcase" : "market";
   // Overall by default; Video from TikTok's top-selling videos (owner, 31 Oct 2026).
-  const channel = req.nextUrl.searchParams.get("channel") === "video" ? "video" : "all";
+  const q = req.nextUrl.searchParams.get("channel");
+  const channel = q === "video" || q === "others" ? q : "all";
   const token = await approvedCreatorToken(user.id);
   if (!token) return NextResponse.json({ linked: false, source, channel, day: null, listAt: null, rows: [], gold: false, at: new Date().toISOString() });
   // Locked until her details are complete (owner, 31 Oct 2026).

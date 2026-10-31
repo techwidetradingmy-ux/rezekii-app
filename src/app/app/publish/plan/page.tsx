@@ -16,7 +16,7 @@ export default function PublishPlan() {
   const [view, setView] = useIdeasView();
   const [tab, setTab] = useKept<Tab>("ideas-tab", "Marketplace");
   // Overall by default; Video shows what sells in TikTok's top-selling videos (owner, 31 Oct 2026).
-  const [channel, setChannel] = useKept<"Overall" | "Video">("ideas-channel", "Overall");
+  const [channel, setChannel] = useKept<"Overall" | "Video" | "Others">("ideas-channel", "Overall");
   const { live } = useDemo();
   return (
     <div className="v2-stack v2-in" style={{ gap: 16 }}>
@@ -26,8 +26,8 @@ export default function PublishPlan() {
       <section className="v2-card v2-aicard td-one">
         <AiHead title="Best Sellers for You" sub={live ? "Ranked by sales across TikTok · updates when TikTok publishes" : "Best-selling first, updated daily"} tip={<Tip label="How these lists are made" text={live ? "Marketplace: the products that sold the most (GMV) on TikTok Shop on the newest day TikTok has published, in every category, mixed with Rezekii campaign products. Only products you can add are shown, and none already in your showcase. Rezekii campaign products can also get a free sample. Showcase: products already in your showcase, ranked by their sales across the whole of TikTok, so you can film the ones selling now. 10 a day; Gold creators see 30." : "Marketplace: TikTok Shop products in your top categories that aren't in your showcase yet, rated 4★ and up. Showcase: products already in your showcase. Both are ranked by units sold this week; the line shows sales for each of the last 7 days."} />} />
         <Seg value={tab} options={["Marketplace", "Showcase"] as const} onChange={setTab} />
-        {live && <div className="ai-channel"><Seg value={channel} options={["Overall", "Video"] as const} onChange={setChannel} /></div>}
-        <NicheBest key={`${tab}-${channel}`} view={view} inFrame source={tab === "Showcase" ? "showcase" : "market"} channel={live && channel === "Video" ? "video" : "all"} />
+        {live && <div className="ai-channel"><Seg value={channel} options={["Overall", "Video", "Others"] as const} onChange={setChannel} /></div>}
+        <NicheBest key={`${tab}-${channel}`} view={view} inFrame source={tab === "Showcase" ? "showcase" : "market"} channel={!live ? "all" : channel === "Video" ? "video" : channel === "Others" ? "others" : "all"} />
       </section>
     </div>
   );

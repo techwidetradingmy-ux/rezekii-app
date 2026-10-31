@@ -209,7 +209,8 @@ export function RatingScan() {
           </div>
           <div className="rc-advice">
             <b>Our advice</b>
-            <p>If a product is heavily low and you&apos;re worried it could hurt your account health and traffic, delete its videos before a violation happens.</p>
+            <p>We only recommend deleting videos of heavily low products (under 3.0★): if you&apos;re worried they could hurt your account health and traffic, delete them before a violation happens.</p>
+            <p>For low and slightly low products, keep the videos and just avoid making new ones.</p>
             <p>If a video already has a violation, don&apos;t delete it: TikTok needs the video to review your appeal, and without it the appeal can fail.</p>
             <p>This is advice only. Videos are deleted in the TikTok app, and a deleted video can&apos;t be recovered.</p>
           </div>
@@ -219,7 +220,7 @@ export function RatingScan() {
           </p>
           {withVideos.map((p) => (
             <div key={p.id} className="rc-vgroup">
-              <span className="rc-vhead"><span className={`rc-dot ${LEVELS.find((l) => l.key === levelOf(p.rating))!.dot}`} /> <b>{shortName(p.name)}</b> <small>{p.rating.toFixed(1)}★</small></span>
+              <span className="rc-vhead"><span className={`rc-dot ${LEVELS.find((l) => l.key === levelOf(p.rating))!.dot}`} /> <b>{shortName(p.name)}</b> <small>{p.rating.toFixed(1)}★</small>{levelOf(p.rating) === "heavy" ? <i className="rc-tag del">Consider deleting</i> : <i className="rc-tag">Keep</i>}</span>
               <ul>
                 {p.videos!.map((v) => (
                   <li key={v.id}>
