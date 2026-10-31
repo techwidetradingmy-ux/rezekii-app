@@ -55,7 +55,9 @@ export async function GET(req: NextRequest) {
   const sum = (from: number, to: number) => {
     const inRange = lines.filter((l) => { const t = Date.parse(l.created_at); return t >= from && t < to; });
     const orders = new Set(inRange.map((l) => l.order_id));
-    const cancelledOrders = new Set(inRange.filter((l) => cancelled(l.status)).map((l) => l.order_id));
+    // Cancels counted by items, not orders (owner, 1 Nov 2026): one cancelled item out of a big order isn't the whole order.
+    let items = 0, badItems = 0;
+    for (const l of inRange) { items += l.quantity; if (cancelled(l.status)) badItems += l.quantity; }
     const ch = [0, 0, 0];
     const byProduct = new Map<string, { productId: string; commission: number; orders: Set<string> }>();
     let gmv = 0, est = 0, paid = 0;
@@ -76,7 +78,7 @@ export async function GET(req: NextRequest) {
     const top = ranked.slice(0, 10);
     return {
       gmv: r2(gmv), orders: orders.size, est: r2(est), paid: r2(paid),
-      cancel: orders.size ? r2((cancelledOrders.size / orders.size) * 100) : 0,
+      cancel: items ? r2((badItems / items) * 100) : 0, items, cancelItems: badItems,
       channel: (est > 0 ? ch.map((v) => Math.round((v / est) * 100)) : [0, 0, 0]) as [number, number, number],
       byProduct: top.map((b) => ({ productId: b.productId, commission: r2(b.commission), orders: b.orders.size })),
       other: r2(ranked.slice(10).reduce((a, b) => a + b.commission, 0)),
@@ -95,7 +97,7 @@ export async function GET(req: NextRequest) {
     const prev = sum(cFrom - n * DAY, cFrom);
     const change = (a: number, b: number) => (b ? Math.round(((a - b) / b) * 100) : null);
     const lv = cur.channel[1];
-    const note = !cur.orders ? "No orders in these days." : `${lv >= 30 ? `LIVE brought ${lv}% of your commission. ` : ""}Cancels and returns: ${cur.cancel}% of orders.`;
+    const note = !cur.orders ? "No orders in these days." : `${lv >= 30 ? `LIVE brought ${lv}% of your commission. ` : ""}Cancels and returns: ${cur.cancelItems} of ${cur.items} items (${cur.cancel}%).`;
     const chart = n <= 31
       ? { unit: "day" as const, points: Array.from({ length: n }, (_, i) => { const d = cFrom + i * DAY; return [label(d), sum(d, d + DAY).est] as [string, number]; }) }
       : { unit: "week" as const, points: Array.from({ length: Math.ceil(n / 7) }, (_, i) => { const d = cFrom + i * 7 * DAY; return [label(d), sum(d, Math.min(d + 7 * DAY, end)).est] as [string, number]; }) };
@@ -115,7 +117,7 @@ export async function GET(req: NextRequest) {
     const change = (a: number, b: number | undefined) => (prev && b ? Math.round(((a - b) / b) * 100) : null);
     // The note says only what the numbers show.
     const live = cur.channel[1];
-    const note = !cur.orders ? "No orders in this period yet." : `${live >= 30 ? `LIVE brought ${live}% of your commission. ` : ""}Cancels and returns: ${cur.cancel}% of orders.`;
+    const note = !cur.orders ? "No orders in this period yet." : `${live >= 30 ? `LIVE brought ${live}% of your commission. ` : ""}Cancels and returns: ${cur.cancelItems} of ${cur.items} items (${cur.cancel}%).`;
     ranges[key] = { ...cur, gmvChange: change(cur.gmv, prev?.gmv), ordersChange: change(cur.orders, prev?.orders), note };
     if (n && n <= 30) charts[key] = { unit: "day", points: Array.from({ length: n }, (_, i) => { const d = from + i * DAY; return [label(d), sum(d, d + DAY).est] as [string, number]; }) };
     else if (n) charts[key] = { unit: "week", points: Array.from({ length: Math.ceil(n / 7) }, (_, i) => { const d = from + i * 7 * DAY; return [label(d), sum(d, Math.min(d + 7 * DAY, now + 1)).est] as [string, number]; }) };

@@ -1146,3 +1146,25 @@ button.rf-pill { border: 0; cursor: pointer; font: inherit; font-size: 12.5px; f
 .cr2-mstats > button { display: grid; grid-template-columns: 30px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 8px; align-items: center; padding: 8px 10px; border-radius: 14px; border: 0; background: var(--surface2); color: var(--text); font: inherit; text-align: left; cursor: pointer; transition: transform 0.12s var(--ease), background-color 0.15s; }
 .cr2-mstats > button:hover { background: var(--line); }
 .cr2-mstats > button:active { transform: scale(0.97); }
+
+/* Sort bar with its ↓ / ↑ switch, sortable table headers, and "x of y items" under a cancel rate (owner, 1 Nov 2026). */
+.sb-bar { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.sb-bar .np-seg { flex: 1 1 auto; min-width: 0; }
+.sb-dir { flex-shrink: 0; width: 38px; height: 38px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-size: 18px; font-weight: 900; line-height: 1; display: grid; place-items: center; cursor: pointer; transition: transform 0.12s var(--ease), background-color 0.15s; }
+.sb-dir:hover { background: var(--surface2); }
+.sb-dir:active { transform: scale(0.92); }
+.sb-head { display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: none; color: inherit; font: inherit; font-weight: inherit; cursor: pointer; white-space: nowrap; }
+.sb-head i { font-style: normal; font-size: 10px; opacity: 0.4; }
+.sb-head.on i { opacity: 1; color: var(--gink); }
+.cr-items { display: block; font-style: normal; font-size: 11.5px; font-weight: 700; color: var(--muted); }
+
+/* Payout calendar, option A (owner, 1 Nov 2026): each day filled in its status colour, stronger the more it earned, and a
+   violet strip along the bottom for what came extra through Rezekii. */
+.cr2-payday.paid { background: color-mix(in srgb, #00c073 var(--k, 0%), var(--surface)); border-color: color-mix(in srgb, #00c073 35%, var(--line)); }
+.cr2-payday.pending { background: color-mix(in srgb, #f5a623 var(--k, 0%), var(--surface)); border-color: color-mix(in srgb, #f5a623 35%, var(--line)); }
+.cr2-payday.zero { background: var(--surface); border-color: var(--line); }
+.cr2-payday > i { display: none; }
+.cr2-pd-x { position: absolute; left: 0; bottom: 0; height: 5px; border-radius: 0 3px 0 0; background: #6d5efc; box-shadow: 0 0 6px rgba(109, 94, 252, 0.5); animation: v2Grow 0.6s var(--ease) both; }
+.cr2-k-xs { background: #6d5efc; }
+.cr2-k-more { font-size: 12px; font-weight: 700; color: var(--muted); }
+@media (max-width: 420px) { .sb-bar .cr2-sortlbl { display: none; } .sb-bar .np-seg button { padding: 0 6px; } }

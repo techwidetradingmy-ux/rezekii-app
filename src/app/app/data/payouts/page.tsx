@@ -181,11 +181,15 @@ function Payouts({ MONTHS, DAYS, RANGE, TODAY, FIRST, updated }: typeof SAMPLE &
                 {cal.days.map((d) => {
                   const date = iso(cal.year, cal.month, d.day);
                   const out = d.state !== "future" && (date < from || date > to);
+                  // Option A (owner, 1 Nov 2026): the whole day takes its status colour, stronger the more it earned, with a strip
+                  // along the bottom for the part that came extra through Rezekii.
+                  const k = d.state === "future" || !maxDay || !d.est ? 0 : Math.round(14 + (d.est / maxDay) * 56);
                   return (
                     <button
                       key={d.day}
                       type="button"
-                      className={`cr2-payday ${d.state} ${out ? "out" : ""} ${picked?.date === date ? "on" : ""}`}
+                      style={{ ["--k" as string]: `${k}%` }}
+                      className={`cr2-payday ${d.state} ${d.est ? "" : "zero"} ${out ? "out" : ""} ${picked?.date === date ? "on" : ""}`}
                       disabled={d.state === "future"}
                       onClick={() => setPicked({ ...d, date })}
                       aria-label={d.state === "future" ? `${d.day}: no orders yet` : `${d.day}: ${rm(d.est)}, ${d.state}`}
@@ -194,7 +198,7 @@ function Payouts({ MONTHS, DAYS, RANGE, TODAY, FIRST, updated }: typeof SAMPLE &
                       {d.state !== "future" && (
                         <>
                           <small>{rm(d.est, 0).replace("RM ", "")}</small>
-                          <i style={{ height: `${Math.max(10, (d.est / maxDay) * 100)}%` }}><em style={{ height: `${(d.extra / d.est) * 100}%` }} /></i>
+                          {d.extra > 0 && d.est > 0 && <span className="cr2-pd-x" style={{ width: `${Math.max(12, Math.min(100, (d.extra / d.est) * 100))}%` }} title="Extra through Rezekii" />}
                           {d.clawed > 0 && <span className="claw" title="Something was clawed back" />}
                         </>
                       )}
@@ -205,7 +209,8 @@ function Payouts({ MONTHS, DAYS, RANGE, TODAY, FIRST, updated }: typeof SAMPLE &
               <div className="cr2-legend">
                 <span><i className="cr2-k-paid" />Paid</span>
                 <span><i className="cr2-k-pend" />Pending</span>
-                <span><i className="cr2-k-extra" />Extra through Rezekii</span>
+                <span><i className="cr2-k-xs" />Extra through Rezekii</span>
+                <span className="cr2-k-more">Darker = more earned</span>
                 <span><i className="cr2-k-claw" />Clawed back</span>
               </div>
               {picked ? (

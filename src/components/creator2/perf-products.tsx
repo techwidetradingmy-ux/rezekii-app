@@ -10,6 +10,10 @@ import { productHref } from "@/lib/product-view";
 import { ANALYTICS, product, rm } from "@/lib/mock";
 import { LIVES, PREV_ORDERS, SHORT, VIDEOS, channelSplit, type VideoRow } from "@/lib/mock-creator2";
 import { perfProduct, shortName, useLivePerf } from "@/lib/live-perf";
+import { CancelRate, SortBar, cancelFlag, useSortPref } from "@/components/sort-bar";
+
+const SORTS = ["Commission", "Orders", "Cancels"] as const;
+type Sort = (typeof SORTS)[number];
 
 const COLORS = ["#00c073", "#2f80ed", "#f5a623", "#e8005a", "#8b7dff"];
 import "@/app/creator2.css";
@@ -24,10 +28,12 @@ type Source = "All" | "Video" | "LIVE";
 export function ProductList() {
   const router = useRouter();
   const [source, setSource] = useState<Source>("All");
-  // Signed in (owner, 31 Oct 2026): what each of her products earned in the last 30 days, and from videos or LIVE.
-  const perf = useLivePerf();
+  // Signed in (owner, 31 Oct 2026): what each of her products earned in the days picked, and from videos or LIVE.
+  const perf = useLivePerf(true);
   const real = perf && perf !== "wait" && perf !== "error" ? perf : null;
-  type Row = { productId: string; commission: number; orders: number; cancel: number; prevOrders?: number; split?: { video: number; live: number; other: number } };
+  // The list sorts highest or lowest first, remembered (owner, 1 Nov 2026); the donut always shows the top earners.
+  const [sort, setSort, dir, flip] = useSortPref<Sort>("perf-products", SORTS, "Commission");
+  type Row = { productId: string; commission: number; orders: number; cancel: number; items?: number; cancelItems?: number; prevOrders?: number; split?: { video: number; live: number; other: number } };
   const base: Row[] = real ? real.products : ANALYTICS.byProduct;
   const splitOf = (b: Row) => b.split ?? channelSplit(b.productId, b.commission);
   const videoTotal = real ? base.reduce((a, b) => a + splitOf(b).video, 0) : Math.round(ANALYTICS.commissionEst * (ANALYTICS.byChannel.find((c) => c.label === "Videos")?.share ?? 0)) / 100;
@@ -42,7 +48,10 @@ export function ProductList() {
   const [video, setVideo] = useState<VideoRow | null>(null);
   // A compact list (owner, 28 Oct 2026: long lists were hard to scroll): one row per product, tap to open its details.
   const [openId, setOpenId] = useState<string | null>(null);
-  const rows = base.map((b) => ({ ...b, value: valueOf(b) })).filter((b) => b.value > 0).sort((a, b) => b.value - a.value).slice(0, real ? 20 : undefined);
+  const ranked = base.map((b) => ({ ...b, value: valueOf(b) })).filter((b) => b.value > 0).sort((a, b) => b.value - a.value);
+  const rows = ranked.slice(0, real ? 20 : undefined);
+  const sortVal = (b: (typeof ranked)[number]) => (sort === "Commission" ? b.value : sort === "Orders" ? b.orders : b.cancel);
+  const list = [...ranked].sort((a, b) => (dir === "desc" ? sortVal(b) - sortVal(a) : sortVal(a) - sortVal(b))).slice(0, real ? 20 : undefined);
   const top = rows[0];
   const topShare = top && total ? Math.round((top.value / total) * 100) : 0;
   // Real listing titles are long: drop "[10.10 BUY 1 FREE 1 …]" style tags and keep the first words.
@@ -57,13 +66,13 @@ export function ProductList() {
   // The slice shown in the middle: the top earner until she taps another.
   const [sel, setSel] = useState<string | null>(null);
   const shown = slices.find((s) => s.id === sel) ?? slices[0];
-  if (perf === "wait") return <p className="v2-muted">Loading your products…</p>;
+  if (perf === "wait") return <p className="v2-muted"><span className="cr1-spin xs" aria-hidden="true" /> Loading your products…</p>;
   if (perf === "error") return <p className="v2-muted">Couldn&apos;t load your products. Please refresh.</p>;
   if (!top || !total) {
     return (
       <div className="v2-stack" style={{ gap: 20 }}>
         <div className="pl-source"><Seg value={source} options={["All", "Video", "LIVE"] as const} onChange={(s) => { setSource(s); setOpenId(null); setSel(null); }} /></div>
-        <p className="v2-muted" style={{ margin: 0 }}>No sales {source === "All" ? "" : `from ${source === "Video" ? "videos" : "LIVEs"} `}in the last 30 days.</p>
+        <p className="v2-muted" style={{ margin: 0 }}>No sales {source === "All" ? "" : `from ${source === "Video" ? "videos" : "LIVEs"} `}in these days.</p>
       </div>
     );
   }
@@ -100,15 +109,18 @@ export function ProductList() {
         </section>
       </Lock>
 
+      <SortBar value={sort} options={SORTS} onChange={setSort} dir={dir} onFlip={flip} />
       <Lock what="what each product earned">
         <div className="cr2-list">
-          {rows.map((b, i) => {
+          {list.map((b) => {
             const p = info(b.productId);
             const prev = real ? b.prevOrders ?? 0 : PREV_ORDERS[b.productId] ?? b.orders;
             const change = prev ? Math.round(((b.orders - prev) / prev) * 100) : 0;
             const dropping = change <= -20;
             const lowRated = !real && p.rating < 3;
-            const highCancel = b.cancel > 15;
+            // Rezekii's standard (owner, 1 Nov 2026), from 5 items sold.
+            const cflag = cancelFlag(b.cancel, b.items);
+            const highCancel = cflag === "high";
             const vids = (real ? real.videos : VIDEOS).filter((v) => v.productId === b.productId).sort((x, y) => y.orders - x.orders);
             return (
               <article key={b.productId} id={`pd-${b.productId}`} className={`pl-row${openId === b.productId ? " open" : ""}`}>
@@ -120,20 +132,20 @@ export function ProductList() {
                   <span className="pl-main">
                     <strong><Link href={productHref(p.id)} className="pv-open">{p.name}</Link></strong>
                     <span className="pl-tags">
-                      {i === 0 && <span className="badge">Top earner</span>}
+                      {b.productId === top.productId && <span className="badge">Top Earner</span>}
                       {dropping && <span className="badge badge-amber">Dropping {change}%</span>}
                       {!dropping && change > 0 && <span className="badge badge-gray">Up {change}%</span>}
-                      {(lowRated || highCancel) && <span className="badge badge-red">{lowRated ? "Low rating" : "High cancels"}</span>}
+                      {lowRated ? <span className="badge badge-red">Low Rating</span> : cflag && <span className={`badge ${highCancel ? "badge-red" : "badge-amber"}`}>{highCancel ? "High Cancels" : "Watch Cancels"}</span>}
                     </span>
                   </span>
-                  <b className="v2-num">{rm(b.value, 0)}</b>
+                  <b className="v2-num">{sort === "Orders" ? `${b.orders} orders` : sort === "Cancels" ? `${b.cancel}%` : rm(b.value, 0)}</b>
                   <Icon name="arrow" size={16} />
                 </div>
                 {openId === b.productId && <div className="pl-body">
                 <Split commission={b.commission} split={splitOf(b)} />
                 <div className="cr2-mini">
                   <span><small>Orders</small><b>{b.orders}</b></span>
-                  <span><small>Cancel rate</small><b className={highCancel ? "cr2-red" : undefined}>{b.cancel}%</b></span>
+                  <span><small>Cancel rate</small><CancelRate pct={b.cancel} items={b.items} bad={b.cancelItems} /></span>
                   {!real && <span><small>Rating</small><b className={lowRated ? "cr2-red" : undefined}>{p.rating.toFixed(1)} / 5</b></span>}
                 </div>
 

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { keepFresh } from "@/modules/creator-accounts/fresh.ts";
 import { currentUser } from "@/app/current-user";
 import { supabaseRest } from "@/integrations/supabase/rest.ts";
@@ -20,34 +20,47 @@ const myt = (t: string) => new Date(Date.parse(t) + MYT);
 const day = (t: string) => { const d = myt(t); return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`; };
 const when = (t: string) => { const d = myt(t); const h = d.getUTCHours(); return { date: `${DOW[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`, time: `${h % 12 || 12}${d.getUTCMinutes() ? `:${String(d.getUTCMinutes()).padStart(2, "0")}` : ""} ${h < 12 ? "AM" : "PM"}` }; };
 
-type Group = { orders: Set<string>; bad: Set<string>; gmv: number; commission: number; first: string; byProduct: Map<string, { commission: number; orders: Set<string>; bad: Set<string>; gmv: number }> };
-const empty = (t: string): Group => ({ orders: new Set(), bad: new Set(), gmv: 0, commission: 0, first: t, byProduct: new Map() });
+/** Orders, and items sold and cancelled (owner, 1 Nov 2026: cancel rates are by items). */
+type Count = { orders: Set<string>; items: number; badItems: number; gmv: number; commission: number };
+type Group = Count & { first: string; byProduct: Map<string, Count> };
+const counts = (): Count => ({ orders: new Set(), items: 0, badItems: 0, gmv: 0, commission: 0 });
+const empty = (t: string): Group => ({ ...counts(), first: t, byProduct: new Map() });
+function tally(c: Count, l: OrderLine) {
+  c.orders.add(l.order_id);
+  c.items += l.quantity;
+  if (cancelled(l.status)) c.badItems += l.quantity;
+  c.gmv += lineGmv(l);
+  c.commission += lineEarned(l);
+}
 function add(g: Group, l: OrderLine) {
-  g.orders.add(l.order_id);
-  if (cancelled(l.status)) g.bad.add(l.order_id);
-  g.gmv += lineGmv(l);
-  g.commission += lineEarned(l);
+  tally(g, l);
   if (l.created_at < g.first) g.first = l.created_at;
   if (!l.product_id) return;
-  const p = g.byProduct.get(l.product_id) ?? { commission: 0, orders: new Set<string>(), bad: new Set<string>(), gmv: 0 };
-  p.commission += lineEarned(l);
-  p.gmv += lineGmv(l);
-  p.orders.add(l.order_id);
-  if (cancelled(l.status)) p.bad.add(l.order_id);
+  const p = g.byProduct.get(l.product_id) ?? counts();
+  tally(p, l);
   g.byProduct.set(l.product_id, p);
 }
+/** Cancel rate by items, with the items behind it. */
+const cancelOf = (c: Count) => ({ cancel: pct(c.badItems, c.items), items: c.items, cancelItems: c.badItems });
 
 /**
- * Performance on real data (owner, 31 Oct 2026): what each video, LIVE and product earned in the last 30 days, from her own
- * TikTok Shop orders. Video titles and views come from her TikTok account when it's connected; orders before that are the
- * previous 30 days, for each product's trend.
+ * Performance on real data (owner, 31 Oct 2026): what each video, LIVE and product earned, from her own TikTok Shop orders.
+ * Any dates (owner, 1 Nov 2026): ?from=YYYY-MM-DD&to=YYYY-MM-DD in Malaysia days, else the last 30 days. Video titles and views
+ * come from her TikTok account when it's connected; the same number of days before is each product's trend.
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
   const user = await currentUser();
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   const read = await keepFresh(user.id);
   const now = Date.now();
-  const [lines, before] = await Promise.all([linesBetween(user.id, now - 30 * DAY, now), linesBetween(user.id, now - 60 * DAY, now - 30 * DAY)]);
+  const q = req.nextUrl.searchParams;
+  const dayAt = (v: string | null) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? Date.parse(`${v}T00:00:00Z`) - MYT : null);
+  const qFrom = dayAt(q.get("from")), qTo = dayAt(q.get("to"));
+  const custom = qFrom !== null && qTo !== null && qTo >= qFrom;
+  const from = custom ? qFrom : now - 30 * DAY;
+  const to = custom ? Math.min(qTo + DAY, now + 1) : now;
+  const span = to - from;
+  const [lines, before] = await Promise.all([linesBetween(user.id, from, to), linesBetween(user.id, from - span, from)]);
 
   const videos = new Map<string, Group>();
   const lives = new Map<string, Group>();
@@ -64,9 +77,11 @@ export async function GET() {
       p.split[k] += lineEarned(l);
     }
   }
-  // Cancellations and returns for Risk Check: orders, cancelled orders, orders with items sent back, and the commission lost.
+  // Cancellations and returns for Risk Check: orders, items, cancelled items, orders with items sent back, and the commission lost.
   const all = new Set(lines.map((l) => l.order_id));
   const bad = new Set(lines.filter((l) => cancelled(l.status)).map((l) => l.order_id));
+  const items = lines.reduce((s, l) => s + l.quantity, 0);
+  const badItems = lines.filter((l) => cancelled(l.status)).reduce((s, l) => s + l.quantity, 0);
   const back = new Set(lines.filter((l) => l.returned_quantity > 0 || l.refunded_quantity > 0).map((l) => l.order_id));
   const lost = lines.filter((l) => cancelled(l.status)).reduce((s, l) => s + Number(l.commission_earned_estimated ?? l.commission_estimated ?? 0), 0);
   const prevOrders = new Map<string, Set<string>>();
@@ -85,16 +100,17 @@ export async function GET() {
   return NextResponse.json({
     videos: [...videos.entries()].map(([id, g]) => {
       const m = meta.get(id);
-      return { id, title: m?.title?.trim() || "Video", date: day(m?.created_at ?? g.first), views: m?.views ?? null, orders: g.orders.size, gmv: r2(g.gmv), commission: r2(g.commission), cancel: pct(g.bad.size, g.orders.size), productId: topProduct(g), refunds: g.bad.size, cover: m?.cover ?? null };
+      return { id, title: m?.title?.trim() || "Video", date: day(m?.created_at ?? g.first), views: m?.views ?? null, orders: g.orders.size, gmv: r2(g.gmv), commission: r2(g.commission), ...cancelOf(g), productId: topProduct(g), refunds: g.badItems, cover: m?.cover ?? null };
     }),
     lives: [...lives.entries()].map(([id, g]) => ({
-      id, ...when(g.first), orders: g.orders.size, gmv: r2(g.gmv), commission: r2(g.commission), cancel: pct(g.bad.size, g.orders.size),
-      products: [...g.byProduct.entries()].sort((a, b) => b[1].commission - a[1].commission).map(([pid, p]) => [pid, r2(p.commission), p.orders.size, pct(p.bad.size, p.orders.size), r2(p.gmv)] as const),
+      id, ...when(g.first), orders: g.orders.size, gmv: r2(g.gmv), commission: r2(g.commission), ...cancelOf(g),
+      products: [...g.byProduct.entries()].sort((a, b) => b[1].commission - a[1].commission).map(([pid, p]) => [pid, r2(p.commission), p.orders.size, pct(p.badItems, p.items), r2(p.gmv), p.items, p.badItems] as const),
     })),
-    products: [...products.entries()].map(([id, g]) => ({ productId: id, commission: r2(g.commission), orders: g.orders.size, cancel: pct(g.bad.size, g.orders.size), prevOrders: prevOrders.get(id)?.size ?? 0, split: { video: r2(g.split.video), live: r2(g.split.live), other: r2(g.split.other) } })),
+    products: [...products.entries()].map(([id, g]) => ({ productId: id, commission: r2(g.commission), orders: g.orders.size, ...cancelOf(g), prevOrders: prevOrders.get(id)?.size ?? 0, split: { video: r2(g.split.video), live: r2(g.split.live), other: r2(g.split.other) } })),
     names: Object.fromEntries([...names.entries()].map(([id, name]) => [id, { name, img: imgs.get(id) ?? null }])),
-    totals: { orders: all.size, cancelled: bad.size, returns: back.size, cancelRate: pct(bad.size, all.size), clawback: r2(lost) },
+    totals: { orders: all.size, cancelled: bad.size, returns: back.size, items, cancelItems: badItems, cancelRate: pct(badItems, items), clawback: r2(lost) },
     asOf: new Date(now).toISOString(),
+    from: new Date(from).toISOString(), to: new Date(to).toISOString(),
     // The older of her orders' and videos' last read: everything on the page is at least this new.
     updated: [read.orders, read.videos].filter((t): t is string => !!t).sort()[0] ?? null,
   }, { headers: { "cache-control": "private, no-store" } });

@@ -42,6 +42,9 @@ type Flag = { id: string; name: string; img: string; rating: number; reviews?: n
  * checked for its buyer rating and sorted into three levels; she removes them one by one, the ones she picks, or a whole level,
  * or keeps them. Her videos that sold these products are listed too, to open in TikTok. She decides, and confirms first.
  */
+/** Ratings that stream past while the check runs: a look, not her numbers. */
+const RC_STREAM: [string, string][] = [["4.8", "ok"], ["3.2", "mid"], ["4.6", "ok"], ["3.7", "low"], ["4.9", "ok"], ["2.8", "bad"], ["4.4", "ok"], ["3.9", "low"], ["4.7", "ok"], ["3.1", "mid"], ["4.5", "ok"], ["2.6", "bad"], ["4.2", "ok"], ["3.6", "low"]];
+
 export function RatingScan() {
   const router = useRouter();
   const { linked, setLinked, toast, live: signedIn } = useDemo();
@@ -140,8 +143,18 @@ export function RatingScan() {
       </section>
 
       <Lock what="your product ratings">
-        <section className={`sh-hub rc-hub ${scanning ? "busy" : ""}`} aria-label="Showcase health check">
+        <section className={`sh-hub rc-hub ${scanning ? "busy" : "done"}`} aria-label="Showcase health check">
           <span className="sh-grid" aria-hidden="true" />
+          {/* While it checks (owner, 1 Nov 2026: more techy): a beam sweeps the card inside HUD corners, and ratings stream past. */}
+          <span className="rc-hud" aria-hidden="true"><i /><i /><i /><i /></span>
+          {scanning && (
+            <span className="rc-fx" aria-hidden="true">
+              <i className="rc-beam" />
+              <span className="rc-stream">
+                {RC_STREAM.map(([v, band], i) => <em key={i} className={band} style={{ left: `${(i * 37) % 92 + 4}%`, animationDelay: `${(i % 7) * 0.32}s` }}>★ {v}</em>)}
+              </span>
+            </span>
+          )}
           <div className="sh-left">
             <span className="sh-kicker"><i />{scanning ? "Checking your showcase…" : real ? `Health check · Updated ${checkedAt}` : `Health check · today ${checkedAt}`}</span>
             <h2><b><Count key={`${run}-${real?.total ?? 0}`} value={real ? real.total : CREATOR.showcaseSize} ms={SCAN_MS - 200} /></b> products checked</h2>
@@ -153,7 +166,7 @@ export function RatingScan() {
             <i className="mid" style={{ flexGrow: Math.max(by("low").length, 0.001) * 60 }} />
             <i className="bad" style={{ flexGrow: Math.max(heavy.length, 0.001) * 60 }} />
           </div>
-          <div className="rc-bands four">
+          <div className={`rc-bands four${scanning ? "" : " rc-pop"}`}>
             <span className="ok"><b>{scanning ? "…" : healthy.toLocaleString("en-MY")}</b><small>4★ and up · fine</small></span>
             <span className="low"><b>{scanning ? "…" : by("slight").length}</b><small>3.5–3.9★ · slightly low</small></span>
             <span className="mid"><b>{scanning ? "…" : by("low").length}</b><small>3.0–3.4★ · low</small></span>

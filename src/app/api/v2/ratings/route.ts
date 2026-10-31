@@ -13,7 +13,7 @@ export const maxDuration = 300;
 
 /** Her videos that sold a product: TikTok's link to open it, so she can decide in the TikTok app. */
 type Video = { id: string; title: string | null; cover: string | null; url: string; orders: number; gmv: number };
-type Flag = { id: string; name: string; img: string | null; rating: number; reviews: number; orders: number; cancel: number; returned: number; videos: Video[] };
+type Flag = { id: string; name: string; img: string | null; rating: number; reviews: number; orders: number; cancel: number; items: number; cancelItems: number; returned: number; videos: Video[] };
 type Result = { linked: boolean; total: number; checked: number; more: boolean; flagged: Flag[]; at: string };
 const cancelled = (s: string | null) => /REFUND|RETURN|CANCEL|INELIGIBLE|INVALID/i.test(s ?? "");
 
@@ -41,13 +41,14 @@ export async function GET(req: NextRequest) {
   if (read.ok) await saveRead(user.id, read);
   const ratings = await ratingsOf(token, items.map((p) => p.id));
   const lines = await linesBetween(user.id, Date.now() - 30 * 86_400_000, Date.now()).catch(() => []);
-  type Seen = { orders: Set<string>; bad: Set<string>; back: Set<string>; videos: Map<string, { orders: Set<string>; gmv: number }> };
+  type Seen = { orders: Set<string>; bad: Set<string>; back: Set<string>; items: number; badItems: number; videos: Map<string, { orders: Set<string>; gmv: number }> };
   const seen = new Map<string, Seen>();
   for (const l of lines) {
     if (!l.product_id) continue;
-    const s = seen.get(l.product_id) ?? seen.set(l.product_id, { orders: new Set(), bad: new Set(), back: new Set(), videos: new Map() }).get(l.product_id)!;
+    const s = seen.get(l.product_id) ?? seen.set(l.product_id, { orders: new Set(), bad: new Set(), back: new Set(), items: 0, badItems: 0, videos: new Map() }).get(l.product_id)!;
     s.orders.add(l.order_id);
-    if (cancelled(l.status)) s.bad.add(l.order_id);
+    s.items += l.quantity;
+    if (cancelled(l.status)) { s.bad.add(l.order_id); s.badItems += l.quantity; }
     if (l.returned_quantity > 0 || l.refunded_quantity > 0) s.back.add(l.order_id);
     if (l.content_id && kindOf(l.content_type) === "video") {
       const v = s.videos.get(l.content_id) ?? s.videos.set(l.content_id, { orders: new Set(), gmv: 0 }).get(l.content_id)!;
@@ -70,7 +71,8 @@ export async function GET(req: NextRequest) {
       const videos = [...(s?.videos.entries() ?? [])]
         .map(([id, v]) => ({ id, title: meta.get(id)?.title ?? null, cover: meta.get(id)?.cover ?? null, url: meta.get(id)?.share_url ?? `https://www.tiktok.com/${handle ? `@${handle}` : "@"}/video/${id}`, orders: v.orders.size, gmv: Math.round(v.gmv * 100) / 100 }))
         .sort((a, b) => b.orders - a.orders);
-      return { ...p, rating: ratings.get(p.id)!.score, reviews: ratings.get(p.id)!.count, orders, cancel: orders ? Math.round(((s?.bad.size ?? 0) / orders) * 1000) / 10 : 0, returned: s?.back.size ?? 0, videos };
+      const items = s?.items ?? 0, cancelItems = s?.badItems ?? 0;
+      return { ...p, rating: ratings.get(p.id)!.score, reviews: ratings.get(p.id)!.count, orders, cancel: items ? Math.round((cancelItems / items) * 1000) / 10 : 0, items, cancelItems, returned: s?.back.size ?? 0, videos };
     })
     .sort((a, b) => a.rating - b.rating);
   const r: Result = { linked: true, total: items.length, checked: ratings.size, more, flagged, at: new Date().toISOString() };

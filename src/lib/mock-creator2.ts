@@ -26,6 +26,9 @@ export type RangeData = {
   est: number;
   paid: number;
   cancel: number;
+  /** Items sold and items cancelled or returned (owner, 1 Nov 2026: the cancel rate is by items); missing in the sample. */
+  items?: number;
+  cancelItems?: number;
   /** Change against the period before, percent (history, not a forecast); null for Lifetime. */
   gmvChange: number | null;
   ordersChange: number | null;
@@ -208,6 +211,9 @@ export type VideoRow = {
   title: string;
   date: string;
   views: number | null;
+  /** Items sold and cancelled (owner, 1 Nov 2026: the cancel rate is by items); missing in the sample. */
+  items?: number;
+  cancelItems?: number;
   orders: number;
   gmv: number;
   commission: number;

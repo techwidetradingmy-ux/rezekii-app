@@ -13,10 +13,15 @@ import { VideoSheet } from "@/components/creator2/view-sheets";
 import { productHref } from "@/lib/product-view";
 import { perfProduct, useLivePerf, shortName } from "@/lib/live-perf";
 import { useDemo } from "@/components/demo";
+import { SortHead, cancelFlag, useSortPref } from "@/components/sort-bar";
+import { CANCEL_TIP } from "@/lib/cancel";
 import "@/app/creator2.css";
 
 const cancelled = (orders: number, rate: number) => Math.round((orders * rate) / 100);
-const tone = (rate: number) => (rate > 15 ? "red" : rate > 10 ? "amber" : undefined);
+/** Rezekii's standard (owner, 1 Nov 2026): red from 20%, orange from 10%, judged from 5 items sold. */
+const tone = (rate: number, items?: number) => { const f = cancelFlag(rate, items); return f === "high" ? "red" : f === "watch" ? "amber" : undefined; };
+const COLS = ["Items", "Cancelled", "Rate"] as const;
+type Col = (typeof COLS)[number];
 
 /**
  * Risk check (owner, 28 Oct 2026): the rating check and returns & risk in one place. Low-rated products in the showcase, then
@@ -33,11 +38,19 @@ export default function DataRisk() {
   const real = perf && perf !== "wait" && perf !== "error" ? perf : null;
   const info = (id: string) => (real ? perfProduct(real, id) : product(id));
   const nameOf = (id: string) => (real ? shortName(info(id).name) : SHORT[id] ?? product(id).name);
-  const vids = (real ? real.videos : VIDEOS).map((v) => ({ ...v, cancelled: real ? v.refunds : cancelled(v.orders, v.cancel) }));
-  const prods = (real ? real.products : ANALYTICS.byProduct).map((b) => ({ ...b, cancelled: cancelled(b.orders, b.cancel) }));
-  const orders = real ? real.totals.orders : ANALYTICS.orders;
+  // Counted by items (owner, 1 Nov 2026): items sold and items cancelled or returned.
+  const vids = (real ? real.videos : VIDEOS).map((v) => ({ ...v, items: real ? v.items ?? v.orders : v.orders, cancelled: real ? v.cancelItems ?? 0 : cancelled(v.orders, v.cancel) }));
+  type PRow = { productId: string; orders: number; cancel: number; items: number; cancelled: number };
+  const prods: PRow[] = real
+    ? real.products.map((x) => ({ productId: x.productId, orders: x.orders, cancel: x.cancel, items: x.items ?? x.orders, cancelled: x.cancelItems ?? 0 }))
+    : ANALYTICS.byProduct.map((x) => ({ productId: x.productId, orders: x.orders, cancel: x.cancel, items: x.orders, cancelled: cancelled(x.orders, x.cancel) }));
+  const items = real ? real.totals.items ?? real.totals.orders : ANALYTICS.orders;
   const rate = real ? real.totals.cancelRate : ANALYTICS.cancelRate;
-  const totalCancelled = real ? real.totals.cancelled : cancelled(ANALYTICS.orders, ANALYTICS.cancelRate);
+  const totalCancelled = real ? real.totals.cancelItems ?? real.totals.cancelled : cancelled(ANALYTICS.orders, ANALYTICS.cancelRate);
+  // The table sorts by any column, highest or lowest first, remembered (owner, 1 Nov 2026).
+  const [col, , dir, , setSort] = useSortPref<Col>("risk-table", COLS, "Cancelled");
+  const colVal = (r: { items: number; cancelled: number; cancel: number }) => (col === "Items" ? r.items : col === "Cancelled" ? r.cancelled : r.cancel);
+  const sorted = <T extends { items: number; cancelled: number; cancel: number }>(rows: T[]) => [...rows].sort((a, b) => (dir === "desc" ? colVal(b) - colVal(a) : colVal(a) - colVal(b)));
   const refunds = real ? real.totals.returns : vids.reduce((s, v) => s + v.refunds, 0);
   const clawback = real ? real.totals.clawback : 51.5;
 
@@ -46,7 +59,6 @@ export default function DataRisk() {
   const worstVid = worst ? [...vids].filter((v) => v.productId === worst.productId).sort((a, b) => b.cancelled - a.cancelled)[0] : undefined;
   const allVideos = real ? real.videos : VIDEOS;
 
-  const highRisk = vids.filter((v) => v.cancel > 15).sort((a, b) => b.cancel - a.cancel);
 
   const ADVICE: Record<string, string[]> = {
     v4: ["Show each colour in daylight next time.", "Low rating (2.8★). Pick a 4★ product next."],
@@ -62,9 +74,9 @@ export default function DataRisk() {
 
       <Lock what="your cancellations and refunds">
         <div className="cr2-stats">
-          <Stat label="Cancelled orders" value={<span className="v2-num">{totalCancelled}</span>} note={`of ${orders} orders`} />
+          <Stat label="Cancelled items" value={<span className="v2-num">{totalCancelled}</span>} note={`of ${items} items sold`} />
           <Stat label="Refunds and returns" value={<span className="v2-num">{refunds}</span>} note="After delivery" />
-          <Stat label="Cancel rate" value={`${rate}%`} note="Under 10% is healthy" tone={rate < 10 ? "up" : "down"} />
+          <Stat label="Cancel rate" value={`${rate}%`} note={items < 5 ? "Too few items to judge" : rate < 10 ? "Normal · under 10%" : rate < 20 ? "Watch · 10–20%" : "High · 20% and over"} tone={items < 5 ? undefined : rate < 10 ? "up" : "down"} />
           <Stat label="Commission clawed back" value={rm(clawback)} note="After cancels and returns" tone="down" />
         </div>
       </Lock>
@@ -81,7 +93,7 @@ export default function DataRisk() {
           <span>
             <strong><Link href={productHref(worstP.id)} className="pv-open">{worstP.name}</Link></strong>
             <small>
-              {worst.cancelled} of {worst.orders} orders cancelled ({worst.cancel}%).{" "}
+              {worst.cancelled} of {worst.items} items cancelled ({worst.cancel}%).{" "}
               {worstVid && worstVid.cancelled > 0 && <><b>{worstVid.cancelled}</b> from your {worstVid.date} video{real ? "" : <> &ldquo;{worstVid.title}&rdquo;</>}.</>}
             </small>
           </span>
@@ -91,14 +103,14 @@ export default function DataRisk() {
 
       <section className="v2-card">
         <div className="v2-card-h">
-          <h2 className="v2-h2">Cancel Rate</h2>
+          <h2 className="v2-h2">Cancel Rate <span title={CANCEL_TIP} className="v2-small">ⓘ</span></h2>
           <Seg value={by} options={["By video", "By product"] as const} onChange={setBy} />
         </div>
         <Lock what="cancel rates">
           {by === "By video" ? (
-            <Bars key="v" rows={[...vids].sort((a, b) => (real ? b.cancelled - a.cancelled : 0) || b.cancel - a.cancel).slice(0, 12).map((v) => ({ label: real ? `${v.date} · ${nameOf(v.productId)}` : v.title, value: v.cancel, display: `${v.cancel}%`, tone: tone(v.cancel), onPick: () => setOpenVideo(allVideos.find((x) => x.id === v.id) ?? null) }))} />
+            <Bars key="v" rows={[...vids].sort((a, b) => (real ? b.cancelled - a.cancelled : 0) || b.cancel - a.cancel).slice(0, 12).map((v) => ({ label: real ? `${v.date} · ${nameOf(v.productId)}` : v.title, value: v.cancel, display: `${v.cancel}%`, tone: tone(v.cancel, v.items), onPick: () => setOpenVideo(allVideos.find((x) => x.id === v.id) ?? null) }))} />
           ) : (
-            <Bars key="p" rows={[...prods].sort((a, b) => (real ? b.cancelled - a.cancelled : 0) || b.cancel - a.cancel).slice(0, 12).map((b) => ({ label: nameOf(b.productId), value: b.cancel, display: `${b.cancel}%`, tone: tone(b.cancel), href: productHref(b.productId) }))} />
+            <Bars key="p" rows={[...prods].sort((a, b) => (real ? b.cancelled - a.cancelled : 0) || b.cancel - a.cancel).slice(0, 12).map((b) => ({ label: nameOf(b.productId), value: b.cancel, display: `${b.cancel}%`, tone: tone(b.cancel, b.items), href: productHref(b.productId) }))} />
           )}
         </Lock>
         <div className="v2-tablewrap">
@@ -106,30 +118,26 @@ export default function DataRisk() {
             <thead>
               <tr>
                 <th>{by === "By video" ? "Video" : "Product"}</th>
-                <th>Orders</th>
-                <th>Cancelled</th>
-                {by === "By video" && <th>Refunds</th>}
-                <th>Rate</th>
+                {COLS.map((c) => <th key={c}><SortHead label={c} k={c} value={col} dir={dir} onSort={setSort} /></th>)}
               </tr>
             </thead>
             <tbody>
               {by === "By video"
-                ? vids.map((v) => (
+                ? sorted(vids).map((v) => (
                     <tr key={v.id}>
                       {/* Tap a video to watch it here (owner, 30 Oct 2026). */}
                       <td style={{ minWidth: 180 }}><button type="button" className="rk-vopen" onClick={() => setOpenVideo(allVideos.find((x) => x.id === v.id) ?? null)}><Icon name="video" size={15} width={2.4} />{real ? nameOf(v.productId) : v.title}</button><br /><span className="v2-small">{v.date}</span></td>
-                      <td className="v2-num">{v.orders}</td>
+                      <td className="v2-num">{v.items}</td>
                       <td className="v2-num">{v.cancelled}</td>
-                      <td className="v2-num">{v.refunds}</td>
-                      <td className={v.cancel > 15 ? "cr2-red" : undefined} style={{ fontWeight: 800 }}>{v.cancel}%</td>
+                      <td className={tone(v.cancel, v.items) === "red" ? "cr2-red" : tone(v.cancel, v.items) === "amber" ? "cr2-orange-v" : undefined} style={{ fontWeight: 800 }}>{v.cancel}%</td>
                     </tr>
                   ))
-                : prods.map((b) => (
+                : sorted(prods).map((b) => (
                     <tr key={b.productId}>
                       <td style={{ minWidth: 180 }}><Link href={productHref(b.productId)} className="pv-open">{info(b.productId).name}</Link></td>
-                      <td className="v2-num">{b.orders}</td>
+                      <td className="v2-num">{b.items}</td>
                       <td className="v2-num">{b.cancelled}</td>
-                      <td className={b.cancel > 15 ? "cr2-red" : undefined} style={{ fontWeight: 800 }}>{b.cancel}%</td>
+                      <td className={tone(b.cancel, b.items) === "red" ? "cr2-red" : tone(b.cancel, b.items) === "amber" ? "cr2-orange-v" : undefined} style={{ fontWeight: 800 }}>{b.cancel}%</td>
                     </tr>
                   ))}
             </tbody>
