@@ -65,7 +65,7 @@ export default function ShopProducts() {
         <button type="button" className="btn-outline" onClick={sync} disabled={syncing}>
           {syncing ? <span className="sl-spin" /> : <Icon name="refresh" size={18} />} Sync now
         </button>
-        <Link href="/seller/app/submit" className="np-btn v2-btn-sm" style={{ height: 42 }}>Submit products</Link>
+        <Link href="/seller/app/submit" className="np-btn v2-btn-sm" style={{ height: 42 }}>Register products</Link>
       </Title>
 
       <ConnBanner shop={live ? !noShop : undefined} />
@@ -109,9 +109,9 @@ export default function ShopProducts() {
                   {st === "Under review" && (
                     <small className="v2-small">{p.stage === "Submitted to TikTok" ? `With TikTok since ${p.dates?.["Submitted to TikTok"]}` : p.stage === "Under review" ? "Our review" : "Submitted"}</small>
                   )}
-                  {st === "Not submitted" && p.listing !== "PENDING" && <Link href={p.real ? `/seller/app/submit?p=${p.id}` : "/seller/app/submit"} className="np-btn v2-btn-sm">Submit</Link>}
+                  {st === "Not submitted" && p.listing !== "PENDING" && <Link href="/seller/app/submit" className="np-btn v2-btn-sm">Register</Link>}
                   {st === "Not approved" && (p.real
-                    ? <Link href={`/seller/app/submit?p=${p.id}`} className="np-btn v2-btn-sm">Fix</Link>
+                    ? <Link href="/seller/app/submit" className="np-btn v2-btn-sm">Register again</Link>
                     : <button type="button" className="np-btn v2-btn-sm" onClick={() => setFix(p)}>Fix</button>)}
                   {st === "Live" && <Link href="/seller/app/changes" className="v2-link" style={{ fontSize: 13.5 }}>Change</Link>}
                   {st === "Under review" && p.register && <a href={p.register} target="_blank" rel="noopener noreferrer" className="np-btn v2-btn-sm">Register in Seller Center</a>}

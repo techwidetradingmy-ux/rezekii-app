@@ -1,6 +1,7 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { getShopProduct, searchOpenCollaborations, searchShopProducts, shopProductSales, type ProductStatus, type ShopProduct } from "../../integrations/tiktok-shop/seller.ts";
 import { sellerAccessFor } from "./seller-connection.ts";
+import { shopCampaignState, type Registered } from "./shop-campaign.ts";
 
 /** A TAP request's status, as tap_submissions stores it. */
 /** approved = Techwide's review passed, waiting to be sent to TikTok (the seller still sees "Our review"). */
@@ -24,11 +25,13 @@ export type LiveShopProduct = {
   openRate: number | null;
   /** In one of Techwide's TAP campaigns (approved), from tap_catalog. */
   tap: { openRate: number | null; totalRate: number | null; sold: number | null } | null;
-  /** The latest request to join Techwide's TAP made on Rezekii. */
+  /** Registered in the shop's own Techwide campaign in Seller Center (owner, 31 Oct 2026), from TikTok. */
+  registered: { status: Registered["status"]; totalRate: number | null; campaignId: string } | null;
+  /** The latest request to join Techwide's TAP made on Rezekii (before 31 Oct 2026 sellers asked here first). */
   request: { status: RequestStatus; raise: number; samples: number; reason: string | null; at: string; campaignId: string | null; totalRate: number | null; steps: { at: string; stage?: RequestStatus }[] } | null;
 };
 
-export type ShopProducts = { shop: string; items: LiveShopProduct[]; notLive: number; at: string };
+export type ShopProducts = { shop: string; items: LiveShopProduct[]; notLive: number; at: string; campaignId: string | null };
 
 type Detail = { image: string | null; category: string; sub: string; leaf: string };
 // Photos and categories only change when the product does, so they are kept per product version.
@@ -124,12 +127,15 @@ export async function shopProducts(user: { id: string; role: string }): Promise<
   for (let i = 0; i < ids.length; i += 150) {
     tapRows.push(...((await (await supabaseRest(`tap_catalog?product_id=in.(${ids.slice(i, i + 150).join(",")})&select=product_id,open_rate,total_rate,sold`)).json()) as TapRow[]));
   }
-  const [info, reqRows, sales, rates] = await Promise.all([
+  const [info, reqRows, sales, rates, camp] = await Promise.all([
     inBatches(products, 8, (p) => detailFor(token, shop.cipher, p)),
     supabaseRest(`tap_submissions?shop_id=eq.${shop.id}&status=neq.withdrawn&select=product_id,status,raise_pct,samples_per_sku,reason,created_at,campaign_id,total_rate,history&order=created_at.desc`).then((r) => r.json() as Promise<ReqRow[]>),
     salesByProduct(token, shop.cipher).catch(() => new Map<string, number>()),
     openRates(token, shop.cipher).catch(() => new Map<string, number>()),
+    shopCampaignState(shop).catch(() => null),
   ]);
+  const own = camp?.ok ? camp : null;
+  const reg = new Map((own?.products ?? []).map((r) => [r.id, r]));
   const tap = new Map(tapRows.map((t) => [t.product_id, t]));
   const latest = new Map<string, ReqRow>();
   for (const q of reqRows) if (!latest.has(q.product_id)) latest.set(q.product_id, q);
@@ -149,8 +155,9 @@ export async function shopProducts(user: { id: string; role: string }): Promise<
       sold90: sales.size ? sales.get(p.id) ?? 0 : null,
       openRate: rates.get(p.id) ?? null,
       tap: t ? { openRate: t.open_rate, totalRate: t.total_rate, sold: t.sold } : null,
+      registered: reg.has(p.id) ? { status: reg.get(p.id)!.status, totalRate: reg.get(p.id)!.totalRate, campaignId: own!.campaign.id } : null,
       request: q ? { status: q.status, raise: Number(q.raise_pct), samples: q.samples_per_sku, reason: q.reason, at: q.created_at, campaignId: q.campaign_id, totalRate: q.total_rate, steps: (q.history ?? []).map((h) => ({ at: h.at, stage: h.stage })) } : null,
     };
   });
-  return { shop: shop.name, items, notLive: Math.max(0, (all.data?.total_count ?? products.length) - products.length), at: new Date().toISOString() };
+  return { shop: shop.name, campaignId: own?.campaign.id ?? null, items, notLive: Math.max(0, (all.data?.total_count ?? products.length) - products.length), at: new Date().toISOString() };
 }

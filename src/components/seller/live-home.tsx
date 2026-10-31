@@ -66,14 +66,14 @@ export function LiveNext({ items }: { items: ShopItem[] | null }) {
         <h2>{waiting.length} product{waiting.length === 1 ? "" : "s"} {withTikTok === waiting.length ? "waiting on TikTok" : "on the way"}</h2>
         <p>{withTikTok === waiting.length ? "Nothing to do. TikTok usually replies in 1–3 working days." : "Our team reviews them first, then sends them to TikTok."}</p>
         <div className="sl-mini-steps">
-          <span className="on"><Icon name="check" size={14} width={2.6} /> Submitted</span>
+          <span className="on"><Icon name="check" size={14} width={2.6} /> Registered</span>
           <span className={withTikTok ? "on" : undefined}>{withTikTok ? <Icon name="check" size={14} width={2.6} /> : null} Our review</span>
           <span>With TikTok</span>
           <span>Live</span>
         </div>
         <div className="v2-row">
           <Link href="/seller/app/progress" className="v2-btn-white">See progress</Link>
-          {fresh > 0 && <Link href="/seller/app/submit" className="v2-btn-ghostw">Submit {fresh} more</Link>}
+          {fresh > 0 && <Link href="/seller/app/submit" className="v2-btn-ghostw">Register {fresh} more</Link>}
         </div>
       </section>
     );
@@ -82,10 +82,10 @@ export function LiveNext({ items }: { items: ShopItem[] | null }) {
     return (
       <section className="v2-next">
         <small>Start here</small>
-        <h2>Submit Your First Products</h2>
+        <h2>Register Your First Products</h2>
         <p>Pick products. AI suggests the commission; samples are set to 40.</p>
         <div className="v2-row">
-          <Link href="/seller/app/submit" className="v2-btn-white">Submit products <Icon name="arrow" size={18} /></Link>
+          <Link href="/seller/app/submit" className="v2-btn-white">Register products <Icon name="arrow" size={18} /></Link>
         </div>
       </section>
     );

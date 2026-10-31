@@ -64,8 +64,8 @@ export default function Progress() {
 
   return (
     <div className="v2-stack v2-in">
-      <Title title="Progress" sub="Submitted → our review → TikTok → live.">
-        <Link href="/seller/app/submit" className="np-btn v2-btn-sm" style={{ height: 42 }}>Submit products</Link>
+      <Title title="Progress" sub={live ? "Registered in your campaign → Techwide's review → live for creators. Statuses come from TikTok." : "Submitted → our review → TikTok → live."}>
+        <Link href="/seller/app/submit" className="np-btn v2-btn-sm" style={{ height: 42 }}>Register products</Link>
       </Title>
 
       <div className="sl-chipline" role="group" aria-label="Filter">
@@ -103,7 +103,7 @@ export default function Progress() {
               {p.stage === "Not approved" && (
                 <div className="v2-alert red">
                   <span><b>Why:</b> {p.reason}</span>
-                  <button type="button" onClick={() => (p.real ? router.push(`/seller/app/submit?p=${p.id}`) : setFix(p))}>Fix and resubmit</button>
+                  <button type="button" onClick={() => (p.real ? router.push("/seller/app/submit") : setFix(p))}>{p.real ? "Register again" : "Fix and resubmit"}</button>
                 </div>
               )}
               {p.note && <p className="v2-small" style={{ margin: 0, display: "flex", gap: 8 }}><Icon name="doc" size={16} /> {p.note}</p>}

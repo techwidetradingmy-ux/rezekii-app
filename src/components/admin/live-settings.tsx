@@ -14,6 +14,7 @@ type Settings = {
   times: string[];
   auto: boolean;
   benefits: { label: string; v: [string, string, string]; key?: boolean }[];
+  campaign: { commission: number; description: string };
   rules: { welcome: number; life: number; post: number; referral: { inviter: number; friend: number }; referralDays: number; starterDays: number };
 };
 
@@ -99,6 +100,8 @@ export function LiveSettings() {
             </div>
           </section>
 
+          <SellerCampaignCard value={d.campaign} />
+
           <section className="v2-card" style={{ padding: "8px 12px" }}>
             <div className="v2-card-h" style={{ padding: "0 8px" }}><h2 className="v2-h2">Level Benefits</h2><span className="v2-small">What creators see on Level & Badges</span></div>
             <div className="v2-tablewrap">
@@ -125,5 +128,36 @@ export function LiveSettings() {
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * New seller campaigns (owner, 31 Oct 2026): every shop that connects Seller Center gets a public campaign "Techwide X [shop]"
+ * with this commission and description. {shop} becomes the shop's name. Campaigns already made keep their own text.
+ */
+function SellerCampaignCard({ value }: { value: { commission: number; description: string } }) {
+  const { toast } = useDemo();
+  const [rate, setRate] = useState(String(value.commission));
+  const [text, setText] = useState(value.description);
+  const [busy, setBusy] = useState(false);
+  const save = async () => {
+    setBusy(true);
+    const r = await fetch("/api/admin/settings", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ campaign: { commission: Number(rate), description: text } }) }).catch(() => null);
+    const x = (await r?.json().catch(() => null)) as { error?: string } | null;
+    setBusy(false);
+    toast(r?.ok ? "Saved. New shops' campaigns use this." : x?.error ?? "Didn't save. Please try again.");
+  };
+  return (
+    <section className="v2-card" style={{ gap: 12 }}>
+      <div className="v2-card-h"><h2 className="v2-h2">New Seller Campaigns</h2><span className="v2-small">Made when a shop connects Seller Center</span></div>
+      <p className="v2-small" style={{ margin: 0 }}>Each shop gets its own public campaign, &quot;Techwide X [shop]&quot;. Every seller in Seller Center can see the description. {"{shop}"} becomes the shop&apos;s name.</p>
+      <label className="v2-small" style={{ display: "grid", gap: 6, maxWidth: 220 }}>Campaign commission (%)
+        <input className="np-input" inputMode="decimal" value={rate} onChange={(e) => setRate(e.target.value)} aria-label="Campaign commission" />
+      </label>
+      <label className="v2-small" style={{ display: "grid", gap: 6 }}>Description ({text.length}/900)
+        <textarea className="np-input" rows={7} maxLength={900} value={text} onChange={(e) => setText(e.target.value)} aria-label="Campaign description" />
+      </label>
+      <button type="button" className="np-btn v2-btn-sm" style={{ alignSelf: "flex-start" }} disabled={busy} onClick={() => void save()}>{busy ? "Saving…" : "Save"}</button>
+    </section>
   );
 }

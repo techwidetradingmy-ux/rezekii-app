@@ -20,7 +20,7 @@ export const MENUS: Record<AppKind, Section[]> = {
     { href: "/seller/app", label: "Home", icon: "home", pages: [] },
     {
       href: "/seller/app/products", label: "Products", icon: "box",
-      pages: [["/seller/app/products", "Shop Products"], ["/seller/app/submit", "Submit Products"], ["/seller/app/progress", "Progress"], ["/seller/app/changes", "Change or End"], ["/seller/app/wanted", "Wanted by Creators"], ["/seller/app/custom", "Custom Service"]],
+      pages: [["/seller/app/products", "Shop Products"], ["/seller/app/submit", "Register Products"], ["/seller/app/progress", "Progress"], ["/seller/app/changes", "Change or End"], ["/seller/app/wanted", "Wanted by Creators"], ["/seller/app/custom", "Custom Service"]],
     },
     {
       href: "/seller/app/results", label: "Results", icon: "chart",

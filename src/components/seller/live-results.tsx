@@ -87,8 +87,8 @@ export function LiveResults() {
       {!r.products.length ? (
         <section className="v2-card flat" style={{ alignItems: "flex-start" }}>
           <b>No products live in TAP yet</b>
-          <p className="v2-muted" style={{ margin: 0 }}>Submit products and their results show here once they&apos;re live.</p>
-          <Link href="/seller/app/submit" className="np-btn v2-btn-sm">Submit products</Link>
+          <p className="v2-muted" style={{ margin: 0 }}>Register products and their results show here once they&apos;re live.</p>
+          <Link href="/seller/app/submit" className="np-btn v2-btn-sm">Register products</Link>
         </section>
       ) : (
         <div className="v2-split">

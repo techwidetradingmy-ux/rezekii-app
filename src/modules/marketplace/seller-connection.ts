@@ -3,15 +3,6 @@ import { refreshTokens, type TokenSet } from "../../integrations/tiktok-shop/aut
 import type { AuthorizedShop } from "../../integrations/tiktok-shop/seller.ts";
 import { decryptToken, encryptToken } from "../creator-accounts/token-crypto.ts";
 
-/**
- * During the proof only these shops (env PROOF_SELLER_SHOPS, comma-separated shop names, any case) may connect.
- * Shop names are real names here, unlike partner logins, which TikTok all calls "Partner account".
- */
-export function isAllowedSellerDuringProof(shopName: string | undefined): boolean {
-  const wanted = (process.env.PROOF_SELLER_SHOPS ?? "").split(",").map((w) => w.trim().toLowerCase()).filter(Boolean);
-  return !!shopName && wanted.includes(shopName.trim().toLowerCase());
-}
-
 const isoFromUnix = (seconds: number) => new Date(seconds * 1000).toISOString();
 
 /**

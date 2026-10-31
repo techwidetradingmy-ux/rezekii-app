@@ -13,7 +13,7 @@ const DAILY: Mission[] = [
   { id: "d1", icon: "check", title: "Check in", reward: 5, cta: "Check in", state: "ready" },
   { id: "d2", icon: "video", title: "Post a video for your shop", reward: 20, cta: "Post", href: "/seller/app/publish", state: "done", counts: "Posts from Rezekii or your phone" },
   { id: "d3", icon: "chart", title: "Check today's results", reward: 5, cta: "Claim", href: "/seller/app/results", state: "ready", counts: "Results opened today" },
-  { id: "d4", icon: "box", title: "Submit or register a product", reward: 20, cta: "Submit", href: "/seller/app/submit", state: "todo", counts: "Counts at our review" },
+  { id: "d4", icon: "box", title: "Submit or register a product", reward: 20, cta: "Register", href: "/seller/app/submit", state: "todo", counts: "Counts at our review" },
   { id: "d5", icon: "share", title: "Share a proud moment", reward: 5, cta: "Share", share: true, state: "todo", counts: "Counts when shared" },
 ];
 /** Where each seller mission is done. */

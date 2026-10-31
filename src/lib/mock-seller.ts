@@ -43,6 +43,8 @@ export type ShopItem = {
   raise?: number;
   /** Where the seller registers it in Techwide's campaign, once Techwide sent it to TikTok. */
   register?: string;
+  /** Registered in the shop's own campaign in Seller Center (real data). */
+  registered?: boolean;
   /** The sales line for a real product, with its period (e.g. "12 sold in 90 days"). */
   soldLabel?: string;
   /** Rezekii's AI pick for a real product, from its real 90-day sales. */

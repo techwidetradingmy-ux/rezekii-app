@@ -151,7 +151,9 @@ export function salesPick(sold90: number): { label: string; raise: number; why: 
 
 /** A real shop product in the sample data's shape. Live in TAP comes from Techwide's campaigns; the rest from requests made here. */
 export function fromLiveShop(p: LiveShopProduct): ShopItem {
-  const stage: Stage = p.tap ? "Live" : (p.request && STAGE[p.request.status]) || "Not submitted";
+  // Registered in Seller Center (owner, 31 Oct 2026): TikTok's own status for it in the shop's campaign comes first.
+  const r = p.registered;
+  const stage: Stage = p.tap || r?.status === "approved" ? "Live" : r?.status === "pending" ? "Under review" : r?.status === "declined" ? "Not approved" : (p.request && STAGE[p.request.status]) || "Not submitted";
   // The day each step was reached, from the request's history.
   const reached = (s: string) => p.request?.steps.find((x) => x.stage === s)?.at;
   const dates: ShopItem["dates"] = p.request ? { Submitted: myDay(p.request.at) } : undefined;
@@ -161,7 +163,7 @@ export function fromLiveShop(p: LiveShopProduct): ShopItem {
     if (sent) dates["Submitted to TikTok"] = myDay(sent);
     if (live) dates.Live = myDay(live);
   }
-  const total = p.tap?.totalRate ?? p.request?.totalRate ?? null;
+  const total = p.tap?.totalRate ?? r?.totalRate ?? p.request?.totalRate ?? null;
   // The shop's own open plan rate first (current), else the one TikTok shows in Techwide's campaign.
   const publicRate = p.openRate != null ? p.openRate / 100 : p.tap?.openRate != null ? p.tap.openRate / 100 : null;
   return {
@@ -173,8 +175,9 @@ export function fromLiveShop(p: LiveShopProduct): ShopItem {
     // TikTok's total rate once live; before that, what the seller asked for (public + their extra), when the public rate is known.
     stage, tapRate: total != null ? total / 100 : p.request && stage !== "Not approved" && publicRate != null ? publicRate + p.request.raise : undefined, raise: p.request?.raise,
     register: stage === "Submitted to TikTok" && p.request?.campaignId ? sellerCenterCampaign(p.request.campaignId) : undefined,
+    registered: !!r,
     samples: p.request?.samples,
-    reason: p.request?.status === "not_approved" ? p.request.reason ?? undefined : undefined,
+    reason: r?.status === "declined" ? "Techwide didn't approve it. Change it in Seller Center and register again." : p.request?.status === "not_approved" ? p.request.reason ?? undefined : undefined,
     dates,
     note: p.listing === "PENDING" ? "TikTok is reviewing this listing" : undefined,
     real: true, listing: p.listing,

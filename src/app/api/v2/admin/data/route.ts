@@ -5,6 +5,7 @@ import { postsBetween } from "@/modules/admin/posts.ts";
 import { missionsReport } from "@/modules/admin/missions-report.ts";
 import { analyticsV2 } from "@/modules/admin/analytics-v2.ts";
 import { settingsData } from "@/modules/admin/settings.ts";
+import { sellerCampaignSettings } from "@/modules/tap/pipeline.ts";
 import { reconcile } from "@/modules/admin/reconcile.ts";
 import { autoApprove } from "@/modules/creator-accounts/access.ts";
 import { benefits } from "@/modules/levels/store.ts";
@@ -21,9 +22,9 @@ const PARTS = {
   analytics: analyticsV2,
   reconcile,
   settings: async () => {
-    const [d, auto, levels] = await Promise.all([settingsData(), autoApprove(), benefits()]);
+    const [d, auto, levels, campaign] = await Promise.all([settingsData(), autoApprove(), benefits(), sellerCampaignSettings()]);
     return {
-      health: d.health, jobs: d.jobs, times: d.times, auto, benefits: levels.list,
+      health: d.health, jobs: d.jobs, times: d.times, auto, benefits: levels.list, campaign,
       rules: { welcome: WELCOME_CREDITS, life: CREDIT_LIFE_DAYS, post: POST_CREDITS, referral: REFERRAL_REWARD, referralDays: REFERRAL_DAYS, starterDays: STARTER_DAYS },
     };
   },

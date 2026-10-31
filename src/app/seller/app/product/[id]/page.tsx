@@ -81,7 +81,7 @@ function SellerProduct({ item }: { item: ShopItem }) {
   const buy =
     st === "Not submitted" ? (
       <>
-        <Link href={`/seller/app/submit?p=${p.id}`} className="np-btn"><Icon name="send" size={18} /> Submit to TAP</Link>
+        <Link href="/seller/app/submit" className="np-btn"><Icon name="send" size={18} /> Register Product</Link>
         {wanted && <button type="button" className="btn-outline" onClick={() => go("wanted")}><Icon name="users" size={18} /> See Creators Who Want It</button>}
       </>
     ) : st === "Under review" ? (
@@ -95,7 +95,7 @@ function SellerProduct({ item }: { item: ShopItem }) {
         <Link href="/seller/app/changes" className="btn-outline"><Icon name="edit" size={18} /> Change or End</Link>
       </>
     ) : p.real ? (
-      <Link href={`/seller/app/submit?p=${p.id}`} className="np-btn"><Icon name="edit" size={18} /> Fix and Resubmit</Link>
+      <Link href="/seller/app/submit" className="np-btn"><Icon name="edit" size={18} /> Register Again</Link>
     ) : fixOpen ? null : (
       <button type="button" className="np-btn" onClick={() => { setFixOpen(true); go("fix"); }}><Icon name="edit" size={18} /> Fix and Resubmit</button>
     );

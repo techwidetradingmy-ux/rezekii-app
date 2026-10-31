@@ -5,7 +5,8 @@ import { getCategoryAssets } from "@/integrations/tiktok-shop/partner.ts";
 import { getAuthorizedShops } from "@/integrations/tiktok-shop/seller.ts";
 import type { TokenSet } from "@/integrations/tiktok-shop/auth.ts";
 import { isAllowedPartnerDuringProof, savePartnerConnection } from "@/modules/marketplace/partner-connection.ts";
-import { isAllowedSellerDuringProof, saveSellerConnection } from "@/modules/marketplace/seller-connection.ts";
+import { saveSellerConnection } from "@/modules/marketplace/seller-connection.ts";
+import { ensureSellerCampaign } from "@/modules/tap/pipeline.ts";
 import { SESSION_COOKIE, userForSession } from "@/modules/accounts/session.ts";
 import { linkCreator } from "@/modules/creator-accounts/access.ts";
 import { syncCreatorOrders } from "@/modules/sales/orders.ts";
@@ -102,8 +103,12 @@ async function connectSeller(tokens: TokenSet, userId?: string): Promise<string>
     console.error("[tiktokshop] authorized shops failed", reply.code, reply.message, reply.request_id);
     return "error";
   }
-  const allowed = shops.filter((s) => isAllowedSellerDuringProof(s.name));
-  if (!allowed.length) return "seller-not-allowed&id=" + encodeURIComponent(shops.map((s) => s.name).join(", "));
-  for (const shop of allowed) await saveSellerConnection(shop, tokens, userId);
+  // Open to every shop since the app went public (owner, 31 Oct 2026). Each shop gets its own Techwide campaign at once; if
+  // TikTok is slow, the seller's Register button makes it later.
+  for (const shop of shops) {
+    await saveSellerConnection(shop, tokens, userId);
+    const c = await ensureSellerCampaign(shop.id).catch((err) => ({ ok: false as const, error: err instanceof Error ? err.message : String(err) }));
+    if (!c.ok) console.error("[tiktokshop] shop campaign not made", shop.name, c.error);
+  }
   return "seller-connected";
 }

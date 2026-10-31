@@ -14,7 +14,7 @@ type Camp = (typeof OPEN_CAMPAIGNS)[number];
 const message = (c: Camp, shop: string) =>
   `Hi ${shop || "there"}, Techwide's "${c.name}" TAP campaign is open for registration until ${c.closes}. It starts ${c.starts}.\n\n` +
   `What you need: commission ${c.uplift} above your public rate, and ${c.samples} samples. Our creators find your products through their showcase scan and AI picks.\n\n` +
-  `Register in the Rezekii seller app (Products > Submit products), or reply here and I'll help you pick products.`;
+  `Register in the Rezekii seller app (Products > Register Products), or reply here and I'll help you pick products.`;
 
 /** TAP campaigns open for registration now, to recommend to merchants. */
 export default function OpenCampaigns() {

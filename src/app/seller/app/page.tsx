@@ -25,7 +25,7 @@ const ACTIVITY: { icon: IconName; tone?: "red" | "amber" | "blue"; text: React.R
 ];
 
 const QUICK: [string | null, string, string, IconName, string][] = [
-  ["/seller/app/submit", "Submit products", "AI suggests the commission", "plus", "linear-gradient(135deg,#22dc95,#00a862)"],
+  ["/seller/app/submit", "Register products", "Once, in your own campaign", "plus", "linear-gradient(135deg,#22dc95,#00a862)"],
   ["/seller/app/results", "See results", "Sales, creators, videos", "chart", "linear-gradient(135deg,#7aa2ff,#1d4ed8)"],
   ["/seller/app/results/samples", "Where samples went", "Who got each one", "box", "linear-gradient(135deg,#ffb35c,#f08a00)"],
   [null, "Ask our team", "WhatsApp us", "whatsapp", "linear-gradient(135deg,#ff7aa8,#e8005a)"],
@@ -78,25 +78,25 @@ export default function SellerHome() {
           <h2>{waiting} products waiting on TikTok</h2>
           <p>Nothing to do. TikTok usually replies in 1–3 working days.{fixed ? " Your fixed mop pads are with our team first." : ""}</p>
           <div className="sl-mini-steps">
-            <span className="on"><Icon name="check" size={14} width={2.6} /> Submitted</span>
+            <span className="on"><Icon name="check" size={14} width={2.6} /> Registered</span>
             <span className="on"><Icon name="check" size={14} width={2.6} /> Our review</span>
             <span>With TikTok</span>
             <span>Live</span>
           </div>
           <div className="v2-row">
             <Link href="/seller/app/progress" className="v2-btn-white">See progress</Link>
-            <Link href="/seller/app/submit" className="v2-btn-ghostw">Submit {fresh} more</Link>
+            <Link href="/seller/app/submit" className="v2-btn-ghostw">Register {fresh} more</Link>
           </div>
         </section>
       )}
       {!signedIn && stage === "new" && (
         <section className="v2-next">
           <small>Start here</small>
-          <h2>Submit Your First Products</h2>
-          <p>Pick products. AI suggests the commission; samples are set to 40.</p>
+          <h2>Register Your First Products</h2>
+          <p>Your own campaign is ready in Seller Center. Pick products there once; Techwide reviews each one.</p>
           <div className="v2-row">
-            <Link href="/seller/app/submit" className="v2-btn-white">Submit products <Icon name="arrow" size={18} /></Link>
-            <span style={{ fontSize: 13, opacity: 0.9 }}>Signed in ✓ · Seller Center ✓ · Submit</span>
+            <Link href="/seller/app/submit" className="v2-btn-white">Register products <Icon name="arrow" size={18} /></Link>
+            <span style={{ fontSize: 13, opacity: 0.9 }}>Signed in ✓ · Seller Center ✓ · Register</span>
           </div>
         </section>
       )}

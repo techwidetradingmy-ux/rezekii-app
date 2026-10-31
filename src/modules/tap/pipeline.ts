@@ -164,7 +164,43 @@ export async function act(id: string, a: Action, actor: string): Promise<{ ok: t
  * The shop's Techwide campaign (owner, 31 Oct 2026: one per shop, public like all of Techwide's campaigns): reused when the shop
  * has one, otherwise created at `commission` percent and published, running as long as TikTok allows (360 days).
  */
-async function shopCampaign(shopId: string, commission: number, actor: string): Promise<{ ok: true; campaignId: string; commission: number | null } | { ok: false; error: string }> {
+/** What every new shop's campaign starts with (Admin › Settings). `{shop}` in the description becomes the shop's name. */
+export type SellerCampaignSettings = { commission: number; description: string };
+export const SELLER_CAMPAIGN_DEFAULT: SellerCampaignSettings = {
+  commission: 10,
+  description: [
+    "Techwide's affiliate campaign for {shop}, opened on Rezekii.",
+    "{shop}: register your products here. Techwide reviews each product, then creators on Rezekii can add it to their showcase, ask for free samples and post videos.",
+    "Other sellers: want a campaign like this for your shop? Install Rezekii from the TikTok Shop App Store (Creator Collaborations) and connect your shop. Rezekii opens your own campaign and shows your creators, samples and sales in one place.",
+  ].join("\n\n"),
+};
+export async function sellerCampaignSettings(): Promise<SellerCampaignSettings> {
+  const [row] = (await (await supabaseRest("app_settings?key=eq.seller_campaign&select=value&limit=1")).json()) as { value: Partial<SellerCampaignSettings> }[];
+  return { ...SELLER_CAMPAIGN_DEFAULT, ...(row?.value ?? {}) };
+}
+export async function saveSellerCampaignSettings(v: SellerCampaignSettings, by: string, actor: string): Promise<void> {
+  await supabaseRest("app_settings?on_conflict=key", { method: "POST", headers: { prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify({ key: "seller_campaign", value: v, updated_at: new Date().toISOString(), updated_by: by }) });
+  await logActivity(actor, "TAP", `set new seller campaigns to ${v.commission}% with a new description`);
+}
+
+/**
+ * The shop's own Techwide campaign (owner, 31 Oct 2026): made and published when the shop connects Seller Center, so the seller
+ * registers products straight into it in Seller Center, once. Public, so every seller in Seller Center can see it.
+ */
+export async function ensureSellerCampaign(shopId: string, actor = "Rezekii"): Promise<{ ok: true; campaignId: string } | { ok: false; error: string }> {
+  const [conn] = (await (await supabaseRest(`seller_connections?shop_id=eq.${shopId}&select=shop_name,campaign_id&limit=1`)).json()) as { shop_name: string; campaign_id: string | null }[];
+  if (!conn) return { ok: false, error: "The shop isn't connected any more. Ask the seller to connect Seller Center again." };
+  if (conn.campaign_id) return { ok: true, campaignId: conn.campaign_id };
+  const set = await sellerCampaignSettings();
+  const c = await shopCampaign(shopId, set.commission, actor, set.description.replaceAll("{shop}", conn.shop_name).slice(0, 999));
+  if (!c.ok) return c;
+  await supabaseRest(`seller_connections?shop_id=eq.${shopId}`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ campaign_id: c.campaignId }) });
+  return { ok: true, campaignId: c.campaignId };
+}
+
+async function shopCampaign(shopId: string, commission: number, actor: string, description?: string): Promise<{ ok: true; campaignId: string; commission: number | null } | { ok: false; error: string }> {
+  const [own] = (await (await supabaseRest(`seller_connections?shop_id=eq.${shopId}&campaign_id=not.is.null&select=campaign_id&limit=1`)).json()) as { campaign_id: string }[];
+  if (own) return { ok: true, campaignId: own.campaign_id, commission: null };
   const [had] = (await (await supabaseRest(`tap_submissions?shop_id=eq.${shopId}&campaign_id=not.is.null&select=campaign_id,commission_pct&order=updated_at.desc&limit=1`)).json()) as { campaign_id: string; commission_pct: number | null }[];
   if (had) return { ok: true, campaignId: had.campaign_id, commission: had.commission_pct === null ? null : Number(had.commission_pct) };
   if (!(commission > 1 && commission < 80)) return { ok: false, error: "Set the campaign commission: more than 1% and less than 80%." };
@@ -175,7 +211,7 @@ async function shopCampaign(shopId: string, commission: number, actor: string): 
   const today = toDay(Math.floor(Date.now() / 1000));
   const end = lastEndDay(startTime(today, Date.now()));
   const title = `Techwide X ${shop.name}`.slice(0, 49);
-  const saved = await saveCampaign({ name: title, description: `Techwide's TAP campaign for ${shop.name} on Rezekii.`, start: today, end, regEnd: end, commission, local: true, crossBorder: true, shopCodes: [], ...contact }, null, actor);
+  const saved = await saveCampaign({ name: title, description: description ?? `Techwide's TAP campaign for ${shop.name} on Rezekii.`, start: today, end, regEnd: end, commission, local: true, crossBorder: true, shopCodes: [], ...contact }, null, actor);
   if (!saved.ok) return saved;
   const pub = await publish(saved.id, title, actor);
   if (!pub.ok) return { ok: false, error: pub.error ?? "TikTok didn't publish the campaign." };
