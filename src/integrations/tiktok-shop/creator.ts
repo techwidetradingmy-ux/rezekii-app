@@ -92,6 +92,21 @@ export type SelectedProduct = {
   shop?: { name?: string; rating?: string };
 };
 
+/**
+ * Creator Select Affiliate Product as a search (owner, 31 Oct 2026: TikTok's whole affiliate marketplace, not only Rezekii's
+ * campaigns): main category, price range in RM, a sort, up to 50 a page. Only products the creator can promote come back.
+ */
+export function searchMarketplace(accessToken: string, q: { categoryIds?: string[]; priceGe?: number; priceLe?: number; sort?: "RECOMMENDED" | "BEST_SELLERS" | "HIGH_COMMISSION_RATE"; pageSize?: number; pageToken?: string }) {
+  const price = q.priceGe || q.priceLe ? { price_range: { ...(q.priceGe ? { price_ge: String(q.priceGe) } : {}), ...(q.priceLe ? { price_le: String(q.priceLe) } : {}) } } : {};
+  return callApi<{ products?: SelectedProduct[]; next_page_token?: string }>({
+    method: "POST",
+    path: "/affiliate_creator/202501/selection/products/search",
+    accessToken,
+    query: { page_size: String(q.pageSize ?? 20), ...(q.pageToken ? { page_token: q.pageToken } : {}) },
+    body: { filter_params: { ...(q.categoryIds?.length ? { category_ids: q.categoryIds } : {}), ...price }, sort_params: { sort_type: q.sort ?? "BEST_SELLERS" } },
+  });
+}
+
 /** Creator Select Affiliate Product, filtered to up to 20 product IDs. */
 export function selectProducts(accessToken: string, productIds: string[]) {
   return callApi<{ products?: SelectedProduct[] }>({

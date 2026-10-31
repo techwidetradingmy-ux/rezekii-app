@@ -1,4 +1,5 @@
 import { getShowcaseProducts, lookupProducts, selectProducts } from "../../integrations/tiktok-shop/creator.ts";
+import { CAT } from "../rankings/build.ts";
 import { linesBetween } from "../sales/frames.ts";
 import { lineEarned, lineGmv, type OrderLine } from "../sales/summary.ts";
 
@@ -36,13 +37,13 @@ export async function ratingsOf(token: string, ids: string[]): Promise<Map<strin
 }
 
 /** TikTok's leaf category and open-plan rate (×100) for each product (20 per call). */
-export async function lookupOf(token: string, ids: string[]): Promise<Map<string, { category: string | null; rate: number | null }>> {
-  const out = new Map<string, { category: string | null; rate: number | null }>();
+export async function lookupOf(token: string, ids: string[]): Promise<Map<string, { category: string | null; rate: number | null; main: string | null; leafId: string | null }>> {
+  const out = new Map<string, { category: string | null; rate: number | null; main: string | null; leafId: string | null }>();
   for (let i = 0; i < ids.length; i += 20) {
     const r = await lookupProducts(token, ids.slice(i, i + 20)).catch(() => null);
     for (const p of r?.data?.products ?? []) {
-      const category = p.category_chains?.find((x) => x.is_leaf)?.local_name ?? p.category_chains?.at(-1)?.local_name ?? null;
-      out.set(p.id, { category, rate: p.commission?.rate ?? null });
+      const leaf = p.category_chains?.find((x) => x.is_leaf) ?? p.category_chains?.at(-1);
+      out.set(p.id, { category: leaf?.local_name ?? null, rate: p.commission?.rate ?? null, main: p.category_chains?.find((x) => CAT[x.id])?.id ?? null, leafId: leaf?.id ?? null });
     }
   }
   return out;
@@ -56,6 +57,11 @@ export type SalesProfile = {
   /** TikTok's category for her best-selling products, and each category's share of her sales (0 to 1). */
   categoryOf: Map<string, string>;
   categories: Map<string, { share: number; video: number; live: number }>;
+  /** The same by TikTok's main category (id), and each product's main category. */
+  mains: Map<string, { share: number; video: number; live: number }>;
+  mainOf: Map<string, string>;
+  /** TikTok's id for each of her leaf categories, by name. */
+  leafIds: Map<string, string>;
   video: number; live: number; gmv: number; orders: number;
   /** The price of every item she sold, low to high. */
   units: number[];
@@ -97,9 +103,22 @@ export async function salesProfile(userId: string, token: string, days = 30): Pr
   const looked = await lookupOf(token, top.map(([id]) => id));
   const categoryOf = new Map<string, string>();
   const cats = new Map<string, { gmv: number; video: number; live: number }>();
+  const mainOf = new Map<string, string>();
+  const leafIds = new Map<string, string>();
+  const mainSums = new Map<string, { gmv: number; video: number; live: number }>();
   for (const [id, m] of top) {
+    const main = looked.get(id)?.main;
+    if (main) {
+      mainOf.set(id, main);
+      const s = mainSums.get(main) ?? mainSums.set(main, { gmv: 0, video: 0, live: 0 }).get(main)!;
+      s.gmv += m.gmv;
+      s.video += m.video;
+      s.live += m.live;
+    }
     const c = looked.get(id)?.category;
     if (!c) continue;
+    const lid = looked.get(id)?.leafId;
+    if (lid) leafIds.set(c, lid);
     categoryOf.set(id, c);
     const s = cats.get(c) ?? cats.set(c, { gmv: 0, video: 0, live: 0 }).get(c)!;
     s.gmv += m.gmv;
@@ -108,5 +127,7 @@ export async function salesProfile(userId: string, token: string, days = 30): Pr
   }
   const catGmv = [...cats.values()].reduce((s, c) => s + c.gmv, 0);
   const categories = new Map([...cats.entries()].map(([c, s]) => [c, { share: catGmv ? s.gmv / catGmv : 0, video: s.video, live: s.live }]));
-  return { lines, products, categoryOf, categories, video, live, gmv, orders: orders.size, units };
+  const mainGmv = [...mainSums.values()].reduce((s, c) => s + c.gmv, 0);
+  const mains = new Map([...mainSums.entries()].map(([c, s]) => [c, { share: mainGmv ? s.gmv / mainGmv : 0, video: s.video, live: s.live }]));
+  return { lines, products, categoryOf, categories, mains, mainOf, leafIds, video, live, gmv, orders: orders.size, units };
 }
