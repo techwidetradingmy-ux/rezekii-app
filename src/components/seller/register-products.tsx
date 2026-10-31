@@ -60,7 +60,7 @@ export function RegisterProducts({ title = true }: { title?: boolean }) {
       ) : !c ? (
         <section className="v2-card flat"><p className="v2-muted" style={{ margin: 0 }}>{d.error ?? "Your campaign isn't ready yet. Please try again."}</p><button type="button" className="btn-outline v2-btn-sm" style={{ alignSelf: "flex-start" }} onClick={() => load()}>Try again</button></section>
       ) : (
-        <>
+        <div className="v2-split" style={{ alignItems: "start" }}>
           <section className="v2-card" style={{ gap: 14 }}>
             <div className="v2-card-h">
               <span><small className="v2-small">Your campaign</small><h2 className="v2-h2" style={{ margin: 0 }}>{c.name}</h2></span>
@@ -101,7 +101,7 @@ export function RegisterProducts({ title = true }: { title?: boolean }) {
               {!list.length && <p className="v2-muted" style={{ margin: 0 }}>Nothing registered yet. Products you register in Seller Center show here.</p>}
             </div>
           </section>
-        </>
+        </div>
       )}
     </div>
   );

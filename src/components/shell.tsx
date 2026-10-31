@@ -19,8 +19,6 @@ import { useSideScroll } from "./side-scroll";
 import { useScrollMemory } from "@/lib/keep";
 import { ACCOUNT, HOME, MENUS, pageFor, sectionFor, type AppKind } from "@/lib/menus";
 import { CREATOR, MY_SAMPLES, REFERRAL_REWARD, SELLER } from "@/lib/mock";
-import { DeskRail } from "./desk-rail";
-import { setDesk, useDesk, type Desk } from "@/lib/desk-layout";
 import { useUnreadNotes } from "@/lib/live-notes";
 import { loadWallet } from "@/lib/live-rewards";
 
@@ -48,7 +46,6 @@ export function DemoStrip() {
         <Link href="/admin">Admin</Link>
         <Link href="/tour">All pages</Link>
         <Link href="/compare">Compare views</Link>
-        <DeskSwitch />
         {!live && (
           <>
             <button type="button" className="v2-demo-toggle" onClick={() => setLinked(!linked)}>
@@ -65,23 +62,13 @@ export function DemoStrip() {
 }
 
 /** The desktop layout mock-ups to pick from (owner, 31 Oct 2026); wide screens only. */
-function DeskSwitch() {
-  const desk = useDesk();
-  const opts: [Desk, string, string][] = [["now", "Now", "Today's layout"], ["a", "A", "Wider canvas"], ["b", "B", "Dashboard with a side panel"], ["c", "C", "List and detail"]];
-  return (
-    <span className="v2-desk" role="group" aria-label="Desktop layout">
-      <small>Desktop</small>
-      {opts.map(([k, l, t]) => <button key={k} type="button" title={t} aria-pressed={desk === k} className={desk === k ? "on" : undefined} onClick={() => setDesk(k)}>{l}</button>)}
-    </span>
-  );
-}
-
 /** The always-visible Invite button: referral is how Rezekii spreads. */
 const INVITE = { creator: "/app/account#referral", seller: "/seller/app/rewards/referral", admin: "" } as const;
 
 /**
- * Signed-in frame. Desktop (owner, 28 Oct 2026: website first): a left side bar with every section and the open section's
- * pages, and a slim top bar. Smaller screens keep the top menu, the sub-menu and the phone tab bar.
+ * Signed-in frame. Desktop (owner, 31 Oct 2026: layout A, made for desktop): a top menu bar with every section (pointing at
+ * one lists its pages), the open section's pages as tabs below it, and pages using the screen's width. Phones keep the page
+ * switcher and the tab bar.
  */
 /** Invite button icon (owner, 29 Oct 2026, option A): a green gift box with a gold ribbon that wiggles, sparkles and glows. */
 function Chest() {
@@ -98,7 +85,6 @@ function Chest() {
 }
 
 export function Shell({ app, children, banner }: { app: AppKind; children: React.ReactNode; banner?: React.ReactNode }) {
-  const desk = useDesk();
   const you = useWho();
   const path = usePathname();
   // Back returns to the same scroll on every page (owner, 29 Oct 2026); open sections come back through useKept.
@@ -158,8 +144,9 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
   const [pill, setPill] = useState<{ left: number; width: number } | null>(null);
   useLayoutEffect(() => {
     const place = () => {
-      const on = menuRef.current?.querySelector<HTMLAnchorElement>("a.on");
-      setPill(on ? { left: on.offsetLeft, width: on.offsetWidth } : null);
+      const box = menuRef.current;
+      const on = box?.querySelector<HTMLAnchorElement>(".v2-mi > a.on");
+      setPill(box && on ? { left: on.getBoundingClientRect().left - box.getBoundingClientRect().left, width: on.offsetWidth } : null);
     };
     place();
     window.addEventListener("resize", place);
@@ -174,44 +161,6 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
     <>
       <DemoStrip />
       <div className="v2-shellgrid" data-app={app}>
-      <aside className="v2-side" aria-label="Main menu">
-        <Link href={HOME[app]} className="v2-side-brand">
-          <span><Image src="/master-logo-transparent.png" alt="" width={30} height={30} /></span>
-          Rezekii
-          {app !== "creator" && <em>{app === "seller" ? "Seller" : "Admin"}</em>}
-        </Link>
-        <nav className="v2-side-nav nv-noscroll">
-          {menu.map((s) => {
-            const on = section?.href === s.href;
-            return (
-              <div key={s.href} className={`v2-side-sec${on ? " on" : ""}`}>
-                <Link href={s.href} className="v2-side-item" aria-current={on && (!page || page === s.href) ? "page" : undefined}>
-                  <Icon name={s.icon} size={20} />
-                  <span>{s.label}</span>
-                  {s.pages.length > 1 && <i className="v2-side-chev" aria-hidden="true" />}
-                </Link>
-                {on && s.pages.length > 1 && (
-                  <div className="v2-side-sub">
-                    {s.pages.map(([href, label]) => (
-                      <Link key={href} href={href} className={page === href ? "on" : undefined} aria-current={page === href ? "page" : undefined}>{label}<AiSpark label={label} /></Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </nav>
-        <Link href={ACCOUNT[app]} className={`v2-side-me${ring}`} onClick={(e) => { if (app === "creator" && (e.target as HTMLElement).closest(".v2-av")) { e.preventDefault(); setStory(true); } }}>
-          {who.photo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <span className="v2-av photo"><img src={who.photo} alt="" /></span>
-          ) : (
-            <span className="v2-av">{who.initials}</span>
-          )}
-          <span><b>{who.name}</b><small>{who.sub}</small></span>
-          <Icon name="gear" size={18} />
-        </Link>
-      </aside>
       <div className="v2-frame">
       <header className="v2-top" data-app={app}>
         <nav className="site-nav site-wrap" aria-label="Main">
@@ -255,9 +204,21 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
             {/* The same green pill as the phone tab bar, sliding to the open section (owner, 28 Oct 2026). */}
             {pill && <span className="v2-menu-ind" aria-hidden="true" style={{ left: pill.left, width: pill.width }} />}
             {menu.map((s) => (
-              <Link key={s.href} href={s.href} className={section?.href === s.href ? "on" : undefined} aria-current={section?.href === s.href ? "page" : undefined}>
-                {s.label === "Marketplace" ? <><span className="v2-long">Marketplace</span><span className="v2-short">Market</span></> : s.label}
-              </Link>
+              <span key={s.href} className="v2-mi">
+                <Link href={s.href} className={section?.href === s.href ? "on" : undefined} aria-current={section?.href === s.href ? "page" : undefined}>
+                  <span className="v2-mi-ic"><Icon name={s.icon} size={18} /></span>
+                  {s.label === "Marketplace" ? <><span className="v2-long">Marketplace</span><span className="v2-short">Market</span></> : s.label}
+                  {s.pages.length > 1 && <i className="v2-mi-chev" aria-hidden="true" />}
+                </Link>
+                {/* Desktop (owner, 31 Oct 2026): pointing at a section lists its pages, so any page is one click away. */}
+                {s.pages.length > 1 && (
+                  <span className="v2-mi-drop" role="menu" aria-label={`${s.label} pages`}>
+                    {s.pages.map(([href, label]) => (
+                      <Link key={href} href={href} role="menuitem" className={page === href ? "on" : undefined}>{label}<AiSpark label={label} /></Link>
+                    ))}
+                  </span>
+                )}
+              </span>
             ))}
           </div>
           {!section && (path.startsWith(ACCOUNT[app]) || path.includes("/notifications")) && (
@@ -314,17 +275,8 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
       {acctOpen && <AccountPanel onClose={() => setAcctOpen(false)} onStory={() => { setAcctOpen(false); setStory(true); }} />}
       {story && <DailyStory day={storyDay} onClose={() => { setStory(false); setStoryNew(false); }} />}
       <main className="site-wrap v2-main">
-        {desk === "b" && app !== "admin" ? (
-          <div className="dk-row">
-            <div className="dk-col">{banner}{children}</div>
-            <DeskRail app={app} />
-          </div>
-        ) : (
-          <>
-            {banner}
-            {children}
-          </>
-        )}
+        {banner}
+        {children}
       </main>
       <footer className="site-foot">
         <div className="site-wrap">

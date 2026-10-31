@@ -1132,3 +1132,10 @@ button.rf-pill { border: 0; cursor: pointer; font: inherit; font-size: 12.5px; f
 /* A real account without enough history yet (owner, 30 Oct 2026): the card keeps its title and says so, no sample numbers. */
 [data-soon] > :not(:first-child) { display: none !important; }
 [data-soon]::after { content: attr(data-soon); display: block; margin-top: 4px; padding: 14px; border-radius: 14px; background: var(--surface2); color: var(--muted); font-size: 14px; font-weight: 600; line-height: 1.45; }
+
+/* Desktop (owner, 31 Oct 2026, layout A): the saved profile in two columns, so it doesn't stretch across a wide screen. */
+@media (min-width: 1200px) {
+  .pf-card.locked .pf-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pf-card.locked .pf-f:nth-child(2) { border-top: 0; }
+  .pf-card.locked .pf-f:nth-child(even) { border-left: 1px solid var(--line); }
+}
