@@ -10,6 +10,11 @@ import { pendingProducts } from "./tap.ts";
  * minutes; each thing is emailed once (a problem that lasts, once a day).
  */
 type Alert = { key: string; title: string; href: string };
+/**
+ * Paused (owner, 31 Oct 2026): email and in-app notification settings come after the app is approved and launched. Sign-in
+ * and password codes still go out. Set to true to send these again.
+ */
+export const ADMIN_ALERT_EMAILS = false;
 const KEY = "admin_alerts_sent";
 const MYT = 8 * 3_600_000;
 const day = () => new Date(Date.now() + MYT).toISOString().slice(0, 10);
@@ -33,6 +38,7 @@ async function whatNeedsAdmins(): Promise<Alert[]> {
 
 /** Sends one email listing what's new since the last one. Returns how many things it listed. */
 export async function sendAdminAlerts(): Promise<number> {
+  if (!ADMIN_ALERT_EMAILS) return 0;
   const [row] = (await (await supabaseRest(`app_settings?key=eq.${KEY}&select=value&limit=1`)).json()) as { value: { keys?: string[] } }[];
   const sent = new Set(row?.value?.keys ?? []);
   const fresh = (await whatNeedsAdmins()).filter((a) => !sent.has(a.key));

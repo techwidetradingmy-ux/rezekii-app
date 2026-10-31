@@ -12,7 +12,7 @@ import { Tip } from "@/components/ui";
 import { AddressFields } from "@/components/account/address-fields";
 import { GoogleMark, TikTokMark } from "@/components/creator1/brand";
 import { MY_STATES, isEmail, tidyPhone } from "@/lib/mock-creator1";
-import { REFERRAL_REWARD, WELCOME_CREDITS } from "@/lib/mock";
+import { REFERRAL_REWARD } from "@/lib/mock";
 import { COUNTRIES, tidyPhone as tidyAnyPhone } from "@/lib/mock-seller";
 import { DIAL_OPTIONS, RACES } from "@/lib/countries";
 import { NICHES } from "@/lib/mock-creator2";
@@ -20,7 +20,7 @@ import { EMPTY_ADDRESS, addressOk, birthdayError, saveAddress, saveSignup, type 
 import "../creator1.css";
 import { keepInviteCode, saveProfile } from "@/lib/live-rewards";
 
-type Step = "start" | "oauth" | "profile" | "email" | "password" | "create" | "forgot" | "verify" | "code" | "reset" | "welcome";
+type Step = "start" | "oauth" | "profile" | "email" | "create" | "reset" | "welcome";
 
 const TILES: [React.CSSProperties, string, string, string, string][] = [
   [{ top: "14%", left: "8%" }, "#fe2c55", "#ffffff", "-10deg", "M4 5h16v14H4zM10 9l5 3-5 3z"],
@@ -39,11 +39,20 @@ const KINDS = ["TikTok Affiliate", "Shopee Affiliate", "Lazada Affiliate", "Thre
 const GENDERS = ["Female", "Male", "Others"];
 
 /** A compact dropdown that takes more than one pick (owner, 30 Oct 2026: the chips made sign-up too long). */
-function MultiPick({ label, options, value, onChange, max, invalid }: { label: string; options: string[]; value: string[]; onChange: (v: string[]) => void; max?: number; invalid?: boolean }) {
+/**
+ * A dropdown you can search by typing (owner, 31 Oct 2026: long lists are dropdowns, and typing finds an option without
+ * scrolling). One choice, or several (`multi`) up to `max`. Options are [value, label].
+ */
+function PickList({ label, options, value, onChange, max, multi = false, invalid, placeholder = "Choose", compact = false, shown: showAs }: {
+  label: string; options: [string, string][]; value: string[]; onChange: (v: string[]) => void; max?: number; multi?: boolean; invalid?: boolean; placeholder?: string; compact?: boolean;
+  /** What the closed dropdown shows for the choice, when shorter than its label (e.g. "+60"). */
+  shown?: (v: string) => string;
+}) {
   const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
   const box = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!open) return;
+    if (!open) return setQ("");
     const away = (e: PointerEvent) => {
       if (!box.current?.contains(e.target as Node)) setOpen(false);
     };
@@ -55,30 +64,46 @@ function MultiPick({ label, options, value, onChange, max, invalid }: { label: s
       document.removeEventListener("keydown", esc);
     };
   }, [open]);
+  const labelOf = (v: string) => options.find(([o]) => o === v)?.[1] ?? v;
+  const shown = q.trim() ? options.filter(([, l]) => l.toLowerCase().includes(q.trim().toLowerCase())) : options;
+  const pick = (v: string) => {
+    if (!multi) {
+      onChange([v]);
+      setOpen(false);
+      return;
+    }
+    onChange(value.includes(v) ? value.filter((x) => x !== v) : [...value, v]);
+  };
   return (
-    <div className="su-pick" ref={box}>
+    <div className={`su-pick${compact ? " sm" : ""}`} ref={box}>
       <button type="button" className="np-input su-pick-btn" aria-label={label} aria-haspopup="listbox" aria-expanded={open} aria-invalid={invalid} onClick={() => setOpen((o) => !o)}>
-        <span className={value.length ? undefined : "ph"}>{value.length ? value[0] : max ? `Up to ${max}` : "Choose"}</span>
+        <span className={value.length ? undefined : "ph"}>{value.length ? (showAs ? showAs(value[0]) : labelOf(value[0])) : max && multi ? `Up to ${max}` : placeholder}</span>
         {value.length > 1 && <em>+{value.length - 1}</em>}
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
       </button>
       {open && (
-        <div className="su-pick-list" role="listbox" aria-multiselectable="true" aria-label={label}>
-          {options.map((o) => {
-            const on = value.includes(o);
+        <div className="su-pick-list" role="listbox" aria-multiselectable={multi} aria-label={label}>
+          {options.length > 7 && (
+            <input className="np-input su-pick-q" autoFocus placeholder="Type to search" value={q} onChange={(e) => setQ(e.target.value)} aria-label={`Search ${label}`}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (shown[0]) pick(shown[0][0]); } }} />
+          )}
+          {shown.map(([v, l]) => {
+            const on = value.includes(v);
             return (
-              <button key={o} type="button" role="option" aria-selected={on} disabled={!on && !!max && value.length >= max} onClick={() => onChange(on ? value.filter((x) => x !== o) : [...value, o])}>
-                <i>{on && <Icon name="check" size={13} width={3.2} />}</i>
-                {o}
+              <button key={v} type="button" role="option" aria-selected={on} disabled={multi && !on && !!max && value.length >= max} onClick={() => pick(v)}>
+                <i className={multi ? undefined : "one"}>{on && <Icon name="check" size={13} width={3.2} />}</i>
+                {l}
               </button>
             );
           })}
-          <button type="button" className="su-pick-done" onClick={() => setOpen(false)}>Done</button>
+          {!shown.length && <p className="su-pick-none">No match</p>}
+          {multi && <button type="button" className="su-pick-done" onClick={() => setOpen(false)}>Done</button>}
         </div>
       )}
     </div>
   );
 }
+const pairs = (list: readonly string[]): [string, string][] => list.map((x) => [x, x]);
 
 /**
  * Sign up first, then sign in (owner, 30 Oct 2026). Sign-up is its own short page: Google or TikTok on top, or the email
@@ -92,7 +117,6 @@ export default function SignIn() {
   // Signed up with Google or TikTok: the same form once, to fill in the details those skip (owner, 31 Oct 2026).
   const [details, setDetails] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [forgotFrom, setForgotFrom] = useState<Step>("password");
   // ?in=1 opens Sign in; everything else opens Sign up.
   const [provider, setProvider] = useState<keyof typeof PROVIDER>("Google");
   const [name, setName] = useState("");
@@ -110,7 +134,8 @@ export default function SignIn() {
   const [code, setCode] = useState("");
   const [tried, setTried] = useState(false);
   // Continue with email (owner, 31 Oct 2026): what the email already has, and where to go after (e.g. /seller/connect).
-  const [acct, setAcct] = useState<{ password: boolean; google: boolean } | null>(null);
+  // A code was emailed for this card (owner, 31 Oct 2026: the code box shows on the same page, no extra page).
+  const [codeSent, setCodeSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [next, setNext] = useState<string | null>(null);
   const [welcome, setWelcome] = useState("");
@@ -161,6 +186,7 @@ export default function SignIn() {
   })();
   const go = (s: Step) => {
     setTried(false);
+    setCodeSent(false);
     setStep(s);
   };
 
@@ -206,20 +232,25 @@ export default function SignIn() {
     setBusy(true);
     try { await fn(); } catch (e) { toast(e instanceof Error ? e.message : "That didn't work. Please try again."); } finally { setBusy(false); }
   }
-  const checkEmail = () => withBusy(async () => {
-    const d = await emailCall({ mode: "check", email });
-    setAcct({ password: !!d.password, google: !!d.google });
-    setPw("");
-    go(d.exists ? "password" : "create");
+  const signInEmail = () => withBusy(async () => {
+    try {
+      land((await emailCall({ mode: "signin", email, password: pw })).details);
+    } catch (e) {
+      // An email that signs in with Google has no password.
+      const d = await emailCall({ mode: "check", email }).catch(() => null);
+      if (d?.exists && !d.password && d.google) throw new Error("This email signs in with Google. Continue with Google, or email yourself a sign-in code.");
+      throw e;
+    }
   });
-  const signInEmail = () => withBusy(async () => land((await emailCall({ mode: "signin", email, password: pw })).details));
   const signUpEmail = () => withBusy(async () => { await emailCall({ mode: "signup", email, password: pw, name: name.trim(), code }); land(true); });
-  /** Emails a code for `purpose`, then shows the step that asks for it. */
-  const sendCode = (purpose: "signup" | "signin" | "reset", then: Step) => withBusy(async () => {
+  /** Emails a code for `purpose`; the code box then shows on the same card (or on `then`). */
+  const sendCode = (purpose: "signup" | "signin" | "reset", then?: Step) => withBusy(async () => {
+    if (!isEmail(email)) throw new Error("Enter your email first.");
     await emailCall({ mode: "code", email, purpose });
     setCode("");
     toast(`Code sent to ${email.trim()}`);
-    go(then);
+    if (then) go(then);
+    setCodeSent(true);
   });
   const signInCode = () => withBusy(async () => land((await emailCall({ mode: "signin", email, code })).details));
   const resetPassword = () => withBusy(async () => land((await emailCall({ mode: "reset", email, code, password: pw })).details));
@@ -269,20 +300,18 @@ export default function SignIn() {
   const countryField = (
     <label className="v2-field">
       Country
-      <select
-        className="np-input cr1-select"
-        autoComplete="country"
-        value={country}
-        onChange={(e) => {
-          const c = COUNTRIES.find((x) => x.code === e.target.value);
-          setCountry(e.target.value);
+      <PickList
+        label="Country"
+        options={COUNTRIES.map((c) => [c.code, c.name] as [string, string])}
+        value={[country]}
+        onChange={([code]) => {
+          const c = COUNTRIES.find((x) => x.code === code);
+          setCountry(code);
           setState("");
           if (c) setDial(c.dial);
           setPhoneTouched(false);
         }}
-      >
-        {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
-      </select>
+      />
     </label>
   );
 
@@ -290,14 +319,7 @@ export default function SignIn() {
     <label className="v2-field">
       State
       {country === "MY" ? (
-        <select className="np-input cr1-select" value={state} onChange={(e) => setState(e.target.value)} aria-invalid={tried && !state}>
-          <option value="">Choose</option>
-          {Object.entries(MY_STATES).map(([group, list]) => (
-            <optgroup key={group} label={group}>
-              {list.map((s) => <option key={s} value={s}>{s}</option>)}
-            </optgroup>
-          ))}
-        </select>
+        <PickList label="State" options={pairs(Object.values(MY_STATES).flat())} value={state ? [state] : []} onChange={([v]) => setState(v)} invalid={tried && !state} />
       ) : (
         <input className="np-input" autoComplete="address-level1" placeholder="State / Province" value={state} onChange={(e) => setState(e.target.value)} aria-invalid={tried && !state.trim()} />
       )}
@@ -309,9 +331,7 @@ export default function SignIn() {
     <label className="v2-field">
       WhatsApp number
       <span className="cr1-phone">
-        <select aria-label="Country code" value={dial} onChange={(e) => { setDial(e.target.value); setPhoneTouched(false); }}>
-          {DIAL_OPTIONS.map((o) => <option key={o.dial} value={o.dial}>{o.label}</option>)}
-        </select>
+        <PickList compact label="Country code" shown={(d) => `+${d}`} options={DIAL_OPTIONS.map((o) => [o.dial, o.label] as [string, string])} value={[dial]} onChange={([d]) => { setDial(d); setPhoneTouched(false); }} />
         <input
           className="np-input"
           inputMode="tel"
@@ -341,29 +361,24 @@ export default function SignIn() {
   );
 
   const raceField = (
-    <label className="v2-field">
-      Race <small className="cr1-small">(optional)</small>
-      <select className="np-input cr1-select" value={race} onChange={(e) => setRace(e.target.value)}>
-        <option value="">Choose</option>
-        {RACES.map((r) => <option key={r} value={r}>{r}</option>)}
-      </select>
-    </label>
+    <div className="v2-field">
+      Race
+      <PickList label="Race" options={pairs(RACES)} value={race ? [race] : []} onChange={([v]) => setRace(v)} invalid={tried && !race} />
+      {tried && !race && <small className="cr1-err">Choose one</small>}
+    </div>
   );
   const genderField = (
-    <label className="v2-field">
+    <div className="v2-field">
       Gender
-      <select className="np-input cr1-select" value={gender} onChange={(e) => setGender(e.target.value)} aria-invalid={tried && !gender}>
-        <option value="">Choose</option>
-        {GENDERS.map((g) => <option key={g} value={g}>{g}</option>)}
-      </select>
+      <PickList label="Gender" options={pairs(GENDERS)} value={gender ? [gender] : []} onChange={([v]) => setGender(v)} invalid={tried && !gender} />
       {tried && !gender && <small className="cr1-err">Choose one</small>}
-    </label>
+    </div>
   );
 
   const kindField = (
     <div className="v2-field">
       Creator type
-      <MultiPick label="Creator type" options={KINDS} value={kinds} onChange={setKinds} invalid={tried && !!kindError} />
+      <PickList multi label="Creator type" options={pairs(KINDS)} value={kinds} onChange={setKinds} invalid={tried && !!kindError} />
       {kinds.includes("Others") && (
         <input className="np-input" placeholder="Which one?" value={otherKind} onChange={(e) => setOtherKind(e.target.value)} aria-label="Other kind of creator" aria-invalid={tried && !otherKind.trim()} />
       )}
@@ -374,7 +389,7 @@ export default function SignIn() {
   const nicheField = (
     <div className="v2-field">
       Niches
-      <MultiPick label="Niches" options={NICHES} value={niches} onChange={setNiches} max={3} invalid={tried && !niches.length} />
+      <PickList multi label="Niches" options={pairs(NICHES)} value={niches} onChange={setNiches} max={3} invalid={tried && !niches.length} />
       {tried && !niches.length && <small className="cr1-err">Pick at least one</small>}
     </div>
   );
@@ -406,7 +421,7 @@ export default function SignIn() {
   ) : (
     <button type="button" className="cr1-addaddr" onClick={() => setShowAddr(true)}><Icon name="plus" size={16} /> Add sample delivery address <small>(optional)</small></button>
   );
-  const signupBad = name.trim().length < 2 || !state.trim() || !!tel.error || !!kindError || !!bErr || !gender || !niches.length || addrBad;
+  const signupBad = name.trim().length < 2 || !state.trim() || !!tel.error || !!kindError || !!bErr || !gender || !race || !niches.length || addrBad;
   const keep = () => {
     saveSignup({ birthday, niches });
     if (addressOk(addr)) saveAddress(addr);
@@ -454,8 +469,6 @@ export default function SignIn() {
               <div className="su-head">
                 <h1>Create your account</h1>
                 <p>Free to join. No minimum followers.</p>
-                {/* Every new account gets free credits to try multi-app posting (owner, 30 Oct 2026). */}
-                <span className="su-gift"><Icon name="gift" size={15} width={2.4} /> +{WELCOME_CREDITS} free credits to try Post Everywhere</span>
               </div>
               {handle && (
                 <p className="si-ref si-handle">
@@ -520,8 +533,19 @@ export default function SignIn() {
     </label>
   );
   const again = (purpose: "signup" | "signin" | "reset") => (
-    <button type="button" className="v2-link cr1-forgot" disabled={busy} onClick={() => void sendCode(purpose, step)}>Send a new code</button>
+    <button type="button" className="v2-link cr1-forgot" disabled={busy} onClick={() => void sendCode(purpose)}>Send a new code</button>
   );
+  const pwField = (label: string) => (
+    <label className="v2-field">
+      {label}
+      <span className="cr1-pw">
+        <input className="np-input" type={showPw ? "text" : "password"} autoComplete={newPw ? "new-password" : "current-password"} value={pw} onChange={(e) => setPw(e.target.value)} aria-invalid={tried && (newPw ? pw.length < 8 : !pw)} />
+        <button type="button" onClick={() => setShowPw((x) => !x)} aria-label={showPw ? "Hide password" : "Show password"}><Icon name="eye" size={18} /></button>
+      </span>
+      {newPw ? <small className={pw.length >= 8 ? "cr1-okline" : tried ? "cr1-err" : undefined}>At least 8 characters</small> : tried && !pw ? <small className="cr1-err">Enter your password</small> : null}
+    </label>
+  );
+  const spin = <span className="cr1-spin sm" />;
   const sentTo = <p>We sent a 6-digit code to <b>{email.trim()}</b>. It works for 10 minutes.</p>;
   let card: React.ReactNode;
   if (step === "start") {
@@ -535,6 +559,7 @@ export default function SignIn() {
         <button type="button" className="btn-google cr1-authbtn" onClick={() => oauth("Google")}><GoogleMark /> Continue with Google</button>
         <button type="button" className="btn-tiktok cr1-authbtn" onClick={() => oauth("TikTok")}><TikTokMark /> Continue with TikTok</button>
         <button type="button" className="btn-email cr1-authbtn" onClick={() => go("email")}><Icon name="inbox" size={20} /> Continue with email</button>
+        <p className="cr1-center cr1-switch">New to Rezekii? <button type="button" className="v2-link" onClick={() => go("create")}>Create account</button></p>
         <p className="cr1-center cr1-fine">By continuing you agree to Rezekii&apos;s <a className="v2-link" href="https://rezekii.com/terms" target="_blank" rel="noreferrer">Terms of Service</a> and <a className="v2-link" href="https://rezekii.com/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.</p>
       </>
     );
@@ -548,109 +573,64 @@ export default function SignIn() {
       </div>
     );
   } else if (step === "email") {
+    // Sign in on one page (owner, 31 Oct 2026): email and password, or a code by email, without extra pages.
     card = (
-      <form className="cr1-form" onSubmit={(e) => { e.preventDefault(); setTried(true); if (isEmail(email)) void checkEmail(); }}>
+      <form className="cr1-form" onSubmit={(e) => { e.preventDefault(); setTried(true); if (!isEmail(email)) return; if (codeSent) { if (code.length === 6) void signInCode(); } else if (pw) void signInEmail(); }}>
         {back("start")}
-        <h1>Continue with email</h1>
+        <h1>Sign in with email</h1>
         {emailField}
-        <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? <span className="cr1-spin sm" /> : "Continue"}</button>
-      </form>
-    );
-  } else if (step === "password") {
-    card = acct?.google && !acct.password ? (
-      <div className="cr1-form">
-        {back("email")}
-        <h1>Use Google for this email</h1>
-        <p><b>{email.trim()}</b> signs in with Google.</p>
-        <button type="button" className="btn-google cr1-authbtn" onClick={() => oauth("Google")}><GoogleMark /> Continue with Google</button>
-        <button type="button" className="v2-link" disabled={busy} onClick={() => void sendCode("signin", "code")}>Or email me a sign-in code</button>
-      </div>
-    ) : (
-      <form className="cr1-form" onSubmit={(e) => { e.preventDefault(); setTried(true); if (pw) void signInEmail(); }}>
-        {back("email")}
-        <h1>Welcome back</h1>
-        <p className="cr1-small" style={{ margin: 0 }}><b>{email.trim()}</b> · <button type="button" className="v2-link" onClick={() => go("email")}>Change</button></p>
-        <label className="v2-field">
-          Password
-          <span className="cr1-pw">
-            <input className="np-input" type={showPw ? "text" : "password"} autoComplete={newPw ? "new-password" : "current-password"} value={pw} onChange={(e) => setPw(e.target.value)} aria-invalid={tried && (newPw ? pw.length < 8 : !pw)} />
-            <button type="button" onClick={() => setShowPw((x) => !x)} aria-label={showPw ? "Hide password" : "Show password"}><Icon name="eye" size={18} /></button>
-          </span>
-          {newPw ? <small className={pw.length >= 8 ? "cr1-okline" : tried ? "cr1-err" : undefined}>At least 8 characters</small> : tried && !pw ? <small className="cr1-err">Enter your password</small> : null}
-        </label>
-        <button type="button" className="v2-link cr1-forgot" onClick={() => { setForgotFrom("password"); go("forgot"); }}>Forgot password?</button>
-        <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? <span className="cr1-spin sm" /> : "Sign in"}</button>
-        <button type="button" className="v2-link" disabled={busy} onClick={() => void sendCode("signin", "code")}>Email me a sign-in code instead</button>
+        {codeSent ? (
+          <>
+            {sentTo}
+            {codeField}
+            <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? spin : "Sign in"}</button>
+            {again("signin")}
+            <button type="button" className="v2-link" onClick={() => setCodeSent(false)}>Use my password instead</button>
+          </>
+        ) : (
+          <>
+            {pwField("Password")}
+            <button type="button" className="v2-link cr1-forgot" disabled={busy} onClick={() => void sendCode("reset", "reset")}>Forgot password?</button>
+            <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? spin : "Sign in"}</button>
+            <button type="button" className="v2-link" disabled={busy} onClick={() => { setTried(true); void sendCode("signin"); }}>Email me a sign-in code instead</button>
+          </>
+        )}
+        <p className="cr1-center cr1-switch">New to Rezekii? <button type="button" className="v2-link" onClick={() => go("create")}>Create account</button></p>
       </form>
     );
   } else if (step === "create") {
+    // Create account on one page: name, email and password, then the code from the email right below.
     card = (
-      <form className="cr1-form" onSubmit={(e) => { e.preventDefault(); setTried(true); if (name.trim().length >= 2 && pw.length >= 8) void sendCode("signup", "verify"); }}>
-        {back("email")}
+      <form className="cr1-form" onSubmit={(e) => { e.preventDefault(); setTried(true); if (name.trim().length < 2 || !isEmail(email) || pw.length < 8) return; if (codeSent) { if (code.length === 6) void signUpEmail(); } else void sendCode("signup"); }}>
+        {back("start")}
         <h1>Create your account</h1>
-        <p className="cr1-small" style={{ margin: 0 }}><b>{email.trim()}</b> · <button type="button" className="v2-link" onClick={() => go("email")}>Change</button></p>
         {nameField}
-        <label className="v2-field">
-          Password
-          <span className="cr1-pw">
-            <input className="np-input" type={showPw ? "text" : "password"} autoComplete={newPw ? "new-password" : "current-password"} value={pw} onChange={(e) => setPw(e.target.value)} aria-invalid={tried && (newPw ? pw.length < 8 : !pw)} />
-            <button type="button" onClick={() => setShowPw((x) => !x)} aria-label={showPw ? "Hide password" : "Show password"}><Icon name="eye" size={18} /></button>
-          </span>
-          {newPw ? <small className={pw.length >= 8 ? "cr1-okline" : tried ? "cr1-err" : undefined}>At least 8 characters</small> : tried && !pw ? <small className="cr1-err">Enter your password</small> : null}
-        </label>
-        <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? <span className="cr1-spin sm" /> : "Create account"}</button>
+        {emailField}
+        {pwField("Password")}
+        {codeSent ? (
+          <>
+            {sentTo}
+            {codeField}
+            <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? spin : "Confirm and create account"}</button>
+            {again("signup")}
+          </>
+        ) : (
+          <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? spin : "Create account"}</button>
+        )}
+        <p className="cr1-center cr1-switch">Already have an account? <button type="button" className="v2-link" onClick={() => go("email")}>Sign in</button></p>
       </form>
-    );
-  } else if (step === "verify") {
-    card = (
-      <form className="cr1-form" onSubmit={(e) => { e.preventDefault(); setTried(true); if (code.length === 6) void signUpEmail(); }}>
-        {back("create")}
-        <h1>Check your email</h1>
-        {sentTo}
-        {codeField}
-        <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? <span className="cr1-spin sm" /> : "Create account"}</button>
-        {again("signup")}
-      </form>
-    );
-  } else if (step === "code") {
-    card = (
-      <form className="cr1-form" onSubmit={(e) => { e.preventDefault(); setTried(true); if (code.length === 6) void signInCode(); }}>
-        {back("password")}
-        <h1>Check your email</h1>
-        {sentTo}
-        {codeField}
-        <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? <span className="cr1-spin sm" /> : "Sign in"}</button>
-        {again("signin")}
-      </form>
-    );
-  } else if (step === "forgot") {
-    // A reset code by email (owner, 31 Oct 2026), then a new password.
-    card = (
-      <div className="cr1-form">
-        {back(forgotFrom)}
-        <h1>Reset your password</h1>
-        <p>We&apos;ll email a 6-digit code to <b>{email.trim()}</b>. Then you choose a new password.</p>
-        <button type="button" className="np-btn np-submit" disabled={busy} onClick={() => void sendCode("reset", "reset")}>{busy ? <span className="cr1-spin sm" /> : "Send code"}</button>
-        <p className="cr1-small" style={{ margin: 0 }}>No access to this email? Write to <a className="v2-link" href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a>.</p>
-      </div>
     );
   } else if (step === "reset") {
     card = (
       <form className="cr1-form" onSubmit={(e) => { e.preventDefault(); setTried(true); if (code.length === 6 && pw.length >= 8) void resetPassword(); }}>
-        {back("forgot")}
+        {back("email")}
         <h1>Choose a new password</h1>
         {sentTo}
         {codeField}
-        <label className="v2-field">
-          New password
-          <span className="cr1-pw">
-            <input className="np-input" type={showPw ? "text" : "password"} autoComplete={newPw ? "new-password" : "current-password"} value={pw} onChange={(e) => setPw(e.target.value)} aria-invalid={tried && (newPw ? pw.length < 8 : !pw)} />
-            <button type="button" onClick={() => setShowPw((x) => !x)} aria-label={showPw ? "Hide password" : "Show password"}><Icon name="eye" size={18} /></button>
-          </span>
-          {newPw ? <small className={pw.length >= 8 ? "cr1-okline" : tried ? "cr1-err" : undefined}>At least 8 characters</small> : tried && !pw ? <small className="cr1-err">Enter your password</small> : null}
-        </label>
+        {pwField("New password")}
         <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? <span className="cr1-spin sm" /> : "Save and sign in"}</button>
         {again("reset")}
+        <p className="cr1-small" style={{ margin: 0 }}>No access to this email? Write to <a className="v2-link" href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a>.</p>
       </form>
     );
   } else {
@@ -658,7 +638,6 @@ export default function SignIn() {
       <div className="cr1-wait">
         <span className="v2-medal green cr1-welcome"><Icon name="check" size={40} width={2.6} /></span>
         <b>{welcome}</b>
-        {welcome.startsWith("Welcome to Rezekii") && <span className="su-gift"><Icon name="gift" size={15} width={2.4} /> +{WELCOME_CREDITS} credits added to try Post Everywhere</span>}
         <p>Opening your app…</p>
       </div>
     );

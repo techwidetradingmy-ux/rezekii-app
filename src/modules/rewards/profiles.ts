@@ -22,11 +22,11 @@ export function cleanCreator(v: Record<string, unknown>): CreatorDetails | null 
   const d: CreatorDetails = {
     name: text(v.name), birthday: text(v.birthday, 10), country: text(v.country, 2).toUpperCase() || "MY", state: text(v.state, 40), whatsapp: text(v.whatsapp, 16),
     gender: gender ?? "Female", types: list(v.types, 6), niches: list(v.niches, 3),
-    // Optional (owner, 31 Oct 2026).
     ...((RACES as readonly string[]).includes(String(v.race)) ? { race: String(v.race) } : {}),
   };
   const age = (Date.now() - Date.parse(d.birthday)) / (365.25 * 86400_000);
-  const ok = d.name.length >= 2 && DATE.test(d.birthday) && age >= 13 && age <= 100 && !!d.state && PHONE.test(d.whatsapp) && d.types.length > 0 && d.niches.length > 0 && !!gender;
+  // Race is required (owner, 31 Oct 2026).
+  const ok = d.name.length >= 2 && DATE.test(d.birthday) && age >= 13 && age <= 100 && !!d.state && PHONE.test(d.whatsapp) && d.types.length > 0 && d.niches.length > 0 && !!gender && !!d.race;
   return ok ? d : null;
 }
 
@@ -65,4 +65,14 @@ export async function saveProfile(userId: string, side: Side, details: CreatorDe
     body: JSON.stringify({ user_id: userId, side, details, complete: true, saved_at: new Date().toISOString() }),
   });
   return { ok: true };
+}
+
+/**
+ * What's still missing before Today's Ideas and AI Picks unlock (owner, 31 Oct 2026: they need her details for the analysis):
+ * the sign-up details, or just her race on a profile saved before race was asked. Null when complete.
+ */
+export async function detailsMissing(userId: string): Promise<"profile" | "race" | null> {
+  const p = await profileOf<CreatorDetails>(userId, "creator");
+  if (!p?.complete) return "profile";
+  return p.details.race ? null : "race";
 }

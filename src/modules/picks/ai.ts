@@ -5,7 +5,7 @@ import { creatorDetail, rankings } from "../rankings/store.ts";
 import { lineEarned, lineGmv } from "../sales/summary.ts";
 import { allProducts, type TapProduct } from "../tap/catalog.ts";
 import { profileOf, type CreatorDetails } from "../rewards/profiles.ts";
-import { ratingsOf, salesProfile, showcaseOf } from "./mine.ts";
+import { ratingsOf, salesProfile, showcaseOf, type Channel } from "./mine.ts";
 
 /**
  * AI Picks (owner, 31 Oct 2026): a deep look at her last 30 days, then the products on TikTok Shop that fit her best.
@@ -55,6 +55,28 @@ async function list(period: "1D" | "7D" | "30D", cat: string, day?: string): Pro
 }
 const gmvOf = (x: Record<string, unknown>) => { const [lo = 0, hi = lo] = nums(x.gmv_range); return (lo + hi) / 2; };
 
+/**
+ * Products in TikTok's daily top-100 selling videos over the newest `days` days, with the videos' sales (a video's GMV split
+ * evenly between the products in it) and how many of those videos show each product.
+ */
+export async function videoProducts(days: number): Promise<Map<string, { lo: number; hi: number; videos: number; name: string; day: string }>> {
+  const rows = (await (await supabaseRest(`market_snapshots?dataset=eq.videos&slot=eq.${enc("1D|LOCAL")}&select=as_of,items&order=as_of.desc&limit=${days}`)).json()) as { as_of: string; items: Record<string, unknown>[] }[];
+  const out = new Map<string, { lo: number; hi: number; videos: number; name: string; day: string }>();
+  for (const r of rows)
+    for (const v of r.items ?? []) {
+      const ps = (v.product_infos as { product_id?: string; product_name?: string }[] | undefined) ?? [];
+      const [lo = 0, hi = lo] = nums(v.gmv_range);
+      for (const p of ps) {
+        if (!p.product_id) continue;
+        const m = out.get(p.product_id) ?? out.set(p.product_id, { lo: 0, hi: 0, videos: 0, name: p.product_name ?? "Product", day: r.as_of }).get(p.product_id)!;
+        m.lo += lo / ps.length;
+        m.hi += hi / ps.length;
+        m.videos += 1;
+      }
+    }
+  return out;
+}
+
 /** Top-100 sales in a main category, newest 7 days against the 7 before, from TikTok's daily lists (kept per day). */
 const rises = new Map<string, number | null>();
 async function riseOf(cat: string): Promise<number | null> {
@@ -81,10 +103,14 @@ async function lookupMany(token: string, ids: string[]): Promise<Map<string, Loo
 }
 const leafOf = (p: LookedUpProduct) => p.category_chains?.find((x) => x.is_leaf) ?? p.category_chains?.at(-1);
 
-export async function aiPicks(userId: string, token: string, username: string | null): Promise<AiResult> {
+/**
+ * `channel` (owner, 31 Oct 2026): "all" by default; "video" or "live" analyses only her sales from that channel, scores the
+ * picks on it, and for video also counts products in TikTok's top-selling videos.
+ */
+export async function aiPicks(userId: string, token: string, username: string | null, channel: Channel = "all"): Promise<AiResult & { channel: Channel }> {
   const now = Date.now();
   const [prof, showcase, tap, saved] = await Promise.all([
-    salesProfile(userId, token),
+    salesProfile(userId, token, 30, channel),
     showcaseOf(token, 4).catch(() => ({ items: [], more: false })),
     allProducts().catch(() => [] as TapProduct[]),
     profileOf<CreatorDetails>(userId, "creator").catch(() => null),
@@ -173,6 +199,8 @@ export async function aiPicks(userId: string, token: string, username: string | 
           sold: p.market_performance?.historical_sold_quantity ?? 0, rating: num(p.review?.overall_score) || null, samples: 0, cat: null, leaf, source: "market", ...(fromTap(tapById.get(p.id)) ?? {}),
         });
   }
+  // Video view: products in TikTok's top-selling videos of the last 7 days.
+  const inVideos = channel === "video" ? await videoProducts(7).catch(() => new Map<string, { lo: number; hi: number; videos: number }>()) : new Map<string, { lo: number; hi: number; videos: number }>();
   // c. Rezekii campaign products in her leaf categories.
   const herLeaf = new Set([...prof.categories.keys()]);
   const ours = tap.filter((p) => !skip(p.id) && !pool.has(p.id) && p.stock !== 0 && p.category && herLeaf.has(p.category));
@@ -196,7 +224,8 @@ export async function aiPicks(userId: string, token: string, username: string | 
       const price = p.price ?? 0;
       const priceFit = lo === null || hi === null ? 10 : price >= lo && price <= hi ? 20 : price >= lo / 2 && price <= hi * 2 ? 10 : 0;
       const rate = Math.round((((p.silver ?? p.rate ?? 0) / maxRate) * 15));
-      const demand = Math.round((Math.log10(p.sold + 1) / Math.log10(maxSold + 1)) * 20);
+      const vid = inVideos.get(p.id);
+      const demand = Math.min(20, Math.round((Math.log10(p.sold + 1) / Math.log10(maxSold + 1)) * 20) + (vid ? 6 : 0));
       const rating = p.rating === null ? 5 : p.rating >= 4.8 ? 10 : p.rating >= 4.5 ? 7 : 4;
       const split = (p.leaf ? prof.categories.get(p.leaf) : undefined) ?? (p.cat ? prof.mains.get(p.cat) : undefined);
       const v = split && split.video + split.live > 0 ? pct(split.video, split.video + split.live) : allSplit ? pct(video, allSplit) : 50;
@@ -206,6 +235,7 @@ export async function aiPicks(userId: string, token: string, username: string | 
         leafShare > 0 ? `${p.leaf} is ${Math.round(leafShare * 100)}% of your sales` : mainShare > 0 && p.cat ? `In ${CAT[p.cat]}, your main category` : null,
         priceFit === 20 ? "In your price range" : null,
         t30 && t30.rank <= 100 ? `Top ${t30.rank <= 10 ? 10 : t30.rank <= 50 ? 50 : 100} on TikTok in ${CAT[t30.cat]}, last 30 days` : null,
+        vid ? `In ${vid.videos} of TikTok's top-selling videos this week` : null,
         p.samples > 0 ? "Free sample through Rezekii" : p.source === "rezekii" ? "Rezekii campaign" : null,
         p.rating !== null && p.rating >= 4.8 ? `Rated ${p.rating.toFixed(1)}★` : null,
       ].filter((x): x is string => !!x);
@@ -230,6 +260,7 @@ export async function aiPicks(userId: string, token: string, username: string | 
   const peers = built
     ? built.creators["30D"]
         .filter((r) => built.details[r[1]]?.c?.[0] === topMains[0] && r[1] !== username?.toLowerCase())
+        .filter((r) => { const vs = built.details[r[1]]?.vs ?? -1; return channel === "all" || (channel === "video" ? vs >= 50 : vs >= 0 && vs < 50); })
         .slice(0, 5)
         .map((r) => ({ user: r[1], name: r[2] || r[1], img: built.details[r[1]]?.a ?? null, followers: r[3], lo: r[5], hi: r[6], video: built.details[r[1]]?.vs ?? -1 }))
     : [];
@@ -240,6 +271,7 @@ export async function aiPicks(userId: string, token: string, username: string | 
   const compared = pool.size;
   return {
     linked: true,
+    channel,
     profile: {
       categories: mains.filter(([, s]) => s.share >= 0.01).slice(0, 4).map(([c, s]) => [CAT[c] ?? c, Math.round(s.share * 100)]),
       video: allSplit ? pct(video, allSplit) : 0,

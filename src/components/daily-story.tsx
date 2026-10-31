@@ -74,18 +74,18 @@ export function StoryCard({ page, hide = false, date }: { page: StoryPage; hide?
  * The Daily Story viewer (owner, 30 Oct 2026): like a story app, it plays page by page. Tap the right side for next, the left
  * side for back, hold to pause. Each page has its own button and Share.
  */
-export function DailyStory({ day = "good", onClose }: { day?: SampleDay; onClose: () => void }) {
-  // Signed in (owner, 31 Oct 2026): her real story of yesterday, made on the server.
+export function DailyStory({ day = "good", onClose, pages }: { day?: SampleDay; onClose: () => void; pages?: StoryPage[] | null }) {
+  // Signed in (owner, 31 Oct 2026): her real story of yesterday, made on the server (or already read by the header).
   const { live } = useDemo();
-  const [real, setReal] = useState<StoryPage[] | null>(null);
+  const [real, setReal] = useState<StoryPage[] | null>(pages?.length ? pages : null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
-    if (!live) return;
+    if (!live || pages?.length) return;
     fetch("/api/v2/story", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d: { pages?: StoryPage[] } | null) => (d?.pages?.length ? setReal(d.pages) : setFailed(true)))
       .catch(() => setFailed(true));
-  }, [live]);
+  }, [live, pages]);
   if (!live) return <StoryPlayer pages={storyFor(day)} onClose={onClose} />;
   if (real) return <StoryPlayer pages={real} onClose={onClose} />;
   return (

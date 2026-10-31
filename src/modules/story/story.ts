@@ -55,6 +55,9 @@ export async function storyOf(user: User, origin: string): Promise<StoryPage[]> 
     supabaseRest("rpc/commission_total", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ p_user: user.id }) }).then((r) => r.json()).then(Number).catch(() => 0),
   ]);
 
+  // Nothing yet (a new creator: no orders in 8 days, no posts, no friends joined): no story at all.
+  if (!lines.length && !postsY && !socialY.length && !joinedY && !postsAll && !socialAll) return [];
+
   // Yesterday against the 7 days before it.
   const startOf = (t: string) => Math.floor((Date.parse(t) + MYT) / DAY);
   let gmv = 0, commission = 0;

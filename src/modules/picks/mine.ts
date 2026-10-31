@@ -67,10 +67,16 @@ export type SalesProfile = {
   units: number[];
 };
 
-/** Her own last 30 days of sales, read for picks: categories, video or LIVE, prices and the last 7 days per product. */
-export async function salesProfile(userId: string, token: string, days = 30): Promise<SalesProfile> {
+export type Channel = "all" | "video" | "live";
+
+/**
+ * Her own last 30 days of sales, read for picks: categories, video or LIVE, prices and the last 7 days per product. `channel`
+ * keeps only sales from videos or from LIVEs (owner, 31 Oct 2026: Overall, Video and LIVE views).
+ */
+export async function salesProfile(userId: string, token: string, days = 30, channel: Channel = "all"): Promise<SalesProfile> {
   const now = Date.now();
-  const lines = await linesBetween(userId, now - days * DAY, now).catch(() => []);
+  const all = await linesBetween(userId, now - days * DAY, now).catch(() => []);
+  const lines = channel === "all" ? all : all.filter((l) => kindOf(l.content_type) === channel);
   const today = Math.floor((now + MYT) / DAY);
   const products = new Map<string, ProductSales>();
   const orders = new Set<string>();

@@ -168,7 +168,8 @@ async function rankings(t: TaskRow, { deadline }: Ctx): Promise<StepResult> {
   // The full build and its three saves take about 35 seconds: start it only at the beginning of a tick, so it isn't cut off.
   if (Date.now() > deadline - 40_000) return { count: 0, more: true, waitMs: 0 };
   const built = await buildRankings((t.params as { day: string }).day);
-  return { count: built.creators["30D"].length };
+  const followUps: PlannedTask[] = (t.params as { manual?: boolean }).manual ? [{ key: `photos|${t.key}`, kind: "photos", params: {}, priority: 2 }] : [];
+  return { count: built.creators["30D"].length, followUps };
 }
 
 /**

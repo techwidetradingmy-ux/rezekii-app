@@ -387,14 +387,14 @@ export default function Account() {
                 {locked ? <b className="pf-v">{gender}</b> : <Seg value={gender} options={["Female", "Male"] as const} onChange={setGender} />}
               </div>
               <div className="pf-f">
-                <span className="pf-l">Race</span>
+                <span className="pf-l">Race {(!locked || !raceSaved) && <Req />}</span>
                 {locked && raceSaved ? <b className="pf-v">{race}</b> : (
-                  <select className="np-input" style={{ maxWidth: 260 }} value={race} aria-label="Race (optional)" onChange={(e) => {
+                  <select className="np-input" style={{ maxWidth: 260 }} value={race} aria-label="Race" onChange={(e) => {
                     setRace(e.target.value);
                     // Saved profiles can still add it once (owner, 31 Oct 2026).
                     if (locked && live && e.target.value) void saveProfile("creator", { name, birthday, country, state, whatsapp: intl, gender, race: e.target.value, types, niches: [niche, sub1, sub2].filter(Boolean) }).then(() => { setRaceSaved(true); toast("Race saved"); }).catch((err: Error) => toast(err.message));
                   }}>
-                    <option value="">Choose (optional)</option>
+                    <option value="">Choose</option>
                     {RACES.map((r) => <option key={r} value={r}>{r}</option>)}
                   </select>
                 )}
@@ -737,7 +737,7 @@ export default function Account() {
             <div><dt>State</dt><dd>{state}</dd></div>
             <div><dt>WhatsApp</dt><dd>{cc} {local ? prettyNum(cc, local) : ""}</dd></div>
             <div><dt>Gender</dt><dd>{gender}</dd></div>
-            <div><dt>Race</dt><dd>{race || "Not given"}</dd></div>
+            <div><dt>Race</dt><dd>{race}</dd></div>
             <div><dt>Creator type</dt><dd>{types.join(", ")}</dd></div>
             <div><dt>Niches</dt><dd>{[niche, sub1, sub2].filter(Boolean).join(" · ")}</dd></div>
           </dl>

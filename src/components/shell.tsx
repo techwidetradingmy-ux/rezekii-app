@@ -3,7 +3,7 @@
 import { useWho } from "@/components/demo";
 import { FeedbackForm } from "@/components/feedback-form";
 import { DailyStory } from "@/components/daily-story";
-import { STORY_SEEN, storyDayKey, type SampleDay } from "@/lib/daily-story";
+import { STORY_SEEN, storyDayKey, type SampleDay, type StoryPage } from "@/lib/daily-story";
 import { SUPPORT } from "@/lib/support";
 import Image from "next/image";
 import Link from "next/link";
@@ -137,12 +137,19 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
   const [story, setStory] = useState(false);
   const [storyNew, setStoryNew] = useState(false);
   const [storyDay, setStoryDay] = useState<SampleDay>("good");
+  // Signed in: her story, read once; a creator with nothing yet has none (owner, 31 Oct 2026), so her photo just opens My Account.
+  const [storyPages, setStoryPages] = useState<StoryPage[] | null>(null);
+  useEffect(() => {
+    if (!live || app !== "creator") return;
+    fetch("/api/v2/story", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d: { pages?: StoryPage[] } | null) => setStoryPages(d?.pages ?? [])).catch(() => setStoryPages([]));
+  }, [live, app]);
+  const hasStory = app === "creator" && (!live || !!storyPages?.length);
   useLayoutEffect(() => {
     if (app !== "creator") return;
     setStoryDay(new URLSearchParams(window.location.search).get("day") === "slow" ? "slow" : "good");
     try { setStoryNew(localStorage.getItem(STORY_SEEN) !== storyDayKey()); } catch { setStoryNew(true); }
   }, [app]);
-  const ring = app === "creator" ? (storyNew ? " story new" : " story") : "";
+  const ring = hasStory ? (storyNew ? " story new" : " story") : "";
   useLayoutEffect(() => {
     const open = () => setAcctOpen(true);
     window.addEventListener(OPEN_ACCOUNT_MENU, open);
@@ -257,7 +264,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
             <Icon name="bell" size={20} />
             {live ? !!unreadNotes && <b>{unreadNotes > 99 ? "99+" : unreadNotes}</b> : <b>3</b>}
           </Link>
-          <Link href={ACCOUNT[app]} className={`v2-acct${ring}`} aria-label={storyNew && app === "creator" ? "Watch your Daily Story" : undefined} onClick={(e) => { if (app === "creator" && storyNew) { e.preventDefault(); setStory(true); return; } if (app === "creator" && window.matchMedia("(max-width: 760px)").matches) { e.preventDefault(); setAcctOpen(true); } }}>
+          <Link href={ACCOUNT[app]} className={`v2-acct${ring}`} aria-label={storyNew && hasStory ? "Watch your Daily Story" : undefined} onClick={(e) => { if (hasStory && storyNew) { e.preventDefault(); setStory(true); return; } if (app === "creator" && window.matchMedia("(max-width: 760px)").matches) { e.preventDefault(); setAcctOpen(true); } }}>
             {who.photo ? (
               // eslint-disable-next-line @next/next/no-img-element
               <span className="v2-av photo"><img src={who.photo} alt="" /></span>
@@ -279,8 +286,8 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
           </nav>
         </div>
       )}
-      {acctOpen && <AccountPanel onClose={() => setAcctOpen(false)} onStory={() => { setAcctOpen(false); setStory(true); }} />}
-      {story && <DailyStory day={storyDay} onClose={() => { setStory(false); setStoryNew(false); }} />}
+      {acctOpen && <AccountPanel onClose={() => setAcctOpen(false)} onStory={hasStory ? () => { setAcctOpen(false); setStory(true); } : undefined} />}
+      {story && <DailyStory day={storyDay} pages={storyPages} onClose={() => { setStory(false); setStoryNew(false); }} />}
       <main className="site-wrap v2-main">
         {banner}
         {children}
@@ -340,7 +347,7 @@ const AI_PAGES = ["AI Picks", "Today's Ideas", "AI Video", "AI Competitors"];
 const AiSpark = ({ label }: { label: string }) => (AI_PAGES.includes(label) ? <svg className="v2-pgai" viewBox="0 0 24 24" width="17" height="17" aria-label="AI"><path d="M11 3Q12 11 20 12Q12 13 11 21Q10 13 2 12Q10 11 11 3Z" fill="currentColor" /><path d="M19 1.5Q19.3 4.7 22.5 5Q19.3 5.3 19 8.5Q18.7 5.3 15.5 5Q18.7 4.7 19 1.5Z" fill="currentColor" /></svg> : null);
 
 /** Every account section in a panel from the right (phones), with her photo, level and streak on top. */
-function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory: () => void }) {
+function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory?: () => void }) {
   const you = useWho();
   const path = usePathname();
   const { toast, linked, live, me } = useDemo();
@@ -384,7 +391,7 @@ function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory: () =
             <span className="ap-chips">
               <i className={`lv ${level.toLowerCase()}`} title={`${level} creator`} aria-label={`${level} creator`}><Icon name="gem" size={13} /></i>
               <i className="st" title={`${streak}-day streak`} aria-label={`${streak}-day streak`}><Icon name="flame" size={13} />{streak}</i>
-              <button type="button" className="ap-story" onClick={onStory}><Icon name="video" size={13} width={2.4} /> Story</button>
+              {onStory && <button type="button" className="ap-story" onClick={onStory}><Icon name="video" size={13} width={2.4} /> Story</button>}
             </span>
           </span>
           <span className="ap-tools">

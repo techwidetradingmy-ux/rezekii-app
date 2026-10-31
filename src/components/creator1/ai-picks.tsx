@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { DetailsLock } from "@/components/details-lock";
 import { updatedWhen } from "@/components/data-note";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { AiHead, Count, Hidden, Tip } from "@/components/ui";
+import { AiHead, Count, Hidden, Seg, Tip } from "@/components/ui";
 import { productHref, requestedSamples } from "@/lib/product-view";
 import { AI_PICKS, AI_PROFILE, PRODUCTS, bestRate, product, rateFor, rm, short, type AiPick } from "@/lib/mock";
 import { canGetSample } from "@/lib/mock-creator1";
@@ -40,6 +41,8 @@ type LivePick = {
 };
 type LivePicks = {
   linked: boolean;
+  /** Her details aren't complete yet (owner, 31 Oct 2026): AI Picks stays locked. */
+  locked?: "profile" | "race";
   profile: {
     categories: [string, number][]; video: number; price: string | null; aov: number; orders: number; days: number; gmv: number; commission: number;
     hours: [string, number][]; you: { gender: string | null; race: string | null } | null; audience: { female: number; male: number; age: string; places: string } | null;
@@ -75,6 +78,7 @@ export function AiPicks() {
   const [requested, setRequested] = useState<string[]>([]);
   useEffect(() => setRequested(requestedSamples()), []);
   const [real, setReal] = useState<LivePicks | null>(null);
+  const [channel, setChannel] = useState<"Overall" | "Video" | "LIVE">("Overall");
   const [failed, setFailed] = useState(false);
   const linked = live ? !!me?.shop : demoLinked;
 
@@ -92,19 +96,20 @@ export function AiPicks() {
     let on = true;
     setReal(null);
     setFailed(false);
-    fetch(`/api/v2/ai-picks${run ? "?fresh=1" : ""}`, { cache: "no-store" })
+    fetch(`/api/v2/ai-picks?channel=${channel === "Video" ? "video" : channel === "LIVE" ? "live" : "all"}${run ? "&fresh=1" : ""}`, { cache: "no-store" })
       .then((r) => (r.ok ? (r.json() as Promise<LivePicks>) : null))
       .then((d) => {
         if (!on) return;
         if (!d) return setFailed(true);
         setReal(d);
         setPhase(STEPS.length);
+        if (d.locked) return;
         // Open on the side she sells more on.
         setFit(d.profile.video >= 50 || !d.profile.orders ? "video" : "live");
       })
       .catch(() => on && setFailed(true));
     return () => { on = false; };
-  }, [run, live, linked]);
+  }, [run, live, linked, channel]);
 
   const level = me?.level ?? "silver";
   const items: Item[] = live
@@ -135,7 +140,8 @@ export function AiPicks() {
 
   const done = phase >= STEPS.length;
   const count = (f: Fit) => items.filter((pk) => pk.fit === f).length;
-  const list = items.filter((pk) => pk.fit === fit).sort((a, b) => {
+  // Signed in, the Overall / Video / LIVE switch at the top decides; the sample keeps its video and LIVE tabs.
+  const list = items.filter((pk) => live || pk.fit === fit).sort((a, b) => {
     if (sort === "Best-selling") return b.sold - a.sold;
     if (sort === "Top commission") return b.rate - a.rate || b.match - a.match;
     if (sort === "Lowest price") return a.price - b.price;
@@ -166,6 +172,14 @@ export function AiPicks() {
     );
   }
 
+  if (live && real?.locked) {
+    return (
+      <section id="ai-picks" className="v2-aicard ai-box" aria-label="AI picks">
+        <AiHead title="AI Picks" sub="Your account analysed from the last 30 days, and the products that fit you best." />
+        <DetailsLock missing={real.locked} what="AI Picks" />
+      </section>
+    );
+  }
   const at = real ? updatedWhen(real.at) : "09:12";
   const prof = real?.profile;
   return (
@@ -182,6 +196,12 @@ export function AiPicks() {
         )}
       </AiHead>
 
+      {live && (
+        <div className="ai-channel">
+          <Seg value={channel} options={["Overall", "Video", "LIVE"] as const} onChange={setChannel} />
+          <small>{channel === "Overall" ? "All your sales" : channel === "Video" ? "Only your sales from videos, and products in TikTok's top-selling videos" : "Only your sales from LIVEs"}</small>
+        </div>
+      )}
       {failed ? null : !done ? (
         <div className="ai-run" aria-live="polite">
           <ol className="ai-steps">
@@ -225,7 +245,7 @@ export function AiPicks() {
                   <em>Not enough sales yet</em>
                 )}
               </div>
-              <div>
+              {channel === "Overall" && <div>
                 <small>Where you sell more</small>
                 {prof.orders ? (
                   <>
@@ -236,7 +256,7 @@ export function AiPicks() {
                 ) : (
                   <em>No orders in the last 30 days</em>
                 )}
-              </div>
+              </div>}
               <div>
                 <small>Your price range</small>
                 <b>{prof.price ?? "Not enough sales yet"}</b>
@@ -317,7 +337,7 @@ export function AiPicks() {
             </div>
           )}
 
-          <div className="ai-fit" role="group" aria-label="Video or LIVE">
+          {!live && <div className="ai-fit" role="group" aria-label="Video or LIVE">
             <button type="button" className={fit === "video" ? "on" : undefined} aria-pressed={fit === "video"} onClick={() => setFit("video")}>
               <span className="ai-fico"><Icon name="video" size={18} /></span>
               <span><b>Best for video <em>{count("video")}</em></b><small>Sells more on video</small></span>
@@ -326,7 +346,7 @@ export function AiPicks() {
               <span className="ai-fico"><span className="ai-dot" />LIVE</span>
               <span><b>Best for LIVE <em>{count("live")}</em></b><small>Needs a demo</small></span>
             </button>
-          </div>
+          </div>}
 
           <div className="ai-sort nv-noscroll" role="group" aria-label="Sort picks">
             <span>Sort</span>
@@ -337,7 +357,7 @@ export function AiPicks() {
 
           {list.length === 0 && (
             <p className="v2-muted" style={{ margin: 0 }}>
-              {items.length === 0 ? "No picks right now. Rezekii adds products every day, so check again tomorrow." : fit === "video" ? "No video picks this time. Your sales in these categories come mostly from LIVE." : "No LIVE picks this time. Your sales in these categories come mostly from video."}
+              {live && !prof?.orders ? `No ${channel === "Overall" ? "" : channel === "Video" ? "video " : "LIVE "}sales in the last 30 days to learn from yet.` : items.length === 0 ? "No picks right now. Rezekii adds products every day, so check again tomorrow." : fit === "video" ? "No video picks this time. Your sales in these categories come mostly from LIVE." : "No LIVE picks this time. Your sales in these categories come mostly from video."}
             </p>
           )}
 
