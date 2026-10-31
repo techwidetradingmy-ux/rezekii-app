@@ -65,6 +65,32 @@ function LoadPrefs({ onLoad }: { onLoad: (p: Record<string, boolean>) => void })
   return null;
 }
 
+/** Her messages and change requests with the team's replies (owner, 1 Nov 2026: replies are read in the app). */
+function MyMessages() {
+  const [list, setList] = useState<{ id: string; kind: string; message: string; status: string; reply: string | null; replied_at: string | null; seen_at: string | null; created_at: string }[] | null>(null);
+  useEffect(() => {
+    fetch("/api/v2/feedback", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d) => setList(d?.messages ?? [])).catch(() => setList([]));
+  }, []);
+  if (!list?.length) return null;
+  const when = (t: string) => new Date(t).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" });
+  return (
+    <div className="cr2-cells acc-msgs" aria-label="My messages">
+      <span className="lbl" style={{ padding: "10px 14px 0", display: "block" }}>My Messages</span>
+      {list.slice(0, 8).map((m) => (
+        <div key={m.id} className="cr2-cell stack acc-msg">
+          <span className="acc-msg-h"><b>{m.kind}</b><small>{when(m.created_at)}</small>{m.reply && !m.seen_at && <i className="badge">New Reply</i>}</span>
+          <span className="v2-small" style={{ whiteSpace: "pre-wrap" }}>{m.message}</span>
+          {m.reply ? (
+            <span className="acc-reply"><b>Rezekii Team{m.replied_at ? ` · ${when(m.replied_at)}` : ""}</b><span style={{ whiteSpace: "pre-wrap" }}>{m.reply}</span></span>
+          ) : (
+            <small className="v2-muted">{m.status === "handled" ? "Seen by the team" : "Waiting for the team"}</small>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function Account() {
   const you = useWho();
   const { linked, setLinked, toast, consent, waVerified: verified, setWaVerified: setVerified, live, me, refreshMe } = useDemo();
@@ -452,7 +478,7 @@ export default function Account() {
               {locked ? (
                 <>
                   <span>Need a change? Ask support.</span>
-                  <button type="button" className="btn-outline v2-btn-sm" onClick={() => setChangeSheet(true)}><Icon name="whatsapp" size={15} /> Contact support</button>
+                  <button type="button" className="btn-outline v2-btn-sm" onClick={() => setChangeSheet(true)}><Icon name="edit" size={15} /> Request a Change</button>
                 </>
               ) : (
                 <>
@@ -708,6 +734,7 @@ export default function Account() {
         </section>
         <section className="cr2-group acc-in-panel">
           <h2>Help & Feedback</h2>
+          {live && <MyMessages />}
           <div className="cr2-cells">
             {/* The page footer is hidden on phones, so its links live here (owner, 29 Oct 2026). */}
             <a className="cr2-cell acc-link" href={SUPPORT.waLink} target="_blank" rel="noreferrer"><span className="lbl">Contact Support</span><span className="v2-small">WhatsApp {SUPPORT.wa}</span><Icon name="arrow" size={16} /></a>
@@ -767,7 +794,16 @@ export default function Account() {
           </label>
           <label className="v2-field">Change it to<input className="np-input" value={change.to} onChange={(e) => setChange({ ...change, to: e.target.value })} placeholder="New value" /></label>
           <label className="v2-field">Why <span className="pf-opt">Optional</span><textarea className="np-input" rows={2} value={change.why} onChange={(e) => setChange({ ...change, why: e.target.value })} placeholder="e.g. I changed my number" /></label>
-          <button type="button" className="np-btn" disabled={!change.to.trim()} onClick={() => { setChangeSheet(false); setChange({ what: "WhatsApp number", to: "", why: "" }); toast("Sent. We'll WhatsApp you within 1 working day."); }}>Send to support</button>
+          {/* Saved to the team's Feedback Inbox as a change request (owner, 1 Nov 2026); the reply comes here in the app. */}
+          <button type="button" className="np-btn" disabled={!change.to.trim()} onClick={() => {
+            const message = `${change.what}: change to "${change.to.trim()}"${change.why.trim() ? `. Why: ${change.why.trim()}` : ""}`;
+            const done = () => { setChangeSheet(false); setChange({ what: "WhatsApp number", to: "", why: "" }); toast("Sent. The team's reply shows in Settings › My Messages."); };
+            if (!live) return done();
+            fetch("/api/v2/feedback", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ kind: "Change request", message, page: "/app/account#profile" }) })
+              .then((r) => (r.ok ? done() : toast("Didn't send. Please try again.")))
+              .catch(() => toast("Didn't send. Please try again."));
+          }}>Send Request</button>
+          <p className="v2-small" style={{ margin: 0 }}>The team checks it and replies here in the app.</p>
         </Sheet>
       )}
       {waSheet && (

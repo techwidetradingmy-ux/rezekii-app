@@ -285,3 +285,12 @@
 .lb-st-badge b { font-size: 15px; font-weight: 900; }
 .mx-strip { text-decoration: none; }
 @media (max-width: 560px) { .lb-tiers { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* Silver either way (owner, 1 Nov 2026): two bars, reach either one. */
+.lb-silver { display: grid; gap: 8px; padding: 12px 14px; border-radius: 16px; background: var(--surface2); }
+.lb-silver > b { font-size: 14px; font-weight: 900; }
+.lb-sbar { display: grid; gap: 4px; }
+.lb-sbar > span { display: flex; justify-content: space-between; gap: 8px; }
+.lb-sbar small { font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.lb-sbar em { font-style: normal; font-size: 12.5px; font-weight: 800; }
+.lb-sor { justify-self: center; padding: 0 10px; border-radius: 99px; background: var(--surface); font-size: 11.5px; font-weight: 900; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }

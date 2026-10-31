@@ -2,7 +2,7 @@ import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { tx } from "../../lib/i18n/lang.ts";
 import { mytDay } from "../refresh/plan.ts";
 import { historyDone, linkedCreators } from "../sales/orders.ts";
-import { monthSales, nextLevel, previousMonth, type Level, type LevelState } from "./rules.ts";
+import { SILVER_SALES, SILVER_VIDEOS, monthDelta, monthSales, nextLevel, previousMonth, silverReached, type Level, type LevelState } from "./rules.ts";
 
 const json = (body: unknown, prefer = "return=minimal"): RequestInit => ({ method: "POST", headers: { prefer }, body: JSON.stringify(body) });
 
@@ -15,7 +15,7 @@ const toState = (r: LevelRow | undefined): LevelState => ({
 
 /** A creator's daily totals from the day before last month began. */
 async function dailyRows(username: string, today: string): Promise<DailyRow[]> {
-  const from = `${previousMonth(`${previousMonth(today)}-01`)}-28`;
+  const from = `${previousMonth(`${previousMonth(today)}-01`)}-25`;
   const rows = (await (await supabaseRest(`creator_daily?username=eq.${encodeURIComponent(username)}&day=gte.${from}&day=lte.${today}&select=day,paid,sample_videos,videos,lives,samples_shipping,samples_delivered&order=day`)).json()) as DailyRow[];
   return rows.map((r) => ({ ...r, paid: Number(r.paid) }));
 }
@@ -69,8 +69,13 @@ export async function updateLevels(today: string): Promise<number> {
     if (source === "wait") continue;
     const days = await dailyRows(u.tiktok_username.toLowerCase(), today);
     const before = toState(byUser.get(u.id));
-    const lastMonthSales = source === "orders" ? await tapSales(u.id, monthStart(last), monthStart(nextMonth(last))) : monthSales(days, last);
-    const after = nextLevel(before, { today, sampleVideos: days.at(-1)?.sample_videos ?? 0, lastMonthSales });
+    const month = today.slice(0, 7);
+    // Sales and videos for Rezekii samples, last month and this month so far (owner, 1 Nov 2026: either one makes Silver).
+    const [lastMonthSales, monthSalesNow] = source === "orders"
+      ? await Promise.all([tapSales(u.id, monthStart(last), monthStart(month)), tapSales(u.id, monthStart(month), new Date().toISOString())])
+      : [monthSales(days, last), monthSales(days, month)];
+    const sv = (m: string) => monthDelta(days, m, (d) => d.sample_videos ?? 0);
+    const after = nextLevel(before, { today, lastMonthSales, lastMonthSampleVideos: sv(last), monthSales: monthSalesNow, monthSampleVideos: sv(month) });
     if (after.level !== before.level) changed++;
     await supabaseRest("creator_levels?on_conflict=user_id", json({
       user_id: u.id, level: after.level, level_since: after.levelSince, gold_invited: after.goldInvited, demoted_at: after.demotedAt, checked_month: after.checkedMonth, updated_at: new Date().toISOString(),
@@ -87,6 +92,8 @@ export async function levelOf(userId: string): Promise<Level> {
 
 export type LevelPage = {
   level: Level; levelSince: string | null; celebrated: Level; lifetime: number; sampleVideos: number;
+  /** This month's progress to Silver (owner, 1 Nov 2026): either one is enough. */
+  silver: { sales: number; salesGoal: number; sampleVideos: number; videosGoal: number; reached: boolean; month: string };
   /** TAP sales last month: what decided this month's level. */
   lastMonth: number | null;
   month: { sales: number; videos: number; sampleVideos: number; delivered: number; shipping: number } | null; asOf: string | null;
@@ -109,8 +116,17 @@ export async function levelPage(userId: string, username: string | null): Promis
   const [lifetime, thisMonth, lastMonth] = fromOrders
     ? await Promise.all([tapSales(userId, "2000-01-01T00:00:00Z", new Date().toISOString()), tapSales(userId, monthStart(month), new Date().toISOString()), tapSales(userId, monthStart(prev), monthStart(month))])
     : [last?.paid ?? 0, last && before ? monthSales(days, month) ?? 0 : null, monthSales(days, prev)];
+  const monthVideos = last && before ? Math.max(0, last.sample_videos - before.sample_videos) : 0;
+  const reached = silverReached(thisMonth, monthVideos);
+  // Up as soon as she reaches it (owner, 1 Nov 2026), not only at the next daily update.
+  let level: Level = row?.level ?? "bronze";
+  if (reached && level === "bronze") {
+    level = "silver";
+    await supabaseRest("creator_levels?on_conflict=user_id", json({ user_id: userId, level, level_since: today, demoted_at: null, checked_month: month, updated_at: new Date().toISOString() }, "resolution=merge-duplicates,return=minimal")).catch(() => null);
+  }
   return {
-    level: row?.level ?? "bronze", levelSince: row?.level_since ?? null, celebrated: row?.celebrated ?? "bronze",
+    level, levelSince: level !== (row?.level ?? "bronze") ? today : row?.level_since ?? null, celebrated: row?.celebrated ?? "bronze",
+    silver: { sales: Math.round((thisMonth ?? 0) * 100) / 100, salesGoal: SILVER_SALES, sampleVideos: monthVideos, videosGoal: SILVER_VIDEOS, reached, month },
     lifetime, sampleVideos: last?.sample_videos ?? 0, lastMonth,
     month: thisMonth !== null ? {
       sales: thisMonth, videos: last && before ? Math.max(0, last.videos - before.videos) : 0, sampleVideos: last && before ? Math.max(0, last.sample_videos - before.sample_videos) : 0,
@@ -131,8 +147,8 @@ export const DEFAULT_BENEFITS: Benefit[] = [
   { label: tx("Commission on Techwide campaign links"), v: [tx("Open Plan rate"), tx("Open Plan + 1%"), tx("Special rate for you")], key: true },
   { label: tx("Free product samples"), v: ["yes", "yes", "yes"] },
   { label: tx("Level emblem on your profile and in Rankings"), v: ["yes", "yes", "yes"] },
-  { label: tx("How you get it"), v: [tx("When you join"), tx("10 sample videos + RM1,000 sales through Rezekii last month"), tx("By invitation")] },
-  { label: tx("How you keep it"), v: [tx("Always"), tx("RM1,000 sales through Rezekii every month"), tx("Set by Techwide")] },
+  { label: tx("How you get it"), v: [tx("When you join"), tx("Either one in a month: RM1,000 sales through Rezekii, or 10 videos for Rezekii samples. You go up as soon as you reach it"), tx("By invitation")] },
+  { label: tx("How you keep it"), v: [tx("Always"), tx("Reach either one again every month (checked on the 1st)"), tx("Set by Techwide")] },
 ];
 
 /** The level benefits list, edited by Techwide on the Benefits screen. */

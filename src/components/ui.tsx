@@ -6,7 +6,9 @@ import { createPortal } from "react-dom";
 import { Icon } from "./icons";
 import { Emblem, type Level } from "./emblems";
 import { BrandLogo, type Brand } from "./brand-logos";
-import { useDemo } from "./demo";
+import { useDemo, useWho } from "./demo";
+import { cardImage, cardVideo, saveFile, shareFile } from "@/lib/share-card";
+import { loadReferral } from "@/lib/live-rewards";
 import QRCode from "qrcode";
 
 /** A small ⓘ beside a word; tap it to read the explanation (owner, 28 Oct 2026: tooltips instead of text on the page). */
@@ -458,31 +460,83 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
   /** Called once the card has gone out to an app (on a phone: when the share menu reports it was sent). */
   onShared?: (where: string) => void;
 }) {
-  const { toast } = useDemo();
+  const { toast, live } = useDemo();
+  const you = useWho();
   const [fmt, setFmt] = useState<(typeof FORMATS)[number]["key"]>("story");
   const [design, setDesign] = useState(0);
   const [video, setVideo] = useState(false);
   const [bless, setBless] = useState(0);
+  // Every link is her invite link on this site (owner, 1 Nov 2026): /r/CODE, which opens, and the QR on the card points there.
+  const [origin, setOrigin] = useState("");
+  const [mine, setMine] = useState<string | null>(null);
+  useEffect(() => {
+    setOrigin(window.location.origin);
+    if (!invite && live) loadReferral("creator").then((r) => setMine(r.link)).catch(() => {});
+  }, [invite, live]);
+  const abs = (l: string) => (/^https?:\/\//.test(l) ? l : `${origin}/${l.replace(/^[^/]*\//, "")}`);
+  const link = invite ? abs(invite.link) : mine ?? (origin ? `${origin}/r/${(handle.replace("@", "") || "rezekii").toUpperCase()}` : "");
   const [caption, setCaption] = useState(
     captionInit ??
       (invite
-        ? `${big}! Use my code ${invite.code} and get +${invite.reward} credits. ${label}. https://${invite.link} #RezekiiAffiliate #RezekiiMY`
+        ? `${big}! Use my code ${invite.code} and get +${invite.reward} credits. ${label}. #RezekiiAffiliate #RezekiiMY`
         : `Alhamdulillah! ${label}: ${big} on Rezekii 🎉 #RezekiiAffiliate #RezekiiMY`),
   );
-  // Copy link copies the link that is hers: her invite link on an invite card, else her profile (owner, 30 Oct 2026).
-  const link = invite ? `https://${invite.link}` : `https://rezekii.com/c/${handle.replace("@", "")}`;
   const copyLink = () => {
-    try {
-      void navigator.clipboard?.writeText(link).catch(() => {});
-    } catch {}
-    toast(`Link copied: ${link.replace("https://", "")}`);
+    if (!link) return;
+    navigator.clipboard?.writeText(link).then(() => toast(`Link copied: ${link.replace(/^https?:\/\//, "")}`), () => toast(link));
   };
   const f = FORMATS.find((x) => x.key === fmt)!;
   const initials = handle.startsWith("@") ? handle.slice(1, 3).toUpperCase() : handle.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
-  const send = (app: string) => {
-    toast(app === "More" ? "Opening your phone's share menu…" : `Opening ${app} with your ${video ? "video" : "image"} and caption…`);
-    // Preview: the share counts a moment later, as if the app confirmed it was posted.
-    if (onShared) window.setTimeout(() => onShared(app), 1200);
+  // The real picture (owner, 1 Nov 2026): made on the server, the same file for the preview, the share menu and Save.
+  const cardUrl = (() => {
+    if (!origin || !link) return "";
+    const q = new URLSearchParams({ fmt, design: String(design), kicker: invite ? "Invite" : kicker, label, big, handle: you.handle || handle, name: you.name || "", link, bless: BLESS[bless] });
+    for (const l of invite ? [`Code ${invite.code}`, `+${invite.reward} credits for you`] : lines) q.append("line", l);
+    if (you.photo?.startsWith("/api/img/")) q.set("photo", you.photo);
+    return `/api/v2/share-card?${q}`;
+  })();
+  const [busy, setBusy] = useState<string | null>(null);
+  const makeFile = async () => {
+    const img = await cardImage(cardUrl);
+    return video ? cardVideo(img) : img;
+  };
+  // Shares the real file through the phone's menu; it counts only when the menu says it went out (owner, 1 Nov 2026).
+  const send = async (app: string) => {
+    if (busy) return;
+    if (card) {
+      const nav = navigator as Navigator;
+      if (nav.share) nav.share({ text: `${caption} ${link}`.trim() }).then(() => onShared?.(app), () => {});
+      else copyLink();
+      return;
+    }
+    if (!cardUrl) return;
+    setBusy(app);
+    try {
+      const file = await makeFile();
+      const r = await shareFile(file, `${caption} ${link}`.trim());
+      if (r === "shared") { toast("Shared"); onShared?.(app); }
+      else if (r === "unsupported") {
+        saveFile(file);
+        navigator.clipboard?.writeText(`${caption} ${link}`.trim()).catch(() => {});
+        toast(`${video ? "Video" : "Image"} saved and caption copied. Post it in ${app === "More" ? "any app" : app}.`);
+      } else if (r === "failed") toast("Couldn't open the share menu. Use Save instead.");
+    } catch {
+      toast(video ? "Couldn't make the video on this browser. Try the image." : "Couldn't make the card. Please try again.");
+    } finally {
+      setBusy(null);
+    }
+  };
+  const save = async () => {
+    if (busy || !cardUrl) return;
+    setBusy("save");
+    try {
+      saveFile(await makeFile());
+      toast(video ? "Video saved" : "Image saved");
+    } catch {
+      toast(video ? "Couldn't make the video on this browser. Try the image." : "Couldn't save the card. Please try again.");
+    } finally {
+      setBusy(null);
+    }
   };
 
   return (
@@ -499,7 +553,10 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
               ))}
             </div>
           )}
-          {card ? <div className="v2-shcover">{card}</div> : invite ? (
+          {card ? <div className="v2-shcover">{card}</div> : cardUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img className={`v2-shimg${video ? " vid" : ""}`} src={cardUrl} alt={`${label}: ${big}`} style={{ aspectRatio: f.ratio }} />
+          ) : invite ? (
             <InviteCard invite={invite} big={big} handle={handle} fmt={fmt} design={design} video={video} ratio={f.ratio} />
           ) : (
           <div className={`v2-story ds${design} ${fmt} ${video ? "vid" : ""} ${moment ? `mo mo-${moment}-card` : ""}`} style={{ aspectRatio: f.ratio }} role="img" aria-label={`${label}: ${big}. ${BLESS[bless]}`}>
@@ -552,7 +609,7 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
           <div className="v2-apps" role="group" aria-label="Share to">
             {/* Real logos only, no names (owner, 30 Oct 2026); the name is still read out and shown on hover. */}
             {SHARE_TO.map((name) => (
-              <button key={name} type="button" className="v2-app" onClick={() => send(name)} aria-label={`Share to ${name}`} title={name}>
+              <button key={name} type="button" className={`v2-app${busy === name ? " busy" : ""}`} disabled={!!busy} onClick={() => send(name)} aria-label={`Share to ${name}`} title={name}>
                 <span className={name === "More" ? "ic more" : "ic"}>
                   {name === "More" ? <Icon name="share" size={20} /> : <BrandLogo name={name} size={42} />}
                 </span>
@@ -560,9 +617,10 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
             ))}
           </div>
           <div className="v2-row" style={{ gap: 8 }}>
-            <button type="button" className="btn-outline" style={{ flex: 1 }} onClick={copyLink}><Icon name="link" size={17} /> Copy link</button>
-            <button type="button" className="np-btn" style={{ flex: 1 }} onClick={() => toast(video ? "Video saved" : "Image saved")}><Icon name="arrow" size={17} /> Save {video ? "video" : "image"}</button>
+            <button type="button" className="btn-outline" style={{ flex: 1 }} onClick={copyLink} disabled={!link}><Icon name="link" size={17} /> Copy Link</button>
+            <button type="button" className="np-btn" style={{ flex: 1 }} onClick={save} disabled={!!busy || !cardUrl}>{busy === "save" ? <><span className="cr1-spin xs" aria-hidden="true" /> {video ? "Making video…" : "Saving…"}</> : <><Icon name="arrow" size={17} /> Save {video ? "Video" : "Image"}</>}</button>
           </div>
+          {busy && busy !== "save" && <p className="v2-small" style={{ margin: 0 }}><span className="cr1-spin xs" aria-hidden="true" /> {video ? "Making your 5-second video…" : "Getting your card ready…"}</p>}
           {!card && <p className="v2-small" style={{ margin: 0 }}>Shows your achievement and invite QR, never your sales.</p>}
         </div>
       </div>

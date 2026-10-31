@@ -10,21 +10,21 @@ import { pendingProducts } from "./tap.ts";
  * minutes; each thing is emailed once (a problem that lasts, once a day).
  */
 type Alert = { key: string; title: string; href: string };
-/**
- * Paused (owner, 31 Oct 2026): email and in-app notification settings come after the app is approved and launched. Sign-in
- * and password codes still go out. Set to true to send these again.
- */
-export const ADMIN_ALERT_EMAILS = false;
+/** On again (owner, 1 Nov 2026), with feedback and change requests, to the admins and to support@rezekii.com. */
+export const ADMIN_ALERT_EMAILS = true;
+const SUPPORT_INBOX = "support@rezekii.com";
 const KEY = "admin_alerts_sent";
 const MYT = 8 * 3_600_000;
 const day = () => new Date(Date.now() + MYT).toISOString().slice(0, 10);
 
 async function whatNeedsAdmins(): Promise<Alert[]> {
   const today = day();
-  const [notice, health, shops] = await Promise.all([
+  const since = new Date(Date.now() - 3 * 86_400_000).toISOString();
+  const [notice, health, shops, fb] = await Promise.all([
     dataNotice().catch(() => null),
     systemHealth().catch(() => null),
     supabaseRest("seller_connections?campaign_id=not.is.null&select=campaign_id,shop_name").then((r) => r.json() as Promise<{ campaign_id: string; shop_name: string | null }[]>).catch(() => []),
+    supabaseRest(`feedback?status=eq.new&created_at=gte.${since}&select=id,kind,message&order=created_at.desc&limit=50`).then((r) => r.json() as Promise<{ id: string; kind: string; message: string }[]>).catch(() => []),
   ]);
   const out: Alert[] = [];
   if (notice) out.push({ key: notice.id, title: `${notice.title}. ${notice.line}`, href: "/admin" });
@@ -33,6 +33,8 @@ async function whatNeedsAdmins(): Promise<Alert[]> {
     const waiting = await pendingProducts(s.campaign_id).catch(() => null);
     for (const p of waiting?.products ?? []) out.push({ key: `review:${s.campaign_id}:${p.id}`, title: `${s.shop_name ?? p.shop ?? "A shop"} registered “${p.name}”. It's waiting for your review.`, href: "/admin/tap/review" });
   }
+  // New feedback and change requests (owner, 1 Nov 2026).
+  for (const f of fb) out.push({ key: `feedback:${f.id}`, title: `${f.kind}: “${f.message.length > 90 ? `${f.message.slice(0, 88)}…` : f.message}”`, href: "/admin/support/feedback" });
   return out;
 }
 
@@ -43,8 +45,7 @@ export async function sendAdminAlerts(): Promise<number> {
   const sent = new Set(row?.value?.keys ?? []);
   const fresh = (await whatNeedsAdmins()).filter((a) => !sent.has(a.key));
   if (!fresh.length) return 0;
-  const admins = ((await (await supabaseRest("app_users?role=eq.admin&email=not.is.null&select=email")).json()) as { email: string }[]).map((a) => a.email);
-  if (!admins.length) return 0;
+  const admins = [...new Set([...((await (await supabaseRest("app_users?role=eq.admin&email=not.is.null&select=email")).json()) as { email: string }[]).map((a) => a.email), SUPPORT_INBOX])];
   const base = process.env.APP_URL ?? "https://rezekii.com";
   const n = fresh.length;
   await sendEmail({
@@ -53,7 +54,7 @@ export async function sendAdminAlerts(): Promise<number> {
     ...layout({
       title: `${n} thing${n === 1 ? "" : "s"} need${n === 1 ? "s" : ""} you`,
       lines: fresh.slice(0, 20).map((a) => `• ${a.title}`).concat(n > 20 ? [`…and ${n - 20} more.`] : []),
-      button: { label: fresh.every((a) => a.href === "/admin/tap/review") ? "Review products" : "Open Admin", href: `${base}${fresh[0].href}` },
+      button: { label: fresh.every((a) => a.href === "/admin/tap/review") ? "Review Products" : fresh.every((a) => a.href === "/admin/support/feedback") ? "Open Feedback Inbox" : "Open Admin", href: `${base}${fresh[0].href}` },
       foot: "You get this because you're a Rezekii admin. Each thing is emailed once. Rezekii · www.rezekii.com",
     }),
   });

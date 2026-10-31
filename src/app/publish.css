@@ -535,3 +535,17 @@
 .sq-opts button.on b { color: var(--gink); }
 .sq-opts-h { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 800; }
 @media (max-width: 760px) { .sq-drop svg { transform: none; } }
+
+/* Content calendar (owner, 1 Nov 2026): what's showing in plain words with removable chips, a posted count on each day, and a
+   lock until her TikTok account is linked. */
+.sq-showing { display: grid; gap: 8px; }
+.sq-showing p { margin: 0; font-size: 13.5px; line-height: 1.45; color: var(--body); }
+.sq-showing b { color: var(--text); font-weight: 800; }
+.sq-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.sq-chip { display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 10px; border-radius: 99px; border: 1.5px solid #b8ead2; background: var(--gsoft); color: var(--gink); font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
+.sq-chip:hover { background: #d9f5e8; }
+.sq-day { position: relative; }
+.sq-posted { position: absolute; top: 4px; right: 4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: #00c073; color: #ffffff; font-style: normal; font-size: 11px; font-weight: 900; line-height: 18px; text-align: center; }
+.sq-legend .sq-posted { position: static; display: inline-block; margin-right: 4px; }
+.sq-lock { align-items: flex-start; gap: 10px; }
+.sq-lock p { margin: 0; }

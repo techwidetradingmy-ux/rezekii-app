@@ -16,13 +16,13 @@ const MAX = 500;
 
 /**
  * Feedback (owner, 30 Oct 2026: a complete form, friendly and easy). Pick what it's about, say it in your own words, add a
- * screenshot if it helps, choose how we reply. The page and device go along so the team can act on it fast.
+ * screenshot if it helps. No reply choice (owner, 1 Nov 2026): when the team answers, it's in the app. The page and device go
+ * along so the team can act on it fast.
  */
 export function FeedbackForm({ onDone }: { onDone: () => void }) {
   const [type, setType] = useState(TYPES[0]);
   const [msg, setMsg] = useState("");
   const [shot, setShot] = useState<string | null>(null);
-  const [reply, setReply] = useState<"WhatsApp" | "Email" | "No need">("WhatsApp");
   const [face, setFace] = useState<number | null>(null);
   const [err, setErr] = useState("");
   const [sent, setSent] = useState(false);
@@ -54,7 +54,7 @@ export function FeedbackForm({ onDone }: { onDone: () => void }) {
       <div className="fb-done" aria-live="polite">
         <span className="v2-medal green" style={{ width: 64, height: 64 }}><Icon name="check" size={28} width={2.6} /></span>
         <b>Thanks, we got it!</b>
-        <p className="v2-muted" style={{ margin: 0 }}>{reply === "No need" ? "Every message is read by the team." : `We usually reply within 1 working day by ${reply}.`}</p>
+        <p className="v2-muted" style={{ margin: 0 }}>Every message is read by the team.</p>
         <button type="button" className="np-btn" onClick={onDone}>Done</button>
       </div>
     );
@@ -67,7 +67,7 @@ export function FeedbackForm({ onDone }: { onDone: () => void }) {
     fetch("/api/v2/feedback", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ kind: type.key, message: msg, mood: face === null ? null : face + 1, reply, page: window.location.pathname, screenshot: img }),
+      body: JSON.stringify({ kind: type.key, message: msg, mood: face === null ? null : face + 1, page: window.location.pathname, screenshot: img }),
     })
       .then(async (r) => (r.ok ? setSent(true) : setErr(((await r.json().catch(() => ({}))) as { error?: string }).error ?? "Didn't send. Please try again.")))
       .catch(() => setErr("Didn't send. Please try again."))
@@ -115,11 +115,6 @@ export function FeedbackForm({ onDone }: { onDone: () => void }) {
             <button key={f} type="button" role="radio" aria-checked={face === i} aria-label={`${i + 1} of 5`} className={face === i ? "on" : undefined} onClick={() => setFace(face === i ? null : i)}>{f}</button>
           ))}
         </div>
-      </div>
-
-      <div className="fb-sec">
-        <b>How should we reply?</b>
-        <Seg value={reply} options={["WhatsApp", "Email", "No need"] as const} onChange={setReply} />
       </div>
 
       <small className="fb-note"><Icon name="info" size={14} /> We attach this page and your device, so we can fix things faster.</small>

@@ -65,7 +65,10 @@ type Share = { big: string; label: string; lines: string[]; level?: Level; kicke
 type Real = {
   level: string; ttLevel: number | null; streak: number; best: number; countedToday: boolean; days: string[]; tiers: number[];
   since: string | null; levels: { name: string; how: string; gives: string[] }[]; badges: { name: string; got: boolean; progress?: [number, number] }[];
+  silver?: { sales: number; salesGoal: number; sampleVideos: number; videosGoal: number; reached: boolean; month: string } | null;
 };
+/** The sample account's month so far, for the Silver bars. */
+const SAMPLE_SILVER = { sales: 620, salesGoal: 1000, sampleVideos: 4, videosGoal: 10, reached: false, month: "2026-10" };
 
 const monthOf = (day: string) => day.slice(0, 7);
 const shiftMonth = (month: string, n: number) => {
@@ -299,6 +302,27 @@ export function LevelBadges() {
               {levels[pick].gives.map((g) => <li key={g}><Icon name="check" size={15} width={2.8} />{g}</li>)}
             </ul>
           </div>
+          {/* Silver either way (owner, 1 Nov 2026): two bars, reach either one. */}
+          {mine !== "gold" && (() => {
+            const s = real ? real.silver : SAMPLE_SILVER;
+            if (!s) return null;
+            const monthName = new Date(`${s.month}-01T00:00:00Z`).toLocaleDateString("en-GB", { month: "long", timeZone: "UTC" });
+            return (
+              <div className="lb-silver">
+                <b>{mine === "silver" ? `Keep Silver: Reach Either One in ${monthName}` : "Reach Silver: Either One This Month"}</b>
+                <span className="lb-sbar">
+                  <span><small>Sales through Rezekii</small><em>RM {Math.round(s.sales).toLocaleString("en-MY")} of RM {s.salesGoal.toLocaleString("en-MY")}</em></span>
+                  <Progress value={Math.min(s.sales, s.salesGoal)} max={s.salesGoal} />
+                </span>
+                <span className="lb-sor" aria-hidden="true">or</span>
+                <span className="lb-sbar">
+                  <span><small>Videos for Rezekii samples</small><em>{s.sampleVideos} of {s.videosGoal}</em></span>
+                  <Progress value={Math.min(s.sampleVideos, s.videosGoal)} max={s.videosGoal} />
+                </span>
+                <small className="v2-small">{s.reached ? (mine === "silver" ? "Reached. You keep Silver next month." : "Reached. You're Silver now.") : mine === "silver" ? "Reach either one by the end of the month to keep Silver. Checked on the 1st." : "Reach either one and you go up straight away. One sample with 10 videos counts."}</small>
+              </div>
+            );
+          })()}
           <div className="v2-row">
             <button type="button" className="np-btn v2-btn-sm" onClick={() => setShare({ big: `${lvName} creator`, label: "My creator level on Rezekii", lines: [`TikTok Shop Lv.${ttl}`, `${got} badges earned`], level: mine, kicker: "Level up", moment: "level" })}>
               <Icon name="share" size={16} /> Share My Card

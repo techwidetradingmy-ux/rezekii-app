@@ -348,3 +348,8 @@
    use a light tint so the button that matters stands out. */
 .ad-verdict.Approve { background: var(--gsoft); color: var(--gink); box-shadow: none; }
 .ad-task.Success .ico, .ad-task.done .ico { background: var(--gsoft); color: var(--gink); }
+
+/* Feedback Inbox replies (owner, 1 Nov 2026): answered inside Rezekii, or on WhatsApp. */
+.ad-reply { display: block; margin-top: 4px; padding: 8px 10px; border-radius: 10px; background: var(--gsoft); color: var(--gink); white-space: pre-wrap; }
+.ad-replybox { display: grid; gap: 6px; margin-top: 6px; max-width: 520px; }
+.ad-replybox textarea { width: 100%; resize: vertical; }

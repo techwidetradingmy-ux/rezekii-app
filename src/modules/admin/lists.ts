@@ -70,18 +70,21 @@ export async function ledgerList() {
 
 /** Feedback from the form, newest first, with who sent it (screenshots only on request, they're large). */
 export async function feedbackList() {
-  const list = await rows<{ id: string; user_id: string; kind: string; message: string; mood: number | null; reply_by: string; page: string | null; device: string | null; status: string; created_at: string }>(
-    "feedback?select=id,user_id,kind,message,mood,reply_by,page,device,status,created_at&order=created_at.desc&limit=500",
+  const list = await rows<{ id: string; user_id: string; kind: string; message: string; mood: number | null; reply_by: string; page: string | null; device: string | null; status: string; created_at: string; reply: string | null; replied_at: string | null; replied_by: string | null }>(
+    "feedback?select=id,user_id,kind,message,mood,reply_by,page,device,status,created_at,reply,replied_at,replied_by&order=created_at.desc&limit=500",
   );
   const shots = new Set((await rows<{ id: string }>("feedback?screenshot=not.is.null&select=id&limit=500")).map((r) => r.id));
   const ids = [...new Set(list.map((r) => r.user_id))];
-  const users = new Map<string, { name: string; handle: string | null; email: string | null }>();
+  const users = new Map<string, { name: string; handle: string | null; email: string | null; whatsapp: string | null }>();
   for (let i = 0; i < ids.length; i += 150) {
-    for (const u of await rows<User>(`app_users?id=in.(${ids.slice(i, i + 150).join(",")})&select=id,display_name,email,tiktok_username,role`)) {
-      users.set(u.id, { name: u.display_name ?? u.email?.split("@")[0] ?? "Someone", handle: u.tiktok_username, email: u.email });
+    const part = ids.slice(i, i + 150).join(",");
+    // Her WhatsApp number from her profile, for Reply on WhatsApp (owner, 1 Nov 2026).
+    const phones = new Map((await rows<{ user_id: string; details: { whatsapp?: string; phone?: string } }>(`profiles?user_id=in.(${part})&select=user_id,details`)).map((p) => [p.user_id, p.details?.whatsapp || p.details?.phone || null]));
+    for (const u of await rows<User>(`app_users?id=in.(${part})&select=id,display_name,email,tiktok_username,role`)) {
+      users.set(u.id, { name: u.display_name ?? u.email?.split("@")[0] ?? "Someone", handle: u.tiktok_username, email: u.email, whatsapp: phones.get(u.id) ?? null });
     }
   }
-  return list.map((r) => ({ ...r, shot: shots.has(r.id), who: users.get(r.user_id) ?? { name: "Someone", handle: null, email: null } }));
+  return list.map((r) => ({ ...r, shot: shots.has(r.id), who: users.get(r.user_id) ?? { name: "Someone", handle: null, email: null, whatsapp: null } }));
 }
 export async function feedbackShot(id: string): Promise<string | null> {
   const [row] = await rows<{ screenshot: string | null }>(`feedback?id=eq.${id}&select=screenshot&limit=1`);
@@ -90,6 +93,17 @@ export async function feedbackShot(id: string): Promise<string | null> {
 export async function setFeedbackStatus(id: string, status: "new" | "handled", actor: string): Promise<boolean> {
   const res = await supabaseRest(`feedback?id=eq.${id}`, { method: "PATCH", headers: { "content-type": "application/json", prefer: "return=minimal" }, body: JSON.stringify({ status }) });
   if (res.ok) await logActivity(actor, "Business", `marked a feedback message as ${status}`);
+  return res.ok;
+}
+
+/** The team's reply to a message, read by her in the app (owner, 1 Nov 2026); replying marks it handled. */
+export async function replyFeedback(id: string, reply: string, actor: string): Promise<boolean> {
+  const res = await supabaseRest(`feedback?id=eq.${id}`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json", prefer: "return=minimal" },
+    body: JSON.stringify({ reply, replied_at: new Date().toISOString(), replied_by: actor, seen_at: null, status: "handled" }),
+  });
+  if (res.ok) await logActivity(actor, "Business", "replied to a feedback message");
   return res.ok;
 }
 

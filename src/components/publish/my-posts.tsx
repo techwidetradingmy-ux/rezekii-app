@@ -41,21 +41,23 @@ function rangesFor(t: string): Record<string, [string, string]> {
   };
 }
 
-/** How a post is doing overall, which decides its group and colour. */
-type Group = "fail" | "live" | "sched" | "draft" | "done";
+/**
+ * How a post is doing overall, which decides its group and colour. Four statuses (owner, 1 Nov 2026): Scheduled, Posted, Needs
+ * You and Drafts; a post on its way out is still Scheduled ("posting now" is a moment, not a status).
+ */
+type Group = "fail" | "sched" | "draft" | "done";
 const MOVING: PostStatus[] = ["uploading", "sending", "processing"];
 const groupOf = (p: MyPost): Group =>
   p.targets.some((t) => t.status === "failed") ? "fail"
-    : p.targets.some((t) => MOVING.includes(t.status)) ? "live"
+    : p.targets.some((t) => MOVING.includes(t.status)) ? "sched"
     : p.targets.every((t) => t.status === "draft") ? "draft"
     : p.targets.some((t) => t.status === "scheduled") ? "sched"
     : "done";
 const GROUPS: { key: Group; title: string; tone: string; icon: "alert" | "send" | "clock" | "edit" | "check" }[] = [
-  { key: "fail", title: "Needs you", tone: "red", icon: "alert" },
-  { key: "live", title: "Posting now", tone: "blue", icon: "send" },
   { key: "sched", title: "Scheduled", tone: "violet", icon: "clock" },
-  { key: "draft", title: "Drafts", tone: "gray", icon: "edit" },
   { key: "done", title: "Posted", tone: "green", icon: "check" },
+  { key: "fail", title: "Needs You", tone: "red", icon: "alert" },
+  { key: "draft", title: "Drafts", tone: "gray", icon: "edit" },
 ];
 
 /** V1's live statuses, per app. */
@@ -109,8 +111,9 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
       ]);
     } catch {}
   }, [setup.channels, newPost, live]);
-  const [preset, setPreset] = useState<string | null>("around");
-  const [[from, to], setRange] = useState<[string, string]>(RANGE.around);
+  // The whole month by default (owner, 1 Nov 2026), nothing hidden.
+  const [preset, setPreset] = useState<string | null>("month");
+  const [[from, to], setRange] = useState<[string, string]>(RANGE.month);
   const [only, setOnly] = useState<Group | null>(null);
   const [day, setDay] = useState<string | null>(null);
   const [month, setMonth] = useState(() => TODAY.slice(0, 7));
@@ -146,10 +149,8 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
   const inRange = (p: MyPost) => !p.date || (p.date >= from && p.date <= to);
   const shown = posts.filter((p) => srcOk(p) && inRange(p) && (!day || p.date === day) && (!only || groupOf(p) === only));
   const count = (g: Group) => posts.filter((p) => srcOk(p) && inRange(p) && groupOf(p) === g).length;
-  const [filterOpen, setFilterOpen] = useState(false);
   const SOURCES = [["all", "All"], ["rezekii", "Via Rezekii"], ["phone", "From phone"]] as const;
   const needs = count("fail");
-  const filterLabel = `${only ? GROUPS.find((g) => g.key === only)!.title : "All posts"}${src === "all" ? "" : ` · ${SOURCES.find(([k]) => k === src)![1]}`}`;
 
   const choose = (a: string, b: string, key: string | null) => { setRange([a, b]); setPreset(key); setDay(null); setMonth(b < TODAY ? b.slice(0, 7) : a > TODAY ? a.slice(0, 7) : TODAY.slice(0, 7)); };
   const label = preset ? PRESETS.find(([k]) => k === preset)![1] : `${dayName(from)} – ${dayName(to)}`;
@@ -263,15 +264,24 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
       </Title>
       <p className="an-range"><b>{label}</b><span>{dayName(from)} – {dayName(to)}</span></p>
 
-      <div className="sq-phonebar">
-        {needs > 0 && only !== "fail" && (
+      {needs > 0 && only !== "fail" && (
+        <div className="sq-phonebar">
           <button type="button" className="sq-alert" onClick={() => { setOnly("fail"); setDay(null); }}>
             <Icon name="alert" size={17} /><span>{needs} post{needs === 1 ? "" : "s"} need{needs === 1 ? "s" : ""} you</span><b>Fix</b>
           </button>
+        </div>
+      )}
+      {/* What's showing, in plain words, and every narrowing as a chip she can remove (owner, 1 Nov 2026). */}
+      <div className="sq-showing">
+        <p>Showing <b>{shown.length} post{shown.length === 1 ? "" : "s"}</b>{only ? <> that are <b>{GROUPS.find((g) => g.key === only)!.title.toLowerCase()}</b></> : ""} {day ? <>on <b>{dayLabel(day)}</b></> : <>in <b>{label.toLowerCase()}</b></>}. Tap a status or a day to narrow it down.</p>
+        {(only || day || src !== "all") && (
+          <span className="sq-chips">
+            {only && <button type="button" className="sq-chip" onClick={() => setOnly(null)} aria-label={`Remove ${GROUPS.find((g) => g.key === only)!.title}`}>{GROUPS.find((g) => g.key === only)!.title} <Icon name="x" size={13} width={2.6} /></button>}
+            {day && <button type="button" className="sq-chip" onClick={() => setDay(null)} aria-label={`Remove ${dayLabel(day)}`}>{dayLabel(day)} <Icon name="x" size={13} width={2.6} /></button>}
+            {src !== "all" && <button type="button" className="sq-chip" onClick={() => setSrc("all")} aria-label="Remove posted from">{SOURCES.find(([k]) => k === src)![1]} <Icon name="x" size={13} width={2.6} /></button>}
+            <button type="button" className="pb-link" onClick={() => { setOnly(null); setDay(null); setSrc("all"); }}>Show All</button>
+          </span>
         )}
-        <button type="button" className="sq-drop" aria-haspopup="dialog" onClick={() => setFilterOpen(true)}>
-          <span>{filterLabel} · {shown.length}</span><Icon name="updown" size={16} width={2.4} />
-        </button>
       </div>
 
       <div className="sq-tiles" role="group" aria-label="Show only">
@@ -306,25 +316,23 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
             const d = `${month}-${String(i + 1).padStart(2, "0")}`;
             const list = posts.filter((p) => p.date === d && srcOk(p));
             const out = d < from || d > to;
+            // How many went up that day (owner, 1 Nov 2026), with a dot for anything else.
+            const posted = list.filter((p) => groupOf(p) === "done").length;
             return (
-              <button key={d} type="button" className={`sq-day${d === TODAY ? " today" : ""}${day === d ? " on" : ""}${out ? " out" : ""}`} onClick={() => setDay(day === d ? null : d)} aria-label={`${dayName(d)}: ${list.length} post${list.length === 1 ? "" : "s"}`} aria-pressed={day === d}>
+              <button key={d} type="button" className={`sq-day${d === TODAY ? " today" : ""}${day === d ? " on" : ""}${out ? " out" : ""}`} onClick={() => setDay(day === d ? null : d)} aria-label={`${dayName(d)}: ${posted} posted, ${list.length} post${list.length === 1 ? "" : "s"} in all`} aria-pressed={day === d}>
                 <b>{i + 1}</b>
-                <span className="sq-dots">{list.slice(0, 4).map((p) => <i key={p.id} className={groupOf(p)} />)}</span>
+                {posted > 0 && <em className="sq-posted">{posted}</em>}
+                <span className="sq-dots">{list.filter((p) => groupOf(p) !== "done").slice(0, 3).map((p) => <i key={p.id} className={groupOf(p)} />)}</span>
               </button>
             );
           })}
         </div>
         <div className="sq-legend">
-          {GROUPS.filter((g) => g.key !== "draft").map((g) => <span key={g.key}><i className={g.key} />{g.title}</span>)}
+          <span><em className="sq-posted">2</em>Posted that day</span>
+          {GROUPS.filter((g) => g.key !== "draft" && g.key !== "done").map((g) => <span key={g.key}><i className={g.key} />{g.title}</span>)}
         </div>
       </section>
 
-      {(day || only) && (
-        <p className="sq-filter">
-          Showing {only ? GROUPS.find((g) => g.key === only)!.title.toLowerCase() : "all posts"}{day ? ` on ${dayLabel(day)}` : ""}
-          <button type="button" className="pb-link" onClick={() => { setDay(null); setOnly(null); }}>Show all</button>
-        </p>
-      )}
 
       {GROUPS.map((g) => {
         const list = shown.filter((p) => groupOf(p) === g.key).sort((a, b) => (g.key === "done" || g.key === "fail" ? `${b.date}${b.time}`.localeCompare(`${a.date}${a.time}`) : `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`)));
@@ -347,23 +355,6 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
       )}
       <p className="v2-small" style={{ margin: 0 }}>{live ? "You can cancel until a post starts sending." : "You can edit or cancel until a post starts sending."}</p>
 
-      {filterOpen && (
-        <Sheet title="Show" onClose={() => setFilterOpen(false)}>
-          <div className="sq-opts" role="radiogroup" aria-label="Status">
-            {[{ key: null, title: "All posts" }, ...GROUPS].map((g) => {
-              const n = g.key ? count(g.key) : posts.filter((p) => srcOk(p) && inRange(p)).length;
-              return (
-                <button key={g.title} type="button" role="radio" aria-checked={only === g.key} className={only === g.key ? "on" : undefined} onClick={() => { setOnly(g.key); setDay(null); }}>
-                  <span>{g.title}</span><b>{n}</b>{only === g.key && <Icon name="check" size={16} />}
-                </button>
-              );
-            })}
-          </div>
-          <span className="sq-opts-h">Posted from <Tip text="Posts you make in the TikTok, Instagram or Facebook app show here too. They sync every 30 minutes." /></span>
-          <Seg value={SOURCES.find(([k]) => k === src)![1]} options={SOURCES.map(([, l]) => l)} onChange={(l) => setSrc(SOURCES.find(([, x]) => x === l)![0])} />
-          <button type="button" className="np-btn" onClick={() => setFilterOpen(false)}>Done</button>
-        </Sheet>
-      )}
 
     </div>
   );

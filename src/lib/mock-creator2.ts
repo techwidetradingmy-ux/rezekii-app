@@ -342,11 +342,11 @@ export const CALENDAR: CalPost[] = [
 
 export const LEVELS = [
   {
-    name: "Bronze", how: "TikTok Shop Lv.0–3",
+    name: "Bronze", how: "When you join",
     gives: ["Open-plan rates through Techwide", "Open samples", "Scan your showcase for better rates"],
   },
   {
-    name: "Silver", how: "TikTok Shop Lv.4+, or RM 10,000 sales last month",
+    name: "Silver", how: "Either one in a month: RM1,000 sales through Rezekii, or 10 videos for Rezekii samples",
     gives: ["Silver Rezekii rates, higher than open plan", "More free samples as your streak grows", "Everything in Bronze"],
   },
   {

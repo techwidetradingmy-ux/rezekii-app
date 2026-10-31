@@ -5,6 +5,7 @@ import { useState, type ReactNode } from "react";
 import { Icon, type IconName } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Celebrate, ShareSheet, Sheet, Title, type MomentKind } from "@/components/ui";
+import { daysText } from "@/lib/share-card";
 import "@/app/rewards.css";
 
 /** Streak tiers: each one an honour emblem in its own colour, with bonus credits when it's reached. */
@@ -83,7 +84,7 @@ export function MissionsBoard(p: {
   const maxToday = daily.reduce((s, m) => s + m.reward, 0) + chests.reduce((s, c) => s + c.bonus, 0);
   const starterDone = starter.filter((m) => m.state === "done").length;
   const starterLeft = starter.filter((m) => m.state !== "done").reduce((s, m) => s + m.reward, 0);
-  const streakCard = { big: `${streak} days`, label: "My streak on Rezekii", lines: [`${tier?.name ?? "Spark"} tier`, `${tier?.metal ?? "Bronze"} emblem`], moment: "streak" as const };
+  const streakCard = { big: daysText(streak), label: "My streak on Rezekii", lines: [`${tier?.name ?? "Spark"} tier`, `${tier?.metal ?? "Bronze"} emblem`], moment: "streak" as const };
 
   // A real claim: the server checks the action happened, pays once, and sends the board back.
   const claimLive = async (m: Mission) => {
@@ -110,7 +111,7 @@ export function MissionsBoard(p: {
           line: `+${r.gained} credits`,
           cheer: t ? `${t.metal} emblem. +${t.bonus} bonus credits.` : (() => { const n = TIERS.find((x) => x.days > r.streak) ?? TIERS[TIERS.length - 1]; return `${Math.max(0, n.days - r.streak)} days to ${n.name}: +${n.bonus} credits.`; })(),
           icon: "flame",
-          share: { big: `${r.streak} days`, label: "My streak on Rezekii", lines: [`${now?.name ?? "Spark"} tier`, `${now?.metal ?? "Bronze"} emblem`], moment: "streak" },
+          share: { big: daysText(r.streak), label: "My streak on Rezekii", lines: [`${now?.name ?? "Spark"} tier`, `${now?.metal ?? "Bronze"} emblem`], moment: "streak" },
         });
       else if (r.chest) setMoment({ title: "Bonus chest opened", line: `+${r.gained} credits`, cheer: "Daily missions done today.", icon: "gift", share: { big: `+${r.gained}`, label: "Done today", lines: [`${r.streak}-day streak`], moment: "mission" } });
       else if (r.lists.daily.some((x) => x.id === m.id)) toast(`+${r.gained} credits`);
@@ -146,7 +147,7 @@ export function MissionsBoard(p: {
         line: `+${gain + (reached?.bonus ?? 0)} credits`,
         cheer: reached ? `${reached.metal} emblem. +${reached.bonus} bonus credits.` : `${next.days - days} days to ${next.name}: +${next.bonus} credits.`,
         icon: "flame",
-        share: { big: `${days} days`, label: "My streak on Rezekii", lines: [`${t?.name ?? "Spark"} tier`, `${t?.metal ?? "Bronze"} emblem`], moment: "streak" },
+        share: { big: daysText(days), label: "My streak on Rezekii", lines: [`${t?.name ?? "Spark"} tier`, `${t?.metal ?? "Bronze"} emblem`], moment: "streak" },
       });
       return;
     }

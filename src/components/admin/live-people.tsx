@@ -94,12 +94,16 @@ export function LiveReview() {
   );
 }
 
-type Fb = { id: string; kind: string; message: string; mood: number | null; reply_by: string; page: string | null; status: "new" | "handled"; created_at: string; shot: boolean; who: { name: string; handle: string | null; email: string | null } };
+type Fb = {
+  id: string; kind: string; message: string; mood: number | null; reply_by: string; page: string | null; status: "new" | "handled"; created_at: string; shot: boolean;
+  reply: string | null; replied_at: string | null; replied_by: string | null;
+  who: { name: string; handle: string | null; email: string | null; whatsapp: string | null };
+};
 const FACES = ["😞", "😕", "😐", "🙂", "😍"];
 /** The form's four types (owner, 31 Oct 2026: the inbox is sorted by them). */
-const TYPES = ["All types", "Something's broken", "Question", "Idea", "Compliment"] as const;
+const TYPES = ["All types", "Change request", "Something's broken", "Question", "Idea", "Compliment"] as const;
 type FType = (typeof TYPES)[number];
-const TYPE_TONE: Record<string, "bad" | "warn" | "info" | "ok"> = { "Something's broken": "bad", Question: "warn", Idea: "info", Compliment: "ok" };
+const TYPE_TONE: Record<string, "bad" | "warn" | "info" | "ok"> = { "Something's broken": "bad", Question: "warn", Idea: "info", Compliment: "ok", "Change request": "warn" };
 /** Support › Feedback Inbox on real data: what creators and sellers sent from the Feedback form. */
 export function LiveFeedback() {
   const { toast } = useDemo();
@@ -115,6 +119,19 @@ export function LiveFeedback() {
     toast(status === "handled" ? "Marked handled" : "Moved back to new");
     void load();
   };
+  // Reply inside Rezekii (owner, 1 Nov 2026): she reads it in Settings › My Messages.
+  const [writing, setWriting] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+  const reply = async (f: Fb) => {
+    if (!draft.trim()) return;
+    const r = await fetch("/api/v2/admin/lists", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ feedback: f.id, reply: draft }) }).catch(() => null);
+    if (!r?.ok) return toast("Didn't send. Please try again.");
+    toast("Reply sent. They'll see it in the app.");
+    setWriting(null);
+    setDraft("");
+    void load();
+  };
+  const wa = (n: string | null) => (n ? `https://wa.me/${n.replace(/\D/g, "")}` : null);
   const see = async (f: Fb) => {
     const d = (await fetch(`/api/v2/admin/lists?shot=${f.id}`).then((r) => (r.ok ? r.json() : null)).catch(() => null)) as { screenshot?: string } | null;
     if (d?.screenshot) setShot(d.screenshot);
@@ -135,9 +152,21 @@ export function LiveFeedback() {
                   <span className="main">
                     <b><Pill tone={TYPE_TONE[f.kind] ?? "info"}>{f.kind}</Pill> {f.who.handle ? `@${f.who.handle}` : f.who.name}{f.mood ? ` ${FACES[f.mood - 1]}` : ""}</b>
                     <small style={{ whiteSpace: "pre-wrap" }}>{f.message}</small>
-                    <small>{when(f.created_at)}{f.page ? ` · ${f.page}` : ""} · reply by {f.reply_by}{f.reply_by === "Email" && f.who.email ? ` (${f.who.email})` : ""}</small>
+                    <small>{when(f.created_at)}{f.page ? ` · ${f.page}` : ""}</small>
+                    {f.reply && <small className="ad-reply"><b>Replied{f.replied_by ? ` by ${f.replied_by}` : ""}:</b> {f.reply}</small>}
+                    {writing === f.id && (
+                      <span className="ad-replybox">
+                        <textarea className="np-input" rows={3} value={draft} onChange={(e) => setDraft(e.target.value.slice(0, 1000))} placeholder="Your reply. They read it in the app." aria-label="Reply" />
+                        <span className="v2-row" style={{ gap: 6 }}>
+                          <button type="button" className="np-btn v2-btn-sm" disabled={!draft.trim()} onClick={() => void reply(f)}>Send Reply</button>
+                          <button type="button" className="ad-btn-ghost" onClick={() => { setWriting(null); setDraft(""); }}>Cancel</button>
+                        </span>
+                      </span>
+                    )}
                   </span>
                   <span className="acts">
+                    {writing !== f.id && <button type="button" className="ad-btn-ghost" onClick={() => { setWriting(f.id); setDraft(f.reply ?? ""); }}>{f.reply ? "Edit Reply" : "Reply"}</button>}
+                    {wa(f.who.whatsapp) && <a className="ad-btn-ghost" href={wa(f.who.whatsapp)!} target="_blank" rel="noreferrer"><Icon name="whatsapp" size={14} /> Reply on WhatsApp</a>}
                     {f.shot && <button type="button" className="ad-btn-ghost" onClick={() => void see(f)}>Screenshot</button>}
                     <button type="button" className="ad-btn-ghost" onClick={() => void mark(f, f.status === "new" ? "handled" : "new")}>{f.status === "new" ? "Mark handled" : "Back to new"}</button>
                   </span>

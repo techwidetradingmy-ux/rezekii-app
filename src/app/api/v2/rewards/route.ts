@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
   if (part === "wallet") return NextResponse.json(await wallet(user.id, side), NO_STORE);
   if (part === "referral") {
     const code = await codeFor(user);
-    return NextResponse.json({ code, link: `${req.nextUrl.origin}/${side === "seller" ? "s" : "r"}/${code}`, friends: await friendsOf(user.id, side), reward: REFERRAL_REWARD, days: REFERRAL_DAYS }, NO_STORE);
+    return NextResponse.json({ code, link: `${process.env.APP_URL ?? req.nextUrl.origin}/${side === "seller" ? "s" : "r"}/${code}`, friends: await friendsOf(user.id, side), reward: REFERRAL_REWARD, days: REFERRAL_DAYS }, NO_STORE);
   }
   return NextResponse.json(await missionBoard({ id: user.id, created_at: await joined(user.id) }, side), NO_STORE);
 }
