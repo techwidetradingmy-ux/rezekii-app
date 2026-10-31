@@ -19,6 +19,12 @@ export type ShopeeOutcome =
  * Centre on a computer records that (tested 30 Oct 2026: a draft or a post from the Shopee app doesn't).
  */
 export const FIRST_POST = "Shopee needs this account's first video to be posted from Seller Centre on a computer: open seller.shopee.com.my, go to Marketing Centre → Live & Video → Upload Video, tick \"By posting, you agree to Shopee Video's Terms of Service\" and post. Then press Try again.";
+/**
+ * Shopee only gives cover frames a minute after the upload ("upload video less than 1 min"), and every refused call lowers
+ * the app's API success rate, which Shopee wants above 90% a day (Partner Rules; restriction notice 31 Oct 2026). So
+ * covers are only asked for once this long has passed since the video was sent.
+ */
+export const COVER_WAIT_MS = 70_000;
 /** Large links are refused rather than held in memory: Rezekii's own uploads are up to 50 MB. */
 const MAX_BYTES = 200 * 1024 * 1024;
 
@@ -66,6 +72,8 @@ export async function checkShopee(p: SocialPostRow): Promise<ShopeeOutcome> {
     const up = await shopeeUploadState(p.container_id);
     if (up.state === "failed") return { kind: "failed", reason: `Shopee couldn't process the video${up.reason ? ` (${up.reason})` : ""}.`, clearContainer: true };
     if (up.state === "processing") return { kind: "waiting" };
+    const sentAt = Date.parse(String(p.settings?.sentAt ?? ""));
+    if (sentAt && Date.now() - sentAt < COVER_WAIT_MS) return { kind: "waiting" };
     const token = await freshShopeeToken(c);
     const covers = await shopeeCovers(token, c.shopee_user_id, p.container_id);
     if (!covers.length) return { kind: "waiting" };

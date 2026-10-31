@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { createHash, randomBytes } from "node:crypto";
 import { encryptToken } from "../creator-accounts/token-crypto.ts";
 import type { SocialPostRow } from "../social/store.ts";
-import { checkShopee, FIRST_POST, publishShopee, shopeeStillLive } from "./posting.ts";
+import { checkShopee, COVER_WAIT_MS, FIRST_POST, publishShopee, shopeeStillLive } from "./posting.ts";
 
 process.env.SUPABASE_URL = "https://db.test";
 process.env.SUPABASE_SECRET_KEY = "secret";
@@ -116,4 +116,11 @@ test("a posted video deleted in Shopee counts as gone: status 400 or Shopee's \"
   assert.equal(await shopeeStillLive(post({ status: "posted", external_post_id: "POST1" })), false);
   shopee = { "/api/v2/video/get_video_detail": { error: "error_param", message: "post_id is illegal,no record in database." } };
   assert.equal(await shopeeStillLive(post({ status: "posted", external_post_id: "POST1" })), false);
+});
+
+test("covers aren't asked for until a minute after the video was sent (a refused call lowers the API success rate)", async () => {
+  shopee = { "/api/v2/media/get_video_upload_result": { error: "", response: { status: "SUCCEED" } } };
+  const sentAt = new Date(Date.now() - COVER_WAIT_MS + 20_000).toISOString();
+  assert.deepEqual(await checkShopee(post({ container_id: "sg-v1", settings: { itemIds: [], duet: true, stitch: true, aigc: false, sentAt } })), { kind: "waiting" });
+  assert.equal(shopeeCalls().some((c) => c.url.pathname === "/api/v2/video/get_cover_list"), false);
 });

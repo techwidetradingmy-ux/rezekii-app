@@ -104,7 +104,8 @@ async function stillProcessing(p: SocialPostRow): Promise<string> {
 /** Saves what a Shopee try came to, the same way as the other channels' tries. */
 async function applyShopee(p: SocialPostRow, o: ShopeeOutcome): Promise<string> {
   if (o.kind === "sent") {
-    await updateSocialPost(p.id, { status: "processing", container_id: o.containerId, last_error: null });
+    // When it was sent: Shopee's covers are only asked for a minute later (posting.ts, COVER_WAIT_MS).
+    await updateSocialPost(p.id, { status: "processing", container_id: o.containerId, last_error: null, settings: { ...p.settings, sentAt: new Date().toISOString() } });
     return "sent";
   }
   if (o.kind === "waiting") return stillProcessing(p);
