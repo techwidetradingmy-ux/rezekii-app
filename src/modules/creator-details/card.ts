@@ -1,6 +1,6 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 
-export type Address = { to: string; phone: string; line: string; postcode: string; city: string; state: string };
+export type Address = { to: string; phone: string; line: string; postcode: string; city: string; state: string; country: string };
 /** Prices are whole ringgit as typed (strings, so an empty box stays empty). */
 export type Rate = { on: boolean; price: string; days?: number };
 export type Pack = { id: number; name: string; qty: Record<string, number>; price: string };
@@ -15,8 +15,11 @@ const upsert = (table: string, body: unknown) =>
 
 /** A Malaysian delivery address, checked the same way as on the page. */
 export function cleanAddress(v: Record<string, unknown>): Address | null {
-  const a = { to: text(v.to, 80), phone: text(v.phone, 16), line: text(v.line, 200), postcode: text(v.postcode, 5), city: text(v.city, 60), state: text(v.state, 40) };
-  return a.to.length > 1 && a.line.length > 4 && /^\d{5}$/.test(a.postcode) && a.city.length > 1 && !!a.state ? a : null;
+  // Any country (owner, 31 Oct 2026): Malaysia keeps the 5-digit postcode; elsewhere it's the local format, or none.
+  const country = (text(v.country, 2) || "MY").toUpperCase();
+  const a = { to: text(v.to, 80), phone: text(v.phone, 24), line: text(v.line, 200), postcode: text(v.postcode, 10), city: text(v.city, 60), state: text(v.state, 60), country };
+  const postcode = country === "MY" ? /^\d{5}$/.test(a.postcode) : a.postcode === "" || /^[A-Za-z0-9 -]{2,10}$/.test(a.postcode);
+  return /^[A-Z]{2}$/.test(country) && a.to.length > 1 && a.line.length > 4 && postcode && a.city.length > 1 && !!a.state ? a : null;
 }
 
 export async function addressOf(userId: string): Promise<Address | null> {

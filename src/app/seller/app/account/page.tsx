@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/seller.css";
+import { dialOfNumber } from "@/lib/countries";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
@@ -42,7 +43,7 @@ export default function SellerAccount() {
     loadProfile<{ contact: string; phone: string }>("seller")
       .then(({ profile }) => {
         if (!profile) return setContact({ name: "", dial: "60", raw: "" });
-        const dial = ["673", "60", "65", "62", "66", "63", "84", "86"].find((d) => profile.details.phone.startsWith(`+${d}`)) ?? "60";
+        const dial = dialOfNumber(profile.details.phone) ?? "60";
         setContact({ name: profile.details.contact, dial, raw: profile.details.phone.slice(dial.length + 1) });
         setSaved(true);
       })

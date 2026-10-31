@@ -6,9 +6,11 @@ import { useDemo } from "@/components/demo";
  * Rate Card, so sellers can send products for paid reviews. Free Samples ship to her TikTok address. Signed out (the preview)
  * it lives in the browser tab; signed in it's kept on her account.
  */
-export type Address = { to: string; phone: string; line: string; postcode: string; city: string; state: string };
-export const EMPTY_ADDRESS: Address = { to: "", phone: "", line: "", postcode: "", city: "", state: "" };
-export const addressOk = (a: Address) => a.to.trim().length > 1 && a.line.trim().length > 4 && /^\d{5}$/.test(a.postcode) && a.city.trim().length > 1 && !!a.state;
+export type Address = { to: string; phone: string; line: string; postcode: string; city: string; state: string; country: string };
+export const EMPTY_ADDRESS: Address = { to: "", phone: "", line: "", postcode: "", city: "", state: "", country: "MY" };
+/** Malaysian postcodes are 5 digits; other countries' are 2-10 letters, digits or spaces, or none. */
+export const postcodeOk = (a: Pick<Address, "postcode" | "country">) => ((a.country || "MY") === "MY" ? /^\d{5}$/.test(a.postcode) : a.postcode === "" || /^[A-Za-z0-9 -]{2,10}$/.test(a.postcode));
+export const addressOk = (a: Address) => a.to.trim().length > 1 && a.line.trim().length > 4 && postcodeOk(a) && a.city.trim().length > 1 && !!a.state.trim();
 
 const KEY = "rz2_address";
 const EVT = "rz2-address";

@@ -168,9 +168,9 @@ export async function act(id: string, a: Action, actor: string): Promise<{ ok: t
 export type SellerCampaignSettings = { name: string; commission: number; description: string };
 export const SELLER_CAMPAIGN_DEFAULT: SellerCampaignSettings = {
   // Rezekii first, so sellers browsing campaigns in Seller Center see the platform's name (owner, 31 Oct 2026).
-  name: "Rezekii X {shop}",
+  name: "🚀 Rezekii X {shop}",
   commission: 10,
-  description: "Get creators selling your products with Rezekii. Rezekii is a TikTok Shop app for Malaysian sellers. Connect your shop and you get your own campaign right away, your products shown to affiliate creators, and free samples, videos and sales tracked in one place. {shop} is already on Rezekii. Find Rezekii in the TikTok Shop App Store.",
+  description: "🎉 Congrats {shop}, your Rezekii campaign is open! Register your products here so creators can start selling them. Other sellers: tired of chasing creators one by one? Rezekii connects your TikTok Shop to affiliate creators in about 3 minutes. You get your own campaign, your products shown to creators, and free samples, videos and sales tracked in one place, so you spend less time messaging and more time selling. Local and cross-border sellers welcome. Install Rezekii from the TikTok Shop App Store.",
 };
 export async function sellerCampaignSettings(): Promise<SellerCampaignSettings> {
   const [row] = (await (await supabaseRest("app_settings?key=eq.seller_campaign&select=value&limit=1")).json()) as { value: Partial<SellerCampaignSettings> }[];
@@ -208,7 +208,11 @@ async function shopCampaign(shopId: string, commission: number, actor: string, t
   const today = toDay(Math.floor(Date.now() / 1000));
   const end = lastEndDay(startTime(today, Date.now()));
   const title = (text?.name ?? `Rezekii X ${shop.name}`).slice(0, 49);
-  const saved = await saveCampaign({ name: title, description: text?.description ?? `${shop.name}'s campaign on Rezekii.`, start: today, end, regEnd: end, commission, local: true, crossBorder: true, shopCodes: [], ...contact }, null, actor);
+  let saved = await saveCampaign({ name: title, description: text?.description ?? `${shop.name}'s campaign on Rezekii.`, start: today, end, regEnd: end, commission, local: true, crossBorder: true, shopCodes: [], ...contact }, null, actor);
+  // TikTok may refuse emoji in a name or description: try once more with plain text.
+  const ascii = (t: string) => t.replace(/[^\x20-\x7E\n]/g, "").trim();
+  const plain = ascii(title);
+  if (!saved.ok && plain !== title) saved = await saveCampaign({ name: plain, description: ascii(text?.description ?? `${shop.name}'s campaign on Rezekii.`), start: today, end, regEnd: end, commission, local: true, crossBorder: true, shopCodes: [], ...contact }, null, actor);
   if (!saved.ok) return saved;
   const pub = await publish(saved.id, title, actor);
   if (!pub.ok) return { ok: false, error: pub.error ?? "TikTok didn't publish the campaign." };

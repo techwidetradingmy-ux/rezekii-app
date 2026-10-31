@@ -306,23 +306,8 @@ export const TERMS: [string, string][] = [
   ["We'll ask you again if the terms change", "We'll tell you about any change and ask you to agree again the next time you submit."],
 ];
 
-export const COUNTRIES: { code: string; name: string; dial: string }[] = [
-  { code: "MY", name: "Malaysia", dial: "60" },
-  { code: "SG", name: "Singapore", dial: "65" },
-  { code: "ID", name: "Indonesia", dial: "62" },
-  { code: "BN", name: "Brunei", dial: "673" },
-  { code: "TH", name: "Thailand", dial: "66" },
-  { code: "PH", name: "Philippines", dial: "63" },
-  { code: "VN", name: "Vietnam", dial: "84" },
-  { code: "CN", name: "China", dial: "86" },
-  { code: "HK", name: "Hong Kong", dial: "852" },
-  { code: "TW", name: "Taiwan", dial: "886" },
-  { code: "IN", name: "India", dial: "91" },
-  { code: "AU", name: "Australia", dial: "61" },
-  { code: "GB", name: "United Kingdom", dial: "44" },
-  { code: "US", name: "United States", dial: "1" },
-  { code: "AE", name: "United Arab Emirates", dial: "971" },
-];
+// Every country (owner, 31 Oct 2026: sellers and creators from anywhere).
+export { COUNTRIES } from "./countries";
 
 /**
  * Checks a phone number and tidies it. Malaysian mobiles must be 01x numbers and come out as +60 12-345 6789;

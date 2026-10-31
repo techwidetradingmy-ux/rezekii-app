@@ -93,7 +93,14 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
   const page = section ? pageFor(section, path) : null;
   const { me, live } = useDemo();
   // The bell shows her real unread count when signed in (owner, 31 Oct 2026); nothing when there are none.
-  const unreadNotes = useUnreadNotes(app === "seller" ? "seller" : "creator", live && app !== "admin");
+  const sideNotes = useUnreadNotes(app === "seller" ? "seller" : "creator", live && app !== "admin");
+  // Admins: the bell counts what needs fixing now (system problems and products to review), from Today (owner, 31 Oct 2026).
+  const [adminAlerts, setAdminAlerts] = useState<number | null>(null);
+  useEffect(() => {
+    if (!live || app !== "admin") return;
+    fetch("/api/v2/admin/today", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d: { queues?: { key: string; n: number }[] } | null) => setAdminAlerts((d?.queues ?? []).filter((q) => q.key === "system" || q.key === "review").reduce((t, q) => t + q.n, 0))).catch(() => {});
+  }, [live, app, path]);
+  const unreadNotes = app === "admin" ? adminAlerts : sideNotes;
   // Signed in with a Seller Center shop: the seller app shows that shop's name (owner, 30 Oct 2026).
   const shopName = app === "seller" ? me?.sellerShop : null;
   const shopInitials = (shopName ?? "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
@@ -248,7 +255,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
           )}
           <Link href={app === "admin" ? "/admin" : app === "seller" ? "/seller/app/notifications" : "/app/notifications"} className="v2-iconbtn" aria-label="Notifications">
             <Icon name="bell" size={20} />
-            {live && app !== "admin" ? !!unreadNotes && <b>{unreadNotes > 99 ? "99+" : unreadNotes}</b> : <b>3</b>}
+            {live ? !!unreadNotes && <b>{unreadNotes > 99 ? "99+" : unreadNotes}</b> : <b>3</b>}
           </Link>
           <Link href={ACCOUNT[app]} className={`v2-acct${ring}`} aria-label={storyNew && app === "creator" ? "Watch your Daily Story" : undefined} onClick={(e) => { if (app === "creator" && storyNew) { e.preventDefault(); setStory(true); return; } if (app === "creator" && window.matchMedia("(max-width: 760px)").matches) { e.preventDefault(); setAcctOpen(true); } }}>
             {who.photo ? (

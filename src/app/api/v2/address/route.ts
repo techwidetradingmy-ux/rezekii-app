@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   const user = await currentUser();
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   const a = cleanAddress((await req.json().catch(() => ({}))) as Record<string, unknown>);
-  if (!a) return NextResponse.json({ error: "Fill in the name, address, 5-digit postcode, city and state." }, { status: 400 });
+  if (!a) return NextResponse.json({ error: "Fill in the name, address, postcode, city and state." }, { status: 400 });
   if (!(await saveAddressFor(user.id, a))) return NextResponse.json({ error: "Didn't save. Please try again." }, { status: 500 });
   return NextResponse.json({ address: a });
 }

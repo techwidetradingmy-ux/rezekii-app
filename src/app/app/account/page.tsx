@@ -1,6 +1,7 @@
 "use client";
 
 import { FeedbackForm } from "@/components/feedback-form";
+import { COUNTRIES, DIAL_OPTIONS, countryName, dialOfNumber } from "@/lib/countries";
 import { SUPPORT } from "@/lib/support";
 import Link from "next/link";
 import { Fragment, useEffect, useRef, useState } from "react";
@@ -37,7 +38,8 @@ const active = MY_SAMPLES.filter((x) => !["Done", "Not approved"].includes(x.sta
 /** A red star for a required field. */
 const Req = () => <i className="pf-req" title="Required">*</i>;
 /** Country codes for WhatsApp numbers (owner, 28 Oct 2026: a fixed format with the code in front). Malaysia first. */
-const CODES: [string, string, string][] = [["+60", "MY", "Malaysia"], ["+65", "SG", "Singapore"], ["+62", "ID", "Indonesia"], ["+66", "TH", "Thailand"], ["+63", "PH", "Philippines"], ["+84", "VN", "Vietnam"], ["+673", "BN", "Brunei"], ["+86", "CN", "China"]];
+// Every calling code (owner, 31 Oct 2026: creators from anywhere).
+const CODES: [string, string][] = DIAL_OPTIONS.map((o) => [`+${o.dial}`, o.label.replace(/ \+\d+$/, "")]);
 /** The number's digits without a leading 0, or null when it isn't a mobile number for that country. */
 function digitsFor(cc: string, raw: string) {
   const d = raw.replace(/\D/g, "").replace(/^0+/, "");
@@ -96,6 +98,7 @@ export default function Account() {
 
   const [name, setName] = useState(you.name);
   const [state, setState] = useState(CREATOR.state);
+  const [country, setCountry] = useState("MY");
   const [cc, setCc] = useState("+60");
   const [phone, setPhone] = useState("12-345 6789");
   const [verifying, setVerifying] = useState(false);
@@ -198,12 +201,12 @@ export default function Account() {
     if (!live) return;
     setLoadingProfile(true);
     loadWallet("creator").then((w) => setStreak(w.streak)).catch(() => {});
-    loadProfile<{ name: string; birthday: string; state: string; whatsapp: string; gender: "Female" | "Male"; types: string[]; niches: string[] }>("creator")
+    loadProfile<{ name: string; birthday: string; country?: string; state: string; whatsapp: string; gender: "Female" | "Male"; types: string[]; niches: string[] }>("creator")
       .then(({ profile }) => {
         if (profile) {
           const d = profile.details;
-          const code = CODES.map((c) => c[0]).filter((c) => d.whatsapp.startsWith(c)).sort((a, b) => b.length - a.length)[0] ?? "+60";
-          setName(d.name); setBirthday(d.birthday); setState(d.state); setCc(code); setPhone(d.whatsapp.slice(code.length));
+          const code = `+${dialOfNumber(d.whatsapp) ?? "60"}`;
+          setName(d.name); setBirthday(d.birthday); setCountry(d.country || "MY"); setState(d.state); setCc(code); setPhone(d.whatsapp.slice(code.length));
           setGender(d.gender); setTypes(d.types); setNiche(d.niches[0] ?? ""); setSub1(d.niches[1] ?? ""); setSub2(d.niches[2] ?? "");
           setLocked(true);
         } else {
@@ -217,7 +220,7 @@ export default function Account() {
   const saveReal = async () => {
     setSaving(true);
     try {
-      await saveProfile("creator", { name, birthday, state, whatsapp: intl, gender, types, niches: [niche, sub1, sub2].filter(Boolean) });
+      await saveProfile("creator", { name, birthday, country, state, whatsapp: intl, gender, types, niches: [niche, sub1, sub2].filter(Boolean) });
       setLocked(true);
       setConfirmSave(false);
       toast("Profile saved");
@@ -232,7 +235,7 @@ export default function Account() {
   const intl = local ? `${cc}${local}` : null;
   const profileErrors = [
     !name.trim() && "Enter your name.",
-    !state && "Pick your state.",
+    !state.trim() && "Pick your state.",
     !niche && "Pick your main niche.",
     birthdayError(birthday) && `Birthday: ${birthdayError(birthday)}.`,
     !local && "Enter a valid WhatsApp number.",
@@ -332,12 +335,22 @@ export default function Account() {
                 {locked ? <b className="pf-v">{new Date(birthday).toLocaleDateString("en-MY", { day: "numeric", month: "long", year: "numeric" })}</b> : <input className="np-input" type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} />}
               </label>
               <label className="pf-f pair">
+                <span className="pf-l">Country {!locked && <Req />}</span>
+                {locked ? <b className="pf-v">{countryName(country)}</b> : (
+                  <select className="np-input" value={country} onChange={(e) => { const c = COUNTRIES.find((x) => x.code === e.target.value); setCountry(e.target.value); setState(""); if (c) { setCc(`+${c.dial}`); setVerified(false); } }}>
+                    {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
+                  </select>
+                )}
+              </label>
+              <label className="pf-f pair">
                 <span className="pf-l">State {!locked && <Req />}</span>
-                {locked ? <b className="pf-v">{state}</b> : (
+                {locked ? <b className="pf-v">{state}</b> : country === "MY" ? (
                   <select className="np-input" value={state} onChange={(e) => setState(e.target.value)}>
                     {!state && <option value="">Pick one</option>}
                     {MY_STATES.map((x) => <option key={x}>{x}</option>)}
                   </select>
+                ) : (
+                  <input className="np-input" autoComplete="address-level1" placeholder="State / Province / Region" value={state} onChange={(e) => setState(e.target.value)} />
                 )}
               </label>
 
@@ -348,7 +361,7 @@ export default function Account() {
                 ) : (
                   <span className="cr2-phone">
                     <select className="np-input" value={cc} onChange={(e) => { setCc(e.target.value); setVerified(false); }} aria-label="Country code">
-                      {CODES.map(([code, short, cname]) => <option key={code} value={code} title={cname}>{short} {code}</option>)}
+                      {CODES.map(([code, short]) => <option key={code} value={code}>{short} {code}</option>)}
                     </select>
                     <input id="cr2-wa" className="np-input" inputMode="tel" value={phone} aria-label="WhatsApp number" placeholder={cc === "+60" ? "12-345 6789" : "Mobile number"} onChange={(e) => { setPhone(e.target.value); setVerified(false); }} onBlur={() => local && setPhone(prettyNum(cc, local))} />
                   </span>
@@ -703,6 +716,7 @@ export default function Account() {
           <p className="v2-muted" style={{ margin: 0 }}>After saving, only support can change it.</p>
           <dl className="pf-sum">
             <div><dt>Name</dt><dd>{name}</dd></div>
+            <div><dt>Country</dt><dd>{countryName(country)}</dd></div>
             <div><dt>State</dt><dd>{state}</dd></div>
             <div><dt>WhatsApp</dt><dd>{cc} {local ? prettyNum(cc, local) : ""}</dd></div>
             <div><dt>Gender</dt><dd>{gender}</dd></div>

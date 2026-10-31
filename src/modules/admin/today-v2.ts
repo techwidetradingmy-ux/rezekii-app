@@ -1,4 +1,14 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import { systemHealth } from "./health.ts";
+import { pendingProducts } from "./tap.ts";
+import { supabaseRest as rest } from "../../integrations/supabase/rest.ts";
+
+/** Products waiting for Techwide in every shop's own campaign (read from TikTok). */
+async function waitingForReview(): Promise<number> {
+  const shops = (await (await rest("seller_connections?campaign_id=not.is.null&select=campaign_id")).json()) as { campaign_id: string }[];
+  const n = await Promise.all(shops.map((s) => pendingProducts(s.campaign_id).then((r) => r.products.length).catch(() => 0)));
+  return n.reduce((t, x) => t + x, 0);
+}
 import { listActivity } from "./admins.ts";
 
 const DAY = 86_400_000;
@@ -55,6 +65,10 @@ export async function adminTodayV2(actor: string): Promise<AdminTodayV2> {
     ),
     listActivity(6).catch(() => []),
   ]);
+  // Something to fix (owner, 31 Oct 2026: who tells us when the daily refresh fails?): failed refresh steps, a lost connection,
+  // and products shops registered that wait for Techwide.
+  const [health, toReview] = await Promise.all([systemHealth().catch(() => null), waitingForReview().catch(() => 0)]);
+  const problems = health ? health.lines.filter((l) => !l.ok).length : 1;
 
   const queues: Queue[] = [
     { key: "tap-new", n: submitted, label: "New TAP requests", note: "Sent by sellers, not reviewed yet" },
@@ -65,6 +79,8 @@ export async function adminTodayV2(actor: string): Promise<AdminTodayV2> {
     { key: "custom", n: custom, label: "Custom Service requests", note: "New, not contacted yet" },
     { key: "posts", n: failedPosts + failedSocial, label: "Failed posts", note: "Last 7 days" },
     { key: "wishes", n: wishes, label: "Wish List", note: "Wishes for products not on Rezekii" },
+    { key: "system", n: problems, label: "System problems", note: health ? health.lines.filter((l) => !l.ok).map((l) => `${l.label}: ${l.value}`).join(" · ") || "All running" : "Couldn't check" },
+    { key: "review", n: toReview, label: "Products to review", note: "Shops registered them in Seller Center" },
   ];
 
   const kpi = (label: string, times: (string | null)[], note: string): Kpi => {

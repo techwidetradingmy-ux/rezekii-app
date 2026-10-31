@@ -25,6 +25,8 @@ const LOOK: Record<string, { href: string; icon: IconName; bg: string; tone?: "r
   custom: { href: "/admin/business/custom", icon: "inbox", bg: "linear-gradient(135deg,#5eead4,#0f766e)" },
   posts: { href: "/admin/system/publishing", icon: "send", bg: "linear-gradient(135deg,#ff7aa8,#e8005a)", tone: "amber" },
   wishes: { href: "/admin/tap/requests", icon: "bag", bg: "linear-gradient(135deg,#ffb35c,#f08a00)" },
+  system: { href: "/admin/system", icon: "alert", bg: "linear-gradient(135deg,#ff8a80,#d93a2b)", tone: "red" },
+  review: { href: "/admin/tap/review", icon: "check", bg: "linear-gradient(135deg,#22dc95,#00a862)", tone: "amber" },
 };
 const hm = (iso: string) => new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kuala_Lumpur" });
 const when = (iso: string) => {

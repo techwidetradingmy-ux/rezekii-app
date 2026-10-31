@@ -8,6 +8,7 @@ import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { GoogleMark, TikTokMark } from "@/components/creator1/brand";
 import { TERMS_VERSION } from "@/lib/mock-seller";
+import { Tip } from "@/components/ui";
 
 /**
  * Seller onboarding for real (owner, 31 Oct 2026): sign in with TikTok or Google (back here after), agree to the sample terms,
@@ -45,24 +46,33 @@ export function LiveSellerConnect() {
         <section className="sl-ob-card">
           {!me ? (
             <>
-              <h1>Sign In</h1>
-              <p>Sign in, then connect your TikTok Shop. About 3 minutes.</p>
-              <a className="btn-tiktok sl-ob-btn" style={{ border: 0, font: "inherit", fontWeight: 800 }} href="/api/auth/tiktok/start?next=/seller/connect"><TikTokMark size={20} /> Continue with TikTok</a>
+              <h1>Connect Your TikTok Shop</h1>
+              <p>Sign in first. It takes about 3 minutes in all.</p>
               <a className="btn-google sl-ob-btn" style={{ font: "inherit", fontWeight: 600 }} href="/api/auth/google/start?next=/seller/connect"><GoogleMark /> Continue with Google</a>
-              {ready && <p className="v2-small" style={{ margin: 0 }}>Use email instead? <Link href="/signin" className="v2-link">Sign in with email</Link>, then come back to this page.</p>}
+              <a className="btn-tiktok sl-ob-btn" style={{ border: 0, font: "inherit", fontWeight: 800 }} href="/api/auth/tiktok/start?next=/seller/connect"><TikTokMark size={20} /> Continue with TikTok</a>
+              {ready && <Link href="/signin?next=/seller/connect" className="btn-outline sl-ob-btn" style={{ font: "inherit", fontWeight: 700 }}><Icon name="inbox" size={18} /> Continue with email</Link>}
             </>
           ) : (
             <>
-              <h1>Connect Seller Center</h1>
-              <p>Signed in as <b>{me.name ?? me.email}</b>. Connect your TikTok Shop so Rezekii can read your products and send them to Techwide&apos;s TAP.</p>
-              <label className="sl-agree" style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+              {/* Owner, 31 Oct 2026: fewer words, one clear button. The sample terms sit in a tip. */}
+              <h1>Connect Your TikTok Shop</h1>
+              <p style={{ margin: 0 }}>
+                Signed in as <b>{me.name ?? me.email}</b> ·{" "}
+                <button type="button" className="v2-link" onClick={() => { fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/seller/connect"; }); }}>Switch account</button>
+              </p>
+              <ul className="sl-ob-list">
+                <li><Icon name="check" size={16} width={2.6} /> Your own campaign, opened for you</li>
+                <li><Icon name="check" size={16} width={2.6} /> Your products shown to creators</li>
+                <li><Icon name="check" size={16} width={2.6} /> Samples, videos and sales in one place</li>
+              </ul>
+              <label className="sl-agree" style={{ display: "flex", gap: 10, alignItems: "center" }}>
                 <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
-                <span>I agree to the sample terms ({TERMS_VERSION}): 1 sample = at least 1 video by the due date, and samples sent can&apos;t be taken back. And to Rezekii&apos;s <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer" className="v2-link">Terms</a> and <a href="https://rezekii.com/privacy" target="_blank" rel="noreferrer" className="v2-link">Privacy Policy</a>.</span>
+                <span>I agree to the <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer" className="v2-link">Terms</a>, <a href="https://rezekii.com/privacy" target="_blank" rel="noreferrer" className="v2-link">Privacy Policy</a> and sample terms <Tip label="Sample terms" text={`${TERMS_VERSION}: 1 sample = at least 1 video by the due date. Samples sent can't be taken back.`} /></span>
               </label>
               <button type="button" className="btn-tiktok sl-ob-btn" style={{ border: 0, font: "inherit", fontWeight: 800, cursor: "pointer" }} disabled={!agreed || busy} onClick={connect}>
-                {busy ? <span className="sl-spin" /> : <TikTokMark size={20} />} Connect Seller Center
+                {busy ? <span className="sl-spin" /> : <TikTokMark size={20} />} Connect TikTok Shop
               </button>
-              <p className="v2-small" style={{ margin: 0, display: "flex", gap: 6 }}><Icon name="shield" size={15} /> TikTok asks you to approve Rezekii. You can disconnect any time in Account.</p>
+              <p className="v2-small" style={{ margin: 0, display: "flex", gap: 6, alignItems: "center" }}><Icon name="shield" size={15} /> Secure sign-in by TikTok · Disconnect any time</p>
             </>
           )}
         </section>

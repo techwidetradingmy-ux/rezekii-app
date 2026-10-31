@@ -172,6 +172,16 @@ async function emailInUse(email: string, except?: string): Promise<boolean> {
   return (await res.json()) === true;
 }
 
+/**
+ * What sign-in an email has (owner, 31 Oct 2026: one "Continue with email" for new and returning people): none (new), a
+ * password, or Google / TikTok only.
+ */
+export async function emailAccount(email: string): Promise<{ exists: boolean; password: boolean; google: boolean }> {
+  if (!(await emailInUse(email))) return { exists: false, password: false, google: false };
+  const [u] = (await (await supabaseRest(`app_users?email=eq.${encodeURIComponent(email)}&select=password_hash,google_sub&limit=1`)).json()) as { password_hash: string | null; google_sub: string | null }[];
+  return { exists: true, password: !!u?.password_hash, google: !!u?.google_sub };
+}
+
 /** Creates a creator account that signs in with email and password. No other account may use the email in any way. */
 export async function createEmailUser(email: string, password: string, name: string | null): Promise<EmailResult> {
   const exists: EmailResult = { ok: false, error: "An account with this email already exists. Sign in instead.", status: 409 };

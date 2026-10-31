@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/seller.css";
+import { DIAL_OPTIONS } from "@/lib/countries";
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -129,8 +130,8 @@ export function PhoneField({ dial, raw, onChange, showError, label = "Phone numb
       {label}
       <div className="sl-phone">
         <select aria-label="Country code" value={dial} onChange={(e) => onChange(e.target.value, raw)}>
-          {COUNTRIES.map((c) => (
-            <option key={c.code} value={c.dial}>{c.code} +{c.dial}</option>
+          {DIAL_OPTIONS.map((o) => (
+            <option key={o.dial} value={o.dial}>{o.label}</option>
           ))}
         </select>
         <input className="np-input" inputMode="tel" autoComplete="tel-national" value={raw} placeholder={dial === "60" ? "12-345 6789" : "Number"} onChange={(e) => onChange(dial, e.target.value)} onBlur={() => setBlurred(true)} aria-invalid={!!err} />
