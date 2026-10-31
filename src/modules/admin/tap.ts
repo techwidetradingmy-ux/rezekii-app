@@ -1,4 +1,5 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import { recordReview } from "../tap/reviews.ts";
 import { listCampaignProducts, listCampaigns, reviewCampaignProduct, type Campaign, type CampaignProduct, type RejectReason } from "../../integrations/tiktok-shop/partner.ts";
 import { storedSessions } from "../refresh/sessions.ts";
 import { logActivity } from "./admins.ts";
@@ -288,6 +289,7 @@ export async function reviewProduct(campaignId: string, productId: string, appro
     keepDecision(campaignId, productId, approve),
     approve && item?.id === productId ? keepApproved(campaignId, item) : null,
   ]).catch((err) => console.error("[tap reviewed]", err instanceof Error ? err.message : err));
+  await recordReview(campaignId, productId, name, approve ? "approved" : "declined", reason, actor).catch((err) => console.error("[tap review record]", err instanceof Error ? err.message : err));
   await logActivity(actor, "TAP", `${approve ? "approved" : "declined"} ${name.slice(0, 60)} for a TAP campaign${!approve && reason ? ` (${REJECT_REASONS.find(([k]) => k === reason)?.[1]})` : ""}`);
   return { ok: true };
 }

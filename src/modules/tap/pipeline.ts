@@ -168,11 +168,7 @@ export async function act(id: string, a: Action, actor: string): Promise<{ ok: t
 export type SellerCampaignSettings = { commission: number; description: string };
 export const SELLER_CAMPAIGN_DEFAULT: SellerCampaignSettings = {
   commission: 10,
-  description: [
-    "Techwide's affiliate campaign for {shop}, opened on Rezekii.",
-    "{shop}: register your products here. Techwide reviews each product, then creators on Rezekii can add it to their showcase, ask for free samples and post videos.",
-    "Other sellers: want a campaign like this for your shop? Install Rezekii from the TikTok Shop App Store (Creator Collaborations) and connect your shop. Rezekii opens your own campaign and shows your creators, samples and sales in one place.",
-  ].join("\n\n"),
+  description: "Techwide's affiliate campaign for {shop} on Rezekii. Want one for your shop? Install Rezekii from the TikTok Shop App Store and connect your shop.",
 };
 export async function sellerCampaignSettings(): Promise<SellerCampaignSettings> {
   const [row] = (await (await supabaseRest("app_settings?key=eq.seller_campaign&select=value&limit=1")).json()) as { value: Partial<SellerCampaignSettings> }[];

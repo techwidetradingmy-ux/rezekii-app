@@ -1,4 +1,5 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import { REASON_TEXT, type Review } from "../tap/reviews.ts";
 import { myWishes } from "../wishes/wishes.ts";
 
 export type Side = "creator" | "seller";
@@ -18,7 +19,7 @@ export type Feed = { notes: (Note & { unread: boolean })[]; unread: number };
 /** What she can switch off in Settings (owner, 31 Oct 2026). Connection reminders always show: things stop working without them. */
 export type Topic = "samples" | "chances" | "posts" | "rewards";
 export type Prefs = Partial<Record<Topic, boolean>>;
-const TOPIC: [string, Topic][] = [["l:", "rewards"], ["j:", "rewards"], ["p:", "posts"], ["s:", "posts"], ["r:", "samples"], ["sub:", "samples"], ["w:", "chances"]];
+const TOPIC: [string, Topic][] = [["l:", "rewards"], ["j:", "rewards"], ["p:", "posts"], ["s:", "posts"], ["r:", "samples"], ["sub:", "samples"], ["rv:", "samples"], ["w:", "chances"]];
 const topicOf = (id: string): Topic | null => TOPIC.find(([p]) => id.startsWith(p))?.[1] ?? null;
 
 const DAY = 86_400_000;
@@ -35,7 +36,7 @@ export async function notesFor(userId: string, side: Side): Promise<Note[]> {
   const since = new Date(Date.now() - 30 * DAY).toISOString();
   const base = side === "seller" ? "/seller/app" : "/app";
   const walletHref = side === "seller" ? "/seller/app/rewards/wallet" : "/app/account#wallet";
-  const [ledger, invites, posts, social, accounts, shop, tiktok, samples, submissions, wishes] = await Promise.all([
+  const [ledger, invites, posts, social, accounts, shop, tiktok, samples, submissions, wishes, reviews] = await Promise.all([
     rows<{ id: string; amount: number; kind: string; what: string; created_at: string; expires_at: string | null }>(
       `credit_ledger?user_id=eq.${userId}&side=eq.${side}&created_at=gte.${enc(since)}&kind=neq.post&select=id,amount,kind,what,created_at,expires_at&order=created_at.desc&limit=40`,
     ),
@@ -60,6 +61,12 @@ export async function notesFor(userId: string, side: Side): Promise<Note[]> {
         )
       : Promise.resolve([]),
     side === "creator" ? myWishes(userId).catch(() => []) : Promise.resolve([]),
+    // Techwide's decisions on products her shop registered in its campaign (owner, 31 Oct 2026), with the reason when made in Rezekii.
+    side === "seller"
+      ? rows<{ shop_id: string }>(`seller_connections?connected_by=eq.${userId}&select=shop_id`).then((sh) =>
+          sh.length ? rows<Review>(`product_reviews?shop_id=in.(${sh.map((x) => x.shop_id).join(",")})&decided_at=gte.${enc(since)}&decided_by=neq.backfill&select=*&order=decided_at.desc&limit=30`) : [],
+        )
+      : Promise.resolve([] as Review[]),
   ]);
 
   const notes: Note[] = [];
@@ -126,6 +133,11 @@ export async function notesFor(userId: string, side: Side): Promise<Note[]> {
   for (const t of submissions) {
     const [icon, what, line] = STEP[t.status] ?? ["check", "was updated", ""];
     notes.push({ id: `sub:${t.id}:${t.status}`, at: t.updated_at, icon, title: `${t.product_name ?? "Your product"} ${what}`, line: t.status === "not_approved" && t.reason ? t.reason : line, href: "/seller/app/progress", cta: "See progress", urgent: null });
+  }
+  for (const r of reviews) {
+    const name = r.product_name ?? "Your product";
+    if (r.decision === "approved") notes.push({ id: `rv:${r.id}`, at: r.decided_at, icon: "check", title: `Approved: ${name}`, line: "Creators can now find it on Rezekii and add it to their showcase.", href: "/seller/app/submit", cta: "See products", urgent: null });
+    else notes.push({ id: `rv:${r.id}`, at: r.decided_at, icon: "x", title: `Not approved: ${name}`, line: `${r.reason ? `${REASON_TEXT[r.reason] ?? r.reason}. ` : ""}Change it in Seller Center and register again.`, href: "/seller/app/submit", cta: "See why", urgent: null });
   }
   // Her wishes: launched on Rezekii, or the seller said no.
   for (const w of wishes) {

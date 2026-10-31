@@ -1,7 +1,9 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { after, NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { supabaseRest } from "@/integrations/supabase/rest.ts";
 import { linesBetween, productImages } from "@/modules/sales/frames.ts";
+import { syncCreatorOrders } from "@/modules/sales/orders.ts";
+import { approvedCreatorToken } from "@/modules/creator-accounts/access.ts";
 import { lineEarned, lineGmv, techwideCampaigns, type OrderLine } from "@/modules/sales/summary.ts";
 
 /**
@@ -11,7 +13,7 @@ import { lineEarned, lineGmv, techwideCampaigns, type OrderLine } from "@/module
 const lineCommission = lineEarned;
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 90;
 
 const DAY = 86_400_000;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -46,6 +48,10 @@ export async function GET(req: NextRequest) {
   }
   const extraOf = (l: OrderLine) => (l.campaign_id && techwide.has(l.campaign_id) && l.product_id && openRate.has(l.product_id) ? Math.max(0, lineCommission(l) - lineGmv(l) * (openRate.get(l.product_id) ?? 0)) : 0);
 
+  // Her orders are read again from TikTok when the last read is over 30 minutes old (owner, 31 Oct 2026: real time), after this
+  // answer, so the next visit shows them; the daily refresh does the same for everyone.
+  const lastRead = lines.reduce((m, l) => Math.max(m, Date.parse(l.synced_at)), 0);
+  if (now - lastRead > 30 * 60_000) after(async () => { const token = await approvedCreatorToken(user.id); if (token) await syncCreatorOrders(user.id, token, Date.now() + 45_000).catch(() => 0); });
   const first = lines.length ? Math.min(...lines.map((l) => Date.parse(l.created_at))) : now;
   const names = new Map<string, { name: string; shop: string }>();
   for (const l of lines) if (l.product_id && !names.has(l.product_id)) names.set(l.product_id, { name: l.product_name ?? "Product", shop: l.shop_name ?? "" });

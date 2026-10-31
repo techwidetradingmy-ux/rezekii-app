@@ -10,7 +10,7 @@ import { SELLER } from "@/lib/mock";
 import { SHOP_ITEMS } from "@/lib/mock-seller";
 
 type Status = "pending" | "approved" | "declined";
-type Product = { id: string; name: string; image: string | null; status: Status; totalRate: number | null };
+type Product = { id: string; name: string; image: string | null; status: Status; totalRate: number | null; reason?: string | null };
 type Data = { linked: boolean; shop?: string; error?: string; campaign?: { id: string; name: string; status: string | null; commission: number | null; end: number | null }; products?: Product[] };
 
 const LABEL: Record<Status, [string, string]> = { pending: ["Waiting for Techwide", "badge-amber"], approved: ["Approved", ""], declined: ["Not approved", "badge-red"] };
@@ -21,7 +21,7 @@ const SAMPLE: Data = {
   linked: true,
   shop: SELLER.shop,
   campaign: { id: "sample", name: `Techwide X ${SELLER.shop}`, status: "ONGOING", commission: 10, end: Date.UTC(2027, 9, 25) / 1000 },
-  products: SHOP_ITEMS.filter((p) => p.stage !== "Not submitted").map((p) => ({ id: p.id, name: p.name, image: p.img, status: p.stage === "Live" ? "approved" : p.stage === "Not approved" ? "declined" : "pending", totalRate: p.tapRate ? p.tapRate * 100 : null })),
+  products: SHOP_ITEMS.filter((p) => p.stage !== "Not submitted").map((p) => ({ id: p.id, name: p.name, image: p.img, status: p.stage === "Live" ? "approved" : p.stage === "Not approved" ? "declined" : "pending", totalRate: p.tapRate ? p.tapRate * 100 : null, reason: p.stage === "Not approved" ? "Commission too low" : null })),
 };
 
 /**
@@ -94,7 +94,7 @@ export function RegisterProducts({ title = true }: { title?: boolean }) {
                 <div key={`${p.status}-${p.id}`} className="sl-act" style={{ gridTemplateColumns: "44px minmax(0,1fr) auto", alignItems: "center" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p.image ?? NO_PHOTO} alt="" style={{ width: 44, height: 44, borderRadius: 10, objectFit: "cover" }} />
-                  <span><b style={{ fontSize: 14 }}>{shortName(p.name)}</b><small>{p.status === "approved" && p.totalRate !== null ? `${p.totalRate / 100}% for creators` : p.status === "pending" ? "Registered · Techwide is reviewing it" : p.status === "declined" ? "Change it in Seller Center and register again" : ""}</small></span>
+                  <span><b style={{ fontSize: 14 }}>{shortName(p.name)}</b><small>{p.status === "approved" && p.totalRate !== null ? `${p.totalRate / 100}% for creators` : p.status === "pending" ? "Registered · Techwide is reviewing it" : p.status === "declined" ? `${p.reason ? `${p.reason}. ` : ""}Change it in Seller Center and register again` : ""}</small></span>
                   <span className={`badge ${LABEL[p.status][1]}`}>{LABEL[p.status][0]}</span>
                 </div>
               ))}
