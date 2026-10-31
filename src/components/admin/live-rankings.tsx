@@ -60,6 +60,7 @@ export function LiveRankings() {
   }
 
   const l = d?.list;
+  const catName = new Map(d?.categories ?? []);
   const pick = (f: () => void) => () => { f(); setPg(1); };
   return (
     <div className="v2-stack v2-in" style={{ gap: 16 }}>
@@ -97,7 +98,7 @@ export function LiveRankings() {
         {view === 1 && (
           <select className="np-input" style={{ width: 230, height: 38 }} value={cat} onChange={(e) => { setCat(e.target.value); setPg(1); }} aria-label="Category">
             <option value="">All categories</option>
-            {(d?.categories ?? []).map(([id, name]) => <option key={id} value={name}>{name}</option>)}
+            {(d?.categories ?? []).map(([id, name]) => <option key={id} value={id}>{name}</option>)}
           </select>
         )}
       </div>
@@ -133,7 +134,7 @@ export function LiveRankings() {
                 {l.products?.map(({ row: r, meta: m }, i) => (
                   <tr key={m[0]}>
                     <td className="num">{cat ? r[4] : i + 1}</td>
-                    <td><span className="ad-cell"><Img src={m[5]} /><span><b>{m[1]}</b><small>{m[2]} · {m[4]}</small></span></span></td>
+                    <td><span className="ad-cell"><Img src={m[5]} /><span><b>{m[1]}</b><small>{m[2]} · {catName.get(m[4]) ?? m[4]}</small></span></span></td>
                     <td>{m[3] ? `${m[3]} ★` : "—"}</td>
                     <td style={{ textAlign: "right" }}>{rm(r[1], r[2])}</td>
                   </tr>

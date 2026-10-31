@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { supabaseRest } from "@/integrations/supabase/rest.ts";
 import { listRankings } from "@/modules/rankings/query.ts";
-import { rankings } from "@/modules/rankings/store.ts";
+import { forgetRankingsBefore, rankings } from "@/modules/rankings/store.ts";
 import { CAT } from "@/modules/rankings/build.ts";
 import { creatorSearchTasks, mytDay } from "@/modules/refresh/plan.ts";
 import { addTasks } from "@/modules/refresh/store.ts";
@@ -41,7 +41,10 @@ export async function GET(req: NextRequest) {
   if (user?.role !== "admin") return NextResponse.json({ error: "Admins only." }, { status: 403 });
   const p = req.nextUrl.searchParams;
   const view = Number(p.get("view")) || 0;
-  const [b, s] = await Promise.all([rankings(...(view === 1 ? (["pm"] as const) : [])), status()]);
+  const s = await status();
+  // A batch built since this server last read them shows straight away.
+  if (s.built) forgetRankingsBefore(s.built.at);
+  const b = await rankings(...(view === 1 ? (["pm"] as const) : []));
   const list = b
     ? listRankings(b, { view, slot: p.has("slot") ? Number(p.get("slot")) : 0, cat: p.get("cat") || undefined, pg: Number(p.get("pg")) || 1 })
     : null;

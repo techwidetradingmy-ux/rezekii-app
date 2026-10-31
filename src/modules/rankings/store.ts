@@ -218,6 +218,14 @@ let cache: { at: number; data: Built | null } | null = null;
 type Part = "pm" | "find";
 const parts = new Map<string, { at: number; data: unknown }>();
 
+/** Reads the rankings again on the next ask when a batch newer than the one in memory was built (`builtAt`). */
+export function forgetRankingsBefore(builtAt: string): void {
+  if (cache && cache.at < Date.parse(builtAt)) {
+    cache = null;
+    parts.clear();
+  }
+}
+
 /**
  * The newest built rankings (kept in memory for 10 minutes), or null before the first build. The large parts are loaded only
  * when asked for: "pm" (product details, for Top products) and "find" (the Creator Marketplace list, for Find creators).
