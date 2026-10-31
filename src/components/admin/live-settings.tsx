@@ -14,7 +14,7 @@ type Settings = {
   times: string[];
   auto: boolean;
   benefits: { label: string; v: [string, string, string]; key?: boolean }[];
-  campaign: { commission: number; description: string };
+  campaign: { name: string; commission: number; description: string };
   rules: { welcome: number; life: number; post: number; referral: { inviter: number; friend: number }; referralDays: number; starterDays: number };
 };
 
@@ -135,14 +135,15 @@ export function LiveSettings() {
  * New seller campaigns (owner, 31 Oct 2026): every shop that connects Seller Center gets a public campaign "Techwide X [shop]"
  * with this commission and description. {shop} becomes the shop's name. Campaigns already made keep their own text.
  */
-function SellerCampaignCard({ value }: { value: { commission: number; description: string } }) {
+function SellerCampaignCard({ value }: { value: { name: string; commission: number; description: string } }) {
   const { toast } = useDemo();
+  const [name, setName] = useState(value.name);
   const [rate, setRate] = useState(String(value.commission));
   const [text, setText] = useState(value.description);
   const [busy, setBusy] = useState(false);
   const save = async () => {
     setBusy(true);
-    const r = await fetch("/api/admin/settings", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ campaign: { commission: Number(rate), description: text } }) }).catch(() => null);
+    const r = await fetch("/api/admin/settings", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ campaign: { name, commission: Number(rate), description: text } }) }).catch(() => null);
     const x = (await r?.json().catch(() => null)) as { error?: string } | null;
     setBusy(false);
     toast(r?.ok ? "Saved. New shops' campaigns use this." : x?.error ?? "Didn't save. Please try again.");
@@ -150,7 +151,10 @@ function SellerCampaignCard({ value }: { value: { commission: number; descriptio
   return (
     <section className="v2-card" style={{ gap: 12 }}>
       <div className="v2-card-h"><h2 className="v2-h2">New Seller Campaigns</h2><span className="v2-small">Made when a shop connects Seller Center</span></div>
-      <p className="v2-small" style={{ margin: 0 }}>Each shop gets its own public campaign, &quot;Techwide X [shop]&quot;. Every seller in Seller Center can see the description. {"{shop}"} becomes the shop&apos;s name.</p>
+      <p className="v2-small" style={{ margin: 0 }}>Each shop gets its own public campaign. Every seller in Seller Center can see its name and description. {"{shop}"} becomes the shop&apos;s name; TikTok cuts names at 49 characters.</p>
+      <label className="v2-small" style={{ display: "grid", gap: 6, maxWidth: 420 }}>Campaign name
+        <input className="np-input" value={name} onChange={(e) => setName(e.target.value)} aria-label="Campaign name" />
+      </label>
       <label className="v2-small" style={{ display: "grid", gap: 6, maxWidth: 220 }}>Campaign commission (%)
         <input className="np-input" inputMode="decimal" value={rate} onChange={(e) => setRate(e.target.value)} aria-label="Campaign commission" />
       </label>
