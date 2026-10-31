@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Count, Flow, Lock, RemoveWarn } from "@/components/ui";
+import { removeFromShowcase } from "@/lib/live";
 import { CREATOR, PRODUCTS, rm } from "@/lib/mock";
 import { productHref } from "@/lib/product-view";
 import "@/app/creator1.css";
@@ -66,11 +67,18 @@ export function RatingScan() {
     if (!linked) return setLinked(true);
     setAsk(ids);
   };
-  const confirmRemove = () => {
+  const confirmRemove = async () => {
     if (!ask) return;
-    setRemoved((r) => [...r, ...ask]);
-    toast(ask.length > 1 ? `${ask.length} products removed from your showcase` : "Removed from your showcase");
+    const ids = ask;
     setAsk(null);
+    // Signed in, TikTok takes them out of her real showcase (owner, 31 Oct 2026).
+    if (real) {
+      toast("Removing from your TikTok showcase…");
+      const r = await removeFromShowcase(ids);
+      if (!r.ok) return toast(r.error);
+    }
+    setRemoved((r) => [...r, ...ids]);
+    toast(ids.length > 1 ? `${ids.length} products removed from your showcase` : "Removed from your showcase");
   };
 
   const row = (p: { id: string; name: string; img: string; rating: number }) => {
@@ -87,8 +95,7 @@ export function RatingScan() {
         <span className="rc-stars" aria-label={`${p.rating.toFixed(1)} stars`}>
           <Icon name="star" size={14} width={2.4} /> {p.rating.toFixed(1)}
         </span>
-        {/* TikTok has no way for apps to take a product out of a showcase, so real accounts do it in TikTok. */}
-        {real ? <small className="v2-small">Remove in TikTok</small> : <button type="button" className={bad ? "np-btn v2-btn-sm" : "btn-outline v2-btn-sm"} onClick={() => remove([p.id])}>Remove</button>}
+        <button type="button" className={bad ? "np-btn v2-btn-sm" : "btn-outline v2-btn-sm"} onClick={() => remove([p.id])}>Remove</button>
       </li>
     );
   };
@@ -128,9 +135,7 @@ export function RatingScan() {
             <span className="bad"><b>{scanning ? "…" : danger.length}</b><small>Under 3★ · danger zone</small></span>
           </div>
           <div className="sh-acts">
-            {danger.length > 0 && real ? (
-              <span className="sh-clear"><Icon name="alert" size={16} /> Remove {danger.length} danger product{danger.length === 1 ? "" : "s"} in the TikTok Shop app</span>
-            ) : danger.length > 0 ? (
+            {danger.length > 0 ? (
               <button type="button" className="sh-go rc-go" disabled={scanning} onClick={() => remove(danger.map((p) => p.id))}>
                 <Icon name="x" size={17} width={2.6} /> Remove {danger.length} danger product{danger.length === 1 ? "" : "s"}
               </button>

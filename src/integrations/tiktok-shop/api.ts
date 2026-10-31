@@ -11,7 +11,7 @@ export type ApiReply<T> = {
 
 /** Calls a TikTok Shop API with a creator's or partner's access token. */
 export async function callApi<T>(opts: {
-  method: "GET" | "POST";
+  method: "GET" | "POST" | "DELETE";
   path: string;
   accessToken: string;
   query?: Record<string, string>;

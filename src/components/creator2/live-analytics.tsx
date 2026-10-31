@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
-import { AiHead, Bars, Progress, Tip } from "@/components/ui";
+import { AiHead, Bars, Progress, RemoveWarn, Tip } from "@/components/ui";
+import { useDemo } from "@/components/demo";
+import { removeFromShowcase } from "@/lib/live";
 import { NO_PHOTO, shortName } from "@/lib/live-perf";
 import { productHref } from "@/lib/product-view";
 import { short } from "@/lib/mock";
@@ -36,10 +38,23 @@ const riskOf = (flagged: Flag[], cancel: number) => {
 
 /** AI Summary: where her money came from, when to post, and low-rated showcase products, all from her own data. */
 export function LiveAiSummary({ sig, span, cancel, lead }: { sig: Signals; span: string; cancel: number; lead: React.ReactNode }) {
+  const { toast } = useDemo();
+  const [gone, setGone] = useState<string[]>([]);
+  const [ask, setAsk] = useState<Flag | null>(null);
   const { ratings, best } = sig;
   const slot = topSlot(best);
-  const flagged = ratings?.flagged ?? [];
+  const flagged = (ratings?.flagged ?? []).filter((f) => !gone.includes(f.id));
   const risk = riskOf(flagged, cancel);
+  const confirm = async () => {
+    if (!ask) return;
+    const f = ask;
+    setAsk(null);
+    toast("Removing from your TikTok showcase…");
+    const r = await removeFromShowcase([f.id]);
+    if (!r.ok) return toast(r.error);
+    setGone((g) => [...g, f.id]);
+    toast("Removed from your showcase");
+  };
   return (
     <section className="v2-aicard cr2-aisum" aria-label="AI summary">
       <AiHead title="AI Summary" sub={`From your TikTok Shop sales, ${span}`} />
@@ -73,12 +88,13 @@ export function LiveAiSummary({ sig, span, cancel, lead }: { sig: Signals; span:
                 <i>{f.rating.toFixed(1)} ★</i>
               </span>
             </span>
-            <small className="v2-small">Remove in TikTok</small>
+            <button type="button" className="btn-outline v2-btn-sm" onClick={() => setAsk(f)}>Remove from showcase</button>
           </div>
         ))}
         {ratings && !ratings.linked && <Link href="/app/account#connections" className="np-btn v2-btn-sm" style={{ alignSelf: "flex-start" }}>Connect TikTok Shop</Link>}
         <Link href="/app/data/risk" className="v2-link" style={{ fontSize: 13.5, padding: "4px 2px 0" }}>{flagged.length > 5 ? `See all ${flagged.length} →` : "See all ratings →"}</Link>
       </div>
+      {ask && <RemoveWarn items={[{ id: ask.id, name: shortName(ask.name), img: ask.img ?? NO_PHOTO }]} onConfirm={() => void confirm()} onClose={() => setAsk(null)} />}
     </section>
   );
 }
@@ -118,7 +134,7 @@ export function LiveActionPlan({ sig, cancel }: { sig: Signals; cancel: number }
   const missing = channels ? (["facebook", "instagram", "threads"] as const).filter((a) => !channels.includes(a)) : [];
   const steps: Step[] = [
     ...(ratings && !ratings.linked ? [{ id: "link", tag: "Fix now" as const, short: "Connect TikTok Shop", why: "Rezekii needs your TikTok Shop to check your showcase and orders.", href: "/app/account#connections" }] : []),
-    ...(under3 ? [{ id: "under3", tag: "Fix now" as const, short: `Remove ${under3} under-3★ product${under3 === 1 ? "" : "s"} in TikTok`, why: "Buyers rated them under 3★. Low-rated products in your showcase can hurt your TikTok account.", href: "/app/data/risk" }] : []),
+    ...(under3 ? [{ id: "under3", tag: "Fix now" as const, short: `Remove ${under3} under-3★ product${under3 === 1 ? "" : "s"}`, why: "Buyers rated them under 3★. Low-rated products in your showcase can hurt your TikTok account.", href: "/app/data/risk" }] : []),
     ...(cancel > 10 ? [{ id: "cancel", tag: "Fix now" as const, short: `${Math.round(cancel * 10) / 10}% of orders cancelled: check why`, why: "Many cancelled orders can hurt your TikTok account. See which products get cancelled most.", href: "/app/data/risk" }] : []),
     ...(flagged.length > under3 ? [{ id: "under4", tag: "This week" as const, short: `Check ${flagged.length - under3} product${flagged.length - under3 === 1 ? "" : "s"} rated 3–3.9★`, why: "Not in the danger zone yet, but buyers aren't happy with them.", href: "/app/data/risk" }] : []),
     ...(slot && best?.basis === "views" ? [{ id: "time", tag: "This week" as const, short: `Post at ${slot[0]}`, why: "Your videos posted in this time slot got the most views on average in the last 60 days.", href: "/app/publish/plan" }] : []),
