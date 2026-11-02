@@ -13,7 +13,10 @@ import { PartnerCard } from "@/components/partner-card";
 import { Reveal } from "@/components/creator1/reveal";
 import { SELLER_RESULTS, rm } from "@/lib/mock";
 import { SELLER_FAQ } from "@/lib/mock-seller";
+import { LangSwitch, useT } from "@/lib/i18n/client";
+import { tx } from "@/lib/i18n/lang";
 import { AiEyebrow } from "./ai-eyebrow";
+import { Rich } from "./bits";
 import { useOnScreen } from "./hooks";
 import { PartnerLine } from "./partner-line";
 import { AiText } from "./ai-text";
@@ -36,13 +39,14 @@ const CREATORS = ["@aisyah.glow", "@kak.ros.kitchen", "@mei.ling.deals", "@dapur
  * bento tile; it only ticks, and draws again, while on screen.
  */
 function LiveDash() {
+  const t = useT();
   const ref = useRef<HTMLDivElement>(null);
   const on = useOnScreen(ref, 0.3);
   const [i, setI] = useState(0);
   useEffect(() => {
     if (!on) return;
-    const t = window.setInterval(() => setI((n) => n + 1), 2300);
-    return () => window.clearInterval(t);
+    const timer = window.setInterval(() => setI((n) => n + 1), 2300);
+    return () => window.clearInterval(timer);
   }, [on]);
   const d = SELLER_RESULTS.daily;
   const max = Math.max(...d);
@@ -51,10 +55,10 @@ function LiveDash() {
   const o = ORDERS[i % ORDERS.length];
   const last = pts[pts.length - 1];
   return (
-    <div ref={ref} className="sl-dash" aria-label="Example: a shop's sales from creators">
+    <div ref={ref} className="sl-dash" aria-label={t("Example: a shop's sales from creators")}>
       <div className="sl-dash-h">
         <span className="sl-shop-ico" style={{ width: 38, height: 38, borderRadius: 12, fontSize: 14 }}>SL</span>
-        <span><b>Example Shop · Sales</b><small>Last 14 days · sample</small></span>
+        <span><b>{t("Example Shop · Sales")}</b><small>{t("Last 14 days · sample")}</small></span>
         <span className="sl-live"><i /> LIVE</span>
       </div>
       <div key={on ? "on" : "off"} style={{ display: "contents" }}>
@@ -75,14 +79,14 @@ function LiveDash() {
           {CREATORS.map((c, k) => (
             <span key={c} style={{ animationDelay: `${1.2 + k * 0.18}s`, borderRadius: "50%" }}><Ava name={c} /></span>
           ))}
-          <em>creators selling</em>
+          <em>{t("creators selling")}</em>
         </div>
       </div>
       <div className="sl-ticker" aria-live="off">
         <div className="sl-tick" key={i}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={o.img} alt="" />
-          <span>{o.who} sold {o.what}</span>
+          <span>{t("{who} sold {what}", { who: o.who, what: o.what })}</span>
           <b>+{rm(o.amt)}</b>
         </div>
       </div>
@@ -90,53 +94,55 @@ function LiveDash() {
   );
 }
 
-const CHIPS = ["RM 0 a Month", "Commission Only on Sales", "Set Up in 3 Minutes"];
-
-const START: PathStep[] = [
-  { icon: "link", title: "Connect Seller Center", line: "We import your products, prices and sales." },
-  { icon: "box", title: "Pick Products and Submit", line: "Set your extra commission. Rezekii AI suggests an amount." },
-];
+const CHIPS = [tx("RM 0 a Month"), tx("Commission Only on Sales"), tx("Set Up in 3 Minutes")];
 
 /**
  * Seller site, "Watch Rezekii Work" (owner, 29 Oct 2026): the AI-powered affiliate platform that connects sellers with
  * creators. JoinBar → hero → partner → what you get → without vs with → a week with Rezekii → everything in one app → what
  * you'll see + sample testimonials → cost → 2 steps → custom service → FAQ → one CTA.
+ * In English, Malay or Chinese (owner, 3 Nov 2026), with the language switch in the top bar for visitors.
  */
 export function SellerLanding() {
+  const t = useT();
   const [talk, setTalk] = useState(false);
+  const start: PathStep[] = [
+    { icon: "link", title: t("Connect Seller Center"), line: t("We import your products, prices and sales.") },
+    { icon: "box", title: t("Pick Products and Submit"), line: t("Set your extra commission. Rezekii AI suggests an amount.") },
+  ];
   return (
     <>
       <DemoStrip />
       <JoinBar />
       <header className="lp-hero">
-        <nav className="site-nav site-wrap" aria-label="Main">
+        <nav className="site-nav site-wrap" aria-label={t("Main menu")}>
           <Link href="/seller" className="site-brand">
             <span><Image src="/master-logo-transparent.png" alt="" width={30} height={30} priority /></span>
             Rezekii
           </Link>
-          <span className="sl-tag">Sellers</span>
-          <a href="#how">How It Works</a>
-          <a href="#features">Features</a>
-          <a href="#cost">Cost</a>
-          <a href="#faq">FAQ</a>
+          <span className="sl-tag">{t("Sellers")}</span>
+          <a href="#how">{t("How It Works")}</a>
+          <a href="#features">{t("Features")}</a>
+          <a href="#cost">{t("Cost")}</a>
+          <a href="#faq">{t("FAQ")}</a>
           <span className="site-spacer" />
-          <Link href="/" className="lp-keep">For Creators</Link>
-          <Link href="/seller/connect">Sign In</Link>
-          <Link href="/seller/connect" className="site-signin">Start Free</Link>
+          <Link href="/" className="lp-keep">{t("For Creators")}</Link>
+          <Link href="/seller/connect">{t("Sign In")}</Link>
+          <LangSwitch compact />
+          <Link href="/seller/connect" className="site-signin">{t("Start Free")}</Link>
         </nav>
         <div className="site-wrap lp-hero-grid">
           <div className="lp-hero-copy">
-            <AiEyebrow />
-            <h1>Let Creators Sell for You, <em>Without Hiring Anyone</em></h1>
-            <p><AiText text="Rezekii AI matches your products with the right creators. They request samples, post videos and go LIVE. You pay only when you sell." /></p>
+            <AiEyebrow text={t("AI-Powered Affiliate Platform · Malaysia")} />
+            <h1><Rich text={t("Let Creators Sell for You, *Without Hiring Anyone*")} /></h1>
+            <p><AiText text={t("Rezekii AI matches your products with the right creators. They request samples, post videos and go LIVE. You pay only when you sell.")} /></p>
             <div className="lp-ctas">
-              <Link href="/seller/connect" className="np-btn lp-bigbtn">Connect Seller Center <Icon name="arrow" size={18} /></Link>
-              <button type="button" className="lp-ghost" onClick={() => setTalk(true)}>Talk to Our Team</button>
+              <Link href="/seller/connect" className="np-btn lp-bigbtn">{t("Connect Seller Center")} <Icon name="arrow" size={18} /></Link>
+              <button type="button" className="lp-ghost" onClick={() => setTalk(true)}>{t("Talk to Our Team")}</button>
             </div>
             <PartnerCard />
             <ul className="lp-chips">
               {CHIPS.map((c) => (
-                <li key={c}><Icon name="check" size={14} width={3} />{c}</li>
+                <li key={c}><Icon name="check" size={14} width={3} />{t(c)}</li>
               ))}
             </ul>
           </div>
@@ -148,108 +154,108 @@ export function SellerLanding() {
 
       <main className="site-wrap site-main lp-main">
 
-        <Reveal className="section" label="What you get">
+        <Reveal className="section" label={t("What you get")}>
           <div className="lp-head">
-            <span className="eyebrow">WHAT YOU GET</span>
-            <h2>Creators Sell, You Grow</h2>
+            <span className="eyebrow">{t("WHAT YOU GET")}</span>
+            <h2>{t("Creators Sell, You Grow")}</h2>
           </div>
           <SellerUsps />
         </Reveal>
 
-        <Reveal className="section" label="Without and with Rezekii">
+        <Reveal className="section" label={t("Without and with Rezekii")}>
           <div className="lp-head">
-            <span className="eyebrow">THE DIFFERENCE</span>
-            <h2>Without Rezekii vs With Rezekii</h2>
+            <span className="eyebrow">{t("THE DIFFERENCE")}</span>
+            <h2>{t("Without Rezekii vs With Rezekii")}</h2>
           </div>
           <SellerCompare />
         </Reveal>
 
-        <Reveal id="how" className="section" label="A week with Rezekii">
+        <Reveal id="how" className="section" label={t("A week with Rezekii")}>
           <div className="lp-head">
-            <span className="eyebrow">HOW REZEKII HELPS</span>
-            <AiHead title="A Week With Rezekii" sub="Watch Rezekii AI and our team do the work." />
+            <span className="eyebrow">{t("HOW REZEKII HELPS")}</span>
+            <AiHead title={t("A Week With Rezekii")} sub={t("Watch Rezekii AI and our team do the work.")} />
           </div>
           <SellerWeek />
         </Reveal>
 
-        <Reveal id="features" className="section" label="Features">
+        <Reveal id="features" className="section" label={t("Features")}>
           <div className="lp-head">
-            <span className="eyebrow">EVERYTHING IN ONE APP</span>
-            <h2>Everything in One App</h2>
+            <span className="eyebrow">{t("EVERYTHING IN ONE APP")}</span>
+            <h2>{t("Everything in One App")}</h2>
           </div>
           <SellerBento dash={<LiveDash />} />
         </Reveal>
 
-        <Reveal className="section" label="What you'll see">
+        <Reveal className="section" label={t("What you'll see")}>
           <div className="lp-head">
-            <span className="eyebrow">WHAT YOU&apos;LL SEE</span>
-            <h2>Real Screens From the App</h2>
+            <span className="eyebrow">{t("WHAT YOU'LL SEE")}</span>
+            <h2>{t("Real Screens From the App")}</h2>
           </div>
           <SellerSee />
         </Reveal>
 
-        <Reveal className="section" id="cost" label="What it costs">
+        <Reveal className="section" id="cost" label={t("What it costs")}>
           <div className="lp-head">
-            <span className="eyebrow">WHAT IT COSTS</span>
-            <h2>RM 0 a Month. Commission Only When You Sell.</h2>
+            <span className="eyebrow">{t("WHAT IT COSTS")}</span>
+            <h2>{t("RM 0 a Month. Commission Only When You Sell.")}</h2>
           </div>
           <div className="lp-cost">
             <div className="old">
-              <h3>Hire Someone</h3>
-              <b>RM 3,000+<small> a month</small></b>
+              <h3>{t("Hire Someone")}</h3>
+              <b>RM 3,000+<small> {t("a month")}</small></b>
               <ul>
-                <li><Icon name="x" size={13} width={3} />Salary, plus EPF and SOCSO</li>
-                <li><Icon name="x" size={13} width={3} />You pay, sales or not</li>
+                <li><Icon name="x" size={13} width={3} />{t("Salary, plus EPF and SOCSO")}</li>
+                <li><Icon name="x" size={13} width={3} />{t("You pay, sales or not")}</li>
               </ul>
             </div>
             <div className="new">
               <h3>Rezekii</h3>
-              <b>RM 0<small> a month</small></b>
+              <b>RM 0<small> {t("a month")}</small></b>
               <ul>
-                <li><Icon name="check" size={13} width={3} />No sign-up fee, no contract</li>
-                <li><Icon name="check" size={13} width={3} />Commission only on real orders</li>
+                <li><Icon name="check" size={13} width={3} />{t("No sign-up fee, no contract")}</li>
+                <li><Icon name="check" size={13} width={3} />{t("Commission only on real orders")}</li>
               </ul>
             </div>
             <div className="lp-year">
-              <small>Over 12 months</small>
-              <span><em>Hire someone</em><span className="lp-bar red"><i /></span><b>RM 36,000+</b></span>
+              <small>{t("Over 12 months")}</small>
+              <span><em>{t("Hire someone")}</em><span className="lp-bar red"><i /></span><b>RM 36,000+</b></span>
               <span><em>Rezekii</em><span className="lp-bar"><i style={{ width: "3%" }} /></span><b>RM 0</b></span>
             </div>
           </div>
         </Reveal>
 
-        <Reveal className="section" id="start" label="Start in 2 steps">
+        <Reveal className="section" id="start" label={t("Start in 2 steps")}>
           <div className="lp-head">
-            <span className="eyebrow">TWO STEPS</span>
-            <h2>Start in 2 Steps<Tip text="We do the rest: TikTok submission, sample approvals and video follow-ups." label="What happens next" /></h2>
+            <span className="eyebrow">{t("TWO STEPS")}</span>
+            <h2>{t("Start in 2 Steps")}<Tip text={t("We do the rest: TikTok submission, sample approvals and video follow-ups.")} label={t("What happens next")} /></h2>
           </div>
-          <Path steps={START} label="Steps to start" />
+          <Path steps={start} label={t("Steps to start")} />
         </Reveal>
 
-        <section className="lp-band" aria-label="Custom service">
+        <section className="lp-band" aria-label={t("Custom service")}>
           <span className="lp-band-ico"><Icon name="whatsapp" size={22} width={2.2} /></span>
           <div>
-            <h2>Want Our Team to Run It?</h2>
-            <p>Launches, big catalogues or paid content. We quote first.</p>
+            <h2>{t("Want Our Team to Run It?")}</h2>
+            <p>{t("Launches, big catalogues or paid content. We quote first.")}</p>
           </div>
           <div className="lp-band-cta">
-            <button type="button" className="np-btn" onClick={() => setTalk(true)}>Talk to Us <Icon name="arrow" size={18} /></button>
+            <button type="button" className="np-btn" onClick={() => setTalk(true)}>{t("Talk to Us")} <Icon name="arrow" size={18} /></button>
             <PartnerLine />
           </div>
         </section>
 
-        <Reveal className="section" id="faq" label="Questions">
+        <Reveal className="section" id="faq" label={t("Questions")}>
           <div className="lp-head">
-            <span className="eyebrow">FAQ</span>
-            <h2>Questions Sellers Ask Us</h2>
+            <span className="eyebrow">{t("FAQ")}</span>
+            <h2>{t("Questions Sellers Ask Us")}</h2>
           </div>
-          <Faqs items={SELLER_FAQ} />
+          <Faqs items={SELLER_FAQ.map(([q, a]): [string, string] => [t(q), t(a)])} />
         </Reveal>
 
-        <Reveal className="lp-final" label="Get started">
-          <h2>Let Creators Sell for You</h2>
-          <p>Set up in about 3 minutes. No sales, you pay us nothing.</p>
-          <Link href="/seller/connect" className="np-btn lp-bigbtn">Connect Seller Center <Icon name="arrow" size={18} /></Link>
+        <Reveal className="lp-final" label={t("Get started")}>
+          <h2>{t("Let Creators Sell for You")}</h2>
+          <p>{t("Set up in about 3 minutes. No sales, you pay us nothing.")}</p>
+          <Link href="/seller/connect" className="np-btn lp-bigbtn">{t("Connect Seller Center")} <Icon name="arrow" size={18} /></Link>
           <PartnerLine center />
         </Reveal>
       </main>
@@ -258,13 +264,13 @@ export function SellerLanding() {
         <div className="site-wrap">
           <span>© 2026 Rezekii · TikTok Shop Partner</span>
           <span className="site-spacer" />
-          <Link href="/">For Creators</Link>
-          <a href="#faq">FAQ</a>
-          <a href="https://rezekii.com/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>
-          <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer">Terms of Service</a>
-          <a href="#" onClick={(e) => { e.preventDefault(); setTalk(true); }}>Talk to Us</a>
+          <Link href="/">{t("For Creators")}</Link>
+          <a href="#faq">{t("FAQ")}</a>
+          <a href="https://rezekii.com/privacy" target="_blank" rel="noreferrer">{t("Privacy Policy")}</a>
+          <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer">{t("Terms of Service")}</a>
+          <a href="#" onClick={(e) => { e.preventDefault(); setTalk(true); }}>{t("Talk to Us")}</a>
           <a href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a>
-          <small className="ft-note">Screens show sample products, creators and numbers. Results vary.</small>
+          <small className="ft-note">{t("Screens show sample products, creators and numbers. Results vary.")}</small>
         </div>
       </footer>
       {talk && <ContactSheet onClose={() => setTalk(false)} />}

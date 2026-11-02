@@ -1,3 +1,7 @@
+"use client";
+
+import { useT } from "@/lib/i18n/client";
+
 /**
  * The small trust line under every main call to action on the landing pages (owner, 29 Oct 2026: people feel safer knowing
  * we're an official TikTok Shop partner). Just our logo and the partner badge side by side, the badge unchanged: no box and no
@@ -5,6 +9,7 @@
  * Not the badge row (PartnerCard).
  */
 export function PartnerLine({ center = false }: { center?: boolean }) {
+  const t = useT();
   return (
     <p className={`lp-pline ${center ? "center" : ""}`}>
       <span className="lp-pline-pair">
@@ -19,7 +24,7 @@ export function PartnerLine({ center = false }: { center?: boolean }) {
           <img src="/tiktok-shop-partner-logo.png" alt="TikTok Shop Partner" width={68} height={20} />
         </span>
       </span>
-      <span className="lp-sr">Official TikTok Shop Partner App</span>
+      <span className="lp-sr">{t("Official TikTok Shop Partner App")}</span>
     </p>
   );
 }

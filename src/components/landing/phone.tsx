@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useT } from "@/lib/i18n/client";
+import { tx, type T } from "@/lib/i18n/lang";
 import { useOnScreen, useReducedMotion } from "./hooks";
+
+/** "now", or how many minutes ago a sample notification came in. */
+const ago = (t: T, m: number) => (m ? t("{n}m ago", { n: m }) : t("now"));
 
 /** The Rezekii app icon, as it shows on a phone. */
 export function AppIcon({ size = 34 }: { size?: number }) {
@@ -44,15 +49,17 @@ export function Phone({ children, lock = false, className = "", label }: { child
   );
 }
 
+/** A sample notification, its words already translated. */
 export type Note = { title: string; line: string; when?: string };
 
 /** One iOS-style notification from Rezekii. */
 export function Banner({ note, className = "", style }: { note: Note; className?: string; style?: React.CSSProperties }) {
+  const t = useT();
   return (
     <div className={`lp-note ${className}`} style={style}>
       <AppIcon size={34} />
       <span className="lp-note-t">
-        <span className="lp-note-h"><b>Rezekii AI</b><small>{note.when ?? "now"}</small></span>
+        <span className="lp-note-h"><b>Rezekii AI</b><small>{note.when ?? t("now")}</small></span>
         <strong>{note.title}</strong>
         <em>{note.line}</em>
       </span>
@@ -62,10 +69,11 @@ export function Banner({ note, className = "", style }: { note: Note; className?
 
 /** Phones and tablets (owner, 29 Oct 2026, option A): no phone frame in the hero, just the first two notifications. */
 export function HeroAlerts({ notes }: { notes: Note[] }) {
+  const t = useT();
   return (
     <div className="lp-hero-alerts" aria-hidden="true">
       {notes.map((note, i) => (
-        <Banner key={note.title} note={{ ...note, when: i === 0 ? "now" : `${i * 2 + 1}m ago` }} style={{ "--i": i } as React.CSSProperties} />
+        <Banner key={note.title} note={{ ...note, when: ago(t, i === 0 ? 0 : i * 2 + 1) }} style={{ "--i": i } as React.CSSProperties} />
       ))}
     </div>
   );
@@ -77,7 +85,8 @@ const STEP = 76;
  * Lock screen where Rezekii's notifications drop in one by one, newest on top, then clear and start again. Runs only while on
  * screen; with reduced motion all of them simply show.
  */
-export function LockScreen({ notes, label, date = "Thursday, 29 October" }: { notes: Note[]; label: string; date?: string }) {
+export function LockScreen({ notes, label, date = tx("Thursday, 29 October") }: { notes: Note[]; label: string; date?: string }) {
+  const t = useT();
   const ref = useRef<HTMLDivElement>(null);
   const on = useOnScreen(ref);
   const still = useReducedMotion();
@@ -86,8 +95,8 @@ export function LockScreen({ notes, label, date = "Thursday, 29 October" }: { no
   useEffect(() => {
     if (still) return setN(notes.length);
     if (!on) return;
-    const t = window.setInterval(() => setN((k) => (k >= notes.length + 2 ? 0 : k + 1)), 1750);
-    return () => window.clearInterval(t);
+    const timer = window.setInterval(() => setN((k) => (k >= notes.length + 2 ? 0 : k + 1)), 1750);
+    return () => window.clearInterval(timer);
   }, [on, still, notes.length]);
   const shown = Math.min(n, notes.length);
   return (
@@ -95,7 +104,7 @@ export function LockScreen({ notes, label, date = "Thursday, 29 October" }: { no
       <Phone lock label={label} className="lp-hero-phone">
         <i className="lp-aiscan" aria-hidden="true" />
         <div className="lp-clock" aria-hidden="true">
-          <small>{date}</small>
+          <small>{t(date)}</small>
           <b>9:41</b>
         </div>
         <div className="lp-notes" aria-hidden="true">
@@ -105,7 +114,7 @@ export function LockScreen({ notes, label, date = "Thursday, 29 October" }: { no
             return (
               <Banner
                 key={note.title}
-                note={{ ...note, when: pos === 0 ? "now" : `${pos * 2 + 1}m ago` }}
+                note={{ ...note, when: ago(t, pos === 0 ? 0 : pos * 2 + 1) }}
                 className={vis ? "in" : ""}
                 style={vis ? { transform: `translateY(${pos * STEP}px) scale(${pos > 2 ? 0.96 : 1})`, opacity: pos > 3 ? 0.7 : 1 } : undefined}
               />

@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import { BrandLogo } from "@/components/brand-logos";
 import { Icon } from "@/components/icons";
 import { AiMark } from "@/components/ui";
@@ -9,7 +10,24 @@ import { AiMark } from "@/components/ui";
 export type Vars = React.CSSProperties & Record<`--${string}`, string | number>;
 export const v = (o: Record<string, string | number>) => Object.fromEntries(Object.entries(o).map(([k, x]) => [`--${k}`, x])) as Vars;
 
-/** A mini app screen: back arrow, title, the AI mark on AI features. */
+/**
+ * A translated line that keeps its styling inside it, so it stays one whole line in every language (owner, 3 Nov 2026):
+ * **words** show bold, *words* in <em>, and each {name} that t() left unfilled becomes the element in `parts`.
+ */
+export function Rich({ text, parts = {} }: { text: string; parts?: Record<string, React.ReactNode> }) {
+  return (
+    <>
+      {text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|\{\w+\})/).map((x, i) => {
+        if (/^\*\*[^*]+\*\*$/.test(x)) return <b key={i}>{x.slice(2, -2)}</b>;
+        if (/^\*[^*]+\*$/.test(x)) return <em key={i}>{x.slice(1, -1)}</em>;
+        const k = /^\{(\w+)\}$/.exec(x)?.[1];
+        return <Fragment key={i}>{k && k in parts ? parts[k] : x}</Fragment>;
+      })}
+    </>
+  );
+}
+
+/** A mini app screen (title already translated): back arrow, title, the AI mark on AI features. */
 export function App({ title, ai, children }: { title: string; ai?: boolean; children: React.ReactNode }) {
   return (
     <div className="lp-app" aria-hidden="true">

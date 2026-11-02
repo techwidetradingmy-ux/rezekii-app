@@ -4,7 +4,7 @@ import { SUPPORT } from "@/lib/support";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DemoStrip } from "@/components/shell";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -12,12 +12,15 @@ import { Tip } from "@/components/ui";
 import { AddressFields } from "@/components/account/address-fields";
 import { PickList } from "@/components/pick-list";
 import { GoogleMark, TikTokMark } from "@/components/creator1/brand";
+import { Rich } from "@/components/landing/bits";
 import { MY_STATES, isEmail, tidyPhone } from "@/lib/mock-creator1";
 import { REFERRAL_REWARD } from "@/lib/mock";
 import { COUNTRIES, tidyPhone as tidyAnyPhone } from "@/lib/mock-seller";
 import { DIAL_OPTIONS, RACES } from "@/lib/countries";
 import { NICHES } from "@/lib/mock-creator2";
 import { EMPTY_ADDRESS, addressOk, birthdayError, saveAddress, saveSignup, type Address } from "@/lib/address";
+import { LangSwitch, useLang, useT } from "@/lib/i18n/client";
+import { dateLocale, tx } from "@/lib/i18n/lang";
 import "../creator1.css";
 import { keepInviteCode, saveProfile } from "@/lib/live-rewards";
 
@@ -41,17 +44,21 @@ const PROVIDER = {
   TikTok: { who: "Aisyah Rahman", id: "@aisyah.glow" },
 };
 
-const KINDS = ["TikTok Affiliate", "Shopee Affiliate", "Lazada Affiliate", "Threads Affiliate", "Others"];
-const GENDERS = ["Female", "Male", "Others"];
+const KINDS = [tx("TikTok Affiliate"), tx("Shopee Affiliate"), tx("Lazada Affiliate"), tx("Threads Affiliate"), tx("Others")];
+const GENDERS = [tx("Female"), tx("Male"), tx("Others")];
 
-const pairs = (list: readonly string[]): [string, string][] => list.map((x) => [x, x]);
+/** The language switch top right of the sign-in card, level with the back button (owner, 3 Nov 2026: visitors pick too). */
+const LANG_SPOT: React.CSSProperties = { position: "absolute", top: 16, right: 14, zIndex: 3 };
 
 /**
  * Sign up first, then sign in (owner, 30 Oct 2026). Sign-up is its own short page: Google or TikTok on top, or the email
  * form below, in dropdowns so it fits about one screen. Email sign-up confirms the address with a 6-digit code; Google and
  * TikTok skip the code. Signing in stays on the small card and goes straight to the app. Sample only: any code works.
+ * In English, Malay or Chinese (owner, 3 Nov 2026): what she picks is saved in English, only the words shown change.
  */
 export default function SignIn() {
+  const t = useT();
+  const lang = useLang();
   const router = useRouter();
   const { toast, me } = useDemo();
   const [step, setStep] = useState<Step>("start");
@@ -96,6 +103,17 @@ export default function SignIn() {
   const [typedRef, setTypedRef] = useState("");
   // Came from the landing checker (owner, 29 Oct 2026): keep the TikTok username she typed.
   const [handle, setHandle] = useState("");
+  // Choices are kept in English; the list shows them in her language. Countries by their code, named by the browser.
+  const pairs = (list: readonly string[]): [string, string][] => list.map((x) => [x, t(x)]);
+  const countryOptions = useMemo(() => {
+    let names: Intl.DisplayNames | null = null;
+    try { names = new Intl.DisplayNames([dateLocale(lang)], { type: "region" }); } catch {}
+    return COUNTRIES.map((c) => {
+      let shown = c.name;
+      if (lang !== "en") try { shown = names?.of(c.code) ?? c.name; } catch {}
+      return [c.code, shown] as [string, string];
+    });
+  }, [lang]);
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     const n = q.get("next");
@@ -112,18 +130,18 @@ export default function SignIn() {
     if (u && /^[a-z0-9._]{2,24}$/i.test(u)) setHandle(u.toLowerCase());
     // A real sign-in that didn't finish comes back with ?error=.
     const err = q.get("error");
-    if (err) toast(err === "denied" ? "Sign-in was cancelled." : err === "config" ? "This sign-in isn't set up yet." : err === "taken" ? "That TikTok account is already connected to another Rezekii account." : "Sign-in didn't finish. Please try again.");
+    if (err) toast(err === "denied" ? t("Sign-in was cancelled.") : err === "config" ? t("This sign-in isn't set up yet.") : err === "taken" ? t("That TikTok account is already connected to another Rezekii account.") : t("Sign-in didn't finish. Please try again."));
   }, []);
   // Her name from Google or TikTok, ready to change.
   useEffect(() => {
     if (details && me?.name) setName((n) => n || me.name || "");
   }, [details, me]);
-  const kindError = !kinds.length ? "Pick at least one" : kinds.includes("Others") && !otherKind.trim() ? "Tell us which one" : "";
+  const kindError = !kinds.length ? t("Pick at least one") : kinds.includes("Others") && !otherKind.trim() ? t("Tell us which one") : "";
 
   const tel = (() => {
     if (dial === "60") return tidyPhone(phone);
     const r = tidyAnyPhone(phone, dial);
-    return { pretty: r.ok ? r.pretty.replace(`+${dial} `, "") : phone, e164: r.ok ? r.pretty : "", error: r.ok ? null : phone.trim() ? r.error ?? "Check the number" : "Enter your WhatsApp number" };
+    return { pretty: r.ok ? r.pretty.replace(`+${dial} `, "") : phone, e164: r.ok ? r.pretty : "", error: r.ok ? null : phone.trim() ? r.error ?? tx("Check the number") : tx("Enter your WhatsApp number") };
   })();
   const go = (s: Step) => {
     setTried(false);
@@ -144,7 +162,7 @@ export default function SignIn() {
       if (typedRef && !refCode) {
         const r = await fetch("/api/v2/referral", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ code: typedRef, side: "creator", join: true }) });
         if (!r.ok) {
-          toast("We couldn't find that referral code. Check it, or leave it empty.");
+          toast(t("We couldn't find that referral code. Check it, or leave it empty."));
           return;
         }
       }
@@ -153,9 +171,9 @@ export default function SignIn() {
         types: kinds.map((k) => (k === "Others" ? `Others: ${otherKind.trim()}` : k)), niches,
       });
       keep();
-      finish(`Welcome to Rezekii, ${name.trim().split(" ")[0]}`);
+      finish(t("Welcome to Rezekii, {name}", { name: name.trim().split(" ")[0] }));
     } catch (e) {
-      toast(e instanceof Error ? e.message : "Didn't save. Please try again.");
+      toast(e instanceof Error ? e.message : t("Didn't save. Please try again."));
     } finally {
       setSaving(false);
     }
@@ -164,14 +182,14 @@ export default function SignIn() {
   async function emailCall(body: Record<string, string>): Promise<{ exists?: boolean; password?: boolean; google?: boolean; details?: boolean }> {
     const r = await fetch("/api/auth/email", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     const d = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error((d as { error?: string }).error ?? "That didn't work. Please try again.");
+    if (!r.ok) throw new Error((d as { error?: string }).error ?? t("That didn't work. Please try again."));
     return d;
   }
   // Signed in: the sign-up details first when they're missing (not when she came to do something else, like connect a shop).
   const land = (details?: boolean) => { window.location.href = details && !next ? "/signin?details=1" : next ?? "/app"; };
   async function withBusy(fn: () => Promise<void>) {
     setBusy(true);
-    try { await fn(); } catch (e) { toast(e instanceof Error ? e.message : "That didn't work. Please try again."); } finally { setBusy(false); }
+    try { await fn(); } catch (e) { toast(e instanceof Error ? e.message : t("That didn't work. Please try again.")); } finally { setBusy(false); }
   }
   const signInEmail = () => withBusy(async () => {
     try {
@@ -179,17 +197,17 @@ export default function SignIn() {
     } catch (e) {
       // An email that signs in with Google has no password.
       const d = await emailCall({ mode: "check", email }).catch(() => null);
-      if (d?.exists && !d.password && d.google) throw new Error("This email signs in with Google. Continue with Google, or email yourself a sign-in code.");
+      if (d?.exists && !d.password && d.google) throw new Error(t("This email signs in with Google. Continue with Google, or email yourself a sign-in code."));
       throw e;
     }
   });
   const signUpEmail = () => withBusy(async () => { await emailCall({ mode: "signup", email, password: pw, name: name.trim(), code }); land(true); });
   /** Emails a code for `purpose`; the code box then shows on the same card (or on `then`). */
   const sendCode = (purpose: "signup" | "signin" | "reset", then?: Step) => withBusy(async () => {
-    if (!isEmail(email)) throw new Error("Enter your email first.");
+    if (!isEmail(email)) throw new Error(t("Enter your email first."));
     await emailCall({ mode: "code", email, purpose });
     setCode("");
-    toast(`Code sent to ${email.trim()}`);
+    toast(t("Code sent to {email}", { email: email.trim() }));
     if (then) go(then);
     setCodeSent(true);
   });
@@ -202,7 +220,7 @@ export default function SignIn() {
       try {
         await keepInviteCode(typedRef, "creator");
       } catch {
-        toast("We couldn't find that referral code. Check it, or leave it empty.");
+        toast(t("We couldn't find that referral code. Check it, or leave it empty."));
         return;
       }
     }
@@ -224,26 +242,26 @@ export default function SignIn() {
 
   const nameField = (
     <label className="v2-field">
-      Full name
-      <input className="np-input" autoComplete="name" placeholder="Your real name, for verification" value={name} onChange={(e) => setName(e.target.value)} aria-invalid={tried && name.trim().length < 2} />
-      {tried && name.trim().length < 2 && <small className="cr1-err">Enter your name</small>}
+      {t("Full name")}
+      <input className="np-input" autoComplete="name" placeholder={t("Your real name, for verification")} value={name} onChange={(e) => setName(e.target.value)} aria-invalid={tried && name.trim().length < 2} />
+      {tried && name.trim().length < 2 && <small className="cr1-err">{t("Enter your name")}</small>}
     </label>
   );
 
   const emailField = (
     <label className="v2-field">
-      Email
+      {t("Email")}
       <input className="np-input" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} aria-invalid={tried && !isEmail(email)} />
-      {tried && !isEmail(email) && <small className="cr1-err">Enter an email like you@example.com</small>}
+      {tried && !isEmail(email) && <small className="cr1-err">{t("Enter an email like you@example.com")}</small>}
     </label>
   );
 
   const countryField = (
     <label className="v2-field">
-      Country
+      {t("Country")}
       <PickList
-        label="Country"
-        options={COUNTRIES.map((c) => [c.code, c.name] as [string, string])}
+        label={t("Country")}
+        options={countryOptions}
         value={[country]}
         onChange={([code]) => {
           const c = COUNTRIES.find((x) => x.code === code);
@@ -258,26 +276,26 @@ export default function SignIn() {
 
   const stateField = (
     <label className="v2-field">
-      State
+      {t("State")}
       {country === "MY" ? (
-        <PickList label="State" options={pairs(Object.values(MY_STATES).flat())} value={state ? [state] : []} onChange={([v]) => setState(v)} invalid={tried && !state} />
+        <PickList label={t("State")} options={Object.values(MY_STATES).flat().map((x): [string, string] => [x, x])} value={state ? [state] : []} onChange={([v]) => setState(v)} invalid={tried && !state} />
       ) : (
-        <input className="np-input" autoComplete="address-level1" placeholder="State / Province" value={state} onChange={(e) => setState(e.target.value)} aria-invalid={tried && !state.trim()} />
+        <input className="np-input" autoComplete="address-level1" placeholder={t("State / Province")} value={state} onChange={(e) => setState(e.target.value)} aria-invalid={tried && !state.trim()} />
       )}
-      {tried && !state.trim() && <small className="cr1-err">Choose your state</small>}
+      {tried && !state.trim() && <small className="cr1-err">{t("Choose your state")}</small>}
     </label>
   );
 
   const phoneField = (
     <label className="v2-field">
-      WhatsApp number
+      {t("WhatsApp number")}
       <span className="cr1-phone">
-        <PickList compact label="Country code" shown={(d) => `+${d}`} options={DIAL_OPTIONS.map((o) => [o.dial, o.label] as [string, string])} value={[dial]} onChange={([d]) => { setDial(d); setPhoneTouched(false); }} />
+        <PickList compact label={t("Country code")} shown={(d) => `+${d}`} options={DIAL_OPTIONS.map((o) => [o.dial, o.label] as [string, string])} value={[dial]} onChange={([d]) => { setDial(d); setPhoneTouched(false); }} />
         <input
           className="np-input"
           inputMode="tel"
           autoComplete="tel-national"
-          placeholder={dial === "60" ? "12-345 6789" : "Phone number"}
+          placeholder={dial === "60" ? "12-345 6789" : t("Phone number")}
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           onBlur={() => {
@@ -287,41 +305,42 @@ export default function SignIn() {
           aria-invalid={(phoneTouched || tried) && !!tel.error}
         />
       </span>
-      {(phoneTouched || tried) && tel.error && <small className="cr1-err">{tel.error}</small>}
+      {/* The number's problem comes in English from the checker; shown in her language. */}
+      {(phoneTouched || tried) && tel.error && <small className="cr1-err">{t(tel.error)}</small>}
     </label>
   );
 
   // TikTok Shop affiliates must be 18 or older.
-  const bErr = bdText && !birthday ? "Use DD/MM/YYYY" : birthdayError(birthday);
+  const bErr = bdText && !birthday ? tx("Use DD/MM/YYYY") : birthdayError(birthday);
   const birthdayField = (
     <label className="v2-field">
-      Birthday
+      {t("Birthday")}
       <input className="np-input" inputMode="numeric" autoComplete="bday" placeholder="DD/MM/YYYY" maxLength={10} value={bdText} onChange={(e) => typeBirthday(e.target.value)} aria-invalid={tried && !!bErr} />
-      {tried && bErr && <small className="cr1-err">{bErr}</small>}
+      {tried && bErr && <small className="cr1-err">{t(bErr)}</small>}
     </label>
   );
 
   const raceField = (
     <div className="v2-field">
-      Race
-      <PickList label="Race" options={pairs(RACES)} value={race ? [race] : []} onChange={([v]) => setRace(v)} invalid={tried && !race} />
-      {tried && !race && <small className="cr1-err">Choose one</small>}
+      {t("Race")}
+      <PickList label={t("Race")} options={pairs(RACES)} value={race ? [race] : []} onChange={([v]) => setRace(v)} invalid={tried && !race} />
+      {tried && !race && <small className="cr1-err">{t("Choose one")}</small>}
     </div>
   );
   const genderField = (
     <div className="v2-field">
-      Gender
-      <PickList label="Gender" options={pairs(GENDERS)} value={gender ? [gender] : []} onChange={([v]) => setGender(v)} invalid={tried && !gender} />
-      {tried && !gender && <small className="cr1-err">Choose one</small>}
+      {t("Gender")}
+      <PickList label={t("Gender")} options={pairs(GENDERS)} value={gender ? [gender] : []} onChange={([v]) => setGender(v)} invalid={tried && !gender} />
+      {tried && !gender && <small className="cr1-err">{t("Choose one")}</small>}
     </div>
   );
 
   const kindField = (
     <div className="v2-field">
-      Creator type
-      <PickList multi label="Creator type" options={pairs(KINDS)} value={kinds} onChange={setKinds} invalid={tried && !!kindError} />
+      {t("Creator type")}
+      <PickList multi label={t("Creator type")} options={pairs(KINDS)} value={kinds} onChange={setKinds} invalid={tried && !!kindError} />
       {kinds.includes("Others") && (
-        <input className="np-input" placeholder="Which one?" value={otherKind} onChange={(e) => setOtherKind(e.target.value)} aria-label="Other kind of creator" aria-invalid={tried && !otherKind.trim()} />
+        <input className="np-input" placeholder={t("Which one?")} value={otherKind} onChange={(e) => setOtherKind(e.target.value)} aria-label={t("Other kind of creator")} aria-invalid={tried && !otherKind.trim()} />
       )}
       {tried && kindError && <small className="cr1-err">{kindError}</small>}
     </div>
@@ -329,25 +348,25 @@ export default function SignIn() {
 
   const nicheField = (
     <div className="v2-field">
-      Niches
-      <PickList multi label="Niches" options={pairs(NICHES)} value={niches} onChange={setNiches} max={3} invalid={tried && !niches.length} />
-      {tried && !niches.length && <small className="cr1-err">Pick at least one</small>}
+      {t("Niches")}
+      <PickList multi label={t("Niches")} options={pairs(NICHES)} value={niches} onChange={setNiches} max={3} invalid={tried && !niches.length} />
+      {tried && !niches.length && <small className="cr1-err">{t("Pick at least one")}</small>}
     </div>
   );
 
   // Referral code (owner, 30 Oct 2026): from a friend's invite link it's filled in and can't be changed.
   const refField = (
     <label className="v2-field">
-      <span>Referral code{!refCode && <small className="su-opt"> · optional</small>}</span>
+      <span>{t("Referral code")}{!refCode && <small className="su-opt"> · {t("optional")}</small>}</span>
       {refCode ? (
         <span className="su-ref">
           <input className="np-input" value={refCode} readOnly aria-readonly="true" aria-describedby="su-ref-note" />
           <Icon name="lock" size={16} />
         </span>
       ) : (
-        <input className="np-input" placeholder="Friend's code" autoCapitalize="characters" value={typedRef} onChange={(e) => setTypedRef(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 20))} />
+        <input className="np-input" placeholder={t("Friend's code")} autoCapitalize="characters" value={typedRef} onChange={(e) => setTypedRef(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 20))} />
       )}
-      {refCode && <small id="su-ref-note" className="cr1-okline"><Icon name="gift" size={14} width={2.4} /> From your friend&apos;s invite: +{REFERRAL_REWARD.friend} credits once you link TikTok Shop</small>}
+      {refCode && <small id="su-ref-note" className="cr1-okline"><Icon name="gift" size={14} width={2.4} /> {t("From your friend's invite: +{n} credits once you link TikTok Shop", { n: REFERRAL_REWARD.friend })}</small>}
     </label>
   );
 
@@ -356,11 +375,11 @@ export default function SignIn() {
   const addrBad = showAddr && addrStarted && !addressOk(addr);
   const addressField = showAddr ? (
     <div className="v2-field">
-      <span className="cr1-addr-h">Sample delivery address <small>· optional</small> <Tip text="Where sellers send your free samples. You can add or change it later in My Account." /></span>
+      <span className="cr1-addr-h">{t("Sample delivery address")} <small>· {t("optional")}</small> <Tip text={t("Where sellers send your free samples. You can add or change it later in My Account.")} /></span>
       <AddressFields value={addr} onChange={setAddr} tried={tried && addrStarted} />
     </div>
   ) : (
-    <button type="button" className="cr1-addaddr" onClick={() => setShowAddr(true)}><Icon name="plus" size={16} /> Add Sample Delivery Address <small>(optional)</small></button>
+    <button type="button" className="cr1-addaddr" onClick={() => setShowAddr(true)}><Icon name="plus" size={16} /> {t("Add Sample Delivery Address")} <small>({t("optional")})</small></button>
   );
   const signupBad = name.trim().length < 2 || !state.trim() || !!tel.error || !!kindError || !!bErr || !gender || !race || !niches.length || addrBad;
   const keep = () => {
@@ -368,9 +387,14 @@ export default function SignIn() {
     if (addressOk(addr)) saveAddress(addr);
   };
 
-  const back = (to: Step, label = "Back") => (
+  const back = (to: Step, label = t("Back")) => (
     <button type="button" className="cr1-back" onClick={() => go(to)}><Icon name="back" size={18} /> {label}</button>
   );
+  // Terms and Privacy Policy, linked, inside one whole line.
+  const policies = {
+    terms: <a className="v2-link" href="https://rezekii.com/terms" target="_blank" rel="noreferrer">{t("Terms of Service")}</a>,
+    privacy: <a className="v2-link" href="https://rezekii.com/privacy" target="_blank" rel="noreferrer">{t("Privacy Policy")}</a>,
+  };
 
   // Sign-up is a page of its own, not the floating card (owner, 30 Oct 2026).
   const linked = step === "profile";
@@ -389,11 +413,13 @@ export default function SignIn() {
         <DemoStrip />
         <main className="su-page">
           <header className="su-top">
-            <button type="button" className="su-back" onClick={unlink} aria-label="Back"><Icon name="back" size={20} /></button>
+            <button type="button" className="su-back" onClick={unlink} aria-label={t("Back")}><Icon name="back" size={20} /></button>
             <Link href="/" className="su-brand">
               <Image src="/master-logo-transparent.png" alt="" width={30} height={30} />
               Rezekii
             </Link>
+            <span className="site-spacer" />
+            <LangSwitch compact />
           </header>
           {(
             <form
@@ -404,17 +430,17 @@ export default function SignIn() {
                 if (signupBad) return;
                 if (details) return void saveDetails();
                 keep();
-                finish(`Welcome to Rezekii, ${name.trim().split(" ")[0]}`);
+                finish(t("Welcome to Rezekii, {name}", { name: name.trim().split(" ")[0] }));
               }}
             >
               <div className="su-head">
-                <h1>Create Your Account</h1>
-                <p>Free to join. No minimum followers.</p>
+                <h1>{t("Create Your Account")}</h1>
+                <p>{t("Free to join. No minimum followers.")}</p>
               </div>
               {handle && (
                 <p className="si-ref si-handle">
                   <Icon name="scan" size={18} />
-                  <span>Your scan for <b>@{handle}</b> is one step away. Sign up, then link TikTok Shop to see your rates.</span>
+                  <span><Rich text={t("Your scan for {handle} is one step away. Sign up, then link TikTok Shop to see your rates.")} parts={{ handle: <b>@{handle}</b> }} /></span>
                 </p>
               )}
               {linked && details ? (
@@ -424,8 +450,8 @@ export default function SignIn() {
                     <img className="v2-av" src={me.photo} alt="" />
                   ) : <span className="v2-av">{(me?.name ?? "?").slice(0, 2).toUpperCase()}</span>}
                   <span>
-                    <b>{me?.name ?? "Your account"}</b>
-                    <small>{me?.email ?? (me?.handle ? `@${me.handle}` : "Signed in")}</small>
+                    <b>{me?.name ?? t("Your account")}</b>
+                    <small>{me?.email ?? (me?.handle ? `@${me.handle}` : t("Signed in"))}</small>
                   </span>
                   <Icon name="check" size={18} stroke="#00c073" width={3} />
                 </div>
@@ -456,8 +482,8 @@ export default function SignIn() {
               </div>
               {refField}
               {addressField}
-              <button type="submit" className="np-btn np-submit" disabled={saving}>{saving ? "Saving…" : "Create Account"}</button>
-              <p className="cr1-center cr1-fine">By continuing you agree to Rezekii&apos;s Terms of Service and Privacy Policy.</p>
+              <button type="submit" className="np-btn np-submit" disabled={saving}>{saving ? t("Saving…") : t("Create Account")}</button>
+              <p className="cr1-center cr1-fine">{t("By continuing you agree to Rezekii's Terms of Service and Privacy Policy.")}</p>
             </form>
           )}
         </main>
@@ -468,40 +494,40 @@ export default function SignIn() {
   const newPw = step === "create" || step === "reset";
   const codeField = (
     <label className="v2-field">
-      6-digit code
+      {t("6-digit code")}
       <input className="np-input cr1-code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} aria-invalid={tried && code.length !== 6} autoFocus />
-      {tried && code.length !== 6 && <small className="cr1-err">Enter the 6 digits from the email</small>}
+      {tried && code.length !== 6 && <small className="cr1-err">{t("Enter the 6 digits from the email")}</small>}
     </label>
   );
   const again = (purpose: "signup" | "signin" | "reset") => (
-    <button type="button" className="v2-link cr1-forgot" disabled={busy} onClick={() => void sendCode(purpose)}>Send a New Code</button>
+    <button type="button" className="v2-link cr1-forgot" disabled={busy} onClick={() => void sendCode(purpose)}>{t("Send a New Code")}</button>
   );
   const pwField = (label: string) => (
     <label className="v2-field">
       {label}
       <span className="cr1-pw">
         <input className="np-input" type={showPw ? "text" : "password"} autoComplete={newPw ? "new-password" : "current-password"} value={pw} onChange={(e) => setPw(e.target.value)} aria-invalid={tried && (newPw ? pw.length < 8 : !pw)} />
-        <button type="button" onClick={() => setShowPw((x) => !x)} aria-label={showPw ? "Hide password" : "Show password"}><Icon name="eye" size={18} /></button>
+        <button type="button" onClick={() => setShowPw((x) => !x)} aria-label={showPw ? t("Hide password") : t("Show password")}><Icon name="eye" size={18} /></button>
       </span>
-      {newPw ? <small className={pw.length >= 8 ? "cr1-okline" : tried ? "cr1-err" : undefined}>At least 8 characters</small> : tried && !pw ? <small className="cr1-err">Enter your password</small> : null}
+      {newPw ? <small className={pw.length >= 8 ? "cr1-okline" : tried ? "cr1-err" : undefined}>{t("At least 8 characters")}</small> : tried && !pw ? <small className="cr1-err">{t("Enter your password")}</small> : null}
     </label>
   );
   const spin = <span className="cr1-spin sm" />;
-  const sentTo = <p>We sent a 6-digit code to <b>{email.trim()}</b>. It works for 10 minutes.</p>;
+  const sentTo = <p><Rich text={t("We sent a 6-digit code to {email}. It works for 10 minutes.")} parts={{ email: <b>{email.trim()}</b> }} /></p>;
   let card: React.ReactNode;
   if (step === "start") {
     // One way in for everyone (owner, 31 Oct 2026): new people are asked for their details after, returning people go straight in.
     card = (
       <>
         <div className="cr1-center">
-          <h1>Welcome to Rezekii</h1>
-          <p>Sign in or create your account.</p>
+          <h1>{t("Welcome to Rezekii")}</h1>
+          <p>{t("Sign in or create your account.")}</p>
         </div>
-        <button type="button" className="btn-google cr1-authbtn" onClick={() => oauth("Google")}><GoogleMark /> Continue with Google</button>
-        <button type="button" className="btn-tiktok cr1-authbtn" onClick={() => oauth("TikTok")}><TikTokMark /> Continue with TikTok</button>
-        <button type="button" className="btn-email cr1-authbtn" onClick={() => go("email")}><Icon name="inbox" size={20} /> Continue with Email</button>
-        <p className="cr1-center cr1-switch">New to Rezekii? <button type="button" className="v2-link" onClick={() => go("create")}>Create Account</button></p>
-        <p className="cr1-center cr1-fine">By Continuing You Agree to Rezekii&apos;s <a className="v2-link" href="https://rezekii.com/terms" target="_blank" rel="noreferrer">Terms of Service</a> and <a className="v2-link" href="https://rezekii.com/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.</p>
+        <button type="button" className="btn-google cr1-authbtn" onClick={() => oauth("Google")}><GoogleMark /> {t("Continue with Google")}</button>
+        <button type="button" className="btn-tiktok cr1-authbtn" onClick={() => oauth("TikTok")}><TikTokMark /> {t("Continue with TikTok")}</button>
+        <button type="button" className="btn-email cr1-authbtn" onClick={() => go("email")}><Icon name="inbox" size={20} /> {t("Continue with Email")}</button>
+        <p className="cr1-center cr1-switch">{t("New to Rezekii?")} <button type="button" className="v2-link" onClick={() => go("create")}>{t("Create Account")}</button></p>
+        <p className="cr1-center cr1-fine"><Rich text={t("By Continuing You Agree to Rezekii's {terms} and {privacy}.")} parts={policies} /></p>
       </>
     );
   } else if (step === "oauth") {
@@ -509,8 +535,8 @@ export default function SignIn() {
       <div className="cr1-wait">
         <span className="cr1-provider">{provider === "Google" ? <GoogleMark /> : <TikTokMark size={26} />}</span>
         <span className="cr1-spin" aria-hidden="true" />
-        <b>Continuing with {provider}…</b>
-        <p>Approve in {provider}&apos;s window.</p>
+        <b>{t("Continuing with {provider}…", { provider })}</b>
+        <p>{t("Approve in {provider}'s window.", { provider })}</p>
       </div>
     );
   } else if (step === "email") {
@@ -518,25 +544,25 @@ export default function SignIn() {
     card = (
       <form className="cr1-form" onSubmit={(e) => { e.preventDefault(); setTried(true); if (!isEmail(email)) return; if (codeSent) { if (code.length === 6) void signInCode(); } else if (pw) void signInEmail(); }}>
         {back("start")}
-        <h1>Sign in with Email</h1>
+        <h1>{t("Sign in with Email")}</h1>
         {emailField}
         {codeSent ? (
           <>
             {sentTo}
             {codeField}
-            <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? spin : "Sign in"}</button>
+            <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? spin : t("Sign in")}</button>
             {again("signin")}
-            <button type="button" className="v2-link" onClick={() => setCodeSent(false)}>Use My Password Instead</button>
+            <button type="button" className="v2-link" onClick={() => setCodeSent(false)}>{t("Use My Password Instead")}</button>
           </>
         ) : (
           <>
-            {pwField("Password")}
-            <button type="button" className="v2-link cr1-forgot" disabled={busy} onClick={() => void sendCode("reset", "reset")}>Forgot password?</button>
-            <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? spin : "Sign in"}</button>
-            <button type="button" className="v2-link" disabled={busy} onClick={() => { setTried(true); void sendCode("signin"); }}>Email Me a Sign-In Code Instead</button>
+            {pwField(t("Password"))}
+            <button type="button" className="v2-link cr1-forgot" disabled={busy} onClick={() => void sendCode("reset", "reset")}>{t("Forgot password?")}</button>
+            <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? spin : t("Sign in")}</button>
+            <button type="button" className="v2-link" disabled={busy} onClick={() => { setTried(true); void sendCode("signin"); }}>{t("Email Me a Sign-In Code Instead")}</button>
           </>
         )}
-        <p className="cr1-center cr1-switch">New to Rezekii? <button type="button" className="v2-link" onClick={() => go("create")}>Create Account</button></p>
+        <p className="cr1-center cr1-switch">{t("New to Rezekii?")} <button type="button" className="v2-link" onClick={() => go("create")}>{t("Create Account")}</button></p>
       </form>
     );
   } else if (step === "create") {
@@ -544,34 +570,34 @@ export default function SignIn() {
     card = (
       <form className="cr1-form" onSubmit={(e) => { e.preventDefault(); setTried(true); if (name.trim().length < 2 || !isEmail(email) || pw.length < 8) return; if (codeSent) { if (code.length === 6) void signUpEmail(); } else void sendCode("signup"); }}>
         {back("start")}
-        <h1>Create Your Account</h1>
+        <h1>{t("Create Your Account")}</h1>
         {nameField}
         {emailField}
-        {pwField("Password")}
+        {pwField(t("Password"))}
         {codeSent ? (
           <>
             {sentTo}
             {codeField}
-            <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? spin : "Confirm and Create Account"}</button>
+            <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? spin : t("Confirm and Create Account")}</button>
             {again("signup")}
           </>
         ) : (
-          <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? spin : "Create Account"}</button>
+          <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? spin : t("Create Account")}</button>
         )}
-        <p className="cr1-center cr1-switch">Already have an account? <button type="button" className="v2-link" onClick={() => go("email")}>Sign in</button></p>
+        <p className="cr1-center cr1-switch">{t("Already have an account?")} <button type="button" className="v2-link" onClick={() => go("email")}>{t("Sign in")}</button></p>
       </form>
     );
   } else if (step === "reset") {
     card = (
       <form className="cr1-form" onSubmit={(e) => { e.preventDefault(); setTried(true); if (code.length === 6 && pw.length >= 8) void resetPassword(); }}>
         {back("email")}
-        <h1>Choose a New Password</h1>
+        <h1>{t("Choose a New Password")}</h1>
         {sentTo}
         {codeField}
-        {pwField("New password")}
-        <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? <span className="cr1-spin sm" /> : "Save and Sign In"}</button>
+        {pwField(t("New password"))}
+        <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? <span className="cr1-spin sm" /> : t("Save and Sign In")}</button>
         {again("reset")}
-        <p className="cr1-small" style={{ margin: 0 }}>No Access to This Email? Write to <a className="v2-link" href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a>.</p>
+        <p className="cr1-small" style={{ margin: 0 }}><Rich text={t("No Access to This Email? Write to {email}.")} parts={{ email: <a className="v2-link" href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a> }} /></p>
       </form>
     );
   } else {
@@ -579,7 +605,7 @@ export default function SignIn() {
       <div className="cr1-wait">
         <span className="v2-medal green cr1-welcome"><Icon name="check" size={40} width={2.6} /></span>
         <b>{welcome}</b>
-        <p>Opening your app…</p>
+        <p>{t("Opening your app…")}</p>
       </div>
     );
   }
@@ -588,7 +614,8 @@ export default function SignIn() {
     <>
       <DemoStrip />
       <main className="rz-splash cr1-splash">
-        <Link href="/" className="rz-back" aria-label="Back to home"><Icon name="back" size={20} /></Link>
+        <Link href="/" className="rz-back" aria-label={t("Back to home")}><Icon name="back" size={20} /></Link>
+        <div style={LANG_SPOT}><LangSwitch compact /></div>
         <div className="rz-tiles" aria-hidden="true">
           {TILES.map(([pos, bg, fg, rot, d], i) => (
             <span key={i} className="rz-tile" style={{ ...pos, animationDelay: `${-i * 0.7}s` }}>
@@ -598,7 +625,7 @@ export default function SignIn() {
             </span>
           ))}
         </div>
-        <Link href="/" className="rz-logo-wrap" aria-label="Rezekii home">
+        <Link href="/" className="rz-logo-wrap" aria-label={t("Rezekii home")}>
           <span className="rz-ripple" aria-hidden="true" />
           <span className="rz-ripple" aria-hidden="true" style={{ animationDelay: "-1s" }} />
           <span className="rz-ripple" aria-hidden="true" style={{ animationDelay: "-2s" }} />
@@ -607,10 +634,10 @@ export default function SignIn() {
           </span>
         </Link>
         <p className="rz-name">Rezekii</p>
-        <p className="rz-tag">CONNECTING AFFILIATES</p>
+        <p className="rz-tag">{t("CONNECTING AFFILIATES")}</p>
         <div key={step} className="rz-card cr1-auth">{card}</div>
         <p className="rz-foot">
-          Need help? <a href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a>
+          <Rich text={t("Need help? {email}")} parts={{ email: <a href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a> }} />
         </p>
       </main>
     </>

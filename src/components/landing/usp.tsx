@@ -2,12 +2,13 @@
 
 import { useRef } from "react";
 import { Icon } from "@/components/icons";
+import { useT } from "@/lib/i18n/client";
 import { useLiveChildren } from "./hooks";
 import { AiText } from "./ai-text";
 import { AutoSlider } from "./slider";
 import { StoryCard, type Story } from "./stories";
 
-/** `live`: the demo has its own button (so it isn't hidden from screen readers). */
+/** `live`: the demo has its own button (so it isn't hidden from screen readers). Words come in already translated. */
 export type Usp = { title: string; line: string; tint: string; demo: React.ReactNode; live?: boolean };
 
 /**
@@ -39,6 +40,7 @@ export type See = { title: string; line: string; screen: React.ReactNode };
  * plays while visible; a tap plays it again.
  */
 export function SeeRail({ items, stories = [], label }: { items: See[]; stories?: Story[]; label: string }) {
+  const t = useT();
   const ref = useRef<HTMLDivElement>(null);
   useLiveChildren(ref, ".lp-see-scr, .lp-story", 0.5);
   const replay = (frame: HTMLElement) => {
@@ -57,7 +59,7 @@ export function SeeRail({ items, stories = [], label }: { items: See[]; stories?
               className="lp-see-frame"
               role="button"
               tabIndex={0}
-              aria-label={`Play again: ${x.title}`}
+              aria-label={t("Play again: {title}", { title: x.title })}
               onClick={(e) => replay(e.currentTarget)}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); replay(e.currentTarget); } }}
             >
@@ -75,7 +77,7 @@ export function SeeRail({ items, stories = [], label }: { items: See[]; stories?
         ))}
         {stories.map((s) => <StoryCard key={s.handle} s={s} />)}
       </AutoSlider>
-      {stories.some((s) => s.sample) && <p className="hm-fine lp-note-line"><Icon name="info" size={13} /> Screens use sample data. Sample testimonials · preview only.</p>}
+      {stories.some((s) => s.sample) && <p className="hm-fine lp-note-line"><Icon name="info" size={13} /> {t("Screens use sample data. Sample testimonials · preview only.")}</p>}
     </div>
   );
 }

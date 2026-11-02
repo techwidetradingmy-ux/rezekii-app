@@ -1,6 +1,7 @@
 "use client";
 
 import { Children, useCallback, useEffect, useRef, useState } from "react";
+import { useT } from "@/lib/i18n/client";
 import { useOnScreen, useReducedMotion } from "./hooks";
 
 /**
@@ -15,6 +16,7 @@ export function AutoSlider({ children, label, every = 6000, className = "", onIn
   className?: string;
   onIndex?: (i: number) => void;
 }) {
+  const t = useT();
   const items = Children.toArray(children);
   const wrap = useRef<HTMLDivElement>(null);
   const track = useRef<HTMLDivElement>(null);
@@ -74,8 +76,8 @@ export function AutoSlider({ children, label, every = 6000, className = "", onIn
 
   useEffect(() => {
     if (!on || still || hold || stops.length < 2) return;
-    const t = window.setTimeout(() => go((idx + 1) % stops.length), every);
-    return () => window.clearTimeout(t);
+    const timer = window.setTimeout(() => go((idx + 1) % stops.length), every);
+    return () => window.clearTimeout(timer);
   }, [on, still, hold, idx, stops.length, every, go]);
 
   const pause = () => { window.clearTimeout(release.current); setHold(true); };
@@ -96,7 +98,7 @@ export function AutoSlider({ children, label, every = 6000, className = "", onIn
     >
       <div ref={track} className="lp-track" role="region" aria-roledescription="carousel" aria-label={label} tabIndex={0}>
         {items.map((c, i) => (
-          <div key={i} className="lp-slide" role="group" aria-roledescription="slide" aria-label={`${i + 1} of ${items.length}`}>
+          <div key={i} className="lp-slide" role="group" aria-roledescription="slide" aria-label={t("{i} of {n}", { i: i + 1, n: items.length })}>
             {c}
           </div>
         ))}
@@ -104,7 +106,7 @@ export function AutoSlider({ children, label, every = 6000, className = "", onIn
       {stops.length > 1 && (
         <div className="lp-dots">
           {stops.map((_, i) => (
-            <button key={i} type="button" aria-label={`Go to slide ${i + 1}`} aria-current={i === idx || undefined} className={i === idx ? "on" : ""} onClick={() => go(i)}>
+            <button key={i} type="button" aria-label={t("Go to slide {n}", { n: i + 1 })} aria-current={i === idx || undefined} className={i === idx ? "on" : ""} onClick={() => go(i)}>
               <i className={i === idx && on && !hold && !still ? "run" : ""} style={{ animationDuration: `${every}ms` }} />
             </button>
           ))}

@@ -3,10 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon, type IconName } from "@/components/icons";
 import { Tip } from "@/components/ui";
+import { useT } from "@/lib/i18n/client";
 import { AiText } from "./ai-text";
 import { useLiveChildren, useMedia, useOnScreen, useReducedMotion } from "./hooks";
 import { AutoSlider } from "./slider";
 
+/** A feature tile; `title` and `tip` come in already translated. */
 export type Tile = {
   key: string;
   title: string;
@@ -32,18 +34,19 @@ export function Bento({ tiles, label, slides = false }: { tiles: Tile[]; label: 
   return phone || slides ? <BentoSlides tiles={tiles} label={label} three={!phone} /> : <BentoGrid tiles={tiles} label={label} />;
 }
 
-function TileCard({ t, item = false }: { t: Tile; item?: boolean }) {
+function TileCard({ t: tile, item = false }: { t: Tile; item?: boolean }) {
+  const t = useT();
   return (
-    <article role={item ? "listitem" : undefined} className={`lp-tile lp-live ${t.size ?? ""} ${t.bare ? "bare" : ""} ${t.soon ? "soon" : ""}`}>
+    <article role={item ? "listitem" : undefined} className={`lp-tile lp-live ${tile.size ?? ""} ${tile.bare ? "bare" : ""} ${tile.soon ? "soon" : ""}`}>
       <header>
-        <span className="lp-tico" style={{ background: t.tint }}><Icon name={t.icon} size={16} width={2.2} /></span>
-        <h3>{t.title}</h3>
-        {t.soon && <span className="badge badge-amber">Soon</span>}
-        <Tip text={t.tip} label={`About ${t.title}`} />
+        <span className="lp-tico" style={{ background: tile.tint }}><Icon name={tile.icon} size={16} width={2.2} /></span>
+        <h3>{tile.title}</h3>
+        {tile.soon && <span className="badge badge-amber">{t("Soon")}</span>}
+        <Tip text={tile.tip} label={t("About {title}", { title: tile.title })} />
       </header>
       {/* Phones: the explanation shows under the title instead of behind the ⓘ (owner, 29 Oct 2026). One icon per card. */}
-      <p className="lp-tile-d"><AiText text={t.tip} /></p>
-      <div className="lp-tile-b">{t.body}</div>
+      <p className="lp-tile-d"><AiText text={tile.tip} /></p>
+      <div className="lp-tile-b">{tile.body}</div>
     </article>
   );
 }
@@ -69,10 +72,10 @@ function BentoGrid({ tiles, label }: { tiles: Tile[]; label: string }) {
     const { clientX: x, clientY: y } = e;
     cancelAnimationFrame(raf.current);
     raf.current = requestAnimationFrame(() => {
-      ref.current?.querySelectorAll<HTMLElement>(".lp-tile").forEach((t) => {
-        const r = t.getBoundingClientRect();
-        t.style.setProperty("--mx", `${x - r.left}px`);
-        t.style.setProperty("--my", `${y - r.top}px`);
+      ref.current?.querySelectorAll<HTMLElement>(".lp-tile").forEach((el) => {
+        const r = el.getBoundingClientRect();
+        el.style.setProperty("--mx", `${x - r.left}px`);
+        el.style.setProperty("--my", `${y - r.top}px`);
       });
     });
   };
@@ -84,8 +87,9 @@ function BentoGrid({ tiles, label }: { tiles: Tile[]; label: string }) {
   );
 }
 
-/** Real AI video examples (muted). Plays only while on screen; the chips switch example. */
+/** Real AI video examples (muted). Plays only while on screen; the chips switch example. Labels come in already translated. */
 export function VideoTile({ clips }: { clips: { src: string; label: string }[] }) {
+  const t = useT();
   const ref = useRef<HTMLDivElement>(null);
   const vid = useRef<HTMLVideoElement>(null);
   const on = useOnScreen(ref, 0.4);
@@ -109,7 +113,7 @@ export function VideoTile({ clips }: { clips: { src: string; label: string }[] }
         loop
         playsInline
         preload="none"
-        aria-label={`Example AI video: ${c.label}`}
+        aria-label={t("Example AI video: {label}", { label: c.label })}
       />
       <div className="lp-vid-chips">
         {clips.map((x, i) => (

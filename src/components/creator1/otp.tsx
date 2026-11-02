@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useT } from "@/lib/i18n/client";
 
 /** Six one-digit boxes: typing moves forward, Backspace moves back, pasting a whole code fills them all. */
 export function Otp({ value, onChange, state }: { value: string; onChange: (v: string) => void; state?: "ok" | "busy" }) {
+  const t = useT();
   const refs = useRef<(HTMLInputElement | null)[]>([]);
   useEffect(() => {
     refs.current[0]?.focus();
@@ -14,7 +16,7 @@ export function Otp({ value, onChange, state }: { value: string; onChange: (v: s
     onChange(arr.join("").replace(/\s+$/, ""));
   };
   return (
-    <div className={`cr1-otp ${state ?? ""}`} role="group" aria-label="6-digit code">
+    <div className={`cr1-otp ${state ?? ""}`} role="group" aria-label={t("6-digit code")}>
       {Array.from({ length: 6 }, (_, i) => {
         const d = value[i] && value[i] !== " " ? value[i] : "";
         return (
@@ -26,7 +28,7 @@ export function Otp({ value, onChange, state }: { value: string; onChange: (v: s
             className={d ? "filled" : undefined}
             inputMode="numeric"
             autoComplete={i === 0 ? "one-time-code" : "off"}
-            aria-label={`Digit ${i + 1}`}
+            aria-label={t("Digit {n}", { n: i + 1 })}
             maxLength={6}
             value={d}
             disabled={state === "busy" || state === "ok"}
