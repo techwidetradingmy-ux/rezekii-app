@@ -5,6 +5,7 @@ import { storedSessions } from "../refresh/sessions.ts";
 import { creatorRateFor, linkTarget } from "./catalog.ts";
 import { askFacts, saveFacts, savedFacts } from "./product-facts.ts";
 import { approvedCreatorToken } from "../creator-accounts/access.ts";
+import { tx } from "../../lib/i18n/lang.ts";
 
 export type LinkResult = { ok: true; link: string; name: string; image: string | null } | { ok: false; error: string; status: number };
 export type MadeLink = { productId: string; name: string | null; image: string | null; tag: string | null; link: string };
@@ -33,7 +34,8 @@ async function recentLink(userId: string, productId: string, level: string): Pro
  */
 export async function makeTapLink(userId: string, productId: string, level?: Awaited<ReturnType<typeof levelOf>>): Promise<LinkResult> {
   const [target, lv] = await Promise.all([linkTarget(productId), level ?? levelOf(userId)]);
-  if (!target) return { ok: false, error: "This product is no longer in the Marketplace.", status: 404 };
+  // Errors are in English; the routes show them in her language (tx: translated where shown).
+  if (!target) return { ok: false, error: tx("This product is no longer in the Marketplace."), status: 404 };
   try {
     const [again, partner] = await Promise.all([recentLink(userId, productId, lv), storedSessions().partner()]);
     if (again) return { ok: true, link: again, name: target.name, image: target.image };
@@ -45,7 +47,7 @@ export async function makeTapLink(userId: string, productId: string, level?: Awa
       if (facts) await saveFacts(productId, facts).catch(() => undefined);
       open = facts?.openRate ?? null;
     }
-    if (open === null) return { ok: false, error: "We couldn't confirm this product's commission rate with TikTok. Please try again later.", status: 409 };
+    if (open === null) return { ok: false, error: tx("We couldn't confirm this product's commission rate with TikTok. Please try again later."), status: 409 };
     const r = await campaignProductLink(partner.token, partner.cipher, target.campaignId, productId, creatorRateFor(lv, open, target.totalRate));
     const link = r.data?.product_promotion_link;
     if (r.code !== 0 || !link) return { ok: false, error: `TikTok could not make the link right now (${r.code}). Please try again.`, status: 502 };
@@ -53,7 +55,7 @@ export async function makeTapLink(userId: string, productId: string, level?: Awa
     return { ok: true, link, name: target.name, image: target.image };
   } catch (err) {
     console.error("[tap link]", err instanceof Error ? err.message : err);
-    return { ok: false, error: "TikTok could not make the link right now. Please try again.", status: 502 };
+    return { ok: false, error: tx("TikTok could not make the link right now. Please try again."), status: 502 };
   }
 }
 

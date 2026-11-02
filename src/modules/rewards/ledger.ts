@@ -1,5 +1,6 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { CREDIT_LIFE_DAYS, dayOf, missionDays, streakOf, WELCOME_CREDITS } from "./rules.ts";
+import { tx, type T } from "../../lib/i18n/lang.ts";
 
 /**
  * The credits wallet (owner, 31 Oct 2026: real data). Every credit in and out is one ledger row; the balance is their sum.
@@ -65,7 +66,7 @@ function remaining(all: Row[]): Map<string, number> {
 export async function settle(userId: string, side: Side): Promise<Row[]> {
   let all = await rows(userId, side);
   let changed = false;
-  if (!all.some((r) => r.ref === "welcome")) changed = (await grant(userId, side, { amount: WELCOME_CREDITS, kind: "welcome", what: "Welcome credits: try Post Everywhere", ref: "welcome" })) || changed;
+  if (!all.some((r) => r.ref === "welcome")) changed = (await grant(userId, side, { amount: WELCOME_CREDITS, kind: "welcome", what: tx("Welcome credits: try Post Everywhere"), ref: "welcome" })) || changed;
   const left = remaining(all);
   const now = Date.now();
   for (const r of all) {
@@ -94,6 +95,24 @@ export async function wallet(userId: string, side: Side): Promise<Wallet> {
   const exp = all.filter((r) => r.amount > 0 && r.expires_at && Date.parse(r.expires_at) <= soon && (left.get(r.id) ?? 0) > 0);
   const expiring = exp.length ? { amount: exp.reduce((s, r) => s + (left.get(r.id) ?? 0), 0), on: exp[0].expires_at as string } : null;
   return { balance, streak: streakOf(missionDays(all), dayOf(Date.now())), expiring, history: [...all].reverse().map((r) => ({ at: r.created_at, what: r.what, amount: r.amount, kind: r.kind })) };
+}
+
+/**
+ * A credit row's line in her language (owner, 3 Nov 2026). Rows are saved in English, as written where they're made, so the
+ * line is read back from that: Rezekii's own wording is translated and the mission, app or friend's name kept. Anything else
+ * (Techwide's notes on credits it gave) stays as written.
+ */
+export function creditLine(t: T, what: string): string {
+  let m: RegExpExecArray | null;
+  if ((m = /^Expired: (.+)$/.exec(what))) return t("Expired: {what}", { what: creditLine(t, m[1]) });
+  if ((m = /^Mission: (.+)$/.exec(what))) return t("Mission: {name}", { name: t(m[1]) });
+  if ((m = /^Bonus chest: (\d+) daily missions$/.exec(what))) return t("Bonus chest: {n} daily missions", { n: m[1] });
+  if ((m = /^Streak: (\d+) days$/.exec(what))) return t("Streak: {n} days", { n: m[1] });
+  if ((m = /^Refund: (.+) post failed$/.exec(what))) return t("Refund: {app} post failed", { app: m[1] });
+  if ((m = /^Refund: (.+) post cancelled$/.exec(what))) return t("Refund: {app} post cancelled", { app: m[1] });
+  if ((m = /^Referral: (.+)$/.exec(what))) return t("Referral: {name}", { name: m[1] === "A friend" ? t("A friend") : m[1] });
+  if ((m = /^Post Everywhere · (.+)$/.exec(what))) return t("Post Everywhere · {app}", { app: m[1] });
+  return t(what);
 }
 
 /** Just the balance (settling first). */

@@ -1,6 +1,7 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { allProducts, getProduct } from "../tap/catalog.ts";
 import { lookupLinks } from "../tap/convert.ts";
+import { tx } from "../../lib/i18n/lang.ts";
 
 const DAY = 86_400_000;
 
@@ -22,7 +23,7 @@ const product = (r: Row): WishProduct => ({ id: r.product_id, name: r.name, shop
 /** The facts TikTok Shop gives for one pasted link (or ID), and whether it's already on Rezekii. */
 export async function findProduct(token: string | null, input: string): Promise<{ product: WishProduct; onRezekii: boolean } | { error: string }> {
   const [row] = await lookupLinks(token, [input.trim().slice(0, 500)]);
-  if (!row?.ok || !row.id) return { error: row?.note && row.note !== "Not a TikTok Shop product link" ? row.note : "Couldn't find this product. Check the link." };
+  if (!row?.ok || !row.id) return { error: row?.note && row.note !== "Not a TikTok Shop product link" ? row.note : tx("Couldn't find this product. Check the link.") };
   return {
     product: { id: row.id, name: row.name, shop: row.shop ?? "", img: row.image, price: row.priceLo ?? 0, rate: row.rate === null ? null : row.rate / 100, category: row.category ?? "", sold: row.sold },
     onRezekii: !!(await getProduct(row.id)),
@@ -55,15 +56,15 @@ export async function myWishes(userId: string): Promise<MyWish[]> {
 
 /** Saves her wish (or changes it). The product's facts come from TikTok Shop, not from the page. */
 export async function saveWish(userId: string, token: string | null, productId: string, c: Commit): Promise<{ ok: true } | { error: string }> {
-  if (!/^\d{15,21}$/.test(productId)) return { error: "That isn't a TikTok Shop product." };
+  if (!/^\d{15,21}$/.test(productId)) return { error: tx("That isn't a TikTok Shop product.") };
   const videos = Math.round(Number(c.videos));
   const lives = Math.round(Number(c.lives));
-  if (!(videos >= 0 && videos <= 60 && lives >= 0 && lives <= 30)) return { error: "Choose up to 60 videos and 30 LIVE sessions a month." };
-  if (videos + lives === 0) return { error: "Commit at least 1 video or LIVE a month." };
-  if (![0, 90, 180].includes(c.rights) || ![1, 3, 6].includes(c.months)) return { error: "Pick ad rights and how long from the list." };
+  if (!(videos >= 0 && videos <= 60 && lives >= 0 && lives <= 30)) return { error: tx("Choose up to 60 videos and 30 LIVE sessions a month.") };
+  if (videos + lives === 0) return { error: tx("Commit at least 1 video or LIVE a month.") };
+  if (![0, 90, 180].includes(c.rights) || ![1, 3, 6].includes(c.months)) return { error: tx("Pick ad rights and how long from the list.") };
   const found = await findProduct(token, productId);
   if ("error" in found) return found;
-  if (found.onRezekii) return { error: "It's already on Rezekii. Add it from the Marketplace." };
+  if (found.onRezekii) return { error: tx("It's already on Rezekii. Add it from the Marketplace.") };
   const p = found.product;
   const note = typeof c.note === "string" ? c.note.trim().slice(0, 200) || null : null;
   const res = await supabaseRest("wishes?on_conflict=user_id,product_id", {
@@ -74,7 +75,7 @@ export async function saveWish(userId: string, token: string | null, productId: 
       rate: p.rate === null ? null : Math.round(p.rate * 100), videos, lives, rights: c.rights, months: c.months, note, updated_at: new Date().toISOString(),
     }),
   });
-  return res.ok ? { ok: true } : { error: "Didn't save. Please try again." };
+  return res.ok ? { ok: true } : { error: tx("Didn't save. Please try again.") };
 }
 
 /** What creators committed in all, per product (wishes oldest first). */

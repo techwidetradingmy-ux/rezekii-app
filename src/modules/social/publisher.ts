@@ -8,6 +8,8 @@ import { freshToken, getAccount, markReconnect, type SocialAccount } from "./acc
 import { NAMES, facebookAsReel } from "./rules.ts";
 import { cleanSettings, unreachableUsers, type InstagramSettings, type ThreadsSettings } from "./settings.ts";
 import { cleanUpGroup, signedMediaUrl, updateSocialPost, type SocialPostRow } from "./store.ts";
+// Reasons are saved in English and shown in her language when read (modules/posting/errors.ts).
+import { tx } from "../../lib/i18n/lang.ts";
 
 const STUCK_MS = 30 * 60e3;
 /** A Facebook Reel saved as a draft on the Page (S1): nothing is public, so there's no link or first comment. */
@@ -46,7 +48,7 @@ async function accountFor(p: SocialPostRow): Promise<SocialAccount | null> {
  */
 export async function publishSocialPost(p: SocialPostRow): Promise<string> {
   const acc = await accountFor(p);
-  if (!acc) return recordFailure(p, "Channel disconnected", { final: true });
+  if (!acc) return recordFailure(p, tx("Channel disconnected"), { final: true });
   if (acc.status === "reconnect") return recordFailure(p, `${acc.name ?? "This channel"} needs reconnecting in Rezekii (Posts → Channels).`, { final: true });
   if (p.container_id) {
     await updateSocialPost(p.id, { status: "processing" });
@@ -96,13 +98,13 @@ async function markPosted(p: SocialPostRow, externalId: string, permalink: strin
 /** Asks the channel how a processing post is doing; publishes it once ready (Instagram and Threads need a publish call). */
 export async function checkSocialProcessing(p: SocialPostRow): Promise<string> {
   const acc = await accountFor(p);
-  if (!acc || !p.container_id) return recordFailure(p, acc ? "Nothing to check." : "Channel disconnected", { final: !acc });
+  if (!acc || !p.container_id) return recordFailure(p, acc ? tx("Nothing to check.") : tx("Channel disconnected"), { final: !acc });
   try {
     const token = await freshToken(acc);
     if (p.platform === "facebook") {
       const v = await facebookVideo(p.container_id, token);
       const st = v.status;
-      if (st?.video_status === "error") return recordFailure(p, st.publishing_phase?.errors?.[0]?.message ?? "Facebook couldn't process the video.", { clearContainer: true });
+      if (st?.video_status === "error") return recordFailure(p, st.publishing_phase?.errors?.[0]?.message ?? tx("Facebook couldn't process the video."), { clearContainer: true });
       if (st?.publishing_phase?.status === "complete" || st?.video_status === "ready") return markPosted(p, v.post_id ?? p.container_id, draftOf(p) ? null : facebookPermalink(v.permalink_url));
     } else if (p.platform === "instagram") {
       const c = await instagramContainer(p.container_id, token);
@@ -111,7 +113,7 @@ export async function checkSocialProcessing(p: SocialPostRow): Promise<string> {
         return markPosted(p, id, await instagramPermalink(id, token).catch(() => null));
       }
       if (c.status_code === "PUBLISHED") return markPosted(p, p.external_post_id ?? p.container_id, p.permalink);
-      if (c.status_code === "ERROR" || c.status_code === "EXPIRED") return recordFailure(p, `Instagram couldn't process the video${c.status ? ` (${c.status})` : ""}.`, { clearContainer: true });
+      if (c.status_code === "ERROR" || c.status_code === "EXPIRED") return recordFailure(p, c.status ? `Instagram couldn't process the video (${c.status}).` : tx("Instagram couldn't process the video."), { clearContainer: true });
     } else {
       const c = await threadsContainer(p.container_id, token);
       if (c.status === "FINISHED") {
@@ -119,9 +121,9 @@ export async function checkSocialProcessing(p: SocialPostRow): Promise<string> {
         return markPosted(p, id, await threadsPermalink(id, token).catch(() => null));
       }
       if (c.status === "PUBLISHED") return markPosted(p, p.external_post_id ?? p.container_id, p.permalink);
-      if (c.status === "ERROR" || c.status === "EXPIRED") return recordFailure(p, c.error_message ? `Threads: ${c.error_message}` : "Threads couldn't process the video.", { clearContainer: true });
+      if (c.status === "ERROR" || c.status === "EXPIRED") return recordFailure(p, c.error_message ? `Threads: ${c.error_message}` : tx("Threads couldn't process the video."), { clearContainer: true });
     }
-    if (Date.now() - new Date(p.scheduled_at ?? p.created_at).getTime() > STUCK_MS) return recordFailure(p, "The channel didn't finish processing the video within 30 minutes.", { final: true });
+    if (Date.now() - new Date(p.scheduled_at ?? p.created_at).getTime() > STUCK_MS) return recordFailure(p, tx("The channel didn't finish processing the video within 30 minutes."), { final: true });
     return "processing";
   } catch (err) {
     return handleError(p, acc, err);
@@ -139,7 +141,7 @@ export async function postFirstComment(p: SocialPostRow): Promise<string> {
     await cleanUpGroup(p.group_id);
     return "comment failed";
   };
-  if (!acc || !p.external_post_id) return fail(acc ? "The post has no id to comment on." : "Channel disconnected");
+  if (!acc || !p.external_post_id) return fail(acc ? tx("The post has no id to comment on.") : tx("Channel disconnected"));
   try {
     const token = await freshToken(acc);
     const text = p.first_comment.trim();
@@ -152,7 +154,7 @@ export async function postFirstComment(p: SocialPostRow): Promise<string> {
       for (let i = 0; i < 5; i++) {
         const c = await threadsContainer(reply, token);
         if (c.status === "FINISHED") break;
-        if (c.status === "ERROR") throw new Error(c.error_message ?? "Threads couldn't create the reply.");
+        if (c.status === "ERROR") throw new Error(c.error_message ?? tx("Threads couldn't create the reply."));
         await new Promise((r) => setTimeout(r, 2000));
       }
       id = await publishThreads(acc.external_id, token, reply);

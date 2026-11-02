@@ -3,6 +3,10 @@ import { listRecentVideos } from "../../integrations/tiktok/stats.ts";
 import { freshTikTokToken, userTikTokOpenId } from "../posting/store.ts";
 import { grant, settle, type Row } from "./ledger.ts";
 import { addDays, chestsFor, dayOf, dayStart, missionDays, STARTER_DAYS, streakOf, TIERS } from "./rules.ts";
+import { makeT, tx, type T } from "../../lib/i18n/lang.ts";
+
+/** English, as written; the rewards route passes the reader's language. */
+const EN: T = makeT(null);
 
 /**
  * Missions on real data (owner, 31 Oct 2026). A mission is ready once Rezekii can see the action really happened (a video on
@@ -65,10 +69,10 @@ const SELLER_MILESTONES: Def[] = [
   { id: "sm8", reward: 300, check: (s) => [Math.min(50, s.creators as number), 50] },
 ];
 
-/** What each mission is called in the credit history. */
+/** What each mission is called in the credit history (saved in English, shown in her language). */
 const TITLES: Record<Side, Record<string, string>> = {
-  creator: { d1: "Check in", d2: "Post a video", d3: "Post 3 videos", d4: "Run a scan", d5: "Request a free sample", d6: "Share a proud moment", s1: "Fill in your profile", s2: "Link TikTok Shop", s3: "Link your TikTok account", s4: "Connect Facebook, Instagram or Threads", s6: "Run your first scan", s7: "Finish your first collaboration" },
-  seller: { d1: "Check in", d2: "Post a video for your shop", d3: "Check today's results", d4: "Submit or register a product", d5: "Share a proud moment", sm1: "Connect Seller Center", sm2: "Add your contact name and phone", sm3: "Submit your first products", sm4: "Get your first product live", sm5: "Connect your Facebook Page, Instagram or Threads", sm6: "Invite one seller or creator", sm7: "Have 10 products in TAP", sm8: "50 creators selling your products" },
+  creator: { d1: tx("Check in"), d2: tx("Post a video"), d3: tx("Post 3 videos"), d4: tx("Run a scan"), d5: tx("Request a free sample"), d6: tx("Share a proud moment"), s1: tx("Fill in your profile"), s2: tx("Link TikTok Shop"), s3: tx("Link your TikTok account"), s4: tx("Connect Facebook, Instagram or Threads"), s6: tx("Run your first scan"), s7: tx("Finish your first collaboration") },
+  seller: { d1: tx("Check in"), d2: tx("Post a video for your shop"), d3: tx("Check today's results"), d4: tx("Submit or register a product"), d5: tx("Share a proud moment"), sm1: tx("Connect Seller Center"), sm2: tx("Add your contact name and phone"), sm3: tx("Submit your first products"), sm4: tx("Get your first product live"), sm5: tx("Connect your Facebook Page, Instagram or Threads"), sm6: tx("Invite one seller or creator"), sm7: tx("Have 10 products in TAP"), sm8: tx("50 creators selling your products") },
 };
 
 const json = async <T>(path: string): Promise<T[]> => (await supabaseRest(path)).json() as Promise<T[]>;
@@ -185,15 +189,16 @@ export async function recordEvent(userId: string, kind: "share" | "results"): Pr
 export type Claimed = { board: Board; gained: number; chest: number | null; tier: { days: number; bonus: number } | null };
 
 /** Claims one mission if it's ready, then any bonus chest and streak tier it unlocks. Each pays once. */
-export async function claim(user: { id: string; created_at: string }, side: Side, id: string): Promise<Claimed | { error: string }> {
+export async function claim(user: { id: string; created_at: string }, side: Side, id: string, t: T = EN): Promise<Claimed | { error: string }> {
   const today = dayOf(Date.now());
   const first = await build(user, side);
   const hit = first.defs[id];
   const m = [...first.board.daily, ...first.board.starter, ...first.board.milestones].find((x) => x.id === id);
-  if (!hit || !m) return { error: "This mission isn't available." };
+  if (!hit || !m) return { error: t("This mission isn't available.") };
   if (m.state === "done") return { board: first.board, gained: 0, chest: null, tier: null };
-  if (m.state !== "ready") return { error: "Not done yet. Credits come once the action is done." };
-  const title = TITLES[side][id] ?? "Mission";
+  if (m.state !== "ready") return { error: t("Not done yet. Credits come once the action is done.") };
+  // Saved in English and shown in her language when the history is read (creditLine).
+  const title = TITLES[side][id] ?? tx("Mission");
   await grant(user.id, side, { amount: hit.def.reward, kind: "mission", what: `Mission: ${title}`, ref: ref(hit.kind, id, today), day: hit.kind === "daily" ? today : undefined });
   let gained = hit.def.reward;
   let chest: number | null = null;

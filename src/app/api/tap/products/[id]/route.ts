@@ -7,6 +7,7 @@ import { ideaFacts } from "@/modules/picks/ideas-cache.ts";
 import { askFacts, saveFacts, savedFacts } from "@/modules/tap/product-facts.ts";
 import { sampleOffers } from "@/modules/tap/samples.ts";
 import { wantedOne } from "@/modules/wishes/wishes.ts";
+import { getLang, tFor } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -24,10 +25,11 @@ const NO_STORE = { headers: { "cache-control": "private, no-store" } };
  * Read fresh on every open (not kept in her browser), so a product that left the Marketplace says so straight away.
  */
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const t = tFor(await getLang());
   const user = await currentUser();
-  if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  if (!user) return NextResponse.json({ error: t("Sign in first.") }, { status: 401 });
   const id = (await ctx.params).id;
-  if (!/^\d{6,25}$/.test(id)) return NextResponse.json({ error: "Couldn't find this product.", product: null }, { status: 404 });
+  if (!/^\d{6,25}$/.test(id)) return NextResponse.json({ error: t("Couldn't find this product."), product: null }, { status: 404 });
   // Her sign-in is read alongside, in case TikTok has to be asked.
   const token = approvedCreatorToken(user.id).catch(() => null);
   const [tap, her, saved] = await Promise.all([getProduct(id), herOffers(user.id), savedFacts(id).catch(() => null)]);
@@ -41,7 +43,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   // ideas showed "We couldn't find this product"); no TikTok call.
   const facts = saved ?? asked ?? (tap ? null : await ideaFacts(user.id, id).catch(() => null));
   const open = tap?.openRate ?? facts?.openRate ?? null;
-  if (!tap && !facts) return NextResponse.json({ error: "Couldn't find this product.", product: null }, { status: 404, ...NO_STORE });
+  if (!tap && !facts) return NextResponse.json({ error: t("Couldn't find this product."), product: null }, { status: 404, ...NO_STORE });
   // The same free sample as the Marketplace (owner, 2 Nov 2026): her own check, else TikTok's general check.
   const samples = !tap ? 0 : her.offers ? (her.offers[id] === 2 ? 1 : 0) : tap.samples <= 0 ? 0 : withSampleOffers([tap], general ?? {})[0].samples;
   return NextResponse.json({

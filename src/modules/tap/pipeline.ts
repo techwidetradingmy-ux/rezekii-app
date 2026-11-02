@@ -6,6 +6,7 @@ import { publish, saveCampaign } from "../admin/campaigns.ts";
 import { pendingProducts, reviewProduct } from "../admin/tap.ts";
 import { storedSessions } from "../refresh/sessions.ts";
 import type { RequestStatus } from "../marketplace/shop-products.ts";
+import { tx } from "../../lib/i18n/lang.ts";
 
 /**
  * Admin TAP pipeline on sellers' real requests (owner, 30 Oct 2026). A request moves: submitted → in_review (Techwide's review)
@@ -200,7 +201,7 @@ export async function saveSellerCampaignSettings(v: SellerCampaignSettings, by: 
  */
 export async function ensureSellerCampaign(shopId: string, actor = "Rezekii"): Promise<{ ok: true; campaignId: string } | { ok: false; error: string }> {
   const [conn] = (await (await supabaseRest(`seller_connections?shop_id=eq.${shopId}&select=shop_name,campaign_id&limit=1`)).json()) as { shop_name: string; campaign_id: string | null }[];
-  if (!conn) return { ok: false, error: "The shop isn't connected any more. Ask the seller to connect Seller Center again." };
+  if (!conn) return { ok: false, error: tx("The shop isn't connected any more. Ask the seller to connect Seller Center again.") };
   if (conn.campaign_id) return { ok: true, campaignId: conn.campaign_id };
   const set = await sellerCampaignSettings();
   const fill = await campaignText(conn.shop_name);
@@ -214,11 +215,11 @@ async function shopCampaign(shopId: string, commission: number, actor: string, t
   // The shop's campaign is the one saved on its connection (shops connected earlier were given theirs, 31 Oct 2026).
   const [own] = (await (await supabaseRest(`seller_connections?shop_id=eq.${shopId}&campaign_id=not.is.null&select=campaign_id&limit=1`)).json()) as { campaign_id: string }[];
   if (own) return { ok: true, campaignId: own.campaign_id, commission: null };
-  if (!(commission > 1 && commission < 80)) return { ok: false, error: "Set the campaign commission: more than 1% and less than 80%." };
+  if (!(commission > 1 && commission < 80)) return { ok: false, error: tx("Set the campaign commission: more than 1% and less than 80%.") };
   const shop = (await shopsById([shopId])).get(shopId);
-  if (!shop) return { ok: false, error: "The shop isn't connected any more. Ask the seller to connect Seller Center again." };
+  if (!shop) return { ok: false, error: tx("The shop isn't connected any more. Ask the seller to connect Seller Center again.") };
   const contact = await techwideContact();
-  if (!contact) return { ok: false, error: "Couldn't read Techwide's campaign contact details from TikTok. Please try again." };
+  if (!contact) return { ok: false, error: tx("Couldn't read Techwide's campaign contact details from TikTok. Please try again.") };
   const today = toDay(Math.floor(Date.now() / 1000));
   const end = lastEndDay(startTime(today, Date.now()));
   const title = (text?.name ?? `Rezekii X ${shop.name}`).slice(0, 49);
@@ -229,7 +230,7 @@ async function shopCampaign(shopId: string, commission: number, actor: string, t
   if (!saved.ok && plain !== title) saved = await saveCampaign({ name: plain, description: ascii(text?.description ?? `${shop.name}'s campaign on Rezekii.`), start: today, end, regEnd: end, commission, local: true, crossBorder: true, shopCodes: [], ...contact }, null, actor);
   if (!saved.ok) return saved;
   const pub = await publish(saved.id, title, actor);
-  if (!pub.ok) return { ok: false, error: pub.error ?? "TikTok didn't publish the campaign." };
+  if (!pub.ok) return { ok: false, error: pub.error ?? tx("TikTok didn't publish the campaign.") };
   return { ok: true, campaignId: saved.id, commission };
 }
 

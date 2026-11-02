@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { supabaseRest } from "@/integrations/supabase/rest.ts";
+import { getLang, tFor } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -10,8 +11,9 @@ const PRIVACY = "1.0";
 
 /** Records her consent before linking TikTok Shop ({ role, action: "agreed" }) or its withdrawal when she unlinks. */
 export async function POST(req: NextRequest) {
+  const t = tFor(await getLang());
   const user = await currentUser();
-  if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  if (!user) return NextResponse.json({ error: t("Sign in first.") }, { status: 401 });
   const b = (await req.json().catch(() => ({}))) as { role?: unknown; action?: unknown };
   const res = await supabaseRest("consents", {
     method: "POST",
@@ -21,5 +23,5 @@ export async function POST(req: NextRequest) {
       ip: (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim().slice(0, 64) || null, user_agent: (req.headers.get("user-agent") ?? "").slice(0, 300) || null,
     }),
   });
-  return res.ok ? NextResponse.json({ ok: true }) : NextResponse.json({ error: "Didn't save." }, { status: 500 });
+  return res.ok ? NextResponse.json({ ok: true }) : NextResponse.json({ error: t("Didn't save.") }, { status: 500 });
 }

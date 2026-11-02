@@ -1,6 +1,10 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { balanceOf, grant, spend, type Side } from "./ledger.ts";
 import { POST_CREDITS } from "./rules.ts";
+import { makeT, type T } from "../../lib/i18n/lang.ts";
+
+/** English, as written; routes pass the reader's language. */
+const EN: T = makeT(null);
 
 /**
  * Post Everywhere costs credits (owner, 28 Oct 2026; real from 31 Oct): POST_CREDITS per channel when a post is scheduled or
@@ -44,7 +48,7 @@ async function charges(userId: string, ids?: string[]): Promise<Map<string, Char
  * Charges each channel post once. All or nothing: if the wallet runs short part way, what was charged is refunded and the
  * caller cancels the posts.
  */
-export async function chargePosts(userId: string, side: Side, posts: Charged[]): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function chargePosts(userId: string, side: Side, posts: Charged[], t: T = EN): Promise<{ ok: true } | { ok: false; error: string }> {
   const had = await charges(userId, posts.map((p) => p.id));
   const done: Charged[] = [];
   for (const p of posts) {
@@ -54,7 +58,7 @@ export async function chargePosts(userId: string, side: Side, posts: Charged[]):
     const r = await spend(userId, side, POST_CREDITS, `post:${p.id}:${n}`, `Post Everywhere · ${NAMES[p.app] ?? p.app}`);
     if (!r.ok) {
       for (const d of done) await refundOne(userId, side, d, "cancelled");
-      return { ok: false, error: `Not enough credits: each channel takes ${POST_CREDITS}. Earn more or save as a draft.` };
+      return { ok: false, error: t("Not enough credits: each channel takes {n}. Earn more or save as a draft.", { n: POST_CREDITS }) };
     }
     done.push(p);
   }

@@ -2,6 +2,8 @@ import { generateGeneralLinks, generateTaggedLinks, lookupProducts, selectProduc
 import { resolveProductId } from "../../integrations/tiktok-shop/product-id.ts";
 import { getProduct, tapProductsWithDescription, type TapProduct } from "./catalog.ts";
 import { logLinks, makeTapLink } from "./links.ts";
+// Notes are in English; the routes show them in her language.
+import { tx } from "../../lib/i18n/lang.ts";
 
 /**
  * One result row. "aff" = the creator's own TikTok Shop affiliate link, "tap" = a Techwide TAP link,
@@ -24,7 +26,7 @@ export function cleanTags(tags: unknown): string[] {
 export async function convertLink(user: { id: string }, token: string | null, input: string, tags: string[]): Promise<ConvertRow[]> {
   const base = { input, productId: null, name: null, image: null, tag: null, link: null };
   const id = await resolveProductId(input);
-  if (!id) return [{ ...base, kind: "bad", note: "Not a TikTok Shop product link" }];
+  if (!id) return [{ ...base, kind: "bad", note: tx("Not a TikTok Shop product link") }];
   const tap = await getProduct(id);
   if (token) {
     const facts = tap ? null : (await lookupProducts(token, [id])).data?.products?.[0];
@@ -46,7 +48,7 @@ export async function convertLink(user: { id: string }, token: string | null, in
     await logLinks(user.id, made.filter((m) => m.kind === "aff").map((m) => ({ productId: id, name, image, tag: m.tag, link: m.link! })));
     return made;
   }
-  if (!tap) return [{ ...base, kind: "shop", productId: id, note: "Needs your TikTok Shop link" }];
+  if (!tap) return [{ ...base, kind: "shop", productId: id, note: tx("Needs your TikTok Shop link") }];
   const r = await makeTapLink(user.id, id);
   return [r.ok ? { ...base, kind: "tap", productId: id, name: r.name, image: r.image, link: r.link, note: "TAP" } : { ...base, kind: "error", productId: id, name: tap.name, image: tap.image, note: r.error }];
 }
@@ -98,7 +100,7 @@ export const fromTikTok = (input: string, p: LookedUpProduct, x?: SelectedProduc
     category: p.category_chains?.find((c) => c.is_leaf)?.local_name ?? p.category_chains?.at(-1)?.local_name ?? null,
     priceLo: amount(price?.minimum_amount), priceHi: amount(price?.maximum_amount),
     rate: p.commission?.rate ?? null, sold: x?.market_performance?.historical_sold_quantity ?? p.units_sold ?? null, stock: x?.stock?.quantity ?? null,
-    source: "tiktok", note: p.has_inventory === false ? "Out of stock" : "", ...extras(x, t),
+    source: "tiktok", note: p.has_inventory === false ? tx("Out of stock") : "", ...extras(x, t),
   };
 };
 
@@ -126,12 +128,12 @@ export async function lookupLinks(token: string | null, inputs: string[]): Promi
   });
   return inputs.map((input, i) => {
     const id = ids[i];
-    if (!id) return none(input, null, "Not a TikTok Shop product link");
+    if (!id) return none(input, null, tx("Not a TikTok Shop product link"));
     const f = facts.get(id);
     if (f) return fromTikTok(input, f, more.get(id), tap.get(id));
     const t = tap.get(id);
     if (t) return fromTap(input, t, more.get(id));
-    return none(input, id, token ? "TikTok: this product is not open for affiliate promotion" : "Needs your TikTok Shop link");
+    return none(input, id, token ? tx("TikTok: this product is not open for affiliate promotion") : tx("Needs your TikTok Shop link"));
   });
 }
 

@@ -2,6 +2,10 @@ import { randomInt } from "node:crypto";
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { grant } from "./ledger.ts";
 import { REFERRAL_DAYS, REFERRAL_REWARD } from "./rules.ts";
+import { makeT, tx, type T } from "../../lib/i18n/lang.ts";
+
+/** English, as written; the rewards route passes the reader's language. */
+const EN: T = makeT(null);
 
 /**
  * Referrals (owner, 28-30 Oct 2026: real data from 31 Oct). Each account has one invite code; creators invite creators with
@@ -110,7 +114,7 @@ export async function settleReferrals(userId: string): Promise<void> {
     if (!ok.length) continue;
     const name = await nameOf(r.friend_id, r.side);
     await grant(r.inviter_id, r.side, { amount: REFERRAL_REWARD.inviter, kind: "referral", what: `Referral: ${name}`, ref: `referral:${r.friend_id}` });
-    await grant(r.friend_id, r.side, { amount: REFERRAL_REWARD.friend, kind: "referral", what: "Joined with a friend's invite", ref: "referred" });
+    await grant(r.friend_id, r.side, { amount: REFERRAL_REWARD.friend, kind: "referral", what: tx("Joined with a friend's invite"), ref: "referred" });
   }
 }
 
@@ -126,7 +130,7 @@ async function nameOf(userId: string, side: Side): Promise<string> {
 export type Friend = { name: string; joined: string; successful: boolean; next: string | null };
 
 /** The friends who joined with this account's code on one side, newest first: their names and shops read in one go each. */
-export async function friendsOf(userId: string, side: Side): Promise<Friend[]> {
+export async function friendsOf(userId: string, side: Side, t: T = EN): Promise<Friend[]> {
   const rows = (await (await supabaseRest(`referrals?inviter_id=eq.${userId}&side=eq.${side}&select=friend_id,joined_at,qualified_at&order=joined_at.desc&limit=200`)).json()) as { friend_id: string; joined_at: string; qualified_at: string | null }[];
   if (!rows.length) return [];
   const ids = `in.(${[...new Set(rows.map((r) => r.friend_id))].join(",")})`;
@@ -140,11 +144,11 @@ export async function friendsOf(userId: string, side: Side): Promise<Friend[]> {
   const shop = new Map<string, string | null>();
   for (const s of shops) if (!shop.has(s.who)) shop.set(s.who, s.shop_name ?? null);
   // Same names as nameOf: the seller's first shop, else her TikTok handle, else her name.
-  const name = (id: string) => (side === "seller" && shop.get(id)) || (user.get(id)?.tiktok_username ? `@${user.get(id)!.tiktok_username}` : user.get(id)?.display_name ?? "A friend");
+  const name = (id: string) => (side === "seller" && shop.get(id)) || (user.get(id)?.tiktok_username ? `@${user.get(id)!.tiktok_username}` : user.get(id)?.display_name ?? t("A friend"));
   return rows.map((r) => {
     if (r.qualified_at) return { name: name(r.friend_id), joined: r.joined_at, successful: true, next: null };
     const late = Date.now() > Date.parse(r.joined_at) + REFERRAL_DAYS * DAY;
-    const next = late ? "Missed the 14 days" : shop.has(r.friend_id) ? "Counting soon" : side === "seller" ? "Connect Seller Center" : "Link TikTok Shop";
+    const next = late ? t("Missed the 14 days") : shop.has(r.friend_id) ? t("Counting soon") : side === "seller" ? t("Connect Seller Center") : t("Link TikTok Shop");
     return { name: name(r.friend_id), joined: r.joined_at, successful: false, next };
   });
 }

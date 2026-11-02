@@ -1,7 +1,8 @@
 import { ImageResponse } from "next/og";
 import type { NextRequest } from "next/server";
 import QRCode from "qrcode";
-import { StyledCard, cardFonts, type CardData } from "./styles";
+import { getLang, tFor } from "@/lib/i18n/server";
+import { StyledCard, cardFontsFor, cardWords, type CardData } from "./styles";
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +50,11 @@ export async function GET(req: NextRequest) {
     photo: (q.get("photo") ?? "").startsWith("/api/img/") ? await asPng(`${origin}${q.get("photo")}`) : null,
     rimau: pose ? `${origin}/mascot/png/rimau-${pose}.png` : null, logo: `${origin}/master-logo-transparent.png`,
     accent: moment === "story" ? STORY_ACCENT[q.get("tone") ?? ""] ?? "#ffd34d" : undefined,
+    // The card's own words in her language (owner, 3 Nov 2026); what the page sends is already in it.
+    words: cardWords(tFor(await getLang())),
   };
-  return new ImageResponse(<StyledCard d={d} wide={wide} />, { width: wide ? 1200 : 1080, height: wide ? 675 : 1920, fonts: await cardFonts(), headers: { "cache-control": "public, max-age=300" } });
+  // Chinese on the card (her language, or a name) gets a font that can draw it; everything else keeps Albert Sans.
+  const text = [d.kicker, d.label, d.big, d.tag, d.sub, d.date, d.bless, d.handle, d.name, ...d.lines, ...d.contacts, ...Object.values(d.words ?? {})].join("");
+  // Private and per language: the same address draws different words for a different language.
+  return new ImageResponse(<StyledCard d={d} wide={wide} />, { width: wide ? 1200 : 1080, height: wide ? 675 : 1920, fonts: await cardFontsFor(text), headers: { "cache-control": "private, max-age=300", vary: "Cookie" } });
 }

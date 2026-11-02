@@ -1,4 +1,6 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import { dateLocale, tx, type Lang, type Vars } from "../../lib/i18n/lang.ts";
+import { translate } from "../../lib/i18n/translate.ts";
 import type { StoryPage } from "../../lib/daily-story.ts";
 import { wallet } from "../rewards/ledger.ts";
 import { codeFor } from "../rewards/referrals.ts";
@@ -7,10 +9,30 @@ import { linesBetween, productImages } from "../sales/frames.ts";
 import { lineEarned, lineGmv } from "../sales/summary.ts";
 import { commissionRaises } from "../tap/raises.ts";
 
+/**
+ * A story page as it's saved (owner, 3 Nov 2026: the story follows her language): its words are English lines with {names},
+ * and `vars` holds what fills them (`day` is the story's date). They're written in her language each time the story is read
+ * (storyIn), so switching language changes the saved story too. Share captions are kept as written.
+ */
+export type SavedPage = StoryPage & { vars?: Vars };
+
+/** The saved story in `lang`. Pages saved before vars existed are English already: their fixed lines still translate. */
+export function storyIn(pages: SavedPage[], lang: Lang): StoryPage[] {
+  return pages.map(({ vars, ...p }) => {
+    const v: Vars = { ...vars };
+    if (typeof v.day === "string") v.date = new Date(`${v.day}T12:00:00Z`).toLocaleDateString(dateLocale(lang), { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+    const w = (s: string) => translate(lang, s, v);
+    return {
+      ...p, kick: w(p.kick), big: w(p.big), head: w(p.head),
+      ...(p.sub !== undefined ? { sub: w(p.sub) } : {}),
+      ...(p.lines ? { lines: p.lines.map((l) => ({ ...l, text: w(l.text) })) } : {}),
+      ...(p.cta ? { cta: { ...p.cta, label: w(p.cta.label) } } : {}),
+    };
+  });
+}
+
 const DAY = 86_400_000;
 const MYT = 8 * 3_600_000;
-const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const tags = "#RezekiiAffiliate #RezekiiMY";
 const rm = (n: number, d = 0) => `RM ${n.toLocaleString("en-MY", { minimumFractionDigits: d, maximumFractionDigits: d })}`;
 /** A product title short enough for a story page: no [promo] prefix, first part only, 40 characters at most. */
@@ -32,13 +54,13 @@ type User = { id: string; display_name: string | null; tiktok_username: string |
  * what needs her, and totals. Only pages with something true to say are shown; the sample story's trend and golden-time pages
  * have no real source yet, so they're left out.
  */
-export async function storyOf(user: User, origin: string): Promise<StoryPage[]> {
+export async function storyOf(user: User, origin: string): Promise<SavedPage[]> {
   // The story day starts at 8 AM Malaysia time (00:00 UTC), when the last Malaysia day is complete: "yesterday" is that day.
   const today = Math.floor(Date.now() / DAY);
   const yStart = (today - 1) * DAY - MYT;
   const yEnd = today * DAY - MYT;
-  const d = new Date(yStart + MYT);
-  const date = `${DOW[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+  // Yesterday's Malaysia date (YYYY-MM-DD), written in her language when the story is read.
+  const day = new Date(yStart + MYT).toISOString().slice(0, 10);
   const yIso = [new Date(yStart).toISOString(), new Date(yEnd).toISOString()].map(encodeURIComponent);
 
   const [lines, w, code, raises, postsY, socialY, failedY, socialFailedY, joinedY, postsAll, socialAll, total] = await Promise.all([
@@ -100,38 +122,41 @@ export async function storyOf(user: User, origin: string): Promise<StoryPage[]> 
   const best = sorted[0];
   const pct = (r: number) => `${r / 100}%`;
 
-  const good: StoryPage[] = [];
-  const heads: StoryPage[] = [];
-  const steady: StoryPage[] = [];
-  if (avg > 0 && gmv >= avg * 1.5) good.push({ id: "gmv", tone: "good", pose: "dance", motion: "bounce", kick: "GMV spike", big: `+${change}%`, head: "GMV jumped yesterday", sub: `${rm(gmv)} vs your usual ${rm(avg)}`, money: true, cta: { label: "See what sold", href: "/app/data" }, caption: `My TikTok Shop GMV jumped ${change}% yesterday 🕺 ${tags}${invite}` });
-  if (top) good.push({ id: "top", tone: "good", pose: "love", motion: "pop", kick: "Best seller yesterday", big: `${top.orders.size} order${top.orders.size === 1 ? "" : "s"}`, head: top.name, img: img(topId), cta: { label: "Performance", href: "/app/data/performance#product" }, caption: `My best seller yesterday: ${top.name} 🛍️ ${tags}${invite}` });
+  // Every line is a whole English line with {names}, filled in her language when the story is read (storyIn). Product and app
+  // names, RM amounts and percentages are kept as they are. Share captions stay as written (they're what she posts).
+  const good: SavedPage[] = [];
+  const heads: SavedPage[] = [];
+  const steady: SavedPage[] = [];
+  const vs = { gmv: rm(gmv), avg: rm(avg) };
+  if (avg > 0 && gmv >= avg * 1.5) good.push({ id: "gmv", tone: "good", pose: "dance", motion: "bounce", kick: tx("GMV spike"), big: `+${change}%`, head: tx("GMV jumped yesterday"), sub: tx("{gmv} vs your usual {avg}"), vars: vs, money: true, cta: { label: tx("See what sold"), href: "/app/data" }, caption: `My TikTok Shop GMV jumped ${change}% yesterday 🕺 ${tags}${invite}` });
+  if (top) good.push({ id: "top", tone: "good", pose: "love", motion: "pop", kick: tx("Best seller yesterday"), big: top.orders.size === 1 ? tx("{n} order") : tx("{n} orders"), vars: { n: top.orders.size }, head: top.name, img: img(topId), cta: { label: tx("Performance"), href: "/app/data/performance#product" }, caption: `My best seller yesterday: ${top.name} 🛍️ ${tags}${invite}` });
   if (sorted.length && best) {
-    good.push({ id: "scan", tone: "good", pose: "found", motion: "wiggle", kick: "Showcase scan", big: String(sorted.length), head: `product${sorted.length === 1 ? "" : "s"} can pay you more`, sub: "Found in your TikTok Shop showcase", cta: { label: "Add them", href: "/app" }, caption: `Rezekii found ${sorted.length} products in my showcase that can pay me more 👀 ${tags}${invite}` });
-    good.push({ id: "best", tone: "good", pose: "love", motion: "pop", kick: "Best raise", big: `${pct(best.nowRate)} → ${pct(best.tapRate)}`, head: short(best.name), sub: "Same product, more commission", img: best.image ?? undefined, cta: { label: "See raises", href: "/app" }, caption: `${best.name}: ${pct(best.nowRate)} → ${pct(best.tapRate)} commission with Rezekii 🙌 ${tags}${invite}` });
+    good.push({ id: "scan", tone: "good", pose: "found", motion: "wiggle", kick: tx("Showcase scan"), big: String(sorted.length), head: sorted.length === 1 ? tx("product can pay you more") : tx("products can pay you more"), sub: tx("Found in your TikTok Shop showcase"), cta: { label: tx("Add them"), href: "/app" }, caption: `Rezekii found ${sorted.length} products in my showcase that can pay me more 👀 ${tags}${invite}` });
+    good.push({ id: "best", tone: "good", pose: "love", motion: "pop", kick: tx("Best raise"), big: `${pct(best.nowRate)} → ${pct(best.tapRate)}`, head: short(best.name), sub: tx("Same product, more commission"), img: best.image ?? undefined, cta: { label: tx("See raises"), href: "/app" }, caption: `${best.name}: ${pct(best.nowRate)} → ${pct(best.tapRate)} commission with Rezekii 🙌 ${tags}${invite}` });
   }
-  if (postedY > 0) good.push({ id: "posted", tone: "good", pose: "posted", motion: "wiggle", kick: "Posted", big: `${postedY} post${postedY === 1 ? "" : "s"}`, head: "went out with Rezekii yesterday", sub: [...(postsY ? ["TikTok"] : []), ...apps.filter((a) => a !== "TikTok")].join(", ") || undefined, cta: { label: "See posts", href: "/app/publish/calendar" }, caption: `${postedY} posts out yesterday, all from Rezekii 📲 ${tags}${invite}` });
-  if (commission > 0) good.push({ id: "commission", tone: "good", pose: "money", motion: "bounce", kick: "Commission", big: rm(commission, 2), head: "earned yesterday", sub: `From ${yOrders.size} order${yOrders.size === 1 ? "" : "s"} on TikTok Shop`, money: true, cta: { label: "See payouts", href: "/app/data/payouts" }, caption: `Earned ${rm(commission, 2)} commission yesterday 💰 ${tags}${invite}` });
-  if (joinedY > 0) good.push({ id: "friends", tone: "good", pose: "love", motion: "pop", kick: "Invites", big: String(joinedY), head: `friend${joinedY === 1 ? "" : "s"} joined with your link`, sub: "It counts once they link TikTok Shop", cta: { label: "See invites", href: "/app/account#referral" }, caption: `${joinedY} friends joined Rezekii with my link 🐯 ${tags}${invite}` });
-  if (streak >= 3) good.push({ id: "streak", tone: "good", pose: "party", motion: "bounce", kick: "Streak", big: `${streak} day${streak === 1 ? "" : "s"}`, head: "in a row, and counting", sub: "Check in today to keep it", cta: { label: "Missions", href: "/app/rewards" }, caption: `${streak}-day streak on Rezekii 👑 ${tags}${invite}` });
+  if (postedY > 0) good.push({ id: "posted", tone: "good", pose: "posted", motion: "wiggle", kick: tx("Posted"), big: postedY === 1 ? tx("{n} post") : tx("{n} posts"), vars: { n: postedY }, head: tx("went out with Rezekii yesterday"), sub: [...(postsY ? ["TikTok"] : []), ...apps.filter((a) => a !== "TikTok")].join(", ") || undefined, cta: { label: tx("See posts"), href: "/app/publish/calendar" }, caption: `${postedY} posts out yesterday, all from Rezekii 📲 ${tags}${invite}` });
+  if (commission > 0) good.push({ id: "commission", tone: "good", pose: "money", motion: "bounce", kick: tx("Commission"), big: rm(commission, 2), head: tx("earned yesterday"), sub: yOrders.size === 1 ? tx("From {n} order on TikTok Shop") : tx("From {n} orders on TikTok Shop"), vars: { n: yOrders.size }, money: true, cta: { label: tx("See payouts"), href: "/app/data/payouts" }, caption: `Earned ${rm(commission, 2)} commission yesterday 💰 ${tags}${invite}` });
+  if (joinedY > 0) good.push({ id: "friends", tone: "good", pose: "love", motion: "pop", kick: tx("Invites"), big: String(joinedY), head: joinedY === 1 ? tx("friend joined with your link") : tx("friends joined with your link"), sub: tx("It counts once they link TikTok Shop"), cta: { label: tx("See invites"), href: "/app/account#referral" }, caption: `${joinedY} friends joined Rezekii with my link 🐯 ${tags}${invite}` });
+  if (streak >= 3) good.push({ id: "streak", tone: "good", pose: "party", motion: "bounce", kick: tx("Streak"), big: streak === 1 ? tx("{n} day") : tx("{n} days"), vars: { n: streak }, head: tx("in a row, and counting"), sub: tx("Check in today to keep it"), cta: { label: tx("Missions"), href: "/app/rewards" }, caption: `${streak}-day streak on Rezekii 👑 ${tags}${invite}` });
 
-  if (avg > 0 && gmv <= avg * 0.6) heads.push({ id: "drop", tone: "heads", pose: "sad", motion: "sway", kick: "Slow day", big: `${change}%`, head: "GMV below your usual", sub: `${rm(gmv)} vs your usual ${rm(avg)}`, money: true, cta: { label: "See why", href: "/app/data" }, caption: `Slow day yesterday. Back stronger today 💪 ${tags}${invite}` });
-  if (risk) heads.push({ id: "cancel", tone: "heads", pose: "worried", motion: "shake", kick: "Heads-up", big: `${riskRate}%`, head: `of ${risk.name} orders were cancelled`, sub: "Over 10% in the last 8 days. Check it before it hurts your account.", img: img(riskId), cta: { label: "Risk Check", href: "/app/data/risk" }, caption: `Rimau caught a high cancel rate before it hurt my account 🐯 ${tags}${invite}` });
-  if (failed > 0) heads.push({ id: "failed", tone: "heads", pose: "worried", motion: "shake", kick: "Posting", big: String(failed), head: `post${failed === 1 ? "" : "s"} didn't go out yesterday`, sub: "Try them again from your Content Calendar", cta: { label: "See posts", href: "/app/publish/calendar" }, caption: `Rimau keeps an eye on my posts 🐯 ${tags}${invite}` });
+  if (avg > 0 && gmv <= avg * 0.6) heads.push({ id: "drop", tone: "heads", pose: "sad", motion: "sway", kick: tx("Slow day"), big: `${change}%`, head: tx("GMV below your usual"), sub: tx("{gmv} vs your usual {avg}"), vars: vs, money: true, cta: { label: tx("See why"), href: "/app/data" }, caption: `Slow day yesterday. Back stronger today 💪 ${tags}${invite}` });
+  if (risk) heads.push({ id: "cancel", tone: "heads", pose: "worried", motion: "shake", kick: tx("Heads-up"), big: `${riskRate}%`, head: tx("of {name} orders were cancelled"), vars: { name: risk.name }, sub: tx("Over 10% in the last 8 days. Check it before it hurts your account."), img: img(riskId), cta: { label: tx("Risk Check"), href: "/app/data/risk" }, caption: `Rimau caught a high cancel rate before it hurt my account 🐯 ${tags}${invite}` });
+  if (failed > 0) heads.push({ id: "failed", tone: "heads", pose: "worried", motion: "shake", kick: tx("Posting"), big: String(failed), head: failed === 1 ? tx("post didn't go out yesterday") : tx("posts didn't go out yesterday"), sub: tx("Try them again from your Content Calendar"), cta: { label: tx("See posts"), href: "/app/publish/calendar" }, caption: `Rimau keeps an eye on my posts 🐯 ${tags}${invite}` });
 
-  if (avg > 0 && gmv > avg * 0.6 && gmv < avg * 1.5) steady.push({ id: "steady", tone: "steady", pose: "tehtarik", motion: "sway", kick: "Steady day", big: rm(gmv), head: "GMV yesterday, close to your usual", sub: `Your usual: ${rm(avg)} a day`, money: true, cta: { label: "See what sold", href: "/app/data" }, caption: `Steady day on TikTok Shop ☕ ${tags}${invite}` });
-  if (!yOrders.size && !postedY) steady.push({ id: "quiet", tone: "steady", pose: "sleep", motion: "float", kick: "Quiet day", big: "Zzz…", head: "No orders or posts yesterday", sub: "A fresh day to post again", cta: { label: "Today's Ideas", href: "/app/publish/plan" }, caption: `Rest day, then back at it 😴 ${tags}${invite}` });
+  if (avg > 0 && gmv > avg * 0.6 && gmv < avg * 1.5) steady.push({ id: "steady", tone: "steady", pose: "tehtarik", motion: "sway", kick: tx("Steady day"), big: rm(gmv), head: tx("GMV yesterday, close to your usual"), sub: tx("Your usual: {avg} a day"), vars: vs, money: true, cta: { label: tx("See what sold"), href: "/app/data" }, caption: `Steady day on TikTok Shop ☕ ${tags}${invite}` });
+  if (!yOrders.size && !postedY) steady.push({ id: "quiet", tone: "steady", pose: "sleep", motion: "float", kick: tx("Quiet day"), big: "Zzz…", head: tx("No orders or posts yesterday"), sub: tx("A fresh day to post again"), cta: { label: tx("Today's Ideas"), href: "/app/publish/plan" }, caption: `Rest day, then back at it 😴 ${tags}${invite}` });
 
   const posts = postsAll + socialAll;
-  const totals: StoryPage = posts
-    ? { id: "total", tone: "total", pose: "cheeky", motion: "bounce", kick: "So far", big: `${posts} post${posts === 1 ? "" : "s"}`, head: "made with Rezekii", sub: `${rm(total)} commission in your TikTok Shop orders on Rezekii`, money: true, cta: { label: "My stats", href: "/app/data" }, caption: `${posts} posts made with Rezekii 🏆 ${tags}${invite}` }
-    : { id: "total", tone: "total", pose: "cheeky", motion: "bounce", kick: "So far", big: rm(total), head: "commission in your TikTok Shop orders on Rezekii", sub: "Post Everywhere sends one video to all your apps", money: true, cta: { label: "New Post", href: "/app/publish" }, caption: `My TikTok Shop journey on Rezekii 🏆 ${tags}${invite}` };
+  const totals: SavedPage = posts
+    ? { id: "total", tone: "total", pose: "cheeky", motion: "bounce", kick: tx("So far"), big: posts === 1 ? tx("{n} post") : tx("{n} posts"), head: tx("made with Rezekii"), sub: tx("{total} commission in your TikTok Shop orders on Rezekii"), vars: { n: posts, total: rm(total) }, money: true, cta: { label: tx("My stats"), href: "/app/data" }, caption: `${posts} posts made with Rezekii 🏆 ${tags}${invite}` }
+    : { id: "total", tone: "total", pose: "cheeky", motion: "bounce", kick: tx("So far"), big: rm(total), head: tx("commission in your TikTok Shop orders on Rezekii"), sub: tx("Post Everywhere sends one video to all your apps"), money: true, cta: { label: tx("New Post"), href: "/app/publish" }, caption: `My TikTok Shop journey on Rezekii 🏆 ${tags}${invite}` };
 
   // Only the tip: the pages now come out one at a time through the day (owner, 2 Nov 2026), so the intro doesn't give them away.
   const summary = [
-    { tag: "Tip" as const, text: sorted.length ? `Add the ${sorted.length} product${sorted.length === 1 ? "" : "s"} that pay more` : !postedY ? "Post a video today to keep your streak going" : "Check Today's Ideas for what to film next" },
+    { tag: "Tip" as const, text: sorted.length ? (sorted.length === 1 ? tx("Add the {n} product that pays more") : tx("Add the {n} products that pay more")) : !postedY ? tx("Post a video today to keep your streak going") : tx("Check Today's Ideas for what to film next") },
   ];
-  const intro: StoryPage = { id: "intro", tone: "intro", pose: "wave", motion: "bounce", kick: `Your day · ${date}`, big: `Hi ${first}!`, head: "Your day, a new story every 2 hours", lines: summary, caption: `My Rezekii daily story is here 🐯 ${tags}${invite}` };
-  const end: StoryPage = { id: "end", tone: "end", pose: "love", motion: "pop", kick: "That's your day", big: "See you tomorrow", head: "Share Rezekii with a friend", sub: `You get ${REFERRAL_REWARD.inviter} credits when they link TikTok Shop`, caption: `My daily story on Rezekii 🐯 Join me, you get ${REFERRAL_REWARD.friend} credits: ${link} ${tags}` };
+  const intro: SavedPage = { id: "intro", tone: "intro", pose: "wave", motion: "bounce", kick: tx("Your day · {date}"), big: user.display_name || user.tiktok_username ? tx("Hi {name}!") : tx("Hi there!"), head: tx("Your day, a new story every 2 hours"), lines: summary, vars: { day, name: first, n: sorted.length }, caption: `My Rezekii daily story is here 🐯 ${tags}${invite}` };
+  const end: SavedPage = { id: "end", tone: "end", pose: "love", motion: "pop", kick: tx("That's your day"), big: tx("See you tomorrow"), head: tx("Share Rezekii with a friend"), sub: tx("You get {n} credits when they link TikTok Shop"), vars: { n: REFERRAL_REWARD.inviter }, caption: `My daily story on Rezekii 🐯 Join me, you get ${REFERRAL_REWARD.friend} credits: ${link} ${tags}` };
 
   return [intro, ...good, ...heads, ...steady, totals, end];
 }

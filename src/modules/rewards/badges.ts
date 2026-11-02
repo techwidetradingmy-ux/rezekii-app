@@ -1,6 +1,7 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { benefits, levelOf } from "../levels/store.ts";
 import { addDays, dayOf, missionDays, streakOf } from "./rules.ts";
+import { makeT, type T } from "../../lib/i18n/lang.ts";
 
 /**
  * Level, Streak & Badges on real data (owner, 31 Oct 2026). Each badge is earned from what Rezekii can see: a scan, linked
@@ -31,7 +32,7 @@ function bestRun(days: string[]): number {
 const json = async <T>(path: string): Promise<T[]> => (await supabaseRest(path)).json() as Promise<T[]>;
 
 /** `level`: her level when the caller is already working it out (the badges route), so nothing waits for it twice. */
-export async function badgesFor(userId: string, levelP: Promise<Badges["level"]> = levelOf(userId)): Promise<Badges> {
+export async function badgesFor(userId: string, levelP: Promise<Badges["level"]> = levelOf(userId), t: T = makeT(null)): Promise<Badges> {
   const connP = json<{ username: string; showcase_at: string | null; tt_level: number | null }>(`affiliate_connections?user_id=eq.${userId}&select=username,showcase_at,tt_level&limit=1`);
   // Everything at once (owner, 3 Nov 2026), Sample Star as soon as her TikTok Shop name is known.
   const [level, [conn], tt, social, ledger, earned, [user], perks, sampleStar] = await Promise.all([
@@ -47,10 +48,12 @@ export async function badgesFor(userId: string, levelP: Promise<Badges["level"]>
       ? (await json<{ product_id: string }>(`tap_creator_products?username=eq.${encodeURIComponent(c.username.toLowerCase())}&videos=gte.3&sample_status=not.is.null&sample_status=neq.NotRequested&select=product_id&limit=1`)).length > 0
       : false),
   ]);
+  // The benefits Techwide wrote, in her language: the default lines are translated; anything Techwide typed itself stays as written.
+  // `name` stays English: the page knows each level by it.
   const levels = ["Bronze", "Silver", "Gold"].map((name, i) => ({
     name,
-    how: perks.find((r) => /how you get it/i.test(r.label))?.v[i] ?? "",
-    gives: perks.filter((r) => !/how you (get|keep) it/i.test(r.label) && r.v[i] !== "no").map((r) => (r.v[i] === "yes" ? r.label : `${r.label}: ${r.v[i]}`)),
+    how: t(perks.find((r) => /how you get it/i.test(r.label))?.v[i] ?? ""),
+    gives: perks.filter((r) => !/how you (get|keep) it/i.test(r.label) && r.v[i] !== "no").map((r) => (r.v[i] === "yes" ? t(r.label) : t("{benefit}: {value}", { benefit: t(r.label), value: t(r.v[i]) }))),
   }));
   const tiers = new Set(ledger.filter((r) => r.kind === "streak").map((r) => r.ref));
   const counted = missionDays(ledger);

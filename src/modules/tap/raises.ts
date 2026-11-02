@@ -4,6 +4,7 @@ import { levelOf } from "../levels/store.ts";
 import { allProducts, type TapProduct } from "./catalog.ts";
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { addManyToShowcase, saveRead } from "./showcase.ts";
+import { tx } from "../../lib/i18n/lang.ts";
 
 /** A product in the creator's showcase that pays more through Techwide's TAP campaign than it pays them now. */
 export type Raise = { productId: string; name: string; shop: string; image: string | null; price: number | null; nowRate: number; tapRate: number };
@@ -115,7 +116,7 @@ export async function showcaseScan(userId: string, scan = false): Promise<{ at: 
 export async function takeRaises(userId: string, productIds: string[]): Promise<{ added: string[]; failed: { productId: string; error: string }[] }> {
   const results = await addManyToShowcase(userId, productIds.filter((x) => /^\d{6,25}$/.test(x)).slice(0, 50));
   const added = results.filter((x) => x.result.added).map((x) => x.productId);
-  const failed = results.flatMap((x) => (x.result.added ? [] : [{ productId: x.productId, error: x.result.error || "TikTok Shop didn't add it." }]));
+  const failed = results.flatMap((x) => (x.result.added ? [] : [{ productId: x.productId, error: x.result.error || tx("TikTok Shop didn't add it.") }]));
   await noteRefused(userId, failed.filter((f) => REFUSED.test(f.error)).map((f) => f.productId)).catch(() => undefined);
   // No new scan (owner, 2 Nov 2026: only when she taps Scan): what was added, or refused, simply leaves the saved one.
   const done = new Set([...added, ...failed.filter((f) => REFUSED.test(f.error)).map((f) => f.productId)]);

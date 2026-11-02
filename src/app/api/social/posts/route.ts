@@ -11,6 +11,8 @@ import { cleanSettings, settingsProblems } from "@/modules/social/settings.ts";
 import { fileInUse } from "@/modules/posting/edit.ts";
 import { copyUpload, insertSocialPosts, listSocialPosts, postsInDay, updateSocialPost, type NewSocialPost } from "@/modules/social/store.ts";
 import { canPay, chargePosts, postSide } from "@/modules/rewards/post-credits.ts";
+import { errorLine } from "@/modules/posting/errors.ts";
+import { getLang, tFor } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -18,10 +20,12 @@ export const dynamic = "force-dynamic";
 const DAILY_CAP = { instagram: 100, threads: 250, facebook: 30 };
 
 export async function GET() {
+  const t = tFor(await getLang());
   const user = await currentUser();
-  if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  if (!user) return NextResponse.json({ error: t("Sign in first.") }, { status: 401 });
   if (!canUseSocial(user)) return NextResponse.json({ posts: [] });
-  return NextResponse.json({ posts: await listSocialPosts(user.id) });
+  // Rezekii's own reasons a post failed are saved in English: shown in her language (the app's own words stay as they are).
+  return NextResponse.json({ posts: (await listSocialPosts(user.id)).map((p) => ({ ...p, ...(p.last_error ? { last_error: errorLine(t, p.last_error) } : {}), ...(p.comment_error ? { comment_error: errorLine(t, p.comment_error) } : {}) })) });
 }
 
 type ChannelIn = { accountId?: string; caption?: string; firstComment?: string; settings?: unknown };
@@ -34,53 +38,54 @@ const bad = (error: string | string[], status = 400) => NextResponse.json({ erro
  * `staged`: an edit being saved, held as drafts with their time until /api/posts/swap puts them in place of the old post.
  */
 export async function POST(req: NextRequest) {
+  const t = tFor(await getLang());
   const user = await currentUser();
-  if (!user) return bad("Sign in first.", 401);
-  if (!canUseSocial(user)) return bad("Not available yet.", 403);
+  if (!user) return bad(t("Sign in first."), 401);
+  if (!canUseSocial(user)) return bad(t("Not available yet."), 403);
   const b = (await req.json().catch(() => ({}))) as Body;
   if (b.source === "upload" ? !b.storagePath?.startsWith(`${user.id}/`) : b.source === "link" ? !/^https:\/\/\S+$/.test(b.linkUrl ?? "") : true)
-    return bad("Add a video: upload one or paste an https link.");
+    return bad(t("Add a video: upload one or paste an https link."));
   let commentImage = b.commentImagePath ?? null;
-  if (commentImage && !new RegExp(`^${user.id}/comment/[0-9a-f-]{36}\\.(jpg|png)$`).test(commentImage)) return bad("The comment image upload wasn't found. Add it again.");
+  if (commentImage && !new RegExp(`^${user.id}/comment/[0-9a-f-]{36}\\.(jpg|png)$`).test(commentImage)) return bad(t("The comment image upload wasn't found. Add it again."));
   const channels = (b.channels ?? []).filter((c) => c.accountId);
-  if (!channels.length) return bad("Pick at least one Facebook, Instagram or Threads channel.");
+  if (!channels.length) return bad(t("Pick at least one Facebook, Instagram or Threads channel."));
   const durationSec = typeof b.durationSec === "number" ? b.durationSec : null;
 
   const accounts = await Promise.all(channels.map((c) => getAccount(String(c.accountId), user.id)));
   const problems: string[] = [];
   accounts.forEach((a, i) => {
-    if (!a) problems.push("One of the channels isn't connected any more. Reload and pick again.");
-    else if (a.status === "reconnect") problems.push(`${a.name ?? NAMES[a.platform]} needs reconnecting first (Posts → Channels).`);
-    else problems.push(...channelProblems(a.platform, String(channels[i].caption ?? ""), String(channels[i].firstComment ?? ""), durationSec), ...settingsProblems(a.platform, cleanSettings(a.platform, channels[i].settings), durationSec));
+    if (!a) problems.push(t("One of the channels isn't connected any more. Reload and pick again."));
+    else if (a.status === "reconnect") problems.push(t("{channel} needs reconnecting first (Posts → Channels).", { channel: a.name ?? NAMES[a.platform] }));
+    else problems.push(...channelProblems(a.platform, String(channels[i].caption ?? ""), String(channels[i].firstComment ?? ""), durationSec, t), ...settingsProblems(a.platform, cleanSettings(a.platform, channels[i].settings), durationSec, undefined, undefined, t));
   });
   if (problems.length) return bad(problems);
 
   // When: the TikTok post's time when there is one, otherwise the same choices as TikTok posting.
   let scheduledAt: Date | null = null;
   const tiktok = b.tiktokPostId ? await getUserPost(user.id, b.tiktokPostId) : null;
-  if (b.tiktokPostId && !tiktok) return bad("The TikTok post wasn't found.");
+  if (b.tiktokPostId && !tiktok) return bad(t("The TikTok post wasn't found."));
   if (tiktok) scheduledAt = tiktok.scheduled_at ? new Date(tiktok.scheduled_at) : null;
   else if (b.when && b.when !== "draft") {
     if (b.when === "now") scheduledAt = new Date();
     else if (b.when === "recommended") scheduledAt = nextRecommendedSlot(new Date(), [], await postingHours());
     else {
       scheduledAt = new Date(b.when);
-      if (isNaN(scheduledAt.getTime()) || scheduledAt.getTime() < Date.now() + 60e3) return bad("Pick a time at least a minute from now.");
-      if (scheduledAt.getTime() > Date.now() + 60 * 86400e3) return bad("Pick a time within the next 60 days.");
+      if (isNaN(scheduledAt.getTime()) || scheduledAt.getTime() < Date.now() + 60e3) return bad(t("Pick a time at least a minute from now."));
+      if (scheduledAt.getTime() > Date.now() + 60 * 86400e3) return bad(t("Pick a time within the next 60 days."));
     }
   }
   if (scheduledAt) {
     for (const a of accounts) {
       if (!a || (a.platform === "facebook" && !facebookAsReel(durationSec))) continue;
       if ((await postsInDay(a.id, scheduledAt)) >= DAILY_CAP[a.platform])
-        return bad(`${a.name ?? NAMES[a.platform]} already has ${DAILY_CAP[a.platform]} posts in the 24 hours before that time (${NAMES[a.platform]}'s daily limit). Pick another time.`);
+        return bad(t("{channel} already has {n} posts in the 24 hours before that time ({app}'s daily limit). Pick another time.", { channel: a.name ?? NAMES[a.platform], n: DAILY_CAP[a.platform], app: NAMES[a.platform] }));
     }
   }
 
   // Post Everywhere costs credits per channel from the creator or seller wallet; drafts are free.
   const side = postSide(b.side);
   if (scheduledAt && !b.staged && !(await canPay(user.id, side, channels.length)))
-    return bad("Not enough credits for these channels. Earn more or save as a draft.", 402);
+    return bad(t("Not enough credits for these channels. Earn more or save as a draft."), 402);
 
   // With TikTok in the post, the channels get their own copy of the upload (TikTok deletes its file once it has posted). An
   // edit copies the video and comment image it kept too: the old post's files go once it is replaced.
@@ -124,7 +129,7 @@ export async function POST(req: NextRequest) {
   const posts = await insertSocialPosts(rows);
   const due = posts.filter((p) => p.status === "scheduled");
   if (due.length) {
-    const paid = await chargePosts(user.id, side, due.map((p) => ({ id: p.id, app: p.platform })));
+    const paid = await chargePosts(user.id, side, due.map((p) => ({ id: p.id, app: p.platform })), t);
     if (!paid.ok) {
       for (const p of due) await updateSocialPost(p.id, { status: "cancelled", next_attempt_at: null });
       return bad(paid.error, 402);

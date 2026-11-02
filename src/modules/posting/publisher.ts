@@ -2,6 +2,8 @@ import { chunkRange, fetchPublishStatus, initVideoPost, planChunks, queryCreator
 import { deleteUpload, openMedia } from "./media.ts";
 import { nextRetry, postProblems, statusFromTikTok, toPostInfo } from "./rules.ts";
 import { choiceFromRow, freshTikTokToken, markTikTokReconnect, RECONNECT_TIKTOK, TIKTOK_LOST, updatePost, type PostRow } from "./store.ts";
+// Reasons are saved in English and shown in her language when read (errors.ts).
+import { tx } from "../../lib/i18n/lang.ts";
 
 /** A try failed: schedule the next try, or mark the post Failed after the last one (`final`: no more tries). Keeps TikTok's reason. */
 export async function recordFailure(post: PostRow, reason: string, final = false): Promise<"retry" | "failed"> {
@@ -56,16 +58,16 @@ async function lost(post: PostRow): Promise<"failed"> {
 
 /** TikTok's error codes that need the creator to act, in plain words. */
 const TIKTOK_REASONS: Record<string, string> = {
-  unaudited_client_can_only_post_to_private_accounts: "TikTok only lets Rezekii post to private TikTok accounts until it approves Rezekii. Set your TikTok account to private to post now, or wait for TikTok's approval.",
-  spam_risk_too_many_posts: "TikTok says this account has posted too much today. Try again tomorrow.",
-  spam_risk_user_banned_from_posting: "TikTok has stopped this account from posting for now.",
+  unaudited_client_can_only_post_to_private_accounts: tx("TikTok only lets Rezekii post to private TikTok accounts until it approves Rezekii. Set your TikTok account to private to post now, or wait for TikTok's approval."),
+  spam_risk_too_many_posts: tx("TikTok says this account has posted too much today. Try again tomorrow."),
+  spam_risk_user_banned_from_posting: tx("TikTok has stopped this account from posting for now."),
 };
 
 const STUCK_MS = 30 * 60e3;
 
 /** Asks TikTok how a processing post is doing; finishes it (and deletes the upload) once TikTok confirms. */
 export async function checkProcessing(post: PostRow): Promise<string> {
-  if (!post.publish_id) return recordFailure(post, "No TikTok upload to check.");
+  if (!post.publish_id) return recordFailure(post, tx("No TikTok upload to check."));
   const token = await freshTikTokToken(post.tiktok_open_id).catch((err: unknown) => {
     if (err instanceof Error && err.message === RECONNECT_TIKTOK) return null;
     throw err;
@@ -81,6 +83,6 @@ export async function checkProcessing(post: PostRow): Promise<string> {
     if (post.storage_path) await deleteUpload(post.storage_path);
     return done;
   }
-  if (Date.now() - new Date(post.updated_at).getTime() > STUCK_MS) return recordFailure(post, "TikTok didn't confirm the post within 30 minutes.");
+  if (Date.now() - new Date(post.updated_at).getTime() > STUCK_MS) return recordFailure(post, tx("TikTok didn't confirm the post within 30 minutes."));
   return "processing";
 }

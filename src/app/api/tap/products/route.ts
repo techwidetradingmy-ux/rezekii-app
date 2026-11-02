@@ -3,13 +3,15 @@ import { currentUser } from "@/app/current-user";
 import { browse } from "@/modules/tap/catalog.ts";
 import { productsFor } from "@/modules/tap/for-creator.ts";
 import { knownRatings } from "@/modules/tap/product-facts.ts";
+import { getLang, tFor } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
 /** TAP Marketplace list: ?q=&cat=&shop=&only=1&sort=sold-d|com-d|com-a|price-a|price-d|smp-d|sold-a&page=1 (24 per page), with filter counts. */
 export async function GET(req: NextRequest) {
+  const t = tFor(await getLang());
   const user = await currentUser();
-  if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  if (!user) return NextResponse.json({ error: t("Sign in first.") }, { status: 401 });
   const p = req.nextUrl.searchParams;
   // Free samples as this creator can request them (their own TikTok check); products TikTok refused for her are left out.
   const all = await productsFor(user.id);

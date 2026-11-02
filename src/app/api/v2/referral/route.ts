@@ -3,6 +3,7 @@ import { currentUser } from "@/app/current-user";
 import { supabaseRest } from "@/integrations/supabase/rest.ts";
 import { attachReferral, cleanCode, ownerOf, readRefCookie, REF_COOKIE, type RefCookie } from "@/modules/rewards/referrals.ts";
 import { refCookieOptions } from "./link";
+import { getLang, tFor } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -23,15 +24,16 @@ export async function GET(req: NextRequest) {
  * follows, like an invite link would.
  */
 export async function POST(req: NextRequest) {
+  const t = tFor(await getLang());
   const origin = req.headers.get("origin");
-  if (origin && origin !== req.nextUrl.origin) return NextResponse.json({ error: "Please do this from Rezekii." }, { status: 403 });
+  if (origin && origin !== req.nextUrl.origin) return NextResponse.json({ error: t("Please do this from Rezekii.") }, { status: 403 });
   const b = (await req.json().catch(() => ({}))) as { code?: string; side?: string; join?: boolean };
   const code = cleanCode(b.code);
-  if (!code || !(await ownerOf(code).catch(() => null))) return NextResponse.json({ ok: false, error: "We couldn't find that code." }, { status: 404 });
+  if (!code || !(await ownerOf(code).catch(() => null))) return NextResponse.json({ ok: false, error: t("We couldn't find that code.") }, { status: 404 });
   // Typed in the sign-up form right after signing up: joins the friend now (only a new account, only once).
   if (b.join) {
     const user = await currentUser();
-    if (!user) return NextResponse.json({ ok: false, error: "Sign in first." }, { status: 401 });
+    if (!user) return NextResponse.json({ ok: false, error: t("Sign in first.") }, { status: 401 });
     await attachReferral(user.id, { c: code, s: b.side === "seller" ? "seller" : "creator", v: "code", t: Date.now() });
     return NextResponse.json({ ok: true, code });
   }

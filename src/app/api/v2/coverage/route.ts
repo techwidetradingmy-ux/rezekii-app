@@ -5,6 +5,7 @@ import { approvedCreatorToken } from "@/modules/creator-accounts/access.ts";
 import { showcaseOf } from "@/modules/picks/mine.ts";
 import { linesBetween, productImages } from "@/modules/sales/frames.ts";
 import { allProducts } from "@/modules/tap/catalog.ts";
+import { getLang, tFor } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -19,8 +20,9 @@ const cache = new Map<string, { at: number; r: Result }>();
  * campaign, and her best sellers of the last 30 days that aren't on Rezekii yet. Kept 30 minutes.
  */
 export async function GET() {
+  const t = tFor(await getLang());
   const user = await currentUser();
-  if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  if (!user) return NextResponse.json({ error: t("Sign in first.") }, { status: 401 });
   const hit = cache.get(user.id);
   if (hit && Date.now() - hit.at < 30 * 60_000) return NextResponse.json(hit.r);
   const token = await approvedCreatorToken(user.id);
@@ -40,7 +42,7 @@ export async function GET() {
   const sold = new Map<string, NotYet>();
   for (const l of lines) {
     if (!l.product_id || byId.has(l.product_id) || /REFUND|CANCEL/i.test(l.status ?? "")) continue;
-    const s = sold.get(l.product_id) ?? sold.set(l.product_id, { id: l.product_id, name: l.product_name ?? "Product", shop: l.shop_name, img: null, sold: 0 }).get(l.product_id)!;
+    const s = sold.get(l.product_id) ?? sold.set(l.product_id, { id: l.product_id, name: l.product_name ?? t("Product"), shop: l.shop_name, img: null, sold: 0 }).get(l.product_id)!;
     s.sold += Math.max(0, l.quantity - l.refunded_quantity - l.returned_quantity);
   }
   const top = [...sold.values()].filter((s) => s.sold > 0).sort((a, b) => b.sold - a.sold).slice(0, 30);

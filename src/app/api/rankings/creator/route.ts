@@ -4,16 +4,18 @@ import { levelMap } from "@/modules/rankings/levels-map.ts";
 import { creatorPanel } from "@/modules/rankings/query.ts";
 import { creatorDetail, rankings } from "@/modules/rankings/store.ts";
 import { isWarmCall } from "@/modules/refresh/warm.ts";
+import { getLang, tFor } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
 /** A creator's TikTok Creator Marketplace profile, best-selling video and TikTok Shop level, for the Rankings panel: ?u=username */
 export async function GET(req: NextRequest) {
+  const t = tFor(await getLang());
   if (await isWarmCall(req)) return NextResponse.json({ warmed: (await levelMap()).size });
-  if (!(await currentUser())) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  if (!(await currentUser())) return NextResponse.json({ error: t("Sign in first.") }, { status: 401 });
   const b = await rankings();
   const u = (req.nextUrl.searchParams.get("u") ?? "").slice(0, 40);
-  if (!b || !u) return NextResponse.json({ error: "Not found." }, { status: 404 });
+  if (!b || !u) return NextResponse.json({ error: t("Not found.") }, { status: 404 });
   const lv = (await levelMap().catch(() => new Map<string, number>())).get(u.toLowerCase()) ?? null;
   const panel = creatorPanel(b, u);
   const det = panel.det ?? (await creatorDetail(u, panel.rate30).catch(() => null));

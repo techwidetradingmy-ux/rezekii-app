@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { supabaseRest } from "@/integrations/supabase/rest.ts";
 import { linkShareReport, type LinkRef } from "@/modules/tap/link-share.ts";
+import { getLang, tFor } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -11,12 +12,13 @@ export const dynamic = "force-dynamic";
  * frame: ?frame=all|7d|30d|...|c:YYYY-MM-DD:YYYY-MM-DD (the Sales page's frames; all time when not given).
  */
 export async function GET(req: NextRequest) {
+  const t = tFor(await getLang());
   const user = await currentUser();
-  if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  if (!user) return NextResponse.json({ error: t("Sign in first.") }, { status: 401 });
   const res = await supabaseRest(`tap_links?user_id=eq.${user.id}&select=product_id,product_name,image,tag,link,made_at&order=made_at.desc&limit=1000`);
   const links = (await res.json()) as (LinkRef & { product_name: string | null; image: string | null })[];
   const now = Date.now();
   const report = await linkShareReport(user.id, links, req.nextUrl.searchParams.get("frame") ?? "all", now, "en" as const).catch(() => ({ perf: {}, outside: [], counts: null, range: null }));
-  if (!report) return NextResponse.json({ error: "That time frame isn't available." }, { status: 400 });
+  if (!report) return NextResponse.json({ error: t("That time frame isn't available.") }, { status: 400 });
   return NextResponse.json({ links, ...report, now });
 }

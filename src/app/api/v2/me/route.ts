@@ -10,6 +10,7 @@ import { myPhoto } from "@/modules/photos/store.ts";
 import { supabaseRest } from "@/integrations/supabase/rest.ts";
 import { profileOf, type CreatorDetails } from "@/modules/rewards/profiles.ts";
 import { betaRows, betaState } from "@/modules/beta/access.ts";
+import { getLang, tFor } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ const NO_STORE = { headers: { "cache-control": "private, no-store" } };
  * the screens keep their sample data. `shop` is the creator's TikTok Shop link, null when not linked.
  */
 export async function GET() {
+  const t = tFor(await getLang());
   const user = await currentUser();
   if (!user) return NextResponse.json({ me: null }, NO_STORE);
   // When she last used Rezekii, noted at most once an hour (owner, 2 Nov 2026: the nightly refresh does active creators first).
@@ -54,8 +56,8 @@ export async function GET() {
         shop: link ? { handle: link.username, access: access?.status ?? null, expired: link.refreshExpiresAt.getTime() < Date.now() } : null,
         ttLevel: link ? tt[0]?.tt_level ?? null : null,
         signIn: {
-          tiktok: ways?.tiktok_open_id ? (ways.tiktok_username ? `@${ways.tiktok_username}` : "Linked") : null,
-          google: ways?.google_sub ? ways.email ?? "Linked" : null,
+          tiktok: ways?.tiktok_open_id ? (ways.tiktok_username ? `@${ways.tiktok_username}` : t("Linked")) : null,
+          google: ways?.google_sub ? ways.email ?? t("Linked") : null,
           email: ways?.login_email ?? null,
           password: !!ways?.password_hash,
         },

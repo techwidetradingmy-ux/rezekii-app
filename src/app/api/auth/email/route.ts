@@ -5,6 +5,7 @@ import { createEmailUser, emailAccount, emailSignIn, resetPassword, signInWithCo
 import { sendCode, checkCode, type CodePurpose } from "@/modules/accounts/email-codes.ts";
 import { needsDetails } from "@/modules/rewards/profiles.ts";
 import { joinInviter } from "../oauth.ts";
+import { getLang, tFor } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -20,48 +21,49 @@ const PURPOSES: CodePurpose[] = ["signup", "signin", "reset"];
  * On success the session cookie is set; `details` says the sign-up details are still to fill in.
  */
 export async function POST(req: NextRequest) {
+  const t = tFor(await getLang());
   const origin = req.headers.get("origin");
-  if (origin && origin !== req.nextUrl.origin) return NextResponse.json({ error: "Please sign in from rezekii.com." }, { status: 403 });
+  if (origin && origin !== req.nextUrl.origin) return NextResponse.json({ error: t("Please sign in from rezekii.com.") }, { status: 403 });
   const body = (await req.json().catch(() => ({}))) as { mode?: string; email?: string; password?: string; name?: string; code?: string; purpose?: string };
   const email = cleanEmail(body.email);
   const password = String(body.password ?? "");
   const code = body.code ? String(body.code) : "";
-  if (!email) return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
+  if (!email) return NextResponse.json({ error: t("Enter a valid email address.") }, { status: 400 });
   if (body.mode === "check") return NextResponse.json(await emailAccount(email));
 
   if (body.mode === "code") {
     const purpose = PURPOSES.find((p) => p === body.purpose);
-    if (!purpose) return NextResponse.json({ error: "Say what the code is for." }, { status: 400 });
+    if (!purpose) return NextResponse.json({ error: t("Say what the code is for.") }, { status: 400 });
     const acct = await emailAccount(email);
-    if (purpose === "signup" && acct.exists) return NextResponse.json({ error: "An account with this email already exists. Sign in instead." }, { status: 409 });
-    if (purpose === "signin" && !acct.exists) return NextResponse.json({ error: "No Rezekii account uses this email. Create one instead." }, { status: 404 });
-    if (purpose === "reset" && !acct.password) return NextResponse.json({ error: acct.exists ? "This email signs in with Google. Continue with Google, or ask for a sign-in code." : "No Rezekii account uses this email. Create one instead." }, { status: 404 });
-    const sent = await sendCode(email, purpose);
+    if (purpose === "signup" && acct.exists) return NextResponse.json({ error: t("An account with this email already exists. Sign in instead.") }, { status: 409 });
+    if (purpose === "signin" && !acct.exists) return NextResponse.json({ error: t("No Rezekii account uses this email. Create one instead.") }, { status: 404 });
+    if (purpose === "reset" && !acct.password) return NextResponse.json({ error: acct.exists ? t("This email signs in with Google. Continue with Google, or ask for a sign-in code.") : t("No Rezekii account uses this email. Create one instead.") }, { status: 404 });
+    const sent = await sendCode(email, purpose, t);
     return sent.ok ? NextResponse.json({ ok: true }) : NextResponse.json({ error: sent.error }, { status: sent.status });
   }
 
   let result;
-  const wrongCode = (purpose: CodePurpose) => checkCode(email, purpose, code);
+  const wrongCode = (purpose: CodePurpose) => checkCode(email, purpose, code, t);
   if (body.mode === "signup") {
-    const problem = passwordProblem(password);
+    const problem = passwordProblem(password, t);
     if (problem) return NextResponse.json({ error: problem }, { status: 400 });
     const bad = await wrongCode("signup");
     if (bad) return NextResponse.json({ error: bad }, { status: 400 });
     const name = String(body.name ?? "").trim().slice(0, 60) || null;
-    result = await createEmailUser(email, password, name);
+    result = await createEmailUser(email, password, name, t);
   } else if (body.mode === "reset") {
-    const problem = passwordProblem(password);
+    const problem = passwordProblem(password, t);
     if (problem) return NextResponse.json({ error: problem }, { status: 400 });
     const bad = await wrongCode("reset");
     if (bad) return NextResponse.json({ error: bad }, { status: 400 });
-    result = await resetPassword(email, password);
+    result = await resetPassword(email, password, t);
   } else if (code) {
     const bad = await wrongCode("signin");
     if (bad) return NextResponse.json({ error: bad }, { status: 400 });
-    result = await signInWithCode(email);
+    result = await signInWithCode(email, t);
   } else {
-    if (!password) return NextResponse.json({ error: "Enter your password." }, { status: 400 });
-    result = await emailSignIn(email, password);
+    if (!password) return NextResponse.json({ error: t("Enter your password.") }, { status: 400 });
+    result = await emailSignIn(email, password, t);
   }
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
 

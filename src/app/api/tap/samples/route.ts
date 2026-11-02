@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { myTapRows } from "@/modules/tap/mytap.ts";
 import { mySamples, sampleLink, sampleStatus, sellerSamples } from "@/modules/tap/samples.ts";
+import { getLang, tFor } from "@/lib/i18n/server";
+import { errorLine } from "@/modules/posting/errors.ts";
 
 export const dynamic = "force-dynamic";
 
@@ -10,8 +12,9 @@ export const dynamic = "force-dynamic";
  * ?product=ID, TikTok's live check of whether they can get a free sample of that product.
  */
 export async function GET(req: NextRequest) {
+  const t = tFor(await getLang());
   const user = await currentUser();
-  if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  if (!user) return NextResponse.json({ error: t("Sign in first.") }, { status: 401 });
   const headers = { "cache-control": "private, no-store" };
   // ?product=ID: TikTok's live answer on whether this creator can get a free sample (available, none, requested, limit).
   const product = req.nextUrl.searchParams.get("product");
@@ -22,7 +25,7 @@ export async function GET(req: NextRequest) {
     const tap = new Set(rows.filter((r) => r.stage !== 0 || r.request).map((r) => r.productId));
     return NextResponse.json({ samples: await sellerSamples(user.id, tap) }, { headers });
   }
-  return NextResponse.json({ requests: await mySamples(user.id) }, { headers });
+  return NextResponse.json({ requests: (await mySamples(user.id)).map((r) => (r.note ? { ...r, note: t(r.note) } : r)) }, { headers });
 }
 
 /**
@@ -30,11 +33,12 @@ export async function GET(req: NextRequest) {
  * Rezekii address that makes a fresh link on the creator's phone (for the QR code on a computer).
  */
 export async function POST(req: NextRequest) {
+  const t = tFor(await getLang());
   const user = await currentUser();
-  if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  if (!user) return NextResponse.json({ error: t("Sign in first.") }, { status: 401 });
   const { productId } = (await req.json().catch(() => ({}))) as { productId?: string };
-  if (!productId) return NextResponse.json({ error: "Choose a product." }, { status: 400 });
+  if (!productId) return NextResponse.json({ error: t("Choose a product.") }, { status: 400 });
   const r = await sampleLink(user.id, productId);
-  if (!r.ok) return NextResponse.json({ error: r.error }, { status: r.status });
+  if (!r.ok) return NextResponse.json({ error: errorLine(t, r.error) }, { status: r.status });
   return NextResponse.json({ deeplink: r.deeplink, phoneUrl: `${req.nextUrl.origin}/sample/${productId}`, addedToShowcase: r.addedToShowcase }, { headers: { "cache-control": "private, no-store" } });
 }

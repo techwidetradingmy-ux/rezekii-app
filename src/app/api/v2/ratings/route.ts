@@ -7,6 +7,7 @@ import { kindOf, ratingsOf } from "@/modules/picks/mine.ts";
 import { readShowcase, saveRead, SHOWCASE_FRESH_MS } from "@/modules/tap/showcase.ts";
 import { linesBetween } from "@/modules/sales/frames.ts";
 import { lineGmv } from "@/modules/sales/summary.ts";
+import { getLang, tFor } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -24,8 +25,9 @@ const cancelled = (s: string | null) => /REFUND|RETURN|CANCEL|INELIGIBLE|INVALID
  * Saved per account (owner, 1 Nov 2026): a reload shows the last check at once; it runs again after 6 hours or on ?fresh=1.
  */
 export async function GET(req: NextRequest) {
+  const t = tFor(await getLang());
   const user = await currentUser();
-  if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  if (!user) return NextResponse.json({ error: t("Sign in first.") }, { status: 401 });
   const [token, [saved]] = await Promise.all([
     approvedCreatorToken(user.id),
     supabaseRest(`showcase_cache?user_id=eq.${user.id}&ratings_at=not.is.null&select=ratings,ratings_at&limit=1`).then((r) => r.json() as Promise<{ ratings: Result; ratings_at: string }[]>).catch(() => []),

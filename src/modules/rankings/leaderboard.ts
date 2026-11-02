@@ -11,14 +11,17 @@ export type BoardRow = { handle: string; name: string; avatar: string | null; le
 export type BoardMonth = { key: string; label: string; final: string; rows: BoardRow[] };
 type Daily = { username: string; day: string; paid: number; videos: number };
 
-const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MON_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+/** Malay month names (owner, 3 Nov 2026): "Okt 2026", "1 Dis 2026". */
+const MON_MS = ["Jan", "Feb", "Mac", "Apr", "Mei", "Jun", "Jul", "Ogo", "Sep", "Okt", "Nov", "Dis"];
 /** "Oct 2026", or "2026年10月" in Chinese. */
-const label = (key: string, lang: Lang) => (lang === "zh" ? `${key.slice(0, 4)}年${Number(key.slice(5))}月` : `${MON[Number(key.slice(5)) - 1]} ${key.slice(0, 4)}`);
+const label = (key: string, lang: Lang) => (lang === "zh" ? `${key.slice(0, 4)}年${Number(key.slice(5))}月` : `${(lang === "ms" ? MON_MS : MON_EN)[Number(key.slice(5)) - 1]} ${key.slice(0, 4)}`);
 /** The 1st of the next month: "1 Nov 2026", or "2026年11月1日" in Chinese. */
 const nextFirst = (key: string, lang: Lang) => {
   const [y, m] = key.split("-").map(Number);
   if (lang === "zh") return m === 12 ? `${y + 1}年1月1日` : `${y}年${m + 1}月1日`;
-  return m === 12 ? `1 Jan ${y + 1}` : `1 ${MON[m]} ${y}`;
+  const MON = lang === "ms" ? MON_MS : MON_EN;
+  return m === 12 ? `1 ${MON[0]} ${y + 1}` : `1 ${MON[m]} ${y}`;
 };
 
 /**

@@ -1,5 +1,6 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { RACES } from "../../lib/countries.ts";
+import { tx } from "../../lib/i18n/lang.ts";
 
 /**
  * Saved details (owner, 31 Oct 2026: real data). The creator profile from My Account, or the seller's contact name and phone.
@@ -57,7 +58,7 @@ export async function saveProfile(userId: string, side: Side, details: CreatorDe
       await supabaseRest(`profiles?user_id=eq.${userId}&side=eq.creator`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ details: { ...had.details, race } }) });
       return { ok: true };
     }
-    return { ok: false, error: "Your profile is saved. Ask support to change it." };
+    return { ok: false, error: tx("Your profile is saved. Ask support to change it.") };
   }
   await supabaseRest("profiles?on_conflict=user_id,side", {
     method: "POST",
