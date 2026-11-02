@@ -13,11 +13,13 @@ const src = new URL("../../", import.meta.url);
  * Rezekii 2.0 in English, Malay and Chinese (owner, 3 Nov 2026): every screen creators and sellers see. Admin stays English, so
  * its pages and components aren't read. Run with `npm run test:i18n`.
  */
+/** I18N_ONLY=<regex> checks only the files it matches (paths like "app/app/market/page.tsx"), e.g. while one area is done. */
+const ONLY = process.env.I18N_ONLY ? new RegExp(process.env.I18N_ONLY) : null;
 const SKIP = /(^|\/)(app\/admin|components\/admin|lib\/i18n)(\/|$)|\.test\.ts$/;
 const FILES = ["app", "components", "lib", "modules"].flatMap((dir) =>
   (readdirSync(new URL(`${dir}/`, src), { recursive: true }) as string[])
     .map((f) => `${dir}/${f.replaceAll("\\", "/")}`)
-    .filter((f) => /\.tsx?$/.test(f) && !SKIP.test(f)),
+    .filter((f) => /\.tsx?$/.test(f) && !SKIP.test(f) && (!ONLY || ONLY.test(f))),
 );
 
 /** Every English text written as t("…"), tx("…") or translate(lang, "…") in a file, in double or single quotes. */
@@ -35,12 +37,12 @@ const LISTS = [
   ...ACCOUNT_TABS.map(([, l]) => l),
   "Market", "Bronze", "Silver", "Gold", "Light", "Dark", "Auto",
 ];
-const KEYS = new Set([...FILES.flatMap(keysIn), ...LISTS]);
+const KEYS = new Set([...FILES.flatMap(keysIn), ...(ONLY ? [] : LISTS)]);
 const placeholders = (s: string) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join(",");
 
 for (const [name, words, parts] of [["Malay", MS, MS_PARTS], ["Chinese", ZH, ZH_PARTS]] as const) {
   test(`i18n: every English line has a ${name} version`, () => {
-    assert.ok(KEYS.size > 100, `only ${KEYS.size} lines found: is the scanner reading the files?`);
+    assert.ok(ONLY || KEYS.size > 100, `only ${KEYS.size} lines found: is the scanner reading the files?`);
     const missing = [...KEYS].filter((k) => !(k in words));
     assert.deepEqual(missing, [], `no ${name} yet for:\n${missing.join("\n")}`);
   });
