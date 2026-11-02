@@ -131,9 +131,10 @@ export default function DataOverview() {
   const channelRows = flipRows((["Videos", "LIVE", "Showcase"] as const).map((label, i) => ({ label, value: dd.channel[i], display: `${dd.channel[i]}%` })).sort((a, b) => b.value - a.value));
   // By product (owner, 1 Nov 2026): ranked most to least, Top 5 (or Top 10 when opened), each name opening its product, then
   // everything below them as Others. Opening Top 10 moves products 6–10 out of Others, so its share gets smaller.
+  // No "1. 2. 3." before the names (owner, 2 Nov 2026): the % shows the order, and lowest first read "5. … 1.".
   const others = dd.other + ranked.slice(topN).reduce((a, b) => a + b.commission, 0);
   const productRows = [
-    ...flipRows(ranked.slice(0, topN).map((b, i) => ({ label: `${i + 1}. ${product(b.productId).name}`, value: pct(b.commission, dd.est), display: `${pct(b.commission, dd.est)}%`, href: productHref(b.productId) }))),
+    ...flipRows(ranked.slice(0, topN).map((b) => ({ label: product(b.productId).name, value: pct(b.commission, dd.est), display: `${pct(b.commission, dd.est)}%`, href: productHref(b.productId) }))),
     ...(others > 0 ? [{ label: `Others · #${topN + 1} and below`, value: pct(others, dd.est), display: `${pct(others, dd.est)}%`, tone: "blue" as const }] : []),
   ];
 

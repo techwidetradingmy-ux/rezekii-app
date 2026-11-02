@@ -89,18 +89,20 @@ export async function GET(req: NextRequest) {
 
   // Her video titles, dates and views, where the daily video job has them.
   const vids = [...videos.keys()];
-  const meta = new Map<string, { title: string | null; created_at: string; views: number | null; cover: string | null }>();
+  const meta = new Map<string, { title: string | null; created_at: string; views: number | null }>();
   for (let i = 0; i < vids.length; i += 100) {
-    const rows = (await (await supabaseRest(`tiktok_videos?video_id=in.(${vids.slice(i, i + 100).join(",")})&select=video_id,title,created_at,views,cover`)).json()) as { video_id: string; title: string | null; created_at: string; views: number | null; cover: string | null }[];
+    const rows = (await (await supabaseRest(`tiktok_videos?video_id=in.(${vids.slice(i, i + 100).join(",")})&select=video_id,title,created_at,views`)).json()) as { video_id: string; title: string | null; created_at: string; views: number | null }[];
     for (const r of rows) meta.set(r.video_id, r);
   }
+  // Each video's cover through Rezekii (TikTok's own stops working within a day) and its TikTok link (owner, 2 Nov 2026).
+  const handle = user.tiktok_username;
   const imgs = await productImages(user.id, [...products.keys()]).catch(() => new Map<string, string | null>());
   const topProduct = (g: Group) => [...g.byProduct.entries()].sort((a, b) => b[1].gmv - a[1].gmv)[0]?.[0] ?? "";
 
   return NextResponse.json({
     videos: [...videos.entries()].map(([id, g]) => {
       const m = meta.get(id);
-      return { id, title: m?.title?.trim() || "Video", date: day(m?.created_at ?? g.first), views: m?.views ?? null, orders: g.orders.size, gmv: r2(g.gmv), commission: r2(g.commission), ...cancelOf(g), productId: topProduct(g), refunds: g.badItems, cover: m?.cover ?? null };
+      return { id, title: m?.title?.trim() || "Video", date: day(m?.created_at ?? g.first), views: m?.views ?? null, orders: g.orders.size, gmv: r2(g.gmv), commission: r2(g.commission), ...cancelOf(g), productId: topProduct(g), refunds: g.badItems, cover: `/api/img/v/${id}`, url: `https://www.tiktok.com/${handle ? `@${handle}/` : ""}video/${id}` };
     }),
     lives: [...lives.entries()].map(([id, g]) => ({
       id, ...when(g.first), orders: g.orders.size, gmv: r2(g.gmv), commission: r2(g.commission), ...cancelOf(g),

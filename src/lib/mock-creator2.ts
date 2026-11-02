@@ -222,6 +222,8 @@ export type VideoRow = {
   refunds: number;
   /** The video's own cover from TikTok (real videos); sample videos show their product. */
   cover?: string | null;
+  /** The video on TikTok (real videos): it plays on Rezekii, this opens it in TikTok (owner, 2 Nov 2026). */
+  url?: string;
 };
 
 /** The five videos in ANALYTICS plus one private video (no view count). */

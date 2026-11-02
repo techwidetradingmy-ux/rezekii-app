@@ -1704,6 +1704,10 @@ li.sc-row { cursor: default; }
 .rc-bands .mid b { color: #dc6803; }
 .rc-bar i.mid { background: #f79009; }
 .rc-dot.mid { background: #f79009; }
+/* Showcase Health, Rezekii's estimate, under the count (owner, 2 Nov 2026). */
+.rc-health { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 15px; font-weight: 700; color: var(--body); }
+.rc-health b { font-size: 22px; font-weight: 900; color: var(--text); font-variant-numeric: tabular-nums; }
+.rc-health small { font-size: 12px; font-weight: 700; color: var(--muted); }
 .rc-list li { grid-template-columns: 20px 44px minmax(0, 1fr) auto auto; }
 .rc-pick { width: 18px; height: 18px; accent-color: #00a862; }
 .rc-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
