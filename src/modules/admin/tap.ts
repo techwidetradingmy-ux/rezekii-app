@@ -130,6 +130,19 @@ async function creatorRows(): Promise<{ campaign_id: string; username: string }[
 let overview: { at: number; data: { asOf: string | null; campaigns: AdminCampaign[] } } | null = null;
 
 /**
+ * A campaign just changed in Rezekii (name or dates) goes into the saved list at once, so the list and the morning check don't
+ * show the old end until the next daily refresh (owner, 2 Nov 2026: extending campaigns).
+ */
+export async function noteCampaignEdit(id: string, f: { name?: string; campaign_end_time?: number; registration_end_time?: number }): Promise<void> {
+  const { asOf, rows } = await latest("tap_campaigns");
+  const row = rows.find((r) => (r.items as Campaign[]).some((c) => c?.id === id));
+  if (!asOf || !row) return;
+  const items = (row.items as Campaign[]).map((c) => (c?.id === id ? { ...c, ...f } : c));
+  await supabaseRest(`market_snapshots?dataset=eq.tap_campaigns&as_of=eq.${asOf}&slot=eq.${encodeURIComponent(row.slot)}`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ items }) });
+  overview = null;
+}
+
+/**
  * Techwide's TAP campaigns, each with its product and creator counts and commission. Admin only. The figures come from the
  * latest daily refresh; TikTok's newest campaigns are read live each time (one call, drafts first), so a campaign just created
  * or published shows at once (owner, 16 Oct 2026: a new draft couldn't be seen to publish it).

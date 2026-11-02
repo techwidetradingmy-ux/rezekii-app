@@ -1,5 +1,6 @@
 import { after, NextResponse, type NextRequest } from "next/server";
 import { sendAdminAlerts } from "@/modules/admin/alerts.ts";
+import { watchCampaigns } from "@/modules/admin/campaign-watch.ts";
 import { checkProcessing, publishPost } from "@/modules/posting/publisher.ts";
 import { claimDuePosts, isTimerToken, processingPosts } from "@/modules/posting/store.ts";
 import { accountsForPictures, accountsToRenew, freshToken, refreshPicture } from "@/modules/social/accounts.ts";
@@ -26,6 +27,8 @@ export async function POST(req: NextRequest) {
     after(() => syncShopReviews().then(() => undefined).catch((err) => console.error("[shop reviews]", err instanceof Error ? err.message : err)));
     // And an email to admins when something new needs them.
     after(() => sendAdminAlerts().then(() => undefined).catch((err) => console.error("[admin alerts]", err instanceof Error ? err.message : err)));
+    // TAP campaigns ending within 90 days, once a day from 9 am (owner, 2 Nov 2026).
+    after(() => watchCampaigns().then(() => undefined).catch((err) => console.error("[campaign watch]", err instanceof Error ? err.message : err)));
   }
   const [{ published, checked }, social] = await Promise.all([tiktokWork(), socialWork().catch((err) => ({ error: err instanceof Error ? err.message : String(err) }))]);
   return NextResponse.json({ published, checked, social });

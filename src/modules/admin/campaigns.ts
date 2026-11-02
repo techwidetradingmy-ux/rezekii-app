@@ -1,6 +1,7 @@
 import { createCampaign, editCampaign, getCampaignDetail, listCampaignProducts, publishCampaign, type CampaignFields } from "../../integrations/tiktok-shop/partner.ts";
 import { storedSessions } from "../refresh/sessions.ts";
 import { logActivity } from "./admins.ts";
+import { noteCampaignEdit } from "./tap.ts";
 import { dayEnd, firstEndDay, lastEndDay, latestEnd, longDay, startTime, toDay } from "./campaign-dates.ts";
 
 /** The campaign form as admins fill it in: dates are Malaysia days (YYYY-MM-DD), commission a percentage. */
@@ -150,6 +151,7 @@ export async function saveCampaign(form: CampaignForm, campaignId: string | null
     if (!Object.keys(fields).length) return { ok: true, id: campaignId };
     const r = await editCampaign(s.token, s.cipher, campaignId, fields);
     if (r.code !== 0) return { ok: false, error: failure("save the changes", r) };
+    await noteCampaignEdit(campaignId, { name: v.fields.name, campaign_end_time: v.fields.campaign_end_time, registration_end_time: v.fields.registration_end_time }).catch(() => null);
     await logActivity(actor, "TAP", `edited the TAP campaign ${v.fields.name}`);
     return { ok: true, id: campaignId };
   }
@@ -172,14 +174,14 @@ export async function publish(campaignId: string, name: string, actor: string): 
  * Moves a campaign's end (and registration end) to the latest day TikTok allows: 360 days after it started. For "Extend all
  * ending in 14 days" (owner, 31 Oct 2026), so a campaign doesn't end by accident.
  */
-export async function extendCampaign(campaignId: string, actor: string): Promise<{ ok: true; end: string } | { ok: false; error: string }> {
+export async function extendCampaign(campaignId: string, actor: string): Promise<{ ok: true; end: string; from: string } | { ok: false; error: string }> {
   const cur = await campaignOverview(campaignId);
   if (!cur.ok) return cur;
   if (cur.data.status === "CLOSED") return { ok: false, error: "It has already ended. TikTok allows no changes after that." };
   const start = cur.data.form.startAt;
   if (!start) return { ok: false, error: "TikTok didn't send the campaign's start time." };
   const end = lastEndDay(start);
-  if (end <= cur.data.form.end) return { ok: true, end: cur.data.form.end };
+  if (end <= cur.data.form.end) return { ok: true, end: cur.data.form.end, from: cur.data.form.end };
   const r = await saveCampaign({ ...cur.data.form, end, regEnd: end }, campaignId, actor);
-  return r.ok ? { ok: true, end } : r;
+  return r.ok ? { ok: true, end, from: cur.data.form.end } : r;
 }

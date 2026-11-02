@@ -4,14 +4,14 @@ import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Sheet, Title } from "@/components/ui";
-import { Chips, Pill } from "@/components/admin/bits";
+import { Chips, Pill, Switch } from "@/components/admin/bits";
 import { rm } from "@/lib/mock";
 import { SUPPORT } from "@/lib/support";
 
 type Status = "draft" | "upcoming" | "live" | "ended";
 type Campaign = { id: string; name: string; status: Status; hidden?: boolean; start: number | null; end: number | null; products: number; creators: number; upto: number; gmvPaid: number; comEst: number };
 type Form = { name: string; description: string; start: string; end: string; regEnd: string; commission: number; local: boolean; crossBorder: boolean; shopCodes: string[]; whatsapp: string; email: string; phone: string; startAt?: number | null };
-type Filter = "Live" | "Not published" | "Ending in 14 days" | "Ended";
+type Filter = "Live" | "Not published" | "Ending in 90 days" | "Ended";
 type Outcome = { total: number; ok: string[]; failed: [string, string][] };
 
 const DAY = 86_400;
@@ -42,6 +42,8 @@ export function LiveCampaigns() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [out, setOut] = useState<Outcome | null>(null);
+  // Extend automatically each morning (owner, 2 Nov 2026).
+  const [auto, setAuto] = useState<boolean | null>(null);
 
   const load = () =>
     fetch("/api/admin/tap/campaigns", { cache: "no-store" })
@@ -49,14 +51,23 @@ export function LiveCampaigns() {
       .then((d: { campaigns?: Campaign[] } | null) => (d?.campaigns ? setList(d.campaigns) : setFailed("TikTok Shop didn't answer. Please try again.")))
       .catch((e: Error) => setFailed(e.message.startsWith("Sign in") ? e.message : "TikTok Shop didn't answer. Please try again."));
   useEffect(() => { void load(); }, []);
+  useEffect(() => { fetch("/api/admin/tap/campaigns/auto", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d: { on?: boolean } | null) => setAuto(d?.on ?? null)).catch(() => null); }, []);
+  const flipAuto = async (on: boolean) => {
+    const r = await fetch("/api/admin/tap/campaigns/auto", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ on }) }).catch(() => null);
+    if (!r?.ok) return toast("Didn't save. Please try again.");
+    setAuto(on);
+    toast(on ? "Campaigns ending within 90 days are extended every morning" : "Automatic extending is off");
+  };
 
   const all = (list ?? []).filter((c) => !c.hidden);
-  const soon = (c: Campaign) => (c.status === "live" || c.status === "upcoming") && (daysLeft(c.end) ?? 99) <= 14;
-  const ending = all.filter(soon);
+  // Within 90 days of the end (owner, 2 Nov 2026). A running campaign can always be extended to 360 days from today.
+  const soon = (c: Campaign) => (c.status === "live" || c.status === "upcoming") && (daysLeft(c.end) ?? 999) < 90;
+  const ending = all.filter(soon).sort((a, b) => (a.end ?? 0) - (b.end ?? 0));
+  const extendable = ending;
   const groups: Record<Filter, Campaign[]> = {
     Live: all.filter((c) => c.status === "live" || c.status === "upcoming"),
     "Not published": all.filter((c) => c.status === "draft"),
-    "Ending in 14 days": ending,
+    "Ending in 90 days": ending,
     Ended: all.filter((c) => c.status === "ended"),
   };
 
@@ -106,8 +117,8 @@ export function LiveCampaigns() {
 
   const extendAll = async () => {
     setBusy(true);
-    const result: Outcome = { total: ending.length, ok: [], failed: [] };
-    for (const c of ending) {
+    const result: Outcome = { total: extendable.length, ok: [], failed: [] };
+    for (const c of extendable) {
       const r = await fetch(`/api/admin/tap/campaigns/${c.id}/extend`, { method: "POST" }).catch(() => null);
       const d = (await r?.json().catch(() => null)) as { error?: string } | null;
       if (r?.ok) result.ok.push(c.id);
@@ -126,8 +137,9 @@ export function LiveCampaigns() {
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
       <Title title="TAP Campaigns" sub="Techwide's campaigns on TikTok. Create and change them here. Don't let one end by accident.">
         {list && <span className="v2-row" style={{ gap: 8 }}>
-          <button type="button" className="btn-outline v2-btn-sm" disabled={busy || !ending.length} onClick={() => void extendAll()}>
-            <Icon name="cal" size={16} /> Extend {ending.length} ending soon
+          {auto !== null && <span className="v2-row" style={{ gap: 8 }}><Switch on={auto} onChange={(v) => void flipAuto(v)} label="Extend automatically" /><small className="v2-muted">Extend Automatically</small></span>}
+          <button type="button" className="btn-outline v2-btn-sm" disabled={busy || !extendable.length} onClick={() => void extendAll()}>
+            <Icon name="cal" size={16} /> Extend {extendable.length} Ending Soon
           </button>
           <button type="button" className="np-btn v2-btn-sm" onClick={() => { setErr(""); setEditing({ id: null, form: blank() }); }}>
             <Icon name="plus" size={16} /> New Campaign
@@ -142,9 +154,9 @@ export function LiveCampaigns() {
             <button type="button" className="v2-iconbtn" aria-label="Dismiss result" onClick={() => setOut(null)}><Icon name="x" size={16} /></button>
           </div>
           <div className="ad-sum">
-            <span>Ending in 14 days {out.total}</span>
+            <span>Ending in 90 days {out.total}</span>
             <Icon name="arrow" size={16} />
-            <span className="ok"><Icon name="check" size={14} /> {out.ok.length} extended to TikTok&apos;s latest end (360 days after the start)</span>
+            <span className="ok"><Icon name="check" size={14} /> {out.ok.length} extended to TikTok&apos;s latest end (360 days from today)</span>
             {out.failed.length > 0 && <span className="bad"><Icon name="x" size={14} /> {out.failed.length} failed</span>}
           </div>
           {out.failed.map(([who, why]) => <div key={who} className="v2-alert red" style={{ padding: "10px 14px" }}><span>{who} · {why}</span></div>)}
@@ -160,7 +172,7 @@ export function LiveCampaigns() {
             <div className="ad-list">
               {groups[filter].map((c) => {
                 const left = daysLeft(c.end);
-                const [label, tone] = soon(c) ? ["Ending soon", "warn" as const] : STATUS[c.status];
+                const [label, tone] = soon(c) ? ["Ending Soon", "warn" as const] : STATUS[c.status];
                 return (
                   <div key={c.id} className="ad-row" style={soon(c) ? { boxShadow: "inset 4px 0 0 #f5a623", paddingLeft: 12, marginLeft: -12 } : undefined}>
                     <span className="main">
