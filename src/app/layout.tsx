@@ -10,8 +10,8 @@ import "./v2.css";
 const albertSans = Albert_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800", "900"], display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Rezekii 2.0 preview",
-  description: "Rezekii 2.0 with sample data: creator, seller and admin apps.",
+  title: "Rezekii",
+  description: "Rezekii: an AI-powered affiliate platform for TikTok Shop creators and sellers.",
   robots: { index: false, follow: false },
 };
 
