@@ -226,7 +226,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
       <div className="v2-shellgrid" data-app={app}>
       <div className="v2-frame">
       <header className="v2-top" data-app={app}>
-        <nav className="site-nav site-wrap" aria-label="Main">
+        <nav className="site-nav site-wrap" aria-label={t("Main menu")}>
           <Link href={HOME[app]} className="site-brand">
             <span>
               <Image src="/master-logo-transparent.png" alt="" width={30} height={30} priority />

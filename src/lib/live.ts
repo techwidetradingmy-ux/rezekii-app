@@ -2,7 +2,7 @@ import { LIVE_PRODUCTS, LIVE_STUBS, short, type Product, type Raise } from "./mo
 import { LIVE_FACTS, LIVE_GONE, LIVE_OFF, LIVE_REFUSED, type LiveFacts, type OffLive, type WantedLive } from "./product-view";
 import type { ShopItem, Stage } from "./mock-seller";
 import type { LiveShopProduct } from "@/modules/marketplace/shop-products.ts";
-import { tx } from "./i18n/lang";
+import { dateLocale, langOf, tx } from "./i18n/lang";
 
 /** Messages the browser shows when a request fails; each screen translates them where it shows them (owner, 3 Nov 2026). */
 const NO_TIKTOK = tx("Couldn't reach TikTok Shop. Please try again.");
@@ -182,8 +182,11 @@ export async function requestSample(productId: string): Promise<{ deeplink?: str
 }
 
 const STAGE: Record<string, Stage> = { submitted: "Submitted", in_review: "Under review", approved: "Under review", with_tiktok: "Submitted to TikTok", live: "Live", not_approved: "Not approved" };
-/** "30 Oct", Malaysia time. */
-export const myDay = (t: string | number | Date = Date.now()) => new Date(t).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" });
+/** "30 Oct", Malaysia time, in the language this device picked ("30 Okt", "10月30日"; owner, 3 Nov 2026). */
+export const myDay = (t: string | number | Date = Date.now()) => {
+  const lang = langOf(typeof document === "undefined" ? null : document.cookie.match(/(?:^|; )rz_lang=(\w+)/)?.[1]);
+  return new Date(t).toLocaleDateString(dateLocale(lang), { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" });
+};
 
 /** Techwide's campaign for the shop in Seller Center, where the seller registers the product (Affiliate → Partner collaborations). */
 export const sellerCenterCampaign = (campaignId: string) =>
