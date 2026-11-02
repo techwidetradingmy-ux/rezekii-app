@@ -43,8 +43,9 @@ export async function GET(req: NextRequest) {
   const forHer = (rows: Idea[]) => rows
     .filter((x) => source !== "market" || !her.refused[x.id])
     .map((x) => (x.rezekii && her.offers ? { ...x, sample: her.offers[x.id] === 2 } : x));
-  // The saved list while TikTok hasn't published a newer one, made for her current level.
-  if (saved && !q.get("fresh") && saved.day === day && saved.level === level)
+  // The saved list while TikTok hasn't published a newer one, made for her current level; a Marketplace list saved before it
+  // carried her own categories is made again once (owner, 3 Nov 2026).
+  if (saved && !q.get("fresh") && saved.day === day && saved.level === level && (source !== "market" || saved.data.herCats))
     return NextResponse.json({ linked: true, ...saved.data, rows: forHer(saved.data.rows), saved: true }, NO_STORE);
   const r = await ideasFor(user.id, token, level, source, channel, cat);
   return NextResponse.json({ linked: true, ...r, rows: forHer(r.rows) }, NO_STORE);

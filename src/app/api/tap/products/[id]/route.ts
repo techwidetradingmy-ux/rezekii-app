@@ -3,6 +3,7 @@ import { currentUser } from "@/app/current-user";
 import { approvedCreatorToken } from "@/modules/creator-accounts/access.ts";
 import { getProduct, withSampleOffers } from "@/modules/tap/catalog.ts";
 import { herOffers } from "@/modules/tap/for-creator.ts";
+import { ideaFacts } from "@/modules/picks/ideas-cache.ts";
 import { askFacts, saveFacts, savedFacts } from "@/modules/tap/product-facts.ts";
 import { sampleOffers } from "@/modules/tap/samples.ts";
 import { wantedOne } from "@/modules/wishes/wishes.ts";
@@ -36,7 +37,9 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     tap && !her.offers && tap.samples > 0 ? sampleOffers().catch(() => ({})) : null,
   ]);
   if (asked) after(() => saveFacts(id, asked).catch((err) => console.error("[product facts]", err instanceof Error ? err.message : err)));
-  const facts = saved ?? asked;
+  // A product from her Today's Ideas opens with the list's own facts when TikTok's lookup gives nothing (owner, 3 Nov 2026:
+  // ideas showed "We couldn't find this product"); no TikTok call.
+  const facts = saved ?? asked ?? (tap ? null : await ideaFacts(user.id, id).catch(() => null));
   const open = tap?.openRate ?? facts?.openRate ?? null;
   if (!tap && !facts) return NextResponse.json({ error: "Couldn't find this product.", product: null }, { status: 404, ...NO_STORE });
   // The same free sample as the Marketplace (owner, 2 Nov 2026): her own check, else TikTok's general check.

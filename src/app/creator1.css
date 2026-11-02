@@ -1256,6 +1256,8 @@ button.cr1-note-main { padding: 0; border: 0; background: none; color: var(--tex
 .td-views.master { position: static; display: inline-flex; padding: 3px; gap: 2px; border-radius: 12px; background: var(--surface2); }
 .td-views.master button { width: 34px; height: 30px; border: 0; border-radius: 9px; background: none; color: var(--muted); display: grid; place-items: center; cursor: pointer; }
 .td-views.master button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12); }
+/* Now right above the category tabs, on the right (owner, 3 Nov 2026). */
+.nb-box > .td-views.master { align-self: flex-end; }
 .nb-list.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
 .nb-list.cards li, .nb-list.cards li:first-child { position: relative; display: block; padding: 10px; border: 2px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); min-width: 0; }
 .nb-list.cards .nb-view { display: flex; flex-direction: column; align-items: stretch; gap: 8px; width: 100%; }
@@ -1850,19 +1852,10 @@ li.sc-row { cursor: default; }
 .gs-dot { fill: #00a862; }
 .gs-at { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 3; }
 .nb-spark { display: grid; justify-items: end; gap: 1px; flex-shrink: 0; }
-.nb-spark small { font-size: 10.5px; font-weight: 700; color: var(--muted); }
+/* "Top 100 on 1 of 28 Days" wraps to two lines in the list's narrow column (owner, 3 Nov 2026). */
+.nb-spark small { font-size: 10.5px; font-weight: 700; color: var(--muted); text-align: right; line-height: 1.2; }
 .nb-est { margin: 4px 0 0; }
 .nb-more { justify-self: center; align-self: center; margin-top: 6px; }
-.nb-dim { opacity: 0.45; transition: opacity 0.2s; }
-.nb-wait { display: grid; gap: 10px; }
-.nb-wait p { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; color: var(--muted); }
-.nb-wait-row { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 10px; align-items: center; }
-.nb-wait-row > i, .nb-wait-row span i { display: block; border-radius: 10px; background: linear-gradient(90deg, var(--surface2) 25%, var(--line) 50%, var(--surface2) 75%); background-size: 200% 100%; animation: ppSk 1.2s ease-in-out infinite; }
-.nb-wait-row > i { width: 44px; height: 44px; }
-.nb-wait-row span { display: grid; gap: 6px; }
-.nb-wait-row span i { height: 12px; }
-.nb-wait-row span i + i { width: 60%; }
-@media (prefers-reduced-motion: reduce) { .nb-wait-row > i, .nb-wait-row span i { animation: none; } }
 .pp-month { display: grid; gap: 8px; }
 .pp-month-h { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 10px; }
 .pp-month-h b { font-size: 14.5px; font-weight: 800; }

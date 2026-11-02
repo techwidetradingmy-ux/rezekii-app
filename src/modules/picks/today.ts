@@ -5,6 +5,8 @@ import { CAT, nums } from "../rankings/build.ts";
 import { allProducts, type TapProduct } from "../tap/catalog.ts";
 import { showcaseOf } from "./mine.ts";
 import { CATEGORIES } from "../refresh/plan.ts";
+import { linesBetween } from "../sales/frames.ts";
+import { lineGmv } from "../sales/summary.ts";
 
 const CATEGORY_LISTS = CATEGORIES.length;
 
@@ -45,6 +47,8 @@ export type TodayIdeas = {
   source: "market" | "showcase"; channel: Channel; day: string | null; listAt: string | null; rows: Idea[]; gold: boolean; at: string;
   /** How many she sees (10, 30 or 100), the category shown (null for all), and the categories with a TikTok list. */
   want?: number; cat?: string | null; cats?: string[];
+  /** Marketplace: her own main categories, best first (herCategories); empty when Rezekii knows none from her sales. */
+  herCats?: string[];
 };
 
 const MYT = 8 * 3_600_000;
@@ -132,6 +136,30 @@ async function listCats(): Promise<string[]> {
   const sums = new Map<string, number>();
   for (const h of l.byId.values()) if (h.cat) sums.set(h.cat, (sums.get(h.cat) ?? 0) + (h.lo + h.hi) / 2);
   return [...sums.entries()].sort((a, b) => b[1] - a[1]).map(([c]) => c);
+}
+
+/**
+ * Her main categories (owner, 3 Nov 2026: "just show a few category, closest category to the users"): her sales in the last 30
+ * days by category from her own order lines, best first, up to 4, only ones with a TikTok list. A product's category is one
+ * Rezekii already has (TikTok's newest daily lists, or a product page that read it), so TikTok isn't asked.
+ */
+export async function herCategories(userId: string): Promise<string[]> {
+  const now = Date.now();
+  const gmv = new Map<string, number>();
+  for (const l of await linesBetween(userId, now - 30 * 86_400_000, now)) if (l.product_id) gmv.set(l.product_id, (gmv.get(l.product_id) ?? 0) + lineGmv(l));
+  const ids = [...gmv].filter(([, g]) => g > 0).sort((a, b) => b[1] - a[1]).slice(0, 200).map(([id]) => id);
+  if (!ids.length) return [];
+  const [l, cats] = await Promise.all([newestLists(), listCats()]);
+  const rest = ids.filter((id) => !l?.byId.get(id)?.cat && /^\d{6,25}$/.test(id));
+  const saved = rest.length ? ((await (await supabaseRest(`product_details?product_id=in.(${rest.join(",")})&main_category=not.is.null&select=product_id,main_category`)).json()) as { product_id: string; main_category: string }[]) : [];
+  const mainOf = new Map(saved.map((r) => [r.product_id, r.main_category]));
+  const known = new Set(cats);
+  const sums = new Map<string, number>();
+  for (const id of ids) {
+    const c = l?.byId.get(id)?.cat ?? mainOf.get(id);
+    if (c && known.has(c)) sums.set(c, (sums.get(c) ?? 0) + gmv.get(id)!);
+  }
+  return [...sums].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([c]) => c);
 }
 
 /** Each idea's last 28 days of sales from TikTok's daily lists (middle of the GMV range; null when not in a top 100). */
@@ -260,7 +288,8 @@ export async function soldInLastDay(products: { id: string; sold: number; price:
 
 /**
  * Showcase ideas: her showcase products (first 200) ranked by their sales across TikTok. Video view: those in TikTok's
- * top-selling videos over the last 7 days, by those videos' sales.
+ * top-selling videos over the last 7 days, by those videos' sales. Only products TikTok's product search returns or that are on
+ * Rezekii, so each one opens (owner, 3 Nov 2026: "if the product couldn't be found, it shouldn't be on the list").
  */
 export async function showcaseIdeas(token: string, want: number, channel: Channel = "all"): Promise<TodayIdeas> {
   const base = await showcaseIdeasFor(token, want, channel);
@@ -273,8 +302,9 @@ async function showcaseIdeasFor(token: string, want: number, channel: Channel): 
   if (channel === "others") {
     const o = await othersOf();
     const tapById = new Map(tap.map((p) => [p.id, p]));
-    const mine = show.items.filter((s) => o.byId.has(s.id)).sort((a, b) => o.byId.get(b.id)!.gmv - o.byId.get(a.id)!.gmv).slice(0, want);
-    const found = await searchIds(token, mine.map((s) => s.id));
+    const listed = show.items.filter((s) => o.byId.has(s.id)).sort((a, b) => o.byId.get(b.id)!.gmv - o.byId.get(a.id)!.gmv);
+    const found = await searchIds(token, listed.map((s) => s.id));
+    const mine = listed.filter((s) => found.has(s.id) || tapById.has(s.id)).slice(0, want);
     const rows = mine.map((s): Idea => {
       const x = o.byId.get(s.id)!;
       const sales: Sales = { kind: "others", gmv: x.gmv, day: o.day! };
@@ -286,8 +316,9 @@ async function showcaseIdeasFor(token: string, want: number, channel: Channel): 
   if (channel === "video") {
     const vids = await videoProducts(7);
     const tapById = new Map(tap.map((p) => [p.id, p]));
-    const mine = show.items.filter((s) => vids.has(s.id)).sort((a, b) => vids.get(b.id)!.lo + vids.get(b.id)!.hi - (vids.get(a.id)!.lo + vids.get(a.id)!.hi)).slice(0, want);
-    const found = await searchIds(token, mine.map((s) => s.id));
+    const listed = show.items.filter((s) => vids.has(s.id)).sort((a, b) => vids.get(b.id)!.lo + vids.get(b.id)!.hi - (vids.get(a.id)!.lo + vids.get(a.id)!.hi));
+    const found = await searchIds(token, listed.map((s) => s.id));
+    const mine = listed.filter((s) => found.has(s.id) || tapById.has(s.id)).slice(0, want);
     const rows = mine.map((s): Idea => {
       const v = vids.get(s.id)!;
       const sales: Sales = { kind: "video", lo: v.lo, hi: v.hi, day: v.day, videos: v.videos, week: true };
@@ -299,7 +330,7 @@ async function showcaseIdeasFor(token: string, want: number, channel: Channel): 
   const tapById = new Map(tap.map((p) => [p.id, p]));
   const found = await searchIds(token, show.items.map((p) => p.id));
   const daily = await soldInLastDay([...found.values()].map((p) => ({ id: p.id, sold: p.market_performance?.historical_sold_quantity ?? 0, price: num(p.price?.floor_price) })));
-  const rows = show.items.map((s): Idea & { tier: number; key: number } => {
+  const rows = show.items.filter((s) => found.has(s.id) || tapById.has(s.id)).map((s): Idea & { tier: number; key: number } => {
     const hit = l?.byId.get(s.id);
     const p = found.get(s.id);
     const total = p?.market_performance?.historical_sold_quantity ?? 0;
