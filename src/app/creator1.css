@@ -361,6 +361,14 @@
 .ai-match { --m: 80; flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: conic-gradient(#6d5efc calc(var(--m) * 1%), var(--line) 0); position: relative; }
 .ai-match::before { content: ""; position: absolute; inset: 3.5px; border-radius: 50%; background: var(--surface); }
 .ai-match b { position: relative; font-size: 11.5px; font-weight: 900; color: #5b4ee0; }
+button.ai-match { border: 0; padding: 0; cursor: pointer; font: inherit; }
+button.ai-match:focus-visible { outline: 2px solid #6d5efc; outline-offset: 2px; }
+.ai-parts { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border-radius: 12px; background: var(--bg); animation: cr1Pop 0.2s ease both; transform-origin: top; }
+.ai-part { display: grid; grid-template-columns: minmax(0, 1fr) clamp(32px, 22%, 64px) 36px; align-items: center; gap: 8px; font-size: 12.5px; color: var(--body); }
+.ai-part > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ai-part i { height: 6px; border-radius: 3px; background: linear-gradient(90deg, #6d5efc var(--p), var(--line) 0); }
+.ai-part b { text-align: right; font-variant-numeric: tabular-nums; color: var(--text); }
+.ai-parts small { font-size: 11.5px; color: var(--muted); }
 .ai-meta { font-size: 12.5px; color: var(--muted); line-height: 1.35; }
 .ai-conv { display: flex; flex-wrap: wrap; gap: 5px; }
 .ai-conv > span { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 8px; border-radius: 8px; background: var(--surface2); color: var(--muted); font-size: 12px; font-weight: 700; }
@@ -524,7 +532,7 @@
 .cr1-parcel-steps i { flex: 1; font-style: normal; font-size: 11.5px; font-weight: 800; color: var(--muted); padding-top: 6px; border-top: 4px solid var(--line); }
 .cr1-parcel-steps i.on { color: var(--blue); border-color: #3b82f6; }
 @media (max-width: 560px) { .cr1-parcel { grid-template-columns: 40px minmax(0, 1fr); } .cr1-parcel > .badge { grid-column: 2; justify-self: start; } }
-@media (prefers-reduced-motion: reduce) { .ai-item, .ai-insight, .ai-stack i, .ai-split i, .mk-card, .cr1-parcel { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .ai-item, .ai-parts, .ai-insight, .ai-stack i, .ai-split i, .mk-card, .cr1-parcel { animation: none !important; } }
 
 /* ================= Scanner hub (Home) ================= */
 .sh-hub { position: relative; overflow: hidden; isolation: isolate; display: flex; flex-direction: column; gap: 18px; padding: 28px; border-radius: 24px; color: var(--text); background: radial-gradient(520px 320px at 82% 45%, rgba(0, 192, 115, 0.12), transparent 62%), var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow), 0 30px 60px -44px rgba(0, 154, 92, 0.55); scroll-margin-top: 90px; }

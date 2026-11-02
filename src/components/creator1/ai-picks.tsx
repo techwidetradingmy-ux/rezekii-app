@@ -67,8 +67,11 @@ const SOURCE: Record<LivePick["source"], string> = { tiktok: "TikTok best seller
 /** One card, the same for sample and real picks. */
 type Item = {
   id: string; name: string; img: string; price: number; sold: number; soldLabel: string; rankLabel: string | null; match: number;
-  video: number; live: number; fit: Fit; why: string; rate: number; sample: boolean; source?: string;
+  video: number; live: number; fit: Fit; why: string; rate: number; sample: boolean; source?: string; parts?: LivePick["parts"];
 };
+
+/** What the match score is made of (item 18, owner, 2 Nov 2026), in the order and with the maximums modules/picks/ai.ts uses. */
+const PARTS: [keyof LivePick["parts"], string, number][] = [["category", "Your Category", 35], ["price", "Price Range", 20], ["demand", "Sells on TikTok", 20], ["rate", "Commission", 15], ["rating", "Rating", 10]];
 
 /**
  * AI picks on Home: the AI reads the creator's sales, compares TikTok Shop's best-sellers with Techwide's campaigns,
@@ -88,6 +91,7 @@ export function AiPicks() {
   const [real, setReal] = useState<LivePicks | null>(null);
   const [channel, setChannel] = useState<"Overall" | "Video" | "LIVE">("Overall");
   const [failed, setFailed] = useState(false);
+  const [scoreOf, setScoreOf] = useState<string | null>(null);
   const linked = live ? !!me?.shop : demoLinked;
 
   // Signed in (owner, 1 Nov 2026): the steps keep pace with how long her last analysis took (about a minute at first), with a
@@ -142,7 +146,7 @@ export function AiPicks() {
   const items: Item[] = live
     ? (real?.picks ?? []).map((p) => ({
         id: p.id, name: p.name, img: p.image ?? NO_PHOTO, price: p.priceLo ?? 0, sold: p.sold, soldLabel: "sold on TikTok", match: p.match, video: p.video, live: p.live, fit: p.fit,
-        rankLabel: null, why: p.why.join(" · ") || "Sells well on TikTok", source: SOURCE[p.source],
+        rankLabel: null, why: p.why.join(" · ") || "Sells well on TikTok", source: SOURCE[p.source], parts: p.parts,
         rate: ((p.source !== "rezekii" || level === "bronze" ? p.openRate : p.silverRate ?? p.openRate) ?? 0) / 100, sample: p.samples > 0,
       }))
     : AI_PICKS.map((pk) => {
@@ -415,8 +419,24 @@ export function AiPicks() {
                   <span className="ai-body">
                     <span className="ai-row1">
                       <Link href={productHref(it.id)} className="ai-name"><strong>{live ? shortName(it.name) : it.name}</strong></Link>
-                      <span className="ai-match" style={{ "--m": it.match } as React.CSSProperties} title="Match with you, out of 100"><b>{it.match}</b></span>
+                      {it.parts ? (
+                        <button type="button" className="ai-match" style={{ "--m": it.match } as React.CSSProperties} aria-expanded={scoreOf === it.id} aria-label={`Match ${it.match} out of 100. See what makes it up`} title="See what makes up this score" onClick={() => setScoreOf(scoreOf === it.id ? null : it.id)}><b>{it.match}</b></button>
+                      ) : (
+                        <span className="ai-match" style={{ "--m": it.match } as React.CSSProperties} title="Match with you, out of 100"><b>{it.match}</b></span>
+                      )}
                     </span>
+                    {it.parts && scoreOf === it.id && (
+                      <span className="ai-parts" role="group" aria-label="Match score">
+                        {PARTS.map(([k, label, max]) => (
+                          <span key={k} className="ai-part">
+                            <span>{label}</span>
+                            <i style={{ "--p": `${Math.round((it.parts![k] / max) * 100)}%` } as React.CSSProperties} />
+                            <b>{it.parts![k]}/{max}</b>
+                          </span>
+                        ))}
+                        <small>How well it fits your sales so far. It isn&apos;t a sales forecast.</small>
+                      </span>
+                    )}
                     <small className="ai-meta">{rm(it.price)} · {short(it.sold)} {it.soldLabel}{it.rankLabel ? ` · ${it.rankLabel}` : ""}</small>
                     {it.source && <i className={`ai-src${it.source === "Rezekii campaign" ? " rz" : ""}`}>{it.source}</i>}
                     <span className="ai-why">{it.why}</span>
