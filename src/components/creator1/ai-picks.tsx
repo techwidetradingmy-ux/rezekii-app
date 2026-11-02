@@ -68,6 +68,8 @@ const SOURCE: Record<LivePick["source"], string> = { tiktok: "TikTok best seller
 type Item = {
   id: string; name: string; img: string; price: number; sold: number; soldLabel: string; rankLabel: string | null; match: number;
   video: number; live: number; fit: Fit; why: string; rate: number; sample: boolean; source?: string; parts?: LivePick["parts"];
+  /** TikTok's buyer rating, when known (owner, 2 Nov 2026). */
+  rating: number | null;
 };
 
 /** What the match score is made of (item 18, owner, 2 Nov 2026), in the order and with the maximums modules/picks/ai.ts uses. */
@@ -147,7 +149,7 @@ export function AiPicks() {
     ? (real?.picks ?? []).map((p) => ({
         id: p.id, name: p.name, img: p.image ?? NO_PHOTO, price: p.priceLo ?? 0, sold: p.sold, soldLabel: "sold on TikTok", match: p.match, video: p.video, live: p.live, fit: p.fit,
         rankLabel: null, why: p.why.join(" · ") || "Sells well on TikTok", source: SOURCE[p.source], parts: p.parts,
-        rate: ((p.source !== "rezekii" || level === "bronze" ? p.openRate : p.silverRate ?? p.openRate) ?? 0) / 100, sample: p.samples > 0,
+        rate: ((p.source !== "rezekii" || level === "bronze" ? p.openRate : p.silverRate ?? p.openRate) ?? 0) / 100, sample: p.samples > 0, rating: p.rating,
       }))
     : AI_PICKS.map((pk) => {
         const p = product(pk.productId);
@@ -155,7 +157,7 @@ export function AiPicks() {
           id: p.id, name: p.name, img: p.img, price: p.price, sold: pk.week, soldLabel: "sold this week", match: pk.match, video: pk.video, live: pk.live, fit: pk.fit,
           rankLabel: pk.rank ? `#${pk.rank} in ${p.category}` : null, why: pk.why, rate: rateOf(pk),
           // A free sample only for Techwide campaign products, and only when this creator's level opens that sample pool.
-          sample: pk.from === "tap" && canGetSample(p.samples),
+          sample: pk.from === "tap" && canGetSample(p.samples), rating: p.rating,
         };
       });
 
@@ -437,7 +439,7 @@ export function AiPicks() {
                         <small>How well it fits your sales so far. It isn&apos;t a sales forecast.</small>
                       </span>
                     )}
-                    <small className="ai-meta">{rm(it.price)} · {short(it.sold)} {it.soldLabel}{it.rankLabel ? ` · ${it.rankLabel}` : ""}</small>
+                    <small className="ai-meta">{rm(it.price)} · {short(it.sold)} {it.soldLabel}{it.rankLabel ? ` · ${it.rankLabel}` : ""}{it.rating ? <> · <span className="ai-score"><Icon name="star" size={11} width={2.4} /> {it.rating.toFixed(1)}</span></> : null}</small>
                     {it.source && <i className={`ai-src${it.source === "Rezekii campaign" ? " rz" : ""}`}>{it.source}</i>}
                     <span className="ai-why">{it.why}</span>
                     <span className="ai-foot">

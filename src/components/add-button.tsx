@@ -42,7 +42,8 @@ export function AddButton({ id, name, rate, size = "md", label = "Add", inShowca
     const r = await addOne(id);
     if (r.added) return done(!!r.already);
     setState("idle");
-    // Not approved for direct adds yet: TikTok's own page opens to add it there.
+    // Not approved for direct adds yet: TikTok's own page opens to add it there. When TikTok refused it, its reason shows instead
+    // (owner, 2 Nov 2026: the link isn't opened silently).
     if (r.link) window.open(r.link, "_blank", "noopener");
     else toast(r.error ?? "TikTok Shop didn't add it. Please try again.");
   };

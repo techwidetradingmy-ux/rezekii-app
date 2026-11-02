@@ -369,6 +369,8 @@ button.ai-match:focus-visible { outline: 2px solid #6d5efc; outline-offset: 2px;
 .ai-part b { text-align: right; font-variant-numeric: tabular-nums; color: var(--text); }
 .ai-parts small { font-size: 11.5px; color: var(--muted); }
 .ai-meta { font-size: 12.5px; color: var(--muted); line-height: 1.35; }
+.ai-score { color: var(--amber); font-weight: 800; }
+.ai-score svg { vertical-align: -1px; }
 .ai-conv { display: flex; flex-wrap: wrap; gap: 5px; }
 .ai-conv > span { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 8px; border-radius: 8px; background: var(--surface2); color: var(--muted); font-size: 12px; font-weight: 700; }
 .ai-conv b { color: var(--body); font-variant-numeric: tabular-nums; }
@@ -730,6 +732,8 @@ button.ai-match:focus-visible { outline: 2px solid #6d5efc; outline-offset: 2px;
 /* Marketplace cards line up (owner, 28 Oct 2026): name always 2 lines, price on 1 line, one text size per row. */
 .mk-card strong { min-height: calc(2 * 1.3em); font-size: 14px; font-weight: 800; }
 .mk-meta { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; line-height: 1.3; }
+.mk-score { color: var(--amber); font-weight: 800; }
+.mk-score svg { vertical-align: -1px; }
 .mk-rates { justify-content: space-between; }
 .mk-rates s { font-size: 16px; }
 .mk-rates .to b { font-size: 16px; }
@@ -1765,6 +1769,7 @@ li.sc-row { cursor: default; }
 .pp-sk { display: block; height: 16px; border-radius: 8px; background: linear-gradient(90deg, var(--surface2) 25%, var(--line) 50%, var(--surface2) 75%); background-size: 200% 100%; animation: ppSk 1.2s ease-in-out infinite; }
 .pp-wait .pp-photo { background: linear-gradient(90deg, var(--surface2) 25%, var(--line) 50%, var(--surface2) 75%); background-size: 200% 100%; animation: ppSk 1.2s ease-in-out infinite; }
 .pp-wait .pp-photo img { opacity: 0.9; }
+.pp-wait-msg { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 13.5px; font-weight: 700; color: var(--muted); }
 @keyframes ppSk { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 @media (prefers-reduced-motion: reduce) { .pp-sk, .pp-wait .pp-photo { animation: none; } }
 
@@ -1837,6 +1842,7 @@ li.sc-row { cursor: default; }
 .gs-band-1 { stroke: rgba(0, 192, 115, 0.3); stroke-width: 4; stroke-linecap: round; }
 .gs-line { fill: none; stroke: #00a862; stroke-width: 1.8; stroke-linejoin: round; stroke-linecap: round; }
 .gs-dot { fill: #00a862; }
+.gs-at { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 3; }
 .nb-spark { display: grid; justify-items: end; gap: 1px; flex-shrink: 0; }
 .nb-spark small { font-size: 10.5px; font-weight: 700; color: var(--muted); }
 .nb-est { margin: 4px 0 0; }
@@ -1856,3 +1862,15 @@ li.sc-row { cursor: default; }
 .pp-month-h b { font-size: 14.5px; font-weight: 800; }
 .pp-month-h small, .pp-month-note { font-size: 12px; font-weight: 600; color: var(--muted); }
 .pp-month .gs { width: 100%; }
+/* The product page's sales graph (owner, 2 Nov 2026): RM up the side, dates along the bottom, tap a day for its range. */
+.gc { display: grid; gap: 8px; }
+.gc-plot { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 6px; row-gap: 4px; }
+.gc-y { display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; }
+.gc-y small, .gc-x small { font-size: 10.5px; font-weight: 700; line-height: 1; color: var(--muted); white-space: nowrap; }
+.gc-area { position: relative; min-width: 0; }
+.gc-hit { position: absolute; inset: 0; display: flex; }
+.gc-hit button { flex: 1 1 0; min-width: 0; padding: 0; border: 0; border-radius: 4px; background: none; cursor: pointer; }
+.gc-hit button:focus-visible { outline: 2px solid var(--green); outline-offset: -2px; }
+.gc-x { grid-column: 2; display: flex; justify-content: space-between; }
+.gc-day { margin: 0; font-size: 13px; font-weight: 600; color: var(--muted); }
+.gc-day b { color: var(--text); font-weight: 800; }

@@ -47,7 +47,7 @@ export function findMatches(showcase: ShowcaseEntry[], catalog: Map<string, TapP
 /** How long a product TikTok refused to add for a creator stays out of their raises. */
 const REFUSED_DAYS = 30;
 /** TikTok's refusal for a product it won't take into this creator's showcase ("Adding product failed. Please contact TikTok.").*/
-const REFUSED = /adding product failed/i;
+export const REFUSED = /adding product failed/i;
 
 /** Products TikTok refused to add for this creator in the last REFUSED_DAYS days: { productId: when }. */
 export async function refusedProducts(userId: string): Promise<Record<string, string>> {
@@ -56,7 +56,7 @@ export async function refusedProducts(userId: string): Promise<Record<string, st
   return Object.fromEntries(Object.entries(row?.value ?? {}).filter(([, at]) => Date.parse(at) > since));
 }
 
-async function noteRefused(userId: string, ids: string[]) {
+export async function noteRefused(userId: string, ids: string[]) {
   if (!ids.length) return;
   const now = new Date().toISOString();
   const value = { ...(await refusedProducts(userId)), ...Object.fromEntries(ids.map((id) => [id, now])) };

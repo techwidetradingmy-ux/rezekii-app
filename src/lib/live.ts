@@ -1,4 +1,5 @@
 import { LIVE_PRODUCTS, LIVE_STUBS, short, type Product, type Raise } from "./mock";
+import { LIVE_FACTS, LIVE_GONE, LIVE_OFF, LIVE_REFUSED, type LiveFacts, type OffLive, type WantedLive } from "./product-view";
 import type { ShopItem, Stage } from "./mock-seller";
 import type { LiveShopProduct } from "@/modules/marketplace/shop-products.ts";
 
@@ -47,15 +48,18 @@ export async function addRaises(productIds: string[]): Promise<{ added: string[]
   return { added: d.added ?? [], failed: d.failed ?? [], raises: ((d.raises ?? []) as LiveRaise[]).map(fromLiveRaise) };
 }
 
-/** A Marketplace product, as /api/tap/products sends it. openRate = the open plan (Bronze); silverRate = Silver and Gold. */
-export type LiveTap = { id: string; name: string; shop: string | null; category: string | null; image: string | null; priceLo: number | null; openRate: number | null; silverRate: number | null; sold: number; samples: number };
+/**
+ * A Marketplace product, as /api/tap/products sends it. openRate = the open plan (Bronze); silverRate = Silver and Gold. `rating`:
+ * TikTok's buyer rating when Rezekii already knows it (owner, 2 Nov 2026).
+ */
+export type LiveTap = { id: string; name: string; shop: string | null; category: string | null; image: string | null; priceLo: number | null; openRate: number | null; silverRate: number | null; sold: number; samples: number; rating?: number | null };
 
 export function fromLiveTap(t: LiveTap, level: "bronze" | "silver" | "gold"): Product {
   const open = (t.openRate ?? 0) / 100;
   const silver = (t.silverRate ?? t.openRate ?? 0) / 100;
   const p: Product = {
     id: t.id, name: t.name, shop: t.shop ?? "", img: t.image ?? "/avatars/blank.svg", price: t.priceLo ?? 0, category: t.category ?? "Other",
-    publicRate: open, partnerRate: silver, tapRate: level === "bronze" ? open : silver, sold: t.sold, rating: 0, samples: t.samples > 0 ? 0 : null,
+    publicRate: open, partnerRate: silver, tapRate: level === "bronze" ? open : silver, sold: t.sold, rating: t.rating ?? 0, samples: t.samples > 0 ? 0 : null,
   };
   LIVE_PRODUCTS.set(t.id, p);
   return p;
@@ -79,8 +83,11 @@ export async function loadMarket(o: { q: string; cat: string; sort: string; only
   };
 }
 
-/** + Showcase for one real product: added straight away (`already`: it was there before), or a TAP link to open. */
-export async function addOne(productId: string): Promise<{ added: boolean; already?: boolean; link?: string; error?: string }> {
+/**
+ * + Showcase for one real product: added straight away (`already`: it was there before), or a TAP link to open. When TikTok
+ * refuses it, its reason in plain words and no link (`refused`: TikTok won't take it for her, owner 2 Nov 2026).
+ */
+export async function addOne(productId: string): Promise<{ added: boolean; already?: boolean; link?: string; error?: string; refused?: boolean }> {
   const r = await fetch("/api/tap/showcase", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ productId }) }).catch(() => null);
   if (!r) return { added: false, error: "Couldn't reach TikTok Shop. Please try again." };
   return r.json().catch(() => ({ added: false, error: "Couldn't reach TikTok Shop. Please try again." }));
@@ -131,11 +138,34 @@ export async function loadAnalyticsRange(from: string, to: string): Promise<{ ra
   return { range: d.range, chart: d.chart };
 }
 
-/** One real Marketplace product by id, in full (never a stand-in); kept 30 minutes by the browser. */
-export async function loadProduct(id: string, level: "bronze" | "silver" | "gold"): Promise<Product | null> {
-  if (LIVE_PRODUCTS.has(id)) return LIVE_PRODUCTS.get(id) ?? null;
-  const d = await fetch(`/api/tap/products/${encodeURIComponent(id)}`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-  return d?.product ? fromLiveTap(d.product as LiveTap, level) : null;
+type LivePage = {
+  product: LiveTap | null; facts: Omit<LiveFacts, "open"> | null; open: number | null;
+  off: { product: OffLive; wanted: WantedLive | null } | null; refused: boolean;
+};
+
+/**
+ * One product page in one request, read fresh on every open (owner, 2 Nov 2026): a Marketplace product in full (never a
+ * stand-in), or one not on Rezekii as TikTok lists it with its wish list numbers; TikTok's rating, categories and Open Plan rate;
+ * and whether TikTok refused it for her. A Marketplace product she saw that has left the Marketplace is marked so. False when it
+ * can't be found.
+ */
+export async function loadProduct(id: string, level: "bronze" | "silver" | "gold"): Promise<boolean> {
+  const r = await fetch(`/api/tap/products/${encodeURIComponent(id)}`, { cache: "no-store" }).catch(() => null);
+  const d = (await r?.json().catch(() => null)) as (Partial<LivePage> & { error?: string }) | null;
+  if (!r || !d || (!r.ok && r.status !== 404) || d.product === undefined) return false;
+  if (d.product) {
+    fromLiveTap(d.product, level);
+    LIVE_GONE.delete(id);
+  } else if (LIVE_PRODUCTS.has(id)) {
+    LIVE_GONE.add(id);
+    // TikTok's listing replaces the Marketplace copy she saw.
+    if (d.off) LIVE_PRODUCTS.delete(id);
+  }
+  if (d.off) LIVE_OFF.set(id, d.off);
+  if (d.open !== undefined) LIVE_FACTS.set(id, { rating: null, reviews: null, main: null, sub: null, ...d.facts, open: d.open === null ? null : d.open / 100 });
+  if (d.refused) LIVE_REFUSED.add(id);
+  else LIVE_REFUSED.delete(id);
+  return !!(d.product || d.off || LIVE_GONE.has(id));
 }
 
 /** Free sample through Techwide's TAP campaign: TikTok's one-time link to its sample request page. */

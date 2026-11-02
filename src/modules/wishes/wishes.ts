@@ -29,18 +29,6 @@ export async function findProduct(token: string | null, input: string): Promise<
   };
 }
 
-/** findProduct for a product page, kept 30 minutes per product (owner, 1 Nov 2026: a product opens fast the second time). */
-export async function findProductCached(token: string | null, id: string): Promise<{ product: WishProduct; onRezekii: boolean } | { error: string }> {
-  if (!/^\d{6,25}$/.test(id)) return findProduct(token, id);
-  const since = new Date(Date.now() - 30 * 60_000).toISOString();
-  const [hit] = (await (await supabaseRest(`product_facts_cache?product_id=eq.${id}&at=gte.${since}&select=data&limit=1`)).json().catch(() => [])) as { data: { product: WishProduct; onRezekii: boolean } }[];
-  if (hit) return hit.data;
-  const found = await findProduct(token, id);
-  if (!("error" in found))
-    await supabaseRest("product_facts_cache?on_conflict=product_id", { method: "POST", headers: { prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify({ product_id: id, data: found, at: new Date().toISOString() }) }).catch(() => null);
-  return found;
-}
-
 /** Her wishes, newest first, with where each one is now. */
 export async function myWishes(userId: string): Promise<MyWish[]> {
   const rows = (await (await supabaseRest(`wishes?user_id=eq.${userId}&select=${COLS}&order=created_at.desc&limit=200`)).json()) as Row[];
@@ -89,14 +77,11 @@ export async function saveWish(userId: string, token: string | null, productId: 
   return res.ok ? { ok: true } : { error: "Didn't save. Please try again." };
 }
 
-/** Every wished-for product not on Rezekii yet, with what creators committed in all. */
-export async function board(): Promise<BoardItem[]> {
-  const rows = (await (await supabaseRest(`wishes?declined_at=is.null&select=${COLS}&order=created_at.asc&limit=5000`)).json()) as Row[];
-  const live = new Set((await allProducts()).map((p) => p.id));
+/** What creators committed in all, per product (wishes oldest first). */
+function tally(rows: Row[]): Map<string, BoardItem> {
   const weekAgo = new Date(Date.now() - 7 * DAY).toISOString();
   const by = new Map<string, BoardItem>();
   for (const r of rows) {
-    if (live.has(r.product_id)) continue;
     const b = by.get(r.product_id) ?? by.set(r.product_id, { ...product(r), creators: 0, videos: 0, lives: 0, rights: 0, week: 0, first: r.created_at }).get(r.product_id)!;
     b.creators += 1;
     b.videos += r.videos;
@@ -104,13 +89,24 @@ export async function board(): Promise<BoardItem[]> {
     if (r.rights > 0) b.rights += 1;
     if (r.created_at >= weekAgo) b.week += 1;
   }
-  return [...by.values()].sort((a, b) => b.creators - a.creators || b.videos - a.videos);
+  return by;
 }
 
-/** One product's board numbers, or null when no one has asked for it. */
+/** Every wished-for product not on Rezekii yet, with what creators committed in all. */
+export async function board(): Promise<BoardItem[]> {
+  const rows = (await (await supabaseRest(`wishes?declined_at=is.null&select=${COLS}&order=created_at.asc&limit=5000`)).json()) as Row[];
+  const live = new Set((await allProducts()).map((p) => p.id));
+  return [...tally(rows.filter((r) => !live.has(r.product_id))).values()].sort((a, b) => b.creators - a.creators || b.videos - a.videos);
+}
+
+/**
+ * One product's board numbers, or null when no one has asked for it. Only that product's wishes are read (owner, 2 Nov 2026: a
+ * product page doesn't load the whole board); callers ask only for products not on Rezekii.
+ */
 export async function wantedOne(productId: string): Promise<BoardItem | null> {
   if (!/^\d{15,21}$/.test(productId)) return null;
-  return (await board()).find((b) => b.id === productId) ?? null;
+  const rows = (await (await supabaseRest(`wishes?product_id=eq.${productId}&declined_at=is.null&select=${COLS}&order=created_at.asc&limit=5000`)).json()) as Row[];
+  return tally(rows).get(productId) ?? null;
 }
 
 /** One creator's wish as admins see it: who, what they commit, and their note. */

@@ -14,6 +14,8 @@ export type ProductView = {
   img: string;
   price: number;
   category: string;
+  /** TikTok's sub category, once the page has read it (owner, 2 Nov 2026); `category` is then TikTok's main category. */
+  sub: string | null;
   rating: number | null;
   /** Total sold on TikTok Shop, when we know it. */
   sold: number | null;
@@ -31,7 +33,20 @@ export type ProductView = {
   /** Units sold each day for the last 7 days (sample), oldest first. */
   week: number[];
   wanted: Wanted | null;
+  /** It was in Rezekii's Marketplace when she saw it and isn't any more (owner, 2 Nov 2026). */
+  gone: boolean;
+  /** TikTok refused to add it to her showcase lately (owner, 2 Nov 2026). */
+  refused: boolean;
 };
+
+/**
+ * What a signed-in product page read for each product (owner, 2 Nov 2026): TikTok's rating and main and sub category, the Open
+ * Plan rate (percent; null when TikTok has none), products no longer in the Marketplace, and ones TikTok refused for her.
+ */
+export type LiveFacts = { rating: number | null; reviews: number | null; main: string | null; sub: string | null; open: number | null };
+export const LIVE_FACTS = new Map<string, LiveFacts>();
+export const LIVE_GONE = new Set<string>();
+export const LIVE_REFUSED = new Set<string>();
 
 /**
  * Real products that aren't on Rezekii yet (owner, 31 Oct 2026), found from a pasted link or the wish list board, with how many
@@ -50,23 +65,30 @@ const pickTrend = (id: string) => TRENDS[[...id].reduce((n, c) => n + c.charCode
 
 export function productView(id: string): ProductView | null {
   const m = PRODUCTS.find((p) => p.id === id) ?? LIVE_PRODUCTS.get(id);
+  const f = LIVE_FACTS.get(id);
+  const gone = LIVE_GONE.has(id);
+  const refused = LIVE_REFUSED.has(id);
   if (m) {
-    // A real product (owner, 30 Oct 2026) has no rating or daily sales line from the API yet, so none is shown.
+    // A real product (owner, 30 Oct 2026) has no daily sales line from the API yet, so none is shown. Its rating, categories and
+    // Open Plan rate are TikTok's once the page has read them (owner, 2 Nov 2026); until then, what the list knew.
     const real = !PRODUCTS.includes(m);
     const nb = NICHE_BEST.find((b) => b.productId === id);
+    const open = real ? (f ? f.open : m.publicRate || null) : bestRate(m).rate;
     return {
-      id, name: m.name, shop: m.shop, img: m.img, price: m.price, category: m.category, rating: real ? null : m.rating, sold: m.sold,
-      publicRate: m.publicRate, nowRate: bestRate(m).rate, nowPlan: bestRate(m).plan, tapRate: rateFor(m).rate, special: rateFor(m).special ? { until: rateFor(m).until } : null, samples: m.samples, inShowcase: !real && ON_IDS.includes(id), mySold: real ? null : ON_SOLD30[id] ?? null,
-      week: real ? [] : daily(nb?.weekSold ?? Math.round(m.sold / 26), nb?.trend ?? pickTrend(id)), wanted: null,
+      id, name: m.name, shop: m.shop, img: m.img, price: m.price, category: f?.main ?? m.category, sub: f?.sub ?? null, rating: real ? f?.rating ?? (m.rating || null) : m.rating, sold: m.sold,
+      publicRate: real ? open : m.publicRate, nowRate: open, nowPlan: real ? "Open plan" : bestRate(m).plan,
+      // No longer in the Marketplace: no Rezekii rate and no free sample (owner, 2 Nov 2026).
+      tapRate: gone ? null : rateFor(m).rate, special: !gone && rateFor(m).special ? { until: rateFor(m).until } : null, samples: gone ? null : m.samples, inShowcase: !real && ON_IDS.includes(id), mySold: real ? null : ON_SOLD30[id] ?? null,
+      week: real ? [] : daily(nb?.weekSold ?? Math.round(m.sold / 26), nb?.trend ?? pickTrend(id)), wanted: null, gone, refused,
     };
   }
   const real = LIVE_OFF.get(id);
   if (real) {
     const r = real.product;
     return {
-      id, name: r.name, shop: r.shop, img: r.img ?? "/avatars/blank.svg", price: r.price, category: r.category, rating: null, sold: r.sold,
+      id, name: r.name, shop: r.shop, img: r.img ?? "/avatars/blank.svg", price: r.price, category: f?.main ?? r.category, sub: f?.sub ?? null, rating: f?.rating ?? null, sold: r.sold,
       publicRate: r.rate, nowRate: r.rate, nowPlan: "Open plan", tapRate: null, special: null, samples: null, inShowcase: false, mySold: null,
-      week: [], wanted: real.wanted ? asWanted(real.wanted) : null,
+      week: [], wanted: real.wanted ? asWanted(real.wanted) : null, gone, refused,
     };
   }
   const off = NOT_YET.find((s) => s.id === id);
@@ -74,9 +96,9 @@ export function productView(id: string): ProductView | null {
   const base = off ?? w;
   if (!base) return null;
   return {
-    id, name: base.name, shop: base.shop, img: base.img, price: base.price, category: off?.category ?? w?.category ?? "", rating: null, sold: null,
+    id, name: base.name, shop: base.shop, img: base.img, price: base.price, category: off?.category ?? w?.category ?? "", sub: null, rating: null, sold: null,
     publicRate: base.rate, nowRate: base.rate, nowPlan: "Open plan", tapRate: null, special: null, samples: null, inShowcase: !!off, mySold: off?.sold ?? null,
-    week: daily(Math.max(70, (off?.sold ?? w?.sold30 ?? 300) * 2), pickTrend(id)), wanted: wantedFor(id) ?? null,
+    week: daily(Math.max(70, (off?.sold ?? w?.sold30 ?? 300) * 2), pickTrend(id)), wanted: wantedFor(id) ?? null, gone: false, refused: false,
   };
 }
 

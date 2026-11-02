@@ -170,7 +170,8 @@ export default function Marketplace() {
                 {asked && <span className="cr1-reqd"><Icon name="check" size={13} width={3} /> Requested</span>}
               </Link>
               <Link href={productHref(p.id)} className="mka-name"><strong>{p.name}</strong></Link>
-              <small className="mk-meta">{rm(p.price)} · {p.sold >= 1e6 ? `${(p.sold / 1e6).toFixed(1)}M` : `${Math.round(p.sold / 1e3)}K`} sold</small>
+              {/* Its TikTok rating when Rezekii already knows it (owner, 2 Nov 2026); TikTok is never asked per card. */}
+              <small className="mk-meta">{rm(p.price)} · {p.sold >= 1e6 ? `${(p.sold / 1e6).toFixed(1)}M` : `${Math.round(p.sold / 1e3)}K`} sold{p.rating > 0 && <> · <span className="mk-score"><Icon name="star" size={11} width={2.4} /> {p.rating.toFixed(1)}</span></>}</small>
               {better ? (
                 <span className="mka-rate" aria-label={`${now.plan} ${now.rate}%, Rezekii ${mine(p)}%`}><s>{now.rate}%</s><Icon name="arrow" size={13} /><b><Hidden>{mine(p)}%</Hidden></b>{now.plan === "Target plan" && <em className="mka-target">Target</em>}{rateFor(p).special && <em className="mka-special">Special</em>}</span>
               ) : kept ? (
