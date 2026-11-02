@@ -53,16 +53,21 @@ type LivePicks = {
     sales?: { video: number; live: number; other: number };
     hours: [string, number][]; you: { gender: string | null; race: string | null } | null; audience: { female: number; male: number; age: string; places: string } | null;
   };
-  effort: { id: string; name: string; videos: number; lives: number; gmv: number; commission: number; perPost: number; hit: { gmv: number } | null; per1k?: number | null; perVideo?: number | null; perLive?: number | null; gmvPerPost?: number }[];
+  /** One row per product on video or LIVE (owner, 3 Nov 2026); picks saved before then have no `kind` and aren't shown. */
+  effort: { id: string; name: string; kind?: "video" | "live"; posts: number; gmv: number; commission: number; worth: number; per: "1k" | "video" | "live"; hit: { gmv: number } | null }[];
   compared: number; picks: LivePick[];
   rising: { category: string; change: number }[];
   peers: { user: string; name: string; img: string | null; followers: number; lo: number; hi: number; video: number }[];
+  peersWhy?: string;
   swap: { count: number; items: { id: string; name: string; img: string | null }[] };
   at: string;
   /** Saved picks shown straight away; `ms` is how long the analysis took. */
   saved?: boolean; ms?: number;
 };
 const SOURCE: Record<LivePick["source"], string> = { tiktok: "TikTok best seller", market: "TikTok marketplace", rezekii: "Rezekii campaign" };
+/** The product on TikTok Shop (owner, 3 Nov 2026), in the shop.tiktok.com/view/product/<id> format of TikTok's own product links. */
+const tiktokHref = (id: string) => `https://shop.tiktok.com/view/product/${id}?region=MY&locale=en`;
+const PER: Record<LivePicks["effort"][number]["per"], string> = { "1k": "per 1K views", video: "per video", live: "per LIVE" };
 
 /** One card, the same for sample and real picks. */
 type Item = {
@@ -361,25 +366,36 @@ export function AiPicks() {
             </div>
           )}
 
-          {live && real && real.effort.length > 0 && (
+          {live && real && real.effort.some((e) => e.kind) && (
             <div className="ai-more">
-              <h3>Worth Your Effort <Tip label="Worth your effort" text="For each product you sold in the last 30 days: sales per 1,000 views on your videos (sales per video where TikTok hasn't given Rezekii your views), and sales per LIVE (TikTok doesn't share how long a LIVE ran, so it can't be per hour). Best sales per post first. A star marks a single video or LIVE that took off. Only posts that made a sale are counted." /></h3>
-              <ol className="ai-effort">
-                {real.effort.map((e) => (
-                  <li key={e.id}>
-                    {/* Each row opens its product (owner, 1 Nov 2026). */}
-                    <Link href={productHref(e.id)} className="ai-effort-row">
-                      <span><b>{shortName(e.name)}</b><small>{[e.videos && `${e.videos} video${e.videos === 1 ? "" : "s"}`, e.lives && `${e.lives} LIVE${e.lives === 1 ? "" : "s"}`].filter(Boolean).join(" · ")} · {rm(e.commission)} commission</small></span>
-                      <span className="ai-per">
-                        {e.per1k != null ? <span><b>{rm(e.per1k)}</b><small>per 1K views</small></span> : e.videos > 0 && <span><b>{rm(e.perVideo ?? e.gmvPerPost ?? e.perPost)}</b><small>per video</small></span>}
-                        {e.perLive != null && <span><b>{rm(e.perLive)}</b><small>per LIVE</small></span>}
-                      </span>
-                      <Icon name="arrow" size={15} />
-                    </Link>
-                    {e.hit && <i className="ai-hit"><Icon name="star" size={12} width={2.4} /> 1 post made {rm(e.hit.gmv)}</i>}
-                  </li>
-                ))}
-              </ol>
+              <h3>Worth Your Effort <Tip label="Worth your effort" text="For each product you sold in the last 30 days, most worthwhile first. Videos: sales per 1,000 views (then sales per video, where TikTok hasn't given Rezekii your views). LIVEs: sales per LIVE, as TikTok's LIVE length isn't reliable enough for per hour. A star marks a single post that took off. Only posts that made a sale are counted." /></h3>
+              {/* Videos and LIVEs apart, each sorted most worthwhile first (owner, 3 Nov 2026). */}
+              <div className="ai-effort-sets">
+                {(["video", "live"] as const).map((k) => {
+                  const rows = real.effort.filter((e) => e.kind === k);
+                  return rows.length > 0 && (
+                    <div key={k}>
+                      <small className="ai-effort-h">{k === "video" ? "Videos" : "LIVEs"}</small>
+                      <ol className="ai-effort">
+                        {rows.map((e) => (
+                          <li key={e.id}>
+                            {/* Each row opens its product (owner, 1 Nov 2026). */}
+                            <Link href={productHref(e.id)} className="ai-effort-row">
+                              <span>
+                                <b>{shortName(e.name)}</b>
+                                <small>{e.posts} {k === "video" ? "video" : "LIVE"}{e.posts === 1 ? "" : "s"} · {rm(e.gmv, 0)} sales · {rm(e.commission)} commission</small>
+                                {e.hit && <i className="ai-hit"><Icon name="star" size={12} width={2.4} /> 1 {k === "video" ? "video" : "LIVE"} made {rm(e.hit.gmv)}</i>}
+                              </span>
+                              <span className="ai-per"><b>{rm(e.worth)}</b><small>{PER[e.per]}</small></span>
+                              <Icon name="arrow" size={15} />
+                            </Link>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -420,7 +436,8 @@ export function AiPicks() {
                   </Link>
                   <span className="ai-body">
                     <span className="ai-row1">
-                      <Link href={productHref(it.id)} className="ai-name"><strong>{live ? shortName(it.name) : it.name}</strong></Link>
+                      {/* Short names throughout AI Picks (owner, 3 Nov 2026). */}
+                      <Link href={productHref(it.id)} className="ai-name"><strong>{shortName(it.name)}</strong></Link>
                       {it.parts ? (
                         <button type="button" className="ai-match" style={{ "--m": it.match } as React.CSSProperties} aria-expanded={scoreOf === it.id} aria-label={`Match ${it.match} out of 100. See what makes it up`} title="See what makes up this score" onClick={() => setScoreOf(scoreOf === it.id ? null : it.id)}><b>{it.match}</b></button>
                       ) : (
@@ -444,12 +461,16 @@ export function AiPicks() {
                     <span className="ai-why">{it.why}</span>
                     <span className="ai-foot">
                       <span className="ai-earn">Earn <b><Hidden>{it.rate}%</Hidden></b></span>
+                      {/* Every card opens its product on TikTok Shop (owner, 3 Nov 2026); the sample's products aren't real ones. */}
+                      {live
+                        ? <a className="ai-btn ghost" href={tiktokHref(it.id)} target="_blank" rel="noreferrer">Open in TikTok</a>
+                        : <button type="button" className="ai-btn ghost" onClick={() => toast("Opening the product in TikTok…")}>Open in TikTok</button>}
                       {it.sample && (
                         <button type="button" className={`ai-btn ghost ${asked ? "asked" : ""}`} disabled={asked} onClick={() => requireWa(() => router.push(productHref(it.id, { sample: true })))}>
                           <Icon name={asked ? "check" : "gift"} size={14} width={asked ? 2.8 : 1.9} /> {asked ? "Requested" : "Free sample"}
                         </button>
                       )}
-                      <AddButton id={it.id} name={it.name} rate={it.rate} size="sm" />
+                      <AddButton id={it.id} name={shortName(it.name)} rate={it.rate} size="sm" />
                     </span>
                   </span>
                 </article>
@@ -469,7 +490,8 @@ export function AiPicks() {
               )}
               {real.peers.length > 0 && (
                 <div className="ai-more">
-                  <h3>Creators Like You <Tip label="Creators like you" text="TikTok's top creators in your main category over the last 30 days, with how much of their sales come from video." /></h3>
+                  <h3>Creators Like You <Tip label="Creators like you" text="TikTok's top creators in your main category over the last 30 days who sell the way you do: mostly LIVE if most of your sales come from LIVE, mostly video if from video (the Video and LIVE tabs choose for you). Those with sales nearest yours and a video share closest to yours come first, so you know who to learn from." /></h3>
+                  {real.peersWhy && <small className="ai-peers-why">{real.peersWhy}</small>}
                   <ol className="ai-peers">
                     {real.peers.map((c) => (
                       <li key={c.user}>
@@ -503,16 +525,11 @@ export function AiPicks() {
             </div>
           )}
 
+          {/* No explanation of Match down here (owner, 3 Nov 2026): the score itself shows what makes it up. */}
           {live ? (
-            <p className="ai-fine">
-              <b>Match</b>: fit with you, out of 100, from your categories (up to 35), your price range (20), how well it sells on TikTok (20), commission (15) and rating (10). Not a forecast.{" "}
-              <b>Earn</b>: the product&apos;s commission; on Rezekii campaign products, your Rezekii rate.
-            </p>
+            <p className="ai-fine"><b>Earn</b>: the product&apos;s commission; on Rezekii campaign products, your Rezekii rate.</p>
           ) : (
-            <p className="ai-fine">
-              <b>Match</b>: fit with you, out of 100. Not a forecast.{" "}
-              <b>Earn</b>: Techwide&apos;s rate, or your own rate if it&apos;s higher.
-            </p>
+            <p className="ai-fine"><b>Earn</b>: Techwide&apos;s rate, or your own rate if it&apos;s higher.</p>
           )}
         </>
       )}

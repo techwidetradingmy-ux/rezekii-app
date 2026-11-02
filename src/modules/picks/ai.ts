@@ -13,7 +13,7 @@ import { ensurePhotos } from "../photos/ensure.ts";
  * AI Picks (owner, 31 Oct 2026): a deep look at her last 30 days, then the products on TikTok Shop that fit her best.
  * - Her account: top categories, price range, average order, video or LIVE, when her buyers order, her gender and race (as
  *   she gave them) and her followers (TikTok's Creator Marketplace profile, when Rezekii has read it).
- * - Worth your effort: commission per video for each product she sold, and single videos that took off.
+ * - Worth your effort: sales per 1,000 views on video and per LIVE for each product she sold, and single posts that took off.
  * - Picks: TikTok's 30-day best sellers in her main categories, TikTok's marketplace search in her categories and price range,
  *   and Rezekii campaign products (which can also get a free sample), scored on fit. All are products she can add.
  * - Rising in your niche, Creators like you, and Swap out (showcase products that didn't sell in 30 days).
@@ -35,13 +35,13 @@ export type Pick = {
   fit: "video" | "live"; video: number; live: number; why: string[];
 };
 /**
- * Worth your effort for one product (owner, 1 Nov 2026): videos are judged by sales per 1,000 views (from her TikTok account's view
- * counts, where Rezekii has them); LIVEs by sales per LIVE, because TikTok doesn't give creators a LIVE's length. Ranked by sales
- * per post (video or LIVE).
+ * Worth your effort for one product, on video or on LIVE (owner, 3 Nov 2026: "always sort from the most worthy effort to the
+ * lowest"). Videos by sales per 1,000 views (from her TikTok account's view counts, where Rezekii has them; else sales per video,
+ * after those); LIVEs by sales per LIVE, because TikTok's LIVE length isn't reliable enough for per hour.
  */
 export type Effort = {
-  id: string; name: string; videos: number; lives: number; gmv: number; commission: number; perPost: number; hit: { gmv: number } | null;
-  videoGmv: number; liveGmv: number; per1k: number | null; perVideo: number | null; perLive: number | null; gmvPerPost: number;
+  id: string; name: string; kind: "video" | "live"; posts: number; gmv: number; commission: number;
+  worth: number; per: "1k" | "video" | "live"; hit: { gmv: number } | null;
 };
 export type AiResult = {
   linked: boolean;
@@ -55,6 +55,8 @@ export type AiResult = {
   effort: Effort[]; compared: number; picks: Pick[];
   rising: { category: string; change: number }[];
   peers: { user: string; name: string; img: string | null; followers: number; lo: number; hi: number; video: number }[];
+  /** Why these creators (owner, 3 Nov 2026). */
+  peersWhy: string;
   swap: { count: number; items: { id: string; name: string; img: string | null }[] };
   at: string;
 };
@@ -145,56 +147,49 @@ export async function aiPicks(userId: string, token: string, username: string | 
   const topMains = mains.filter(([, s]) => s.share >= 0.05).slice(0, 3).map(([c]) => c);
   const detail = username ? await creatorDetail(username.toLowerCase(), 4.08).catch(() => null) : null;
 
-  // Worth your effort: commission per video or LIVE, per product; a single video that took off.
-  type Acc = { name: string; posts: Map<string, { gmv: number; live: boolean }>; gmv: number; commission: number };
-  const per = new Map<string, Acc>();
+  // Worth your effort: per product, her videos and LIVEs that made a sale (a refunded order makes none); a single post that took off.
+  const per = new Map<string, { name: string; posts: Map<string, { gmv: number; earned: number; live: boolean }> }>();
   for (const l of lines) {
-    if (!l.product_id) continue;
-    const a = per.get(l.product_id) ?? per.set(l.product_id, { name: l.product_name ?? "Product", posts: new Map(), gmv: 0, commission: 0 }).get(l.product_id)!;
-    const g = lineGmv(l);
-    a.gmv += g;
-    a.commission += lineEarned(l);
     const k = kindOf(l.content_type);
-    if (l.content_id && k !== "other") {
-      const p = a.posts.get(l.content_id) ?? a.posts.set(l.content_id, { gmv: 0, live: k === "live" }).get(l.content_id)!;
-      p.gmv += g;
-    }
+    if (!l.product_id || !l.content_id || k === "other") continue;
+    const a = per.get(l.product_id) ?? per.set(l.product_id, { name: l.product_name ?? "Product", posts: new Map() }).get(l.product_id)!;
+    const p = a.posts.get(l.content_id) ?? a.posts.set(l.content_id, { gmv: 0, earned: 0, live: k === "live" }).get(l.content_id)!;
+    p.gmv += lineGmv(l);
+    p.earned += lineEarned(l);
   }
   // Her videos' view counts, where her TikTok account gives them.
-  const vidIds = [...new Set([...per.values()].flatMap((a) => [...a.posts.entries()].filter(([, p]) => !p.live).map(([id]) => id)))];
+  const vidIds = [...new Set([...per.values()].flatMap((a) => [...a.posts.entries()].filter(([, p]) => !p.live && p.gmv > 0).map(([id]) => id)))];
   const views = new Map<string, number>();
   for (let i = 0; i < vidIds.length; i += 100)
     for (const r of (await (await supabaseRest(`tiktok_videos?video_id=in.(${vidIds.slice(i, i + 100).join(",")})&views=not.is.null&select=video_id,views`)).json().catch(() => [])) as { video_id: string; views: number }[])
       if (r.views > 0) views.set(r.video_id, r.views);
   const r2 = (n: number) => Math.round(n * 100) / 100;
-  const effort: Effort[] = [...per.entries()]
-    .filter(([, a]) => a.posts.size > 0 && a.commission > 0)
-    .map(([id, a]) => {
-      const posts = [...a.posts.entries()];
-      const best = posts.reduce((m, [, p]) => (p.gmv > m ? p.gmv : m), 0);
-      const vids = posts.filter(([, p]) => !p.live);
-      const lvs = posts.filter(([, p]) => p.live);
-      const videoGmv = vids.reduce((s, [, p]) => s + p.gmv, 0);
-      const liveGmv = lvs.reduce((s, [, p]) => s + p.gmv, 0);
-      // Sales per 1,000 views, from the videos whose views are known.
-      const seen = vids.filter(([vid]) => views.has(vid));
-      const seenViews = seen.reduce((s, [vid]) => s + (views.get(vid) ?? 0), 0);
-      const seenGmv = seen.reduce((s, [, p]) => s + p.gmv, 0);
-      return {
-        id, name: a.name, videos: vids.length, lives: lvs.length, gmv: Math.round(a.gmv), commission: r2(a.commission),
-        perPost: r2(a.commission / posts.length),
-        videoGmv: r2(videoGmv), liveGmv: r2(liveGmv),
-        per1k: seenViews >= 100 ? r2((seenGmv / seenViews) * 1000) : null,
-        // Without view counts a video is judged by its sales per video (owner, 1 Nov 2026: the fallback standard).
-        perVideo: vids.length ? r2(videoGmv / vids.length) : null,
-        perLive: lvs.length ? r2(liveGmv / lvs.length) : null,
-        gmvPerPost: r2((videoGmv + liveGmv) / posts.length),
-        // One video or LIVE that took off: RM1,000+ in sales on its own, or nearly all of the product's sales from one post.
-        hit: best >= 1000 || (posts.length >= 3 && best >= a.gmv * 0.7 && best >= 300) ? { gmv: Math.round(best) } : null,
-      };
-    })
-    .sort((a, b) => b.gmvPerPost - a.gmvPerPost)
-    .slice(0, 8);
+  // One row per product on video and one on LIVE, most worthwhile first; none worth RM 0.00 (owner, 3 Nov 2026).
+  const effort: Effort[] = (["video", "live"] as const).flatMap((kind) =>
+    [...per.entries()]
+      .flatMap(([id, a]): Effort[] => {
+        const posts = [...a.posts.entries()].filter(([, p]) => p.live === (kind === "live") && p.gmv > 0);
+        const gmv = posts.reduce((s, [, p]) => s + p.gmv, 0);
+        const commission = posts.reduce((s, [, p]) => s + p.earned, 0);
+        if (!posts.length || r2(commission) <= 0) return [];
+        const best = posts.reduce((m, [, p]) => (p.gmv > m ? p.gmv : m), 0);
+        // Sales per 1,000 views, from the videos whose views are known.
+        const seen = posts.filter(([vid]) => views.has(vid));
+        const seenViews = seen.reduce((s, [vid]) => s + (views.get(vid) ?? 0), 0);
+        const per1k = kind === "video" && seenViews >= 100 ? r2((seen.reduce((s, [, p]) => s + p.gmv, 0) / seenViews) * 1000) : null;
+        return [{
+          id, name: a.name, kind, posts: posts.length, gmv: Math.round(gmv), commission: r2(commission),
+          // Without view counts a video is judged by its sales per video (owner, 1 Nov 2026: the fallback standard).
+          worth: per1k ?? r2(gmv / posts.length), per: per1k !== null ? "1k" : kind,
+          // One post that took off: RM1,000+ in sales on its own, or nearly all of the product's sales there from one post.
+          hit: best >= 1000 || (posts.length >= 3 && best >= gmv * 0.7 && best >= 300) ? { gmv: Math.round(best) } : null,
+        }];
+      })
+      .filter((e) => e.worth > 0)
+      // Per 1,000 views first (they can't be compared with per video), each highest first.
+      .sort((a, b) => Number(b.per === "1k") - Number(a.per === "1k") || b.worth - a.worth)
+      .slice(0, 6),
+  );
 
   // Candidates: TikTok's 30-day best sellers in her main categories, TikTok's marketplace search, Rezekii campaign products.
   const mine = prof.products;
@@ -288,15 +283,29 @@ export async function aiPicks(userId: string, token: string, username: string | 
     if (change !== null) rising.push({ category: CAT[c], change });
   }
 
-  // Creators like you: TikTok's top creators (30 days) whose main category is hers.
+  // Creators like you (owner, 3 Nov 2026): TikTok's top creators (30 days) in her main category who sell the way she does, mostly
+  // LIVE or mostly video (the Video and LIVE tabs choose), with sales like hers (within about one of TikTok's ranges, ×10, of her
+  // 30 days; else the nearest) and the video share closest to hers, so she knows who to learn from.
   const built = topMains.length ? await rankings().catch(() => null) : null;
-  const peers = built
+  const { video: sv, live: sl, other: so } = prof.split;
+  const mix = sv + sl > 0 ? pct(sv, sv + sl) : -1;
+  const side = channel !== "all" ? channel : mix < 0 ? null : mix >= 50 ? "video" : "live";
+  const her = sv + sl + so;
+  const gap = (lo: number, hi: number) => (her > 0 ? Math.max(0, Math.log10(Math.max(lo / her, her / Math.max(1, hi))) - 1) : 0);
+  const like = built
     ? built.creators["30D"]
-        .filter((r) => built.details[r[1]]?.c?.[0] === topMains[0] && r[1] !== username?.toLowerCase())
-        .filter((r) => { const vs = built.details[r[1]]?.vs ?? -1; return channel === "all" || (channel === "video" ? vs >= 50 : vs >= 0 && vs < 50); })
+        .flatMap((r) => {
+          const d = built.details[r[1]];
+          if (!d || d.c?.[0] !== topMains[0] || r[1] === username?.toLowerCase()) return [];
+          if (side && (d.vs < 0 || (side === "video") !== (d.vs >= 50))) return [];
+          return [{ r, vs: d.vs, img: d.a ?? null, gap: gap(r[5], r[6]) }];
+        })
+        .sort((a, b) => a.gap - b.gap || (mix < 0 ? 0 : Math.abs(a.vs - mix) - Math.abs(b.vs - mix)) || a.r[0] - b.r[0])
         .slice(0, 5)
-        .map((r) => ({ user: r[1], name: r[2] || r[1], img: built.details[r[1]]?.a ?? null, followers: r[3], lo: r[5], hi: r[6], video: built.details[r[1]]?.vs ?? -1 }))
     : [];
+  const peers = like.map(({ r, vs, img }) => ({ user: r[1], name: r[2] || r[1], img, followers: r[3], lo: r[5], hi: r[6], video: vs }));
+  const range = like.every((x) => x.gap === 0) ? "in your sales range" : "closest to your sales";
+  const peersWhy = side ? `Mostly ${side === "video" ? "video" : "LIVE"}${channel === "all" ? " like you" : ""}, ${range}` : range[0].toUpperCase() + range.slice(1);
   // Every creator shows a photo (owner, 1 Nov 2026): one without a saved photo is saved now; any still missing go to the
   // front of the daily photo task.
   const noPhoto = peers.filter((c) => !c.img).map((c) => c.user);
@@ -323,7 +332,7 @@ export async function aiPicks(userId: string, token: string, username: string | 
       you: saved ? { gender: saved.details.gender ?? null, race: saved.details.race ?? null } : null,
       audience: detail && (detail.f || detail.m) ? { female: detail.f, male: detail.m, age: detail.age, places: detail.loc } : null,
     },
-    effort, compared, picks, rising, peers,
+    effort, compared, picks, rising, peers, peersWhy,
     swap: { count: idle.length, items: idle.slice(0, 5).map((p) => ({ id: p.id, name: p.name, img: p.img })) },
     at: new Date(now).toISOString(),
   };
