@@ -324,7 +324,7 @@ export const APP_LANDING: Record<string, string> = {
   "8–10 pm": "8–10 malam",
   "From your own posts": "Daripada hantaran anda sendiri",
   "Before": "Sebelum",
-  "Sample": "Contoh",
+  "Example": "Contoh",
   "View {name}'s results screenshot larger": "Lihat tangkapan skrin keputusan {name} dengan lebih besar",
   "{name}'s results screenshot": "Tangkapan skrin keputusan {name}",
 

@@ -140,7 +140,7 @@ export function StoryCard({ s }: { s: Story }) {
           <small>{t(s.handle)}{s.state ? ` · ${t(s.state)}` : ""}</small>
         </span>
         {s.level && <span className={`badge ${LEVEL_BADGE[s.level]}`}>{t(s.level)}</span>}
-        {s.sample && <span className="badge badge-gray">{t("Sample")}</span>}
+        {s.sample && <span className="badge badge-gray">{t("Example")}</span>}
       </header>
       <div className="lp-story-mid">
         {s.screenshot ? (

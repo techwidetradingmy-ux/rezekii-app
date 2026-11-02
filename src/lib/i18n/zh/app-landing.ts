@@ -311,7 +311,7 @@ export const APP_LANDING: Record<string, string> = {
   "8–10 pm": "晚上 8–10 点",
   "From your own posts": "来自你自己的发布",
   "Before": "之前",
-  "Sample": "示例",
+  "Example": "示例",
   "View {name}'s results screenshot larger": "放大查看 {name} 的成效截图",
   "{name}'s results screenshot": "{name} 的成效截图",
 
