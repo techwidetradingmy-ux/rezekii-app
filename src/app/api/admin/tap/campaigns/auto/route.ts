@@ -5,7 +5,7 @@ import { autoExtendOn, endingCampaigns, setAutoExtend } from "@/modules/admin/ca
 
 export const dynamic = "force-dynamic";
 
-/** Whether campaigns ending within 90 days are extended automatically each morning, and which ones those are (admins only; owner, 2 Nov 2026). */
+/** Whether campaigns ending within 90 days are extended automatically on the 1st of each month, and which ones those are (admins only; owner, 2 Nov 2026). */
 export async function GET() {
   const user = await currentUser();
   if (user?.role !== "admin") return NextResponse.json({ error: "Admins only." }, { status: 403 });

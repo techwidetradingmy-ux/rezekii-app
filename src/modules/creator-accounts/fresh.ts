@@ -47,13 +47,21 @@ function readOnce(userId: string, kind: Kind): Promise<unknown> {
 
 /**
  * Keeps her data current before a page shows it: what was never read is read now, so the page isn't empty; what's over 30
- * minutes old is read again right after the answer, so it's current a moment later. Returns when each was last read.
+ * minutes old is read again, and the page waits for it up to `waitMs` (owner, 2 Nov 2026: Sales shows new orders at once),
+ * otherwise it's current a moment later. Returns when each was last read.
  */
-export async function keepFresh(userId: string, kinds: Kind[] = ["orders", "videos"]): Promise<ReadTimes> {
+export async function keepFresh(userId: string, kinds: Kind[] = ["orders", "videos"], waitMs = 0): Promise<ReadTimes> {
   const t = await readTimes(userId).catch((): ReadTimes => ({ orders: null, videos: null }));
   const never = kinds.filter((k) => !t[k]);
   const old = kinds.filter((k) => t[k] && Date.now() - Date.parse(t[k]!) > STALE);
-  if (old.length) after(() => Promise.all(old.map((k) => readOnce(userId, k))));
+  if (old.length) {
+    const reading = Promise.all(old.map((k) => readOnce(userId, k)));
+    after(() => reading);
+    if (waitMs > 0 && !never.length) {
+      const done = await Promise.race([reading.then(() => true), new Promise<false>((r) => setTimeout(() => r(false), waitMs))]);
+      return done ? readTimes(userId).catch(() => t) : t;
+    }
+  }
   if (!never.length) return t;
   await Promise.all(never.map((k) => readOnce(userId, k)));
   return readTimes(userId).catch(() => t);

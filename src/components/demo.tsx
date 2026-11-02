@@ -6,7 +6,7 @@ import type { BetaState } from "@/modules/beta/access.ts";
 
 export type Role = "creator" | "seller";
 /** The real signed-in account (owner, 30 Oct 2026: plug real data, keep the design). Null = signed out, sample data shows. */
-export type Me = { id: string; name: string | null; email: string | null; role: "admin" | "creator"; photo: string | null; handle: string | null; level: "bronze" | "silver" | "gold"; shop: { handle: string; access: string | null } | null; sellerShop: string | null; ttLevel?: number | null;
+export type Me = { id: string; name: string | null; email: string | null; role: "admin" | "creator"; photo: string | null; handle: string | null; level: "bronze" | "silver" | "gold"; shop: { handle: string; access: string | null; expired?: boolean } | null; sellerShop: string | null; ttLevel?: number | null;
   signIn?: { tiktok: string | null; google: string | null; email: string | null; password: boolean };
   /** Beta sign-up approval per app (owner, 2 Nov 2026); null on an app she hasn't opened yet. */
   beta?: { creator: BetaState | null; seller: BetaState | null } | null };

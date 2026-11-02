@@ -9,7 +9,7 @@ import { shopPhotos } from "../creator-accounts/photos.ts";
 import { campaignSampleProducts, checkCreatorSamples, offersSamples, sampleCheckToken, sampleOffers, saveSampleOffers } from "../tap/samples.ts";
 import { getSampleLabel } from "../../integrations/tiktok-shop/creator.ts";
 import { listCampaignProductStats, listCampaignProducts, listCampaigns, listProductCreators, type Campaign, type CampaignProduct, type CampaignProductStats } from "../../integrations/tiktok-shop/partner.ts";
-import { amount, goldenSellers, type StatRow } from "../tap/golden.ts";
+import { amount, type StatRow } from "../tap/golden.ts";
 import { smallImage } from "../tap/image.ts";
 import { updateLevels } from "../levels/store.ts";
 import { pruneActivity } from "../admin/admins.ts";
@@ -18,17 +18,17 @@ import { refreshCommunity } from "../community/numbers.ts";
 import { approvedCreatorToken } from "../creator-accounts/access.ts";
 import { queuedPhotos } from "../photos/queue.ts";
 import { activeCreators, syncCreatorOrders } from "../sales/orders.ts";
-import { buildRankings, rankings as builtRankings } from "../rankings/store.ts";
+import { buildRankings } from "../rankings/store.ts";
 import { productSums } from "../admin/tap.ts";
 import { PHOTO_DAYS, freshUrl, saveCreatorPhoto, savedPhotos } from "../photos/store.ts";
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { getTikTokUser } from "../../integrations/tiktok/login.ts";
 import { freshTikTokToken } from "../posting/store.ts";
 import { getBestselling, getMarketplaceCreator, searchMarketplaceCreators, type BestsellingKind } from "../../integrations/tiktok-shop/seller.ts";
-import { TT_LEVELS, bestSlot, mytDay, type PlannedTask } from "./plan.ts";
+import { TT_LEVELS, bestSlot, mytDay, mytWeekday, type PlannedTask } from "./plan.ts";
 import { TAG_START, tagFilters, tagNext, tagTask, type TagState } from "../accounts/tags.ts";
 import type { Sessions } from "./sessions.ts";
-import { catalogSales, creatorsNeedingDetail, linkedUsername, marketplaceOpen, openTaskCount, photoSources, rebuildTapCatalog, saveDetail, saveSnapshot, saveTags, snapshotItems, tagsDue, trimMarket, type TaskRow, upsertCreatorProducts, upsertCreators } from "./store.ts";
+import { carryTapSnapshots, creatorsNeedingDetail, lastSnapshot, linkedUsername, marketplaceOpen, openTaskCount, photoSources, rebuildTapCatalog, samplesUnderway, saveDetail, saveSnapshot, saveTags, tagsDue, trimMarket, type TaskRow, upsertCreatorProducts, upsertCreators } from "./store.ts";
 
 /** TikTok's "too many requests" code, shared by the app's whole API group. */
 export const RATE_LIMITED = 36009002;
@@ -106,8 +106,13 @@ async function tapCampaigns(t: TaskRow, { sessions }: Ctx): Promise<StepResult> 
     pageToken = data.next_page_token || undefined;
     if (pageToken) await wait(300);
   } while (pageToken);
+  // Campaigns that had already ended at the last read don't change (owner, 2 Nov 2026): their last products and sales are kept
+  // for today without asking TikTok again.
+  const ended = new Set(((await lastSnapshot("tap_campaigns", "all", t.run_date)) as Campaign[]).filter((c) => c?.status === "CLOSED").map((c) => c.id));
   await saveSnapshot("tap_campaigns", "all", t.run_date, campaigns);
-  const followUps: PlannedTask[] = campaigns.map((c) => ({ key: `tap_products|${c.id}`, kind: "tap_products", params: { campaign: c }, priority: 2 }));
+  const keep = campaigns.filter((c) => c.status === "CLOSED" && ended.has(c.id)).map((c) => c.id);
+  if (keep.length) await carryTapSnapshots(keep, t.run_date);
+  const followUps: PlannedTask[] = campaigns.filter((c) => !keep.includes(c.id)).map((c) => ({ key: `tap_products|${c.id}`, kind: "tap_products", params: { campaign: c }, priority: 2 }));
   return { count: campaigns.length, followUps };
 }
 
@@ -132,9 +137,15 @@ async function tapProducts(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
 
   const shopOf = new Map(rows.map((p) => [p.id, p.shop_name ?? ""]));
   const stats: StatRow[] = [];
-  // Products somebody promotes: their creators are read next (tap_creators), for My TAP products.
+  // Products whose creators are read next (tap_creators), for My TAP products: only those whose sales changed since the last
+  // read (owner, 2 Nov 2026: products without sales aren't read), and those with a free sample on its way, so sample missions
+  // and levels keep counting.
   const promoted: CreatorTaskProduct[] = [];
   const byId = new Map(rows.map((p) => [p.id, p]));
+  const [before, sampling] = await Promise.all([
+    lastSnapshot("tap_stats", c.id, t.run_date).then((r) => new Map((r as StatRow[]).map((x) => [x[0], JSON.stringify(x.slice(2))]))),
+    samplesUnderway(c.id),
+  ]);
   try {
     pageToken = undefined;
     do {
@@ -142,9 +153,11 @@ async function tapProducts(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
       for (const x of data.campaign_product_statistics ?? []) {
         const d = x.campaign_product_detail;
         const k = d?.indicator_data;
-        if (d?.product_id) stats.push([d.product_id, shopOf.get(d.product_id) ?? "", amount(k?.estimated_amount), amount(k?.actual_amount), amount(k?.estimated_partner_commission), amount(k?.actual_partner_commission)]);
+        const row: StatRow | null = d?.product_id ? [d.product_id, shopOf.get(d.product_id) ?? "", amount(k?.estimated_amount), amount(k?.actual_amount), amount(k?.estimated_partner_commission), amount(k?.actual_partner_commission)] : null;
+        if (row) stats.push(row);
         const p = d?.product_id ? byId.get(d.product_id) : undefined;
-        if (p && (x.promoted_creator_num ?? 0) > 0) promoted.push([p.id, p.name, p.shop_name ?? "", smallImage(p.main_image_url)]);
+        const sold = !!row && row.slice(2).some((v) => Number(v) > 0) && before.get(row[0]) !== JSON.stringify(row.slice(2));
+        if (p && (x.promoted_creator_num ?? 0) > 0 && (sold || sampling.has(p.id))) promoted.push([p.id, p.name, p.shop_name ?? "", smallImage(p.main_image_url)]);
       }
       pageToken = data.next_page_token || undefined;
       if (pageToken) await wait(300);
@@ -167,7 +180,7 @@ async function levels(t: TaskRow): Promise<StepResult> {
 
 /** The Rankings page data from the day's best-seller lists. Waits until every list (and older missing day) is saved, except lists TikTok hasn't published yet. */
 async function rankings(t: TaskRow, { deadline }: Ctx): Promise<StepResult> {
-  if (!(t.params as { manual?: boolean }).manual && (await openTaskCount(t.run_date, "best", WAITING))) return { count: 0, more: true, waitMs: 60_000 };
+  if (await openTaskCount(t.run_date, "best", WAITING)) return { count: 0, more: true, waitMs: 60_000 };
   // The full build and its three saves take about 35 seconds: start it only at the beginning of a tick, so it isn't cut off.
   if (Date.now() > deadline - 40_000) return { count: 0, more: true, waitMs: 0 };
   const built = await buildRankings((t.params as { day: string }).day);
@@ -282,11 +295,7 @@ async function tapCreators(t: TaskRow, { sessions, deadline }: Ctx): Promise<Ste
 async function tapCatalog(t: TaskRow): Promise<StepResult> {
   if (await openTaskCount(t.run_date, "tap_products")) return { count: 0, more: true, waitMs: 60_000 };
   if (await openTaskCount(t.run_date, "tap_campaigns")) return { count: 0, more: true, waitMs: 60_000 };
-  const count = await rebuildTapCatalog();
-  // Golden Sellers from today's campaign sales (kept from the last good day if sales could not be read).
-  const stats = (await snapshotItems("tap_stats", t.run_date)) as StatRow[];
-  if (stats.length) await saveSnapshot("tap_golden", "top3", t.run_date, goldenSellers(stats, await catalogSales()));
-  return { count };
+  return { count: await rebuildTapCatalog() };
 }
 
 /**
@@ -298,8 +307,12 @@ async function tapSamples(t: TaskRow, { deadline }: Ctx): Promise<StepResult> {
   if (await openTaskCount(t.run_date, "tap_catalog")) return { count: 0, more: true, waitMs: 60_000 };
   const token = await sampleCheckToken();
   if (!token) return { count: 0 };
-  const ids = await campaignSampleProducts();
-  const offers = await sampleOffers(t.run_date);
+  // Products that offered samples at the last check, and new products, are checked every night; those that didn't, on Sundays
+  // (owner, 2 Nov 2026). The rest keep their last answer.
+  const [every, last, offers] = await Promise.all([campaignSampleProducts(), sampleOffers(), sampleOffers(t.run_date)]);
+  const weekly = mytWeekday(Date.now()) === 0;
+  const ids = weekly ? every : every.filter((id) => last[id] !== 0);
+  if (!weekly) for (const id of every) if (last[id] === 0 && !(id in offers)) offers[id] = 0;
   let count = 0, failed = 0;
   for (let i = t.cursor ? Number(t.cursor) : 0; i < ids.length; i += 5) {
     if (Date.now() > deadline - 6000 || failed > 20) {
@@ -357,21 +370,19 @@ async function details(t: TaskRow, { sessions, deadline }: Ctx): Promise<StepRes
 }
 
 /**
- * Saved copies of the photos of every creator the Rankings views show, of Rezekii's own creators and of every TikTok account
- * connected to Rezekii, Techwide's included (owner, 16 and 21 Oct 2026: once every two weeks; TikTok's photo addresses stop
+ * Saved copies of the photos of Rezekii's own creators, of every TikTok account connected to Rezekii (Techwide's included) and
+ * of creators a screen is waiting on (owner, 16 and 21 Oct 2026: once every two weeks; TikTok's photo addresses stop
  * working within a day or two). A photo comes from a saved profile or marketplace address that still works; otherwise a
  * connected account's own sign-in gives a new address, or the creator's profile is read again. Goes through the due creators in
  * name order, carrying on after `cursor`; failures wait for the next day's task.
  */
 async function photos(t: TaskRow, { sessions, deadline }: Ctx): Promise<StepResult> {
-  const b = await builtRankings();
   const rezekii = (await (await supabaseRest("app_users?role=eq.creator&tiktok_username=not.is.null&select=tiktok_username,avatar_url&limit=5000")).json()) as { tiktok_username: string; avatar_url: string | null }[];
   const own = new Map(rezekii.map((u) => [u.tiktok_username, u.avatar_url]));
   const conns = (await (await supabaseRest("tiktok_connections?username=not.is.null&select=open_id,username,avatar_url&limit=5000")).json()) as { open_id: string; username: string; avatar_url: string | null }[];
   const team = new Map(conns.map((c) => [c.username, c]));
-  const users = new Set([...Object.keys(b?.details ?? {}), ...own.keys(), ...team.keys()]);
-  for (const rows of Object.values(b?.creators ?? {})) for (const r of rows) users.add(r[1]);
-  for (const rows of Object.values(b?.lives ?? {})) for (const r of rows) if (r[1]) users.add(r[1]);
+  // Rankings' creators keep their saved copies while Rankings is paused (owner, 2 Nov 2026).
+  const users = new Set([...own.keys(), ...team.keys()]);
   const saved = await savedPhotos(true);
   const cutoff = mytDay(Date.now(), PHOTO_DAYS);
   // Creators a screen is waiting on go first (owner, 1 Nov 2026: Creators Like You must show photos).
@@ -463,18 +474,16 @@ async function marketplace(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
   return { count: items.length, more, cursor: more ? next : null, waitMs: 20_000, followUps: capped ? marketSplits(p) : undefined };
 }
 
-/** How often a linked creator's agency status is checked again (owner, 14 Oct 2026); their TikTok level, on the 1st. */
-export const AGENCY_DAYS = 14;
-
 /**
- * A linked creator's agency status and TikTok level (modules/accounts/tags.ts): one marketplace search per run, about 20
- * seconds apart, carrying on from `cursor`. Without a creator, it queues one such task for every linked creator who is due.
+ * A linked creator's TikTok level and agency status (modules/accounts/tags.ts), once a month (owner, 2 Nov 2026: the agency
+ * status isn't shown, so it's no longer checked every 2 weeks): one marketplace search per run, about 20 seconds apart,
+ * carrying on from `cursor`. Without a creator, it queues one such task for every linked creator who is due.
  */
 async function agency(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
   const userId = (t.params as { userId?: string }).userId;
   if (!userId) {
     // Creators away for 14 days are left alone (owner, 2 Nov 2026), so their checks don't use TikTok's shared limit.
-    const [due, active] = await Promise.all([tagsDue(AGENCY_DAYS, `${mytDay(Date.now()).slice(0, 7)}-01T00:00:00+08:00`), activeCreators().then((a) => new Set(a))]);
+    const [due, active] = await Promise.all([tagsDue(`${mytDay(Date.now()).slice(0, 7)}-01T00:00:00+08:00`), activeCreators().then((a) => new Set(a))]);
     const todo = due.filter((c) => active.has(c.user_id));
     return { count: todo.length, followUps: todo.map((c) => tagTask(c.user_id)) };
   }
@@ -496,6 +505,9 @@ async function agency(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
 async function ideas(t: TaskRow, { deadline }: Ctx): Promise<StepResult> {
   const day = await listDay();
   if (!day) return { count: 0 };
+  // Made for the day TikTok just published (runner.ts): waits until all of that day's lists are saved.
+  const want = (t.params as { day?: string }).day;
+  if (want && day < want) return { count: 0, more: true, waitMs: QUARTER };
   // Creators away for 14 days are skipped (owner, 2 Nov 2026); their Today's Ideas are made when they open the page.
   const ids = await activeCreators();
   let count = 0;

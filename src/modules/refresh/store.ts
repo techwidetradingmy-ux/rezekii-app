@@ -112,14 +112,21 @@ export async function marketplaceOpen(): Promise<boolean> {
 export const DETAIL_REFRESH_DAYS = 90;
 
 /**
- * Creators whose profile is due: never read yet (best-seller creators first), then, once everyone has one, profiles older
- * than DETAIL_REFRESH_DAYS, oldest first (owner, 14 Oct 2026: no creator with WhatsApp or email missed).
+ * Rezekii creators whose profile is due: never read yet, then profiles older than DETAIL_REFRESH_DAYS, oldest first. Only
+ * Rezekii's own creators (owner, 2 Nov 2026): their profile is their audience in AI Picks; Rankings is paused.
  */
 export async function creatorsNeedingDetail(limit: number): Promise<{ creator_key: string; open_id: string }[]> {
-  const fresh = (await (await supabaseRest(`market_creators?detail_at=is.null&open_id=not.is.null&select=creator_key,open_id&order=best_rank.asc.nullslast&limit=${limit}`)).json()) as { creator_key: string; open_id: string }[];
+  const [users, linked] = await Promise.all([
+    supabaseRest("app_users?tiktok_username=not.is.null&select=u:tiktok_username&limit=5000").then((r) => r.json() as Promise<{ u: string }[]>),
+    supabaseRest("affiliate_connections?username=not.is.null&select=u:username&limit=5000").then((r) => r.json() as Promise<{ u: string }[]>),
+  ]);
+  const names = [...new Set([...users, ...linked].map((r) => r.u.toLowerCase()))];
+  if (!names.length) return [];
+  const ours = `username=in.(${encodeURIComponent(names.map((u) => `"${u.replace(/"/g, "")}"`).join(","))})`;
+  const fresh = (await (await supabaseRest(`market_creators?${ours}&detail_at=is.null&open_id=not.is.null&select=creator_key,open_id&limit=${limit}`)).json()) as { creator_key: string; open_id: string }[];
   if (fresh.length) return fresh;
   const old = new Date(Date.now() - DETAIL_REFRESH_DAYS * 86_400_000).toISOString();
-  return (await supabaseRest(`market_creators?detail_at=lt.${old}&open_id=not.is.null&select=creator_key,open_id&order=detail_at.asc&limit=${limit}`)).json();
+  return (await supabaseRest(`market_creators?${ours}&detail_at=lt.${old}&open_id=not.is.null&select=creator_key,open_id&order=detail_at.asc&limit=${limit}`)).json();
 }
 
 /** Where each creator's photo can come from: their saved profile and marketplace photo addresses (which expire), and open id. */
@@ -176,10 +183,9 @@ export async function levelPassOpen(): Promise<boolean> {
   return ((await res.json()) as unknown[]).length > 0;
 }
 
-/** Linked creators whose labels are due: agency not checked in `days` days, or TikTok level not checked since `levelSince`. */
-export async function tagsDue(days: number, levelSince: string): Promise<{ user_id: string }[]> {
-  const since = new Date(Date.now() - days * 86_400_000).toISOString();
-  const due = `or=(agency_at.is.null,agency_at.lt.${since},tt_level_at.is.null,tt_level_at.lt.${encodeURIComponent(levelSince)})`;
+/** Linked creators whose labels are due: TikTok level not checked since `levelSince` (the 1st of the month). */
+export async function tagsDue(levelSince: string): Promise<{ user_id: string }[]> {
+  const due = `or=(tt_level_at.is.null,tt_level_at.lt.${encodeURIComponent(levelSince)})`;
   const res = await supabaseRest(`affiliate_connections?user_id=not.is.null&username=not.is.null&${due}&select=user_id&limit=2000`);
   return res.json();
 }
@@ -209,20 +215,25 @@ export async function rebuildTapCatalog(): Promise<number> {
   return Number(await res.json()) || 0;
 }
 
-/** Every item of one dataset's snapshots for a day, all slots joined (e.g. every campaign's sales). */
-export async function snapshotItems(dataset: string, asOf: string): Promise<unknown[]> {
-  const rows = (await (await supabaseRest(`market_snapshots?dataset=eq.${dataset}&as_of=eq.${asOf}&select=items`)).json()) as { items: unknown[] }[];
-  return rows.flatMap((r) => r.items ?? []);
+/** One snapshot's items as last saved before `before` (e.g. a campaign's sales at the previous read); empty when there's none. */
+export async function lastSnapshot(dataset: string, slot: string, before: string): Promise<unknown[]> {
+  const [row] = (await (await supabaseRest(`market_snapshots?dataset=eq.${dataset}&slot=eq.${encodeURIComponent(slot)}&as_of=lt.${before}&select=items&order=as_of.desc&limit=1`)).json()) as { items: unknown[] }[];
+  return row?.items ?? [];
 }
 
-/** Shop and units sold for every Marketplace product (for Golden Sellers). */
-export async function catalogSales(): Promise<{ id: string; shop: string | null; sold: number }[]> {
-  const out: { id: string; shop: string | null; sold: number }[] = [];
-  for (let offset = 0; ; offset += 1000) {
-    const page = (await (await supabaseRest(`tap_catalog?select=product_id,shop,sold&order=product_id&offset=${offset}&limit=1000`)).json()) as { product_id: string; shop: string | null; sold: number }[];
-    out.push(...page.map((r) => ({ id: r.product_id, shop: r.shop, sold: Number(r.sold) })));
-    if (page.length < 1000) return out;
-  }
+/** Keeps ended campaigns' last products, totals and sales as today's, without asking TikTok (their old copies would be pruned). */
+export async function carryTapSnapshots(campaignIds: string[], to: string): Promise<void> {
+  await supabaseRest("rpc/carry_tap_snapshots", json({ p_slots: campaignIds, p_to: to }));
+}
+
+/** A campaign's products with a free sample on its way (requested, shipping or waiting for the video), and those asked for on Rezekii in the last 60 days. */
+export async function samplesUnderway(campaignId: string): Promise<Set<string>> {
+  const since = new Date(Date.now() - 60 * 86_400_000).toISOString();
+  const [tap, asked] = await Promise.all([
+    supabaseRest(`tap_creator_products?campaign_id=eq.${campaignId}&sample_status=in.(Pending,AwaitingShipment,Shipped,AwaitingCollection,ContentPending)&select=product_id&limit=1000`).then((r) => r.json() as Promise<{ product_id: string }[]>),
+    supabaseRest(`sample_requests?campaign_id=eq.${campaignId}&created_at=gte.${since}&select=product_id&limit=1000`).then((r) => r.json() as Promise<{ product_id: string }[]>),
+  ]);
+  return new Set([...tap, ...asked].map((r) => r.product_id));
 }
 
 /**

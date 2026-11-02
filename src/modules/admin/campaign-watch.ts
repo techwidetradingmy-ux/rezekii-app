@@ -5,9 +5,10 @@ import { lastEndDay, longDay, toDay } from "./campaign-dates.ts";
 import { tapOverview } from "./tap.ts";
 
 /**
- * TAP campaigns ending soon (owner, 2 Nov 2026): once a day, every live or upcoming campaign with under 90 days left is moved
+ * TAP campaigns ending soon (owner, 2 Nov 2026): once a month, every live or upcoming campaign with under 90 days left is moved
  * to the latest end TikTok allows (campaign and registration end together: 360 days from today once it is running), and
- * admins get one email listing what was extended. Tested on Techwide X Anker, 2 Nov 2026: 7 Nov 2026 → 28 Oct 2027.
+ * admins get one email listing what was extended. Monthly is enough (owner: a daily check only spent TikTok calls), since 90
+ * days is more than a month. Tested on Techwide X Anker, 2 Nov 2026: 7 Nov 2026 → 28 Oct 2027.
  */
 export const WATCH_DAYS = 90;
 const KEY = "campaign_watch";
@@ -42,15 +43,17 @@ export async function endingCampaigns(now = Date.now()): Promise<EndingCampaign[
 }
 
 /**
- * The daily run, from the quarter-hour timer: from 9 am Malaysia time, once a day. Extends them (when Extend automatically is
- * on) and emails admins what changed, what failed, or, when it's off, what is waiting to be extended.
+ * The monthly run, from the quarter-hour timer: from 9 am Malaysia time on the 1st (or the first day after it that the timer
+ * runs). Extends them (when Extend automatically is on) and emails admins what changed, what failed, or, when it's off, what is
+ * waiting to be extended.
  */
 export async function watchCampaigns(now = Date.now(), force = false): Promise<{ ran: boolean; extended: number; waiting: number; failed: number }> {
   const day = today(now);
-  const state = (await setting<{ day?: string }>(KEY)) ?? {};
-  if (!force && (state.day === day || new Date(now + MYT).getUTCHours() < 9)) return { ran: false, extended: 0, waiting: 0, failed: 0 };
+  const month = day.slice(0, 7);
+  const state = (await setting<{ day?: string; month?: string }>(KEY)) ?? {};
+  if (!force && (state.month === month || state.day === day || new Date(now + MYT).getUTCHours() < 9)) return { ran: false, extended: 0, waiting: 0, failed: 0 };
   // Claimed first, so two timer runs can't both extend and email.
-  await save(KEY, { day });
+  await save(KEY, { day, month });
   const [ending, auto] = await Promise.all([endingCampaigns(now), autoExtendOn()]);
   const extended: [string, string, string][] = [];
   const failed: [string, string][] = [];
@@ -74,7 +77,7 @@ export async function watchCampaigns(now = Date.now(), force = false): Promise<{
     await sendEmail({
       to: admins.slice(0, 50),
       subject: `Rezekii: TAP campaigns ${extended.length ? `· ${extended.length} extended` : "ending soon"}${failed.length ? ` · ${failed.length} failed` : ""}`,
-      ...layout({ title: extended.length && !failed.length ? "TAP campaigns extended" : "TAP campaigns ending soon", lines, button: { label: "Open TAP Campaigns", href: `${base}/admin/tap/campaigns` }, foot: "You get this because you're a Rezekii admin. Checked every morning. Rezekii · www.rezekii.com" }),
+      ...layout({ title: extended.length && !failed.length ? "TAP campaigns extended" : "TAP campaigns ending soon", lines, button: { label: "Open TAP Campaigns", href: `${base}/admin/tap/campaigns` }, foot: "You get this because you're a Rezekii admin. Checked on the 1st of every month. Rezekii · www.rezekii.com" }),
     });
   }
   return { ran: true, extended: extended.length, waiting: waiting.length, failed: failed.length };

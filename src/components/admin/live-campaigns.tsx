@@ -42,7 +42,7 @@ export function LiveCampaigns() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [out, setOut] = useState<Outcome | null>(null);
-  // Extend automatically each morning (owner, 2 Nov 2026).
+  // Extend automatically on the 1st of each month (owner, 2 Nov 2026).
   const [auto, setAuto] = useState<boolean | null>(null);
 
   const load = () =>
@@ -56,7 +56,7 @@ export function LiveCampaigns() {
     const r = await fetch("/api/admin/tap/campaigns/auto", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ on }) }).catch(() => null);
     if (!r?.ok) return toast("Didn't save. Please try again.");
     setAuto(on);
-    toast(on ? "Campaigns ending within 90 days are extended every morning" : "Automatic extending is off");
+    toast(on ? "Campaigns ending within 90 days are extended on the 1st of each month" : "Automatic extending is off");
   };
 
   const all = (list ?? []).filter((c) => !c.hidden);

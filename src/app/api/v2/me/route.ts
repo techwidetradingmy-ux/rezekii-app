@@ -44,7 +44,7 @@ export async function GET() {
         photo: myPhoto(user) ?? user.avatar_url,
         handle: user.tiktok_username,
         level,
-        shop: link ? { handle: link.username, access: access?.status ?? null } : null,
+        shop: link ? { handle: link.username, access: access?.status ?? null, expired: link.refreshExpiresAt.getTime() < Date.now() } : null,
         ttLevel: link ? tt[0]?.tt_level ?? null : null,
         signIn: {
           tiktok: ways?.tiktok_open_id ? (ways.tiktok_username ? `@${ways.tiktok_username}` : "Linked") : null,

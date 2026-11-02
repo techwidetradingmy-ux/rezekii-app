@@ -508,8 +508,10 @@ export default function Account() {
           <div className="cr2-cells">
             <div className="cr2-cell row">
               <BrandLogo name="TikTok Shop" size={34} className="cr2-pi" />
-              <span className="cr2-conn"><b>TikTok Shop</b><small>{me?.shop ? `@${me.shop.handle}${me.shop.access && me.shop.access !== "approved" ? " · waiting for approval" : ""}` : "Not linked"}</small></span>
-              {me?.shop ? <button type="button" className="btn-outline v2-btn-sm" onClick={() => setUnlink(true)}>Unlink</button> : <button type="button" className="np-btn v2-btn-sm" onClick={() => setLinked(true)}>Link</button>}
+              <span className="cr2-conn"><b>TikTok Shop</b>{me?.shop?.expired ? <small className="cr2-lost">@{me.shop.handle} · Link expired. Re-link to keep your data updating.</small> : <small>{me?.shop ? `@${me.shop.handle}${me.shop.access && me.shop.access !== "approved" ? " · waiting for approval" : ""}` : "Not linked"}</small>}</span>
+              {/* A link that ended (owner, 2 Nov 2026) turns into a red Re-link, so she notices. */}
+              {me?.shop?.expired ? <button type="button" className="np-btn v2-btn-sm cr2-relink" onClick={() => setLinked(true)}><Icon name="refresh" size={15} /> Re-link</button>
+                : me?.shop ? <button type="button" className="btn-outline v2-btn-sm" onClick={() => setUnlink(true)}>Unlink</button> : <button type="button" className="np-btn v2-btn-sm" onClick={() => setLinked(true)}>Link</button>}
             </div>
             {chans === null && <p className="v2-muted" style={{ margin: "8px 0" }}>Loading your accounts…</p>}
             {chans !== null && (["tiktok", "facebook", "instagram", "threads"] as const).map((app) => {

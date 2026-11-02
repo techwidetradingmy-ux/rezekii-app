@@ -4,6 +4,9 @@ import { selectProducts, type SelectedProduct } from "../../integrations/tiktok-
 import { CAT, nums } from "../rankings/build.ts";
 import { allProducts, type TapProduct } from "../tap/catalog.ts";
 import { showcaseOf } from "./mine.ts";
+import { CATEGORIES } from "../refresh/plan.ts";
+
+const CATEGORY_LISTS = CATEGORIES.length;
 
 /**
  * Today's Ideas (owner, 31 Oct 2026): what's selling most on TikTok Shop right now, so creators can ride the wave.
@@ -53,10 +56,17 @@ export const IDEAS_FOR = { bronze: 10, silver: 30, gold: 100 } as const;
 type Hit = { id: string; name: string; shop: string | null; img: string | null; rating: number | null; cat: string | null; lo: number; hi: number };
 let lists: { day: string; at: string; checked: number; byId: Map<string, Hit> } | null = null;
 
-/** TikTok's daily best-seller lists for the newest day saved (28 categories × 100, plus the all-category list). */
+/**
+ * TikTok's daily best-seller lists for the newest day saved in full (28 categories × 100, plus the all-category list). A day
+ * still coming in isn't used yet (owner, 2 Nov 2026: Today's Ideas once switched to a day with only some lists).
+ */
 async function newestLists(): Promise<typeof lists> {
   if (lists && Date.now() - lists.checked < 5 * 60_000) return lists;
-  const [top] = (await (await supabaseRest(`market_snapshots?dataset=eq.products&slot=like.${enc("1D|*|LOCAL")}&select=as_of&order=as_of.desc&limit=1`)).json()) as { as_of: string }[];
+  const recent = (await (await supabaseRest(`market_snapshots?dataset=eq.products&slot=like.${enc("1D|*|LOCAL")}&select=as_of&order=as_of.desc&limit=120`)).json()) as { as_of: string }[];
+  const perDay = new Map<string, number>();
+  for (const r of recent) perDay.set(r.as_of, (perDay.get(r.as_of) ?? 0) + 1);
+  const full = [...perDay].find(([, n]) => n >= CATEGORY_LISTS)?.[0];
+  const top = full ? { as_of: full } : recent[0];
   if (!top) return null;
   const slots = (await (await supabaseRest(`market_snapshots?dataset=eq.products&as_of=eq.${top.as_of}&slot=like.${enc("1D|*|LOCAL")}&select=slot,fetched_at,items`)).json()) as { slot: string; fetched_at: string; items: Record<string, unknown>[] }[];
   const byId = new Map<string, Hit>();

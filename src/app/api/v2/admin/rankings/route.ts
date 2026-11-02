@@ -4,7 +4,7 @@ import { supabaseRest } from "@/integrations/supabase/rest.ts";
 import { listRankings } from "@/modules/rankings/query.ts";
 import { forgetRankingsBefore, rankings } from "@/modules/rankings/store.ts";
 import { CAT } from "@/modules/rankings/build.ts";
-import { creatorSearchTasks, mytDay } from "@/modules/refresh/plan.ts";
+import { creatorSearchTasks, mytDay, planNewest } from "@/modules/refresh/plan.ts";
 import { addTasks } from "@/modules/refresh/store.ts";
 
 export const dynamic = "force-dynamic";
@@ -62,7 +62,8 @@ export async function POST(req: NextRequest) {
   if (what === "rankings") {
     if (s.building) return NextResponse.json({ error: "A new batch is already being built." }, { status: 409 });
     if (!s.newestLists) return NextResponse.json({ error: "No best-seller lists are saved yet." }, { status: 409 });
-    await addTasks(today, [{ key: `rankings|${s.newestLists}${run}`, kind: "rankings", params: { day: s.newestLists, manual: true }, priority: 1 }]);
+    // Rankings' own lists aren't read every night (owner, 2 Nov 2026): they're read now, and the build waits for them.
+    await addTasks(today, [...planNewest(s.newestLists, true), { key: `rankings|${s.newestLists}${run}`, kind: "rankings", params: { day: s.newestLists, manual: true }, priority: 1 }]);
   } else if (what === "search") {
     if (s.search.running) return NextResponse.json({ error: "The creator search is already running." }, { status: 409 });
     await addTasks(today, creatorSearchTasks(run));

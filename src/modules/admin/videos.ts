@@ -2,6 +2,7 @@ import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { listVideosPage, queryVideos, type TikTokVideo } from "../../integrations/tiktok/stats.ts";
 import { freshTikTokToken, markTikTokReconnect, TIKTOK_LOST } from "../posting/store.ts";
 import { noteRead } from "../creator-accounts/fresh.ts";
+import { AWAY_DAYS } from "../sales/orders.ts";
 
 const KEEP_DAYS = 90;
 const MAX_PAGES = 8;
@@ -85,12 +86,18 @@ export async function syncMyVideos(userId: string): Promise<number> {
  */
 export async function refreshVideos(start: number, stopAt: number): Promise<{ count: number; next: number | null }> {
   const conns = (await (await supabaseRest("tiktok_connections?select=open_id,username,user_id,refresh_token_expires_at&order=open_id&limit=2000")).json()) as Conn[];
+  // Accounts whose owner used Rezekii in the last 14 days (owner, 2 Nov 2026); the others are read when they're back.
+  const ids = [...new Set(conns.map((c) => c.user_id).filter((x): x is string => !!x))];
+  const away = new Set<string>();
+  for (let i = 0; i < ids.length; i += 150)
+    for (const u of (await (await supabaseRest(`app_users?id=in.(${ids.slice(i, i + 150).join(",")})&select=id,last_seen_at`)).json()) as { id: string; last_seen_at: string | null }[])
+      if (!u.last_seen_at || Date.parse(u.last_seen_at) < Date.now() - AWAY_DAYS * 86400_000) away.add(u.id);
   const oldest = Date.now() / 1000 - KEEP_DAYS * 86400;
   let count = 0;
   for (let i = start; i < conns.length; i++) {
     if (Date.now() > stopAt) return { count, next: i };
     const c = conns[i];
-    if (Date.parse(c.refresh_token_expires_at) < Date.now()) continue;
+    if (Date.parse(c.refresh_token_expires_at) < Date.now() || (c.user_id && away.has(c.user_id))) continue;
     count += (await readAccount(c, oldest)) ?? 0;
   }
   await supabaseRest(`tiktok_videos?created_at=lt.${new Date(oldest * 1000).toISOString()}`, { method: "DELETE", headers: { prefer: "return=minimal" } });

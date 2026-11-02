@@ -10,6 +10,8 @@ export function isAllowedDuringProof(username: string): boolean {
 }
 
 const isoFromUnix = (seconds: number) => new Date(seconds * 1000).toISOString();
+/** TikTok's "too many requests" and "internal error, retry later": a renewal that failed for these is tried again later. */
+const BUSY = [36009002, 36009003];
 
 /** Saves or replaces a Creator Account's Affiliate Connection. Columns left out (e.g. no avatar on a token refresh) keep their stored value. */
 export async function saveAffiliateConnection(
@@ -40,6 +42,8 @@ export type StoredConnection = {
   accessToken: string;
   accessExpiresAt: Date;
   refreshToken: string;
+  /** When the link ends: TikTok's refresh token expiry, or the moment TikTok refused to renew it (she removed access). */
+  refreshExpiresAt: Date;
 };
 
 /**
@@ -54,6 +58,7 @@ const toStored = (row: Record<string, string> | undefined): StoredConnection | n
         accessToken: decryptToken(row.access_token_enc),
         accessExpiresAt: new Date(row.access_token_expires_at),
         refreshToken: decryptToken(row.refresh_token_enc),
+        refreshExpiresAt: new Date(row.refresh_token_expires_at),
       }
     : null;
 
@@ -76,7 +81,12 @@ export async function freshCreatorToken(conn: StoredConnection | null): Promise<
   if (!conn) return null;
   if (conn.accessExpiresAt.getTime() > Date.now() + 10 * 60_000) return conn.accessToken;
   const r = await refreshTokens(conn.refreshToken);
-  if (r.code !== 0 || !r.data) throw new Error(`TikTok Shop token renewal failed: ${r.code} ${r.message}`);
+  if (r.code !== 0 || !r.data) {
+    // TikTok refused it (not a busy or internal error): the link has ended, so her Connections show Re-link (owner, 2 Nov 2026).
+    if (r.code !== 0 && !BUSY.includes(r.code) && conn.refreshExpiresAt.getTime() > Date.now())
+      await supabaseRest(`affiliate_connections?creator_user_open_id=eq.${encodeURIComponent(conn.openId)}`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ refresh_token_expires_at: new Date().toISOString() }) }).catch(() => undefined);
+    throw new Error(`TikTok Shop token renewal failed: ${r.code} ${r.message}`);
+  }
   await saveAffiliateConnection({ openId: conn.openId, username: conn.username }, r.data);
   return r.data.access_token;
 }

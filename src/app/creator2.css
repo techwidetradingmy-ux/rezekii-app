@@ -360,6 +360,9 @@
 .cr2-conn { flex: 1 1 160px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .cr2-conn b { font-size: 15px; }
 .cr2-conn small { font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* A TikTok Shop link that ended (owner, 2 Nov 2026): red, so she notices and re-links. */
+.cr2-conn small.cr2-lost { color: var(--red); font-weight: 700; white-space: normal; }
+.np-btn.cr2-relink { background: var(--rsoft); border: 1.5px solid var(--red); color: var(--red); box-shadow: none; }
 .cr2-profile { display: flex; align-items: center; gap: 14px; padding: 18px 16px; }
 .cr2-profile .v2-av { width: 62px; height: 62px; font-size: 22px; }
 .cr2-profile > span { display: flex; flex-direction: column; gap: 4px; min-width: 0; }

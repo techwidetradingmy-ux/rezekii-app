@@ -27,8 +27,11 @@ export const DATA_LAG_DAYS = 2;
  * them every 15 minutes, so the newest lists arrive within 15 minutes of TikTok publishing them (owner: always the latest).
  */
 export const LATE_HOUR = PLAN_HOUR;
-/** Daily lists are kept for this many days; missing days are filled in (the first run fills all of them). */
-export const DAILY_DAYS = 30;
+/**
+ * Missing days of the daily product lists are filled in for this many days back (owner, 2 Nov 2026: AI Picks' Rising reads 14
+ * days; the first run fills all of them).
+ */
+export const DAILY_DAYS = 14;
 
 const SLOTS = ["1D", "7D", "30D"] as const;
 const CURRENCIES = ["LOCAL", "USD"] as const;
@@ -72,16 +75,28 @@ function best(kind: string, date: string, timeSlot: string, currency: string, ex
 export const RANKINGS = false;
 export const CREATOR_SEARCH = false;
 
-/** One data date as the newest: every period for every best-seller list, then the Rankings page data built from them. */
-export function planNewest(date: string): PlannedTask[] {
+/**
+ * The best-seller lists creators' screens use, read every day (owner, 2 Nov 2026: calls only for data that matters): products by
+ * category for 1 and 30 days (Today's Ideas, AI Picks, product trends) and videos for 1 day, all in RM. Admins' other lists are
+ * read when an admin opens them; the rest only feed Rankings, read when an admin refreshes it.
+ */
+export const dailyList = (kind: string, timeSlot: string, currency: string) =>
+  currency === "LOCAL" && (kind === "products" ? timeSlot !== "7D" : kind === "videos" && timeSlot === "1D");
+
+/**
+ * One data date as the newest: the daily best-seller lists (`all`: every list, for a Rankings build), then the Rankings page
+ * data built from them.
+ */
+export function planNewest(date: string, all = RANKINGS): PlannedTask[] {
   const tasks: PlannedTask[] = [];
+  const want = (kind: string, timeSlot: string, currency: string) => all || dailyList(kind, timeSlot, currency);
   for (const timeSlot of SLOTS)
     for (const currency of CURRENCIES) {
       // Admin-only (owner, 31 Oct 2026): after everything people see, so the 1:00 AM data is ready first.
-      for (const authorType of AUTHOR_TYPES) tasks.push(best("creators", date, timeSlot, currency, { authorType }, 7));
-      for (const categoryId of CATEGORIES) tasks.push(best("products", date, timeSlot, currency, { categoryId }, 7));
-      tasks.push(best("videos", date, timeSlot, currency, {}, 7));
-      tasks.push(best("lives", date, timeSlot, currency, {}, 7));
+      if (want("creators", timeSlot, currency)) for (const authorType of AUTHOR_TYPES) tasks.push(best("creators", date, timeSlot, currency, { authorType }, 7));
+      if (want("products", timeSlot, currency)) for (const categoryId of CATEGORIES) tasks.push(best("products", date, timeSlot, currency, { categoryId }, 7));
+      if (want("videos", timeSlot, currency)) tasks.push(best("videos", date, timeSlot, currency, {}, 7));
+      if (want("lives", timeSlot, currency)) tasks.push(best("lives", date, timeSlot, currency, {}, 7));
     }
   // the Rankings page data, once every best-seller list is saved
   if (RANKINGS) tasks.push({ key: `rankings|${date}`, kind: "rankings", params: { day: date }, priority: 5 });
@@ -98,40 +113,35 @@ export function planDay(now: number, haveDays: Set<string>, newestBuilt = false,
     { key: "tap_campaigns", kind: "tap_campaigns", params: {}, priority: 1 },
     // the TAP Marketplace table, rebuilt once every campaign's products are in
     { key: "tap_catalog", kind: "tap_catalog", params: {}, priority: 3 },
-    // which TAP products TikTok really offers free samples of, once the catalog is rebuilt
+    // which TAP products TikTok really offers free samples of, once the catalog is rebuilt (each creator's own check runs when
+    // she opens the Marketplace, owner 2 Nov 2026)
     { key: "tap_samples", kind: "tap_samples", params: {}, priority: 3 },
-    // then each linked creator's own sample check (sellers may give samples only to some creators)
-    { key: "tap_samples_mine", kind: "tap_samples_mine", params: {}, priority: 3 },
     // creator levels, once every campaign's creators are read (tap_creators)
     { key: "levels", kind: "levels", params: {}, priority: 5 },
-    // video numbers for every connected TikTok account (admin Video stats)
+    // video numbers for every connected TikTok account in use (admin Video stats)
     { key: "videos", kind: "videos", params: {}, priority: 6 },
     // every linked creator's own affiliate orders (Sales page, admin Stats, Rankings by real GMV)
     { key: "orders", kind: "orders", params: {}, priority: 6 },
-    // the Admins' Facebook, Instagram and Threads numbers (Community → Numbers)
-    { key: "community", kind: "community", params: {}, priority: 6 },
   ];
 
   if (!newestBuilt) tasks.push(...planNewest(newest));
 
-  // Older days: only the daily (1D) creator and product lists, and only days not saved yet.
+  // Older days: only the daily (1D) product lists in RM, and only days not saved yet.
   for (let n = DATA_LAG_DAYS + 1; n < DATA_LAG_DAYS + DAILY_DAYS; n++) {
     const date = mytDay(now, n);
     if (haveDays.has(date)) continue;
-    for (const currency of CURRENCIES) {
-      for (const authorType of AUTHOR_TYPES) tasks.push(best("creators", date, "1D", currency, { authorType }, 8));
-      for (const categoryId of CATEGORIES) tasks.push(best("products", date, "1D", currency, { categoryId }, 8));
-    }
+    for (const categoryId of CATEGORIES) tasks.push(best("products", date, "1D", "LOCAL", { categoryId }, 8));
   }
 
+  // Rezekii creators' own profiles (their audience in AI Picks)
   tasks.push({ key: "details", kind: "details", params: {}, priority: 5 });
-  // saved copies of the Rankings creators' photos, each refreshed every two weeks (TikTok's photo addresses expire in a day or two)
+  // saved copies of Rezekii creators' and connected accounts' photos, each refreshed every two weeks (TikTok's photo addresses
+  // expire in a day or two)
   tasks.push({ key: "photos", kind: "photos", params: {}, priority: 5 });
   // each Rezekii product's and each creator's showcase products' all-time units sold, for Today's Ideas' daily sales
   tasks.push({ key: "sold", kind: "sold", params: {}, priority: 5 });
-  // each linked creator's Today's Ideas (Marketplace and Showcase), made ahead and saved so the page opens at once (owner, 1 Nov 2026)
-  tasks.push({ key: "ideas", kind: "ideas", params: {}, priority: 6 });
-  // linked creators' agency status (every 2 weeks) and TikTok level (on the 1st): queues one task per creator who is due
+  // linked creators' TikTok level (from the 1st, monthly): queues one task per creator who is due. Each creator's Today's Ideas
+  // are made once TikTok publishes the day's lists (runner.ts).
   tasks.push({ key: "agency", kind: "agency", params: {}, priority: 6 });
   // On the 1st the marketplace search is also split by TikTok's creator level, so each creator's level comes with it (levels
   // change monthly). It takes more than a day, so it carries on past midnight and the usual search waits for it. The usual

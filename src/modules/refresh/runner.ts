@@ -1,11 +1,11 @@
 import { getBestselling } from "../../integrations/tiktok-shop/seller.ts";
-import { AUTHOR_TYPES, CATEGORIES, DATA_LAG_DAYS, LATE_HOUR, PLAN_HOUR, mytDay, mytHour, planDay, planNewest, type TaskKind } from "./plan.ts";
+import { CATEGORIES, DATA_LAG_DAYS, LATE_HOUR, PLAN_HOUR, mytDay, mytHour, planDay, planNewest, type TaskKind } from "./plan.ts";
 import type { Sessions } from "./sessions.ts";
 import { ApiError, RATE_LIMITED, STEPS } from "./steps.ts";
 import { addTasks, claimTask, completeDailyDays, hasTask, levelPassOpen, notePublished, profilesWaiting, pruneMarketData, rankingsBuilt, updateTask, type TaskRow } from "./store.ts";
 
-/** Daily lists per data date: creators (4 author types) and products (29 category lists), each in RM and US$. */
-const DAILY_LISTS = (AUTHOR_TYPES.length + CATEGORIES.length) * 2;
+/** Daily lists per data date: the 29 product category lists in RM (owner, 2 Nov 2026: the others aren't read every day). */
+const DAILY_LISTS = CATEGORIES.length;
 const QUEUE: TaskKind[] = ["tap_campaigns", "tap_products", "tap_catalog", "tap_samples", "tap_samples_mine", "tap_creators", "levels", "best", "rankings", "videos", "orders", "details", "photos", "sold", "ideas", "agency", "community"];
 /** Gap between calls to TikTok's analytics and partner APIs. */
 const GAP_MS = 1200;
@@ -65,10 +65,11 @@ export async function runRefresh(sessions: Sessions, deadline: number, now = Dat
     planned = tasks.length;
   }
   // TikTok publishes yesterday's lists during the day: every 15 minutes check whether TikTok has them and, once it does, plan
-  // that day as the newest too (its Rankings build waits for every list), and note when TikTok published them.
+  // that day as the newest too (its Rankings build waits for every list), and note when TikTok published them. Today's Ideas
+  // are made right after, from the new lists (owner, 2 Nov 2026), so they stay right for a full day.
   const yesterday = mytDay(now, 1);
-  if (mytHour(now) >= LATE_HOUR && new Date(now).getUTCMinutes() % 15 === 0 && !(await hasTask(runDate, `best|lives|${yesterday}|1D|LOCAL`)) && (await listsOut(sessions, yesterday))) {
-    const late = planNewest(yesterday);
+  if (mytHour(now) >= LATE_HOUR && new Date(now).getUTCMinutes() % 15 === 0 && !(await hasTask(runDate, `best|videos|${yesterday}|1D|LOCAL`)) && (await listsOut(sessions, yesterday))) {
+    const late = [...planNewest(yesterday), { key: `ideas|${yesterday}`, kind: "ideas" as const, params: { day: yesterday }, priority: 6 }];
     await addTasks(runDate, late);
     await notePublished(yesterday, new Date(now).toISOString()).catch(() => undefined);
     planned += late.length;

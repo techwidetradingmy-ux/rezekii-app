@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
   const user = await currentUser();
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   const now = Date.now();
-  const read = await keepFresh(user.id, ["orders"]);
+  const read = await keepFresh(user.id, ["orders"], 4000);
   const [lines, techwide] = await Promise.all([linesBetween(user.id, 0, now + DAY), techwideCampaigns()]);
 
   // The open plan rate of each TAP product she sold, to count what Rezekii added.
