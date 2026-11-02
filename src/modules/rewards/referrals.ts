@@ -36,14 +36,22 @@ export async function ownerOf(code: string): Promise<string | null> {
   return r?.user_id ?? null;
 }
 
-/** The account's invite code, made the first time from its name (letters, then two digits). */
+/** Letters and digits for the longer fallback codes; no 0/O or 1/I, which are easy to mix up when typed. */
+const MIX = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const mixed = (n: number) => Array.from({ length: n }, () => MIX[randomInt(MIX.length)]).join("");
+
+/**
+ * The account's invite code, made the first time from its name (letters, then two digits). If six tries all clash (a very
+ * common name), it falls back to the name plus 6 random letters and digits, e.g. NURUL7K2Q9X, so making a code can't fail
+ * (item 35, owner, 2 Nov 2026).
+ */
 export async function codeFor(user: { id: string; display_name: string | null; tiktok_username: string | null }): Promise<string> {
   const [have] = (await (await supabaseRest(`referral_codes?user_id=eq.${user.id}&select=code&limit=1`)).json()) as { code: string }[];
   if (have) return have.code;
   const base = (user.tiktok_username ?? user.display_name ?? "").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 6);
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 9; i++) {
     const stem = base.length >= 3 ? base : `RZ${base}`;
-    const code = `${stem}${randomInt(10, i < 3 ? 100 : 10000)}`.slice(0, 12);
+    const code = (i < 6 ? `${stem}${randomInt(10, i < 3 ? 100 : 10000)}` : `${stem}${mixed(6)}`).slice(0, 12);
     const res = await supabaseRest("referral_codes?on_conflict=code", {
       method: "POST",
       headers: { prefer: "resolution=ignore-duplicates,return=representation" },
