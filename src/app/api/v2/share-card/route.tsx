@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import type { NextRequest } from "next/server";
 import QRCode from "qrcode";
+import { StyledCard, cardFonts, type CardData } from "./styles";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +43,17 @@ export async function GET(req: NextRequest) {
   const initials = (name || handle.replace("@", "")).slice(0, 2).toUpperCase();
   const story = moment === "story" ? STORY[q.get("tone") ?? ""] ?? STORY.other : null;
   const look = story ? { ...LOOKS[2], ...story, pill: "rgba(255,255,255,0.12)", pillInk: story.ink } : LOOKS[Math.min(2, Math.max(0, Number(q.get("design")) || 0))];
+
+  // The three new looks for the owner to pick from (owner, 2 Nov 2026), asked for with `style`.
+  const style = q.get("style");
+  if (!wide && (style === "a" || style === "b" || style === "c")) {
+    const d: CardData = {
+      moment: moment === "invite" ? "invite" : moment === "story" ? "story" : "achievement",
+      kicker, label, big, tag, sub, lines, handle, name, link, qr, photo, reward: clip(q.get("reward"), 6), code: clip(q.get("code"), 16), date: clip(q.get("date"), 40),
+      rimau: `${origin}/mascot/png/rimau-${pose ?? (moment === "invite" ? "wave" : "party")}.png`, logo: `${origin}/master-logo-transparent.png`,
+    };
+    return new ImageResponse(<StyledCard style={style} d={d} />, { width: 1080, height: 1920, fonts: await cardFonts(), headers: { "cache-control": "public, max-age=300" } });
+  }
 
   const head = (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
