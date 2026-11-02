@@ -21,6 +21,7 @@ import { BetaWait } from "./beta-wait";
 import { ACCOUNT, HOME, MENUS, pageFor, sectionFor, type AppKind } from "@/lib/menus";
 import { CREATOR, MY_SAMPLES, REFERRAL_REWARD, SELLER } from "@/lib/mock";
 import { useUnreadNotes } from "@/lib/live-notes";
+import { useNoteChime } from "@/lib/note-chime";
 import { PullRefresh } from "@/components/pull-refresh";
 import { loadWallet } from "@/lib/live-rewards";
 import { LangSwitch, useT } from "@/lib/i18n/client";
@@ -118,6 +119,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
   const { me, live } = useDemo();
   // The bell shows her real unread count when signed in (owner, 31 Oct 2026); nothing when there are none.
   const sideNotes = useUnreadNotes(app === "seller" ? "seller" : "creator", live && app !== "admin");
+  useNoteChime(sideNotes);
   // Admins: the bell counts what needs fixing now (system problems and products to review), from Today (owner, 31 Oct 2026).
   const [adminAlerts, setAdminAlerts] = useState<number | null>(null);
   useEffect(() => {

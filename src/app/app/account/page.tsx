@@ -17,6 +17,7 @@ import { LevelBadges } from "@/components/account/level-badges";
 import { Referral } from "@/components/account/referral";
 import { RateCard } from "@/components/account/rate-card";
 import { Wallet } from "@/components/account/wallet";
+import { PushSwitch } from "@/components/account/push-switch";
 import { AddressForm } from "@/components/account/address-fields";
 import { SAMPLE_INFO, birthdayError, readSignup, useAddress, type Address } from "@/lib/address";
 import { shortId } from "@/lib/short-id";
@@ -687,6 +688,7 @@ export default function Account() {
 
         <section className="cr2-group">
           <h2>Notifications</h2>
+          <PushSwitch side="creator" />
           <div className="cr2-cells">
             <div className="cr2-notifyhead"><span>Tell me about</span><span>In-app</span><span>Email</span></div>
             {live && !inApp && <LoadPrefs onLoad={setInApp} />}

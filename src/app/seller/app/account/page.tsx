@@ -13,6 +13,7 @@ import { SELLER } from "@/lib/mock";
 import { TERMS_VERSION, tidyPhone, type Platform } from "@/lib/mock-seller";
 import { loadProfile, saveProfile } from "@/lib/live-rewards";
 import { LiveSellerHelp, LiveSellerNotify, LiveSellerSecurity, LiveSellerSocials, LiveShopAuth } from "@/components/seller/live-account";
+import { PushSwitch } from "@/components/account/push-switch";
 
 const NOTIFY: [string, string, boolean][] = [
   ["Product status", "Approved, live or not approved", true],
@@ -134,6 +135,7 @@ export default function SellerAccount() {
         </div>
       </section>
       )}
+      <PushSwitch side="seller" />
 
       {live ? <LiveSellerSecurity /> : (
       <section className="v2-card">
