@@ -3,12 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { AiMark } from "@/components/ui";
+import { useT } from "@/lib/i18n/client";
 import { AiText } from "./ai-text";
 import { useMedia, useOnScreen, useReducedMotion } from "./hooks";
 import { Banner, Phone, type Note } from "./phone";
 import { AutoSlider } from "./slider";
 
-/** One job in "A Day With Rezekii": when, the problem, the fix, the notification that starts it and its app screen. */
+/** One job in "A Day With Rezekii": when, the problem, the fix, the notification that starts it and its app screen (words already translated). */
 export type DayStep = { id: string; time: string; title: string; problem: string; fix: string; ai?: boolean; note: Note; screen: React.ReactNode };
 
 /** The notification drops in from the Dynamic Island, then the app screen opens and does the job. */
@@ -34,6 +35,7 @@ function StepText({ s }: { s: DayStep }) {
 
 /** Desktop: the phone stays pinned while the steps scroll past; the step in the middle of the screen drives the phone. */
 function Pinned({ steps, label }: { steps: DayStep[]; label: string }) {
+  const t = useT();
   const [active, setActive] = useState(0);
   const list = useRef<HTMLOListElement>(null);
   const pin = useRef<HTMLDivElement>(null);
@@ -60,7 +62,7 @@ function Pinned({ steps, label }: { steps: DayStep[]; label: string }) {
         ))}
       </ol>
       <div className="lp-jr-pin" ref={pin}>
-        <Phone label={`Example Rezekii screen: ${s.title}`}>
+        <Phone label={t("Example Rezekii screen: {title}", { title: s.title })}>
           <StepScreen key={s.id} step={s} live={on} />
         </Phone>
         <div className="lp-jr-ticks">
@@ -77,6 +79,7 @@ function Pinned({ steps, label }: { steps: DayStep[]; label: string }) {
 
 /** Phones: one step per slide, moving on by itself; touching pauses it. Only the slide on screen plays. */
 function Slides({ steps, label }: { steps: DayStep[]; label: string }) {
+  const t = useT();
   const [active, setActive] = useState(0);
   const wrap = useRef<HTMLDivElement>(null);
   const on = useOnScreen(wrap, 0.3);
@@ -86,7 +89,7 @@ function Slides({ steps, label }: { steps: DayStep[]; label: string }) {
         {steps.map((x, i) => (
           <article key={x.id} className="lp-jr-slide">
             <div className="lp-jr-text"><StepText s={x} /></div>
-            <Phone className="sm" label={`Example Rezekii screen: ${x.title}`}>
+            <Phone className="sm" label={t("Example Rezekii screen: {title}", { title: x.title })}>
               <StepScreen key={i === active ? `on-${x.id}` : x.id} step={x} live={on && i === active} />
             </Phone>
           </article>

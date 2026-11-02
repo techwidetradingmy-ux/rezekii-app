@@ -8,7 +8,9 @@ import { NICHE_BEST, VIDEOS, daily } from "@/lib/mock-creator2";
 import { AiMark, Tip } from "@/components/ui";
 import { Emblem } from "@/components/emblems";
 import { ReferralOffer } from "@/components/referral-offer";
-import { App, Av, Flip, PLATS, PlatIcon, Ring, Swap, Thumb, v, type Plat } from "./bits";
+import { useT } from "@/lib/i18n/client";
+import { tx, type T } from "@/lib/i18n/lang";
+import { App, Av, PLATS, PlatIcon, Rich, Ring, Swap, Thumb, v } from "./bits";
 import { Bento, VideoTile, type Tile } from "./bento";
 import { Journey, type DayStep } from "./journey";
 import { type Note } from "./phone";
@@ -22,6 +24,7 @@ import { SeeRail, UspRail, type Usp } from "./usp";
 /**
  * Creator landing, "Watch Rezekii Work" (owner, 29 Oct 2026): every animation is a real feature in miniature. Products, rates,
  * sold counts and ratings come from PRODUCTS; people and the rest are sample, and the page says so.
+ * In her language (owner, 3 Nov 2026): lists that hold words are built with her translator `t`; product names stay as they are.
  */
 
 /** Landing examples show a modest +1% (owner, 29 Oct 2026), not the biggest gap in the sample data. */
@@ -38,12 +41,12 @@ const n = (x: number) => x.toLocaleString("en-MY");
 
 /* ---------------- Hero ---------------- */
 
-const HERO_NOTES: Note[] = [
-  { title: "3 products have a better rate", line: `${POT.name}: ${POT.publicRate}% → ${POT.tapRate}% on Rezekii` },
-  { title: `AI pick: ${TRACK.name.replace(/ \(.*\)$/, "")} is selling fast`, line: `${short(TRACK.sold)} sold. Fits your Fashion videos` },
-  { title: "Your viral time frame today: 8–10 pm", line: "When your followers watch most" },
-  { title: "Sample shipped. Post by 6 Nov", line: `${product("p05").name} is on its way` },
-  { title: `+${POST_TODAY.reward} credits`, line: "Mission done: you posted today" },
+const heroNotes = (t: T): Note[] => [
+  { title: t("3 products have a better rate"), line: t("{name}: {from}% → {to}% on Rezekii", { name: POT.name, from: POT.publicRate, to: POT.tapRate }) },
+  { title: t("AI pick: {name} is selling fast", { name: TRACK.name.replace(/ \(.*\)$/, "") }), line: t("{n} sold. Fits your Fashion videos", { n: short(TRACK.sold) }) },
+  { title: t("Your viral time frame today: 8–10 pm"), line: t("When your followers watch most") },
+  { title: t("Sample shipped. Post by 6 Nov"), line: t("{name} is on its way", { name: product("p05").name }) },
+  { title: t("+{n} credits", { n: POST_TODAY.reward }), line: t("Mission done: you posted today") },
 ];
 
 /**
@@ -52,6 +55,7 @@ const HERO_NOTES: Note[] = [
  */
 const HERO_ROWS = ["p08", "p13", "p24", "p21"].map(example);
 export function CreatorHeroScan() {
+  const t = useT();
   const ref = useRef<HTMLDivElement>(null);
   const on = useOnScreen(ref, 0.12);
   const still = useReducedMotion();
@@ -74,8 +78,8 @@ export function CreatorHeroScan() {
     const run = () => {
       cancelAnimationFrame(raf);
       const t0 = performance.now();
-      const tick = (t: number) => {
-        const ms = t - t0;
+      const tick = (time: number) => {
+        const ms = time - t0;
         setCount(Math.round(to * ease(ms / 2400)));
         setMoney(Math.round(extra * ease((ms - 1000) / 2200)));
         if (ms < 3300) raf = requestAnimationFrame(tick);
@@ -95,8 +99,8 @@ export function CreatorHeroScan() {
         <div className="hs-head" aria-hidden="true">
           <AiMark size={34} busy={on} />
           <span>
-            <b>Scanning your showcase</b>
-            <small><span className="hs-n">{n(count)}</span> products checked</small>
+            <b>{t("Scanning your showcase")}</b>
+            <small><Rich text={t("{n} products checked")} parts={{ n: <span className="hs-n">{n(count)}</span> }} /></small>
           </span>
         </div>
         <ul className="hs-rows" aria-hidden="true">
@@ -112,12 +116,12 @@ export function CreatorHeroScan() {
         {/* The extra, at scale (owner, 29 Oct 2026): what joining adds over 1,000 sales of the RM 159.90 example. */}
         <div className="hs-total">
           <small>
-            Estimated extra commission
+            {t("Estimated extra commission")}
             {/* What the example is, and that it isn't a promise (owner, 29 Oct 2026). */}
-            <Tip label="About this example" text={`Example only: the ${POT.name} (RM ${POT.price.toFixed(2)}) at ${POT.publicRate}% on the open plan vs ${POT.tapRate}% on Rezekii, over 1,000 orders. It doesn't mean your account will earn this; it depends on your products, rates and sales.`} />
+            <Tip label={t("About this example")} text={t("Example only: the {name} (RM {price}) at {from}% on the open plan vs {to}% on Rezekii, over 1,000 orders. It doesn't mean your account will earn this; it depends on your products, rates and sales.", { name: POT.name, price: POT.price.toFixed(2), from: POT.publicRate, to: POT.tapRate })} />
           </small>
           <b><span>+RM</span>{n(money)}</b>
-          <span className="hs-sum">≈ +RM {PER_SALE.toFixed(2)} extra a sale <i>×</i> 1,000 orders</span>
+          <span className="hs-sum"><Rich text={t("≈ +RM {amount} extra a sale {times} 1,000 orders", { amount: PER_SALE.toFixed(2) })} parts={{ times: <i>×</i> }} /></span>
         </div>
       </div>
     </div>
@@ -138,6 +142,7 @@ const earn = (p: Product, rate: number) => (p.price * rate) / 100;
 const SCAN = ["p08", "p13", "p24"].map(example);
 const FLY = PRODUCTS.slice(0, 13).map((p) => p.img);
 function ScanScreen() {
+  const t = useT();
   const ref = useRef<HTMLDivElement>(null);
   const on = useOnScreen(ref, 0.3);
   const still = useReducedMotion();
@@ -145,26 +150,26 @@ function ScanScreen() {
   const [k, setK] = useState(0);
   useEffect(() => {
     if (!on || still) return setScan(false);
-    let t = 0;
+    let timer = 0;
     const run = () => {
       setScan(true);
       setK((x) => x + 1);
-      t = window.setTimeout(() => {
+      timer = window.setTimeout(() => {
         setScan(false);
-        t = window.setTimeout(run, 4600);
+        timer = window.setTimeout(run, 4600);
       }, 4200);
     };
-    t = window.setTimeout(run, 1200);
-    return () => window.clearTimeout(t);
+    timer = window.setTimeout(run, 1200);
+    return () => window.clearTimeout(timer);
   }, [on, still]);
   return (
-    <App title="Showcase Scanner" ai>
+    <App title={t("Showcase Scanner")} ai>
       <div ref={ref} className="lp-s-radar">
-        <p className="lp-s-rh">{scan ? "Scanning your showcase…" : <><b>{n(CREATOR.showcaseSize)}</b> products checked</>}</p>
+        <p className="lp-s-rh">{scan ? t("Scanning your showcase…") : <Rich text={t("{n} products checked")} parts={{ n: <b>{n(CREATOR.showcaseSize)}</b> }} />}</p>
         <div className="sh-radar" style={{ "--sweep": scan ? "1.2s" : "4s" } as React.CSSProperties}>
           <span className="sh-rings" />
           <span className="sh-sweep" />
-          <span className="sh-core"><Icon name="scan" size={26} /><small>{scan ? "Scanning" : "Scan"}</small></span>
+          <span className="sh-core"><Icon name="scan" size={26} /><small>{scan ? t("Scanning") : t("Scan")}</small></span>
           {scan && <span key={`burst-${k}`} className="sh-burst" />}
           {scan &&
             FLY.map((src, i) => {
@@ -188,26 +193,28 @@ function ScanScreen() {
             })}
         </div>
         <div className="lp-s-stats">
-          <span><b>{SCAN.length}</b><small>can pay more</small></span>
-          <span><b>+1%</b><small>each, same product</small></span>
+          <span><b>{SCAN.length}</b><small>{t("can pay more")}</small></span>
+          <span><b>+1%</b><small>{t("each, same product")}</small></span>
         </div>
       </div>
-      <span className="lp-s-btn"><span>Add All {SCAN.length}</span></span>
+      <span className="lp-s-btn"><span>{t("Add All {n}", { n: SCAN.length })}</span></span>
     </App>
   );
 }
 
 /** AI Picks: a light sweeps a grid of products, then the three that suit her light up. */
-const PICK_TAG: Record<string, string> = { p01: "Selling fast", p20: "Fits your videos", p21: "Your #2 category" };
+const PICK_TAG: Record<string, string> = { p01: tx("Selling fast"), p20: tx("Fits your videos"), p21: tx("Your #2 category") };
+const READS = [tx("Your videos and sales"), tx("What sells in Malaysia")];
 const GRID = ["p01", "p06", "p20", "p10", "p12", "p21", "p15", "p07", "p02"].map(product);
 function PicksScreen() {
+  const t = useT();
   return (
-    <App title="AI Picks" ai>
+    <App title={t("AI Picks")} ai>
       <ul className="lp-s-read">
-        {["Your videos and sales", "What sells in Malaysia"].map((t, i) => (
-          <li key={t} style={v({ i })}>
+        {READS.map((x, i) => (
+          <li key={x} style={v({ i })}>
             <Swap at={0.3 + i * 0.4} from={<span className="lp-spin" />} to={<span className="lp-ok"><Icon name="check" size={10} width={3.4} /></span>} />
-            {t}
+            {t(x)}
           </li>
         ))}
       </ul>
@@ -215,13 +222,13 @@ function PicksScreen() {
         {GRID.map((p, i) => (
           <span key={p.id} className={PICK_TAG[p.id] ? "pick" : ""} style={v({ i })}>
             <Thumb src={p.img} size={72} />
-            <small>{short(p.sold)} sold</small>
-            {PICK_TAG[p.id] && <em>{PICK_TAG[p.id]}</em>}
+            <small>{t("{n} sold", { n: short(p.sold) })}</small>
+            {PICK_TAG[p.id] && <em>{t(PICK_TAG[p.id])}</em>}
           </span>
         ))}
         <i className="lp-s-sweep" />
       </div>
-      <p className="lp-s-hit ai"><AiMark size={18} /> 3 picks that suit you</p>
+      <p className="lp-s-hit ai"><AiMark size={18} /> {t("3 picks that suit you")}</p>
     </App>
   );
 }
@@ -230,17 +237,18 @@ function PicksScreen() {
 const OPEN = PRODUCTS.filter((p) => p.samples === 0);
 const SHOP = [...OPEN].sort((a, b) => b.sold - a.sold).slice(0, 12);
 function SamplesScreen() {
+  const t = useT();
   return (
-    <App title="Free Samples">
-      <p className="lp-s-open"><Icon name="gift" size={16} width={2.2} /><b>{OPEN.length} free samples</b> open now</p>
-      <p className="lp-s-free"><span><Icon name="check" size={11} width={3.2} /> Open to new creators</span><span><Icon name="check" size={11} width={3.2} /> Best sellers included</span></p>
+    <App title={t("Free Samples")}>
+      <p className="lp-s-open"><Icon name="gift" size={16} width={2.2} /><Rich text={OPEN.length === 1 ? t("**{n} free sample** open now", { n: OPEN.length }) : t("**{n} free samples** open now", { n: OPEN.length })} /></p>
+      <p className="lp-s-free"><span><Icon name="check" size={11} width={3.2} /> {t("Open to new creators")}</span><span><Icon name="check" size={11} width={3.2} /> {t("Best sellers included")}</span></p>
       <div className="lp-s-shop">
         <div>
           {[...SHOP, ...SHOP].map((p, i) => (
             <span key={i}>
               <Thumb src={p.img} size={72} />
-              <em>Free</em>
-              <small>{short(p.sold)} sold</small>
+              <em>{t("Free")}</em>
+              <small>{t("{n} sold", { n: short(p.sold) })}</small>
             </span>
           ))}
         </div>
@@ -256,15 +264,16 @@ const at = (deg: number, r: number) => pt(deg, r).map((x) => x.toFixed(2)).join(
 const arc = (from: number, to: number) => `M${at(from * 30, 80)} A80 80 0 0 1 ${at(to * 30, 80)}`;
 const NUMS: [string, number][] = [["12", 0], ["3", 90], ["6", 180], ["9", 270]];
 function BestTimeScreen() {
+  const t = useT();
   return (
-    <App title="Viral Time Frame" ai>
+    <App title={t("Viral Time Frame")} ai>
       <div className="lp-s-clock">
         <svg viewBox="0 0 200 200" width="200" height="200">
           <circle cx="100" cy="100" r="96" className="face" />
           {TICKS.map((d) => <path key={d} d={`M${at(d, 89)} L${at(d, 94)}`} className="tick" />)}
-          {NUMS.map(([t, d]) => {
+          {NUMS.map(([num, d]) => {
             const [x, y] = pt(d, 58);
-            return <text key={t} x={x.toFixed(2)} y={(y + 5).toFixed(2)} textAnchor="middle">{t}</text>;
+            return <text key={num} x={x.toFixed(2)} y={(y + 5).toFixed(2)} textAnchor="middle">{num}</text>;
           })}
           <path d={arc(0, 2)} className="arc b" />
           <path d={arc(8, 10)} className="arc a" />
@@ -273,9 +282,9 @@ function BestTimeScreen() {
           <circle cx="100" cy="100" r="5" className="pin" />
         </svg>
       </div>
-      <p className="lp-s-when"><b>Your golden time: 8–10 pm</b><small>Your best shot at FYP, when your followers watch most</small></p>
-      <p className="lp-s-other"><i /> Another creator: 12–2 pm</p>
-      <small className="lp-s-fine">Everyone&apos;s time is different.</small>
+      <p className="lp-s-when"><b>{t("Your golden time: 8–10 pm")}</b><small>{t("Your best shot at FYP, when your followers watch most")}</small></p>
+      <p className="lp-s-other"><i /> {t("Another creator: 12–2 pm")}</p>
+      <small className="lp-s-fine">{t("Everyone's time is different.")}</small>
     </App>
   );
 }
@@ -283,43 +292,49 @@ function BestTimeScreen() {
 const HEALTH = ["p05", "p17", "p21", "p22"].map(product);
 
 
+const LEVELS = ["Bronze", "Silver", "Gold"] as const;
 function RewardsScreen() {
+  const t = useT();
   return (
-    <App title="Rewards">
+    <App title={t("Rewards")}>
       <div className="lp-s-lvl">
         <Ring size={84} from={POST_TODAY.progress / POST_TODAY.goal} to={(POST_TODAY.progress + 1) / POST_TODAY.goal}>
           <Swap at={1.3} from={`${POST_TODAY.progress}/${POST_TODAY.goal}`} to={`${POST_TODAY.progress + 1}/${POST_TODAY.goal}`} />
         </Ring>
         <span>
-          <b>Post Today</b>
-          <small>Posts with a Rezekii product</small>
-          <Swap className="lp-s-cred" at={1.5} from={`${n(CREATOR.credits)} credits`} to={`${n(CREATOR.credits + POST_TODAY.reward)} credits`} />
+          <b>{t("Post Today")}</b>
+          <small>{t("Posts with a Rezekii product")}</small>
+          <Swap className="lp-s-cred" at={1.5} from={t("{n} credits", { n: n(CREATOR.credits) })} to={t("{n} credits", { n: n(CREATOR.credits + POST_TODAY.reward) })} />
         </span>
         <span className="lp-s-plus">+{POST_TODAY.reward}</span>
       </div>
       <ol className="lp-s-medals">
-        {(["Bronze", "Silver", "Gold"] as const).map((l, i) => (
+        {LEVELS.map((l, i) => (
           <li key={l} className={l === CREATOR.level ? "on" : i < 1 ? "done" : ""} style={v({ i })}>
             {/* The app's own level emblems (owner, 29 Oct 2026: same as in the app). */}
-            <Emblem level={l.toLowerCase() as "bronze" | "silver" | "gold"} size={l === CREATOR.level ? 84 : 68} animate={l === CREATOR.level} dim={i > (["Bronze", "Silver", "Gold"] as const).indexOf(CREATOR.level)} />
-            <span>{l}</span>
+            <Emblem level={l.toLowerCase() as "bronze" | "silver" | "gold"} size={l === CREATOR.level ? 84 : 68} animate={l === CREATOR.level} dim={i > LEVELS.indexOf(CREATOR.level)} />
+            <span>{t(l)}</span>
           </li>
         ))}
       </ol>
-      <p className="lp-s-fine">Better rates as you level up.</p>
+      <p className="lp-s-fine">{t("Better rates as you level up.")}</p>
     </App>
   );
 }
 
-const DAY: DayStep[] = [
-  { id: "scan", time: "9:00", title: "Showcase Scan", ai: true, problem: "Checking 500 products one by one.", fix: "One scan shows where Rezekii pays more. Add All in one tap.", note: { title: "Scan done: 3 better rates", line: "Tap to see them and add all" }, screen: <ScanScreen /> },
-  { id: "picks", time: "10:00", title: "AI Picks", ai: true, problem: "Scrolling TikTok for hours to find products.", fix: "Rezekii AI picks trending best sellers that suit you.", note: HERO_NOTES[1], screen: <PicksScreen /> },
-  { id: "samples", time: "13:00", title: "Free Samples", problem: "Best sellers rarely give samples. Others turn new creators down.", fix: "Free samples, even on best sellers. Each one is tracked to your video, so sellers trust you.", note: { title: `${OPEN.length} free samples open now`, line: "Open to new creators" }, screen: <SamplesScreen /> },
-  { id: "time", time: "19:00", title: "Viral Time Frame", ai: true, problem: "Posting when your followers aren't watching.", fix: "Rezekii AI learns when YOUR followers watch.", note: HERO_NOTES[2], screen: <BestTimeScreen /> },
-  { id: "rewards", time: "21:00", title: "Rewards & Levels", problem: "Doing well, with nothing extra for it.", fix: "Credits for posting. Better rates as you level up.", note: HERO_NOTES[4], screen: <RewardsScreen /> },
-];
+const day = (t: T): DayStep[] => {
+  const notes = heroNotes(t);
+  return [
+    { id: "scan", time: "9:00", title: t("Showcase Scan"), ai: true, problem: t("Checking 500 products one by one."), fix: t("One scan shows where Rezekii pays more. Add All in one tap."), note: { title: t("Scan done: 3 better rates"), line: t("Tap to see them and add all") }, screen: <ScanScreen /> },
+    { id: "picks", time: "10:00", title: t("AI Picks"), ai: true, problem: t("Scrolling TikTok for hours to find products."), fix: t("Rezekii AI picks trending best sellers that suit you."), note: notes[1], screen: <PicksScreen /> },
+    { id: "samples", time: "13:00", title: t("Free Samples"), problem: t("Best sellers rarely give samples. Others turn new creators down."), fix: t("Free samples, even on best sellers. Each one is tracked to your video, so sellers trust you."), note: { title: OPEN.length === 1 ? t("{n} free sample open now", { n: OPEN.length }) : t("{n} free samples open now", { n: OPEN.length }), line: t("Open to new creators") }, screen: <SamplesScreen /> },
+    { id: "time", time: "19:00", title: t("Viral Time Frame"), ai: true, problem: t("Posting when your followers aren't watching."), fix: t("Rezekii AI learns when YOUR followers watch."), note: notes[2], screen: <BestTimeScreen /> },
+    { id: "rewards", time: "21:00", title: t("Rewards & Levels"), problem: t("Doing well, with nothing extra for it."), fix: t("Credits for posting. Better rates as you level up."), note: notes[4], screen: <RewardsScreen /> },
+  ];
+};
 export function CreatorDay() {
-  return <Journey steps={DAY} label="A day with Rezekii" />;
+  const t = useT();
+  return <Journey steps={day(t)} label={t("A day with Rezekii")} />;
 }
 
 /* ---------------- Bento widgets (Everything in One App) ---------------- */
@@ -331,11 +346,12 @@ export function CreatorDay() {
 /** Rezekii's own risk level from ratings and refunds (TikTok's health score isn't in any API): remove the risky one, risk drops. */
 const RISKY = product("p17");
 function HealthTile() {
+  const t = useT();
   return (
     <div className="lp-w-risk" aria-hidden="true">
       <div className="lp-w-level">
-        <small>Showcase risk</small>
-        <span><b className="watch">Watch</b><b className="low">Low</b></span>
+        <small>{t("Showcase risk")}</small>
+        <span><b className="watch">{t("Watch")}</b><b className="low">{t("Low")}</b></span>
       </div>
       <span className="lp-w-meter"><i /><i /><i /><em /></span>
       <ul>
@@ -344,7 +360,7 @@ function HealthTile() {
             <Thumb src={p.img} size={26} />
             <span>{p.name}</span>
             <b>★ {p.rating}</b>
-            {p.id === RISKY.id && <em>Remove</em>}
+            {p.id === RISKY.id && <em>{t("Remove")}</em>}
           </li>
         ))}
       </ul>
@@ -354,42 +370,44 @@ function HealthTile() {
 
 /** Paste a product you want, see how many creators want it too, and Rezekii asks the seller. */
 function WishTile() {
+  const t = useT();
   return (
     <div className="lp-w-wish" aria-hidden="true">
       <span className="lp-w-link"><Icon name="link" size={12} width={2.4} /><span className="lp-type">…/bento-box-set</span></span>
       <span className="lp-w-wishrow">
         <Thumb src={WISH.img} size={44} />
-        <span><b>{WISH.name}</b><small>{WANTED_N} creators want this</small></span>
+        <span><b>{WISH.name}</b><small>{WANTED_N === 1 ? t("{n} creator wants this", { n: WANTED_N }) : t("{n} creators want this", { n: WANTED_N })}</small></span>
       </span>
       {/* What she asks for (owner, 29 Oct 2026): a free sample, or a better rate on a top seller. */}
-      <span className="lp-w-asks"><span><Icon name="gift" size={13} width={2.4} /> Free sample</span><span><Icon name="trend" size={13} width={2.4} /> Better rate</span></span>
-      <span className="lp-w-next"><Icon name="users" size={13} width={2.4} /> Our team talks to the seller</span>
+      <span className="lp-w-asks"><span><Icon name="gift" size={13} width={2.4} /> {t("Free sample")}</span><span><Icon name="trend" size={13} width={2.4} /> {t("Better rate")}</span></span>
+      <span className="lp-w-next"><Icon name="users" size={13} width={2.4} /> {t("Our team talks to the seller")}</span>
     </div>
   );
 }
 
 /** A personal rate card for every creator (owner, 29 Oct 2026): three sample creators' cards fanned out. Sample prices. */
 const RATE_CARDS: { handle: string; level: string; photo?: string; rows: [string, string][] }[] = [
-  { handle: "@kak.ros.kitchen", level: "Gold", rows: [["TikTok video", "RM 450"], ["TikTok LIVE", "RM 300"]] },
-  { handle: "@hafiz.tech", level: "Bronze", rows: [["TikTok video", "RM 180"], ["Threads post", "RM 50"]] },
-  { handle: CREATOR.handle, level: CREATOR.level, photo: CREATOR.photo, rows: [["TikTok video", "RM 350"], ["Instagram Reel", "RM 300"], ["Ad rights, 30 days", "RM 400"]] },
+  { handle: "@kak.ros.kitchen", level: "Gold", rows: [[tx("TikTok video"), "RM 450"], [tx("TikTok LIVE"), "RM 300"]] },
+  { handle: "@hafiz.tech", level: "Bronze", rows: [[tx("TikTok video"), "RM 180"], [tx("Threads post"), "RM 50"]] },
+  { handle: CREATOR.handle, level: CREATOR.level, photo: CREATOR.photo, rows: [[tx("TikTok video"), "RM 350"], [tx("Instagram Reel"), "RM 300"], [tx("Ad rights, 30 days"), "RM 400"]] },
 ];
 function RateTile() {
+  const t = useT();
   return (
     <div className="lp-w-rcx" aria-hidden="true">
       {RATE_CARDS.map((c, i) => (
         <div key={c.handle} className="lp-rcx" style={v({ i })}>
           <span className="lp-rcx-h">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/master-logo-transparent.png" alt="" />Rezekii<em>Rate card</em>
+            <img src="/master-logo-transparent.png" alt="" />Rezekii<em>{t("Rate card")}</em>
           </span>
           <span className="lp-rcx-me">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             {c.photo ? <img src={c.photo} alt="" /> : <Av name={c.handle} size={34} />}
-            <span><b>{c.handle}</b><small>{c.level} creator</small></span>
+            <span><b>{c.handle}</b><small>{t("{level} creator", { level: t(c.level) })}</small></span>
           </span>
-          <ul>{c.rows.map(([k, p]) => <li key={k}><span>{k}</span><b>{p}</b></li>)}</ul>
-          <span className="lp-rcx-f">Book me on Rezekii</span>
+          <ul>{c.rows.map(([k, p]) => <li key={k}><span>{t(k)}</span><b>{p}</b></li>)}</ul>
+          <span className="lp-rcx-f">{t("Book me on Rezekii")}</span>
         </div>
       ))}
     </div>
@@ -398,35 +416,37 @@ function RateTile() {
 
 /** The app's own referral offer (owner, 29 Oct 2026: a better presentation), with the share link under it. */
 function InviteTile() {
+  const t = useT();
   return (
     <div className="lp-w-ref2">
       {/* Sharing is a favour to a friend (owner, 29 Oct 2026): what they'd send. */}
-      <span className="lp-w-msg">“Check your TikTok showcase on Rezekii. It found me better rates on the same products, free.”</span>
+      <span className="lp-w-msg">“{t("Check your TikTok showcase on Rezekii. It found me better rates on the same products, free.")}”</span>
       <ReferralOffer />
-      <span className="lp-w-link2"><Icon name="link" size={14} width={2.4} /> rezekii.com/r/{CREATOR.handle.replace(/^@/, "")}<b>Share</b></span>
+      <span className="lp-w-link2"><Icon name="link" size={14} width={2.4} /> rezekii.com/r/{CREATOR.handle.replace(/^@/, "")}<b>{t("Share")}</b></span>
     </div>
   );
 }
 
 const CLIPS = [
-  { src: "try-on", label: "Try-On" },
-  { src: "pov-demo", label: "POV" },
-  { src: "review", label: "Review" },
-  { src: "expert", label: "Expert" },
-  { src: "drama", label: "Drama" },
-  { src: "home-demo", label: "Home" },
+  { src: "try-on", label: tx("Try-On") },
+  { src: "pov-demo", label: tx("POV") },
+  { src: "review", label: tx("Review") },
+  { src: "expert", label: tx("Expert") },
+  { src: "drama", label: tx("Drama") },
+  { src: "home-demo", label: tx("At Home") },
 ];
 
-const TILES: Tile[] = [
-  { key: "video", title: "AI Video", ai: true, soon: true, icon: "video", tint: "linear-gradient(135deg,#25f4ee,#0e7490)", size: "tall", tip: "Make product videos with Rezekii AI. These are real examples made with it.", body: <VideoTile clips={CLIPS} /> },
-  { key: "health", title: "Showcase Health", ai: true, icon: "shield", tint: "linear-gradient(135deg,#ff8a80,#e14b3b)", size: "wide", tip: "Rezekii AI checks ratings and refunds in your showcase and flags risky products. Remove them in one tap.", body: <HealthTile /> },
-  { key: "wish", title: "Wish List", icon: "bag", tint: "linear-gradient(135deg,#22dc95,#00a862)", size: "wide", tip: "Want a free sample, or a better rate on a top seller? Add it to your Wish List. When many creators want it, our team talks to the seller for you.", body: <WishTile /> },
-  { key: "rate", title: "Rate Card", icon: "tag", tint: "linear-gradient(135deg,#5ee7df,#0e9488)", tip: "Rezekii makes a personal rate card for every creator: your photo, your prices, your packages. Share it with sellers in one tap.", body: <RateTile /> },
-  { key: "invite", title: "Earn with Referral", icon: "users", tint: "linear-gradient(135deg,#ff7aa8,#e8005a)", size: "wide", tip: `Do a friend a favour: they can check their showcase too and may earn more. You each get ${REFERRAL_REWARD.inviter} credits once they get started.`, body: <InviteTile /> },
+const tiles = (t: T): Tile[] => [
+  { key: "video", title: t("AI Video"), ai: true, soon: true, icon: "video", tint: "linear-gradient(135deg,#25f4ee,#0e7490)", size: "tall", tip: t("Make product videos with Rezekii AI. These are real examples made with it."), body: <VideoTile clips={CLIPS.map((c) => ({ ...c, label: t(c.label) }))} /> },
+  { key: "health", title: t("Showcase Health"), ai: true, icon: "shield", tint: "linear-gradient(135deg,#ff8a80,#e14b3b)", size: "wide", tip: t("Rezekii AI checks ratings and refunds in your showcase and flags risky products. Remove them in one tap."), body: <HealthTile /> },
+  { key: "wish", title: t("Wish List"), icon: "bag", tint: "linear-gradient(135deg,#22dc95,#00a862)", size: "wide", tip: t("Want a free sample, or a better rate on a top seller? Add it to your Wish List. When many creators want it, our team talks to the seller for you."), body: <WishTile /> },
+  { key: "rate", title: t("Rate Card"), icon: "tag", tint: "linear-gradient(135deg,#5ee7df,#0e9488)", tip: t("Rezekii makes a personal rate card for every creator: your photo, your prices, your packages. Share it with sellers in one tap."), body: <RateTile /> },
+  { key: "invite", title: t("Earn with Referral"), icon: "users", tint: "linear-gradient(135deg,#ff7aa8,#e8005a)", size: "wide", tip: t("Do a friend a favour: they can check their showcase too and may earn more. You each get {n} credits once they get started.", { n: REFERRAL_REWARD.inviter }), body: <InviteTile /> },
 ];
 export function CreatorBento() {
+  const t = useT();
   // In order, a few at a time, on every screen (owner, 1 Nov 2026: not every feature in one frame on desktop).
-  return <Bento tiles={TILES} label="Rezekii features" slides />;
+  return <Bento tiles={tiles(t)} label={t("Rezekii features")} slides />;
 }
 
 /* ---------------- Why Rezekii (USP banners) ---------------- */
@@ -437,10 +457,10 @@ const rmn = (x: number) => x.toLocaleString("en-MY", { minimumFractionDigits: 0,
 const AI_PICK = product("p20");
 const FEED = ["p02", "p11", "p23", "p04", "p18", "p12"].map(product);
 const TREND = ["p01", "p13", "p20"].map(product);
-const USPS: Usp[] = [
+const usps = (t: T): Usp[] => [
   {
-    title: "Stop Scrolling for Products", tint: "#6d5efc",
-    line: "Rezekii AI shows what's trending and suits you, before you buy or shoot.",
+    title: t("Stop Scrolling for Products"), tint: "#6d5efc",
+    line: t("Rezekii AI shows what's trending and suits you, before you buy or shoot."),
     demo: (
       <div className="lp-u-scroll">
         <span className="lp-u-feed"><span className="lp-u-feedin">{[...FEED, ...FEED].map((p, i) => <Thumb key={i} src={p.img} size={44} />)}</span></span>
@@ -457,16 +477,16 @@ const USPS: Usp[] = [
     ),
   },
   {
-    title: "More Commission, Same Products", tint: "#00c073",
-    line: "Rezekii AI finds higher rates for products already in your showcase.",
+    title: t("More Commission, Same Products"), tint: "#00c073",
+    line: t("Rezekii AI finds higher rates for products already in your showcase."),
     demo: (
       <div className="lp-u-col">
         <div className="lp-u-row">
           <Thumb src={POT.img} size={44} />
-          <span>{POT.name}<small>Already in your showcase</small></span>
+          <span>{POT.name}<small>{t("Already in your showcase")}</small></span>
           <span className="lp-u-flip"><span className="was">{POT.publicRate}%</span><b>{POT.tapRate}% <s>{POT.publicRate}%</s></b></span>
         </div>
-        <span className="lp-u-chip">Example: RM {POT.price.toFixed(2)} item, +RM {PER_SALE.toFixed(2)} a sale</span>
+        <span className="lp-u-chip">{t("Example: RM {price} item, +RM {extra} a sale", { price: POT.price.toFixed(2), extra: PER_SALE.toFixed(2) })}</span>
       </div>
     ),
   },
@@ -474,8 +494,8 @@ const USPS: Usp[] = [
     // TikTok samples are free too; sellers there often set strict rules (owner, 29 Oct 2026). The difference is who gets in.
     // TikTok has free samples too, but best sellers rarely offer them and sellers fear no-shows (owner, 29 Oct 2026). Rezekii
     // tracks every sample to a posted video, so sellers can trust the creator.
-    title: "Free Samples, Even on Best Sellers", tint: "#1d4ed8",
-    line: "Sellers worry samples never become videos. Rezekii tracks each one to your post, so they can trust you.",
+    title: t("Free Samples, Even on Best Sellers"), tint: "#1d4ed8",
+    line: t("Sellers worry samples never become videos. Rezekii tracks each one to your post, so they can trust you."),
     demo: (
       // A best seller with no free sample on TikTok flips to a free sample on Rezekii (owner, 30 Oct 2026).
       <div className="lp-u-samp">
@@ -483,14 +503,14 @@ const USPS: Usp[] = [
           {SAMPLE_PICKS.map((p, i) => (
             <span key={p.id} className="lp-u-tile" style={v({ i })}>
               <Thumb src={p.img} size={52} />
-              <small>{short(p.sold)} sold</small>
-              <em><Icon name="gift" size={11} width={2.6} /> Free</em>
+              <small>{t("{n} sold", { n: short(p.sold) })}</small>
+              <em><Icon name="gift" size={11} width={2.6} /> {t("Free")}</em>
             </span>
           ))}
         </span>
         <span className="lp-u-flipbox">
-          <span className="no"><Icon name="lock" size={14} width={2.4} /> On TikTok: no free sample</span>
-          <span className="yes"><Icon name="gift" size={14} width={2.4} /> On Rezekii: free sample</span>
+          <span className="no"><Icon name="lock" size={14} width={2.4} /> {t("On TikTok: no free sample")}</span>
+          <span className="yes"><Icon name="gift" size={14} width={2.4} /> {t("On Rezekii: free sample")}</span>
         </span>
       </div>
     ),
@@ -499,14 +519,14 @@ const USPS: Usp[] = [
     // One video, four apps, one tap (owner, 29 Oct 2026): each app's own icon so it reads at a glance.
     // Four apps means four places to earn (owner, 29 Oct 2026), not a promise of 4× the commission.
     // Before: one app to earn on. Now: the same video and caption, 3 more apps to earn on (owner, 29 Oct 2026).
-    title: "Same Video, 4 Places to Earn", tint: "#f08a00",
-    line: "Same videos, same captions. Rezekii posts them to 3 more apps where you can earn too.",
+    title: t("Same Video, 4 Places to Earn"), tint: "#f08a00",
+    line: t("Same videos, same captions. Rezekii posts them to 3 more apps where you can earn too."),
     demo: (
       <div className="lp-u-hub">
         <span className="lp-u-src">
           <Thumb src="/ai-videos/try-on.jpg" size={52} />
-          <b>1 video</b>
-          <small>1 → 4 places</small>
+          <b>{t("1 video")}</b>
+          <small>{t("1 → 4 places")}</small>
         </span>
         <span className="lp-u-mid">
           <svg className="lp-u-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
@@ -519,7 +539,7 @@ const USPS: Usp[] = [
             <li key={p} className={i === 0 ? "" : "new"} style={v({ i })}>
               <PlatIcon name={p} size={28} />
               <span>{p}</span>
-              <em>{i === 0 ? "Today" : "+ New"}</em>
+              <em>{i === 0 ? t("Today") : t("+ New")}</em>
             </li>
           ))}
         </ul>
@@ -529,27 +549,30 @@ const USPS: Usp[] = [
 ];
 
 export function CreatorUsps() {
-  return <UspRail items={USPS} label="Why Rezekii" />;
+  const t = useT();
+  return <UspRail items={usps(t)} label={t("Why Rezekii")} />;
 }
 
 /* ---------------- Without vs With ---------------- */
 
-const ROWS: CompareRow[] = [
-  { label: `Commission on a RM ${POT.price.toFixed(2)} product`, without: `${POT.publicRate}% open plan, RM ${earn(POT, POT.publicRate).toFixed(2)}/sale`, with: <span className="lp-cmp-money"><span>{POT.tapRate}% on Rezekii, RM{" "}{earn(POT, POT.tapRate).toFixed(2)}/sale</span><b>+RM {PER_SALE.toFixed(2)}/sale</b><small><span>× 1,000 orders</span><span>= <b>+RM {rmn(PER_SALE * 1000)} extra</b></span></small></span> },
-  { label: "Finding viral products", without: "Hours a day scrolling TikTok, then guessing", with: "Rezekii AI shows what's trending for you" },
-  { label: "Captions", without: "A new caption for every app, every post", with: "Write once, fitted to each app" },
-  { label: "Posting", without: "Upload to each app, one by one", with: <span className="lp-cmp-apps">Multi-platform in one click<span>{PLATS.map((p) => <PlatIcon key={p} name={p} size={26} />)}</span><span className="lp-sr">TikTok, Facebook, Instagram and Threads</span></span> },
-  { label: "Free samples", without: "Sample requests often get rejected", with: "Higher approval through Rezekii, even on best sellers" },
-  { label: "When to post", without: "Post anytime and hope for FYP", with: "Rezekii AI finds your Viral Time Frame" },
+const rows = (t: T): CompareRow[] => [
+  { label: t("Commission on a RM {price} product", { price: POT.price.toFixed(2) }), without: t("{rate}% open plan, RM {amount}/sale", { rate: POT.publicRate, amount: earn(POT, POT.publicRate).toFixed(2) }), with: <span className="lp-cmp-money"><span>{t("{rate}% on Rezekii, RM {amount}/sale", { rate: POT.tapRate, amount: earn(POT, POT.tapRate).toFixed(2) })}</span><b>{t("+RM {amount}/sale", { amount: PER_SALE.toFixed(2) })}</b><small><span>{t("× 1,000 orders")}</span><span>= <b>{t("+RM {amount} extra", { amount: rmn(PER_SALE * 1000) })}</b></span></small></span> },
+  { label: t("Finding viral products"), without: t("Hours a day scrolling TikTok, then guessing"), with: t("Rezekii AI shows what's trending for you") },
+  { label: t("Captions"), without: t("A new caption for every app, every post"), with: t("Write once, fitted to each app") },
+  { label: t("Posting"), without: t("Upload to each app, one by one"), with: <span className="lp-cmp-apps">{t("Multi-platform in one click")}<span>{PLATS.map((p) => <PlatIcon key={p} name={p} size={26} />)}</span><span className="lp-sr">{t("TikTok, Facebook, Instagram and Threads")}</span></span> },
+  { label: t("Free samples"), without: t("Sample requests often get rejected"), with: t("Higher approval through Rezekii, even on best sellers") },
+  { label: t("When to post"), without: t("Post anytime and hope for FYP"), with: t("Rezekii AI finds your Viral Time Frame") },
 ];
 export function CreatorCompare() {
-  return <Compare rows={ROWS} note={`Example: ${POT.name} at RM ${POT.price.toFixed(2)}. Rates differ by product and level; some products have no better rate.`} />;
+  const t = useT();
+  return <Compare rows={rows(t)} note={t("Example: {name} at RM {price}. Rates differ by product and level; some products have no better rate.", { name: POT.name, price: POT.price.toFixed(2) })} />;
 }
 
 /* ---------------- What You'll See ---------------- */
 
 export function CreatorSee() {
-  return <SeeRail items={[]} stories={CREATOR_STORIES} label="What creators say" />;
+  const t = useT();
+  return <SeeRail items={[]} stories={CREATOR_STORIES} label={t("What creators say")} />;
 }
 
 /* ---------------- Banner, product strip and pain-point posters (owner, 29 Oct 2026: some banners, not all animation) ---------------- */
@@ -557,12 +580,13 @@ export function CreatorSee() {
 const COLLAGE = ["p08", "p01", "p13", "p24", "p21"].map(example);
 /** A bold banner right after the hero: the promise in big type over the products it applies to. */
 export function CreatorBanner() {
+  const t = useT();
   return (
-    <section className="lp-banner" aria-label="Same products, more commission">
+    <section className="lp-banner" aria-label={t("Same products, more commission")}>
       <div className="lp-banner-t">
-        <h2>Same Products. <em>More Commission.</em></h2>
+        <h2><Rich text={t("Same Products. *More Commission.*")} /></h2>
         {/* 1% sounds small; at volume it isn't (owner, 29 Oct 2026). */}
-        <p>1% sounds small. On about RM 160,000 of sales, it's RM 1,600 more.</p>
+        <p>{t("1% sounds small. On about RM 160,000 of sales, it's RM 1,600 more.")}</p>
       </div>
       <div className="lp-banner-c" aria-hidden="true">
         {COLLAGE.map((p, i) => (
@@ -578,14 +602,15 @@ export function CreatorBanner() {
 
 /** A slow strip of what Rezekii gives you, between sections (owner, 30 Oct 2026, option 2A: benefits, not more products). */
 const PERKS: { icon: IconName; text: string; tone?: "gold" }[] = [
-  { icon: "trend", text: "+1% commission" },
-  { icon: "gift", text: "Free samples" },
-  { icon: "spark", text: "AI Viral Product Sourcing" },
-  { icon: "clock", text: "Golden time to go FYP", tone: "gold" },
-  { icon: "share", text: "4 places to earn" },
-  { icon: "tag", text: "Rate cards" },
+  { icon: "trend", text: tx("+1% commission") },
+  { icon: "gift", text: tx("Free samples") },
+  { icon: "spark", text: tx("AI Viral Product Sourcing") },
+  { icon: "clock", text: tx("Golden time to go FYP"), tone: "gold" },
+  { icon: "share", text: tx("4 places to earn") },
+  { icon: "tag", text: tx("Rate cards") },
 ];
 export function CreatorStrip() {
+  const t = useT();
   return (
     <div className="lp-strip perks" aria-hidden="true">
       <div>
@@ -593,7 +618,7 @@ export function CreatorStrip() {
           <span key={i} className={x.tone}>
             {/* The AI tag brings its own spark, so no second icon. */}
             {x.icon !== "spark" && <Icon name={x.icon} size={18} width={2.4} />}
-            <b><AiText text={x.text} /></b>
+            <b><AiText text={t(x.text)} /></b>
           </span>
         ))}
       </div>
@@ -608,7 +633,7 @@ export function CreatorStrip() {
  */
 /** Lowest-rated products in her showcase, with how many of her videos sell them (sample). */
 const RISK_ROWS = [{ p: product("p17"), videos: 2 }, { p: product("p22"), videos: 1 }, { p: product("p23"), videos: 1 }];
-const WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const WEEK = [tx("Mon"), tx("Tue"), tx("Wed"), tx("Thu"), tx("Fri"), tx("Sat"), tx("Sun")];
 /** Ideas from Rezekii AI: products that fit her account best, with the match score from AI Picks (sample). */
 const FIT_PICKS = AI_PICKS.slice(0, 3);
 const HOT = NICHE_BEST[0];
@@ -622,21 +647,21 @@ const VID_ROW = [SEEN[1], SEEN[0], SEEN[SEEN.length - 1]];
 /** Video covers that look like TikTok videos, not product photos (owner, 30 Oct 2026). Sample. */
 const VID_COVERS = ["/ai-videos/home-demo.jpg", "/ai-videos/pov-demo.jpg", "/ai-videos/review.jpg"];
 type Pain = { key: string; tint: string; pain: string; why: string; fix: string; art: React.ReactNode; tag?: string };
-const PAINS: Pain[] = [
+const pains = (t: T): Pain[] => [
   {
     key: "health", tint: "linear-gradient(160deg,#3b0d12,#b4232c)",
-    pain: "Scared Your Account Gets Frozen?",
-    why: "Violations can mean low traffic, a shadow ban, even frozen commission you can't withdraw.",
-    fix: "Rezekii AI flags risky products and the videos selling them, so you fix them early.",
+    pain: t("Scared Your Account Gets Frozen?"),
+    why: t("Violations can mean low traffic, a shadow ban, even frozen commission you can't withdraw."),
+    fix: t("Rezekii AI flags risky products and the videos selling them, so you fix them early."),
     art: (
       // The low-rated products behind the risk (owner, 30 Oct 2026), flagged one by one.
       <div className="lp-pa-risk">
-        <span className="lp-pa-tag">Showcase risk · <b>{RISK_ROWS.length} products</b></span>
+        <span className="lp-pa-tag"><Rich text={RISK_ROWS.length === 1 ? t("Showcase risk · **{n} product**", { n: RISK_ROWS.length }) : t("Showcase risk · **{n} products**", { n: RISK_ROWS.length })} /></span>
         {RISK_ROWS.map((r, i) => (
           <div key={r.p.id} className="lp-pa-row lp-pa-rk" style={v({ i })}>
             <Thumb src={r.p.img} size={36} />
-            <span>{r.p.name}<small>★ {r.p.rating.toFixed(1)} · in {r.videos} of your videos</small></span>
-            <em className={r.p.rating < 3 ? "high" : "watch"}>{r.p.rating < 3 ? "High risk" : "Watch"}</em>
+            <span>{r.p.name}<small>{t("★ {rating} · in {n} of your videos", { rating: r.p.rating.toFixed(1), n: r.videos })}</small></span>
+            <em className={r.p.rating < 3 ? "high" : "watch"}>{r.p.rating < 3 ? t("High risk") : t("Watch")}</em>
           </div>
         ))}
       </div>
@@ -644,50 +669,50 @@ const PAINS: Pain[] = [
   },
   {
     key: "source", tint: "linear-gradient(160deg,#1e1452,#6d5efc)",
-    pain: "Saw It Trending? You're Already Late.",
-    why: "By the time your sample arrives, about a week later, the wave has passed.",
-    fix: "AI Viral Product Sourcing reads real sales and your account, and tells you what to shoot next. Trust data, not trends.",
+    pain: t("Saw It Trending? You're Already Late."),
+    why: t("By the time your sample arrives, about a week later, the wave has passed."),
+    fix: t("AI Viral Product Sourcing reads real sales and your account, and tells you what to shoot next. Trust data, not trends."),
     art: (
       <div className="lp-pa-chart">
-        <span className="lp-pa-tag"><Thumb src={HOT_P.img} size={28} /> {short(HOT.weekSold)} sold this week <b>↑</b></span>
+        <span className="lp-pa-tag"><Thumb src={HOT_P.img} size={28} /> <Rich text={t("{n} sold this week **↑**", { n: short(HOT.weekSold) })} /></span>
         <span className="lp-pa-bars lp-pa-wave">
           {WAVE.map((h, i) => <i key={i} className={i === 1 ? "early" : undefined} style={v({ h: `${h}%`, i })} />)}
           {/* The label sits above the chart, with a line down to the exact green bar (owner, 30 Oct 2026). */}
           <span className="pin-line" style={{ bottom: `${WAVE[1]}%` }} />
-          <em className="pin early">✦ Rezekii AI spots it</em>
-          <em className="pin late">Everyone else</em>
+          <em className="pin early">{t("✦ Rezekii AI spots it")}</em>
+          <em className="pin late">{t("Everyone else")}</em>
         </span>
-        <span className="lp-pa-days">{WEEK.map((d) => <i key={d}>{d}</i>)}</span>
-        <small>Rising early, before the wave</small>
+        <span className="lp-pa-days">{WEEK.map((d) => <i key={d}>{t(d)}</i>)}</span>
+        <small>{t("Rising early, before the wave")}</small>
       </div>
     ),
   },
   {
     key: "ideas", tint: "linear-gradient(160deg,#4a2a00,#e8a400)",
-    pain: "Out of Ideas Today?",
-    why: "Scrolling TikTok for hours to find what to film, then copying what's already old.",
-    fix: "Rezekii AI gives ideas made for your account, not copied from others.",
+    pain: t("Out of Ideas Today?"),
+    why: t("Scrolling TikTok for hours to find what to film, then copying what's already old."),
+    fix: t("Rezekii AI gives ideas made for your account, not copied from others."),
     // Before: endless TikTok scrolling. After: today's ideas, ready (owner, 29 Oct 2026).
     art: (
       <div className="lp-pa-swap">
         <div className="lp-pa-feed">
           <div>{[...TT_FEED, ...TT_FEED].map((src, i) => <Thumb key={i} src={src} size={60} />)}</div>
-          <span className="lp-pa-tag"><Icon name="clock" size={14} width={2.4} /> 2 hours of scrolling…</span>
+          <span className="lp-pa-tag"><Icon name="clock" size={14} width={2.4} /> {t("2 hours of scrolling…")}</span>
         </div>
         {/* Ideas from AI analysis, scored by how well each product fits her (owner, 30 Oct 2026): a better fit, a better chance to go FYP. */}
         <div className="lp-pa-ideas">
-          <span className="lp-pa-tag"><Icon name="spark" size={14} width={2.4} /> Rezekii AI checked your videos and buyers</span>
+          <span className="lp-pa-tag"><Icon name="spark" size={14} width={2.4} /> {t("Rezekii AI checked your videos and buyers")}</span>
           {FIT_PICKS.map((a, i) => {
             const p = product(a.productId);
             return (
               <div key={a.productId} className="lp-pa-row lp-pa-fit" style={v({ i, m: `${a.match}%` })}>
                 <Thumb src={p.img} size={36} />
-                <span>{p.name}<small><i className="lp-pa-meter"><b /></i>Fits you {a.match}%</small></span>
-                {i === 0 && <em>Best fit</em>}
+                <span>{p.name}<small><i className="lp-pa-meter"><b /></i>{t("Fits you {n}%", { n: a.match })}</small></span>
+                {i === 0 && <em>{t("Best fit")}</em>}
               </div>
             );
           })}
-          <small className="lp-pa-note">A better fit means a better chance to go FYP.</small>
+          <small className="lp-pa-note">{t("A better fit means a better chance to go FYP.")}</small>
         </div>
       </div>
     ),
@@ -695,9 +720,9 @@ const PAINS: Pain[] = [
   {
     // What they care about: which videos earn, not where the data comes from (owner, 29 Oct 2026).
     key: "live", tint: "linear-gradient(160deg,#04291a,#00a862)",
-    pain: "Which Video Is Actually Making You Money?",
-    why: "Copying others is a guess. What sells is different for every account, and sometimes a repost wins.",
-    fix: "See commission per video and product as it happens, so you post more of what earns.",
+    pain: t("Which Video Is Actually Making You Money?"),
+    why: t("Copying others is a guess. What sells is different for every account, and sometimes a repost wins."),
+    fix: t("See commission per video and product as it happens, so you post more of what earns."),
     art: (
       // Option 1A (owner, 30 Oct 2026): three video covers, commission bars filling up, the winner crowned and worth reposting.
       <div className="lp-pa-risk">
@@ -706,7 +731,7 @@ const PAINS: Pain[] = [
             const top = x.id === BY_EARN[0].id;
             return (
               <div key={x.id} className={`lp-pa-vid${top ? " top" : ""}`} style={v({ h: `${Math.round((x.commission / BY_EARN[0].commission) * 100)}%` })}>
-                {top && <span className="lp-pa-crown">Top earner</span>}
+                {top && <span className="lp-pa-crown">{t("Top earner")}</span>}
                 <span className="lp-pa-cover">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={VID_COVERS[i]} alt="" />
@@ -720,24 +745,24 @@ const PAINS: Pain[] = [
             );
           })}
         </div>
-        <span className="lp-pa-again"><Icon name="refresh" size={15} width={2.6} /> Post it again</span>
+        <span className="lp-pa-again"><Icon name="refresh" size={15} width={2.6} /> {t("Post it again")}</span>
       </div>
     ),
   },
   {
     key: "plan", tint: "linear-gradient(160deg,#0b2246,#2f80ed)",
-    pain: "Posting Whenever You Can?",
-    why: "Copying others' posting time rarely works. The right time for your own account does far better.",
-    fix: "Plan the week in Content Calendar, timed to your golden hours.",
+    pain: t("Posting Whenever You Can?"),
+    why: t("Copying others' posting time rarely works. The right time for your own account does far better."),
+    fix: t("Plan the week in Content Calendar, timed to your golden hours."),
     // Posting time as a clock (owner, 29 Oct 2026): her golden windows lit up; there can be more than one (owner, 30 Oct 2026).
     art: (
       <div className="lp-pa-clock">
         <svg viewBox="0 0 200 200" width="170" height="170">
           <circle cx="100" cy="100" r="96" className="face" />
           {TICKS.map((d) => <path key={d} d={`M${at(d, 89)} L${at(d, 94)}`} className="tick" />)}
-          {NUMS.map(([t, d]) => {
+          {NUMS.map(([num, d]) => {
             const [x, y] = pt(d, 58);
-            return <text key={t} x={x.toFixed(2)} y={(y + 5).toFixed(2)} textAnchor="middle">{t}</text>;
+            return <text key={num} x={x.toFixed(2)} y={(y + 5).toFixed(2)} textAnchor="middle">{num}</text>;
           })}
           <path d={arc(0, 1)} className="arc" />
           <path d={arc(8, 10)} className="arc" />
@@ -745,15 +770,16 @@ const PAINS: Pain[] = [
           <line x1="100" y1="100" x2="100" y2="36" className="hand m" />
           <circle cx="100" cy="100" r="5" className="pin" />
         </svg>
-        <span className="lp-pa-tag">Your golden times: 12–1 pm · 8–10 pm</span>
+        <span className="lp-pa-tag">{t("Your golden times: 12–1 pm · 8–10 pm")}</span>
       </div>
     ),
   },
 ];
-export function CreatorPains({ items = PAINS, label = "Affiliate problems Rezekii solves" }: { items?: Pain[]; label?: string } = {}) {
+export function CreatorPains({ items, label }: { items?: Pain[]; label?: string } = {}) {
+  const t = useT();
   return (
-    <AutoSlider label={label} every={5000} className="three lp-pains">
-      {items.map((x) => (
+    <AutoSlider label={label ?? t("Affiliate problems Rezekii solves")} every={5000} className="three lp-pains">
+      {(items ?? pains(t)).map((x) => (
         <article key={x.key} className="lp-poster" style={{ background: x.tint }}>
           {x.tag && <span className="lp-poster-tag">{x.tag}</span>}
           <h3>{x.pain}</h3>
@@ -768,28 +794,32 @@ export function CreatorPains({ items = PAINS, label = "Affiliate problems Rezeki
 
 /* ---------------- Your free report (owner, 1 Nov 2026, option D): the three main tools as the three parts of a free report ---------------- */
 
-const REPORT: Pain[] = [
-  {
-    key: "r-scan", tag: "Part 1 · Showcase Scanner", tint: "linear-gradient(160deg,#04291a,#00a862)",
-    pain: "Better Rates on What You Already Sell",
-    why: "Every product in your showcase, checked in one scan.",
-    fix: "Only higher rates, never lower. Add them all in one tap.",
-    art: (
-      <div className="lp-pa-risk">
-        <span className="lp-pa-tag">Scan done · <b>{SCAN.length} can pay more</b></span>
-        {SCAN.map((p, i) => (
-          <div key={p.id} className="lp-pa-row lp-pa-rk" style={v({ i })}>
-            <Thumb src={p.img} size={36} />
-            <span>{p.name}<small className="up">Already in your showcase</small></span>
-            <em className="up">{p.publicRate}% → {p.tapRate}%</em>
-          </div>
-        ))}
-      </div>
-    ),
-  },
-  { ...PAINS.find((x) => x.key === "ideas")!, key: "r-picks", tag: "Part 2 · AI Picks", tint: "linear-gradient(160deg,#1e1452,#6d5efc)", pain: "What to Sell Next, Picked for You", why: "From your own sales and videos, not copied from others.", fix: "Rezekii AI picks best sellers that fit your account." },
-  { ...PAINS.find((x) => x.key === "health")!, key: "r-health", tag: "Part 3 · Health Scanner", pain: "Risky Products, Found Early", why: "Low ratings can mean low traffic, a shadow ban, even frozen commission.", fix: "Remove products under 3.0★ in one tap, before they hurt your account." },
-];
+const report = (t: T): Pain[] => {
+  const all = pains(t);
+  return [
+    {
+      key: "r-scan", tag: t("Part 1 · Showcase Scanner"), tint: "linear-gradient(160deg,#04291a,#00a862)",
+      pain: t("Better Rates on What You Already Sell"),
+      why: t("Every product in your showcase, checked in one scan."),
+      fix: t("Only higher rates, never lower. Add them all in one tap."),
+      art: (
+        <div className="lp-pa-risk">
+          <span className="lp-pa-tag"><Rich text={t("Scan done · **{n} can pay more**", { n: SCAN.length })} /></span>
+          {SCAN.map((p, i) => (
+            <div key={p.id} className="lp-pa-row lp-pa-rk" style={v({ i })}>
+              <Thumb src={p.img} size={36} />
+              <span>{p.name}<small className="up">{t("Already in your showcase")}</small></span>
+              <em className="up">{p.publicRate}% → {p.tapRate}%</em>
+            </div>
+          ))}
+        </div>
+      ),
+    },
+    { ...all.find((x) => x.key === "ideas")!, key: "r-picks", tag: t("Part 2 · AI Picks"), tint: "linear-gradient(160deg,#1e1452,#6d5efc)", pain: t("What to Sell Next, Picked for You"), why: t("From your own sales and videos, not copied from others."), fix: t("Rezekii AI picks best sellers that fit your account.") },
+    { ...all.find((x) => x.key === "health")!, key: "r-health", tag: t("Part 3 · Health Scanner"), pain: t("Risky Products, Found Early"), why: t("Low ratings can mean low traffic, a shadow ban, even frozen commission."), fix: t("Remove products under 3.0★ in one tap, before they hurt your account.") },
+  ];
+};
 export function CreatorReport() {
-  return <CreatorPains items={REPORT} label="Your free report" />;
+  const t = useT();
+  return <CreatorPains items={report(t)} label={t("Your free report")} />;
 }

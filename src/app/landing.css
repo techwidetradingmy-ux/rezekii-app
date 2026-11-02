@@ -1155,3 +1155,13 @@ button.lp-shotf { cursor: zoom-in; }
   .lp-bento-slides .lp-tile { height: 100%; min-height: 440px; padding: 20px; gap: 12px; }
   .lp-bento-slides .lp-tile h3 { font-size: 16.5px; }
 }
+/* The language switch in the top bar (owner, 3 Nov 2026: visitors pick a language before signing in). Where the bar can't
+   also fit the section links on one row, they hide, as they already do on phones: the creator bar below 960px, the seller
+   bar (more links) below 1080px. The switch never wraps inside itself. */
+.lp-hero .lang-switch { flex-shrink: 0; white-space: nowrap; }
+@media (max-width: 960px) {
+  .lp-hero .site-nav > a:not(.site-brand):not(.lp-keep):not(.site-signin) { display: none; }
+}
+@media (max-width: 1080px) {
+  .lp-hero .site-nav:has(.sl-tag) > a:not(.site-brand):not(.lp-keep):not(.site-signin) { display: none; }
+}

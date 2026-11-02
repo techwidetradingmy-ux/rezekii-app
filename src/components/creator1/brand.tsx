@@ -1,5 +1,8 @@
+"use client";
+
 import { Icon } from "@/components/icons";
 import { canGetSample } from "@/lib/mock-creator1";
+import { useT } from "@/lib/i18n/client";
 
 /** TikTok's note and Google's G for the sign-in buttons (same marks as V1). */
 const NOTE =
@@ -31,8 +34,9 @@ export function GoogleMark() {
  * "Free sample", or the streak it needs when she isn't there yet.
  */
 export function SampleTag({ streak, label = true }: { streak: number; label?: boolean }) {
+  const t = useT();
   const can = canGetSample(streak);
-  const text = can ? "Free sample" : `Free sample at a ${streak}-day streak`;
+  const text = can ? t("Free sample") : t("Free sample at a {n}-day streak", { n: streak });
   return (
     <span className={`cr1-tier ${can ? "open" : "locked"} ${label ? "" : "icon"}`} title={text} aria-label={label ? undefined : text}>
       <Icon name={can ? "gift" : "lock"} size={label ? 13 : 15} width={2.4} />
