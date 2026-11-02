@@ -14,7 +14,7 @@ import { useDemo } from "./demo";
 import { Portal, Sheet } from "./ui";
 import { applyTheme, readTheme, type Theme } from "@/lib/theme";
 import { LevelFace } from "./level-face";
-import { ACCOUNT_TABS, OPEN_ACCOUNT_MENU, PANEL_MORE, tabFor } from "@/lib/account-tabs";
+import { ACCOUNT_TABS, OPEN_ACCOUNT_MENU, tabFor } from "@/lib/account-tabs";
 import { useSideScroll } from "./side-scroll";
 import { useScrollMemory } from "@/lib/keep";
 import { BetaWait } from "./beta-wait";
@@ -420,17 +420,6 @@ function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory?: () 
     return () => document.removeEventListener("keydown", key);
   }, [onClose]);
   const here = (k: string) => path === "/app/account" && (tabFor(hash) ?? "profile") === k;
-  // Wish List, Connections and Rate Card sit under More (owner, 1 Nov 2026); it stays open if she opened it last time.
-  const [more, setMore] = useState(false);
-  useLayoutEffect(() => {
-    let open = PANEL_MORE.includes(tabFor(window.location.hash.slice(1)) ?? "profile");
-    try { open = open || localStorage.getItem("rz2_ap_more") === "1"; } catch {}
-    setMore(open);
-  }, []);
-  const toggleMore = () => {
-    setMore(!more);
-    try { localStorage.setItem("rz2_ap_more", more ? "0" : "1"); } catch {}
-  };
   /** Opens a section of My Account; on My Account itself it only changes the address. */
   const open = (k: string) => (e: React.MouseEvent) => {
     if (path === "/app/account") { e.preventDefault(); window.location.hash = k; }
@@ -452,10 +441,12 @@ function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory?: () 
       <aside className="ap-panel" role="dialog" aria-modal="true" aria-label="My Account">
         <div className="ap-body">
           <div className="ap-me">
-            {/* Her TikTok level frame, the same as on My Account (owner, 29 Oct 2026). */}
-            <LevelFace lv={live ? me?.ttLevel ?? null : linked ? CREATOR.tiktokLevel : null} size={50} img={you.photo} name={you.name} />
+            {/* Her TikTok level frame, the same as on My Account (owner, 29 Oct 2026). Her photo and name open Your Profile (owner, 3 Nov 2026). */}
+            <Link href="/app/account#profile" className="ap-face" aria-label="Open Your Profile" onClick={open("profile")}>
+              <LevelFace lv={live ? me?.ttLevel ?? null : linked ? CREATOR.tiktokLevel : null} size={50} img={you.photo} name={you.name} />
+            </Link>
             <span>
-              <b>{you.name}</b><small>{you.handle}</small>
+              <Link href="/app/account#profile" className="ap-name" onClick={open("profile")}><b>{you.name}</b><small>{you.handle}</small></Link>
               <span className="ap-chips">
                 {/* The level opens Level, Streak & Badges; the flame opens its Streak section (owner, 1 Nov 2026). */}
                 <Link href="/app/account#level" className={`lv ${level.toLowerCase()}`} title={`${level} creator`} aria-label={`${level} creator. Open Level, Streak & Badges`} onClick={open("level")}><Icon name="gem" size={13} /></Link>
@@ -467,12 +458,9 @@ function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory?: () 
               <button type="button" className="v2-iconbtn" aria-label={`Theme: ${theme}. Tap to change`} onClick={nextTheme}><Icon name={theme === "Light" ? "sun" : theme === "Dark" ? "moon" : "auto"} size={18} /></button>
             </span>
           </div>
+          {/* Every section shows, no More (owner, 3 Nov 2026: the panel isn't full, so nothing needs folding away). */}
           <nav className="ap-list" aria-label="Account sections">
-            {ACCOUNT_TABS.filter(([k]) => !PANEL_MORE.includes(k)).map(row)}
-            <button type="button" className={`ap-more${more ? " open" : ""}`} aria-expanded={more} onClick={toggleMore}>
-              <span>More</span><small>Wish List, Connections, Rate Card</small><Icon name="arrow" size={15} />
-            </button>
-            {more && ACCOUNT_TABS.filter(([k]) => PANEL_MORE.includes(k)).map(row)}
+            {ACCOUNT_TABS.map(row)}
           </nav>
           {/* Support and feedback side by side (owner, 1 Nov 2026); Contact Support opens WhatsApp. */}
           <div className="ap-help">

@@ -186,7 +186,7 @@ export function RateCard() {
       const sum = Object.entries(g.qty).reduce((a, [k, q]) => a + worth(k, q, next), 0);
       return { id: Date.now() + i, name: g.name, qty: g.qty, price: String(Math.round((sum * (1 - g.off)) / 10) * 10) };
     }));
-    toast("Prices and 2 packages suggested. Change anything you like.");
+    toast("Example prices and 2 packages filled in. Change anything you like.");
   }
   const ready = packs.filter((p) => p.name.trim() && num(p.price) > 0);
   const priced = live.filter((it) => num(rates[it.key].price) > 0);
@@ -217,7 +217,8 @@ export function RateCard() {
     <div className="v2-stack rc-page" style={{ gap: 18 }}>
       <div className="acc-head">
         <span className="v2-small">Your prices for paid videos. Sellers see them when inviting you.</span>
-        <button type="button" className="btn-outline v2-btn-sm" onClick={suggest}>✦ Suggest prices</button>
+        {/* "Example Pricing", not suggested prices (owner, 3 Nov 2026). */}
+        <button type="button" className="btn-outline v2-btn-sm" onClick={suggest}>✦ Example Pricing</button>
       </div>
 
       <section className="cr2-group">

@@ -17,8 +17,5 @@ export type AccountTab = (typeof ACCOUNT_TABS)[number][0];
 /** #streak opens Level, Streak & Badges at its Streak section (owner, 1 Nov 2026). */
 export const tabFor = (hash: string): AccountTab | null => (hash === "streak" ? "level" : ACCOUNT_TABS.find(([k]) => k === hash)?.[0] ?? null);
 
-/** The phone account panel lists the rest first; these sit under More (owner, 1 Nov 2026). */
-export const PANEL_MORE: readonly AccountTab[] = ["wish", "connections", "rate-card"];
-
 /** Asks the shell to open the account panel (phones). */
 export const OPEN_ACCOUNT_MENU = "rz-account-menu";

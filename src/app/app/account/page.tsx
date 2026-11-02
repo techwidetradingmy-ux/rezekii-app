@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo, useWho } from "@/components/demo";
-import { Seg, Sheet, Title, Loading } from "@/components/ui";
+import { Seg, Sheet, Title, Loading, Tip } from "@/components/ui";
 import { useSideScroll } from "@/components/side-scroll";
 import { PlatformIcon } from "@/components/creator2/bits";
 import { CREATOR, MY_SAMPLES, SOCIALS } from "@/lib/mock";
@@ -17,8 +17,9 @@ import { LevelBadges } from "@/components/account/level-badges";
 import { Referral } from "@/components/account/referral";
 import { RateCard } from "@/components/account/rate-card";
 import { Wallet } from "@/components/account/wallet";
-import { AddressFields } from "@/components/account/address-fields";
-import { SAMPLE_INFO, addressOk, birthdayError, readSignup, useAddress, type Address } from "@/lib/address";
+import { AddressForm } from "@/components/account/address-fields";
+import { SAMPLE_INFO, birthdayError, readSignup, useAddress, type Address } from "@/lib/address";
+import { shortId } from "@/lib/short-id";
 import type { IconName } from "@/components/icons";
 import { MY_STATES, NICHES, NOTIFY } from "@/lib/mock-creator2";
 import { GoogleMark, TikTokMark } from "@/components/creator1/brand";
@@ -148,7 +149,6 @@ export default function Account() {
   const [savedAddr, saveAddr] = useAddress();
   const [addr, setAddr] = useState<Address>(savedAddr);
   useEffect(() => setAddr(savedAddr), [savedAddr]);
-  const [addrTried, setAddrTried] = useState(false);
   const [conn, setConn] = useState<Record<string, boolean>>(Object.fromEntries(SOCIALS.map((s) => [s.name, s.linked])));
   const [notify, setNotify] = useState<Record<string, [boolean, boolean]>>({ samples: [true, true], chances: [true, true], posts: [true, false], rewards: [true, false] });
   // Signed in (owner, 31 Oct 2026): the in-app switches decide what shows in Notifications. No email alerts are sent yet.
@@ -285,7 +285,7 @@ export default function Account() {
 
   const socials: { key: string; label: string; icon: React.ReactNode; detail: string; on: boolean; soon?: boolean }[] = [
     { key: "TikTok Shop", label: "TikTok Shop", icon: <BrandLogo name="TikTok Shop" size={34} className="cr2-pi" />, detail: linked ? "Linked" : "Not linked", on: linked },
-    { key: "TikTok", label: "TikTok account", icon: <PlatformIcon name="TikTok" size={34} />, detail: conn.TikTok ? SOCIALS[0].handle : "Not connected", on: conn.TikTok },
+    { key: "TikTok", label: "TikTok Account", icon: <PlatformIcon name="TikTok" size={34} />, detail: conn.TikTok ? SOCIALS[0].handle : "Not connected", on: conn.TikTok },
     { key: "Facebook", label: "Facebook Page", icon: <PlatformIcon name="Facebook" size={34} />, detail: conn.Facebook ? SOCIALS[2].handle : "Not connected", on: conn.Facebook },
     { key: "Instagram", label: "Instagram", icon: <PlatformIcon name="Instagram" size={34} />, detail: conn.Instagram ? `${SOCIALS[1].handle} · Reels` : "Not connected", on: conn.Instagram },
     { key: "Threads", label: "Threads", icon: <PlatformIcon name="Threads" size={34} />, detail: conn.Threads ? "@aisyah.glow" : "Not connected", on: conn.Threads },
@@ -331,15 +331,6 @@ export default function Account() {
           </div>
         </div>
         )}
-        {/* Her user ID on every section (owner, 1 Nov 2026), to quote to support. */}
-        {live && me && (
-          <p className="acc-uid">
-            <span>User ID</span>
-            <code>{me.id}</code>
-            <button type="button" className="v2-iconbtn" aria-label="Copy user ID" onClick={() => navigator.clipboard.writeText(me.id).then(() => toast("User ID copied"), () => toast(me.id))}><Icon name="doc" size={15} /></button>
-          </p>
-        )}
-
         <div ref={tabsRef} className="acc-tabs nv-noscroll" role="tablist" aria-label="Account sections">
           {TABS.map(([k, label, icon]) => (
             <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? "on" : undefined} onClick={() => go(k)}>
@@ -366,6 +357,16 @@ export default function Account() {
             </div>
 
             <div className="pf-grid">
+              {/* Her short user ID, only here (owner, 3 Nov 2026), so she knows what to give when support asks. */}
+              {live && me && (
+                <div className="pf-f wide">
+                  <span className="pf-l">User ID <Tip text="Give this to Rezekii support when they ask who you are." label="About your user ID" /></span>
+                  <b className="pf-v pf-uid">
+                    <code>{shortId(me.id)}</code>
+                    <button type="button" className="v2-iconbtn" aria-label="Copy user ID" onClick={() => navigator.clipboard.writeText(shortId(me.id)).then(() => toast("User ID copied"), () => toast(shortId(me.id)))}><Icon name="doc" size={15} /></button>
+                  </b>
+                </div>
+              )}
               <label className="pf-f">
                 <span className="pf-l">Name {!locked && <Req />}</span>
                 {locked ? <b className="pf-v">{name}</b> : <input className="np-input" value={name} onChange={(e) => setName(e.target.value)} />}
@@ -496,8 +497,7 @@ export default function Account() {
           <p style={{ color: "var(--body)" }}>
             Needed for your Rate Card, so sellers can send products for paid reviews. Free Samples use your TikTok address.
           </p>
-          <AddressFields value={addr} onChange={setAddr} tried={addrTried} />
-          <button type="button" className="btn-outline" style={{ alignSelf: "flex-start" }} onClick={() => { setAddrTried(true); if (!addressOk(addr)) return; saveAddr(addr); toast("Address saved"); }}>Save Address</button>
+          <AddressForm value={addr} onChange={setAddr} save={saveAddr} />
         </section>
 
           </>
@@ -522,7 +522,8 @@ export default function Account() {
             </div>
             {chans === null && <Loading text="Loading your accounts…" inline />}
             {chans !== null && (["tiktok", "facebook", "instagram", "threads"] as const).map((app) => {
-              const label = { tiktok: "TikTok account", facebook: "Facebook Page", instagram: "Instagram", threads: "Threads" }[app];
+              // Labels in Title Case (owner, 3 Nov 2026: "TikTok Account", "Add Another TikTok Account").
+              const label = { tiktok: "TikTok Account", facebook: "Facebook Page", instagram: "Instagram", threads: "Threads" }[app];
               const icon = { tiktok: "TikTok", facebook: "Facebook", instagram: "Instagram", threads: "Threads" }[app] as "TikTok" | "Facebook" | "Instagram" | "Threads";
               const mine = chans.filter((c) => c.app === app);
               return (
@@ -537,7 +538,7 @@ export default function Account() {
                   ))}
                   <div className="cr2-cell row">
                     <PlatformIcon name={icon} size={34} />
-                    <span className="cr2-conn"><b>{mine.length ? `Add another ${label}` : label}</b><small>{mine.length ? "Connect one more" : "Not connected"}</small></span>
+                    <span className="cr2-conn"><b>{mine.length ? `Add Another ${label}` : label}</b><small>{mine.length ? "Connect one more" : "Not connected"}</small></span>
                     <button type="button" className={mine.length ? "btn-outline v2-btn-sm" : "np-btn v2-btn-sm"} onClick={() => connectApp(app)}>Connect</button>
                   </div>
                 </Fragment>
