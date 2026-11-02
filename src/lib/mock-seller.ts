@@ -3,9 +3,10 @@
  * number here is invented. Size variants reuse the shop's own product photos, as real listings often do.
  */
 import { PRODUCTS, SELLER, SELLER_RESULTS, product, type Product } from "./mock";
+import { tx } from "./i18n/lang";
 
 export const TODAY = "28 Oct";
-export const UPDATED = "today 09:12";
+export const UPDATED = tx("today 09:12");
 
 /* ---------------- Shop products ---------------- */
 
@@ -91,17 +92,17 @@ export type Range = (typeof RANGES)[number];
 export const RESULTS: Record<Range, { gmv: number; units: number; creators: number; videos: number; lives: number; paid: number; daily: number[]; labels: string[]; unit: string; prev: number }> = {
   "7 days": {
     gmv: 27310.6, units: 731, creators: 31, videos: 64, lives: 6, paid: 3112.4, prev: 18,
-    daily: [3.3, 3.9, 4.2, 3.9, 4.1, 4.5, 3.4], labels: ["22", "23", "24", "25", "26", "27", "28"], unit: "Daily sales, RM thousands",
+    daily: [3.3, 3.9, 4.2, 3.9, 4.1, 4.5, 3.4], labels: ["22", "23", "24", "25", "26", "27", "28"], unit: tx("Daily sales, RM thousands"),
   },
   "30 days": {
     gmv: SELLER_RESULTS.gmv, units: SELLER_RESULTS.units, creators: SELLER_RESULTS.creators, videos: SELLER_RESULTS.videos, lives: SELLER_RESULTS.lives, paid: SELLER_RESULTS.commissionPaid, prev: 31,
     daily: [1.4, 1.7, 1.6, 1.9, 2.1, 1.9, 1.8, 2.2, 2.6, 2.7, 2.5, 2.7, 3.0, 2.8, 2.4, 2.7, 3.1, 3.4, 3.2, 2.9, 3.4, 3.7, 3.5, 3.3, 3.9, 4.2, 3.9, 4.1, 4.5, 3.4],
     labels: ["29 Sep", "", "", "", "", "", "5 Oct", "", "", "", "", "", "", "12 Oct", "", "", "", "", "", "", "19 Oct", "", "", "", "", "", "", "26 Oct", "", ""],
-    unit: "Daily sales, RM thousands",
+    unit: tx("Daily sales, RM thousands"),
   },
   "90 days": {
     gmv: 198640.0, units: 5410, creators: 63, videos: 488, lives: 41, paid: 22590.8, prev: 0,
-    daily: [6.2, 7.8, 9.1, 11.4, 12.9, 14.2, 15.8, 16.1, 17.9, 18.8, 20.4, 22.9, 24.2], labels: ["W1", "", "W3", "", "W5", "", "W7", "", "W9", "", "W11", "", "W13"], unit: "Weekly sales, RM thousands",
+    daily: [6.2, 7.8, 9.1, 11.4, 12.9, 14.2, 15.8, 16.1, 17.9, 18.8, 20.4, 22.9, 24.2], labels: ["W1", "", "W3", "", "W5", "", "W7", "", "W9", "", "W11", "", "W13"], unit: tx("Weekly sales, RM thousands"),
   },
 };
 
@@ -290,20 +291,20 @@ export const SELLER_FAQ: [string, string][] = [
   ["Do you guarantee sales?", "No. We pick the creators most likely to sell, but we don't control them, so we can't promise reach, sales or posting dates. You'll see real numbers from TikTok, updated every day."],
 ];
 
-/** Sample allocation terms, version 1 (blueprint 11.4c). */
-export const TERMS_VERSION = "Version 1 · Oct 2026";
+/** Sample allocation terms, version 1 (blueprint 11.4c). In English here; shown in her language (tx marks them for the word lists). */
+export const TERMS_VERSION = tx("Version 1 · Oct 2026");
 export const TERMS: [string, string][] = [
-  ["Techwide decides who gets each sample", "When you add samples to Techwide's TAP campaign, our team approves each creator's request."],
-  ["Your creator conditions are a reference", "We use them as a guide, together with each creator's record, when we decide."],
-  ["Samples can't be taken back", "Once a sample is sent, you can't ask for it to be returned or refunded."],
-  ["We pick creators most likely to bring results", "We look at activity, delivery record, category, TikTok level and sales. If you have questions about who got a sample, ask our support team."],
-  ["We don't control creators", "So we're not responsible for their delivery rate, posting dates, speed or content direction."],
-  ["We can act on creators who don't deliver", "Creators who are late can lose sample access, or be frozen or banned."],
-  ["No guarantee of results", "We don't guarantee reach, sales, GMV or return. Numbers come from TikTok and can be delayed."],
-  ["Shipping follows TikTok's rules", "You ship TAP samples through TikTok. Losses, damage and returns in transit are handled under TikTok's rules."],
-  ["Product compliance is yours; opinions are the creator's", "You're responsible for your product's labels, certificates and claims. What creators say in their videos is their own view."],
-  ["You can stop at any time", "You can stop adding new samples whenever you like. Samples already sent aren't affected."],
-  ["We'll ask you again if the terms change", "We'll tell you about any change and ask you to agree again the next time you submit."],
+  [tx("Techwide decides who gets each sample"), tx("When you add samples to Techwide's TAP campaign, our team approves each creator's request.")],
+  [tx("Your creator conditions are a reference"), tx("We use them as a guide, together with each creator's record, when we decide.")],
+  [tx("Samples can't be taken back"), tx("Once a sample is sent, you can't ask for it to be returned or refunded.")],
+  [tx("We pick creators most likely to bring results"), tx("We look at activity, delivery record, category, TikTok level and sales. If you have questions about who got a sample, ask our support team.")],
+  [tx("We don't control creators"), tx("So we're not responsible for their delivery rate, posting dates, speed or content direction.")],
+  [tx("We can act on creators who don't deliver"), tx("Creators who are late can lose sample access, or be frozen or banned.")],
+  [tx("No guarantee of results"), tx("We don't guarantee reach, sales, GMV or return. Numbers come from TikTok and can be delayed.")],
+  [tx("Shipping follows TikTok's rules"), tx("You ship TAP samples through TikTok. Losses, damage and returns in transit are handled under TikTok's rules.")],
+  [tx("Product compliance is yours; opinions are the creator's"), tx("You're responsible for your product's labels, certificates and claims. What creators say in their videos is their own view.")],
+  [tx("You can stop at any time"), tx("You can stop adding new samples whenever you like. Samples already sent aren't affected.")],
+  [tx("We'll ask you again if the terms change"), tx("We'll tell you about any change and ask you to agree again the next time you submit.")],
 ];
 
 // Every country (owner, 31 Oct 2026: sellers and creators from anywhere).
@@ -311,21 +312,21 @@ export { COUNTRIES } from "./countries";
 
 /**
  * Checks a phone number and tidies it. Malaysian mobiles must be 01x numbers and come out as +60 12-345 6789;
- * other countries just need 6–14 digits.
+ * other countries just need 6–14 digits. Errors are in English, shown with t().
  */
 export function tidyPhone(raw: string, dial: string): { ok: boolean; pretty: string; error?: string } {
   let d = raw.replace(/\D/g, "");
-  if (!d) return { ok: false, pretty: "", error: "Enter your phone number" };
+  if (!d) return { ok: false, pretty: "", error: tx("Enter your phone number") };
   if (d.startsWith("00")) d = d.slice(2);
   if (d.startsWith(dial) && d.length > dial.length + 5) d = d.slice(dial.length);
   if (dial === "60") {
     if (d.startsWith("0")) d = d.slice(1);
-    if (!/^1\d{8,9}$/.test(d)) return { ok: false, pretty: "", error: "That doesn't look like a Malaysian mobile number. It should start with 01, like 012-345 6789." };
+    if (!/^1\d{8,9}$/.test(d)) return { ok: false, pretty: "", error: tx("That doesn't look like a Malaysian mobile number. It should start with 01, like 012-345 6789.") };
     const pretty = d.length === 9 ? `+60 ${d.slice(0, 2)}-${d.slice(2, 5)} ${d.slice(5)}` : `+60 ${d.slice(0, 2)}-${d.slice(2, 6)} ${d.slice(6)}`;
     return { ok: true, pretty };
   }
   if (d.startsWith("0")) d = d.slice(1);
-  if (d.length < 6 || d.length > 14) return { ok: false, pretty: "", error: "Enter 6 to 14 digits, without the country code." };
+  if (d.length < 6 || d.length > 14) return { ok: false, pretty: "", error: tx("Enter 6 to 14 digits, without the country code.") };
   return { ok: true, pretty: `+${dial} ${d.replace(/(\d{4})(?=\d)/g, "$1 ")}` };
 }
 

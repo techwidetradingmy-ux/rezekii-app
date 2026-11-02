@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Count, Stat } from "@/components/ui";
-import { Source } from "@/components/seller/seller-ui";
+import { Rich, Source } from "@/components/seller/seller-ui";
+import { useT } from "@/lib/i18n/client";
 import { rm } from "@/lib/mock";
 import type { ShopItem } from "@/lib/mock-seller";
 import { loadShop } from "@/lib/live";
@@ -17,22 +18,27 @@ const TONE: Record<string, string> = { alert: "red", x: "red", video: "blue", gi
 
 /** "Good morning/afternoon/evening, Name" and the shop line, from her real shop. */
 export function LiveHello({ items, totals }: { items: ShopItem[] | null; totals: Totals | null }) {
+  const t = useT();
   const { me } = useDemo();
   const [name, setName] = useState("");
-  const [hi, setHi] = useState("Good morning");
+  const [hi, setHi] = useState<"morning" | "afternoon" | "evening">("morning");
   useEffect(() => {
     const h = new Date().getHours();
-    setHi(h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening");
+    setHi(h < 12 ? "morning" : h < 18 ? "afternoon" : "evening");
     loadProfile<{ contact?: string }>("seller").then((d) => setName(d.profile?.details.contact?.split(" ")[0] ?? "")).catch(() => {});
   }, []);
   const live = items?.filter((s) => s.stage === "Live").length ?? 0;
+  const who = name || me?.name?.split(" ")[0] || "";
+  const hello = hi === "morning" ? (who ? t("Good morning, {name}", { name: who }) : t("Good morning"))
+    : hi === "afternoon" ? (who ? t("Good afternoon, {name}", { name: who }) : t("Good afternoon"))
+    : who ? t("Good evening, {name}", { name: who }) : t("Good evening");
   return (
     <div className="sl-hello">
-      <h1>{hi}{name || me?.name ? `, ${name || me?.name?.split(" ")[0]}` : ""}</h1>
+      <h1>{hello}</h1>
       <p className="v2-muted">
-        {me?.sellerShop ?? "Your shop"}
-        {items && <> · <b>{live}</b> product{live === 1 ? "" : "s"} live in TAP</>}
-        {totals && <> · <b>{totals.creators}</b> creator{totals.creators === 1 ? "" : "s"} promoting</>}
+        {me?.sellerShop ?? t("Your shop")}
+        {items && <> · <Rich text={live === 1 ? t("<b>{n}</b> product live in TAP", { n: live }) : t("<b>{n}</b> products live in TAP", { n: live })} /></>}
+        {totals && <> · <Rich text={totals.creators === 1 ? t("<b>{n}</b> creator promoting", { n: totals.creators }) : t("<b>{n}</b> creators promoting", { n: totals.creators })} /></>}
       </p>
     </div>
   );
@@ -40,6 +46,7 @@ export function LiveHello({ items, totals }: { items: ShopItem[] | null; totals:
 
 /** One "do this first" card from where her products really are. */
 export function LiveNext({ items }: { items: ShopItem[] | null }) {
+  const t = useT();
   if (!items) return null;
   const live = items.filter((s) => s.stage === "Live").length;
   const waiting = items.filter((s) => s.stage === "Under review" || s.stage === "Submitted to TikTok");
@@ -48,12 +55,12 @@ export function LiveNext({ items }: { items: ShopItem[] | null }) {
   if (broken.length) {
     return (
       <section className="v2-next red">
-        <small>Do this first</small>
-        <h2>{broken.length} Product{broken.length === 1 ? "" : "s"} Not Approved</h2>
-        <p>{broken[0].name}{broken[0].reason ? `: ${broken[0].reason}` : " needs a change before it can go back in."}</p>
+        <small>{t("Do this first")}</small>
+        <h2>{broken.length === 1 ? t("{n} Product Not Approved", { n: broken.length }) : t("{n} Products Not Approved", { n: broken.length })}</h2>
+        <p>{broken[0].reason ? `${broken[0].name}: ${t(broken[0].reason)}` : t("{name} needs a change before it can go back in.", { name: broken[0].name })}</p>
         <div className="v2-row">
-          <Link href={`/seller/app/product/${broken[0].id}`} className="v2-btn-white" style={{ color: "#b42318" }}>Fix and Resubmit</Link>
-          <Link href="/seller/app/progress" className="v2-btn-ghostw">See Progress</Link>
+          <Link href={`/seller/app/product/${broken[0].id}`} className="v2-btn-white" style={{ color: "#b42318" }}>{t("Fix and Resubmit")}</Link>
+          <Link href="/seller/app/progress" className="v2-btn-ghostw">{t("See Progress")}</Link>
         </div>
       </section>
     );
@@ -62,18 +69,20 @@ export function LiveNext({ items }: { items: ShopItem[] | null }) {
     const withTikTok = waiting.filter((s) => s.stage === "Submitted to TikTok").length;
     return (
       <section className="v2-next">
-        <small>On its way</small>
-        <h2>{waiting.length} product{waiting.length === 1 ? "" : "s"} {withTikTok === waiting.length ? "waiting on TikTok" : "on the way"}</h2>
-        <p>{withTikTok === waiting.length ? "Nothing to do. TikTok usually replies in 1–3 working days." : "Our team reviews them first, then sends them to TikTok."}</p>
+        <small>{t("On the way")}</small>
+        <h2>{withTikTok === waiting.length
+          ? (waiting.length === 1 ? t("{n} product waiting on TikTok", { n: waiting.length }) : t("{n} products waiting on TikTok", { n: waiting.length }))
+          : waiting.length === 1 ? t("{n} product on the way", { n: waiting.length }) : t("{n} products on the way", { n: waiting.length })}</h2>
+        <p>{withTikTok === waiting.length ? t("Nothing to do. TikTok usually replies in 1–3 working days.") : t("Our team reviews them first, then sends them to TikTok.")}</p>
         <div className="sl-mini-steps">
-          <span className="on"><Icon name="check" size={14} width={2.6} /> Registered</span>
-          <span className={withTikTok ? "on" : undefined}>{withTikTok ? <Icon name="check" size={14} width={2.6} /> : null} Our review</span>
-          <span>With TikTok</span>
-          <span>Live</span>
+          <span className="on"><Icon name="check" size={14} width={2.6} /> {t("Registered")}</span>
+          <span className={withTikTok ? "on" : undefined}>{withTikTok ? <Icon name="check" size={14} width={2.6} /> : null} {t("Our review")}</span>
+          <span>{t("With TikTok")}</span>
+          <span>{t("Live")}</span>
         </div>
         <div className="v2-row">
-          <Link href="/seller/app/progress" className="v2-btn-white">See Progress</Link>
-          {fresh > 0 && <Link href="/seller/app/submit" className="v2-btn-ghostw">Register {fresh} more</Link>}
+          <Link href="/seller/app/progress" className="v2-btn-white">{t("See Progress")}</Link>
+          {fresh > 0 && <Link href="/seller/app/submit" className="v2-btn-ghostw">{t("Register {n} more", { n: fresh })}</Link>}
         </div>
       </section>
     );
@@ -81,23 +90,23 @@ export function LiveNext({ items }: { items: ShopItem[] | null }) {
   if (!live) {
     return (
       <section className="v2-next">
-        <small>Start here</small>
-        <h2>Register Your First Products</h2>
-        <p>Pick products. AI suggests the commission; samples are set to 40.</p>
+        <small>{t("Start here")}</small>
+        <h2>{t("Register Your First Products")}</h2>
+        <p>{t("Pick products. AI suggests the commission; samples are set to 40.")}</p>
         <div className="v2-row">
-          <Link href="/seller/app/submit" className="v2-btn-white">Register Products <Icon name="arrow" size={18} /></Link>
+          <Link href="/seller/app/submit" className="v2-btn-white">{t("Register Products")} <Icon name="arrow" size={18} /></Link>
         </div>
       </section>
     );
   }
   return (
     <section className="v2-next">
-      <small>All good</small>
-      <h2>All {live} product{live === 1 ? " is" : "s are"} live</h2>
-      <p>{fresh ? `${fresh} product${fresh === 1 ? "" : "s"} not in TAP yet.` : "Every product you sent is in TAP."}</p>
+      <small>{t("All good")}</small>
+      <h2>{live === 1 ? t("All {n} product is live", { n: live }) : t("All {n} products are live", { n: live })}</h2>
+      <p>{fresh ? (fresh === 1 ? t("{n} product not in TAP yet.", { n: fresh }) : t("{n} products not in TAP yet.", { n: fresh })) : t("Every product you sent is in TAP.")}</p>
       <div className="v2-row">
-        <Link href="/seller/app/results" className="v2-btn-white">See Results</Link>
-        {fresh > 0 && <Link href="/seller/app/submit" className="v2-btn-ghostw">Add More Products</Link>}
+        <Link href="/seller/app/results" className="v2-btn-white">{t("See Results")}</Link>
+        {fresh > 0 && <Link href="/seller/app/submit" className="v2-btn-ghostw">{t("Add More Products")}</Link>}
       </div>
     </section>
   );
@@ -105,21 +114,22 @@ export function LiveNext({ items }: { items: ShopItem[] | null }) {
 
 /** Her TAP results so far (lifetime, from TikTok), in the home card's place. */
 export function LiveSummary({ totals, failed }: { totals: Totals | null; failed: boolean }) {
+  const t = useT();
   return (
     <section className="v2-card">
       <div className="v2-card-h">
-        <h2 className="v2-h2">Your TAP Results</h2>
-        <Link href="/seller/app/results">See All</Link>
+        <h2 className="v2-h2">{t("Your TAP Results")}</h2>
+        <Link href="/seller/app/results">{t("See All")}</Link>
       </div>
-      <Source text="Data from TikTok" when="today" />
+      <Source when={t("today")} />
       {!totals ? (
-        <p className="v2-muted" style={{ margin: 0 }}>{failed ? "Couldn't reach TikTok Shop." : "Loading…"}</p>
+        <p className="v2-muted" style={{ margin: 0 }}>{failed ? t("Couldn't reach TikTok Shop.") : t("Loading…")}</p>
       ) : (
         <div className="v2-grid4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))" }}>
-          <Stat label="Sales" value={<Count value={totals.gmv} format={(n) => rm(n, 0)} />} note="Since live" />
-          <Stat label="Orders" value={<Count value={totals.orders} />} />
-          <Stat label="Creators Promoting" value={<Count value={totals.creators} />} />
-          <Stat label="Videos" value={<Count value={totals.videos} />} />
+          <Stat label={t("Sales")} value={<Count value={totals.gmv} format={(n) => rm(n, 0)} />} note={t("Since live")} />
+          <Stat label={t("Orders")} value={<Count value={totals.orders} />} />
+          <Stat label={t("Creators Promoting")} value={<Count value={totals.creators} />} />
+          <Stat label={t("Videos")} value={<Count value={totals.videos} />} />
         </div>
       )}
     </section>
@@ -128,17 +138,18 @@ export function LiveSummary({ totals, failed }: { totals: Totals | null; failed:
 
 /** Her latest notifications as the home page's recent activity. */
 export function LiveActivity() {
+  const t = useT();
   const [notes, setNotes] = useState<LiveNote[] | null>(null);
   useEffect(() => { loadNotes("seller").then((d) => setNotes(d?.notes.slice(0, 5) ?? [])); }, []);
   return (
     <section className="v2-card">
       <div className="v2-card-h">
-        <h2 className="v2-h2">Recent Activity</h2>
-        <Link href="/seller/app/notifications">All</Link>
+        <h2 className="v2-h2">{t("Recent Activity")}</h2>
+        <Link href="/seller/app/notifications">{t("All")}</Link>
       </div>
       <div className="sl-acts">
-        {notes === null && <p className="v2-muted" style={{ margin: 0 }}>Loading…</p>}
-        {notes?.length === 0 && <p className="v2-muted" style={{ margin: 0 }}>Nothing yet. Product reviews, missions and posts show up here.</p>}
+        {notes === null && <p className="v2-muted" style={{ margin: 0 }}>{t("Loading…")}</p>}
+        {notes?.length === 0 && <p className="v2-muted" style={{ margin: 0 }}>{t("Nothing yet. Product reviews, missions and posts show up here.")}</p>}
         {notes?.map((n) => {
           const inner = (
             <>

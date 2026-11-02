@@ -9,12 +9,15 @@ import { useDemo } from "@/components/demo";
 import { GoogleMark, TikTokMark } from "@/components/creator1/brand";
 import { TERMS_VERSION } from "@/lib/mock-seller";
 import { Tip } from "@/components/ui";
+import { Rich } from "@/components/seller/seller-ui";
+import { useT } from "@/lib/i18n/client";
 
 /**
  * Seller onboarding for real (owner, 31 Oct 2026): sign in with TikTok or Google (back here after), agree to the sample terms,
  * then connect Seller Center on TikTok. A seller with a shop already goes straight to the seller app.
  */
 export function LiveSellerConnect() {
+  const t = useT();
   const { me } = useDemo();
   const [ready, setReady] = useState(false);
   const [agreed, setAgreed] = useState(false);
@@ -38,41 +41,48 @@ export function LiveSellerConnect() {
           <span><Image src="/master-logo-transparent.png" alt="" width={30} height={30} priority /></span>
           Rezekii
         </Link>
-        <span className="sl-tag" style={{ marginLeft: 0 }}>Sellers</span>
+        <span className="sl-tag" style={{ marginLeft: 0 }}>{t("Sellers")}</span>
         <span className="site-spacer" />
-        <Link href="/seller" className="v2-link" style={{ fontSize: 14 }}>Exit</Link>
+        <Link href="/seller" className="v2-link" style={{ fontSize: 14 }}>{t("Exit")}</Link>
       </header>
       <main className="sl-ob-main">
         <section className="sl-ob-card">
           {!me ? (
             <>
-              <h1>Connect Your TikTok Shop</h1>
-              <p>Sign in first. It takes about 3 minutes in all.</p>
-              <a className="btn-google sl-ob-btn" style={{ font: "inherit", fontWeight: 600 }} href="/api/auth/google/start?next=/seller/connect"><GoogleMark /> Continue with Google</a>
-              <a className="btn-tiktok sl-ob-btn" style={{ border: 0, font: "inherit", fontWeight: 800 }} href="/api/auth/tiktok/start?next=/seller/connect"><TikTokMark size={20} /> Continue with TikTok</a>
-              {ready && <Link href="/signin?next=/seller/connect" className="btn-outline sl-ob-btn" style={{ font: "inherit", fontWeight: 700 }}><Icon name="inbox" size={18} /> Continue with Email</Link>}
+              <h1>{t("Connect Your TikTok Shop")}</h1>
+              <p>{t("Sign in first. It takes about 3 minutes in all.")}</p>
+              <a className="btn-google sl-ob-btn" style={{ font: "inherit", fontWeight: 600 }} href="/api/auth/google/start?next=/seller/connect"><GoogleMark /> {t("Continue with Google")}</a>
+              <a className="btn-tiktok sl-ob-btn" style={{ border: 0, font: "inherit", fontWeight: 800 }} href="/api/auth/tiktok/start?next=/seller/connect"><TikTokMark size={20} /> {t("Continue with TikTok")}</a>
+              {ready && <Link href="/signin?next=/seller/connect" className="btn-outline sl-ob-btn" style={{ font: "inherit", fontWeight: 700 }}><Icon name="inbox" size={18} /> {t("Continue with Email")}</Link>}
             </>
           ) : (
             <>
               {/* Owner, 31 Oct 2026: fewer words, one clear button. The sample terms sit in a tip. */}
-              <h1>Connect Your TikTok Shop</h1>
+              <h1>{t("Connect Your TikTok Shop")}</h1>
               <p style={{ margin: 0 }}>
-                Signed in as <b>{me.name ?? me.email}</b> ·{" "}
-                <button type="button" className="v2-link" onClick={() => { fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/seller/connect"; }); }}>Switch Account</button>
+                <Rich text={t("Signed in as <b>{name}</b>", { name: me.name ?? me.email ?? "" })} /> ·{" "}
+                <button type="button" className="v2-link" onClick={() => { fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/seller/connect"; }); }}>{t("Switch Account")}</button>
               </p>
               <ul className="sl-ob-list">
-                <li><Icon name="check" size={16} width={2.6} /> Your own campaign, opened for you</li>
-                <li><Icon name="check" size={16} width={2.6} /> Your products shown to creators</li>
-                <li><Icon name="check" size={16} width={2.6} /> Samples, videos and sales in one place</li>
+                <li><Icon name="check" size={16} width={2.6} /> {t("Your own campaign, opened for you")}</li>
+                <li><Icon name="check" size={16} width={2.6} /> {t("Your products shown to creators")}</li>
+                <li><Icon name="check" size={16} width={2.6} /> {t("Samples, videos and sales in one place")}</li>
               </ul>
               <label className="sl-agree" style={{ display: "flex", gap: 10, alignItems: "center" }}>
                 <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
-                <span>I Agree to the <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer" className="v2-link">Terms</a>, <a href="https://rezekii.com/privacy" target="_blank" rel="noreferrer" className="v2-link">Privacy Policy</a> and sample terms <Tip label="Sample terms" text={`${TERMS_VERSION}: 1 sample = at least 1 video by the due date. Samples sent can't be taken back.`} /></span>
+                <span>
+                  {/* One whole sentence in every language; the two links sit where {terms} and {privacy} are. */}
+                  {t("I Agree to the {terms}, {privacy} and sample terms").split(/(\{terms\}|\{privacy\})/).map((part, i) =>
+                    part === "{terms}" ? <a key={i} href="https://rezekii.com/terms" target="_blank" rel="noreferrer" className="v2-link">{t("Terms")}</a>
+                    : part === "{privacy}" ? <a key={i} href="https://rezekii.com/privacy" target="_blank" rel="noreferrer" className="v2-link">{t("Privacy Policy")}</a>
+                    : part)}{" "}
+                  <Tip label={t("Sample terms")} text={t("{version}: 1 sample = at least 1 video by the due date. Samples sent can't be taken back.", { version: t(TERMS_VERSION) })} />
+                </span>
               </label>
               <button type="button" className="btn-tiktok sl-ob-btn" style={{ border: 0, font: "inherit", fontWeight: 800, cursor: "pointer" }} disabled={!agreed || busy} onClick={connect}>
-                {busy ? <span className="sl-spin" /> : <TikTokMark size={20} />} Connect TikTok Shop
+                {busy ? <span className="sl-spin" /> : <TikTokMark size={20} />} {t("Connect TikTok Shop")}
               </button>
-              <p className="v2-small" style={{ margin: 0, display: "flex", gap: 6, alignItems: "center" }}><Icon name="shield" size={15} /> Secure sign-in by TikTok · Disconnect any time</p>
+              <p className="v2-small" style={{ margin: 0, display: "flex", gap: 6, alignItems: "center" }}><Icon name="shield" size={15} /> {t("Secure sign-in by TikTok · Disconnect any time")}</p>
             </>
           )}
         </section>
@@ -83,12 +93,13 @@ export function LiveSellerConnect() {
 
 /** The result of connecting Seller Center, shown once when TikTok sends her back to the seller app. */
 export function useConnectResult() {
+  const t = useT();
   const { toast, refreshMe } = useDemo();
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     const r = q.get("tts");
     if (!r) return;
-    toast(r === "seller-connected" ? "Seller Center connected." : r.startsWith("seller-not-allowed") ? "This shop can't join yet: Rezekii is open to a few shops while TikTok reviews it. We'll let you know." : r === "denied" ? "Connecting was cancelled." : "Seller Center didn't connect. Please try again.");
+    toast(r === "seller-connected" ? t("Seller Center connected.") : r.startsWith("seller-not-allowed") ? t("This shop can't join yet: Rezekii is open to a few shops while TikTok reviews it. We'll let you know.") : r === "denied" ? t("Connecting was cancelled.") : t("Seller Center didn't connect. Please try again."));
     refreshMe();
     window.history.replaceState(null, "", window.location.pathname);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
