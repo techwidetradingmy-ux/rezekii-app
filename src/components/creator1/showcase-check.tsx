@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { PRODUCTS, short } from "@/lib/mock";
+import { useT } from "@/lib/i18n/client";
+import type { T } from "@/lib/i18n/lang";
 
 /** TikTok usernames: 2–24 letters, numbers, dots or underscores. */
 const tidy = (s: string) => s.trim().replace(/^@+/, "").toLowerCase();
@@ -23,10 +25,14 @@ function lookup(handle: string): Found | null {
   return { handle, img: "/avatars/aisyah.jpg", followers: 1200 + (h % 84000), cats: ["Fashion", "Home & Kitchen"] };
 }
 
-const STEPS = (f: Found | null, n: number) => [
-  f ? `Found @${f.handle} on TikTok Shop` : "Looking on TikTok Shop",
-  f ? `You sell in ${f.cats.join(" and ")}` : "Reading your categories",
-  `${n} products on Rezekii to compare`,
+/** "You sell in Fashion and Home & Kitchen", with our own category names in her language. */
+const sellsIn = (t: T, cats: string[]) =>
+  cats.length === 1 ? t("You sell in {cat}", { cat: t(cats[0]) }) : t("You sell in {a} and {b}", { a: cats.slice(0, -1).map((c) => t(c)).join(", "), b: t(cats[cats.length - 1]) });
+
+const STEPS = (t: T, f: Found | null, n: number) => [
+  f ? t("Found {handle} on TikTok Shop", { handle: `@${f.handle}` }) : t("Looking on TikTok Shop"),
+  f ? sellsIn(t, f.cats) : t("Reading your categories"),
+  t("{n} products on Rezekii to compare", { n }),
 ];
 
 /**
@@ -36,13 +42,14 @@ const STEPS = (f: Found | null, n: number) => [
  * the username isn't found, the blurred list is a labelled example instead.
  */
 export function ShowcaseCheck() {
+  const t = useT();
   const [raw, setRaw] = useState("");
   const [tried, setTried] = useState(false);
   const [stage, setStage] = useState<"type" | "check" | "locked">("type");
   const [step, setStep] = useState(0);
   const [found, setFound] = useState<Found | null>(null);
   const handle = tidy(raw);
-  const err = !handle ? "Type your TikTok username" : VALID.test(handle) ? "" : "Use letters, numbers, dots or underscores";
+  const err = !handle ? t("Type your TikTok username") : VALID.test(handle) ? "" : t("Use letters, numbers, dots or underscores");
 
   useEffect(() => {
     if (stage !== "check") return;
@@ -70,8 +77,8 @@ export function ShowcaseCheck() {
             <input
               value={raw}
               onChange={(e) => setRaw(e.target.value)}
-              placeholder="TikTok username"
-              aria-label="Your TikTok username"
+              placeholder={t("TikTok username")}
+              aria-label={t("Your TikTok username")}
               aria-invalid={tried && !!err}
               autoCapitalize="none"
               autoCorrect="off"
@@ -80,11 +87,11 @@ export function ShowcaseCheck() {
               enterKeyHint="go"
             />
           </label>
-          <button type="submit" className="np-btn cr1-bigbtn">Check My Showcase <Icon name="arrow" size={20} /></button>
+          <button type="submit" className="np-btn cr1-bigbtn">{t("Check My Showcase")} <Icon name="arrow" size={20} /></button>
         </div>
         {tried && err && <span className="sc-err" role="alert">{err}</span>}
         {/* Price is just "free to join", by the button (owner, 29 Oct 2026). */}
-        <p className="sc-free"><b>Beta open now. Join now for free.</b> · <a href="#how" className="sc-how">How It Works</a></p>
+        <p className="sc-free"><b>{t("Beta open now. Join now for free.")}</b> · <a href="#how" className="sc-how">{t("How It Works")}</a></p>
       </form>
     );
   }
@@ -102,9 +109,9 @@ export function ShowcaseCheck() {
       )}
       <span>
         <b>@{handle}</b>
-        <small>{found && step > 0 ? `${short(found.followers)} followers` : stage === "check" ? "Looking you up…" : "Not found on TikTok Shop yet"}</small>
+        <small>{found && step > 0 ? t("{n} followers", { n: short(found.followers) }) : stage === "check" ? t("Looking you up…") : t("Not found on TikTok Shop yet")}</small>
       </span>
-      {found && step > 0 && <span className="sc-found"><Icon name="check" size={12} width={3.2} /> Found You</span>}
+      {found && step > 0 && <span className="sc-found"><Icon name="check" size={12} width={3.2} /> {t("Found You")}</span>}
     </div>
   );
 
@@ -113,7 +120,7 @@ export function ShowcaseCheck() {
       <div className="sc-card" aria-live="polite">
         {who}
         <ul className="sc-steps">
-          {STEPS(found, inCats.length).map((l, i) => (
+          {STEPS(t, found, inCats.length).map((l, i) => (
             <li key={i} className={i < step ? "ok" : i === step ? "now" : ""}>
               {i < step ? <Icon name="check" size={16} width={3} /> : <span className="sc-spin" aria-hidden="true" />}
               {l}
@@ -129,11 +136,11 @@ export function ShowcaseCheck() {
       {who}
       {found && (
         <div className="sc-cats">
-          <small>You sell in</small>
-          {found.cats.map((c) => <span key={c}>{c}</span>)}
+          <small>{t("You sell in")}</small>
+          {found.cats.map((c) => <span key={c}>{t(c)}</span>)}
         </div>
       )}
-      <h3>{found ? `${inCats.length} Products on Rezekii in Your Categories` : "Sign Up to See Your Better Rates"}</h3>
+      <h3>{found ? t("{n} Products on Rezekii in Your Categories", { n: inCats.length }) : t("Sign Up to See Your Better Rates")}</h3>
       <div className="sc-lock">
         <div className="sc-blur" aria-hidden="true">
           {shown.map((p) => (
@@ -145,16 +152,16 @@ export function ShowcaseCheck() {
             </div>
           ))}
         </div>
-        <span className="sc-tag"><Icon name="lock" size={14} /> {found ? "Which ones are in your showcase?" : "Example only"}</span>
+        <span className="sc-tag"><Icon name="lock" size={14} /> {found ? t("Which ones are in your showcase?") : t("Example only")}</span>
       </div>
-      <small className="sc-note">Free during Beta. Link TikTok Shop to see your real rates; you can unlink anytime.</small>
-      <Link href={`/signin?u=${encodeURIComponent(handle)}`} className="np-btn cr1-bigbtn">Sign Up to Reveal <Icon name="arrow" size={20} /></Link>
+      <small className="sc-note">{t("Free during Beta. Link TikTok Shop to see your real rates; you can unlink anytime.")}</small>
+      <Link href={`/signin?u=${encodeURIComponent(handle)}`} className="np-btn cr1-bigbtn">{t("Sign Up to Reveal")} <Icon name="arrow" size={20} /></Link>
       {/* Under every CTA (owner, 29 Oct 2026): people feel safe signing up to a TikTok-related app. */}
       <span className="sc-trust">
         <span className="sc-trust-logo"><Image src="/tiktok-shop-partner-logo.png" alt="TikTok Shop Partner" width={62} height={18} /></span>
-        Official TikTok Shop Partner App
+        {t("Official TikTok Shop Partner App")}
       </span>
-      <button type="button" className="v2-link sc-again" onClick={() => { setStage("type"); setTried(false); }}>Use Another Username</button>
+      <button type="button" className="v2-link sc-again" onClick={() => { setStage("type"); setTried(false); }}>{t("Use Another Username")}</button>
     </div>
   );
 }

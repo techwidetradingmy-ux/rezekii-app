@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { AiMark, AiTag, Count, Flow, Hidden, Sheet } from "@/components/ui";
@@ -12,10 +12,17 @@ import { NEW_ON_RESCAN, SILVER_UNLOCKS } from "@/lib/mock-creator1";
 import { LEVELS } from "@/lib/mock-creator2";
 import { productHref } from "@/lib/product-view";
 import { useKept } from "@/lib/keep";
+import { useLang, useT } from "@/lib/i18n/client";
+import { dateLocale, tx, type Lang } from "@/lib/i18n/lang";
 
 type Tab = "same" | "similar" | "silver";
-/** One product the creator can move to a better rate: the same listing (raise) or a similar one in TAP. */
-type Item = { id: string; productId: string; kind: "same" | "similar"; from: number; fromLabel: "Target" | "Open" | "Now"; to: number; note: string };
+/**
+ * Where her rate now comes from, as the cards label it (translated where shown). "Open plan", not "Open": that word is the
+ * verb (Buka, 打开) everywhere else, so "Target plan" matches it.
+ */
+const FROM = { target: tx("Target plan"), open: tx("Open plan"), now: tx("Now") } as const;
+/** One product the creator can move to a better rate: the same listing (raise) or a similar one in TAP. `until`: the raise's end date. */
+type Item = { id: string; productId: string; kind: "same" | "similar"; from: number; fromLabel: string; to: number; until: string };
 type Bulk = { phase: "working" | "done"; items: Item[]; doneIds: string[] };
 type Pending = { id: string; productId: string; from: number; to: number; state: "checking" | "confirmed" };
 /** Tap-and-swipe through the better rates, one card at a time (owner, 28 Oct 2026). */
@@ -30,7 +37,9 @@ const SCAN_MS = 4200;
 const scanSeconds = (count: number | null) => Math.round(5 + Math.ceil((count || 400) / 20) * 1.1);
 /** About how long adding takes: 5 products at a time, about 3 seconds a round. */
 const addSeconds = (n: number) => 2 + Math.ceil(n / 5) * 3;
-const scanTime = (t: number) => new Date(t).toLocaleString("en-MY", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true });
+const scanTime = (t: number, lang: Lang) => new Date(t).toLocaleString(dateLocale(lang), { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true });
+/** A translated line whose {placeholders} are React elements (an animated count, a blurred rate). */
+const fillEl = (line: string, els: Record<string, React.ReactNode>) => line.split(/\{(\w+)\}/).map((s, i) => (i % 2 ? <Fragment key={i}>{els[s]}</Fragment> : s));
 const HOLD_MS = 900;
 const SWIPE_PX = 70;
 /** Her showcase photos that fly into the radar while it scans. */
@@ -40,13 +49,13 @@ const FLY = PRODUCTS.slice(0, 13).map((p) => p.img);
 const raiseItem = (r: Raise): Item => {
   const now = bestRate(product(r.productId));
   // A real scan gives her rate now from TikTok (target or open plan), so it's labelled "Now".
-  const fromLabel = LIVE_STUBS.has(r.productId) || LIVE_PRODUCTS.has(r.productId) ? "Now" : now.plan === "Target plan" ? "Target" : "Open";
-  return { id: r.id, productId: r.productId, kind: "same", from: r.nowRate ?? now.rate, fromLabel, to: r.tapRate, note: r.until ? `Until ${r.until}` : "" };
+  const fromLabel = LIVE_STUBS.has(r.productId) || LIVE_PRODUCTS.has(r.productId) ? FROM.now : now.plan === "Target plan" ? FROM.target : FROM.open;
+  return { id: r.id, productId: r.productId, kind: "same", from: r.nowRate ?? now.rate, fromLabel, to: r.tapRate, until: r.until };
 };
 const similarItem = (id: string): Item => {
   const p = product(id);
   const now = bestRate(p);
-  return { id: `sim-${id}`, productId: id, kind: "similar", from: now.rate, fromLabel: now.plan === "Target plan" ? "Target" : "Open", to: rateFor(p).rate, note: "" };
+  return { id: `sim-${id}`, productId: id, kind: "similar", from: now.rate, fromLabel: now.plan === "Target plan" ? FROM.target : FROM.open, to: rateFor(p).rate, until: "" };
 };
 
 /**
@@ -56,6 +65,8 @@ const similarItem = (id: string): Item => {
  * one opens a card deck to swipe through. Bronze creators also see a quiet "Unlock at Silver" tab.
  */
 export function ScanHub() {
+  const t = useT();
+  const lang = useLang();
   const router = useRouter();
   const { linked, setLinked, toast, bronze, live } = useDemo();
   const [rows, setRows] = useState<Raise[]>(RAISES);
@@ -125,11 +136,11 @@ export function ScanHub() {
       addRaises(items.map((i) => i.productId))
         .then((r) => {
           setBulk((b) => (b ? { ...b, phase: "done", doneIds: items.filter((i) => r.added.includes(i.productId)).map((i) => i.id) } : b));
-          if (r.failed.length) toast(`${r.failed.length} not added: ${r.failed[0].error}`);
+          if (r.failed.length) toast(t("{n} not added: {error}", { n: r.failed.length, error: t(r.failed[0].error) }));
         })
         .catch(() => {
           setBulk(null);
-          toast("Couldn't reach TikTok Shop. Please try again.");
+          toast(t("Couldn't reach TikTok Shop. Please try again."));
         });
       return;
     }
@@ -145,7 +156,7 @@ export function ScanHub() {
       setSimilar((s) => s.filter((id) => !ids.includes(`sim-${id}`)));
       setPending((p) => [...bulk.items.map((i) => ({ id: i.id, productId: i.productId, from: i.from, to: i.to, state: "checking" as const })), ...p]);
       later(() => setPending((p) => p.map((x) => (ids.includes(x.id) ? { ...x, state: "confirmed" } : x))), 3000);
-      if (bulk.phase === "working") toast("Still adding in the background. We'll tell you when it's done.");
+      if (bulk.phase === "working") toast(t("Still adding in the background. We'll tell you when it's done."));
     }
     setBulk(null);
   }
@@ -163,7 +174,7 @@ export function ScanHub() {
         later(() => {
           setScanning(false);
           setLast("just now");
-          if (!s) return toast("Couldn't reach TikTok Shop. Please try again.");
+          if (!s) return toast(t("Couldn't reach TikTok Shop. Please try again."));
           setScannedAt(s.at ?? Date.now());
           if (s.count !== null) setChecked(s.count);
           setRows(s.raises);
@@ -171,7 +182,8 @@ export function ScanHub() {
             setTab("same");
             setOpen(true);
           }
-          toast(s.raises.length ? `Scan finished: ${s.raises.length} better ${s.raises.length === 1 ? "rate" : "rates"}` : "Scan finished: no better rates right now");
+          const n = s.raises.length;
+          toast(n ? (n === 1 ? t("Scan finished: {n} better rate", { n }) : t("Scan finished: {n} better rates", { n })) : t("Scan finished: no better rates right now"));
         }, Math.max(0, SCAN_MS - (Date.now() - started)));
       });
       return;
@@ -185,8 +197,8 @@ export function ScanHub() {
         setFresh([NEW_ON_RESCAN.id]);
         setTab("same");
         setOpen(true);
-        toast("Scan finished: 1 new better rate");
-      } else toast("Scan finished: nothing new since your last scan");
+        toast(t("Scan finished: 1 new better rate"));
+      } else toast(t("Scan finished: nothing new since your last scan"));
     }, SCAN_MS);
   }
 
@@ -213,7 +225,7 @@ export function ScanHub() {
     holdFrom.current = 0;
     setHold(0);
     if (full) scanAgain();
-    else toast("Keep holding until the ring is full");
+    else toast(t("Keep holding until the ring is full"));
   }
 
   /* Tap a product on the radar: swipe right to keep it, left to skip, then add what she kept. */
@@ -246,45 +258,53 @@ export function ScanHub() {
   return (
     <div className="v2-stack" style={{ gap: 14 }} id="scan">
       <section className="v2-card tight sh-howcard">
-        <span className="sh-howlbl">How the scan works</span>
+        <span className="sh-howlbl">{t("How the scan works")}</span>
         <Flow
-          label="How the scan works"
+          label={t("How the scan works")}
           steps={[
-            { icon: "scan", title: "We scan your showcase", note: "Every product, when you tap Scan" },
-            { icon: "tag", title: "Same product, better rate", note: "Higher commission" },
-            { icon: "plus", title: "Add all in one tap", note: "You approve every change" },
-            { icon: "check", title: "TikTok confirms", note: "Then it counts" },
+            { icon: "scan", title: t("We scan your showcase"), note: t("Every product, when you tap Scan") },
+            { icon: "tag", title: t("Same product, better rate"), note: t("Higher commission") },
+            { icon: "plus", title: t("Add all in one tap"), note: t("You approve every change") },
+            { icon: "check", title: t("TikTok confirms"), note: t("Then it counts") },
           ]}
         />
       </section>
 
-      <section className={`sh-hub ${scanning ? "busy" : ""}`} aria-label="Showcase scanner" style={{ "--hold": hold } as React.CSSProperties}>
+      <section className={`sh-hub ${scanning ? "busy" : ""}`} aria-label={t("Showcase scanner")} style={{ "--hold": hold } as React.CSSProperties}>
         <span className="sh-grid" aria-hidden="true" />
         <div className="sh-top">
           <div className="sh-left">
-            <span className="sh-kicker"><AiMark size={22} busy={scanning} />{scanning ? "Scanning Your Showcase…" : "Showcase Scanner"} <AiTag label="Rezekii AI" bare /></span>
+            <span className="sh-kicker"><AiMark size={22} busy={scanning} />{scanning ? t("Scanning Your Showcase…") : t("Showcase Scanner")} <AiTag label="Rezekii AI" bare /></span>
             {linked && checked === null ? (
-              <h2 className="sh-checking"><span className="cr1-spin xs" aria-hidden="true" /> Checking your showcase…</h2>
+              <h2 className="sh-checking"><span className="cr1-spin xs" aria-hidden="true" /> {t("Checking your showcase…")}</h2>
             ) : (
               <h2>
-                <b><Count key={scanKey} value={linked ? checked ?? 0 : 0} ms={scanning ? SCAN_MS - 300 : 900} /></b> products checked
+                {fillEl(t("{n} products checked"), { n: <b><Count key={scanKey} value={linked ? checked ?? 0 : 0} ms={scanning ? SCAN_MS - 300 : 900} /></b> })}
               </h2>
             )}
-            {!linked && <p>Link TikTok Shop and we check every product you promote</p>}
+            {!linked && <p>{t("Link TikTok Shop and we check every product you promote")}</p>}
             <div className="sh-stats">
-              <span><b>{linked ? same.length : "–"}</b><small>can pay more</small></span>
-              <span><b>{linked && top ? `+${top}%` : "–"}</b><small>best increase</small></span>
-              <span><b>{sims.length}</b><small>similar on Rezekii</small></span>
+              <span><b>{linked ? same.length : "–"}</b><small>{t("can pay more")}</small></span>
+              <span><b>{linked && top ? `+${top}%` : "–"}</b><small>{t("best increase")}</small></span>
+              <span><b>{sims.length}</b><small>{t("similar on Rezekii")}</small></span>
             </div>
-            {linked && scanKey > 0 && same.length > 0 && !scanning && !deck && <p className="sh-tip"><Icon name="spark" size={14} /> Tap a product on the radar to swipe through them</p>}
+            {linked && scanKey > 0 && same.length > 0 && !scanning && !deck && <p className="sh-tip"><Icon name="spark" size={14} /> {t("Tap a product on the radar to swipe through them")}</p>}
             {/* The scan's progress and usual time (owner, 2 Nov 2026: long jobs show how long they take). */}
             {live && scanning && (
               <div className="sh-progress" role="status">
                 <span className="sh-bar" aria-hidden="true"><i key={scanKey} style={{ animationDuration: `${scanFor}s` }} /></span>
-                <small>Reading every product from TikTok Shop. Usually about {scanFor < 60 ? `${scanFor} seconds` : `${Math.round(scanFor / 60)} minutes`}{checked ? ` for ${checked.toLocaleString()} products` : ""}.</small>
+                <small>
+                  {scanFor < 60
+                    ? checked
+                      ? t("Reading every product from TikTok Shop. Usually about {n} seconds for {count} products.", { n: scanFor, count: checked.toLocaleString() })
+                      : t("Reading every product from TikTok Shop. Usually about {n} seconds.", { n: scanFor })
+                    : checked
+                      ? t("Reading every product from TikTok Shop. Usually about {n} minutes for {count} products.", { n: Math.round(scanFor / 60), count: checked.toLocaleString() })
+                      : t("Reading every product from TikTok Shop. Usually about {n} minutes.", { n: Math.round(scanFor / 60) })}
+                </small>
               </div>
             )}
-            {live && linked && !scanning && scannedAt !== null && <p className="sh-last">{scannedAt ? `Last Scan: ${scanTime(scannedAt)}` : "Not scanned yet. Hold the button to scan."}</p>}
+            {live && linked && !scanning && scannedAt !== null && <p className="sh-last">{scannedAt ? t("Last Scan: {when}", { when: scanTime(scannedAt, lang) }) : t("Not scanned yet. Hold the button to scan.")}</p>}
           </div>
           <div className="sh-radar" style={{ "--sweep": `${scanning ? 1.2 : SWEEP_S}s` } as React.CSSProperties}>
             <span className="sh-rings" aria-hidden="true" />
@@ -299,12 +319,12 @@ export function ScanHub() {
               onClick={(e) => { if (e.detail === 0) scanAgain(); }}
               onContextMenu={(e) => e.preventDefault()}
               disabled={scanning}
-              aria-label={!linked ? "Link TikTok Shop" : scanning ? "Scanning" : "Scan your showcase. Press and hold"}
+              aria-label={!linked ? t("Link TikTok Shop") : scanning ? t("Scanning") : t("Scan your showcase. Press and hold")}
             >
               {/* Option A (owner, 29 Oct 2026): a ring that fills while she holds, like an Apple Watch activity ring. */}
               <svg className="sh-ring" viewBox="0 0 100 100" aria-hidden="true"><circle className="track" cx="50" cy="50" r="47" pathLength={100} /><circle cx="50" cy="50" r="47" pathLength={100} style={{ strokeDashoffset: 100 - hold * 100, opacity: hold > 0 ? 1 : 0 }} /></svg>
               <Icon name="scan" size={30} />
-              <small>{!linked ? "Link to scan" : scanning ? "Scanning" : hold >= 1 ? "Let go" : "Hold to scan"}</small>
+              <small>{!linked ? t("Link to scan") : scanning ? t("Scanning") : hold >= 1 ? t("Let go") : t("Hold to scan")}</small>
             </button>
             {scanning && <span key={`burst-${scanKey}`} className="sh-burst" aria-hidden="true" />}
             {scanning &&
@@ -330,7 +350,7 @@ export function ScanHub() {
                     className="sh-blip pop"
                     style={{ left: `${50 + Math.sin(rad) * RING_DIST * 46}%`, top: `${50 - Math.cos(rad) * RING_DIST * 46}%`, animationDelay: `${(deg / 360) * SWEEP_S}s`, "--d": `${i * 0.22}s` } as React.CSSProperties}
                     onClick={() => openDeck(it.id)}
-                    aria-label={`${p.name}, ${it.from}% to ${it.to}%. Swipe through better rates`}
+                    aria-label={t("{name}, {from}% to {to}%. Swipe through better rates", { name: p.name, from: it.from, to: it.to })}
                   >
                     <span className="sh-bin">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -342,10 +362,10 @@ export function ScanHub() {
               })}
 
             {deck && (
-              <div className="sh-deck" role="dialog" aria-label="Swipe through better rates" onKeyDown={(e) => { if (e.key === "ArrowRight") decide(true); if (e.key === "ArrowLeft") decide(false); if (e.key === "Escape") closeDeck(false); }}>
+              <div className="sh-deck" role="dialog" aria-label={t("Swipe through better rates")} onKeyDown={(e) => { if (e.key === "ArrowRight") decide(true); if (e.key === "ArrowLeft") decide(false); if (e.key === "Escape") closeDeck(false); }}>
                 <div className="sh-deckbar">
-                  <span>{card ? `${deck.at + 1} of ${deck.ids.length}` : "All done"}</span>
-                  <button type="button" className="sh-x" onClick={() => closeDeck(false)} aria-label="Close"><Icon name="x" size={16} /></button>
+                  <span>{card ? t("{a} of {b}", { a: deck.at + 1, b: deck.ids.length }) : t("All done")}</span>
+                  <button type="button" className="sh-x" onClick={() => closeDeck(false)} aria-label={t("Close")}><Icon name="x" size={16} /></button>
                 </div>
                 {card ? (
                   <>
@@ -358,31 +378,31 @@ export function ScanHub() {
                       onPointerUp={() => { const d = drag; dragFrom.current = null; if (Math.abs(d) > SWIPE_PX) decide(d > 0); else setDrag(0); }}
                       onPointerCancel={() => { dragFrom.current = null; setDrag(0); }}
                     >
-                      <span className="sh-stamp keep" style={{ opacity: Math.max(0, Math.min(1, drag / SWIPE_PX)) }}>Add</span>
-                      <span className="sh-stamp skip" style={{ opacity: Math.max(0, Math.min(1, -drag / SWIPE_PX)) }}>Skip</span>
+                      <span className="sh-stamp keep" style={{ opacity: Math.max(0, Math.min(1, drag / SWIPE_PX)) }}>{t("Add")}</span>
+                      <span className="sh-stamp skip" style={{ opacity: Math.max(0, Math.min(1, -drag / SWIPE_PX)) }}>{t("Skip")}</span>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={product(card.productId).img} alt="" draggable={false} />
                       {/* The name opens the product; the rest of the card swipes. */}
                       <b><Link href={productHref(card.productId)} className="pv-open">{product(card.productId).name}</Link></b>
                       <span className="sh-rate">
-                        <span><small>{card.fromLabel}</small>{card.from}%</span>
+                        <span><small>{t(card.fromLabel)}</small>{card.from}%</span>
                         <Icon name="arrow" size={13} />
                         <span className="to"><small>Rezekii</small><Hidden>{card.to}%</Hidden></span>
                       </span>
                     </div>
                     {deck.fly === "right" && <span key={`cf-${deck.at}`} className="sh-cf deck" aria-hidden="true">{Array.from({ length: 10 }, (_, k) => <i key={k} style={{ "--a": `${k * 36}deg` } as React.CSSProperties} />)}</span>}
                     <div className="sh-deckacts">
-                      <button type="button" className="skip" onClick={() => decide(false)} aria-label="Skip"><Icon name="x" size={20} width={2.6} /></button>
-                      <small>Swipe or tap</small>
-                      <button type="button" className="keep" onClick={() => decide(true)} aria-label="Add"><Icon name="check" size={20} width={2.6} /></button>
+                      <button type="button" className="skip" onClick={() => decide(false)} aria-label={t("Skip")}><Icon name="x" size={20} width={2.6} /></button>
+                      <small>{t("Swipe or tap")}</small>
+                      <button type="button" className="keep" onClick={() => decide(true)} aria-label={t("Add")}><Icon name="check" size={20} width={2.6} /></button>
                     </div>
                   </>
                 ) : (
                   <div className="sh-deckend">
-                    <b>{deck.kept.length ? `${deck.kept.length} picked` : "Nothing picked"}</b>
-                    <small>{deck.kept.length ? "Add them now, or keep them ticked in your list." : "They stay in your list if you change your mind."}</small>
-                    {deck.kept.length > 0 && <button type="button" className="sh-go" onClick={() => closeDeck(true)}><Icon name="plus" size={18} width={2.6} /> Add {deck.kept.length}</button>}
-                    <button type="button" className="sh-again" onClick={() => closeDeck(false)}>Back to the List</button>
+                    <b>{deck.kept.length ? t("{n} picked", { n: deck.kept.length }) : t("Nothing picked")}</b>
+                    <small>{deck.kept.length ? t("Add them now, or keep them ticked in your list.") : t("They stay in your list if you change your mind.")}</small>
+                    {deck.kept.length > 0 && <button type="button" className="sh-go" onClick={() => closeDeck(true)}><Icon name="plus" size={18} width={2.6} /> {t("Add {n}", { n: deck.kept.length })}</button>}
+                    <button type="button" className="sh-again" onClick={() => closeDeck(false)}>{t("Back to the List")}</button>
                   </div>
                 )}
               </div>
@@ -392,16 +412,16 @@ export function ScanHub() {
 
         {linked && (
           <div className="sh-panel">
-            <div className="sh-tabs" role="tablist" aria-label="Products that can pay more">
+            <div className="sh-tabs" role="tablist" aria-label={t("Products that can pay more")}>
               <button type="button" role="tab" aria-selected={view === "same"} className={view === "same" ? "on" : undefined} onClick={() => { setTab("same"); setUnticked([]); }}>
-                Same product <em>{same.length}</em>
+                {t("Same product")} <em>{same.length}</em>
               </button>
               <button type="button" role="tab" aria-selected={view === "similar"} className={view === "similar" ? "on" : undefined} onClick={() => { setTab("similar"); setUnticked([]); }}>
-                Similar <em>{sims.length}</em>
+                {t("Similar")} <em>{sims.length}</em>
               </button>
               {bronze && (
                 <button type="button" role="tab" aria-selected={view === "silver"} className={`sh-tab-lock${view === "silver" ? " on" : ""}`} onClick={() => setTab("silver")}>
-                  <Icon name="lock" size={13} /> Unlock at Silver <em>{unlocks.length}</em>
+                  <Icon name="lock" size={13} /> {t("Unlock at Silver")} <em>{unlocks.length}</em>
                 </button>
               )}
               <button type="button" className="sh-drop" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
@@ -411,7 +431,7 @@ export function ScanHub() {
                     <img key={src} src={src} alt="" />
                   ))}
                 </span>
-                {open ? "Hide list" : `See ${thumbs.length} product${thumbs.length === 1 ? "" : "s"}`}
+                {open ? t("Hide list") : thumbs.length === 1 ? t("See {n} product", { n: thumbs.length }) : t("See {n} products", { n: thumbs.length })}
                 <Icon name="arrow" size={15} />
               </button>
             </div>
@@ -424,16 +444,16 @@ export function ScanHub() {
                   return (
                     <li key={it.id} className={fresh.includes(it.id) ? "fresh" : undefined}>
                       <label>
-                        <input type="checkbox" checked={on} onChange={() => setUnticked((u) => (on ? [...u, it.id] : u.filter((x) => x !== it.id)))} aria-label={`Add ${p.name}`} />
+                        <input type="checkbox" checked={on} onChange={() => setUnticked((u) => (on ? [...u, it.id] : u.filter((x) => x !== it.id)))} aria-label={t("Add {name}", { name: p.name })} />
                         {/* The photo and name open the product; the rest of the row ticks it. */}
                         {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
                         <img className="pv-open" src={p.img} alt="" onClick={(e) => { e.preventDefault(); router.push(productHref(p.id)); }} />
                         <span className="sh-name">
-                          <b>{fresh.includes(it.id) && <span className="badge badge-blue">New</span>} <Link href={productHref(p.id)} className="pv-open">{p.name}</Link></b>
-                          {it.note && <small>{it.note}</small>}
+                          <b>{fresh.includes(it.id) && <span className="badge badge-blue">{t("New")}</span>} <Link href={productHref(p.id)} className="pv-open">{p.name}</Link></b>
+                          {it.until && <small>{t("Until {date}", { date: it.until })}</small>}
                         </span>
-                        <span className="sh-rate" aria-label={`${it.fromLabel} ${it.from}%, through Techwide ${it.to}%`}>
-                          <span><small>{it.fromLabel}</small>{it.from}%</span>
+                        <span className="sh-rate" aria-label={t("{plan} {from}%, through Techwide {to}%", { plan: t(it.fromLabel), from: it.from, to: it.to })}>
+                          <span><small>{t(it.fromLabel)}</small>{it.from}%</span>
                           <Icon name="arrow" size={13} />
                           <span className="to"><small>Rezekii</small><Hidden>{it.to}%</Hidden></span>
                         </span>
@@ -441,7 +461,7 @@ export function ScanHub() {
                     </li>
                   );
                 })}
-                {list.length === 0 && <li className="sh-empty">All added. Scan again any time to check for new ones.</li>}
+                {list.length === 0 && <li className="sh-empty">{t("All added. Scan again any time to check for new ones.")}</li>}
               </ul>
             )}
 
@@ -458,28 +478,28 @@ export function ScanHub() {
                       </span>
                       <span className="sh-name">
                         <b><Link href={productHref(p.id)} className="pv-open">{p.name}</Link></b>
-                        {p.samples !== null && p.samples > CREATOR.streak && <small>Free sample at a {p.samples}-day streak</small>}
+                        {p.samples !== null && p.samples > CREATOR.streak && <small>{t("Free sample at a {n}-day streak", { n: p.samples })}</small>}
                       </span>
-                      <span className="sh-rate" aria-label={`Now ${bestRate(p).rate}%, on Rezekii ${rateFor(p).rate}%`}>
-                        <span><small>Now</small>{bestRate(p).rate}%</span>
+                      <span className="sh-rate" aria-label={t("Now {now}%, on Rezekii {rate}%", { now: bestRate(p).rate, rate: rateFor(p).rate })}>
+                        <span><small>{t("Now")}</small>{bestRate(p).rate}%</span>
                         <Icon name="arrow" size={13} />
-                        <span className="to"><small>On Rezekii</small><Hidden>{rateFor(p).rate}%</Hidden></span>
+                        <span className="to"><small>{t("On Rezekii")}</small><Hidden>{rateFor(p).rate}%</Hidden></span>
                       </span>
                     </div>
                   </li>
                 ))}
-                <li className="sh-lockline">Reach Silver to unlock these: {LEVELS[1].how}. More sales this month moves you up.</li>
+                <li className="sh-lockline">{t("Reach Silver to unlock these: {how}. More sales this month moves you up.", { how: t(LEVELS[1].how) })}</li>
               </ul>
             )}
 
             {pending.length > 0 && (
               <div className="sh-added">
-                <b>Added today</b>
+                <b>{t("Added today")}</b>
                 {pending.map((x) => (
                   <span key={x.id} className={x.state}>
                     {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
                     <img className="pv-open" src={product(x.productId).img} alt="" onClick={() => router.push(productHref(x.productId))} />
-                    {x.state === "checking" ? <><span className="cr1-spin xs" aria-hidden="true" /> Checking with TikTok</> : <><Icon name="check" size={13} width={3} /> Live at {x.to}%</>}
+                    {x.state === "checking" ? <><span className="cr1-spin xs" aria-hidden="true" /> {t("Checking with TikTok")}</> : <><Icon name="check" size={13} width={3} /> {t("Live at {n}%", { n: x.to })}</>}
                   </span>
                 ))}
               </div>
@@ -489,31 +509,31 @@ export function ScanHub() {
 
         <div className="sh-acts">
           {!linked ? (
-            <button type="button" className="sh-go" onClick={() => setLinked(true)}>Link TikTok Shop <Icon name="arrow" size={18} /></button>
+            <button type="button" className="sh-go" onClick={() => setLinked(true)}>{t("Link TikTok Shop")} <Icon name="arrow" size={18} /></button>
           ) : view === "silver" ? (
-            <Link href="/app/account#level" className="sh-go"><Icon name="medal" size={18} /> How to Reach Silver</Link>
+            <Link href="/app/account#level" className="sh-go"><Icon name="medal" size={18} /> {t("How to Reach Silver")}</Link>
           ) : list.length > 0 ? (
             <button type="button" className="sh-go" onClick={() => add(picked)} disabled={scanning || picked.length === 0}>
-              <Icon name="plus" size={18} width={2.6} /> {allPicked ? `Add all ${list.length}${view === "similar" ? " similar" : ""} in one tap` : `Add ${picked.length} selected`}
+              <Icon name="plus" size={18} width={2.6} /> {allPicked ? (view === "similar" ? t("Add all {n} similar in one tap", { n: list.length }) : t("Add all {n} in one tap", { n: list.length })) : t("Add {n} selected", { n: picked.length })}
             </button>
           ) : (
-            <span className="sh-clear"><Icon name="check" size={16} width={3} /> All added</span>
+            <span className="sh-clear"><Icon name="check" size={16} width={3} /> {t("All added")}</span>
           )}
           {/* Two ways to scan (owner, 28 Oct 2026): hold the big button in the middle, or tap this one, no hold needed. */}
           {linked && (
             <button type="button" className="sh-again" onClick={scanAgain} disabled={scanning}>
-              <Icon name="refresh" size={16} /> {scanning ? "Scanning…" : "Scan now"}
+              <Icon name="refresh" size={16} /> {scanning ? t("Scanning…") : t("Scan now")}
             </button>
           )}
         </div>
       </section>
 
       {bulk && (
-        <Sheet title={bulk.phase === "done" ? "Done" : `Adding ${bulk.items.length} products`} onClose={closeBulk}>
+        <Sheet title={bulk.phase === "done" ? t("Done") : t("Adding {n} products", { n: bulk.items.length })} onClose={closeBulk}>
           {bulk.phase === "done" && (
             <div className="cr1-bulksum">
-              <span><b>{bulk.items.length}</b><small>added</small></span>
-              <span><b>+{Math.max(...bulk.items.map((i) => i.to - i.from))}%</b><small>best increase</small></span>
+              <span><b>{bulk.items.length}</b><small>{t("added")}</small></span>
+              <span><b>+{Math.max(...bulk.items.map((i) => i.to - i.from))}%</b><small>{t("best increase")}</small></span>
             </div>
           )}
           <div className="v2-divide">
@@ -526,23 +546,29 @@ export function ScanHub() {
                   <img src={p.img} alt="" />
                   <span>
                     <strong>{p.name}</strong>
-                    <small>{it.fromLabel} {it.from}% → Rezekii <Hidden>{it.to}%</Hidden></small>
+                    <small>{t(it.fromLabel)} {it.from}% → Rezekii <Hidden>{it.to}%</Hidden></small>
                   </span>
-                  {ok ? <span className="cr1-st ok cr1-pop"><Icon name="check" size={16} width={3} /></span> : <span className="cr1-spin" aria-label="Adding" />}
+                  {ok ? <span className="cr1-st ok cr1-pop"><Icon name="check" size={16} width={3} /></span> : <span className="cr1-spin" aria-label={t("Adding")} />}
                 </div>
               );
             })}
           </div>
           {bulk.phase === "done" ? (
             <>
-              <p className="v2-small" style={{ margin: 0 }}>Each one counts once TikTok confirms it&apos;s under Techwide.</p>
-              <button type="button" className="np-btn" onClick={closeBulk}>Done</button>
+              <p className="v2-small" style={{ margin: 0 }}>{t("Each one counts once TikTok confirms it's under Techwide.")}</p>
+              <button type="button" className="np-btn" onClick={closeBulk}>{t("Done")}</button>
             </>
           ) : (
             <>
               {/* How long it usually takes (owner, 2 Nov 2026): TikTok adds 5 at a time, a few seconds each round. */}
               {live && <span className="sh-bar sh-bar-sheet" aria-hidden="true"><i style={{ animationDuration: `${addSeconds(bulk.items.length)}s` }} /></span>}
-              <p className="v2-small" style={{ margin: 0 }}>Adding through Techwide, up to 5 at a time{live ? `. Usually about ${addSeconds(bulk.items.length)} seconds for ${bulk.items.length} ${bulk.items.length === 1 ? "product" : "products"}` : ""}. Keep this open or close it; it carries on either way.</p>
+              <p className="v2-small" style={{ margin: 0 }}>
+                {!live
+                  ? t("Adding through Techwide, up to 5 at a time. Keep this open or close it; it carries on either way.")
+                  : bulk.items.length === 1
+                    ? t("Adding through Techwide, up to 5 at a time. Usually about {s} seconds for {n} product. Keep this open or close it; it carries on either way.", { s: addSeconds(1), n: 1 })
+                    : t("Adding through Techwide, up to 5 at a time. Usually about {s} seconds for {n} products. Keep this open or close it; it carries on either way.", { s: addSeconds(bulk.items.length), n: bulk.items.length })}
+              </p>
             </>
           )}
         </Sheet>

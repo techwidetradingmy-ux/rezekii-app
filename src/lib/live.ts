@@ -2,6 +2,12 @@ import { LIVE_PRODUCTS, LIVE_STUBS, short, type Product, type Raise } from "./mo
 import { LIVE_FACTS, LIVE_GONE, LIVE_OFF, LIVE_REFUSED, type LiveFacts, type OffLive, type WantedLive } from "./product-view";
 import type { ShopItem, Stage } from "./mock-seller";
 import type { LiveShopProduct } from "@/modules/marketplace/shop-products.ts";
+import { tx } from "./i18n/lang";
+
+/** Messages the browser shows when a request fails; each screen translates them where it shows them (owner, 3 Nov 2026). */
+const NO_TIKTOK = tx("Couldn't reach TikTok Shop. Please try again.");
+const NOT_REMOVED = tx("TikTok didn't remove it. Please try again.");
+const NO_REZEKII = tx("Couldn't reach Rezekii. Please try again.");
 
 /**
  * Real data for the screens (owner, 30 Oct 2026: plug real data, keep the design). The server's answers are turned into the
@@ -89,8 +95,8 @@ export async function loadMarket(o: { q: string; cat: string; sort: string; only
  */
 export async function addOne(productId: string): Promise<{ added: boolean; already?: boolean; link?: string; error?: string; refused?: boolean }> {
   const r = await fetch("/api/tap/showcase", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ productId }) }).catch(() => null);
-  if (!r) return { added: false, error: "Couldn't reach TikTok Shop. Please try again." };
-  return r.json().catch(() => ({ added: false, error: "Couldn't reach TikTok Shop. Please try again." }));
+  if (!r) return { added: false, error: NO_TIKTOK };
+  return r.json().catch(() => ({ added: false, error: NO_TIKTOK }));
 }
 
 /** Her Analytics and Payouts from her real orders, as /api/v2/analytics sends them (same shapes as the sample). */
@@ -124,9 +130,9 @@ export function loadAnalytics(): Promise<LiveAnalytics | null> {
 /** Takes products out of her real TikTok showcase (she confirms first). */
 export async function removeFromShowcase(productIds: string[]): Promise<{ ok: true } | { ok: false; error: string }> {
   const r = await fetch("/api/v2/showcase", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ productIds }) }).catch(() => null);
-  if (!r) return { ok: false, error: "Couldn't reach TikTok Shop. Please try again." };
+  if (!r) return { ok: false, error: NO_TIKTOK };
   if (r.ok) return { ok: true };
-  return { ok: false, error: ((await r.json().catch(() => ({}))) as { error?: string }).error ?? "TikTok didn't remove it. Please try again." };
+  return { ok: false, error: ((await r.json().catch(() => ({}))) as { error?: string }).error ?? NOT_REMOVED };
 }
 
 /** Her real numbers for exactly the days she picked in the calendar (YYYY-MM-DD, Malaysia days). */
@@ -171,8 +177,8 @@ export async function loadProduct(id: string, level: "bronze" | "silver" | "gold
 /** Free sample through Techwide's TAP campaign: TikTok's one-time link to its sample request page. */
 export async function requestSample(productId: string): Promise<{ deeplink?: string; phoneUrl?: string; error?: string }> {
   const r = await fetch("/api/tap/samples", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ productId }) }).catch(() => null);
-  if (!r) return { error: "Couldn't reach TikTok Shop. Please try again." };
-  return r.json().catch(() => ({ error: "Couldn't reach TikTok Shop. Please try again." }));
+  if (!r) return { error: NO_TIKTOK };
+  return r.json().catch(() => ({ error: NO_TIKTOK }));
 }
 
 const STAGE: Record<string, Stage> = { submitted: "Submitted", in_review: "Under review", approved: "Under review", with_tiktok: "Submitted to TikTok", live: "Live", not_approved: "Not approved" };
@@ -241,8 +247,8 @@ export async function loadShop(fresh = false): Promise<LiveShop | null> {
 
 async function fetchShop(): Promise<LiveShop | null> {
   const r = await fetch("/api/v2/seller/products");
-  const d = await r.json().catch(() => ({ error: "Couldn't reach TikTok Shop. Please try again." }));
-  if (!r.ok) throw new Error(d.error ?? "Couldn't reach TikTok Shop. Please try again.");
+  const d = await r.json().catch(() => ({ error: NO_TIKTOK }));
+  if (!r.ok) throw new Error(d.error ?? NO_TIKTOK);
   if (!d.linked) return null;
   return { shop: d.shop, items: (d.items as LiveShopProduct[]).map(fromLiveShop), notLive: d.notLive, at: d.at };
 }
@@ -251,5 +257,5 @@ async function fetchShop(): Promise<LiveShop | null> {
 export async function submitToTap(body: { productIds: string[]; raise: number; samples: number; conditions: Record<string, unknown> }): Promise<{ submitted?: { id: string }[]; skipped?: { id: string; why: string }[]; error?: string; campaignId?: string; handOff?: string }> {
   shopCache = null;
   const r = await fetch("/api/v2/seller/submissions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-  return r.json().catch(() => ({ error: "Couldn't reach Rezekii. Please try again." }));
+  return r.json().catch(() => ({ error: NO_REZEKII }));
 }

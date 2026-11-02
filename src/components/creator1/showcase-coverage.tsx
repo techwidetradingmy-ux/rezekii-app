@@ -10,6 +10,7 @@ import { bestRate, product, rateFor } from "@/lib/mock";
 import { NOT_YET, ON_IDS, ON_REZEKII, SHOWCASE_TOTAL } from "@/lib/mock-showcase";
 import { productHref } from "@/lib/product-view";
 import { useKept } from "@/lib/keep";
+import { useT } from "@/lib/i18n/client";
 
 const pct = (n: number, of = SHOWCASE_TOTAL) => (of ? Math.round((n / of) * 100) : 0);
 
@@ -41,6 +42,7 @@ type Tab = "On Rezekii" | "Not yet";
  * sellers that aren't on Rezekii, for awareness. No wish list here (owner, 30 Oct 2026): it lives on each product page.
  */
 export function CoverageCard() {
+  const t = useT();
   const { live, me } = useDemo();
   // Signed in (owner, 31 Oct 2026): her real showcase and sales.
   const [real, setReal] = useState<LiveCoverage | null>(null);
@@ -61,29 +63,31 @@ export function CoverageCard() {
     ? (real?.on ?? []).map((p) => {
         const open = (p.openRate ?? 0) / 100;
         const tap = ((me?.level === "bronze" ? p.openRate : p.silverRate ?? p.openRate) ?? 0) / 100;
-        return { id: p.id, name: shortName(p.name), img: p.img ?? NO_PHOTO, line: tap > open ? <>{open}% open plan · <em>{tap}% on Rezekii</em></> : <>{tap}% on Rezekii</> };
+        return { id: p.id, name: shortName(p.name), img: p.img ?? NO_PHOTO, line: tap > open ? <>{t("{n}% open plan", { n: open })} · <em>{t("{n}% on Rezekii", { n: tap })}</em></> : <>{t("{n}% on Rezekii", { n: tap })}</> };
       })
     : ON_IDS.map(product).map((p) => ({
         id: p.id, name: p.name, img: p.img,
-        line: <>{bestRate(p).rate}% {bestRate(p).plan.toLowerCase()} · {bestRate(p).rate < rateFor(p).rate ? <em>{rateFor(p).rate}% on Rezekii</em> : "pays more than Rezekii"}</>,
+        line: <>{bestRate(p).plan === "Target plan" ? t("{n}% target plan", { n: bestRate(p).rate }) : t("{n}% open plan", { n: bestRate(p).rate })} · {bestRate(p).rate < rateFor(p).rate ? <em>{t("{n}% on Rezekii", { n: rateFor(p).rate })}</em> : t("pays more than Rezekii")}</>,
       }));
   const notYet = live
-    ? (real?.notYet ?? []).map((it) => ({ id: it.id, name: shortName(it.name), img: it.img ?? NO_PHOTO, line: `${it.shop ? `${it.shop} · ` : ""}${it.sold} sold by you, 30 days` }))
-    : NOT_YET.map((it) => ({ id: it.id, name: it.name, img: it.img, line: `${it.shop} · ${it.sold} sold by you` }));
+    ? (real?.notYet ?? []).map((it) => ({ id: it.id, name: shortName(it.name), img: it.img ?? NO_PHOTO, line: `${it.shop ? `${it.shop} · ` : ""}${t("{n} sold by you, 30 days", { n: it.sold })}` }))
+    : NOT_YET.map((it) => ({ id: it.id, name: it.name, img: it.img, line: `${it.shop} · ${t("{n} sold by you", { n: it.sold })}` }));
   const all = tab === "On Rezekii" ? onList.length : notYet.length;
   const more = Math.min(5, all - limit);
   const onCount = live ? real?.on.length ?? 0 : ON_REZEKII;
   const total = live ? real?.count ?? 0 : SHOWCASE_TOTAL;
   const sub = live
-    ? !real ? (failed ? "Couldn't load your showcase" : "Checking your showcase…") : !real.linked ? "Link TikTok Shop to see it" : `${onCount} of your ${real.more ? "first " : ""}${total.toLocaleString("en-MY")} products`
-    : `${ON_REZEKII} of your ${SHOWCASE_TOTAL.toLocaleString("en-MY")} products`;
+    ? !real ? (failed ? t("Couldn't load your showcase") : t("Checking your showcase…")) : !real.linked ? t("Link TikTok Shop to see it") : real.more ? t("{n} of your first {total} products", { n: onCount, total: total.toLocaleString("en-MY") }) : t("{n} of your {total} products", { n: onCount, total: total.toLocaleString("en-MY") })
+    : t("{n} of your {total} products", { n: ON_REZEKII, total: SHOWCASE_TOTAL.toLocaleString("en-MY") });
+  // The tabs in her language; the kept choice stays in English.
+  const TABS: Record<Tab, string> = { "On Rezekii": t("On Rezekii"), "Not yet": t("Not yet") };
 
   return (
     <section className={`v2-card sc-card${open ? " open" : ""}`}>
       <button type="button" className="sc-head" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
         <CoverageRing on={onCount} of={total} />
         <span className="sc-main">
-          <b>Your Showcase on Rezekii</b>
+          <b>{t("Your Showcase on Rezekii")}</b>
           <small>{sub}</small>
         </span>
         <span className="sc-chev"><Icon name="arrow" size={18} /></span>
@@ -91,9 +95,9 @@ export function CoverageCard() {
 
       {open && (
         <div className="sc-body">
-          <Lock what="your showcase">
-            <div className="sc-tabs"><Seg value={tab} options={["On Rezekii", "Not yet"] as const} onChange={pickTab} /></div>
-            {tab === "Not yet" && <p className="sc-hint">Your Top Sellers Not on Rezekii</p>}
+          <Lock what={t("your showcase")}>
+            <div className="sc-tabs"><Seg value={TABS[tab]} options={[TABS["On Rezekii"], TABS["Not yet"]]} onChange={(v) => pickTab(v === TABS["On Rezekii"] ? "On Rezekii" : "Not yet")} /></div>
+            {tab === "Not yet" && <p className="sc-hint">{t("Your Top Sellers Not on Rezekii")}</p>}
             <ul className="sc-list">
               {(tab === "On Rezekii" ? onList : notYet).slice(0, limit).map((it) => (
                 <li key={it.id}>
@@ -104,9 +108,9 @@ export function CoverageCard() {
                   </Link>
                 </li>
               ))}
-              {live && real && all === 0 && <li className="sc-empty">{tab === "On Rezekii" ? "None of your showcase products are on Rezekii yet." : "Everything you sold in the last 30 days is on Rezekii."}</li>}
+              {live && real && all === 0 && <li className="sc-empty">{tab === "On Rezekii" ? t("None of your showcase products are on Rezekii yet.") : t("Everything you sold in the last 30 days is on Rezekii.")}</li>}
             </ul>
-            {more > 0 && <button type="button" className="sc-more" onClick={() => setLimit((l) => l + 5)}>Show {more} more</button>}
+            {more > 0 && <button type="button" className="sc-more" onClick={() => setLimit((l) => l + 5)}>{t("Show {n} more", { n: more })}</button>}
           </Lock>
         </div>
       )}

@@ -2,22 +2,25 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Hidden, Tip } from "@/components/ui";
 import { SampleTag } from "@/components/creator1/brand";
 import { Trend } from "@/components/creator1/shoot-today";
-import { WishForm, WishSteps, useWishes } from "@/components/creator1/wish";
+import { WishForm, WishSteps, useCommitText, useWishes } from "@/components/creator1/wish";
 import { LIVE_STUBS, product, rm } from "@/lib/mock";
 import { AddButton } from "@/components/add-button";
 import { GmvChart } from "@/components/gmv-spark";
 import { sampleCount } from "@/lib/mock-creator1";
-import { commitText } from "@/lib/mock-showcase";
 import { canRequest, markRequested, productView, requestedSamples, sampleConditions } from "@/lib/product-view";
 import { loadProduct, requestSample } from "@/lib/live";
 import { useLivePerf } from "@/lib/live-perf";
+import { useT } from "@/lib/i18n/client";
 import "@/app/creator1.css";
+
+/** A translated line whose {placeholders} are React elements (a bold number, a blurred amount). */
+const fillEl = (line: string, els: Record<string, React.ReactNode>) => line.split(/\{(\w+)\}/).map((s, i) => (i % 2 ? <Fragment key={i}>{els[s]}</Fragment> : s));
 
 /**
  * Back goes to the screen she came from when that was a page in Rezekii; opened from a link, to the Marketplace (owner,
@@ -35,6 +38,8 @@ const fromApp = () => {
  * small link at the very end, for a product with no free sample or not on Rezekii yet.
  */
 export default function ProductPage() {
+  const t = useT();
+  const commitText = useCommitText();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { linked, setLinked, toast, requireWa, live, me } = useDemo();
@@ -95,8 +100,8 @@ export default function ProductPage() {
     if (live && !missing) {
       const stub = LIVE_STUBS.get(id);
       return (
-        <div className="pp pp-wait" aria-busy="true" aria-label="Loading the product">
-          <button type="button" className="pp-back" onClick={back} aria-label="Back"><Icon name="back" size={20} /></button>
+        <div className="pp pp-wait" aria-busy="true" aria-label={t("Loading the product")}>
+          <button type="button" className="pp-back" onClick={back} aria-label={t("Back")}><Icon name="back" size={20} /></button>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <div className="pp-photo">{stub?.img && <img src={stub.img} alt="" />}</div>
           <div className="pp-info">
@@ -106,7 +111,7 @@ export default function ProductPage() {
             <i className="pp-sk" style={{ height: 48, borderRadius: 14 }} />
             <i className="pp-sk" style={{ height: 48, borderRadius: 14 }} />
             {/* So people wait (owner, 2 Nov 2026). */}
-            <p className="pp-wait-msg" role="status"><span className="cr1-spin xs" aria-hidden="true" /> Getting this product from TikTok…</p>
+            <p className="pp-wait-msg" role="status"><span className="cr1-spin xs" aria-hidden="true" /> {t("Getting this product from TikTok…")}</p>
           </div>
         </div>
       );
@@ -114,11 +119,11 @@ export default function ProductPage() {
     return (
       <div className="v2-stack v2-in">
         <section className="v2-card flat" style={{ alignItems: "flex-start" }}>
-          <b>We couldn&apos;t find this product</b>
+          <b>{t("We couldn't find this product")}</b>
           {/* Back as on the product itself (owner, 3 Nov 2026: "there should be back button if there's [no] product or any error"). */}
           <span className="v2-row">
-            <button type="button" className="btn-outline v2-btn-sm" onClick={back}><Icon name="back" size={16} /> Back</button>
-            <Link href="/app/market" className="np-btn v2-btn-sm">Open Marketplace</Link>
+            <button type="button" className="btn-outline v2-btn-sm" onClick={back}><Icon name="back" size={16} /> {t("Back")}</button>
+            <Link href="/app/market" className="np-btn v2-btn-sm">{t("Open Marketplace")}</Link>
           </span>
         </section>
       </div>
@@ -132,8 +137,8 @@ export default function ProductPage() {
   // Signed in (owner, 31 Oct 2026): TikTok decides on the sample against the seller's own requirements; the only condition
   // Rezekii knows for sure is a linked TikTok Shop, so that's the one shown.
   const conds = live
-    ? hasSample ? [{ label: "TikTok Shop linked", ok: !!me?.shop, you: me?.shop ? `Linked as @${me.shop.handle}` : "Link TikTok Shop", fix: "/app/account#connections" }] : []
-    : (m && hasSample ? sampleConditions(m) : []).map((c) => (c.fix === "/app/account#connections" ? { ...c, ok: linked, you: linked ? c.you : "Link TikTok Shop" } : c));
+    ? hasSample ? [{ label: t("TikTok Shop linked"), ok: !!me?.shop, you: me?.shop ? t("Linked as {handle}", { handle: `@${me.shop.handle}` }) : t("Link TikTok Shop"), fix: "/app/account#connections" }] : []
+    : (m && hasSample ? sampleConditions(m, t) : []).map((c) => (c.fix === "/app/account#connections" ? { ...c, ok: linked, you: linked ? c.you : t("Link TikTok Shop") } : c));
   const unmet = conds.filter((c) => !c.ok);
   const canSample = !!m && canRequest(m);
   const base = sampleCount(p.id);
@@ -161,7 +166,7 @@ export default function ProductPage() {
         requestSample(p.id).then((r) => {
           if (!r.deeplink) {
             setOpening(false);
-            return toast(r.error ?? "TikTok Shop didn't open the sample request. Please try again.");
+            return toast(r.error ? t(r.error) : t("TikTok Shop didn't open the sample request. Please try again."));
           }
           markRequested(p.id);
           setAsked(true);
@@ -174,7 +179,7 @@ export default function ProductPage() {
       markRequested(p.id);
       setAsked(true);
       setWarn(false);
-      toast("Opening TikTok's sample request…");
+      toast(t("Opening TikTok's sample request…"));
     });
   };
   const openWish = () => {
@@ -185,10 +190,10 @@ export default function ProductPage() {
 
   const sampleBtn = m && hasSample && (
     asked
-      ? <Link href="/app/account#samples" className="btn-outline"><Icon name="check" size={18} /> Sample Requested</Link>
+      ? <Link href="/app/account#samples" className="btn-outline"><Icon name="check" size={18} /> {t("Sample Requested")}</Link>
       : opening
-        ? <button type="button" className="btn-outline" disabled aria-busy="true"><span className="cr1-spin xs" aria-hidden="true" /> Opening TikTok…</button>
-        : <button type="button" className="btn-outline" onClick={canSample ? request : () => document.getElementById("sample")?.scrollIntoView({ behavior: "smooth" })}><Icon name="gift" size={18} /> {canSample ? "Request Free Sample" : `Free Sample at ${m.samples}-Day Streak`}</button>
+        ? <button type="button" className="btn-outline" disabled aria-busy="true"><span className="cr1-spin xs" aria-hidden="true" /> {t("Opening TikTok…")}</button>
+        : <button type="button" className="btn-outline" onClick={canSample ? request : () => document.getElementById("sample")?.scrollIntoView({ behavior: "smooth" })}><Icon name="gift" size={18} /> {canSample ? t("Request Free Sample") : t("Free Sample at {n}-Day Streak", { n: m.samples ?? 0 })}</button>
   );
   // One buy box for every product (owner, 30 Oct 2026): Add to Showcase, then Free Sample. The wish list is a small link at the end.
   // Nothing says "In your showcase" until she taps Add on one that is (owner, 1 Nov 2026). A product TikTok refused to add for
@@ -196,17 +201,17 @@ export default function ProductPage() {
   const buy = (
     <>
       {keepPlan
-        ? <button type="button" className="np-btn" disabled><Icon name="shield" size={18} width={2.4} /> Your Target Plan Pays More</button>
+        ? <button type="button" className="np-btn" disabled><Icon name="shield" size={18} width={2.4} /> {t("Your Target Plan Pays More")}</button>
         : p.refused
-          ? <button type="button" className="np-btn" disabled><Icon name="x" size={18} width={2.4} /> TikTok Won&apos;t Add This</button>
-          : <AddButton id={p.id} name={p.name} rate={p.tapRate} size="lg" label="Add to Showcase" inShowcase={p.inShowcase} />}
+          ? <button type="button" className="np-btn" disabled><Icon name="x" size={18} width={2.4} /> {t("TikTok Won't Add This")}</button>
+          : <AddButton id={p.id} name={p.name} rate={p.tapRate} size="lg" label={t("Add to Showcase")} inShowcase={p.inShowcase} />}
       {sampleBtn}
     </>
   );
 
   return (
     <div className="pp">
-      <button type="button" className="pp-back" onClick={back} aria-label="Back"><Icon name="back" size={20} /></button>
+      <button type="button" className="pp-back" onClick={back} aria-label={t("Back")}><Icon name="back" size={20} /></button>
       <div className="pp-photo">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={p.img} alt={p.name} />
@@ -219,69 +224,79 @@ export default function ProductPage() {
         {linked && (!live || mySold !== null) ? (
           <p className={`pp-sold${mySold ? " ok" : ""}`}>
             <Icon name={mySold ? "check" : "info"} size={15} width={2.6} />
-            {mySold ? <span>You&apos;ve sold this · <b>{mySold}</b> {live ? `order${mySold === 1 ? "" : "s"} ` : ""}in the last 30 days</span> : <span>{live ? "No orders from you in the last 30 days" : "You haven't sold this yet"}</span>}
+            {mySold ? (
+              <span>
+                {fillEl(!live ? t("You've sold this · {n} in the last 30 days") : mySold === 1 ? t("You've sold this · {n} order in the last 30 days") : t("You've sold this · {n} orders in the last 30 days"), { n: <b>{mySold}</b> })}
+              </span>
+            ) : <span>{live ? t("No orders from you in the last 30 days") : t("You haven't sold this yet")}</span>}
           </p>
         ) : null}
         <div className="pp-chips">
           {p.rating !== null && <span className="pp-chip score"><Icon name="star" size={13} width={2.4} /> {p.rating.toFixed(1)}</span>}
           {m && m.samples !== null && <SampleTag streak={m.samples} />}
-          {p.special && <span className="pp-chip special"><Icon name="star" size={13} width={2.4} /> Your Special Rate</span>}
-          {p.tapRate === null && <span className="pp-chip muted">{p.gone ? "No Longer in Rezekii's Marketplace" : "Not on Rezekii Yet"}</span>}
+          {p.special && <span className="pp-chip special"><Icon name="star" size={13} width={2.4} /> {t("Your Special Rate")}</span>}
+          {p.tapRate === null && <span className="pp-chip muted">{p.gone ? t("No Longer in Rezekii's Marketplace") : t("Not on Rezekii Yet")}</span>}
         </div>
 
         {p.tapRate !== null ? (
           extra > 0 ? (
             <div className="pp-rate">
-              <span className="pp-extra"><b><Hidden>+{rm(extra)}</Hidden></b> extra per sale on Rezekii</span>
-              <span className="pp-rate-line">{p.nowPlan === "Target plan" ? "Target Plan " : "Open Plan "}<s>{p.nowRate}%</s> <Icon name="arrow" size={14} /> <b><Hidden>{p.tapRate}%</Hidden></b> · <Hidden>{rm(earn ?? 0)}</Hidden> a sale</span>
+              <span className="pp-extra">{fillEl(t("{amount} extra per sale on Rezekii"), { amount: <b><Hidden>+{rm(extra)}</Hidden></b> })}</span>
+              <span className="pp-rate-line">{p.nowPlan === "Target plan" ? t("Target Plan") : t("Open Plan")} <s>{p.nowRate}%</s> <Icon name="arrow" size={14} /> <b><Hidden>{p.tapRate}%</Hidden></b> · {fillEl(t("{amount} a sale"), { amount: <Hidden>{rm(earn ?? 0)}</Hidden> })}</span>
               <small>
-                {mySold ? <>At your {mySold} sales last 30 days: <b><Hidden>+{rm(month)}</Hidden></b> a month</> : <>Sell 100 a month: <b><Hidden>+{rm(month)}</Hidden></b> more</>}
-                {p.special ? ` · your special rate${p.special.until ? ` until ${p.special.until}` : ""}` : ""}
+                {mySold
+                  ? fillEl(t("At your {n} sales last 30 days: {amount} a month"), { n: mySold, amount: <b><Hidden>+{rm(month)}</Hidden></b> })
+                  : fillEl(t("Sell 100 a month: {amount} more"), { amount: <b><Hidden>+{rm(month)}</Hidden></b> })}
+                {p.special ? ` · ${p.special.until ? t("your special rate until {date}", { date: p.special.until }) : t("your special rate")}` : ""}
               </small>
             </div>
           ) : keepPlan ? (
             <div className="pp-rate">
-              <span className="pp-rate-line"><b><Hidden>{p.nowRate}%</Hidden></b> on your target plan</span>
-              <small>More than Rezekii&apos;s <Hidden>{p.tapRate}%</Hidden>, so it stays as it is.</small>
+              <span className="pp-rate-line">{fillEl(t("{rate} on your target plan"), { rate: <b><Hidden>{p.nowRate}%</Hidden></b> })}</span>
+              <small>{fillEl(t("More than Rezekii's {rate}, so it stays as it is."), { rate: <Hidden>{p.tapRate}%</Hidden> })}</small>
             </div>
           ) : (
             // The Open Plan rate is always shown (owner, 2 Nov 2026), also when Rezekii pays the same (Bronze).
             <div className="pp-rate">
-              <span className="pp-rate-line"><b><Hidden>{p.tapRate}%</Hidden></b> on Rezekii</span>
-              <small>Open Plan {p.nowRate === null ? "—" : `${p.nowRate}%`} · You earn <b><Hidden>{rm(earn ?? 0)}</Hidden></b> per sale{p.special ? ` · your special rate${p.special.until ? ` until ${p.special.until}` : ""}` : ""}</small>
+              <span className="pp-rate-line">{fillEl(t("{rate} on Rezekii"), { rate: <b><Hidden>{p.tapRate}%</Hidden></b> })}</span>
+              <small>
+                {t("Open Plan")} {p.nowRate === null ? "—" : `${p.nowRate}%`} · {fillEl(t("You earn {amount} per sale"), { amount: <b><Hidden>{rm(earn ?? 0)}</Hidden></b> })}
+                {p.special ? ` · ${p.special.until ? t("your special rate until {date}", { date: p.special.until }) : t("your special rate")}` : ""}
+              </small>
             </div>
           )
         ) : (
           <div className="pp-rate off">
-            <span className="pp-rate-line">{p.nowPlan === "Target plan" ? "Target Plan" : "Open Plan"} {p.nowRate === null ? "—" : `${p.nowRate}%`}</span>
-            <small>{p.wanted ? `${p.wanted.creators} creators want it on Rezekii` : "Ask us to bring it to Rezekii"}</small>
+            <span className="pp-rate-line">{p.nowPlan === "Target plan" ? t("Target Plan") : t("Open Plan")} {p.nowRate === null ? "—" : `${p.nowRate}%`}</span>
+            <small>{p.wanted ? t("{n} creators want it on Rezekii", { n: p.wanted.creators }) : t("Ask us to bring it to Rezekii")}</small>
           </div>
         )}
 
         <div className="pp-buy">{buy}</div>
 
         <section className="v2-card pp-card">
-          {p.week.length > 0 && <Trend points={p.week} label="Sales, last 7 days" />}
+          {p.week.length > 0 && <Trend points={p.week} label={t("Sales, last 7 days")} />}
           {/* Labelled (owner, 2 Nov 2026): the period, RM up the side, dates along the bottom; tap a day for its range. */}
           {live && trend28 && (
             <div className="pp-month">
               <span className="pp-month-h">
-                <b>Sales on TikTok, Last 28 Days <Tip label="Where these numbers come from" text="From TikTok's daily best-seller lists (top 100 products). TikTok gives each day's sales as a range in RM: the shading is that range and the line its middle. A gap is a day it wasn't in a top 100." /></b>
-                <small>{trend28.ranges.filter(Boolean).length} of 28 days in TikTok&apos;s top 100</small>
+                <b>{t("Sales on TikTok, Last 28 Days")} <Tip label={t("Where these numbers come from")} text={t("From TikTok's daily best-seller lists (top 100 products). TikTok gives each day's sales as a range in RM: the shading is that range and the line its middle. A gap is a day it wasn't in a top 100.")} /></b>
+                <small>{t("{n} of 28 days in TikTok's top 100", { n: trend28.ranges.filter(Boolean).length })}</small>
               </span>
               {trend28.ranges.some(Boolean) ? (
-                <GmvChart days={trend28.days} ranges={trend28.ranges} label="Sales on TikTok, last 28 days" />
+                <GmvChart days={trend28.days} ranges={trend28.ranges} label={t("Sales on TikTok, last 28 days")} />
               ) : (
-                <p className="v2-small" style={{ margin: 0 }}>Not in TikTok&apos;s daily top 100 in the last 28 days.</p>
+                <p className="v2-small" style={{ margin: 0 }}>{t("Not in TikTok's daily top 100 in the last 28 days.")}</p>
               )}
             </div>
           )}
           <div className="pp-facts">
-            {mySold !== null && <span><small>Your sales, 30 days</small><b>{mySold}</b></span>}
-            {p.wanted && <span><small>Creators want it</small><b>{p.wanted.creators}</b></span>}
-            {/* TikTok's main and sub category once the page has read them (owner, 2 Nov 2026). */}
-            {p.category && <span><small>{p.sub ? "Main Category" : "Category"}</small><b>{p.category}</b></span>}
-            {p.sub && <span><small>Sub Category</small><b>{p.sub}</b></span>}
+            {mySold !== null && <span><small>{t("Your sales, 30 days")}</small><b>{mySold}</b></span>}
+            {p.wanted && <span><small>{t("Creators want it")}</small><b>{p.wanted.creators}</b></span>}
+            {/* TikTok's main and sub category once the page has read them (owner, 2 Nov 2026). Signed out, they're our own sample
+                categories, so they're translated; TikTok's stay as TikTok names them. */}
+            {p.category && <span><small>{p.sub ? t("Main Category") : t("Category")}</small><b>{live ? p.category : t(p.category)}</b></span>}
+            {p.sub && <span><small>{t("Sub Category")}</small><b>{p.sub}</b></span>}
           </div>
         </section>
 
@@ -289,18 +304,18 @@ export default function ProductPage() {
           <section className="v2-card pp-card" id="sample">
             {/* Owner, 29 Oct 2026: how many asked and how many are left (live), then whether she can apply. Nothing about after. */}
             <div className="pp-sh">
-              <h2 className="v2-h2">Free Sample</h2>
-              {!live && <span className="pp-live"><i /> Live</span>}
+              <h2 className="v2-h2">{t("Free Sample")}</h2>
+              {!live && <span className="pp-live"><i /> {t("Live")}</span>}
             </div>
             {live ? (
-              <p className="v2-small" style={{ margin: 0 }}>TikTok shows a free sample you can request. When you apply, TikTok checks your account against the seller&apos;s requirements.</p>
+              <p className="v2-small" style={{ margin: 0 }}>{t("TikTok shows a free sample you can request. When you apply, TikTok checks your account against the seller's requirements.")}</p>
             ) : (
               <div className="pp-count">
                 <span className="v2-meter"><i style={{ width: `${(count.applied / count.total) * 100}%` }} /></span>
-                <small><b>{count.applied}</b> applied · <b>{count.left}</b> left</small>
+                <small>{fillEl(t("{applied} applied · {left} left"), { applied: <b>{count.applied}</b>, left: <b>{count.left}</b> })}</small>
               </div>
             )}
-            <h3 className="pp-sub">Can You Apply?</h3>
+            <h3 className="pp-sub">{t("Can You Apply?")}</h3>
             <ul className="cr1-conds">
               {conds.map((c) => (
                 <li key={c.label}>
@@ -316,9 +331,9 @@ export default function ProductPage() {
               <div className="cr1-warn">
                 <span className="cr1-warn-ico"><Icon name="alert" size={22} /></span>
                 <div>
-                  <b>Likely to be rejected:</b>
+                  <b>{t("Likely to be rejected:")}</b>
                   <ul>{unmet.map((c) => <li key={c.label}>{c.label}. <span>{c.you}.</span></li>)}</ul>
-                  <button type="button" className="btn-outline v2-btn-sm" onClick={request}>Request Anyway</button>
+                  <button type="button" className="btn-outline v2-btn-sm" onClick={request}>{t("Request Anyway")}</button>
                 </div>
               </div>
             )}
@@ -327,15 +342,15 @@ export default function ProductPage() {
 
         {wish && !wishOpen && (
           <section className="v2-card pp-card">
-            <h2 className="v2-h2">On Your Wish List</h2>
+            <h2 className="v2-h2">{t("On Your Wish List")}</h2>
             <WishSteps w={wish} />
             <small className="v2-small">{commitText(wish.commit)}</small>
           </section>
         )}
         {!wish && !wishOpen && (p.tapRate === null || (!hasSample && !live)) && (
           <p className="pp-wishlink">
-            Want a free sample or a better rate?{" "}
-            <button type="button" onClick={openWish}>{p.wanted ? "Join This Wish" : "Add to Wish List"}</button>
+            {t("Want a free sample or a better rate?")}{" "}
+            <button type="button" onClick={openWish}>{p.wanted ? t("Join This Wish") : t("Add to Wish List")}</button>
           </p>
         )}
         {wishOpen && <WishForm item={{ id: p.id, name: p.name, shop: p.shop, img: p.img, price: p.price, rate: p.publicRate }} wanted={p.wanted} onCancel={() => setWishOpen(false)} />}
