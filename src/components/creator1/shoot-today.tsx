@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSideScroll } from "@/components/side-scroll";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { AiHead, Hidden, Tip } from "@/components/ui";
+import { AiHead, Hidden, Loading, Tip } from "@/components/ui";
 import Link from "next/link";
 import { productHref } from "@/lib/product-view";
 import { bestRate, product, short, rateFor } from "@/lib/mock";
@@ -223,7 +223,7 @@ type LiveBest = {
   openRate: number | null; silverRate: number | null; rezekii: boolean; sample: boolean; sales: LiveSales;
   trend?: (number | null)[]; trendRange?: ([number, number] | null)[];
 };
-type LiveIdeas = { linked: boolean; locked?: "profile" | "race"; rows: LiveBest[]; day: string | null; listAt: string | null; gold: boolean; at: string; want?: number; cat?: string | null; cats?: string[] };
+type LiveIdeas = { linked: boolean; locked?: "profile" | "race"; rows: LiveBest[]; day: string | null; listAt: string | null; gold: boolean; at: string; want?: number; cat?: string | null; cats?: string[]; herCats?: string[] };
 /** One best-seller row, the same for sample and real lists. */
 type BestRow = {
   productId: string; name: string; img: string; category: string; rating: number | null; line: string; rate: number; points: number[] | null; pointsLabel: string; rezekii?: boolean; sample?: boolean;
@@ -231,6 +231,8 @@ type BestRow = {
 };
 
 const rm = (v: number) => (v >= 1e6 ? `${(v / 1e6).toFixed(1)}M` : v >= 1e3 ? `${Math.round(v / 1e3)}K` : String(Math.round(v)));
+/** A 28-day graph with no two days in a row in TikTok's top 100 draws only dots, no line. */
+const dotsOnly = (t: (number | null)[]) => !t.some((v, i) => v != null && t[i - 1] != null);
 const dayName = (d: string) => new Date(`${d}T12:00:00+08:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 /** What a row's sales number means: TikTok's GMV for the day, units across TikTok in about the last day, or all-time units. */
 const salesLine = (s: LiveSales) =>
@@ -241,19 +243,21 @@ const salesLine = (s: LiveSales) =>
 /**
  * Best sellers (owner, 29 Oct 2026). Marketplace: public TikTok Shop products in her top categories that aren't in her showcase
  * yet, rated 4★+; + adds one to her showcase. Showcase: products already in her showcase; Plan a Video starts a post. Both are
- * ranked best-selling first (units sold this week). Tap a product to see it on Rezekii.
+ * ranked best-selling first (units sold this week). Tap a product to see it on Rezekii. `onView` puts the cards/list switch
+ * right above the category tabs (owner, 3 Nov 2026).
  */
-export function NicheBest({ view: shape = "list", inFrame = false, source = "market", channel = "all" }: { view?: IdeasView; inFrame?: boolean; source?: BestSource; channel?: "all" | "video" | "others" }) {
+export function NicheBest({ view: shape = "list", inFrame = false, source = "market", channel = "all", onView }: { view?: IdeasView; inFrame?: boolean; source?: BestSource; channel?: "all" | "video" | "others"; onView?: (v: IdeasView) => void }) {
   const { linked: demoLinked, setLinked, toast, live, me } = useDemo();
   const linked = live ? !!me?.shop : demoLinked;
   const mine = source === "showcase";
   const week = (id: string) => NICHE_BEST.find((b) => b.productId === id)?.weekSold ?? Math.round(product(id).sold / 26);
 
   // Signed in (owner, 31 Oct 2026): her real lists from /api/v2/best. A category asks for that category's own TikTok list
-  // (owner, 1 Nov 2026), and the list says it's checking until it's back.
+  // (owner, 1 Nov 2026), and the list says it's checking until it's back: from the first paint, with the shared loader (owner,
+  // 3 Nov 2026: "why is it no loading transition").
   const [cat, setCat] = useKept(`best-cat-${source}`, "All");
   const [real, setReal] = useState<LiveIdeas | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const askCat = live && !mine && cat !== "All" ? cat : "";
   useEffect(() => {
@@ -294,11 +298,14 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
         });
   // Short tab names so the row fits a phone: "Home & Kitchen" shows as "Home".
   const short1 = (c: string) => c.split(" & ")[0];
-  // Signed in on the Marketplace, the chips are TikTok's categories (each with its own list); otherwise the rows' own.
+  // Signed in on the Marketplace, the chips are TikTok's categories (each with its own list); otherwise the rows' own. Only the
+  // few she sells most in when Rezekii knows them (owner, 3 Nov 2026), else all of TikTok's.
   const liveCats = live && !mine && real?.cats?.length;
-  const cats = liveCats ? ["All", ...real!.cats!] : ["All", ...Array.from(new Set(rows.map((b) => short1(b.category))))];
+  const cats = liveCats ? ["All", ...(real!.herCats?.length ? real!.herCats : real!.cats!)] : ["All", ...Array.from(new Set(rows.map((b) => short1(b.category))))];
   const all = liveCats ? rows : rows.filter((b) => cat === "All" || short1(b.category) === cat);
-  const shown = all.slice(0, shownN);
+  // While a list is made or a category loads, the shared loader stands in for the rows (owner, 3 Nov 2026).
+  const busy = live && linked && loading && !failed;
+  const shown = busy ? [] : all.slice(0, shownN);
   const want = real?.want ?? (real?.gold ? 30 : 10);
   const lvl = me?.level ?? "bronze";
   const { rail, at } = useRail<HTMLOListElement>(shape);
@@ -316,18 +323,14 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
           <Tip label="When this updates" text="TikTok publishes each day's best sellers the next afternoon, around 4 PM. This list updates as soon as it's out, so it's always the newest day." />
         </p>
       )}
-      {live && linked && loading && !failed && (
-        <div className="nb-wait" role="status">
-          <p><span className="cr1-spin xs" aria-hidden="true" /> Checking which best sellers you can add…</p>
-          {Array.from({ length: 4 }, (_, i) => <span key={i} className="nb-wait-row"><i /><span><i /><i /></span></span>)}
-        </div>
-      )}
       {live && failed && <p className="v2-muted" style={{ margin: 0 }}>Couldn&apos;t load this list. Please try again later.</p>}
       {live && real && !loading && !real.locked && !real.rows.length && <p className="v2-muted" style={{ margin: 0 }}>{mine ? (channel === "video" ? "None of your showcase products are in TikTok's top-selling videos this week." : channel === "others" ? "None of your showcase products are in TikTok's best-seller lists for this day." : "Your showcase is empty. Add products from the Marketplace.") : "TikTok hasn't published a best-seller list yet. Check again later."}</p>}
+      {onView && <ViewSwitch view={shape} onChange={onView} />}
       <div className="nb-cats" role="group" aria-label="Category">
         {cats.map((c) => <button key={c} type="button" className={`v2-chip${c === cat ? " on" : ""}`} aria-pressed={c === cat} onClick={() => setCat(c)}>{c}</button>)}
       </div>
-      <ol ref={rail} className={`nb-list ${shape}${live && loading ? " nb-dim" : ""}`} key={cat}>
+      {busy && <Loading text="Checking which best sellers you can add…" />}
+      <ol ref={rail} className={`nb-list ${shape}`} key={cat}>
         {shown.map((b) => {
           return (
             <li key={b.productId}>
@@ -343,8 +346,10 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
                 </span>
                 {b.points && b.points.some((v) => v > 0) && <Trend points={b.points} label={b.pointsLabel} />}
                 {/* Its TikTok sales over the same 28 days as the product page (owner, 2 Nov 2026), estimated from TikTok's daily
-                    ranges. A list saved before then still has 7 days, so the label says how many. */}
-                {b.trend && b.trend.some((v) => v != null) && <span className="nb-spark"><GmvSpark points={b.trend} ranges={b.trendRange} /><small>Last {b.trend.length} Days</small></span>}
+                    ranges. A list saved before then still has 7 days, so the label says how many. A graph of lone dots says on
+                    how many of those days it was in TikTok's top 100 (owner, 3 Nov 2026: "why some of the product the graph is
+                    only 1 dot"). */}
+                {b.trend && b.trend.some((v) => v != null) && <span className="nb-spark"><GmvSpark points={b.trend} ranges={b.trendRange} /><small>{dotsOnly(b.trend) ? `Top 100 on ${b.trend.filter((v) => v != null).length} of ${b.trend.length} Days` : `Last ${b.trend.length} Days`}</small></span>}
               </Link>
               {/* Rezekii campaign products can ask for a free sample (owner, 31 Oct 2026); TikTok's other products only add. */}
               {live && b.sample && <Link href={productHref(b.productId, { sample: true })} className="nb-add nb-sample" aria-label={`Request a free sample of ${b.name}`}><Icon name="gift" size={18} /></Link>}
@@ -358,12 +363,17 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
         })}
       </ol>
       {shape === "cards" && <span className="td-dots" aria-hidden="true">{shown.map((b, n) => <i key={b.productId} className={n === at ? "on" : undefined} />)}</span>}
-      {all.length > shown.length && (
+      {!busy && all.length > shown.length && (
         <button type="button" className="btn-outline v2-btn-sm nb-more" onClick={() => setShownN((n) => n + per)}>Show More · {all.length - shown.length} left</button>
       )}
-      {live && real && real.rows.some((b) => b.trend?.some((v) => v != null)) && <p className="v2-small nb-est">Sales lines are estimated from TikTok&apos;s daily sales ranges.</p>}
+      {live && real && !busy && real.rows.some((b) => b.trend?.some((v) => v != null)) && (
+        <p className="v2-small nb-est">
+          Sales lines are estimated from TikTok&apos;s daily sales ranges.
+          <Tip label="About the sales lines" text="Each dot is a day the product was in TikTok's daily top 100 best sellers, and a gap is a day it wasn't. A single dot means it was in the top 100 on only one of the days shown." />
+        </p>
+      )}
       {/* How deep she sees TikTok's top 100 (owner, 1 Nov 2026): Bronze 10, Silver 30, Gold all 100. */}
-      {live && real && real.rows.length > 0 && lvl !== "gold" && (
+      {live && real && !busy && real.rows.length > 0 && lvl !== "gold" && (
         <p className="nb-gold"><Icon name="lock" size={14} /> You see the top {want}. {lvl === "bronze" ? "Silver creators see the top 30, Gold the full top 100." : "Gold creators see the full top 100."}</p>
       )}
     </section>

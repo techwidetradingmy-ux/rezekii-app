@@ -88,6 +88,7 @@ export default function ProductPage() {
     const to = q.get("sample") ? "sample" : q.get("join") ? "wish" : null;
     if (to) window.setTimeout(() => document.getElementById(to)?.scrollIntoView({ behavior: "smooth", block: "start" }), 250);
   }, [id]);
+  const back = () => (fromApp() ? router.back() : router.push("/app/market"));
 
   if (!p) {
     // A skeleton while it loads (owner, 1 Nov 2026), with the photo and name already known from the list she came from.
@@ -95,7 +96,7 @@ export default function ProductPage() {
       const stub = LIVE_STUBS.get(id);
       return (
         <div className="pp pp-wait" aria-busy="true" aria-label="Loading the product">
-          <button type="button" className="pp-back" onClick={() => (fromApp() ? router.back() : router.push("/app/market"))} aria-label="Back"><Icon name="back" size={20} /></button>
+          <button type="button" className="pp-back" onClick={back} aria-label="Back"><Icon name="back" size={20} /></button>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <div className="pp-photo">{stub?.img && <img src={stub.img} alt="" />}</div>
           <div className="pp-info">
@@ -114,7 +115,11 @@ export default function ProductPage() {
       <div className="v2-stack v2-in">
         <section className="v2-card flat" style={{ alignItems: "flex-start" }}>
           <b>We couldn&apos;t find this product</b>
-          <Link href="/app/market" className="np-btn v2-btn-sm">Open Marketplace</Link>
+          {/* Back as on the product itself (owner, 3 Nov 2026: "there should be back button if there's [no] product or any error"). */}
+          <span className="v2-row">
+            <button type="button" className="btn-outline v2-btn-sm" onClick={back}><Icon name="back" size={16} /> Back</button>
+            <Link href="/app/market" className="np-btn v2-btn-sm">Open Marketplace</Link>
+          </span>
         </section>
       </div>
     );
@@ -140,7 +145,6 @@ export default function ProductPage() {
   const extra = p.tapRate !== null && p.nowRate !== null ? (p.price * (p.tapRate - p.nowRate)) / 100 : 0;
   const keepPlan = p.tapRate !== null && p.nowRate !== null && p.nowRate >= p.tapRate && p.nowPlan === "Target plan";
   const month = extra * (mySold || 100);
-  const back = () => (fromApp() ? router.back() : router.push("/app/market"));
   const request = () => {
     if (!linked) return setLinked(true);
     requireWa(() => {
