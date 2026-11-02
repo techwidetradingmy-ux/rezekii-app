@@ -20,11 +20,14 @@ const day = () => new Date(Date.now() + MYT).toISOString().slice(0, 10);
 async function whatNeedsAdmins(): Promise<Alert[]> {
   const today = day();
   const since = new Date(Date.now() - 3 * 86_400_000).toISOString();
-  const [notice, health, shops, fb] = await Promise.all([
+  const [notice, health, shops, fb, signups] = await Promise.all([
     dataNotice().catch(() => null),
     systemHealth().catch(() => null),
     supabaseRest("seller_connections?campaign_id=not.is.null&select=campaign_id,shop_name").then((r) => r.json() as Promise<{ campaign_id: string; shop_name: string | null }[]>).catch(() => []),
     supabaseRest(`feedback?status=eq.new&created_at=gte.${since}&select=id,kind,message&order=created_at.desc&limit=50`).then((r) => r.json() as Promise<{ id: string; kind: string; message: string }[]>).catch(() => []),
+    supabaseRest(`beta_access?status=eq.waiting&requested_at=gte.${since}&select=user_id,side,app_users(display_name,email,login_email)&order=requested_at.desc&limit=100`)
+      .then((r) => r.json() as Promise<{ user_id: string; side: string; app_users: { display_name: string | null; email: string | null; login_email: string | null } | null }[]>)
+      .catch(() => []),
   ]);
   const out: Alert[] = [];
   if (notice) out.push({ key: notice.id, title: `${notice.title}. ${notice.line}`, href: "/admin" });
@@ -35,6 +38,11 @@ async function whatNeedsAdmins(): Promise<Alert[]> {
   }
   // New feedback and change requests (owner, 1 Nov 2026).
   for (const f of fb) out.push({ key: `feedback:${f.id}`, title: `${f.kind}: “${f.message.length > 90 ? `${f.message.slice(0, 88)}…` : f.message}”`, href: "/admin/support/feedback" });
+  // New beta sign-ups waiting to be let in (owner, 2 Nov 2026).
+  for (const b of Array.isArray(signups) ? signups : []) {
+    const u = b.app_users;
+    out.push({ key: `beta:${b.user_id}:${b.side}`, title: `New ${b.side} sign-up waiting: ${u?.display_name ?? u?.email ?? u?.login_email ?? "someone"}`, href: "/admin/users" });
+  }
   return out;
 }
 
@@ -54,7 +62,7 @@ export async function sendAdminAlerts(): Promise<number> {
     ...layout({
       title: `${n} thing${n === 1 ? "" : "s"} need${n === 1 ? "s" : ""} you`,
       lines: fresh.slice(0, 20).map((a) => `• ${a.title}`).concat(n > 20 ? [`…and ${n - 20} more.`] : []),
-      button: { label: fresh.every((a) => a.href === "/admin/tap/review") ? "Review Products" : fresh.every((a) => a.href === "/admin/support/feedback") ? "Open Feedback Inbox" : "Open Admin", href: `${base}${fresh[0].href}` },
+      button: { label: fresh.every((a) => a.href === "/admin/tap/review") ? "Review Products" : fresh.every((a) => a.href === "/admin/support/feedback") ? "Open Feedback Inbox" : fresh.every((a) => a.href === "/admin/users") ? "Review Sign-Ups" : "Open Admin", href: `${base}${fresh[0].href}` },
       foot: "You get this because you're a Rezekii admin. Each thing is emailed once. Rezekii · www.rezekii.com",
     }),
   });

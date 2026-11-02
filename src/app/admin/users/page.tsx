@@ -2,6 +2,7 @@
 
 import "@/app/admin.css";
 import { LiveReview } from "@/components/admin/live-people";
+import { LiveBeta } from "@/components/admin/live-beta";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -24,8 +25,8 @@ export default function UsersReview() {
   const [rejecting, setRejecting] = useState<Target | null>(null);
   const [reason, setReason] = useState<string | null>(null);
   const [note, setNote] = useState("");
-  // Signed in (owner, 31 Oct 2026): real data.
-  if (live) return <LiveReview />;
+  // Signed in (owner, 31 Oct 2026): real data. Beta sign-ups first (owner, 2 Nov 2026).
+  if (live) return <div className="v2-stack" style={{ gap: 32 }}><LiveBeta /><LiveReview /></div>;
 
   const creators = REVIEW_CREATORS.filter((c) => !handled[c.handle]);
   const sellers = REVIEW_SELLERS.filter((s) => !handled[s.shop]);

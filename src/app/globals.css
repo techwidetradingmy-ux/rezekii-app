@@ -517,3 +517,17 @@ textarea.np-input { resize: vertical; line-height: 1.5; }
 .si-switch .v2-link { font-weight: 900; }
 /* The card sits above the floating background icons. */
 .rz-splash .rz-card { position: relative; z-index: 2; }
+/* Beta waiting screen (owner, 2 Nov 2026): "You're on the List" until Techwide lets the account in. */
+.bw-page { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px)); background: var(--hero), var(--bg); }
+.bw-card { width: 100%; max-width: 440px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; padding: 26px 22px; border-radius: 22px; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-lg); }
+.bw-brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 900; font-size: 18px; color: var(--text); }
+.bw-mascot { width: 130px; height: auto; }
+.bw-card h1 { margin: 0; font-size: 24px; line-height: 1.25; color: var(--text); text-wrap: balance; }
+.bw-card p { margin: 0; color: var(--body); line-height: 1.55; }
+.bw-stats { display: flex; gap: 10px; width: 100%; }
+.bw-stats span { flex: 1; display: flex; flex-direction: column; gap: 2px; padding: 12px; border-radius: 14px; background: var(--gsoft); }
+.bw-stats b { font-size: 22px; color: var(--gink); }
+.bw-stats small { font-size: 12.5px; color: var(--muted); font-weight: 700; }
+.bw-group { width: 100%; }
+.bw-acts { display: flex; gap: 8px; width: 100%; }
+.bw-acts .btn-outline { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; }

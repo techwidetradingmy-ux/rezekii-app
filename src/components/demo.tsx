@@ -2,11 +2,14 @@
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { CREATOR } from "@/lib/mock";
+import type { BetaState } from "@/modules/beta/access.ts";
 
 export type Role = "creator" | "seller";
 /** The real signed-in account (owner, 30 Oct 2026: plug real data, keep the design). Null = signed out, sample data shows. */
 export type Me = { id: string; name: string | null; email: string | null; role: "admin" | "creator"; photo: string | null; handle: string | null; level: "bronze" | "silver" | "gold"; shop: { handle: string; access: string | null } | null; sellerShop: string | null; ttLevel?: number | null;
-  signIn?: { tiktok: string | null; google: string | null; email: string | null; password: boolean } };
+  signIn?: { tiktok: string | null; google: string | null; email: string | null; password: boolean };
+  /** Beta sign-up approval per app (owner, 2 Nov 2026); null on an app she hasn't opened yet. */
+  beta?: { creator: BetaState | null; seller: BetaState | null } | null };
 /** Who agreed to what and when, kept as evidence (the real one also stores IP, device and TikTok's grant id). */
 export type Consent = { role: Role; at: string; terms: string; privacy: string; unlinkedAt?: string };
 

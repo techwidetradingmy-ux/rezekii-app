@@ -17,6 +17,7 @@ import { LevelFace } from "./level-face";
 import { ACCOUNT_TABS, OPEN_ACCOUNT_MENU, PANEL_MORE, tabFor } from "@/lib/account-tabs";
 import { useSideScroll } from "./side-scroll";
 import { useScrollMemory } from "@/lib/keep";
+import { BetaWait } from "./beta-wait";
 import { ACCOUNT, HOME, MENUS, pageFor, sectionFor, type AppKind } from "@/lib/menus";
 import { CREATOR, MY_SAMPLES, REFERRAL_REWARD, SELLER } from "@/lib/mock";
 import { useUnreadNotes } from "@/lib/live-notes";
@@ -183,6 +184,9 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
   const isScan = (href: string) => app === "creator" && href === menu[0].href;
   const found = phoneTabs.findIndex((s) => s.href === section?.href);
   const navIndex = found >= 0 ? (isScan(phoneTabs[found].href) ? -1 : found) : app === "admin" && menu.slice(4).some((s) => s.href === section?.href) ? phoneTabs.length : -1;
+  // Beta (owner, 2 Nov 2026): an account Techwide hasn't let in yet sees only "You're on the List", on each app separately.
+  const betaSide = app === "seller" ? "seller" : "creator";
+  if (live && me && me.role !== "admin" && app !== "admin" && me.beta?.[betaSide]?.status !== "approved") return <BetaWait side={betaSide} state={me.beta?.[betaSide] ?? null} />;
   return (
     <>
       <DemoStrip />
