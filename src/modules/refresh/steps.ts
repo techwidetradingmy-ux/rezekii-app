@@ -17,7 +17,8 @@ import { refreshVideos } from "../admin/videos.ts";
 import { refreshCommunity } from "../community/numbers.ts";
 import { approvedCreatorToken } from "../creator-accounts/access.ts";
 import { queuedPhotos } from "../photos/queue.ts";
-import { linkedCreators, syncCreatorOrders } from "../sales/orders.ts";
+import { activeCreators, linkedCreatorsSeen, syncCreatorOrders } from "../sales/orders.ts";
+import { readTimes } from "../creator-accounts/fresh.ts";
 import { buildRankings, rankings as builtRankings } from "../rankings/store.ts";
 import { productSums } from "../admin/tap.ts";
 import { PHOTO_DAYS, freshUrl, saveCreatorPhoto, savedPhotos } from "../photos/store.ts";
@@ -187,7 +188,8 @@ async function sold(t: TaskRow, { deadline }: Ctx): Promise<StepResult> {
     count += (await soldInLastDay(tap.map((p) => ({ id: p.id, sold: p.sold, price: p.priceLo })))).size;
     i = 0;
   }
-  const ids = await linkedCreators();
+  // Creators away for 14 days are skipped (owner, 2 Nov 2026); their pages read their showcase when they're back.
+  const ids = await activeCreators();
   for (; i < ids.length; i++) {
     if (Date.now() > deadline - 10_000) return { count, more: true, cursor: String(i) };
     const token = await approvedCreatorToken(ids[i]);
@@ -209,12 +211,20 @@ async function sold(t: TaskRow, { deadline }: Ctx): Promise<StepResult> {
   return { count };
 }
 
-/** Each linked creator's own affiliate orders, creator by creator, carrying on from `cursor` when time runs out. */
+/**
+ * Each linked creator's own affiliate orders, creator by creator, the most recently active first, carrying on from `cursor` when
+ * time runs out. Creators away for 14 days are read once a week (owner, 2 Nov 2026); their pages read them fresh when they're back.
+ */
 async function orders(t: TaskRow, { deadline }: Ctx): Promise<StepResult> {
-  const ids = await linkedCreators();
+  const list = await linkedCreatorsSeen();
+  const ids = list.map((c) => c.id);
   let count = 0;
   for (let i = t.cursor ? Number(t.cursor) : 0; i < ids.length; i++) {
     if (Date.now() > deadline - 8000) return { count, more: true, cursor: String(i) };
+    if (list[i].away) {
+      const read = (await readTimes(ids[i]).catch(() => null))?.orders;
+      if (read && Date.now() - Date.parse(read) < 7 * 86_400_000) continue;
+    }
     const token = await approvedCreatorToken(ids[i]);
     if (!token) continue;
     try {
@@ -322,7 +332,8 @@ async function tapSamples(t: TaskRow, { deadline }: Ctx): Promise<StepResult> {
  */
 async function tapSamplesMine(t: TaskRow, { deadline }: Ctx): Promise<StepResult> {
   if (await openTaskCount(t.run_date, "tap_samples")) return { count: 0, more: true, waitMs: 60_000 };
-  const ids = await linkedCreators();
+  // Creators away for 14 days are skipped (owner, 2 Nov 2026).
+  const ids = await activeCreators();
   for (let i = t.cursor ? Number(t.cursor) : 0; i < ids.length; i++) {
     if (Date.now() > deadline - 40_000) return { count: i, more: true, cursor: String(i), waitMs: 0 };
     await checkCreatorSamples(ids[i]).catch((err) => console.error("[creator samples]", ids[i], err instanceof Error ? err.message : err));
@@ -489,7 +500,8 @@ async function agency(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
 async function ideas(t: TaskRow, { deadline }: Ctx): Promise<StepResult> {
   const day = await listDay();
   if (!day) return { count: 0 };
-  const ids = await linkedCreators();
+  // Creators away for 14 days are skipped (owner, 2 Nov 2026); their Today's Ideas are made when they open the page.
+  const ids = await activeCreators();
   let count = 0;
   for (let i = t.cursor ? Number(t.cursor) : 0; i < ids.length; i++) {
     if (Date.now() > deadline - 20_000) return { count, more: true, cursor: String(i) };

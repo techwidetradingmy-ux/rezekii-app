@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { accessFor } from "@/modules/creator-accounts/access.ts";
 import { connectionForUser } from "@/modules/creator-accounts/affiliate-connections.ts";
@@ -20,6 +20,9 @@ const NO_STORE = { headers: { "cache-control": "private, no-store" } };
 export async function GET() {
   const user = await currentUser();
   if (!user) return NextResponse.json({ me: null }, NO_STORE);
+  // When she last used Rezekii, noted at most once an hour (owner, 2 Nov 2026: the nightly refresh does active creators first).
+  const hourAgo = new Date(Date.now() - 3_600_000).toISOString();
+  after(() => supabaseRest(`app_users?id=eq.${user.id}&or=${encodeURIComponent(`(last_seen_at.is.null,last_seen_at.lt."${hourAgo}")`)}`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ last_seen_at: new Date().toISOString() }) }).catch(() => null));
   const [link, access, level, sellerShop, tt, profile, beta] = await Promise.all([
     connectionForUser(user.id).catch(() => null), accessFor(user.id).catch(() => null), levelOf(user.id).catch(() => "bronze" as const), sellerShopName(user).catch(() => null),
     // Her TikTok Shop creator level, read by the refresh queue after linking (owner, 14 Oct 2026).
