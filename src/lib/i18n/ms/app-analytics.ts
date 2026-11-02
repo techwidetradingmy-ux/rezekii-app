@@ -2,14 +2,12 @@
 export const APP_ANALYTICS: Record<string, string> = {
   // Words shared across Analytics (Chinese for some of these is in Rezekii 1.0's lists)
   "Loading": "Memuatkan",
-  "No orders yet": "Belum ada pesanan",
   "Views": "Tontonan",
   "Rating": "Penilaian",
   "Paid": "Dibayar",
   "Pending": "Menunggu",
   "Cancelled": "Dibatalkan",
   "Removed": "Dibuang",
-  "Try again": "Cuba lagi",
   "{n} LIVEs": "{n} LIVE",
   "{n} cancelled": "{n} dibatalkan",
   "{pct}% cancelled": "{pct}% dibatalkan",
@@ -26,7 +24,6 @@ export const APP_ANALYTICS: Record<string, string> = {
   "Last 14 days": "14 hari lepas",
   "Last 90 days": "90 hari lepas",
   "Lifetime": "Sepanjang masa",
-  "Last month": "Bulan lepas",
   "{from} – {to} · {n} day": "{from} – {to} · {n} hari",
   "{from} – {to} · {n} days": "{from} – {to} · {n} hari",
   "{from} – {to} · this month": "{from} – {to} · bulan ini",

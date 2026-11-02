@@ -163,11 +163,12 @@ export function messagesFor(fresh: NoteLike[], app: App, lang: Lang): PushMessag
 /**
  * The quarter-hour step (api/cron/posts): pushes each person's new notifications to her devices. Notifications aren't stored (feed.ts
  * builds them from real events), so her list is built here as she'd see it, and each device keeps the ids already pushed to it
- * (written before sending, so nothing goes twice). `feed` is feed.ts's feedFor, passed in so this file needs nothing from the pages.
+ * (written before sending, so nothing goes twice). `feed` is feed.ts's feedFor, passed in so this file needs nothing from the pages;
+ * it's built once per language her devices use, so each phone gets the words in its own language (ids are the same in every one).
  * `dryRun` sends and saves nothing and says what it would send.
  */
 export async function pushNewNotes(
-  feed: (userId: string, side: App) => Promise<{ notes: NoteLike[] }>,
+  feed: (userId: string, side: App, lang: Lang) => Promise<{ notes: NoteLike[] }>,
   opts: { dryRun?: boolean; now?: number } = {},
 ): Promise<Tally & { people: number; preview: { device: string; messages: PushMessage[] }[] }> {
   const now = opts.now ?? Date.now();
@@ -177,9 +178,10 @@ export async function pushNewNotes(
   const tally: Tally = { devices: subs.length, sent: 0, dropped: 0, failed: 0 };
   const preview: { device: string; messages: PushMessage[] }[] = [];
   const one = async (list: PushSub[]) => {
-    const { notes } = await feed(list[0].user_id, list[0].app);
+    const byLang = new Map<Lang, NoteLike[]>();
+    for (const lang of new Set(list.map((sub) => sub.lang))) byLang.set(lang, (await feed(list[0].user_id, list[0].app, lang)).notes);
     for (const sub of list) {
-      const fresh = pickNew(notes, sub, now);
+      const fresh = pickNew(byLang.get(sub.lang) ?? [], sub, now);
       if (!fresh.length) continue;
       const messages = messagesFor(fresh, sub.app, sub.lang);
       if (opts.dryRun) {

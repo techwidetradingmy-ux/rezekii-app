@@ -303,8 +303,6 @@ export const APP_ACCOUNT: Record<string, string> = {
   "TikTok, Instagram, Facebook and Threads": "TikTok、Instagram、Facebook 和 Threads",
   "Joined {date}": "{date} 加入",
   "Next: {step}": "下一步：{step}",
-  "Missed the 14 days": "已超过 14 天",
-  "Counting soon": "即将计入",
   "{successful} means your friend links TikTok Shop within 14 days.": "“{successful}”指好友在 14 天内连接 TikTok Shop。",
   "{rule} Your link works for 14 days after your friend taps it. If they tap another creator's link after yours, that one counts, so share early.": "{rule}好友点击你的链接后 14 天内有效。如果好友之后点击了其他达人的链接，则以那个为准，所以要尽早分享。",
   "Your Credits Show in Your {wallet}.": "你的积分显示在{wallet}中。",
@@ -368,7 +366,6 @@ export const APP_ACCOUNT: Record<string, string> = {
   "{n} video counted by TikTok": "TikTok 已计入 {n} 个视频",
   "{n} videos counted by TikTok": "TikTok 已计入 {n} 个视频",
   "TikTok ships your samples to the address in your TikTok account.": "TikTok 会把样品寄到你 TikTok 账户中的地址。",
-  "This product has no free samples left.": "此商品的免费样品已领完。",
 
   // Wish List
   "Want a Free Sample or a Better Rate?": "想要免费样品或更高佣金？",

@@ -206,7 +206,6 @@ export const APP_LANDING: Record<string, string> = {
   "Captions": "Kapsyen",
   "A new caption for every app, every post": "Kapsyen baharu untuk setiap aplikasi, setiap hantaran",
   "Write once, fitted to each app": "Tulis sekali, disesuaikan untuk setiap aplikasi",
-  "Posting": "Menyiar",
   "Upload to each app, one by one": "Muat naik ke setiap aplikasi, satu per satu",
   "Multi-platform in one click": "Pelbagai platform dalam satu klik",
   "Free samples": "Sampel percuma",
