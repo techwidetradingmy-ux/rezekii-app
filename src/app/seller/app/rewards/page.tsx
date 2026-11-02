@@ -7,6 +7,7 @@ import { useDemo } from "@/components/demo";
 import { claimMission, loadBoard, mergeMissions, type LiveBoard } from "@/lib/live-rewards";
 import { SELLER } from "@/lib/mock";
 import { SELLER_CREDITS, SELLER_MISSIONS, SELLER_STREAK } from "@/lib/mock-seller";
+import { Loading } from "@/components/ui";
 
 /** Daily missions for sellers: general actions in the seller app, reset at midnight. */
 const DAILY: Mission[] = [
@@ -42,7 +43,7 @@ export default function SellerMissions() {
   useEffect(() => {
     if (live) loadBoard("seller").then(setBoard).catch(() => setBoard("error"));
   }, [live]);
-  if (live && board === null) return <div className="v2-stack v2-in"><p className="v2-muted">Loading your missions…</p></div>;
+  if (live && board === null) return <div className="v2-stack v2-in"><Loading text="Loading your missions…" /></div>;
   if (live && board === "error") return <div className="v2-stack v2-in"><p className="v2-muted">Couldn&apos;t load your missions. Please refresh.</p></div>;
   const b = live && board && board !== "error" ? board : null;
   const l = b ? lists(b) : null;

@@ -245,7 +245,6 @@
   .cr1-splash { padding-top: 28px; }
   .cr1-splash .rz-card { padding: 22px 18px; }
   .cr1-splash .rz-tile { opacity: 0.55; }
-  .cr1-splash .rz-tile:nth-child(3), .cr1-splash .rz-tile:nth-child(5) { display: none; }
 }
 
 /* ================= Scan results ================= */
@@ -904,6 +903,15 @@ button.ai-match:focus-visible { outline: 2px solid #6d5efc; outline-offset: 2px;
 .sh-ring circle { fill: none; stroke: #00c073; stroke-width: 5; stroke-dasharray: 100; stroke-linecap: round; }
 a.sh-go { text-decoration: none; }
 .sh-hub .sh-tip { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--gink); }
+/* A real scan's progress with its usual time, and when the last scan ran (owner, 2 Nov 2026). */
+.sh-hub .sh-progress { display: grid; gap: 6px; margin-top: 4px; }
+.sh-hub .sh-bar { display: block; height: 8px; border-radius: 999px; background: color-mix(in srgb, currentColor 14%, transparent); overflow: hidden; }
+.sh-bar.sh-bar-sheet { display: block; height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.sh-bar-sheet i { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, #00c073, #25c8f4); animation: shBar linear forwards; }
+.sh-hub .sh-bar i { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, #00c073, #25c8f4); animation: shBar linear forwards; }
+@keyframes shBar { from { width: 4%; } to { width: 95%; } }
+.sh-hub .sh-progress small, .sh-hub .sh-last { font-size: 12.5px; font-weight: 600; color: var(--gink); opacity: 0.85; margin: 0; }
+@media (prefers-reduced-motion: reduce) { .sh-hub .sh-bar i { animation: none; width: 60%; } }
 .sh-deck { position: absolute; inset: -4%; z-index: 6; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 10px; border-radius: 22px; background: color-mix(in srgb, var(--surface) 94%, transparent); border: 1px solid var(--border); box-shadow: var(--shadow); animation: v2Rise2 0.2s var(--ease) both; }
 .sh-deckbar { align-self: stretch; display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 800; color: var(--muted); }
 .sh-x { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--text); display: grid; place-items: center; cursor: pointer; }

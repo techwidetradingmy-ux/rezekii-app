@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { Portal, Seg, ShareSheet } from "@/components/ui";
 import { CREATOR } from "@/lib/mock";
-import { STORY_SEEN, hoursLeft, storyDayKey, storyFor, type SampleDay, type StoryPage } from "@/lib/daily-story";
+import { STORY_SEEN, hoursLeft, noteStorySeen, storyDayKey, storyFor, storyNextAt, storyReleased, storySeen, type SampleDay, type StoryPage } from "@/lib/daily-story";
 import "@/app/creator1.css";
 
 const SLIDE_MS = 5200;
@@ -70,6 +70,12 @@ export function StoryCard({ page, hide = false, date }: { page: StoryPage; hide?
   );
 }
 
+/** The page that says when the next story comes out (owner, 2 Nov 2026: one story at a time through the day). */
+const nextPage = (at: number): StoryPage => ({
+  id: "next", tone: "steady", pose: "think", motion: "float", kick: "Coming up", big: new Date(at).toLocaleTimeString("en-MY", { hour: "numeric", minute: "2-digit", hour12: true }),
+  head: "Your next story", sub: "A new one every 2 hours today, until your whole day is out", caption: "",
+});
+
 /**
  * The Daily Story viewer (owner, 30 Oct 2026): like a story app, it plays page by page. Tap the right side for next, the left
  * side for back, hold to pause. Each page has its own button and Share.
@@ -87,7 +93,7 @@ export function DailyStory({ day = "good", onClose, pages }: { day?: SampleDay; 
       .catch(() => setFailed(true));
   }, [live, pages]);
   if (!live) return <StoryPlayer pages={storyFor(day)} onClose={onClose} />;
-  if (real) return <StoryPlayer pages={real} onClose={onClose} />;
+  if (real) return <StoryPlayer pages={real} onClose={onClose} drip />;
   return (
     <Portal>
       <div className="ss-back" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -101,11 +107,20 @@ export function DailyStory({ day = "good", onClose, pages }: { day?: SampleDay; 
   );
 }
 
-/** The story itself: one page at a time, moving on by itself. */
-function StoryPlayer({ pages, onClose }: { pages: StoryPage[]; onClose: () => void }) {
+/**
+ * The story itself: one page at a time, moving on by itself. `drip` (her real story, owner 2 Nov 2026): only the pages out so
+ * far, starting at the first she hasn't seen, and a "next story" page while more are coming today.
+ */
+function StoryPlayer({ pages: all, onClose, drip = false }: { pages: StoryPage[]; onClose: () => void; drip?: boolean }) {
   const you = useWho();
+  const [out] = useState(() => (drip ? storyReleased(all.length) : all.length));
+  const pages = out < all.length ? [...all.slice(0, out), nextPage(storyNextAt(out))] : all;
   const last = pages.length - 1;
-  const [i, setI] = useState(0);
+  // From the first page she hasn't seen; from the start again once she has seen all that's out.
+  const [i, setI] = useState(() => {
+    const seen = drip ? storySeen() : 0;
+    return seen < out ? seen : 0;
+  });
   const [held, setHeld] = useState(false);
   const [share, setShare] = useState<StoryPage | null>(null);
   const [hide, setHide] = useState(false);
@@ -115,8 +130,10 @@ function StoryPlayer({ pages, onClose }: { pages: StoryPage[]; onClose: () => vo
 
   useEffect(() => setLeft(hoursLeft()), []);
   useEffect(() => {
-    try { localStorage.setItem(STORY_SEEN, storyDayKey()); } catch {}
-  }, []);
+    if (!drip) {
+      try { localStorage.setItem(STORY_SEEN, storyDayKey()); } catch {}
+    } else noteStorySeen(Math.min(i + 1, out));
+  }, [drip, i, out]);
   useEffect(() => {
     if (held || share || i >= last) return;
     const t = window.setTimeout(() => setI((x) => Math.min(x + 1, last)), page.tone === "intro" ? SLIDE_MS + 2500 : SLIDE_MS);
@@ -186,7 +203,9 @@ function StoryPlayer({ pages, onClose }: { pages: StoryPage[]; onClose: () => vo
           <div key={page.id} className="ss-cover"><StoryCard page={page} date={date} /></div>
 
           <div className="ss-foot ds-foot">
-            {page.tone === "end" ? (
+            {page.id === "next" ? (
+              <button type="button" className="ds-cta" onClick={onClose}>Done</button>
+            ) : page.tone === "end" ? (
               <>
                 <button type="button" className="ss-share" onClick={() => openShare(page)}><Icon name="users" size={17} /> Invite a Friend</button>
                 <button type="button" className="ds-cta" onClick={onClose}>Done</button>

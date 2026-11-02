@@ -33,7 +33,8 @@ type User = { id: string; display_name: string | null; tiktok_username: string |
  * have no real source yet, so they're left out.
  */
 export async function storyOf(user: User, origin: string): Promise<StoryPage[]> {
-  const today = Math.floor((Date.now() + MYT) / DAY);
+  // The story day starts at 8 AM Malaysia time (00:00 UTC), when the last Malaysia day is complete: "yesterday" is that day.
+  const today = Math.floor(Date.now() / DAY);
   const yStart = (today - 1) * DAY - MYT;
   const yEnd = today * DAY - MYT;
   const d = new Date(yStart + MYT);
@@ -44,6 +45,7 @@ export async function storyOf(user: User, origin: string): Promise<StoryPage[]> 
     linesBetween(user.id, yStart - 7 * DAY, yEnd).catch(() => []),
     wallet(user.id, "creator").catch(() => null),
     codeFor(user),
+    // From her last scan: the story never scans her showcase itself (owner, 2 Nov 2026).
     commissionRaises(user.id).catch(() => null),
     count(`posts?user_id=eq.${user.id}&status=eq.posted&posted_at=gte.${yIso[0]}&posted_at=lt.${yIso[1]}&select=id`),
     (await supabaseRest(`social_posts?user_id=eq.${user.id}&posted_at=gte.${yIso[0]}&posted_at=lt.${yIso[1]}&select=platform`)).json() as Promise<{ platform: string }[]>,
@@ -124,25 +126,11 @@ export async function storyOf(user: User, origin: string): Promise<StoryPage[]> 
     ? { id: "total", tone: "total", pose: "cheeky", motion: "bounce", kick: "So far", big: `${posts} post${posts === 1 ? "" : "s"}`, head: "made with Rezekii", sub: `${rm(total)} commission in your TikTok Shop orders on Rezekii`, money: true, cta: { label: "My stats", href: "/app/data" }, caption: `${posts} posts made with Rezekii 🏆 ${tags}${invite}` }
     : { id: "total", tone: "total", pose: "cheeky", motion: "bounce", kick: "So far", big: rm(total), head: "commission in your TikTok Shop orders on Rezekii", sub: "Post Everywhere sends one video to all your apps", money: true, cta: { label: "New Post", href: "/app/publish" }, caption: `My TikTok Shop journey on Rezekii 🏆 ${tags}${invite}` };
 
-  // One short line for the first good page and the first heads-up.
-  const say: Record<string, string> = {
-    gmv: `GMV up ${change}% on your usual`,
-    top: top ? `${top.name} sold best (${top.orders.size} order${top.orders.size === 1 ? "" : "s"})` : "",
-    scan: `${sorted.length} product${sorted.length === 1 ? "" : "s"} can pay you more`,
-    posted: `${postedY} post${postedY === 1 ? "" : "s"} went out`,
-    commission: `${rm(commission, 2)} commission earned`,
-    friends: `${joinedY} friend${joinedY === 1 ? "" : "s"} joined with your link`,
-    streak: `${streak}-day streak`,
-    drop: `GMV ${Math.abs(change)}% below your usual`,
-    cancel: risk ? `${riskRate}% of ${risk.name} orders cancelled` : "",
-    failed: `${failed} post${failed === 1 ? "" : "s"} didn't go out`,
-  };
+  // Only the tip: the pages now come out one at a time through the day (owner, 2 Nov 2026), so the intro doesn't give them away.
   const summary = [
-    good[0] ? { tag: "Good" as const, text: say[good[0].id] } : null,
-    heads[0] ? { tag: "Watch" as const, text: say[heads[0].id] } : null,
     { tag: "Tip" as const, text: sorted.length ? `Add the ${sorted.length} product${sorted.length === 1 ? "" : "s"} that pay more` : !postedY ? "Post a video today to keep your streak going" : "Check Today's Ideas for what to film next" },
-  ].filter((x): x is NonNullable<typeof x> => !!x);
-  const intro: StoryPage = { id: "intro", tone: "intro", pose: "wave", motion: "bounce", kick: `Your day · ${date}`, big: `Hi ${first}!`, head: "Here's yesterday in 30 seconds", lines: summary, caption: `My Rezekii daily story is here 🐯 ${tags}${invite}` };
+  ];
+  const intro: StoryPage = { id: "intro", tone: "intro", pose: "wave", motion: "bounce", kick: `Your day · ${date}`, big: `Hi ${first}!`, head: "Your day, a new story every 2 hours", lines: summary, caption: `My Rezekii daily story is here 🐯 ${tags}${invite}` };
   const end: StoryPage = { id: "end", tone: "end", pose: "love", motion: "pop", kick: "That's your day", big: "See you tomorrow", head: "Share Rezekii with a friend", sub: `You get ${REFERRAL_REWARD.inviter} credits when they link TikTok Shop`, caption: `My daily story on Rezekii 🐯 Join me, you get ${REFERRAL_REWARD.friend} credits: ${link} ${tags}` };
 
   return [intro, ...good, ...heads, ...steady, totals, end];

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
-import { Count, Seg } from "@/components/ui";
+import { Count, Seg, Loading } from "@/components/ui";
 import { ShareButton } from "@/components/creator2/bits";
 import { CREATOR, LEDGER } from "@/lib/mock";
 import { useDemo } from "@/components/demo";
@@ -26,7 +26,7 @@ export function Wallet() {
   const rows = all.filter((l) => (show === "All" ? true : show === "Earned" ? l.amount > 0 : l.amount < 0));
   const credits = w ? w.balance : CREATOR.credits;
   const expiring = w ? w.expiring : { amount: EXPIRING, on: "27 Nov" };
-  if (live && real === null) return <p className="v2-muted">Loading your wallet…</p>;
+  if (live && real === null) return <Loading text="Loading your wallet…" />;
   if (live && real === "error") return <p className="v2-muted">Couldn&apos;t load your wallet. Please refresh.</p>;
 
   return (

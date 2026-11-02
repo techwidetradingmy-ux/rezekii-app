@@ -8,7 +8,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { Progress, Tip } from "@/components/ui";
+import { Progress, Tip, Loading } from "@/components/ui";
 import { Trend } from "@/components/creator1/shoot-today";
 import { SELLER, rm, short } from "@/lib/mock";
 import { BY_PRODUCT, DESTINATIONS, SHOP_ITEMS, heat, listStatus, type ShopItem } from "@/lib/mock-seller";
@@ -36,7 +36,7 @@ export default function SellerProductPage() {
     loadShop().then((s) => setReal(s?.items.find((p) => p.id === id) ?? null)).catch(() => setReal(null));
   }, [live, id]);
   const found = live ? (real === "wait" ? null : real) : SHOP_ITEMS.find((s) => s.id === id) ?? null;
-  if (live && real === "wait") return <div className="v2-stack v2-in"><p className="v2-muted">Loading the product…</p></div>;
+  if (live && real === "wait") return <div className="v2-stack v2-in"><Loading text="Loading the product…" /></div>;
   if (!found) {
     return (
       <div className="v2-stack v2-in">

@@ -15,15 +15,18 @@ export async function loadNotes(side: Side): Promise<{ notes: LiveNote[]; unread
   return r?.ok ? r.json() : null;
 }
 
-/** Marks one read (id) or all of them (null), and tells the bell. */
-export async function markNote(side: Side, id: string | null): Promise<void> {
+/** Marks one read (id) or all of them (null), and tells the bell how many are left unread. */
+export async function markNote(side: Side, id: string | null, left?: number): Promise<void> {
   await fetch("/api/v2/notifications", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(id ? { side, id } : { side, all: true }) }).catch(() => null);
-  notesChanged();
+  notesChanged(left);
 }
 
 const NOTES_CHANGED = "rz-notes-changed";
-/** Tells the bell to count again (after she reads some or changes what she wants to see). */
-export const notesChanged = () => window.dispatchEvent(new Event(NOTES_CHANGED));
+/**
+ * Tells the bell its number (owner, 2 Nov 2026: notifications were slow, as the bell built her whole list again each time); with
+ * no number, the bell counts again (after she changes what she wants to see).
+ */
+export const notesChanged = (unread?: number) => window.dispatchEvent(new CustomEvent(NOTES_CHANGED, { detail: unread }));
 const MYT = 8 * 3_600_000;
 const dayNo = (t: number) => Math.floor((t + MYT) / 86_400_000);
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -67,10 +70,12 @@ export function useUnreadNotes(side: Side, on: boolean): number | null {
         .then((r) => (r.ok ? r.json() : null))
         .then((d: { unread?: number } | null) => live && d && setN(d.unread ?? 0))
         .catch(() => {});
-    void load();
+    const told = (e: Event) => { const d = (e as CustomEvent<number | undefined>).detail; if (typeof d === "number") setN(d); else void load(); };
+    // On the Notifications screen the list itself tells the bell.
+    if (!window.location.pathname.endsWith("/notifications")) void load();
     const every = window.setInterval(load, 5 * 60_000);
-    window.addEventListener(NOTES_CHANGED, load);
-    return () => { live = false; window.clearInterval(every); window.removeEventListener(NOTES_CHANGED, load); };
+    window.addEventListener(NOTES_CHANGED, told);
+    return () => { live = false; window.clearInterval(every); window.removeEventListener(NOTES_CHANGED, told); };
   }, [side, on]);
   return n;
 }

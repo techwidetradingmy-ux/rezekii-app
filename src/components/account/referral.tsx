@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo, useWho } from "@/components/demo";
-import { Qr, Tip } from "@/components/ui";
+import { Qr, Tip, Loading } from "@/components/ui";
 import { ShareButton } from "@/components/creator2/bits";
 import { BrandLogo } from "@/components/brand-logos";
 import { CREATOR, INVITES, REFERRAL_REWARD } from "@/lib/mock";
@@ -45,7 +45,7 @@ export function Referral() {
   const done = friends.filter((f) => f.ok).length;
   /** The friends she brought in who are set up: they make the chain on the story card. */
   const CHAIN = friends.filter((f) => f.ok).slice(0, 3);
-  if (live && real === null) return <p className="v2-muted">Loading your invite…</p>;
+  if (live && real === null) return <Loading text="Loading your invite…" />;
   if (live && real === "error") return <p className="v2-muted">Couldn&apos;t load your invite. Please refresh.</p>;
   const copy = (text: string, what: string) => {
     try {

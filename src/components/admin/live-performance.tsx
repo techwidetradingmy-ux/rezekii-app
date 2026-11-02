@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useState } from "react";
-import { Title } from "@/components/ui";
+import { Title, Loading } from "@/components/ui";
 import { Av, Search } from "@/components/admin/bits";
 import { when } from "@/components/admin/live-lists";
 import { rm } from "@/lib/mock";
@@ -44,7 +44,7 @@ export function LivePerformance() {
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
       <Title title="Live Performance" sub="Each merchant's results in a Techwide campaign, from TikTok. What to show a merchant when you call them." />
-      {!camps ? <p className="v2-muted">{err ?? "Loading campaigns…"}</p> : (
+      {!camps ? (err ? <p className="v2-muted">{err}</p> : <Loading text="Loading campaigns from TikTok…" />) : (
         <>
           <div className="ad-bar" style={{ gap: 8, flexWrap: "wrap" }}>
             <select className="np-input" style={{ width: "auto", minWidth: 260 }} value={cid} onChange={(e) => setCid(e.target.value)} aria-label="Campaign">

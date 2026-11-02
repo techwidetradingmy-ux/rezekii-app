@@ -222,6 +222,14 @@ a[href*="/product/"] { text-decoration: none; }
 @keyframes v2Pop { 0% { transform: scale(0.7); opacity: 0; } 100% { transform: none; opacity: 1; } }
 @keyframes v2Medal { 0% { transform: scale(0.2) rotate(-40deg); } 100% { transform: none; } }
 @keyframes v2Spin { to { transform: rotate(360deg); } }
+/* The shared loader (owner, 2 Nov 2026): a brand circle and a message, centred on an empty screen, beside the text in a list. */
+.v2-loading { display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 28px auto; text-align: center; color: var(--muted); font-weight: 700; font-size: 14px; }
+.v2-loading > span:last-child { display: grid; gap: 4px; }
+.v2-loading small { font-weight: 600; font-size: 12.5px; opacity: 0.85; animation: v2Up 0.3s var(--ease) both; }
+.v2-loading.inline { flex-direction: row; justify-content: flex-start; text-align: left; margin: 8px 0; }
+.v2-spinner { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 3px solid var(--line); border-top-color: #00c073; border-right-color: #25c8f4; animation: v2Spin 0.8s linear infinite; }
+.v2-loading.inline .v2-spinner { width: 20px; height: 20px; border-width: 2.5px; }
+@media (prefers-reduced-motion: reduce) { .v2-spinner { animation-duration: 2s; } }
 @keyframes v2Fall { 0% { transform: translateY(0) rotate(0); opacity: 1; } 100% { transform: translateY(420px) rotate(540deg); opacity: 0; } }
 
 /* Share card (9:16 story) */
@@ -350,9 +358,13 @@ a[href*="/product/"] { text-decoration: none; }
 }
 
 /* Toast and preview strip button */
-/* Centred without a transform (owner, 1 Nov 2026): the pop-in animation ends at transform: none, which used to undo the centring. */
-.v2-toast { position: fixed; left: 0; right: 0; margin-inline: auto; width: fit-content; max-width: calc(100% - 32px); text-align: center; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); z-index: 100; padding: 12px 18px; border-radius: 14px; background: var(--text); color: var(--bg); font-weight: 700; font-size: 14px; box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.5); animation: v2Up 0.3s var(--ease) both; }
-@media (min-width: 761px) { .v2-toast { bottom: 32px; } }
+/* Centred without a transform (owner, 1 Nov 2026): the pop-in animation ends at transform: none, which used to undo the centring.
+   In the middle of the screen (owner, 2 Nov 2026), so it's seen. */
+.v2-toast { position: fixed; inset: 0; margin: auto; width: fit-content; height: fit-content; max-width: calc(100% - 32px); text-align: center; z-index: 100; padding: 12px 18px; border-radius: 14px; background: var(--text); color: var(--bg); font-weight: 700; font-size: 14px; box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.5); animation: v2Up 0.3s var(--ease) both; }
+/* Pull to refresh in the home-screen app (owner, 2 Nov 2026): a circle that follows the pull, then spins while it reloads. */
+.v2-pull { position: fixed; left: 0; right: 0; margin-inline: auto; top: calc(-44px + env(safe-area-inset-top, 0px)); width: 40px; height: 40px; z-index: 120; display: grid; place-items: center; border-radius: 50%; background: var(--surface, var(--bg)); color: #00a862; box-shadow: 0 8px 22px -8px rgba(0, 0, 0, 0.35); pointer-events: none; }
+.v2-pull span { display: grid; place-items: center; }
+.v2-pull.going span { animation: v2Spin 0.8s linear infinite; }
 .v2-demo-toggle { height: 26px; padding: 0 10px; border-radius: 999px; border: 1px solid currentColor; background: transparent; color: inherit; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
 @media (max-width: 760px) { .v2-demo .site-wrap > a { display: none; } .v2-demo .site-wrap > a[href="/tour"] { display: inline; } }
 

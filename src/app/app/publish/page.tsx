@@ -1,6 +1,6 @@
 "use client";
 
-import { Title } from "@/components/ui";
+import { Title, Loading } from "@/components/ui";
 import { Composer } from "@/components/publish/composer";
 import { useEditId } from "@/components/publish/post-edits";
 import { CREATOR_SETUP } from "@/lib/mock-publish";
@@ -13,7 +13,7 @@ export default function PublishNew() {
   return (
     <div className="v2-stack v2-in" style={{ gap: 16 }}>
       <Title title={editId ? "Edit Post" : "Cross-Channel Posting"} sub="One video to TikTok, Facebook, Instagram and Threads" />
-      {setup === "wait" ? <p className="v2-muted">Loading your channels…</p> : setup === "error" ? <p className="v2-muted">Couldn&apos;t load your channels. Please refresh.</p> : <Composer key={setup.live ?? "sample"} setup={setup} />}
+      {setup === "wait" ? <Loading text="Loading your channels…" /> : setup === "error" ? <p className="v2-muted">Couldn&apos;t load your channels. Please refresh.</p> : <Composer key={setup.live ?? "sample"} setup={setup} />}
     </div>
   );
 }

@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo, useWho } from "@/components/demo";
-import { Seg, Sheet, Title } from "@/components/ui";
+import { Seg, Sheet, Title, Loading } from "@/components/ui";
 import { useSideScroll } from "@/components/side-scroll";
 import { PlatformIcon } from "@/components/creator2/bits";
 import { CREATOR, MY_SAMPLES, SOCIALS } from "@/lib/mock";
@@ -353,7 +353,7 @@ export default function Account() {
         </div>
         </aside>
 
-        {tab === "profile" && loadingProfile && <p className="v2-muted">Loading your profile…</p>}
+        {tab === "profile" && loadingProfile && <Loading text="Loading your profile…" />}
         {tab === "profile" && !loadingProfile && (
           <>
         {/* Owner, 28 Oct 2026: the whole profile in one box; once saved it's locked, and changes go through support. */}
@@ -513,7 +513,7 @@ export default function Account() {
               {me?.shop?.expired ? <button type="button" className="np-btn v2-btn-sm cr2-relink" onClick={() => setLinked(true)}><Icon name="refresh" size={15} /> Re-link</button>
                 : me?.shop ? <button type="button" className="btn-outline v2-btn-sm" onClick={() => setUnlink(true)}>Unlink</button> : <button type="button" className="np-btn v2-btn-sm" onClick={() => setLinked(true)}>Link</button>}
             </div>
-            {chans === null && <p className="v2-muted" style={{ margin: "8px 0" }}>Loading your accounts…</p>}
+            {chans === null && <Loading text="Loading your accounts…" inline />}
             {chans !== null && (["tiktok", "facebook", "instagram", "threads"] as const).map((app) => {
               const label = { tiktok: "TikTok account", facebook: "Facebook Page", instagram: "Instagram", threads: "Threads" }[app];
               const icon = { tiktok: "TikTok", facebook: "Facebook", instagram: "Instagram", threads: "Threads" }[app] as "TikTok" | "Facebook" | "Instagram" | "Threads";

@@ -4,9 +4,9 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Icon, type IconName } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { Title } from "@/components/ui";
+import { Title, Loading } from "@/components/ui";
 import { NOTES } from "@/lib/mock-creator1";
-import { loadNotes, markNote, noteBg, noteDay, noteWhen, type LiveNote, type NoteCategory } from "@/lib/live-notes";
+import { loadNotes, markNote, notesChanged, noteBg, noteDay, noteWhen, type LiveNote, type NoteCategory } from "@/lib/live-notes";
 import { CAT_LABEL, NoteFilter, passes, type NoteFilterValue } from "@/components/note-filter";
 import "../../creator1.css";
 
@@ -26,16 +26,17 @@ export default function Notifications() {
       if (!d) return setFailed(true);
       setReal(d.notes);
       setUnread(d.notes.filter((n) => n.unread).map((n) => n.id));
+      notesChanged(d.unread);
     });
   }, [live]);
   const read = (id: string) => {
     if (!unread.includes(id)) return;
     setUnread((u) => u.filter((x) => x !== id));
-    if (live) void markNote("creator", id);
+    if (live) void markNote("creator", id, unread.length - 1);
   };
   const readAll = () => {
     setUnread([]);
-    if (live) void markNote("creator", null);
+    if (live) void markNote("creator", null, 0);
     toast("All marked as read");
   };
   // Phones show each one as a short row (owner, 29 Oct 2026); a tap opens the full text and its button, and marks it read.
@@ -55,6 +56,7 @@ export default function Notifications() {
         </button>
       </Title>
 
+      {live && !real && !failed && <Loading text="Loading your notifications…" />}
       {live && real && real.length > 0 && <NoteFilter notes={notes} value={show} onChange={setShow} />}
 
       {live && real && !real.length && (

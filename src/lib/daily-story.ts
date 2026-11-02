@@ -147,6 +147,30 @@ export const STORY_SEEN = "rz_story_seen";
 export function storyDayKey(now = new Date()): string {
   return now.toISOString().slice(0, 10);
 }
+/**
+ * One story page at a time (owner, 2 Nov 2026: something new through the day): the intro and the first page at 8 AM Malaysia
+ * time, then one more every 2 hours until the whole day is out. How many of `total` pages are out at `now`.
+ */
+export const STORY_EVERY_MS = 2 * 3_600_000;
+const dayStart = (now: number) => Math.floor(now / 86_400_000) * 86_400_000;
+export const storyReleased = (total: number, now = Date.now()) => Math.min(total, 2 + Math.floor((now - dayStart(now)) / STORY_EVERY_MS));
+/** When the next page comes out, once `released` pages are out. */
+export const storyNextAt = (released: number, now = Date.now()) => dayStart(now) + (released - 1) * STORY_EVERY_MS;
+/** How many of today's pages she has seen (saved as "day:count"; an older "day" alone meant the whole story). */
+export function storySeen(now = new Date()): number {
+  try {
+    const [d, n] = (localStorage.getItem(STORY_SEEN) ?? "").split(":");
+    return d === storyDayKey(now) ? (n ? Number(n) || 0 : Infinity) : 0;
+  } catch {
+    return 0;
+  }
+}
+export function noteStorySeen(count: number, now = new Date()) {
+  try {
+    if (count > storySeen(now)) localStorage.setItem(STORY_SEEN, `${storyDayKey(now)}:${count}`);
+  } catch {}
+}
+
 /** Hours until the story ends (the next 8 AM Malaysia time). */
 export function hoursLeft(now = new Date()): number {
   const next = new Date(now);

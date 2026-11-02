@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
-import { Count, Stat, Title } from "@/components/ui";
+import { Count, Stat, Title, Loading } from "@/components/ui";
 import { Ava } from "@/components/seller/seller-ui";
 import { sellerProductHref } from "@/lib/product-pages";
 import { shortName } from "@/lib/live-perf";
@@ -34,7 +34,7 @@ export function LiveSamples() {
     return (
       <div className="v2-stack v2-in">
         <Title title="Where Samples Went" />
-        <p className="v2-muted">{failed ? "Couldn't reach TikTok Shop. Please try again." : "Loading from TikTok…"}</p>
+        {failed ? <p className="v2-muted">Couldn&apos;t reach TikTok Shop. Please try again.</p> : <Loading text="Loading where your samples went, from TikTok…" />}
       </div>
     );
   }

@@ -21,11 +21,14 @@ export function fromLiveRaise(r: LiveRaise): Raise {
   return { id: r.productId, productId: r.productId, nowRate: now, tapRate: tap, until: "", eligible: true };
 }
 
-/** Her real scan: better rates in her showcase. */
-export async function loadScan(): Promise<{ raises: Raise[] } | null> {
-  const raises = await fetch("/api/tap/raises", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+/**
+ * Her real scan: better rates in her showcase. The last scan and when it ran (`at`, null before her first); `scan` scans her
+ * showcase on TikTok now (owner, 2 Nov 2026: only when she taps Scan) and also gives her showcase size (`count`).
+ */
+export async function loadScan(scan = false): Promise<{ raises: Raise[]; at: number | null; count: number | null } | null> {
+  const raises = await fetch(`/api/tap/raises${scan ? "?scan=1" : ""}`, { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   if (!raises) return null;
-  return { raises: ((raises.raises ?? []) as LiveRaise[]).map(fromLiveRaise) };
+  return { raises: ((raises.raises ?? []) as LiveRaise[]).map(fromLiveRaise), at: raises.at ?? null, count: raises.count ?? null };
 }
 
 /**

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { Celebrate, Progress, Seg, ShareSheet, Sheet } from "@/components/ui";
+import { Celebrate, Progress, Seg, ShareSheet, Sheet, Loading } from "@/components/ui";
 import { SampleTag } from "@/components/creator1/brand";
 import { CREATOR, MY_SAMPLES, product, type MySample, type SampleStatus } from "@/lib/mock";
 import { productHref } from "@/lib/product-view";
@@ -306,7 +306,7 @@ export function LiveSamples() {
       .then((d: { samples: LiveSample[] }) => setRows(d.samples))
       .catch(() => setRows("error"));
   }, []);
-  if (rows === null) return <p className="v2-muted">Loading your samples…</p>;
+  if (rows === null) return <Loading text="Loading your samples and their TikTok status…" />;
   if (rows === "error") return <p className="v2-muted">Couldn&apos;t load your samples. Please refresh.</p>;
   const list = rows.map((r) => ({ ...r, status: STATUS[r.stage] ?? "Applied" }));
   const tabOfLive = (s: { status: SampleStatus }) => (s.status === "Done" ? "Done" : s.status === "Not approved" ? "Not approved" : "In progress");

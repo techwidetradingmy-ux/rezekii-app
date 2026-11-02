@@ -41,7 +41,8 @@ export async function notesFor(userId: string, side: Side): Promise<Note[]> {
   const since = new Date(Date.now() - 30 * DAY).toISOString();
   const base = side === "seller" ? "/seller/app" : "/app";
   const walletHref = side === "seller" ? "/seller/app/rewards/wallet" : "/app/account#wallet";
-  const [ledger, invites, posts, social, accounts, shop, tiktok, samples, submissions, wishes, reviews] = await Promise.all([
+  // Everything read at once, Techwide's announcements too (owner, 2 Nov 2026: notifications were slow).
+  const [ledger, invites, posts, social, accounts, shop, tiktok, samples, submissions, wishes, reviews, system] = await Promise.all([
     rows<{ id: string; amount: number; kind: string; what: string; created_at: string; expires_at: string | null }>(
       `credit_ledger?user_id=eq.${userId}&side=eq.${side}&created_at=gte.${enc(since)}&kind=neq.post&select=id,amount,kind,what,created_at,expires_at&order=created_at.desc&limit=40`,
     ),
@@ -72,6 +73,7 @@ export async function notesFor(userId: string, side: Side): Promise<Note[]> {
           sh.length ? rows<Review>(`product_reviews?shop_id=in.(${sh.map((x) => x.shop_id).join(",")})&decided_at=gte.${enc(since)}&decided_by=neq.backfill&select=*&order=decided_at.desc&limit=30`) : [],
         )
       : Promise.resolve([] as Review[]),
+    systemNotes(side).catch(() => []),
   ]);
 
   const notes: Note[] = [];
@@ -153,7 +155,7 @@ export async function notesFor(userId: string, side: Side): Promise<Note[]> {
     notes.push({ id: `r:${s.id}`, at: s.created_at, icon: "box", title: `Sample requested: ${s.product_name ?? "a product"}`, line: "You'll see TikTok's steps (approved, shipped, received) in Samples & Delivery.", href: "/app/account#samples", cta: "See sample", urgent: null });
   }
   // Techwide's announcements and late or failed data updates, for everyone.
-  for (const n of await systemNotes(side).catch(() => [])) {
+  for (const n of system) {
     notes.push({ id: n.id, at: n.at, icon: n.important ? "alert" : "check", title: n.title, line: n.line, href: null, cta: null, urgent: n.important ? "Important" : null });
   }
   return notes.sort((a, b) => (a.at < b.at ? 1 : -1));

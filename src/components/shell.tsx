@@ -3,7 +3,7 @@
 import { useWho } from "@/components/demo";
 import { FeedbackForm } from "@/components/feedback-form";
 import { DailyStory } from "@/components/daily-story";
-import { STORY_SEEN, storyDayKey, type SampleDay, type StoryPage } from "@/lib/daily-story";
+import { STORY_SEEN, storyDayKey, storyReleased, storySeen, type SampleDay, type StoryPage } from "@/lib/daily-story";
 import { SUPPORT } from "@/lib/support";
 import Image from "next/image";
 import Link from "next/link";
@@ -21,6 +21,7 @@ import { BetaWait } from "./beta-wait";
 import { ACCOUNT, HOME, MENUS, pageFor, sectionFor, type AppKind } from "@/lib/menus";
 import { CREATOR, MY_SAMPLES, REFERRAL_REWARD, SELLER } from "@/lib/mock";
 import { useUnreadNotes } from "@/lib/live-notes";
+import { PullRefresh } from "@/components/pull-refresh";
 import { loadWallet } from "@/lib/live-rewards";
 
 const LEVEL: Record<string, string> = { bronze: "Bronze", silver: "Silver", gold: "Gold" };
@@ -164,6 +165,14 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
     setStoryDay(new URLSearchParams(window.location.search).get("day") === "slow" ? "slow" : "good");
     try { setStoryNew(localStorage.getItem(STORY_SEEN) !== storyDayKey()); } catch { setStoryNew(true); }
   }, [app]);
+  // Her real story comes out one page at a time (owner, 2 Nov 2026): the photo glows again whenever a new page is out.
+  useEffect(() => {
+    if (!live || app !== "creator" || !storyPages?.length) return;
+    const check = () => setStoryNew(storySeen() < storyReleased(storyPages.length));
+    check();
+    const t = window.setInterval(check, 60_000);
+    return () => window.clearInterval(t);
+  }, [live, app, storyPages, story]);
   const ring = hasStory ? (storyNew ? " story new" : " story") : "";
   useLayoutEffect(() => {
     const open = () => setAcctOpen(true);
@@ -300,6 +309,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
           </nav>
         </div>
       )}
+      <PullRefresh />
       {acctOpen && <AccountPanel onClose={() => setAcctOpen(false)} onStory={hasStory ? () => { setAcctOpen(false); setStory(true); } : undefined} />}
       {story && <DailyStory day={storyDay} pages={storyPages} onClose={() => { setStory(false); setStoryNew(false); }} />}
       <main className="site-wrap v2-main">

@@ -7,7 +7,7 @@ import { Icon, type IconName } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Title } from "@/components/ui";
 import { SELLER_NOTES } from "@/lib/mock-seller";
-import { loadNotes, markNote, noteDay, noteWhen, type NoteCategory } from "@/lib/live-notes";
+import { loadNotes, markNote, notesChanged, noteDay, noteWhen, type NoteCategory } from "@/lib/live-notes";
 import { CAT_LABEL, NoteFilter, passes, type NoteFilterValue } from "@/components/note-filter";
 
 const TONE: Record<string, string> = { alert: "red", x: "red", video: "blue", gift: "amber", link: "amber" };
@@ -25,6 +25,7 @@ export default function SellerNotifications() {
       if (!d) return setState("failed");
       setNotes(d.notes.map((n) => ({ id: n.id, icon: n.icon, title: n.title, line: n.line, when: noteWhen(n.at), unread: n.unread, href: n.href ?? "/seller/app/notifications", today: noteDay(n.at) === "Today", cat: n.cat, urgent: n.urgent })));
       setState("ok");
+      notesChanged(d.unread);
     });
   }, [live]);
   const unread = notes.filter((n) => n.unread).length;
@@ -36,7 +37,7 @@ export default function SellerNotifications() {
   const earlier = shown.filter((n) => !n.urgent && !n.today);
   const readOne = (id: string) => {
     setNotes((all) => all.map((x) => (x.id === id ? { ...x, unread: false } : x)));
-    if (live && notes.find((x) => x.id === id)?.unread) void markNote("seller", id);
+    if (live && notes.find((x) => x.id === id)?.unread) void markNote("seller", id, unread - 1);
   };
 
   const list = (items: Row[]) => items.map((n) => {
@@ -58,7 +59,7 @@ export default function SellerNotifications() {
   return (
     <div className="v2-stack v2-in v2-narrow">
       <Title title="Notifications" sub={state === "wait" ? "Loading…" : state === "failed" ? "Couldn't load your notifications" : unread ? `${unread} unread` : "You're all caught up"}>
-        <button type="button" className="btn-outline" disabled={!unread} onClick={() => { setNotes((all) => all.map((x) => ({ ...x, unread: false }))); if (live) void markNote("seller", null); toast("All marked as read"); }}>Mark All as Read</button>
+        <button type="button" className="btn-outline" disabled={!unread} onClick={() => { setNotes((all) => all.map((x) => ({ ...x, unread: false }))); if (live) void markNote("seller", null, 0); toast("All marked as read"); }}>Mark All as Read</button>
       </Title>
       {live && notes.length > 0 && <NoteFilter notes={notes} value={show} onChange={setShow} />}
       <section className="v2-card">

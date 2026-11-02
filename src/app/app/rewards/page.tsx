@@ -5,6 +5,7 @@ import { MissionsBoard, type ClaimResult, type Mission } from "@/components/miss
 import { useDemo } from "@/components/demo";
 import { CREATOR } from "@/lib/mock";
 import { claimMission, loadBoard, mergeMissions, type LiveBoard } from "@/lib/live-rewards";
+import { Loading } from "@/components/ui";
 
 /** Daily missions: general actions anywhere in Rezekii, reset at midnight. */
 const DAILY: Mission[] = [
@@ -46,7 +47,7 @@ export default function Missions() {
   useEffect(() => {
     if (live) loadBoard("creator").then(setBoard).catch(() => setBoard("error"));
   }, [live]);
-  if (live && board === null) return <div className="v2-stack v2-in"><p className="v2-muted">Loading your missions…</p></div>;
+  if (live && board === null) return <div className="v2-stack v2-in"><Loading text="Loading your missions…" /></div>;
   if (live && board === "error") return <div className="v2-stack v2-in"><p className="v2-muted">Couldn&apos;t load your missions. Please refresh.</p></div>;
   const b = live && board && board !== "error" ? board : null;
   const l = b ? lists(b) : null;

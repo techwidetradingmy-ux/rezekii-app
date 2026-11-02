@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { Sheet, Title } from "@/components/ui";
+import { Sheet, Title, Loading } from "@/components/ui";
 import { Av, Pill, Search } from "@/components/admin/bits";
 import { day, useList } from "@/components/admin/live-lists";
 
@@ -73,7 +73,7 @@ export function LiveOpenCampaigns() {
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
       <Title title="Open Campaigns" sub="Techwide's TAP campaigns open now. Recommend them to merchants." />
-      {!list ? <p className="v2-muted">{err ?? "Loading Techwide's campaigns from TikTok…"}</p> : (
+      {!list ? (err ? <p className="v2-muted">{err}</p> : <Loading text="Loading Techwide's campaigns from TikTok…" />) : (
         <section className="v2-card" style={{ padding: "6px 20px" }}>
           <div className="ad-list">
             {[...list].sort((a, b) => b.products - a.products).map((c) => (

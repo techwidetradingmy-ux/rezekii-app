@@ -2,7 +2,7 @@
 
 import { MyPosts } from "@/components/publish/my-posts";
 import { Icon } from "@/components/icons";
-import { Title } from "@/components/ui";
+import { Title, Loading } from "@/components/ui";
 import { CREATOR_POSTS, CREATOR_SETUP } from "@/lib/mock-publish";
 import { useLivePosts, useLiveSetup } from "@/lib/live-publish";
 import "@/app/publish.css";
@@ -14,7 +14,7 @@ import "@/app/publish.css";
 export default function PublishPosts() {
   const setup = useLiveSetup(CREATOR_SETUP, "creator");
   const posts = useLivePosts(CREATOR_POSTS);
-  if (setup === "wait" || posts === "wait") return <div className="v2-stack v2-in"><p className="v2-muted">Loading your posts…</p></div>;
+  if (setup === "wait" || posts === "wait") return <div className="v2-stack v2-in"><Loading text="Loading your posts…" /></div>;
   if (setup === "error" || posts === "error") return <div className="v2-stack v2-in"><p className="v2-muted">Couldn&apos;t load your posts. Please refresh.</p></div>;
   if (setup.live && !setup.channels.some((c) => c.app === "tiktok" && c.status === "active")) {
     return (

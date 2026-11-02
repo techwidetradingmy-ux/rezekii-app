@@ -12,6 +12,24 @@ import { loadReferral } from "@/lib/live-rewards";
 import QRCode from "qrcode";
 
 /** A small ⓘ beside a word; tap it to read the explanation (owner, 28 Oct 2026: tooltips instead of text on the page). */
+/**
+ * Anything still loading (owner, 2 Nov 2026: never just "Loading…", so people keep waiting): a moving circle and what's
+ * happening; after a few seconds it adds that it's still working.
+ */
+export function Loading({ text, slow = "Still working. This can take a few seconds.", inline = false }: { text: string; slow?: string; inline?: boolean }) {
+  const [late, setLate] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setLate(true), 4000);
+    return () => window.clearTimeout(t);
+  }, []);
+  return (
+    <p className={`v2-loading${inline ? " inline" : ""}`} role="status">
+      <span className="v2-spinner" aria-hidden="true" />
+      <span>{text}{late && <small>{slow}</small>}</span>
+    </p>
+  );
+}
+
 export function Tip({ text, label = "What's this?", big = false }: { text: React.ReactNode; label?: string; big?: boolean }) {
   const [open, setOpen] = useState(false);
   const btn = useRef<HTMLButtonElement>(null);

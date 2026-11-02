@@ -44,7 +44,9 @@ export async function findProductCached(token: string | null, id: string): Promi
 /** Her wishes, newest first, with where each one is now. */
 export async function myWishes(userId: string): Promise<MyWish[]> {
   const rows = (await (await supabaseRest(`wishes?user_id=eq.${userId}&select=${COLS}&order=created_at.desc&limit=200`)).json()) as Row[];
-  const live = new Set((await allProducts()).map((p) => p.id));
+  // Only her wished products are looked up in the Marketplace, not the whole catalog (owner, 2 Nov 2026: notifications were slow).
+  const ids = [...new Set(rows.map((r) => r.product_id))].filter((x) => /^\d{6,25}$/.test(x));
+  const live = new Set(ids.length ? ((await (await supabaseRest(`tap_catalog?product_id=in.(${ids.join(",")})&select=product_id`)).json()) as { product_id: string }[]).map((r) => r.product_id) : []);
   // The first time a wish is seen on Rezekii, that moment is kept (for her notification).
   const now = new Date().toISOString();
   const launched = rows.filter((r) => live.has(r.product_id) && !r.launched_at).map((r) => r.product_id);

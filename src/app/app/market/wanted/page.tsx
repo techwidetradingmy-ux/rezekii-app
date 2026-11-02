@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
-import { Seg, Title } from "@/components/ui";
+import { Seg, Title, Loading } from "@/components/ui";
 import Link from "next/link";
 import { LinkFinder, useWishes } from "@/components/creator1/wish";
 import { WANTED, onBoard } from "@/lib/mock-showcase";
@@ -46,7 +46,7 @@ export default function MostWanted() {
         <Seg value={sort} options={["This week", "All time"] as const} onChange={setSort} />
       </div>
 
-      {live && !real && <p className="v2-muted" style={{ margin: 0 }}>{failed ? "Couldn't load the wish list. Please try again later." : "Loading the wish list…"}</p>}
+      {live && !real && (failed ? <p className="v2-muted" style={{ margin: 0 }}>Couldn&apos;t load the wish list. Please try again later.</p> : <Loading text="Loading the wish list…" />)}
       {live && real && !real.length && <p className="v2-muted" style={{ margin: 0 }}>No wishes yet. Paste a product link above to start one.</p>}
 
       <ol className="mw-list">

@@ -148,13 +148,13 @@ export async function saveRead(userId: string, read: { items: ShowcaseItem[]; mo
 }
 
 /**
- * Her showcase totals (every product, and how many are on Rezekii). The saved count is used while it's under 6 hours old;
- * `fresh` reads TikTok again (Scan again).
+ * Her showcase totals (every product, and how many are on Rezekii): the saved count from her last scan, whatever its age (owner,
+ * 2 Nov 2026: TikTok is read only when she taps Scan); `fresh` reads TikTok again.
  */
 export async function showcaseSummary(userId: string, fresh = false): Promise<ShowcaseSummary> {
   const [token, saved] = await Promise.all([approvedCreatorToken(userId), savedShowcase(userId)]);
   if (!token) return { linked: false, count: 0, tap: 0, more: false };
-  if (!fresh && saved && !showcaseStale(saved, Date.now())) return { linked: true, count: saved.count, tap: saved.tap, more: saved.more, at: saved.at };
+  if (!fresh) return saved ? { linked: true, count: saved.count, tap: saved.tap, more: saved.more, at: saved.at } : { linked: true, count: 0, tap: 0, more: false };
   const read = await readShowcase(token);
   // TikTok didn't answer: keep the last count rather than saving a wrong 0.
   if (!read.ok) return saved ? { linked: true, count: saved.count, tap: saved.tap, more: saved.more, at: saved.at } : { linked: true, count: 0, tap: 0, more: false };

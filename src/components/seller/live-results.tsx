@@ -5,7 +5,7 @@ import { DataNote } from "@/components/data-note";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { Bars, Count, Stat, Title } from "@/components/ui";
+import { Bars, Count, Stat, Title, Loading } from "@/components/ui";
 import { Ava, Source } from "@/components/seller/seller-ui";
 import { rm } from "@/lib/mock";
 import { sellerProductHref } from "@/lib/product-pages";
@@ -53,7 +53,7 @@ export function LiveResults() {
     return (
       <div className="v2-stack v2-in">
         <Title title="TAP Performance" />
-        <p className="v2-muted">{failed ? "Couldn't reach TikTok Shop. Please try again." : "Loading your results from TikTok…"}</p>
+        {failed ? <p className="v2-muted">Couldn&apos;t reach TikTok Shop. Please try again.</p> : <Loading text="Loading your results from TikTok…" />}
       </div>
     );
   }

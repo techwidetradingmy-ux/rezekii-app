@@ -26,6 +26,11 @@ const RING_MAX = 6;
 const RING_DIST = 0.8;
 const SWEEP_S = 4;
 const SCAN_MS = 4200;
+/** About how long a real scan takes: TikTok gives 20 showcase products a page, about 1.1 seconds each (791 took ~47 s). */
+const scanSeconds = (count: number | null) => Math.round(5 + Math.ceil((count || 400) / 20) * 1.1);
+/** About how long adding takes: 5 products at a time, about 3 seconds a round. */
+const addSeconds = (n: number) => 2 + Math.ceil(n / 5) * 3;
+const scanTime = (t: number) => new Date(t).toLocaleString("en-MY", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true });
 const HOLD_MS = 900;
 const SWIPE_PX = 70;
 /** Her showcase photos that fly into the radar while it scans. */
@@ -57,6 +62,8 @@ export function ScanHub() {
   // Signed in (owner, 30 Oct 2026): her real showcase scan replaces the sample.
   // Her exact showcase size, every page counted (owner, 1 Nov 2026); null while it's being checked.
   const [checked, setChecked] = useState<number | null>(CREATOR.showcaseSize);
+  // When her last scan ran (owner, 2 Nov 2026: it scans only when she taps Scan): 0 before her first, null while loading.
+  const [scannedAt, setScannedAt] = useState<number | null>(null);
   useEffect(() => {
     if (!live) return;
     // Signed in, no sample numbers ever: clear them while hers load. Not linked yet: nothing of hers to show.
@@ -65,6 +72,7 @@ export function ScanHub() {
     setChecked(null);
     if (!linked) return;
     loadScan().then((s) => {
+      setScannedAt(s?.at ?? 0);
       if (!s) return;
       setRows(s.raises);
       setSimilar([]);
@@ -84,6 +92,8 @@ export function ScanHub() {
   const [scanning, setScanning] = useState(false);
   const [scanKey, setScanKey] = useState(0);
   const [last, setLast] = useState("today 09:12");
+  // How long this scan usually takes, in seconds, for the progress bar.
+  const [scanFor, setScanFor] = useState(SCAN_MS / 1000);
   const [bulk, setBulk] = useState<Bulk | null>(null);
   const [hold, setHold] = useState(0);
   const [deck, setDeck] = useState<Deck | null>(null);
@@ -146,15 +156,16 @@ export function ScanHub() {
     setScanning(true);
     setScanKey((k) => k + 1);
     if (live) {
-      // A real scan of her showcase; the radar runs at least as long as the scan. The count is read again from TikTok.
+      // A real scan of her showcase; the radar runs at least as long as the scan. The same read gives her showcase size.
       const started = Date.now();
-      setChecked(null);
-      loadShowcaseCount(true).then((n) => setChecked(n ?? 0));
-      loadScan().then((s) => {
+      setScanFor(scanSeconds(checked));
+      loadScan(true).then((s) => {
         later(() => {
           setScanning(false);
           setLast("just now");
           if (!s) return toast("Couldn't reach TikTok Shop. Please try again.");
+          setScannedAt(s.at ?? Date.now());
+          if (s.count !== null) setChecked(s.count);
           setRows(s.raises);
           if (s.raises.length) {
             setTab("same");
@@ -239,7 +250,7 @@ export function ScanHub() {
         <Flow
           label="How the scan works"
           steps={[
-            { icon: "scan", title: "We scan your showcase", note: "Every day, every product" },
+            { icon: "scan", title: "We scan your showcase", note: "Every product, when you tap Scan" },
             { icon: "tag", title: "Same product, better rate", note: "Higher commission" },
             { icon: "plus", title: "Add all in one tap", note: "You approve every change" },
             { icon: "check", title: "TikTok confirms", note: "Then it counts" },
@@ -266,6 +277,14 @@ export function ScanHub() {
               <span><b>{sims.length}</b><small>similar on Rezekii</small></span>
             </div>
             {linked && scanKey > 0 && same.length > 0 && !scanning && !deck && <p className="sh-tip"><Icon name="spark" size={14} /> Tap a product on the radar to swipe through them</p>}
+            {/* The scan's progress and usual time (owner, 2 Nov 2026: long jobs show how long they take). */}
+            {live && scanning && (
+              <div className="sh-progress" role="status">
+                <span className="sh-bar" aria-hidden="true"><i key={scanKey} style={{ animationDuration: `${scanFor}s` }} /></span>
+                <small>Reading every product from TikTok Shop. Usually about {scanFor < 60 ? `${scanFor} seconds` : `${Math.round(scanFor / 60)} minutes`}{checked ? ` for ${checked.toLocaleString()} products` : ""}.</small>
+              </div>
+            )}
+            {live && linked && !scanning && scannedAt !== null && <p className="sh-last">{scannedAt ? `Last Scan: ${scanTime(scannedAt)}` : "Not scanned yet. Hold the button to scan."}</p>}
           </div>
           <div className="sh-radar" style={{ "--sweep": `${scanning ? 1.2 : SWEEP_S}s` } as React.CSSProperties}>
             <span className="sh-rings" aria-hidden="true" />
@@ -422,7 +441,7 @@ export function ScanHub() {
                     </li>
                   );
                 })}
-                {list.length === 0 && <li className="sh-empty">All added. We re-check your showcase every day.</li>}
+                {list.length === 0 && <li className="sh-empty">All added. Scan again any time to check for new ones.</li>}
               </ul>
             )}
 
@@ -516,11 +535,15 @@ export function ScanHub() {
           </div>
           {bulk.phase === "done" ? (
             <>
-              <p className="v2-small" style={{ margin: 0 }}>We&apos;re re-reading your showcase now. Each one counts once TikTok confirms it&apos;s under Techwide.</p>
+              <p className="v2-small" style={{ margin: 0 }}>Each one counts once TikTok confirms it&apos;s under Techwide.</p>
               <button type="button" className="np-btn" onClick={closeBulk}>Done</button>
             </>
           ) : (
-            <p className="v2-small" style={{ margin: 0 }}>Adding through Techwide, up to 5 at a time. Keep this open or close it; it carries on either way.</p>
+            <>
+              {/* How long it usually takes (owner, 2 Nov 2026): TikTok adds 5 at a time, a few seconds each round. */}
+              {live && <span className="sh-bar sh-bar-sheet" aria-hidden="true"><i style={{ animationDuration: `${addSeconds(bulk.items.length)}s` }} /></span>}
+              <p className="v2-small" style={{ margin: 0 }}>Adding through Techwide, up to 5 at a time{live ? `. Usually about ${addSeconds(bulk.items.length)} seconds for ${bulk.items.length} ${bulk.items.length === 1 ? "product" : "products"}` : ""}. Keep this open or close it; it carries on either way.</p>
+            </>
           )}
         </Sheet>
       )}

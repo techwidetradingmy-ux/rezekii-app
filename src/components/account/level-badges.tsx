@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { Icon, type IconName } from "@/components/icons";
 import { Emblem, type Level } from "@/components/emblems";
 import { Emblem as StreakEmblem, TIERS as STREAK_TIERS, tierOf } from "@/components/missions-board";
-import { Progress, ShareSheet, type MomentKind, Sheet } from "@/components/ui";
+import { Progress, ShareSheet, type MomentKind, Sheet, Loading } from "@/components/ui";
 import { BADGES, CREATOR } from "@/lib/mock";
 import { BADGE_INFO, LEVELS } from "@/lib/mock-creator2";
 import { addDays, chestsFor, dayOf } from "@/modules/rewards/rules.ts";
@@ -243,7 +243,7 @@ export function LevelBadges() {
     el.style.setProperty("--ry", "0deg");
   };
 
-  if (live && !real) return <p className="v2-muted">{failed ? "Couldn't load your level, streak and badges. Please refresh." : "Loading your level, streak and badges…"}</p>;
+  if (live && !real) return failed ? <p className="v2-muted">Couldn&apos;t load your level, streak and badges. Please refresh.</p> : <Loading text="Loading your level, streak and badges…" />;
   return (
     <div className="v2-stack" style={{ gap: 20 }}>
       <section className="lb-hero">

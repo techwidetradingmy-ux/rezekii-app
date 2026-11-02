@@ -5,7 +5,7 @@ import "@/app/creator2.css";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { Qr, ShareSheet, Tip, Title } from "@/components/ui";
+import { Qr, ShareSheet, Tip, Title, Loading } from "@/components/ui";
 import { REFERRAL_REWARD, SELLER } from "@/lib/mock";
 import { SELLER_INVITES } from "@/lib/mock-seller";
 import { loadReferral, whenLabel, type LiveReferral } from "@/lib/live-rewards";
@@ -43,7 +43,7 @@ export default function SellerReferral() {
     toast(`${what} copied`);
   };
 
-  if (live && real === null) return <div className="v2-stack v2-in"><p className="v2-muted">Loading your invite…</p></div>;
+  if (live && real === null) return <div className="v2-stack v2-in"><Loading text="Loading your invite…" /></div>;
   if (live && real === "error") return <div className="v2-stack v2-in"><p className="v2-muted">Couldn&apos;t load your invite. Please refresh.</p></div>;
   return (
     <div className="v2-stack v2-in">

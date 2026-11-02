@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
-import { Title } from "@/components/ui";
+import { Title, Loading } from "@/components/ui";
 import { Av, Chips, Pill, Search } from "@/components/admin/bits";
 import { NO_PHOTO, shortName } from "@/lib/live-perf";
 import { adminProductHref } from "@/lib/product-pages";
@@ -114,7 +114,7 @@ export function LiveSampleReview() {
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
       <Title title="Sample Review" sub="Samples creators asked for on Rezekii, with TikTok's status. Approve them in Partner Center." />
-      {!list ? <p className="v2-muted">{err ?? "Loading samples and their TikTok status…"}</p> : (
+      {!list ? (err ? <p className="v2-muted">{err}</p> : <Loading text="Loading samples and their TikTok status…" />) : (
         <>
           <Chips<SFilter> label="Filter" value={filter} onChange={setFilter} options={(["All", "Waiting in TikTok", "Not Sent in TikTok"] as SFilter[]).map((f) => [f, pick(f).length])} />
           <section className="v2-card" style={{ padding: "6px 20px" }}>

@@ -4,7 +4,7 @@ import "@/app/seller.css";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
-import { Count, Seg, ShareSheet, Title } from "@/components/ui";
+import { Count, Seg, ShareSheet, Title, Loading } from "@/components/ui";
 import { SELLER } from "@/lib/mock";
 import { SELLER_CREDITS, SELLER_LEDGER } from "@/lib/mock-seller";
 import { useDemo } from "@/components/demo";
@@ -26,7 +26,7 @@ export default function SellerWallet() {
   const used = all.filter((l) => l.amount < 0).reduce((a, l) => a - l.amount, 0);
   const credits = w ? w.balance : SELLER_CREDITS;
   const shop = w ? me?.sellerShop ?? "My shop" : SELLER.shop;
-  if (live && real === null) return <div className="v2-stack v2-in v2-narrow"><p className="v2-muted">Loading your wallet…</p></div>;
+  if (live && real === null) return <div className="v2-stack v2-in v2-narrow"><Loading text="Loading your wallet…" /></div>;
   if (live && real === "error") return <div className="v2-stack v2-in v2-narrow"><p className="v2-muted">Couldn&apos;t load your wallet. Please refresh.</p></div>;
 
   return (

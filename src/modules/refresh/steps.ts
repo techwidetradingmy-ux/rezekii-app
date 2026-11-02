@@ -139,7 +139,8 @@ async function tapProducts(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
   const stats: StatRow[] = [];
   // Products whose creators are read next (tap_creators), for My TAP products: only those whose sales changed since the last
   // read (owner, 2 Nov 2026: products without sales aren't read), and those with a free sample on its way, so sample missions
-  // and levels keep counting.
+  // and levels keep counting. On Sundays every promoted product, so videos that haven't sold yet are counted too (weekly).
+  const weekly = mytWeekday(Date.now()) === 0;
   const promoted: CreatorTaskProduct[] = [];
   const byId = new Map(rows.map((p) => [p.id, p]));
   const [before, sampling] = await Promise.all([
@@ -157,7 +158,7 @@ async function tapProducts(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
         if (row) stats.push(row);
         const p = d?.product_id ? byId.get(d.product_id) : undefined;
         const sold = !!row && row.slice(2).some((v) => Number(v) > 0) && before.get(row[0]) !== JSON.stringify(row.slice(2));
-        if (p && (x.promoted_creator_num ?? 0) > 0 && (sold || sampling.has(p.id))) promoted.push([p.id, p.name, p.shop_name ?? "", smallImage(p.main_image_url)]);
+        if (p && (x.promoted_creator_num ?? 0) > 0 && (weekly || sold || sampling.has(p.id))) promoted.push([p.id, p.name, p.shop_name ?? "", smallImage(p.main_image_url)]);
       }
       pageToken = data.next_page_token || undefined;
       if (pageToken) await wait(300);
