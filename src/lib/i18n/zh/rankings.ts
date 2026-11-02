@@ -46,7 +46,7 @@ export const RANKINGS: Record<string, string> = {
   "Views: low to high": "观看量：从低到高",
   "Length: longest first": "时长：从长到短",
   "Length: shortest first": "时长：从短到长",
-  "Views": "观看量",
+  "Views": "播放量",
   "Length": "时长",
   "Sort by {label} (now high to low, click for low to high)": "按{label}排序（当前从高到低，点击改为从低到高）",
   "Sort by {label} (now low to high, click for high to low)": "按{label}排序（当前从低到高，点击改为从高到低）",

@@ -9,8 +9,6 @@ export const APP_IDEAS: Record<string, string> = {
   "How these lists are made": "Cara senarai ini dibuat",
   "Marketplace: the products that sold the most (GMV) on TikTok Shop on the newest day TikTok has published, in every category, mixed with Rezekii campaign products. Only products you can add are shown, and none already in your showcase. The category tabs are the ones you sold most in over the last 30 days (all of them until you have sales). Rezekii campaign products can also get a free sample. Showcase: products already in your showcase, ranked by their sales across the whole of TikTok, so you can film the ones selling now. 10 a day; Gold creators see 30.": "Pasaran: produk yang paling laris (GMV) di TikTok Shop pada hari terbaharu yang diterbitkan TikTok, dalam setiap kategori, bercampur dengan produk kempen Rezekii. Hanya produk yang boleh anda tambah ditunjukkan, dan tiada yang sudah ada dalam showcase anda. Tab kategori ialah kategori yang paling banyak anda jual dalam 30 hari lepas (semua kategori sehingga anda ada jualan). Produk kempen Rezekii juga boleh dapat sampel percuma. Showcase: produk yang sudah ada dalam showcase anda, disusun ikut jualannya di seluruh TikTok, supaya anda boleh rakam produk yang sedang laris. 10 sehari; kreator Emas nampak 30.",
   "Marketplace: TikTok Shop products in your top categories that aren't in your showcase yet, rated 4★ and up. Showcase: products already in your showcase. Both are ranked by units sold this week; the line shows sales for each of the last 7 days.": "Pasaran: produk TikTok Shop dalam kategori teratas anda yang belum ada dalam showcase anda, dengan penilaian 4★ ke atas. Showcase: produk yang sudah ada dalam showcase anda. Kedua-duanya disusun ikut unit terjual minggu ini; garis menunjukkan jualan bagi setiap 7 hari lepas.",
-  "Overall": "Keseluruhan",
-  "Others": "Lain-lain",
 
   // Best-seller lists
   "Best sellers in your showcase": "Terlaris dalam showcase anda",
@@ -30,15 +28,12 @@ export const APP_IDEAS: Record<string, string> = {
   "TikTok sales on {day} · list updated {when}": "Jualan TikTok pada {day} · senarai dikemas kini {when}",
   "When this updates": "Bila ini dikemas kini",
   "TikTok publishes each day's best sellers the next afternoon, around 4 PM. This list updates as soon as it's out, so it's always the newest day.": "TikTok menerbitkan produk terlaris setiap hari pada petang keesokannya, sekitar 4 PTG. Senarai ini dikemas kini sebaik sahaja ia keluar, jadi ia sentiasa hari yang terbaharu.",
-  "Couldn't load this list. Please try again later.": "Tidak dapat memuatkan senarai ini. Sila cuba lagi nanti.",
   "None of your showcase products are in TikTok's top-selling videos this week.": "Tiada produk showcase anda dalam video paling laris TikTok minggu ini.",
   "None of your showcase products are in TikTok's best-seller lists for this day.": "Tiada produk showcase anda dalam senarai terlaris TikTok untuk hari tersebut.",
   "Your showcase is empty. Add products from the Marketplace.": "Showcase anda kosong. Tambah produk dari Pasaran.",
   "TikTok hasn't published a best-seller list yet. Check again later.": "TikTok belum menerbitkan senarai terlaris. Semak semula nanti.",
   "Checking which best sellers you can add…": "Menyemak produk terlaris yang boleh anda tambah…",
   "View {name}": "Lihat {name}",
-  "Rezekii campaign": "Kempen Rezekii",
-  "Free sample": "Sampel percuma",
   "{line} · Earn {rate}": "{line} · Dapat {rate}",
   "Top 100 on {n} of {days} Days": "100 Teratas pada {n} daripada {days} Hari",
   "Last {n} Days": "{n} Hari Lepas",
@@ -52,7 +47,6 @@ export const APP_IDEAS: Record<string, string> = {
   "You see the top {n}. Silver creators see the top 30, Gold the full top 100.": "Anda nampak {n} teratas. Kreator Perak nampak 30 teratas, Emas nampak 100 teratas penuh.",
   "You see the top {n}. Gold creators see the full top 100.": "Anda nampak {n} teratas. Kreator Emas nampak 100 teratas penuh.",
   "Sales, 7 days": "Jualan, 7 hari",
-  "{n} sold this week": "{n} terjual minggu ini",
   "{n} sold this week · You sold {m}": "{n} terjual minggu ini · Anda jual {m}",
   "RM {lo}–{hi} sales on {day}": "Jualan RM {lo}–{hi} pada {day}",
   "RM {lo}–{hi} from {n} top video this week": "RM {lo}–{hi} daripada {n} video teratas minggu ini",
@@ -61,10 +55,8 @@ export const APP_IDEAS: Record<string, string> = {
   "RM {lo}–{hi} from {n} top videos on {day}": "RM {lo}–{hi} daripada {n} video teratas pada {day}",
   "≈ RM {gmv} outside top videos on {day}": "≈ RM {gmv} di luar video teratas pada {day}",
   "~{n} sold on TikTok in the last day": "~{n} terjual di TikTok dalam sehari lepas",
-  "{n} sold on TikTok": "{n} terjual di TikTok",
 
   // Cards or list
   "Show as": "Papar sebagai",
   "Cards": "Kad",
-  "List": "Senarai",
 };

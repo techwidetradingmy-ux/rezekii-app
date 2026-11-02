@@ -12,8 +12,6 @@ export const APP_MARKET: Record<string, string> = {
   "On wish list": "在心愿单中",
   "Seller said no": "商家已拒绝",
   "Commit at least 1 video or LIVE a month.": "每月至少承诺 1 个视频或 1 场 LIVE。",
-  "Didn't save. Please try again.": "未能保存，请重试。",
-  "Just now": "刚刚",
   "You've Joined": "你已加入",
   "Added to Your Wish List": "已加入你的心愿单",
   "You'll see it in your notifications if it launches on Rezekii.": "如果它在 Rezekii 上架，你会在通知中看到。",
@@ -22,7 +20,6 @@ export const APP_MARKET: Record<string, string> = {
   "Add to Wish List": "加入心愿单",
   "If the seller agrees, what will you give each month?": "如果商家同意，你每月能提供什么？",
   "Others give {n} videos on average.": "其他人平均提供 {n} 个视频。",
-  "Videos a month": "每月视频数",
   "LIVE sessions a month": "每月 LIVE 场数",
   "Ad rights for the seller": "给商家的广告授权",
   "For how long": "持续多久",
@@ -45,16 +42,12 @@ export const APP_MARKET: Record<string, string> = {
   "Filters": "筛选",
   "Search products or shops": "搜索商品或店铺",
   "All categories ({n})": "全部类目（{n}）",
-  "Sort by": "排序方式",
-  "Free Samples": "免费样品",
   "How the marketplace works": "选品广场如何运作",
-  "Better rate": "更高佣金",
   "Or Free Samples": "或申请免费样品",
   "Post 1 video": "发布 1 个视频",
   "Grid or list view": "网格或列表视图",
   "Grid view": "网格视图",
   "List view": "列表视图",
-  "Requested": "已申请",
   "{plan} {rate}%, Rezekii {mine}%": "{plan} {rate}%，Rezekii {mine}%",
   "Target": "定向",
   "Special": "专属",
@@ -68,7 +61,6 @@ export const APP_MARKET: Record<string, string> = {
   "No free sample": "无免费样品",
   "Show More Products": "显示更多商品",
   "Try other filters.": "试试其他筛选条件。",
-  "Show All": "显示全部",
 
   // Community Wish List (app/app/market/wanted/page.tsx)
   "Products creators want on Rezekii. Join one by saying what you'll give if it launches; we take it to the seller.": "达人希望在 Rezekii 上架的商品。说明上架后你能提供什么即可加入，我们会转达给商家。",
@@ -84,8 +76,6 @@ export const APP_MARKET: Record<string, string> = {
   // Product page (app/app/product/[id]/page.tsx)
   "Loading the product": "正在加载商品",
   "Getting this product from TikTok…": "正在从 TikTok 获取此商品…",
-  "We couldn't find this product": "我们找不到此商品",
-  "Open Marketplace": "打开选品广场",
   "Linked as {handle}": "已连接为 {handle}",
   "TikTok Shop didn't open the sample request. Please try again.": "TikTok Shop 未能打开样品申请，请重试。",
   "Sample Requested": "已申请样品",
@@ -117,7 +107,6 @@ export const APP_MARKET: Record<string, string> = {
   "You earn {amount} per sale": "你每单赚 {amount}",
   "{n} creators want it on Rezekii": "{n} 位达人希望它上架 Rezekii",
   "Ask us to bring it to Rezekii": "请我们把它带到 Rezekii",
-  "Sales, last 7 days": "销量，近 7 天",
   "Sales on TikTok, Last 28 Days": "TikTok 销售额，近 28 天",
   "Where these numbers come from": "这些数字从哪来",
   "From TikTok's daily best-seller lists (top 100 products). TikTok gives each day's sales as a range in RM: the shading is that range and the line its middle. A gap is a day it wasn't in a top 100.": "来自 TikTok 每日畅销榜（前 100 名商品）。TikTok 以 RM 区间给出每天的销售额：阴影是该区间，线条是区间中值。空缺表示当天不在前 100 名。",
@@ -147,18 +136,11 @@ export const APP_MARKET: Record<string, string> = {
   "You're on day {n} ({left} to go)": "你已连续 {n} 天（还差 {left} 天）",
 
   // Bonuses a seller can offer, shown on the seller's Product page (lib/product-pages.ts)
-  "Extra % for top sellers": "销量最高的达人额外加 %",
-  "Cash bonus at a sales target": "达到销售目标送现金奖励",
-  "Free samples for everyone who committed": "所有承诺者都送免费样品",
 
   // Categories in our own sample list (TikTok's category names stay as TikTok writes them)
   "Beauty": "美妆",
   "Electronics": "电子产品",
   "Fashion": "时尚",
-  "Home & Kitchen": "家居厨房",
-  "Home & Living": "家居生活",
-  "Home Decor": "家居装饰",
   "Household": "家庭用品",
   "Party": "派对用品",
-  "Sports": "运动",
 };

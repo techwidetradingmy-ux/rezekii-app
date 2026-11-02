@@ -37,7 +37,7 @@ export const POSTS: Record<string, string> = {
   "Times are Malaysia time. Posts can be checked, edited or cancelled until they start sending to TikTok. Posts already on TikTok can only be edited or deleted in the TikTok app.": "时间为马来西亚时间。发布在开始发送到 TikTok 之前都可以查看、编辑或取消。已在 TikTok 上的发布只能在 TikTok 应用中编辑或删除。",
 
   // All channels (the board) and the notes each channel shows
-  "Removed": "已删除",
+  "Removed": "已移除",
   "Draft in Facebook": "Facebook 草稿",
   "{name}: cancelled.": "{name}：已取消。",
   "{name}: trying again within a minute.": "{name}：将在一分钟内重试。",

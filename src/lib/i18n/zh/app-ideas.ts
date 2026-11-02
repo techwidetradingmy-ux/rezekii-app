@@ -9,8 +9,6 @@ export const APP_IDEAS: Record<string, string> = {
   "How these lists are made": "这些列表是怎么生成的",
   "Marketplace: the products that sold the most (GMV) on TikTok Shop on the newest day TikTok has published, in every category, mixed with Rezekii campaign products. Only products you can add are shown, and none already in your showcase. The category tabs are the ones you sold most in over the last 30 days (all of them until you have sales). Rezekii campaign products can also get a free sample. Showcase: products already in your showcase, ranked by their sales across the whole of TikTok, so you can film the ones selling now. 10 a day; Gold creators see 30.": "选品广场：在 TikTok 最新公布的那一天里，TikTok Shop 各类目销售额（GMV）最高的商品，并混入 Rezekii 推广活动商品。只显示你可以添加的商品，不包括已在你橱窗里的。类目标签是你过去 30 天卖得最多的类目（还没有销量时显示全部）。Rezekii 推广活动商品还可以申请免费样品。橱窗：已在你橱窗里的商品，按它们在整个 TikTok 的销量排序，方便你拍正在热卖的商品。每天 10 个；金牌达人可看 30 个。",
   "Marketplace: TikTok Shop products in your top categories that aren't in your showcase yet, rated 4★ and up. Showcase: products already in your showcase. Both are ranked by units sold this week; the line shows sales for each of the last 7 days.": "选品广场：你热门类目中还不在你橱窗里的 TikTok Shop 商品，评分 4★ 及以上。橱窗：已在你橱窗里的商品。两者都按本周售出件数排序；曲线显示过去 7 天每天的销量。",
-  "Overall": "总体",
-  "Others": "其他",
 
   // Best-seller lists
   "Best sellers in your showcase": "你橱窗里的爆款",
@@ -30,14 +28,12 @@ export const APP_IDEAS: Record<string, string> = {
   "TikTok sales on {day} · list updated {when}": "{day}的 TikTok 销量 · 列表更新于 {when}",
   "When this updates": "什么时候更新",
   "TikTok publishes each day's best sellers the next afternoon, around 4 PM. This list updates as soon as it's out, so it's always the newest day.": "TikTok 会在第二天下午 4 点左右公布每天的畅销商品。榜单一公布这里就会更新，所以总是最新的一天。",
-  "Couldn't load this list. Please try again later.": "无法加载此列表，请稍后再试。",
   "None of your showcase products are in TikTok's top-selling videos this week.": "你橱窗里的商品都不在 TikTok 本周的热销视频里。",
   "None of your showcase products are in TikTok's best-seller lists for this day.": "你橱窗里的商品都不在 TikTok 当天的畅销榜上。",
   "Your showcase is empty. Add products from the Marketplace.": "你的橱窗是空的。去选品广场添加商品吧。",
   "TikTok hasn't published a best-seller list yet. Check again later.": "TikTok 还没有公布畅销榜，请稍后再看。",
   "Checking which best sellers you can add…": "正在检查你可以添加哪些爆款…",
   "View {name}": "查看 {name}",
-  "Rezekii campaign": "Rezekii 推广活动",
   "{line} · Earn {rate}": "{line} · 佣金 {rate}",
   "Top 100 on {n} of {days} Days": "{days} 天中有 {n} 天进入前 100",
   "Last {n} Days": "近 {n} 天",
@@ -51,7 +47,6 @@ export const APP_IDEAS: Record<string, string> = {
   "You see the top {n}. Silver creators see the top 30, Gold the full top 100.": "你可以看到前 {n} 名。银牌达人可以看到前 30 名，金牌达人可以看到完整的前 100 名。",
   "You see the top {n}. Gold creators see the full top 100.": "你可以看到前 {n} 名。金牌达人可以看到完整的前 100 名。",
   "Sales, 7 days": "销量，7 天",
-  "{n} sold this week": "本周已售 {n}",
   "{n} sold this week · You sold {m}": "本周已售 {n} · 你卖了 {m}",
   "RM {lo}–{hi} sales on {day}": "{day}销售额 RM {lo}–{hi}",
   "RM {lo}–{hi} from {n} top video this week": "本周来自 {n} 个热门视频的销售额 RM {lo}–{hi}",
@@ -60,7 +55,6 @@ export const APP_IDEAS: Record<string, string> = {
   "RM {lo}–{hi} from {n} top videos on {day}": "{day}来自 {n} 个热门视频的销售额 RM {lo}–{hi}",
   "≈ RM {gmv} outside top videos on {day}": "{day}热门视频之外约 RM {gmv}",
   "~{n} sold on TikTok in the last day": "过去一天在 TikTok 售出约 {n}",
-  "{n} sold on TikTok": "TikTok 已售 {n}",
 
   // Cards or list
   "Show as": "显示方式",
