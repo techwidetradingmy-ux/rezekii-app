@@ -8,14 +8,14 @@ import { Celebrate, ShareSheet, Sheet, Title, type MomentKind } from "@/componen
 import { daysText } from "@/lib/share-card";
 import "@/app/rewards.css";
 
-/** Streak tiers: each one an honour emblem in its own colour, with bonus credits when it's reached. */
+/** Streak tiers: each one an honour emblem in its own colour, with bonus credits when it's reached (100 at most, owner 3 Nov 2026). */
 export const TIERS = [
   { days: 3, name: "Spark", metal: "Bronze", bonus: 20, c1: "#f8c39b", c2: "#b8642f" },
   { days: 7, name: "Flame", metal: "Silver", bonus: 50, c1: "#f1f4f8", c2: "#8593a6" },
   { days: 14, name: "Blaze", metal: "Gold", bonus: 100, c1: "#ffe38f", c2: "#cf9312" },
-  { days: 30, name: "Inferno", metal: "Emerald", bonus: 300, c1: "#7dedbd", c2: "#008a55" },
-  { days: 60, name: "Legend", metal: "Amethyst", bonus: 600, c1: "#c4b9ff", c2: "#5340d8" },
-  { days: 100, name: "Mythic", metal: "Ruby", bonus: 1000, c1: "#ff9ccb", c2: "#d4004f" },
+  { days: 30, name: "Inferno", metal: "Emerald", bonus: 100, c1: "#7dedbd", c2: "#008a55" },
+  { days: 60, name: "Legend", metal: "Amethyst", bonus: 100, c1: "#c4b9ff", c2: "#5340d8" },
+  { days: 100, name: "Mythic", metal: "Ruby", bonus: 100, c1: "#ff9ccb", c2: "#d4004f" },
 ];
 export const tierOf = (d: number) => [...TIERS].reverse().find((t) => d >= t.days) ?? null;
 

@@ -38,14 +38,14 @@ export const REFERRAL_DAYS = 14;
 /** Starter missions are open for the first days after joining. */
 export const STARTER_DAYS = 7;
 
-/** Streak tiers: bonus credits the first time each one is reached. */
+/** Streak tiers: bonus credits the first time each one is reached, rising to 100 at most (owner, 3 Nov 2026). */
 export const TIERS = [
   { days: 3, bonus: 20 },
   { days: 7, bonus: 50 },
   { days: 14, bonus: 100 },
-  { days: 30, bonus: 300 },
-  { days: 60, bonus: 600 },
-  { days: 100, bonus: 1000 },
+  { days: 30, bonus: 100 },
+  { days: 60, bonus: 100 },
+  { days: 100, bonus: 100 },
 ];
 
 /** Bonus chests after a third, two thirds and all of today's daily missions. */

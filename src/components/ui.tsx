@@ -570,8 +570,11 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
     if (busy || !cardUrl) return;
     setBusy("save");
     try {
-      saveFile(await makeFile());
-      toast(video ? "Video saved" : "Image saved");
+      const file = await makeFile();
+      // On a phone (owner, 3 Nov 2026: Save Image never reached her Photos): the phone's own menu, where Save Image keeps it.
+      const r = window.matchMedia("(pointer: coarse)").matches ? await shareFile(file, "") : "unsupported";
+      if (r === "unsupported" || r === "failed") saveFile(file);
+      if (r !== "cancelled") toast(video ? "Video saved" : "Image saved");
     } catch {
       toast(video ? "Couldn't make the video on this browser. Try the image." : "Couldn't save the card. Please try again.");
     } finally {

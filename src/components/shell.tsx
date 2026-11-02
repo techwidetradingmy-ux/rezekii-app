@@ -95,6 +95,23 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
   useScrollMemory(path);
   const section = sectionFor(app, path);
   const page = section ? pageFor(section, path) : null;
+  // Each section's tab opens the page she last had open in it (owner, 3 Nov 2026: back from Missions, Publish reopened on its
+  // first page). Kept for this visit only.
+  const [lastPage, setLastPage] = useState<Record<string, string>>({});
+  useEffect(() => {
+    try { setLastPage(JSON.parse(sessionStorage.getItem("rz_last_pages") ?? "{}")); } catch {}
+  }, []);
+  const sectionHref = section?.href;
+  useEffect(() => {
+    if (!sectionHref || !page) return;
+    setLastPage((m) => {
+      if (m[sectionHref] === page) return m;
+      const next = { ...m, [sectionHref]: page };
+      try { sessionStorage.setItem("rz_last_pages", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, [sectionHref, page]);
+  const tabHref = (href: string) => (section?.href === href ? href : lastPage[href] ?? href);
   const { me, live } = useDemo();
   // The bell shows her real unread count when signed in (owner, 31 Oct 2026); nothing when there are none.
   const sideNotes = useUnreadNotes(app === "seller" ? "seller" : "creator", live && app !== "admin");
@@ -242,7 +259,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
             {pill && <span className="v2-menu-ind" aria-hidden="true" style={{ left: pill.left, width: pill.width }} />}
             {menu.map((s) => (
               <span key={s.href} className="v2-mi">
-                <Link href={s.href} className={section?.href === s.href ? "on" : undefined} aria-current={section?.href === s.href ? "page" : undefined}>
+                <Link href={tabHref(s.href)} className={section?.href === s.href ? "on" : undefined} aria-current={section?.href === s.href ? "page" : undefined}>
                   <span className="v2-mi-ic"><Icon name={s.icon} size={18} /></span>
                   {s.label === "Marketplace" ? <><span className="v2-long">Marketplace</span><span className="v2-short">Market</span></> : s.label}
                   {s.pages.length > 1 && <i className="v2-mi-chev" aria-hidden="true" />}
@@ -338,7 +355,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
               Scan
             </Link>
           ) : (
-            <Link key={s.href} href={s.href} className={section?.href === s.href ? "on" : ""} aria-current={section?.href === s.href ? "page" : undefined}>
+            <Link key={s.href} href={tabHref(s.href)} className={section?.href === s.href ? "on" : ""} aria-current={section?.href === s.href ? "page" : undefined}>
               <Icon name={s.icon} size={24} />
               {s.label === "Marketplace" ? "Market" : s.label}
             </Link>
