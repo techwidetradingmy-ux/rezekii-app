@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { AiHead, Stepper, Tip, Title } from "@/components/ui";
+import { PickList } from "@/components/pick-list";
 import { AI_EXAMPLES, MY_SPOT, PLATFORMS, VIDEO_TYPES, type WaitlistAnswers } from "@/lib/mock-ai-video";
 import "@/app/ai-video.css";
 
@@ -19,7 +20,6 @@ function readSaved(): Saved | null {
   }
 }
 
-const toggle = <T,>(list: T[], v: T) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
 
 /** One example: plays muted while it's on screen; a tap turns the sound on or off. */
 function Example({ id, type, product }: (typeof AI_EXAMPLES)[number]) {
@@ -149,16 +149,8 @@ export default function AiVideo() {
           <div className="wf-rows">
             <div className="wf-row col">
               <span>What would you make?</span>
-              <div className="v2-chips av-chips" role="group" aria-label="What would you make?">
-                {VIDEO_TYPES.map((t) => {
-                  const on = types.includes(t);
-                  return (
-                    <button key={t} type="button" className={`v2-chip ${on ? "on" : ""}`} aria-pressed={on} onClick={() => { setTypes((l) => toggle(l, t)); setErr(""); }}>
-                      {on && <Icon name="check" size={14} width={2.8} />}{t}
-                    </button>
-                  );
-                })}
-              </div>
+              {/* A dropdown that takes several picks (owner, 3 Nov 2026: rows of bubbles looked messy). */}
+              <PickList label="What would you make?" multi placeholder="Choose the kinds of video" options={VIDEO_TYPES.map((t) => [t, t])} value={types} onChange={(v) => { setTypes(VIDEO_TYPES.filter((t) => v.includes(t))); setErr(""); }} />
             </div>
             <div className="wf-row">
               <span>Videos a month</span>
@@ -166,16 +158,7 @@ export default function AiVideo() {
             </div>
             <div className="wf-row col">
               <span>Where would you post?</span>
-              <div className="v2-chips av-chips" role="group" aria-label="Where would you post?">
-                {PLATFORMS.map((p) => {
-                  const on = platforms.includes(p);
-                  return (
-                    <button key={p} type="button" className={`v2-chip ${on ? "on" : ""}`} aria-pressed={on} onClick={() => { setPlatforms((l) => toggle(l, p)); setErr(""); }}>
-                      {on && <Icon name="check" size={14} width={2.8} />}{p}
-                    </button>
-                  );
-                })}
-              </div>
+              <PickList label="Where would you post?" multi placeholder="Choose where you'd post" options={PLATFORMS.map((x) => [x, x])} value={platforms} onChange={(v) => { setPlatforms(PLATFORMS.filter((x) => v.includes(x))); setErr(""); }} />
             </div>
           </div>
           <textarea className="np-input wf-note-in" rows={2} maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Anything you'd want it to do? (optional)" aria-label="Note (optional)" />
