@@ -210,7 +210,7 @@ export function RatingScan() {
             </div>
             <p className="v2-small" style={{ margin: 0 }}>{l.note}</p>
             <div className="rc-tools">
-              <button type="button" className="v2-link" onClick={() => setPicked((p) => (all ? p.filter((x) => !list.some((q) => q.id === x)) : [...new Set([...p, ...list.map((q) => q.id)])]))}>{all ? "Unselect all" : "Select all"}</button>
+              <button type="button" className="v2-link" onClick={() => setPicked((p) => (all ? p.filter((x) => !list.some((q) => q.id === x)) : [...new Set([...p, ...list.map((q) => q.id)])]))}>{all ? "Unselect All" : "Select All"}</button>
               <button type="button" className="btn-outline v2-btn-sm" onClick={() => remove(list.map((p) => p.id))}>Remove all {list.length}</button>
             </div>
             <ul>{list.map(row)}</ul>

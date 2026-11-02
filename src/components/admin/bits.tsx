@@ -2,6 +2,7 @@
 
 import { Icon } from "@/components/icons";
 import { TZ } from "@/lib/mock-admin";
+import { labelCase } from "@/lib/label-case";
 
 export type Tone = "ok" | "warn" | "bad" | "info" | "mute";
 
@@ -103,7 +104,7 @@ export function Chips<T extends string>({ value, options, onChange, label }: { v
     <div className="v2-chips ad-chips" role="group" aria-label={label}>
       {options.map(([o, n]) => (
         <button key={o} type="button" className={`v2-chip ${o === value ? "on" : ""}`} aria-pressed={o === value} onClick={() => onChange(o)}>
-          {o}
+          {labelCase(o)}
           {n !== undefined && <small>{n}</small>}
         </button>
       ))}

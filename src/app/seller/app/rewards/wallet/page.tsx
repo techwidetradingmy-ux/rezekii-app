@@ -49,7 +49,7 @@ export default function SellerWallet() {
         ) : (
           <span style={{ flex: "1 1 220px", minWidth: 0 }}><b>Coming soon: spend credits</b><br /><span className="v2-muted">AI captions and extra competitor reports.</span></span>
         )}
-        <Link href={w ? "/seller/app/publish" : "/seller/app/rewards"} className="btn-outline" style={{ height: 40 }}>{w ? "Post" : "Earn more"}</Link>
+        <Link href={w ? "/seller/app/publish" : "/seller/app/rewards"} className="btn-outline" style={{ height: 40 }}>{w ? "Post" : "Earn More"}</Link>
       </section>
 
       <section className="v2-card">

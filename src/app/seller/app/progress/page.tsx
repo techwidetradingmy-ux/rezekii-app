@@ -10,6 +10,7 @@ import { Sheet, Title } from "@/components/ui";
 import { SHOP_ITEMS, type ShopItem, type Stage } from "@/lib/mock-seller";
 import { sellerProductHref } from "@/lib/product-pages";
 import { loadShop } from "@/lib/live";
+import { labelCase } from "@/lib/label-case";
 
 const STEPS: [Exclude<Stage, "Not submitted" | "Not approved">, string, string][] = [
   ["Submitted", "Submitted", ""],
@@ -71,7 +72,7 @@ export default function Progress() {
       <div className="sl-chipline" role="group" aria-label="Filter">
         {FILTERS.map((f) => (
           <button key={f} type="button" className={`v2-chip ${filter === f ? "on" : ""}`} onClick={() => setFilter(f)}>
-            {f} <small>{f === "All" ? items.length : items.filter((i) => group(i.stage) === f).length}</small>
+            {labelCase(f)} <small>{f === "All" ? items.length : items.filter((i) => group(i.stage) === f).length}</small>
           </button>
         ))}
       </div>
@@ -90,7 +91,7 @@ export default function Progress() {
                   {p.fromSellerCenter && <span className="v2-row"><span className="badge badge-blue">From Seller Center</span></span>}
                 </span>
                 <span className="sl-pside">
-                  <span className={`badge ${g === "Live" ? "" : g === "Not approved" ? "badge-red" : "badge-amber"}`}>{p.stage === "Submitted to TikTok" ? "With TikTok" : p.stage}</span>
+                  <span className={`badge ${g === "Live" ? "" : g === "Not approved" ? "badge-red" : "badge-amber"}`}>{p.stage === "Submitted to TikTok" ? "With TikTok" : labelCase(p.stage)}</span>
                 </span>
               </div>
               <Tracker item={p} />
@@ -103,7 +104,7 @@ export default function Progress() {
               {p.stage === "Not approved" && (
                 <div className="v2-alert red">
                   <span><b>Why:</b> {p.reason}</span>
-                  <button type="button" onClick={() => (p.real ? router.push("/seller/app/submit") : setFix(p))}>{p.real ? "Register again" : "Fix and resubmit"}</button>
+                  <button type="button" onClick={() => (p.real ? router.push("/seller/app/submit") : setFix(p))}>{p.real ? "Register Again" : "Fix and Resubmit"}</button>
                 </div>
               )}
               {p.note && <p className="v2-small" style={{ margin: 0, display: "flex", gap: 8 }}><Icon name="doc" size={16} /> {p.note}</p>}

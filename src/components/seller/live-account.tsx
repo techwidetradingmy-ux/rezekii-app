@@ -24,7 +24,7 @@ export function LiveShopAuth() {
           <small>{shop === undefined ? "Checking…" : shop ? `Connected since ${day(shop.connected_at)}${shop.shop_code ? ` · ${shop.shop_code}` : ""}${shop.region ? ` · ${shop.region}` : ""}` : "Not connected"}</small>
           <small>One account = one shop.</small>
         </span>
-        <span className={`badge ${shop ? "" : "badge-red"}`}>{shop ? "Connected" : "Not connected"}</span>
+        <span className={`badge ${shop ? "" : "badge-red"}`}>{shop ? "Connected" : "Not Connected"}</span>
       </div>
       <button type="button" className={shop ? "btn-outline" : "np-btn"} style={{ alignSelf: "flex-start" }} onClick={() => { window.location.href = "/api/auth/tiktokshop/start?as=seller"; }}>
         <Icon name="refresh" size={18} /> {shop ? "Reconnect" : "Connect Seller Center"}
@@ -85,7 +85,7 @@ export function LiveSellerSocials() {
   );
 }
 
-const TOPICS = [["samples", "Product status", "Approved, live or not approved"], ["posts", "Posts", "Posted or failed"], ["rewards", "Missions & rewards", "Credits, invites, chests"]] as const;
+const TOPICS = [["samples", "Product Status", "Approved, live or not approved"], ["posts", "Posts", "Posted or failed"], ["rewards", "Missions & Rewards", "Credits, invites, chests"]] as const;
 /** In-app notification choices for the seller side, saved and applied to Notifications. */
 export function LiveSellerNotify() {
   const { toast } = useDemo();

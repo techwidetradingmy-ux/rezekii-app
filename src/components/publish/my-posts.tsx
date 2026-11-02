@@ -149,7 +149,7 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
   const inRange = (p: MyPost) => !p.date || (p.date >= from && p.date <= to);
   const shown = posts.filter((p) => srcOk(p) && inRange(p) && (!day || p.date === day) && (!only || groupOf(p) === only));
   const count = (g: Group) => posts.filter((p) => srcOk(p) && inRange(p) && groupOf(p) === g).length;
-  const SOURCES = [["all", "All"], ["rezekii", "Via Rezekii"], ["phone", "From phone"]] as const;
+  const SOURCES = [["all", "All"], ["rezekii", "Via Rezekii"], ["phone", "From Phone"]] as const;
   const needs = count("fail");
 
   const choose = (a: string, b: string, key: string | null) => { setRange([a, b]); setPreset(key); setDay(null); setMonth(b < TODAY ? b.slice(0, 7) : a > TODAY ? a.slice(0, 7) : TODAY.slice(0, 7)); };
@@ -201,7 +201,7 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
         <span className="sq-body">
           <span className="sq-when">
             {p.date ? <><b>{dayLabel(p.date)}</b> · {clock(p.time)}</> : <b>No time yet</b>}
-            <span className={`sq-src${p.source === "phone" ? " phone" : ""}`}>{p.source === "phone" ? <><Icon name="phone" size={12} /> From phone</> : "Via Rezekii"}</span>
+            <span className={`sq-src${p.source === "phone" ? " phone" : ""}`}>{p.source === "phone" ? <><Icon name="phone" size={12} /> From Phone</> : "Via Rezekii"}</span>
           </span>
           <strong className="sq-cap">{p.caption}</strong>
           <span className="sq-targets">
@@ -229,7 +229,7 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
             <span className="sq-confirm" role="alert">
               <span>{g === "draft" ? "Delete this draft?" : "Cancel this post? It moves to Drafts."}</span>
               <button type="button" className="btn-outline v2-btn-sm" onClick={() => setCancelling(null)}>Keep It</button>
-              <button type="button" className="sq-danger v2-btn-sm" onClick={() => (g === "draft" ? (setPosts((all) => all.filter((x) => x.id !== p.id)), toast("Draft deleted")) : cancel(p))}>{g === "draft" ? "Delete" : "Cancel post"}</button>
+              <button type="button" className="sq-danger v2-btn-sm" onClick={() => (g === "draft" ? (setPosts((all) => all.filter((x) => x.id !== p.id)), toast("Draft deleted")) : cancel(p))}>{g === "draft" ? "Delete" : "Cancel Post"}</button>
             </span>
           ) : (
             <span className="sq-acts">
@@ -296,7 +296,7 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
 
       {!live && <div className="sq-srcbar">
         <div className="v2-chips" role="group" aria-label="Posted from">
-          {([["all", "All posts"], ["rezekii", "Via Rezekii"], ["phone", "From phone"]] as const).map(([k, l]) => (
+          {([["all", "All Posts"], ["rezekii", "Via Rezekii"], ["phone", "From Phone"]] as const).map(([k, l]) => (
             <button key={k} type="button" className={`v2-chip${src === k ? " on" : ""}`} aria-pressed={src === k} onClick={() => setSrc(k)}>{k === "phone" && <Icon name="phone" size={15} />}{l}</button>
           ))}
         </div>

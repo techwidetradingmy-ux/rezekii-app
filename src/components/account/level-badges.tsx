@@ -363,7 +363,7 @@ export function LevelBadges() {
             <BadgeEmblem name={badge.name} got={badge.got} size={132} />
           </div>
           <p style={{ margin: 0, textAlign: "center", lineHeight: 1.5 }}>{BADGE_INFO[badge.name]}</p>
-          <span className={`badge ${badge.got ? "" : "badge-gray"}`} style={{ alignSelf: "center" }}>{badge.got ? "Collected" : "Not yet"}</span>
+          <span className={`badge ${badge.got ? "" : "badge-gray"}`} style={{ alignSelf: "center" }}>{badge.got ? "Collected" : "Not Yet"}</span>
           {badge.got ? (
             <button type="button" className="np-btn" onClick={() => { setBadge(null); setShare({ big: badge.name, label: "New badge on Rezekii", lines: [`${lvName} creator`, `${got} badges so far`], kicker: "New badge", moment: "badge" }); }}>
               <Icon name="share" size={18} /> Share This Badge

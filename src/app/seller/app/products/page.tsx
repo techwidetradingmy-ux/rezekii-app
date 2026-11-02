@@ -13,6 +13,7 @@ import { SHOP_ITEMS, UPDATED, listStatus, type ShopItem } from "@/lib/mock-selle
 import { sellerProductHref } from "@/lib/product-pages";
 import { useKept } from "@/lib/keep";
 import { loadShop } from "@/lib/live";
+import { labelCase } from "@/lib/label-case";
 
 const FILTERS = ["All", "Not submitted", "Under review", "Live", "Not approved"] as const;
 type Filter = (typeof FILTERS)[number];
@@ -73,7 +74,7 @@ export default function ShopProducts() {
       <div className="sl-chipline" role="group" aria-label="Filter by status">
         {FILTERS.map((f) => (
           <button key={f} type="button" className={`v2-chip ${filter === f ? "on" : ""}`} onClick={() => setFilter(f)}>
-            {f} <small>{count(f)}</small>
+            {labelCase(f)} <small>{count(f)}</small>
           </button>
         ))}
       </div>
@@ -102,7 +103,7 @@ export default function ShopProducts() {
                   {st === "Not approved" && p.reason && <span className="sl-reason">{p.reason}</span>}
                 </span>
                 <span className="sl-pside">
-                  <span className={`badge ${BADGE[st]}`}>{st}</span>
+                  <span className={`badge ${BADGE[st]}`}>{labelCase(st)}</span>
                   {st === "Live" && p.tapRate !== undefined && (
                     <span className="sl-rate">{p.publicRate}% <Icon name="arrow" size={12} /> <b>{p.tapRate}%</b> in TAP</span>
                   )}

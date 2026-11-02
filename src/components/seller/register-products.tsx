@@ -13,7 +13,7 @@ type Status = "pending" | "approved" | "declined";
 type Product = { id: string; name: string; image: string | null; status: Status; totalRate: number | null; reason?: string | null };
 type Data = { linked: boolean; shop?: string; error?: string; campaign?: { id: string; name: string; status: string | null; commission: number | null; end: number | null }; products?: Product[] };
 
-const LABEL: Record<Status, [string, string]> = { pending: ["Waiting for Techwide", "badge-amber"], approved: ["Approved", ""], declined: ["Not approved", "badge-red"] };
+const LABEL: Record<Status, [string, string]> = { pending: ["Waiting for Techwide", "badge-amber"], approved: ["Approved", ""], declined: ["Not Approved", "badge-red"] };
 const day = (sec: number) => new Date(sec * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kuala_Lumpur" });
 
 /** The sample preview: the same page with a made-up shop. */
@@ -82,7 +82,7 @@ export function RegisterProducts({ title = true }: { title?: boolean }) {
           <section className="v2-card">
             <div className="v2-card-h">
               <h2 className="v2-h2">Your Registered Products</h2>
-              {live && <button type="button" className="v2-link" disabled={busy} onClick={() => load(true)}><Icon name="refresh" size={15} /> {busy ? "Checking…" : "Check again"}</button>}
+              {live && <button type="button" className="v2-link" disabled={busy} onClick={() => load(true)}><Icon name="refresh" size={15} /> {busy ? "Checking…" : "Check Again"}</button>}
             </div>
             <div className="v2-chips" aria-label="Summary">
               <span className="v2-chip">{count("pending")} waiting</span>

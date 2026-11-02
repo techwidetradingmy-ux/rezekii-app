@@ -6,6 +6,7 @@ import { Icon } from "@/components/icons";
 import { Av } from "@/components/admin/bits";
 import { NO_PHOTO } from "@/lib/live-perf";
 import type { ListResult } from "@/modules/rankings/query.ts";
+import { labelCase } from "@/lib/label-case";
 
 type Status = {
   built: { day: string; at: string } | null;
@@ -93,7 +94,7 @@ export function LiveRankings() {
           {VIEWS.map((v, i) => <button key={v} type="button" className={`v2-chip ${view === i ? "on" : ""}`} onClick={pick(() => { setView(i); setCat(""); })}>{v}</button>)}
         </div>
         <div className="v2-chips" role="group" aria-label="Period">
-          {SLOTS.map((s, i) => <button key={s} type="button" className={`v2-chip ${slot === i ? "on" : ""}`} onClick={pick(() => setSlot(i))}>{s}</button>)}
+          {SLOTS.map((s, i) => <button key={s} type="button" className={`v2-chip ${slot === i ? "on" : ""}`} onClick={pick(() => setSlot(i))}>{labelCase(s)}</button>)}
         </div>
         {view === 1 && (
           <select className="np-input" style={{ width: 230, height: 38 }} value={cat} onChange={(e) => { setCat(e.target.value); setPg(1); }} aria-label="Category">

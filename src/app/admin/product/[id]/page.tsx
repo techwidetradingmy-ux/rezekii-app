@@ -204,7 +204,7 @@ function AdminProduct({ v, m, w }: { v: ProductView; m: Product | null; w: Wante
         <div className="pp-chips">
           {state ? <Pill tone={state === "Paused" ? "warn" : "bad"}>{state}</Pill> : camp?.status === "Live" ? <Pill tone="ok">Live in TAP</Pill> : <Pill>{camp?.status ?? "Not in a campaign"}</Pill>}
           <span className="pp-chip score"><Icon name="star" size={13} width={2.4} /> {p.rating.toFixed(1)}</span>
-          {p.samples !== null && <span className="pp-chip">{p.samples ? `Samples · ${p.samples}-day streak` : "Samples · open to all"}</span>}
+          {p.samples !== null && <span className="pp-chip">{p.samples ? `Samples · ${p.samples}-Day Streak` : "Samples · Open to All"}</span>}
           <span className="pp-chip muted">{p.category}</span>
         </div>
 

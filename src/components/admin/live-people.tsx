@@ -6,6 +6,7 @@ import { useDemo } from "@/components/demo";
 import { Title } from "@/components/ui";
 import { Av, Chips, Pill } from "@/components/admin/bits";
 import { day, useList, when } from "@/components/admin/live-lists";
+import { labelCase } from "@/lib/label-case";
 
 type Waiting = { id: string; handle: string; name: string; signIn: string; shopAccount: string | null; access: string; reason: string | null; requestedAt: string | null };
 /**
@@ -150,7 +151,7 @@ export function LiveFeedback() {
                 <div key={f.id} className="ad-row" style={{ alignItems: "flex-start" }}>
                   <Av name={f.who.name} />
                   <span className="main">
-                    <b><Pill tone={TYPE_TONE[f.kind] ?? "info"}>{f.kind}</Pill> {f.who.handle ? `@${f.who.handle}` : f.who.name}{f.mood ? ` ${FACES[f.mood - 1]}` : ""}</b>
+                    <b><Pill tone={TYPE_TONE[f.kind] ?? "info"}>{labelCase(f.kind)}</Pill> {f.who.handle ? `@${f.who.handle}` : f.who.name}{f.mood ? ` ${FACES[f.mood - 1]}` : ""}</b>
                     <small style={{ whiteSpace: "pre-wrap" }}>{f.message}</small>
                     <small>{when(f.created_at)}{f.page ? ` · ${f.page}` : ""}</small>
                     {f.reply && <small className="ad-reply"><b>Replied{f.replied_by ? ` by ${f.replied_by}` : ""}:</b> {f.reply}</small>}
@@ -168,7 +169,7 @@ export function LiveFeedback() {
                     {writing !== f.id && <button type="button" className="ad-btn-ghost" onClick={() => { setWriting(f.id); setDraft(f.reply ?? ""); }}>{f.reply ? "Edit Reply" : "Reply"}</button>}
                     {wa(f.who.whatsapp) && <a className="ad-btn-ghost" href={wa(f.who.whatsapp)!} target="_blank" rel="noreferrer"><Icon name="whatsapp" size={14} /> Reply on WhatsApp</a>}
                     {f.shot && <button type="button" className="ad-btn-ghost" onClick={() => void see(f)}>Screenshot</button>}
-                    <button type="button" className="ad-btn-ghost" onClick={() => void mark(f, f.status === "new" ? "handled" : "new")}>{f.status === "new" ? "Mark handled" : "Back to new"}</button>
+                    <button type="button" className="ad-btn-ghost" onClick={() => void mark(f, f.status === "new" ? "handled" : "new")}>{f.status === "new" ? "Mark Handled" : "Back to New"}</button>
                   </span>
                 </div>
               ))}

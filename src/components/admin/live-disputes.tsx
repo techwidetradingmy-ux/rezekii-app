@@ -6,6 +6,7 @@ import { useDemo } from "@/components/demo";
 import { Sheet, Title } from "@/components/ui";
 import { Av, Chips, Pill } from "@/components/admin/bits";
 import { day } from "@/components/admin/live-lists";
+import { labelCase } from "@/lib/label-case";
 
 const KINDS = ["Sample not received", "Creator overdue", "Seller complaint", "Creator complaint", "Other"] as const;
 type Case = { id: string; kind: string; creator: string | null; shop: string | null; product: string | null; detail: string; status: "open" | "waiting" | "resolved"; outcome: string | null; owner: string | null; opened_by: string; created_at: string };
@@ -52,7 +53,7 @@ export function LiveDisputes() {
               {cases.map((c) => (
                 <button key={c.id} type="button" className="ad-row ad-rowbtn click" onClick={() => { setSel(c); setOutcome(c.outcome ?? ""); }}>
                   <Av name={c.creator ?? c.shop ?? c.kind} />
-                  <span className="main"><b>{c.kind}{c.creator ? ` · ${c.creator}` : ""}{c.shop ? ` · ${c.shop}` : ""}</b><small>{c.detail.slice(0, 120)}</small><small>Opened {day(c.created_at)} by {c.opened_by}{c.owner ? ` · ${c.owner} looking after it` : ""}</small></span>
+                  <span className="main"><b>{labelCase(c.kind)}{c.creator ? ` · ${c.creator}` : ""}{c.shop ? ` · ${c.shop}` : ""}</b><small>{c.detail.slice(0, 120)}</small><small>Opened {day(c.created_at)} by {c.opened_by}{c.owner ? ` · ${c.owner} looking after it` : ""}</small></span>
                   <Pill tone={STATUS[c.status][1]}>{STATUS[c.status][0]}</Pill>
                 </button>
               ))}
@@ -80,7 +81,7 @@ export function LiveDisputes() {
       {form && (
         <Sheet title="Open a Case" onClose={() => setForm(null)}>
           <label className="v2-field">Kind
-            <select className="np-input" value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value as (typeof KINDS)[number] })}>{KINDS.map((k) => <option key={k}>{k}</option>)}</select>
+            <select className="np-input" value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value as (typeof KINDS)[number] })}>{KINDS.map((k) => <option key={k} value={k}>{labelCase(k)}</option>)}</select>
           </label>
           <label className="v2-field">Creator (optional)<input className="np-input" value={form.creator} onChange={(e) => setForm({ ...form, creator: e.target.value })} placeholder="@handle" /></label>
           <label className="v2-field">Shop (optional)<input className="np-input" value={form.shop} onChange={(e) => setForm({ ...form, shop: e.target.value })} /></label>
@@ -91,7 +92,7 @@ export function LiveDisputes() {
       )}
 
       {sel && (
-        <Sheet title={sel.kind} onClose={() => setSel(null)}>
+        <Sheet title={labelCase(sel.kind)} onClose={() => setSel(null)}>
           <p className="v2-muted" style={{ margin: 0, whiteSpace: "pre-wrap" }}>{sel.detail}</p>
           <p className="v2-small" style={{ margin: 0 }}>{[sel.creator, sel.shop, sel.product].filter(Boolean).join(" · ")}</p>
           <label className="v2-field">Outcome<textarea className="np-input" rows={3} maxLength={500} value={outcome} onChange={(e) => setOutcome(e.target.value)} placeholder="What was agreed" /></label>
@@ -99,7 +100,7 @@ export function LiveDisputes() {
             {sel.status !== "resolved" ? (
               <>
                 <button type="button" className="np-btn" disabled={!outcome.trim()} onClick={async () => { if (await post({ dispute: sel.id, status: "resolved", outcome }, "Resolved")) setSel(null); }}>Resolve</button>
-                <button type="button" className="btn-outline" onClick={async () => { if (await post({ dispute: sel.id, status: sel.status === "waiting" ? "open" : "waiting", outcome }, sel.status === "waiting" ? "Back to open" : "Marked waiting")) setSel(null); }}>{sel.status === "waiting" ? "Back to open" : "Waiting on someone"}</button>
+                <button type="button" className="btn-outline" onClick={async () => { if (await post({ dispute: sel.id, status: sel.status === "waiting" ? "open" : "waiting", outcome }, sel.status === "waiting" ? "Back to open" : "Marked waiting")) setSel(null); }}>{sel.status === "waiting" ? "Back to Open" : "Waiting on Someone"}</button>
               </>
             ) : (
               <button type="button" className="btn-outline" onClick={async () => { if (await post({ dispute: sel.id, status: "open" }, "Reopened")) setSel(null); }}>Reopen</button>

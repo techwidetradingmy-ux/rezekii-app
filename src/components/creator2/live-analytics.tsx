@@ -92,7 +92,7 @@ export function LiveAiSummary({ sig, span, cancel, lead }: { sig: Signals; span:
           </div>
         ))}
         {ratings && !ratings.linked && <Link href="/app/account#connections" className="np-btn v2-btn-sm" style={{ alignSelf: "flex-start" }}>Connect TikTok Shop</Link>}
-        <Link href="/app/data/risk" className="v2-link" style={{ fontSize: 13.5, padding: "4px 2px 0" }}>{flagged.length > 5 ? `See all ${flagged.length} →` : "See all ratings →"}</Link>
+        <Link href="/app/data/risk" className="v2-link" style={{ fontSize: 13.5, padding: "4px 2px 0" }}>{flagged.length > 5 ? `See All ${flagged.length} →` : "See All Ratings →"}</Link>
       </div>
       {ask && <RemoveWarn items={[{ id: ask.id, name: shortName(ask.name), img: ask.img ?? NO_PHOTO }]} onConfirm={() => void confirm()} onClose={() => setAsk(null)} />}
     </section>
@@ -168,7 +168,7 @@ export function LiveActionPlan({ sig, cancel }: { sig: Signals; cancel: number }
           })}
         </ol>
       )}
-      {steps.length > 3 && <button type="button" className="v2-link an-more" onClick={() => setAll((x) => !x)}>{all ? "Show less" : `+${steps.length - 3} more`}</button>}
+      {steps.length > 3 && <button type="button" className="v2-link an-more" onClick={() => setAll((x) => !x)}>{all ? "Show Less" : `+${steps.length - 3} More`}</button>}
     </section>
   );
 }

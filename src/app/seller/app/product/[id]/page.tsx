@@ -15,6 +15,7 @@ import { BY_PRODUCT, DESTINATIONS, SHOP_ITEMS, heat, listStatus, type ShopItem }
 import { HOT_RAISE, MIN_RAISE, commitText, hotFor } from "@/lib/mock-showcase";
 import { BONUSES, PARTNER_ID, mostWantedRank, sellerWanted, weekLine } from "@/lib/product-pages";
 import { loadShop } from "@/lib/live";
+import { labelCase } from "@/lib/label-case";
 
 const BADGE = { "Not submitted": "badge-gray", "Under review": "badge-amber", Live: "", "Not approved": "badge-red" } as const;
 const n = (v: number) => v.toLocaleString("en-MY");
@@ -112,7 +113,7 @@ function SellerProduct({ item }: { item: ShopItem }) {
         <h1 className="pp-name">{p.name}</h1>
         <p className="pp-meta">{p.real ? me?.sellerShop ?? "Your shop" : SELLER.shop} · {rm(p.price)}{p.real ? (p.soldLabel ? ` · ${p.soldLabel}` : "") : ` · ${p.sold ? `${short(p.sold)} sold` : "No sales yet"}`}</p>
         <div className="pp-chips">
-          <span className={`badge ${BADGE[st]}`}>{st}</span>
+          <span className={`badge ${BADGE[st]}`}>{labelCase(st)}</span>
           {h.label && <span className="pp-chip muted">{h.label}</span>}
           {p.note && <span className="pp-chip muted">{p.note}</span>}
           {p.fromSellerCenter && <span className="badge badge-blue">From Seller Center</span>}

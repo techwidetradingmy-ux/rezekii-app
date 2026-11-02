@@ -166,7 +166,7 @@ export default function WishListAdmin() {
                 <h3>Log Seller Reply</h3>
                 <div className="v2-chips">
                   {(["Joined", "Bonus", "Declined"] as Reply[]).map((r) => (
-                    <button key={r} type="button" className={`v2-chip ${reply === r ? "on" : ""}`} onClick={() => setReply(r)}>{r === "Bonus" ? "Bonus program" : r}</button>
+                    <button key={r} type="button" className={`v2-chip ${reply === r ? "on" : ""}`} onClick={() => setReply(r)}>{r === "Bonus" ? "Bonus Program" : r}</button>
                   ))}
                 </div>
                 {reply === "Joined" && <div className="ad-wl-line"><span>Raise for these creators</span><span className="ad-wl-raise">+<Stepper label="Raise in percent" value={raise} min={1} max={30} onChange={setRaise} />%</span></div>}

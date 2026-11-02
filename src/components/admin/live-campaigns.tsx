@@ -173,7 +173,7 @@ export function LiveCampaigns() {
                     </span>
                     <Pill tone={tone}>{label}</Pill>
                     <span className="acts">
-                      {c.status !== "ended" && <button type="button" className="ad-btn-ghost" disabled={loadingId === c.id} onClick={() => void open(c)}>{loadingId === c.id ? "Opening…" : c.status === "draft" ? "Edit or publish" : "Edit"}</button>}
+                      {c.status !== "ended" && <button type="button" className="ad-btn-ghost" disabled={loadingId === c.id} onClick={() => void open(c)}>{loadingId === c.id ? "Opening…" : c.status === "draft" ? "Edit or Publish" : "Edit"}</button>}
                       {c.status === "draft" && <button type="button" className="ad-btn-ghost" onClick={() => void hide(c)}>Hide</button>}
                     </span>
                   </div>

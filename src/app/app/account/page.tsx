@@ -613,7 +613,7 @@ export default function Account() {
                   <span><b>Email and password</b><small>{ways.password ? `${ways.email ?? me?.email ?? ""}` : "No password yet"}</small></span>
                   <span className="si-acts">
                     {ways.password && <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setNewEmail(""); setCurPw(""); setEmailSheet(true); }}>Change Email</button>}
-                    <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setPw(["", "", ""]); setPwSheet(true); }}>{ways.password ? "Change password" : "Set password"}</button>
+                    <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setPw(["", "", ""]); setPwSheet(true); }}>{ways.password ? "Change Password" : "Set Password"}</button>
                   </span>
                 </span>
               </div>
@@ -633,7 +633,7 @@ export default function Account() {
                       : (
                         <span className="si-acts">
                           <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setNewEmail(""); setEmailSheet(true); }}>Change Email</button>
-                          <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setPw(["", "", ""]); setPwSheet(true); }}>{hasPw ? "Change password" : "Set password"}</button>
+                          <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setPw(["", "", ""]); setPwSheet(true); }}>{hasPw ? "Change Password" : "Set Password"}</button>
                         </span>
                       )}
                   </span>
@@ -776,7 +776,7 @@ export default function Account() {
             <div><dt>Creator type</dt><dd>{types.join(", ")}</dd></div>
             <div><dt>Niches</dt><dd>{[niche, sub1, sub2].filter(Boolean).join(" · ")}</dd></div>
           </dl>
-          <button type="button" className="np-btn" disabled={saving} onClick={() => { if (live) { void saveReal(); return; } setLocked(true); setConfirmSave(false); toast("Profile saved"); }}>{saving ? "Saving…" : "Save profile"}</button>
+          <button type="button" className="np-btn" disabled={saving} onClick={() => { if (live) { void saveReal(); return; } setLocked(true); setConfirmSave(false); toast("Profile saved"); }}>{saving ? "Saving…" : "Save Profile"}</button>
           <button type="button" className="btn-outline" style={{ height: 48 }} onClick={() => setConfirmSave(false)}>Keep Editing</button>
         </Sheet>
       )}
@@ -908,7 +908,7 @@ export default function Account() {
               setHasPw(true); setPw(["", "", ""]); setPwSheet(false); toast(hasPw ? "Password changed. Other devices are signed out." : "Password set");
             }}
           >
-            {(ways ? ways.password : hasPw) ? "Change password" : "Save password"}
+            {(ways ? ways.password : hasPw) ? "Change Password" : "Save Password"}
           </button>
         </Sheet>
       )}

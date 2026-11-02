@@ -15,7 +15,7 @@ export function DetailsLock({ missing, what }: { missing: "profile" | "race"; wh
         <b>Complete your details to unlock {what}</b>
         <small>{missing === "race" ? "Add your race in My Account. Rezekii uses your details to analyse your account and match products to you." : "Rezekii uses your details (country, gender, race, birthday, niches) to analyse your account and match products to you."}</small>
       </span>
-      <Link href={missing === "race" ? "/app/account" : "/signin?details=1&next=" + encodeURIComponent(typeof window === "undefined" ? "/app" : window.location.pathname)} className="np-btn v2-btn-sm">{missing === "race" ? "Add race" : "Complete details"}</Link>
+      <Link href={missing === "race" ? "/app/account" : "/signin?details=1&next=" + encodeURIComponent(typeof window === "undefined" ? "/app" : window.location.pathname)} className="np-btn v2-btn-sm">{missing === "race" ? "Add Race" : "Complete Details"}</Link>
     </div>
   );
 }

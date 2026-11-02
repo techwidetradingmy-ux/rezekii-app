@@ -387,7 +387,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     return (
       <section className="v2-card pb-sent" role="status">
         <span className="pb-sent-ico" aria-hidden="true">✓</span>
-        <h2>{done.when === "draft" ? "Saved as a draft" : done.when === "now" ? "On its way" : "Scheduled"}</h2>
+        <h2>{done.when === "draft" ? "Saved as a Draft" : done.when === "now" ? "On Its Way" : "Scheduled"}</h2>
         <p>
           {done.when === "draft" ? `Saved in Rezekii for ${done.summary}.` : done.when === "now" ? `${done.summary}: posting now.` : `${done.summary}: ${done.at} (Malaysia time).`} Track or edit it in Content Calendar.
         </p>

@@ -45,7 +45,7 @@ export default function Results() {
 
       <section className="v2-card">
         <div className="v2-card-h">
-          <h2 className="v2-h2">{range === "90 days" ? "Weekly sales" : "Daily sales"}</h2>
+          <h2 className="v2-h2">{range === "90 days" ? "Weekly Sales" : "Daily Sales"}</h2>
           <span className="v2-small">{r.unit}</span>
         </div>
         <div className={r.daily.length > 20 ? "sl-cols sl-dense" : "sl-cols"}><Columns key={range} values={r.daily} labels={r.labels} /></div>

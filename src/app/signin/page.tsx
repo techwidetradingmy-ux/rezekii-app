@@ -515,7 +515,7 @@ export default function SignIn() {
               </div>
               {refField}
               {addressField}
-              <button type="submit" className="np-btn np-submit" disabled={saving}>{saving ? "Saving…" : "Create account"}</button>
+              <button type="submit" className="np-btn np-submit" disabled={saving}>{saving ? "Saving…" : "Create Account"}</button>
               <p className="cr1-center cr1-fine">By continuing you agree to Rezekii&apos;s Terms of Service and Privacy Policy.</p>
             </form>
           )}
@@ -611,11 +611,11 @@ export default function SignIn() {
           <>
             {sentTo}
             {codeField}
-            <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? spin : "Confirm and create account"}</button>
+            <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? spin : "Confirm and Create Account"}</button>
             {again("signup")}
           </>
         ) : (
-          <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? spin : "Create account"}</button>
+          <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? spin : "Create Account"}</button>
         )}
         <p className="cr1-center cr1-switch">Already have an account? <button type="button" className="v2-link" onClick={() => go("email")}>Sign in</button></p>
       </form>
@@ -628,7 +628,7 @@ export default function SignIn() {
         {sentTo}
         {codeField}
         {pwField("New password")}
-        <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? <span className="cr1-spin sm" /> : "Save and sign in"}</button>
+        <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? <span className="cr1-spin sm" /> : "Save and Sign In"}</button>
         {again("reset")}
         <p className="cr1-small" style={{ margin: 0 }}>No Access to This Email? Write to <a className="v2-link" href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a>.</p>
       </form>

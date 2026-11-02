@@ -11,6 +11,7 @@ import { product } from "@/lib/mock";
 import { DESTINATIONS, SAMPLE_SUMMARY, type Dest } from "@/lib/mock-seller";
 import { LiveSamples } from "@/components/seller/live-samples";
 import { sellerProductHref } from "@/lib/product-pages";
+import { labelCase } from "@/lib/label-case";
 
 const FILTERS = ["All", "Delivered", "On time", "Overdue"] as const;
 type Filter = (typeof FILTERS)[number];
@@ -58,7 +59,7 @@ export default function SamplesWent() {
       <div className="sl-chipline" role="group" aria-label="Filter">
         {FILTERS.map((f) => (
           <button key={f} type="button" className={`v2-chip ${filter === f ? "on" : ""}`} onClick={() => setFilter(f)}>
-            {f} <small>{f === "All" ? DESTINATIONS.length : DESTINATIONS.filter((d) => d.state === f).length}</small>
+            {labelCase(f)} <small>{f === "All" ? DESTINATIONS.length : DESTINATIONS.filter((d) => d.state === f).length}</small>
           </button>
         ))}
       </div>
@@ -80,7 +81,7 @@ export default function SamplesWent() {
                   {d.reminded && <small style={{ color: "var(--red)", fontWeight: 600 }}>{d.reminded} · samples paused</small>}
                 </span>
                 <span className="sl-pside">
-                  <span className={`badge ${d.state === "Overdue" ? "badge-red" : d.state === "On time" ? "badge-amber" : ""}`}>{label(d)}</span>
+                  <span className={`badge ${d.state === "Overdue" ? "badge-red" : d.state === "On time" ? "badge-amber" : ""}`}>{labelCase(label(d))}</span>
                   {d.videos > 0 ? (
                     <button type="button" className="v2-link" style={{ fontSize: 13.5 }} onClick={() => toast(`Opening ${d.handle}'s videos on TikTok`)}>Watch Videos</button>
                   ) : d.state === "Overdue" ? (

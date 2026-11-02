@@ -8,6 +8,7 @@ import { useDemo } from "@/components/demo";
 import { Title } from "@/components/ui";
 import { CHANGE_REQUESTS, SHOP_ITEMS, type ChangeReq, type ReqStatus } from "@/lib/mock-seller";
 import { sellerProductHref } from "@/lib/product-pages";
+import { labelCase } from "@/lib/label-case";
 
 const KINDS: [ChangeReq["kind"], string, IconName][] = [
   ["Raise commission", "Pay creators more", "tag"],
@@ -104,7 +105,7 @@ export default function Changes() {
                     {p && <small><Link href={sellerProductHref(p.id)} className="pv-open">{p.name}</Link></small>}
                     <small>{r.id} · {r.when}{r.note ? ` · ${r.note}` : ""}</small>
                   </span>
-                  <span className={`badge ${STATUS[r.status]}`} style={{ alignSelf: "flex-start" }}>{r.status}</span>
+                  <span className={`badge ${STATUS[r.status]}`} style={{ alignSelf: "flex-start" }}>{labelCase(r.status)}</span>
                 </div>
               );
             })}

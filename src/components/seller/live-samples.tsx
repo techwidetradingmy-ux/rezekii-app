@@ -7,6 +7,7 @@ import { Count, Stat, Title } from "@/components/ui";
 import { Ava } from "@/components/seller/seller-ui";
 import { sellerProductHref } from "@/lib/product-pages";
 import { shortName } from "@/lib/live-perf";
+import { labelCase } from "@/lib/label-case";
 
 type Sample = { handle: string; productId: string; product: string; stage: number; videos: number; lives: number };
 const STEP: Record<number, [string, string]> = {
@@ -56,7 +57,7 @@ export function LiveSamples() {
       <div className="sl-chipline" role="group" aria-label="Filter">
         {FILTERS.map((f) => (
           <button key={f} type="button" className={`v2-chip ${filter === f ? "on" : ""}`} onClick={() => setFilter(f)}>
-            {f} <small>{f === "All" ? list.length : f === "With a video" ? withVideo.length : list.length - withVideo.length}</small>
+            {labelCase(f)} <small>{f === "All" ? list.length : f === "With a video" ? withVideo.length : list.length - withVideo.length}</small>
           </button>
         ))}
       </div>
@@ -76,7 +77,7 @@ export function LiveSamples() {
                 </span>
               </span>
               <span className="sl-pside">
-                <span className={`badge ${STEP[d.stage]?.[1] ?? ""}`}>{STEP[d.stage]?.[0] ?? "Asked"}</span>
+                <span className={`badge ${STEP[d.stage]?.[1] ?? ""}`}>{labelCase(STEP[d.stage]?.[0] ?? "Asked")}</span>
                 {d.videos > 0 && <a className="v2-link" style={{ fontSize: 13.5 }} href={`https://www.tiktok.com/@${d.handle}`} target="_blank" rel="noreferrer">Watch Videos</a>}
               </span>
             </div>

@@ -11,6 +11,7 @@ import { CREATOR, MY_SAMPLES, product, type MySample, type SampleStatus } from "
 import { productHref } from "@/lib/product-view";
 import "@/app/creator1.css";
 import { useKept } from "@/lib/keep";
+import { labelCase } from "@/lib/label-case";
 
 /** The steps she sees (owner, 29 Oct 2026): no separate "Posting" step; the first video posted is the last step. */
 const STEPS = ["Applied", "Approved", "Shipped", "Received", "Posted"] as const;
@@ -73,7 +74,7 @@ export function MySamples() {
 
   const shown = list.filter((s) => tabOf(s) === tab);
   const count = (t: Tab) => list.filter((s) => tabOf(s) === t).length;
-  const tabLabels = TABS.map((t) => `${t} (${count(t)})`);
+  const tabLabels = TABS.map((t) => `${labelCase(t)} (${count(t)})`);
 
   function addVideo() {
     if (!submit) return;
@@ -310,7 +311,7 @@ export function LiveSamples() {
   const list = rows.map((r) => ({ ...r, status: STATUS[r.stage] ?? "Applied" }));
   const tabOfLive = (s: { status: SampleStatus }) => (s.status === "Done" ? "Done" : s.status === "Not approved" ? "Not approved" : "In progress");
   const count = (t: Tab) => list.filter((s) => tabOfLive(s) === t).length;
-  const labels = TABS.map((t) => `${t} (${count(t)})`);
+  const labels = TABS.map((t) => `${labelCase(t)} (${count(t)})`);
   const shown = list.filter((s) => tabOfLive(s) === tab);
   return (
     <div className="v2-stack v2-in" style={{ gap: 20 }}>

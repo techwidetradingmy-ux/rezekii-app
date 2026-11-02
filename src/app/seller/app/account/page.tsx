@@ -142,7 +142,7 @@ export default function SellerAccount() {
 
       <section className="v2-card">
         <h2 className="v2-h2">Sample Allocation Terms</h2>
-        <div className="sl-set"><span><b>{live ? "Sample terms for TAP products" : "You agreed on 12 Sep 2026"}</b><small>{TERMS_VERSION}.{live ? " They apply to every product you send to TAP." : " We'll ask again if they change."}</small></span><button type="button" className="v2-link" onClick={() => setTerms(true)}>Read</button></div>
+        <div className="sl-set"><span><b>{live ? "Sample Terms for TAP Products" : "You agreed on 12 Sep 2026"}</b><small>{TERMS_VERSION}.{live ? " They apply to every product you send to TAP." : " We'll ask again if they change."}</small></span><button type="button" className="v2-link" onClick={() => setTerms(true)}>Read</button></div>
       </section>
 
       {live ? <LiveSellerHelp /> : (
