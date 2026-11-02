@@ -1193,3 +1193,7 @@ html[data-wait="1"] .v2-main::after { content: "Loading your Rezekii…"; positi
 @media (prefers-reduced-motion: reduce) { .v2-shimg.vid { animation: none; } }
 .v2-app.busy { opacity: 0.6; }
 .v2-app:disabled { cursor: progress; }
+/* Language in the phone account panel (owner, 3 Nov 2026): all three side by side, the chosen one filled. */
+.ap-lang .lang-switch { display: flex; width: 100%; }
+.ap-lang .lang-switch button { flex: 1; min-width: 0; height: 34px; color: var(--muted); }
+.ap-lang .lang-switch button[aria-pressed="true"] { display: inline-block; color: var(--bg); }

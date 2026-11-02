@@ -23,6 +23,7 @@ import { CREATOR, MY_SAMPLES, REFERRAL_REWARD, SELLER } from "@/lib/mock";
 import { useUnreadNotes } from "@/lib/live-notes";
 import { PullRefresh } from "@/components/pull-refresh";
 import { loadWallet } from "@/lib/live-rewards";
+import { LangSwitch, useT } from "@/lib/i18n/client";
 
 const LEVEL: Record<string, string> = { bronze: "Bronze", silver: "Silver", gold: "Gold" };
 
@@ -89,6 +90,8 @@ function Chest() {
 }
 
 export function Shell({ app, children, banner }: { app: AppKind; children: React.ReactNode; banner?: React.ReactNode }) {
+  // Menus in her language (owner, 3 Nov 2026); Admin always reads English (its layout says so).
+  const t = useT();
   const you = useWho();
   const path = usePathname();
   // Back returns to the same scroll on every page (owner, 29 Oct 2026); open sections come back through useKept.
@@ -125,7 +128,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
   // Signed in with a Seller Center shop: the seller app shows that shop's name (owner, 30 Oct 2026).
   const shopName = app === "seller" ? me?.sellerShop : null;
   const shopInitials = (shopName ?? "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
-  const who = app === "creator" ? { ...WHO.creator, name: you.first, initials: you.initials, photo: you.photo, ...(live && me ? { sub: `${LEVEL[me.level]} creator` } : {}) } : shopName ? { ...WHO.seller, name: shopName, initials: shopInitials || "S" } : WHO[app];
+  const who = app === "creator" ? { ...WHO.creator, name: you.first, initials: you.initials, photo: you.photo, ...(live && me ? { sub: t("{level} creator", { level: t(LEVEL[me.level]) }) } : {}) } : shopName ? { ...WHO.seller, name: shopName, initials: shopInitials || "S" } : WHO[app];
   const [more, setMore] = useState(false);
   const menu = MENUS[app];
   // Where the top menu's pill sits: measured from the open section's link, again on resize.
@@ -160,9 +163,9 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
   }, [acctPage]);
   const pick: { title: string; items: { href: string; label: string; on: boolean; hash?: string }[] } | null =
     section && section.pages.length > 1
-      ? { title: section.label, items: section.pages.map(([href, label]) => ({ href, label, on: page === href })) }
+      ? { title: t(section.label), items: section.pages.map(([href, label]) => ({ href, label, on: page === href })) }
       : acctPage
-        ? { title: "My Account", items: ACCOUNT_TABS.map(([k, label]) => ({ href: `${ACCOUNT[app]}#${k}`, label, on: acctTab === k, hash: k })) }
+        ? { title: t("My Account"), items: ACCOUNT_TABS.map(([k, label]) => ({ href: `${ACCOUNT[app]}#${k}`, label, on: acctTab === k, hash: k })) }
         : null;
   // Account panel (owner, 29 Oct 2026, option B): on phones the avatar opens every account section in a side panel.
   const [acctOpen, setAcctOpen] = useState(false);
@@ -228,15 +231,15 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
             </span>
             Rezekii
           </Link>
-          {app !== "creator" && <span className="v2-workspace">{app === "seller" ? "Seller" : "Admin"}</span>}
+          {app !== "creator" && <span className="v2-workspace">{app === "seller" ? t("Seller") : "Admin"}</span>}
           {pick && (
             <span className="v2-pgpick" ref={pgRef}>
               <button type="button" aria-haspopup="menu" aria-expanded={pgOpen} onClick={() => setPgOpen((o) => !o)}>
                 <small>{pick.title}</small>
-                <b><span>{pick.items.find((x) => x.on)?.label ?? pick.title}</span><AiSpark label={pick.items.find((x) => x.on)?.label ?? ""} /><Icon name="updown" size={14} width={2.4} /></b>
+                <b><span>{t(pick.items.find((x) => x.on)?.label ?? "") || pick.title}</span><AiSpark label={pick.items.find((x) => x.on)?.label ?? ""} /><Icon name="updown" size={14} width={2.4} /></b>
               </button>
               {/* Always there, so it can fade and slide both ways (owner, 1 Nov 2026). */}
-              <span className={`v2-pgmenu${pgOpen ? " open" : ""}`} role="menu" aria-label={`${pick.title} pages`} aria-hidden={!pgOpen}>
+              <span className={`v2-pgmenu${pgOpen ? " open" : ""}`} role="menu" aria-label={t("{section} pages", { section: pick.title })} aria-hidden={!pgOpen}>
                     {pick.items.map((x) => (
                       <Link
                         key={x.href}
@@ -248,7 +251,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
                         onClick={(e) => { if (x.hash) { e.preventDefault(); window.location.hash = x.hash; } setPgOpen(false); }}
                       >
                         {/* AI-made pages carry the AI mark so the feature stands out (owner, 29 Oct 2026). */}
-                        <span>{x.label}</span><AiSpark label={x.label} />{x.on && <Icon name="check" size={16} />}
+                        <span>{t(x.label)}</span><AiSpark label={x.label} />{x.on && <Icon name="check" size={16} />}
                       </Link>
                     ))}
               </span>
@@ -261,14 +264,14 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
               <span key={s.href} className="v2-mi">
                 <Link href={tabHref(s.href)} className={section?.href === s.href ? "on" : undefined} aria-current={section?.href === s.href ? "page" : undefined}>
                   <span className="v2-mi-ic"><Icon name={s.icon} size={18} /></span>
-                  {s.label === "Marketplace" ? <><span className="v2-long">Marketplace</span><span className="v2-short">Market</span></> : s.label}
+                  {s.label === "Marketplace" ? <><span className="v2-long">{t("Marketplace")}</span><span className="v2-short">{t("Market")}</span></> : t(s.label)}
                   {s.pages.length > 1 && <i className="v2-mi-chev" aria-hidden="true" />}
                 </Link>
                 {/* Desktop (owner, 31 Oct 2026): pointing at a section lists its pages, so any page is one click away. */}
                 {s.pages.length > 1 && (
-                  <span className="v2-mi-drop" role="menu" aria-label={`${s.label} pages`}>
+                  <span className="v2-mi-drop" role="menu" aria-label={t("{section} pages", { section: t(s.label) })}>
                     {s.pages.map(([href, label]) => (
-                      <Link key={href} href={href} role="menuitem" className={page === href ? "on" : undefined}>{label}<AiSpark label={label} /></Link>
+                      <Link key={href} href={href} role="menuitem" className={page === href ? "on" : undefined}>{t(label)}<AiSpark label={label} /></Link>
                     ))}
                   </span>
                 )}
@@ -276,12 +279,12 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
             ))}
           </div>
           {!section && (path.startsWith(ACCOUNT[app]) || path.includes("/notifications")) && (
-            <span className="v2-crumb"><b>{path.includes("/notifications") ? "Notifications" : app === "admin" ? "System" : "My Account"}</b></span>
+            <span className="v2-crumb"><b>{path.includes("/notifications") ? t("Notifications") : app === "admin" ? "System" : t("My Account")}</b></span>
           )}
           {section && (
             <span className="v2-crumb">
-              <b>{section.label}</b>
-              {page && page !== section.href && <><Icon name="arrow" size={14} /><span>{section.pages.find(([h]) => h === page)?.[1]}</span></>}
+              <b>{t(section.label)}</b>
+              {page && page !== section.href && <><Icon name="arrow" size={14} /><span>{t(section.pages.find(([h]) => h === page)?.[1] ?? "")}</span></>}
             </span>
           )}
           <span className="site-spacer" />
@@ -289,7 +292,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
             <Link
               href={INVITE[app]}
               className="v2-invite"
-              aria-label="Invite friends and earn credits"
+              aria-label={t("Invite friends and earn credits")}
               onClick={(e) => {
                 // Already on My account: switch to the Referral section without leaving the page.
                 if (app === "creator" && path === "/app/account") { e.preventDefault(); window.location.hash = "referral"; window.scrollTo({ top: 0, behavior: "smooth" }); }
@@ -300,27 +303,27 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
               <span>+{REFERRAL_REWARD.inviter}</span>
             </Link>
           )}
-          <Link href={app === "admin" ? "/admin" : app === "seller" ? "/seller/app/notifications" : "/app/notifications"} className="v2-iconbtn" aria-label="Notifications">
+          <Link href={app === "admin" ? "/admin" : app === "seller" ? "/seller/app/notifications" : "/app/notifications"} className="v2-iconbtn" aria-label={t("Notifications")}>
             <Icon name="bell" size={20} />
             {live ? !!unreadNotes && <b>{unreadNotes > 99 ? "99+" : unreadNotes}</b> : <b>3</b>}
           </Link>
-          <Link href={ACCOUNT[app]} className={`v2-acct${ring}`} aria-label={storyNew && hasStory ? "Watch your Daily Story" : undefined} onClick={(e) => { if (hasStory && storyNew) { e.preventDefault(); setStory(true); return; } if (app === "creator" && window.matchMedia("(max-width: 760px)").matches) { e.preventDefault(); setAcctOpen(true); } }}>
+          <Link href={ACCOUNT[app]} className={`v2-acct${ring}`} aria-label={storyNew && hasStory ? t("Watch your Daily Story") : undefined} onClick={(e) => { if (hasStory && storyNew) { e.preventDefault(); setStory(true); return; } if (app === "creator" && window.matchMedia("(max-width: 760px)").matches) { e.preventDefault(); setAcctOpen(true); } }}>
             {who.photo ? (
               // eslint-disable-next-line @next/next/no-img-element
               <span className="v2-av photo"><img src={who.photo} alt="" /></span>
             ) : (
               <span className="v2-av">{who.initials}</span>
             )}
-            <span>{who.label}</span>
+            <span>{t(who.label)}</span>
           </Link>
         </nav>
       </header>
       {section && section.pages.length > 1 && (
         <div className="v2-subwrap">
-          <nav ref={subRef} className="site-wrap sub-menu nv-noscroll" aria-label={`${section.label} pages`}>
+          <nav ref={subRef} className="site-wrap sub-menu nv-noscroll" aria-label={t("{section} pages", { section: t(section.label) })}>
             {section.pages.map(([href, label]) => (
               <Link key={href} href={href} className={page === href ? "on" : undefined} aria-current={page === href ? "page" : undefined}>
-                {label}<AiSpark label={label} />
+                {t(label)}<AiSpark label={label} />
               </Link>
             ))}
           </nav>
@@ -338,26 +341,26 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
           <span>© 2026 Rezekii</span>
           <span className="site-spacer" />
           {/* Phones show short labels so the footer fits one line (owner, 28 Oct 2026). */}
-          <a href="https://rezekii.com/privacy" target="_blank" rel="noreferrer">Privacy<span className="ft-long"> Policy</span></a>
-          <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer">Terms<span className="ft-long"> of Service</span></a>
-          <a href={`mailto:${SUPPORT.email}`} title={SUPPORT.email}><span className="ft-long">{SUPPORT.email}</span><span className="ft-short">Email</span></a>
+          <a href="https://rezekii.com/privacy" target="_blank" rel="noreferrer"><span className="ft-long">{t("Privacy Policy")}</span><span className="ft-short">{t("Privacy")}</span></a>
+          <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer"><span className="ft-long">{t("Terms of Service")}</span><span className="ft-short">{t("Terms")}</span></a>
+          <a href={`mailto:${SUPPORT.email}`} title={SUPPORT.email}><span className="ft-long">{SUPPORT.email}</span><span className="ft-short">{t("Email")}</span></a>
         </div>
       </footer>
       </div>
       </div>
-      <nav className="nv-bottom" data-app={app} aria-label="Main menu (phone)" style={{ ["--n" as string]: phoneTabs.length + (app === "admin" ? 1 : 0) }}>
+      <nav className="nv-bottom" data-app={app} aria-label={t("Main menu (phone)")} style={{ ["--n" as string]: phoneTabs.length + (app === "admin" ? 1 : 0) }}>
         {/* A green pill that slides to the open tab (owner, 28 Oct 2026: make the tab bar easier to see). */}
         {navIndex >= 0 && <span className="nv-ind" aria-hidden="true" style={{ ["--i" as string]: navIndex }} />}
         {phoneTabs.map((s) =>
           isScan(s.href) ? (
             <Link key={s.href} href={`${s.href}#scan`} className={`nv-scan${section?.href === s.href ? " on" : ""}`} aria-current={section?.href === s.href ? "page" : undefined}>
               <span className="nv-scan-btn" aria-hidden="true"><Icon name="scan" size={26} /></span>
-              Scan
+              {t("Scan")}
             </Link>
           ) : (
             <Link key={s.href} href={tabHref(s.href)} className={section?.href === s.href ? "on" : ""} aria-current={section?.href === s.href ? "page" : undefined}>
               <Icon name={s.icon} size={24} />
-              {s.label === "Marketplace" ? "Market" : s.label}
+              {t(s.label === "Marketplace" ? "Market" : s.label)}
             </Link>
           ),
         )}
@@ -389,6 +392,7 @@ const AiSpark = ({ label }: { label: string }) => (AI_PAGES.includes(label) ? <s
 
 /** Every account section in a panel from the right (phones), with her photo, level and streak on top. */
 function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory?: () => void }) {
+  const t = useT();
   const you = useWho();
   const path = usePathname();
   const { toast, linked, live, me } = useDemo();
@@ -405,10 +409,10 @@ function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory?: () 
   const [theme, setTheme] = useState<Theme>("Auto");
   useLayoutEffect(() => setTheme(readTheme()), []);
   const nextTheme = () => {
-    const t: Theme = theme === "Light" ? "Dark" : theme === "Dark" ? "Auto" : "Light";
-    applyTheme(t);
-    setTheme(t);
-    toast(t === "Auto" ? "Theme: Auto (follows your phone)" : `Theme: ${t}`);
+    const next: Theme = theme === "Light" ? "Dark" : theme === "Dark" ? "Auto" : "Light";
+    applyTheme(next);
+    setTheme(next);
+    toast(next === "Auto" ? t("Theme: Auto (follows your phone)") : t("Theme: {theme}", { theme: t(next) }));
   };
   const [feedback, setFeedback] = useState(false);
   const samples = MY_SAMPLES.filter((x) => !["Done", "Not approved"].includes(x.status)).length;
@@ -428,7 +432,7 @@ function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory?: () 
   const row = ([k, label, icon]: (typeof ACCOUNT_TABS)[number]) => (
     <Link key={k} href={`/app/account#${k}`} className={here(k) ? "on" : undefined} aria-current={here(k) ? "page" : undefined} onClick={open(k)}>
       <span className={`ap-ic ${k}`}><Icon name={icon} size={16} /></span>
-      <span>{label}</span>
+      <span>{t(label)}</span>
       {k === "wallet" && !live && <small>{CREATOR.credits.toLocaleString("en-MY")}</small>}
       {k === "samples" && !live && samples > 0 && <i className="badge badge-amber">{samples}</i>}
       <Icon name="arrow" size={15} />
@@ -438,52 +442,54 @@ function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory?: () 
     <Portal>
       <div className="ap-back" onClick={onClose} />
       {/* Compact (owner, 1 Nov 2026): the whole panel fits one phone screen, with Sign out pinned at the bottom. */}
-      <aside className="ap-panel" role="dialog" aria-modal="true" aria-label="My Account">
+      <aside className="ap-panel" role="dialog" aria-modal="true" aria-label={t("My Account")}>
         <div className="ap-body">
           <div className="ap-me">
             {/* Her TikTok level frame, the same as on My Account (owner, 29 Oct 2026). Her photo and name open Your Profile (owner, 3 Nov 2026). */}
-            <Link href="/app/account#profile" className="ap-face" aria-label="Open Your Profile" onClick={open("profile")}>
+            <Link href="/app/account#profile" className="ap-face" aria-label={t("Open Your Profile")} onClick={open("profile")}>
               <LevelFace lv={live ? me?.ttLevel ?? null : linked ? CREATOR.tiktokLevel : null} size={50} img={you.photo} name={you.name} />
             </Link>
             <span>
               <Link href="/app/account#profile" className="ap-name" onClick={open("profile")}><b>{you.name}</b><small>{you.handle}</small></Link>
               <span className="ap-chips">
                 {/* The level opens Level, Streak & Badges; the flame opens its Streak section (owner, 1 Nov 2026). */}
-                <Link href="/app/account#level" className={`lv ${level.toLowerCase()}`} title={`${level} creator`} aria-label={`${level} creator. Open Level, Streak & Badges`} onClick={open("level")}><Icon name="gem" size={13} /></Link>
-                <Link href="/app/account#streak" className="st" title={`${streak}-day streak`} aria-label={`${streak}-day streak. Open your streak`} onClick={open("streak")}><Icon name="flame" size={13} />{streak}</Link>
-                {onStory && <button type="button" className="ap-story" onClick={onStory}><Icon name="video" size={13} width={2.4} /> Story</button>}
+                <Link href="/app/account#level" className={`lv ${level.toLowerCase()}`} title={t("{level} creator", { level: t(level) })} aria-label={t("{level} creator. Open Level, Streak & Badges", { level: t(level) })} onClick={open("level")}><Icon name="gem" size={13} /></Link>
+                <Link href="/app/account#streak" className="st" title={t("{n}-day streak", { n: streak })} aria-label={t("{n}-day streak. Open your streak", { n: streak })} onClick={open("streak")}><Icon name="flame" size={13} />{streak}</Link>
+                {onStory && <button type="button" className="ap-story" onClick={onStory}><Icon name="video" size={13} width={2.4} /> {t("Story")}</button>}
               </span>
             </span>
             <span className="ap-tools">
-              <button type="button" className="v2-iconbtn" aria-label={`Theme: ${theme}. Tap to change`} onClick={nextTheme}><Icon name={theme === "Light" ? "sun" : theme === "Dark" ? "moon" : "auto"} size={18} /></button>
+              <button type="button" className="v2-iconbtn" aria-label={t("Theme: {theme}. Tap to change", { theme: t(theme) })} onClick={nextTheme}><Icon name={theme === "Light" ? "sun" : theme === "Dark" ? "moon" : "auto"} size={18} /></button>
             </span>
           </div>
           {/* Every section shows, no More (owner, 3 Nov 2026: the panel isn't full, so nothing needs folding away). */}
-          <nav className="ap-list" aria-label="Account sections">
+          {/* Language sits with the theme on phones (owner, 3 Nov 2026: English, Bahasa Melayu, 中文). */}
+          <div className="ap-lang"><LangSwitch /></div>
+          <nav className="ap-list" aria-label={t("Account sections")}>
             {ACCOUNT_TABS.map(row)}
           </nav>
           {/* Support and feedback side by side (owner, 1 Nov 2026); Contact Support opens WhatsApp. */}
           <div className="ap-help">
-            <a href={SUPPORT.waLink} target="_blank" rel="noreferrer" className="ap-hbtn"><span className="ap-ic support"><Icon name="whatsapp" size={15} /></span>Contact Support</a>
-            <button type="button" className="ap-hbtn" onClick={() => setFeedback(true)}><span className="ap-ic feedback"><Icon name="edit" size={15} /></span>Send Feedback</button>
+            <a href={SUPPORT.waLink} target="_blank" rel="noreferrer" className="ap-hbtn"><span className="ap-ic support"><Icon name="whatsapp" size={15} /></span>{t("Contact Support")}</a>
+            <button type="button" className="ap-hbtn" onClick={() => setFeedback(true)}><span className="ap-ic feedback"><Icon name="edit" size={15} /></span>{t("Send Feedback")}</button>
           </div>
           {/* Legal and contact sit at the foot of the panel on phones (owner, 29 Oct 2026). */}
           <footer className="ap-foot">
             <span className="ap-links">
-              <a href="https://rezekii.com/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>
-              <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer">Terms of Service</a>
+              <a href="https://rezekii.com/privacy" target="_blank" rel="noreferrer">{t("Privacy Policy")}</a>
+              <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer">{t("Terms of Service")}</a>
               <a href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a>
             </span>
-            <small>© 2026 Rezekii · Built by Techwide</small>
+            <small>{t("© 2026 Rezekii · Built by Techwide")}</small>
           </footer>
         </div>
         {feedback && (
-          <Sheet title="Send Feedback" onClose={() => setFeedback(false)}>
+          <Sheet title={t("Send Feedback")} onClose={() => setFeedback(false)}>
             <FeedbackForm onDone={() => setFeedback(false)} />
           </Sheet>
         )}
         {/* Sign out lives in the panel on phones, not in Settings (owner, 29 Oct 2026). */}
-        <Link href="/signin?in=1" className="ap-signout" onClick={(e) => { if (!live) return onClose(); e.preventDefault(); fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/signin?in=1"; }); }}><Icon name="back" size={17} /> Sign Out</Link>
+        <Link href="/signin?in=1" className="ap-signout" onClick={(e) => { if (!live) return onClose(); e.preventDefault(); fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/signin?in=1"; }); }}><Icon name="back" size={17} /> {t("Sign Out")}</Link>
       </aside>
     </Portal>
   );

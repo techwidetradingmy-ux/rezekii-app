@@ -4,6 +4,10 @@ import Script from "next/script";
 import { DemoProvider } from "@/components/demo";
 import { ConsentGate } from "@/components/consent";
 import { WaGate } from "@/components/wa-gate";
+import { LangProvider } from "@/lib/i18n/client";
+import { htmlLang } from "@/lib/i18n/lang";
+import { getLang } from "@/lib/i18n/server";
+import { wordsFor } from "@/lib/i18n/translate";
 import "./globals.css";
 import "./v2.css";
 
@@ -25,12 +29,14 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, them
  */
 const THEME_SCRIPT = `try{var p=location.pathname;if(p==="/"||p==="/seller"){document.documentElement.dataset.theme="light"}else{var t=localStorage.getItem("rz2_theme");if(t==="Light"||t==="Dark"){document.documentElement.dataset.theme=t.toLowerCase()}}if((localStorage.getItem("rz2_in")==="1"||document.cookie.indexOf("rz_in=1")>=0)&&(p.indexOf("/app")===0||p.indexOf("/seller/app")===0||p.indexOf("/admin")===0)){document.documentElement.dataset.wait="1"}}catch(e){}`;
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  // English, Malay or Chinese (owner, 3 Nov 2026), from this device's choice; the word list comes with the page.
+  const lang = await getLang();
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={htmlLang(lang)} suppressHydrationWarning>
       <body className={albertSans.className}>
         <Script id="rz2-theme" strategy="beforeInteractive">{THEME_SCRIPT}</Script>
-        <DemoProvider>{children}<ConsentGate /><WaGate /></DemoProvider>
+        <LangProvider lang={lang} words={wordsFor(lang)}><DemoProvider>{children}<ConsentGate /><WaGate /></DemoProvider></LangProvider>
       </body>
     </html>
   );

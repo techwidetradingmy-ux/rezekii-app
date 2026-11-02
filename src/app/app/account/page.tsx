@@ -27,6 +27,8 @@ import { BrandLogo } from "@/components/brand-logos";
 import { MyWishes } from "@/components/creator1/my-wishes";
 import { ACCOUNT_TABS, tabFor, type AccountTab } from "@/lib/account-tabs";
 import { applyTheme, readTheme, type Theme } from "@/lib/theme";
+import { useLang, useSetLang } from "@/lib/i18n/client";
+import { LANGS } from "@/lib/i18n/lang";
 import { loadProfile, loadWallet, saveProfile } from "@/lib/live-rewards";
 import { notesChanged } from "@/lib/live-notes";
 import "@/app/creator2.css";
@@ -159,7 +161,10 @@ export default function Account() {
   const [pw, setPw] = useState(["", "", ""]);
   const [feedback, setFeedback] = useState(false);
   const [theme, setTheme] = useState<Theme>("Auto");
-  const [lang, setLang] = useState<"English" | "中文">("English");
+  // English, Bahasa Melayu or 中文 (owner, 3 Nov 2026): saved on this device and the page reloads in it.
+  const lang = useLang();
+  const [pickLang, langBusy] = useSetLang();
+  const langLabel = LANGS.find(([k]) => k === lang)![1];
 
   useEffect(() => {
     const t = readTheme();
@@ -732,7 +737,7 @@ export default function Account() {
           <div className="cr2-cells">
             <div className="cr2-cell">
               <span className="lbl">Language</span>
-              <span className="val"><Seg value={lang} options={["English", "中文"] as const} onChange={(l) => { setLang(l); toast(l === "中文" ? "已切换为中文" : "Switched to English"); }} /></span>
+              <span className="val"><Seg value={langLabel} options={LANGS.map(([, l]) => l)} onChange={(l) => { if (!langBusy) pickLang(LANGS.find(([, x]) => x === l)![0]); }} /></span>
             </div>
             {/* Phones switch theme from the sun/moon icon in the account panel (owner, 29 Oct 2026). */}
             <div className="cr2-cell acc-theme-row">
