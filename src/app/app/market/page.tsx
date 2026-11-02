@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { DataNote } from "@/components/data-note";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Flow, Hidden, Title } from "@/components/ui";
@@ -15,18 +15,24 @@ import { loadMarket } from "@/lib/live";
 import { AddButton } from "@/components/add-button";
 import "@/app/creator1.css";
 import { useKept } from "@/lib/keep";
+import { useT } from "@/lib/i18n/client";
+import { tx } from "@/lib/i18n/lang";
+
+/** A translated line whose {placeholders} are React elements (a blurred amount). */
+const fillEl = (line: string, els: Record<string, React.ReactNode>) => line.split(/\{(\w+)\}/).map((s, i) => (i % 2 ? <Fragment key={i}>{els[s]}</Fragment> : s));
 
 const WITH_SAMPLES = PRODUCTS.filter((p) => p.samples !== null);
 /** Free samples she can request right now (her streak is long enough). */
 const CAN_GET = WITH_SAMPLES.filter((p) => canGetSample(p.samples));
+/** The sample's categories (our own list, so they're translated where shown; signed in, TikTok's stay as TikTok names them). */
 const CATS = Array.from(new Set(PRODUCTS.map((p) => p.category))).sort();
 const SORTS = [
-  ["sold", "Best-selling"],
-  ["rate", "Highest commission"],
-  ["earn", "Earn per sale"],
-  ["cheap", "Price: low to high"],
-  ["dear", "Price: high to low"],
-  ["samples", "Most samples left"],
+  ["sold", tx("Best-selling")],
+  ["rate", tx("Highest commission")],
+  ["earn", tx("Earn per sale")],
+  ["cheap", tx("Price: low to high")],
+  ["dear", tx("Price: high to low")],
+  ["samples", tx("Most samples left")],
 ] as const;
 type SortKey = (typeof SORTS)[number][0];
 // Her own rate: level or special (owner, 29 Oct 2026).
@@ -38,6 +44,7 @@ const earn = (p: Product) => (p.price * mine(p)) / 100;
  * per sale. Add to showcase in one tap; request a free sample where the product has one. Filter by category, samples and tier, then sort.
  */
 export default function Marketplace() {
+  const t = useT();
   const { linked, setLinked, toast, requireWa, live, me } = useDemo();
   const [q, setQ] = useKept("mk-q", "");
   const [cat, setCat] = useKept("mk-cat", "All");
@@ -96,58 +103,58 @@ export default function Marketplace() {
   });
   return (
     <div className="v2-stack v2-in mk-page" style={{ gap: 20 }}>
-      <Title title="Marketplace" sub="Better rates than TikTok's open plan. Free Samples on many.">
-        <Link href="/app/account#samples" className="mk-mysamples" aria-label={live ? "My samples" : `My samples: ${MY_SAMPLES.filter((s) => !["Done", "Not approved"].includes(s.status)).length} in progress`} title="My samples"><Icon name="box" size={20} />{!live && <span className="badge">{MY_SAMPLES.filter((s) => !["Done", "Not approved"].includes(s.status)).length}</span>}</Link>
+      <Title title={t("Marketplace")} sub={t("Better rates than TikTok's open plan. Free Samples on many.")}>
+        <Link href="/app/account#samples" className="mk-mysamples" aria-label={live ? t("My samples") : t("My samples: {n} in progress", { n: MY_SAMPLES.filter((s) => !["Done", "Not approved"].includes(s.status)).length })} title={t("My samples")}><Icon name="box" size={20} />{!live && <span className="badge">{MY_SAMPLES.filter((s) => !["Done", "Not approved"].includes(s.status)).length}</span>}</Link>
       </Title>
-      {live && <DataNote latest={real?.asOf} what="Products and rates from" />}
+      {live && <DataNote latest={real?.asOf} what={t("Products and rates from")} />}
 
 
       <div className="mk-bar">
-        <span className="mk-bar-h">Filters</span>
+        <span className="mk-bar-h">{t("Filters")}</span>
         <label className="mk-search">
           <Icon name="search" size={18} />
-          <input className="np-input" type="search" placeholder="Search products" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search products or shops" />
+          <input className="np-input" type="search" placeholder={t("Search products")} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t("Search products or shops")} />
         </label>
         <label className="mk-select">
-          <span>Category</span>
+          <span>{t("Category")}</span>
           <select value={cat} onChange={(e) => setCat(e.target.value)}>
-            <option value="All">All categories ({live && real ? real.all : PRODUCTS.length})</option>
+            <option value="All">{t("All categories ({n})", { n: live && real ? real.all : PRODUCTS.length })}</option>
             {live && real
               ? real.cats.map(([c, n]) => <option key={c} value={c}>{c} ({n})</option>)
-              : CATS.map((c) => <option key={c} value={c}>{c} ({PRODUCTS.filter((p) => p.category === c).length})</option>)}
+              : CATS.map((c) => <option key={c} value={c}>{t(c)} ({PRODUCTS.filter((p) => p.category === c).length})</option>)}
           </select>
         </label>
         <label className="mk-select">
-          <span>Sort by</span>
+          <span>{t("Sort by")}</span>
           <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
-            {SORTS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+            {SORTS.map(([k, l]) => <option key={k} value={k}>{t(l)}</option>)}
           </select>
         </label>
         <button type="button" role="switch" aria-checked={onlySamples} className={`mk-switch ${onlySamples ? "on" : ""}`} onClick={() => setOnlySamples((o) => !o)}>
           <span className="np-switch-like" aria-hidden="true"><i /></span>
-          <Icon name="gift" size={16} /> Free Samples {!live && <em>{CAN_GET.length}</em>}
+          <Icon name="gift" size={16} /> {t("Free Samples")} {!live && <em>{CAN_GET.length}</em>}
         </button>
       </div>
 
       <section className="v2-card tight">
         <Flow
-          label="How the marketplace works"
+          label={t("How the marketplace works")}
           steps={[
-            { icon: "tag", title: "Better rate" },
-            { icon: "plus", title: "Add to showcase" },
-            { icon: "gift", title: "Or Free Samples" },
-            { icon: "video", title: "Post 1 video" },
-            { icon: "wallet", title: "Earn per sale" },
+            { icon: "tag", title: t("Better rate") },
+            { icon: "plus", title: t("Add to showcase") },
+            { icon: "gift", title: t("Or Free Samples") },
+            { icon: "video", title: t("Post 1 video") },
+            { icon: "wallet", title: t("Earn per sale") },
           ]}
         />
       </section>
 
       <p className="mk-count">
-        {live && real ? real.total : list.length} product{(live && real ? real.total : list.length) === 1 ? "" : "s"}
-        {(cat !== "All" || onlySamples || term) && <button type="button" className="v2-link" onClick={() => { setQ(""); setCat("All"); setOnlySamples(false); }}>Clear</button>}
-        <span className="mk-view" role="group" aria-label="View">
-          <button type="button" aria-pressed={view === "grid"} aria-label="Grid view" onClick={() => pickView("grid")}><Icon name="grid" size={16} /></button>
-          <button type="button" aria-pressed={view === "list"} aria-label="List view" onClick={() => pickView("list")}><Icon name="list" size={16} /></button>
+        {(live && real ? real.total : list.length) === 1 ? t("{n} product", { n: 1 }) : t("{n} products", { n: live && real ? real.total : list.length })}
+        {(cat !== "All" || onlySamples || term) && <button type="button" className="v2-link" onClick={() => { setQ(""); setCat("All"); setOnlySamples(false); }}>{t("Clear")}</button>}
+        <span className="mk-view" role="group" aria-label={t("Grid or list view")}>
+          <button type="button" aria-pressed={view === "grid"} aria-label={t("Grid view")} onClick={() => pickView("grid")}><Icon name="grid" size={16} /></button>
+          <button type="button" aria-pressed={view === "list"} aria-label={t("List view")} onClick={() => pickView("list")}><Icon name="list" size={16} /></button>
         </span>
       </p>
 
@@ -167,31 +174,31 @@ export default function Marketplace() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={p.img} alt="" />
                 {p.samples !== null && <SampleTag streak={p.samples} label={false} />}
-                {asked && <span className="cr1-reqd"><Icon name="check" size={13} width={3} /> Requested</span>}
+                {asked && <span className="cr1-reqd"><Icon name="check" size={13} width={3} /> {t("Requested")}</span>}
               </Link>
               <Link href={productHref(p.id)} className="mka-name"><strong>{p.name}</strong></Link>
               {/* Its TikTok rating when Rezekii already knows it (owner, 2 Nov 2026); TikTok is never asked per card. */}
-              <small className="mk-meta">{rm(p.price)} · {p.sold >= 1e6 ? `${(p.sold / 1e6).toFixed(1)}M` : `${Math.round(p.sold / 1e3)}K`} sold{p.rating > 0 && <> · <span className="mk-score"><Icon name="star" size={11} width={2.4} /> {p.rating.toFixed(1)}</span></>}</small>
+              <small className="mk-meta">{rm(p.price)} · {t("{sold} sold", { sold: p.sold >= 1e6 ? `${(p.sold / 1e6).toFixed(1)}M` : `${Math.round(p.sold / 1e3)}K` })}{p.rating > 0 && <> · <span className="mk-score"><Icon name="star" size={11} width={2.4} /> {p.rating.toFixed(1)}</span></>}</small>
               {better ? (
-                <span className="mka-rate" aria-label={`${now.plan} ${now.rate}%, Rezekii ${mine(p)}%`}><s>{now.rate}%</s><Icon name="arrow" size={13} /><b><Hidden>{mine(p)}%</Hidden></b>{now.plan === "Target plan" && <em className="mka-target">Target</em>}{rateFor(p).special && <em className="mka-special">Special</em>}</span>
+                <span className="mka-rate" aria-label={t("{plan} {rate}%, Rezekii {mine}%", { plan: t(now.plan), rate: now.rate, mine: mine(p) })}><s>{now.rate}%</s><Icon name="arrow" size={13} /><b><Hidden>{mine(p)}%</Hidden></b>{now.plan === "Target plan" && <em className="mka-target">{t("Target")}</em>}{rateFor(p).special && <em className="mka-special">{t("Special")}</em>}</span>
               ) : kept ? (
-                <span className="mka-rate" aria-label={`Your target plan ${now.rate}%, more than Rezekii's ${mine(p)}%`}><b><Hidden>{now.rate}%</Hidden></b><em className="mka-target">Your target plan</em></span>
+                <span className="mka-rate" aria-label={t("Your target plan {rate}%, more than Rezekii's {mine}%", { rate: now.rate, mine: mine(p) })}><b><Hidden>{now.rate}%</Hidden></b><em className="mka-target">{t("Your target plan")}</em></span>
               ) : (
-                <span className="mka-rate" aria-label={`Rezekii ${mine(p)}%`}><b><Hidden>{mine(p)}%</Hidden></b>{rateFor(p).special && <em className="mka-special">Special</em>}</span>
+                <span className="mka-rate" aria-label={`Rezekii ${mine(p)}%`}><b><Hidden>{mine(p)}%</Hidden></b>{rateFor(p).special && <em className="mka-special">{t("Special")}</em>}</span>
               )}
-              <span className="mka-earn">Earn <b><Hidden>{rm((p.price * Math.max(now.rate, mine(p))) / 100)}</Hidden></b></span>
+              <span className="mka-earn">{fillEl(t("Earn {r}"), { r: <b><Hidden>{rm((p.price * Math.max(now.rate, mine(p))) / 100)}</Hidden></b> })}</span>
               <span className="mka-acts">
                 {!kept ? (
                   <AddButton id={p.id} name={p.name} rate={mine(p)} />
                 ) : (
-                  <button type="button" className="mka-add done" disabled title="Your target plan pays more, so it stays as it is"><Icon name="shield" size={15} width={2.4} /> Kept</button>
+                  <button type="button" className="mka-add done" disabled title={t("Your target plan pays more, so it stays as it is")}><Icon name="shield" size={15} width={2.4} /> {t("Kept")}</button>
                 )}
                 {p.samples !== null ? (
-                  <button type="button" className={`mka-gift ${asked ? "asked" : ""}`} disabled={asked} onClick={() => requireWa(() => router.push(productHref(p.id, { sample: true })))} aria-label={asked ? "Free sample requested" : `Free sample, ${left} left`} title={asked ? "Requested" : `Free sample · ${left} left`}>
+                  <button type="button" className={`mka-gift ${asked ? "asked" : ""}`} disabled={asked} onClick={() => requireWa(() => router.push(productHref(p.id, { sample: true })))} aria-label={asked ? t("Free sample requested") : t("Free sample, {n} left", { n: left })} title={asked ? t("Requested") : t("Free sample · {n} left", { n: left })}>
                     <Icon name={asked ? "check" : "gift"} size={16} />
                   </button>
                 ) : (
-                  <button type="button" className="mka-gift off" disabled aria-label="No free sample" title="No free sample"><Icon name="gift" size={16} /></button>
+                  <button type="button" className="mka-gift off" disabled aria-label={t("No free sample")} title={t("No free sample")}><Icon name="gift" size={16} /></button>
                 )}
               </span>
             </article>
@@ -200,13 +207,13 @@ export default function Marketplace() {
       </div>
       </div>
       {live && real && real.items.length < real.total && (
-        <button type="button" className="btn-outline" style={{ alignSelf: "center" }} onClick={() => setPage((n) => n + 1)}>Show More Products</button>
+        <button type="button" className="btn-outline" style={{ alignSelf: "center" }} onClick={() => setPage((n) => n + 1)}>{t("Show More Products")}</button>
       )}
       {list.length === 0 && (
         <div className="v2-card flat" style={{ alignItems: "flex-start" }}>
-          <b>No products match</b>
-          <span className="v2-muted">Try other filters.</span>
-          <button type="button" className="np-btn v2-btn-sm" onClick={() => { setQ(""); setCat("All"); setOnlySamples(false); }}>Show All</button>
+          <b>{t("No products match")}</b>
+          <span className="v2-muted">{t("Try other filters.")}</span>
+          <button type="button" className="np-btn v2-btn-sm" onClick={() => { setQ(""); setCat("All"); setOnlySamples(false); }}>{t("Show All")}</button>
         </div>
       )}
 

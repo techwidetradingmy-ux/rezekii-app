@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { PRODUCTS, RAISES, product } from "@/lib/mock";
+import { useT } from "@/lib/i18n/client";
+
+/** A translated line whose {placeholders} are React elements (the climbing count). */
+const fillEl = (line: string, els: Record<string, React.ReactNode>) => line.split(/\{(\w+)\}/).map((s, i) => (i % 2 ? <Fragment key={i}>{els[s]}</Fragment> : s));
 
 /** Width of one product tile in the strip (88px image + 12px gap, from .v2-scan-track). */
 const ITEM = 100;
@@ -17,6 +21,7 @@ const AT = [0.12, 0.27, 0.43, 0.58, 0.74, 0.9];
 export function ScanAnim({ total = 1248, ms = 5600, loop = false, speed = 95, variant = "inline", onDone }: {
   total?: number; ms?: number; loop?: boolean; speed?: number; variant?: "hero" | "inline"; onDone?: () => void;
 }) {
+  const t = useT();
   const box = useRef<HTMLDivElement>(null);
   const track = useRef<HTMLDivElement>(null);
   const done = useRef(onDone);
@@ -127,8 +132,8 @@ export function ScanAnim({ total = 1248, ms = 5600, loop = false, speed = 95, va
       <div className="cr1-scanbox" role="status" aria-live="polite">
         {strip}
         <div className="cr1-counter">
-          <span>Checked <b className="v2-num">{count.toLocaleString("en-MY")}</b> of {total.toLocaleString("en-MY")}</span>
-          <span className="badge">{found} better rate{found === 1 ? "" : "s"} so far</span>
+          <span>{fillEl(t("Checked {n} of {total}"), { n: <b className="v2-num">{count.toLocaleString("en-MY")}</b>, total: total.toLocaleString("en-MY") })}</span>
+          <span className="badge">{found === 1 ? t("{n} better rate so far", { n: found }) : t("{n} better rates so far", { n: found })}</span>
         </div>
         <div className="v2-prog"><i style={{ width: `${(count / total) * 100}%`, animation: "none", transition: "width 0.2s linear" }} /></div>
       </div>
@@ -136,18 +141,18 @@ export function ScanAnim({ total = 1248, ms = 5600, loop = false, speed = 95, va
   }
 
   return (
-    <div className="cr1-scancard" aria-label="Example: a showcase scan">
+    <div className="cr1-scancard" aria-label={t("Example: a showcase scan")}>
       <div className="cr1-scanhead">
         <span className="v2-av">AR</span>
         <span>
-          <b>Scanning @aisyah.glow</b>
-          <small>TikTok Shop showcase</small>
+          <b>{t("Scanning {handle}", { handle: "@aisyah.glow" })}</b>
+          <small>{t("TikTok Shop showcase")}</small>
         </span>
-        <span className={`cr1-live ${finished ? "off" : ""}`}><i />{finished ? "Done" : "Live"}</span>
+        <span className={`cr1-live ${finished ? "off" : ""}`}><i />{finished ? t("Done") : t("Live")}</span>
       </div>
       {strip}
       <div className="cr1-counter big">
-        <span>Checked <b className="v2-num">{count.toLocaleString("en-MY")}</b> products</span>
+        <span>{fillEl(t("Checked {n} products"), { n: <b className="v2-num">{count.toLocaleString("en-MY")}</b> })}</span>
       </div>
       <ul className="cr1-found">
         {RAISES.slice(0, 4).map((r, i) => {
@@ -163,8 +168,8 @@ export function ScanAnim({ total = 1248, ms = 5600, loop = false, speed = 95, va
         })}
       </ul>
       <div className="cr1-scanfoot">
-        <span className={`cr1-foundn ${found > 0 ? "on" : ""}`}><Icon name="spark" size={16} /> {found} better rate{found === 1 ? "" : "s"} found</span>
-        <small>Rates for Silver · example</small>
+        <span className={`cr1-foundn ${found > 0 ? "on" : ""}`}><Icon name="spark" size={16} /> {found === 1 ? t("{n} better rate found", { n: found }) : t("{n} better rates found", { n: found })}</span>
+        <small>{t("Rates for Silver · example")}</small>
       </div>
     </div>
   );

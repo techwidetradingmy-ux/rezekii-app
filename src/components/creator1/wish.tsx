@@ -6,10 +6,30 @@ import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Stepper } from "@/components/ui";
 import "@/app/creator1.css";
-import { MY_WISHES, commitText, lookupLink, type Commit, type Lookup, type Wanted, type Wish, type WishItem } from "@/lib/mock-showcase";
+import { MY_WISHES, lookupLink, type Commit, type Lookup, type Wanted, type Wish, type WishItem } from "@/lib/mock-showcase";
 import { productHref } from "@/lib/product-view";
 import { findWishLink, loadMyWishes, saveWishLive, type LiveWish } from "@/lib/live-wishes";
 import { noteWhen } from "@/lib/live-notes";
+import { useLang, useT } from "@/lib/i18n/client";
+import { tx } from "@/lib/i18n/lang";
+
+/**
+ * What she commits, in her language: "4 videos, 1 LIVE, 90-day ad rights a month · 3 months" (the same as commitText in
+ * English). Used on the wish form and the Product page.
+ */
+export function useCommitText() {
+  const t = useT();
+  const lang = useLang();
+  return (c: Commit) => {
+    const list = [
+      c.videos ? (c.videos === 1 ? t("{n} video", { n: 1 }) : t("{n} videos", { n: c.videos })) : "",
+      c.lives ? t("{n} LIVE", { n: c.lives }) : "",
+      c.rights ? t("{n}-day ad rights", { n: c.rights }) : "",
+    ].filter(Boolean).join(lang === "zh" ? "、" : ", ");
+    const months = c.months === 1 ? t("{n} month", { n: 1 }) : t("{n} months", { n: c.months });
+    return t("{list} a month · {months}", { list, months });
+  };
+}
 
 /**
  * Her wish list, shared by Home, Most Wanted and the Product page. The preview has no server, so new wishes live in this browser
@@ -61,8 +81,10 @@ export function useWishes() {
  * scenes (owner, 29 Oct 2026: no "Seller contacted" for creators).
  */
 export function WishSteps({ w }: { w: Wish }) {
+  const t = useT();
   const live = w.status === "On Rezekii";
-  return <small className={`wf-st${live ? " live" : w.status === "Seller said no" ? " no" : ""}`}>{live ? `On Rezekii · +${w.raise ?? 1}% for you` : w.status} · {w.when}</small>;
+  // The status ("On wish list", "Seller said no") and a word like "Just now" are translated here.
+  return <small className={`wf-st${live ? " live" : w.status === "Seller said no" ? " no" : ""}`}>{live ? t("On Rezekii · +{n}% for you", { n: w.raise ?? 1 }) : t(w.status)} · {t(w.when)}</small>;
 }
 
 const RIGHTS: Commit["rights"][] = [0, 90, 180];
@@ -73,6 +95,8 @@ const MONTHS: Commit["months"][] = [1, 3, 6];
  * product launches on Rezekii; that's what we take to the seller. No rate to ask for: none is guaranteed, at least +1% if agreed.
  */
 export function WishForm({ item, wanted, onCancel }: { item: WishItem; wanted?: Wanted | null; onCancel: () => void }) {
+  const t = useT();
+  const commitText = useCommitText();
   const { linked, setLinked, live } = useDemo();
   const { add } = useWishes();
   const [done, setDone] = useState(false);
@@ -87,19 +111,20 @@ export function WishForm({ item, wanted, onCancel }: { item: WishItem; wanted?: 
 
   const send = () => {
     if (!linked) return setLinked(true);
-    if (videos + lives === 0) return setErr("Commit at least 1 video or LIVE a month.");
+    if (videos + lives === 0) return setErr(t("Commit at least 1 video or LIVE a month."));
     const commit = { videos, lives, rights, months, note: note.trim() || undefined };
     if (live) {
       setBusy(true);
       saveWishLive(item.id, commit).then((r) => {
         setBusy(false);
-        if (!r.ok) return setErr(r.error ?? "Didn't save. Please try again.");
+        if (!r.ok) return setErr(r.error ? t(r.error) : t("Didn't save. Please try again."));
         void refreshWishes();
         setDone(true);
       });
       return;
     }
-    add({ ...item, status: "On wish list", when: "Just now", commit });
+    // Kept in English like the sample wishes; WishSteps shows it in her language.
+    add({ ...item, status: "On wish list", when: tx("Just now"), commit });
     setDone(true);
   };
 
@@ -107,33 +132,33 @@ export function WishForm({ item, wanted, onCancel }: { item: WishItem; wanted?: 
     return (
       <section className="v2-card wf-card wf-done" aria-live="polite">
         <span className="v2-medal green" style={{ width: 64, height: 64 }}><Icon name="check" size={28} width={2.6} /></span>
-        <b>{wanted ? "You've Joined" : "Added to Your Wish List"}</b>
-        <p className="v2-muted" style={{ margin: 0 }}>{commitText({ videos, lives, rights, months })}. {live ? "You'll see it in your notifications if it launches on Rezekii." : "We'll tell you when the seller replies."}</p>
+        <b>{wanted ? t("You've Joined") : t("Added to Your Wish List")}</b>
+        <p className="v2-muted" style={{ margin: 0 }}>{commitText({ videos, lives, rights, months })}. {live ? t("You'll see it in your notifications if it launches on Rezekii.") : t("We'll tell you when the seller replies.")}</p>
       </section>
     );
   }
   return (
     <section className="v2-card wf-card" id="wish">
-      <h2 className="v2-h2">{wanted ? "Join This Wish" : "Add to Wish List"}</h2>
-      <p className="v2-muted" style={{ margin: 0 }}>If the seller agrees, what will you give each month?{wanted ? ` Others give ${avg} videos on average.` : ""}</p>
+      <h2 className="v2-h2">{wanted ? t("Join This Wish") : t("Add to Wish List")}</h2>
+      <p className="v2-muted" style={{ margin: 0 }}>{t("If the seller agrees, what will you give each month?")}{wanted ? ` ${t("Others give {n} videos on average.", { n: avg })}` : ""}</p>
       <div className="wf-rows">
-        <div className="wf-row"><span>Videos a month</span><Stepper label="Videos a month" value={videos} max={60} onChange={(v) => { setVideos(v); setErr(""); }} /></div>
-        <div className="wf-row"><span>LIVE sessions a month</span><Stepper label="LIVE sessions a month" value={lives} max={30} onChange={(v) => { setLives(v); setErr(""); }} /></div>
+        <div className="wf-row"><span>{t("Videos a month")}</span><Stepper label={t("Videos a month")} value={videos} max={60} onChange={(v) => { setVideos(v); setErr(""); }} /></div>
+        <div className="wf-row"><span>{t("LIVE sessions a month")}</span><Stepper label={t("LIVE sessions a month")} value={lives} max={30} onChange={(v) => { setLives(v); setErr(""); }} /></div>
         <div className="wf-row col">
-          <span>Ad rights for the seller</span>
-          <div className="v2-chips">{RIGHTS.map((r) => <button key={r} type="button" className={`v2-chip ${rights === r ? "on" : ""}`} onClick={() => setRights(r)}>{r ? `${r} days` : "None"}</button>)}</div>
+          <span>{t("Ad rights for the seller")}</span>
+          <div className="v2-chips">{RIGHTS.map((r) => <button key={r} type="button" className={`v2-chip ${rights === r ? "on" : ""}`} onClick={() => setRights(r)}>{r ? t("{n} days", { n: r }) : t("None")}</button>)}</div>
         </div>
         <div className="wf-row col">
-          <span>For how long</span>
-          <div className="v2-chips">{MONTHS.map((m) => <button key={m} type="button" className={`v2-chip ${months === m ? "on" : ""}`} onClick={() => setMonths(m)}>{m} month{m === 1 ? "" : "s"}</button>)}</div>
+          <span>{t("For how long")}</span>
+          <div className="v2-chips">{MONTHS.map((m) => <button key={m} type="button" className={`v2-chip ${months === m ? "on" : ""}`} onClick={() => setMonths(m)}>{m === 1 ? t("{n} month", { n: 1 }) : t("{n} months", { n: m })}</button>)}</div>
         </div>
       </div>
-      <textarea className="np-input wf-note-in" rows={2} maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} placeholder="A free sample would help me film faster" aria-label="Note for the seller (optional)" />
+      <textarea className="np-input wf-note-in" rows={2} maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("A free sample would help me film faster")} aria-label={t("Note for the seller (optional)")} />
       {err && <p className="wf-err" role="alert">{err}</p>}
-      <p className="wf-fine">If the seller agrees, you get at least +1%. Not guaranteed. The seller sees what you commit and sell.</p>
+      <p className="wf-fine">{t("If the seller agrees, you get at least +1%. Not guaranteed. The seller sees what you commit and sell.")}</p>
       <div className="pp-stack">
-        <button type="button" className="np-btn" disabled={busy} onClick={send}>{busy ? <span className="sl-spin" /> : wanted ? "Join" : "Add to Wish List"}</button>
-        <button type="button" className="btn-outline" onClick={onCancel}>Cancel</button>
+        <button type="button" className="np-btn" disabled={busy} onClick={send}>{busy ? <span className="sl-spin" /> : wanted ? t("Join") : t("Add to Wish List")}</button>
+        <button type="button" className="btn-outline" onClick={onCancel}>{t("Cancel")}</button>
       </div>
     </section>
   );
@@ -144,6 +169,7 @@ export function WishForm({ item, wanted, onCancel }: { item: WishItem; wanted?: 
  * open on the Product page unless `onFound` says otherwise.
  */
 export function LinkFinder({ onFound }: { onFound?: (r: Lookup) => void }) {
+  const t = useT();
   const router = useRouter();
   const { live } = useDemo();
   const [url, setUrl] = useState("");
@@ -151,13 +177,13 @@ export function LinkFinder({ onFound }: { onFound?: (r: Lookup) => void }) {
   const [err, setErr] = useState("");
   const find = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!url.trim()) return setErr("Paste a TikTok Shop product link first.");
+    if (!url.trim()) return setErr(t("Paste a TikTok Shop product link first."));
     setBusy(true);
     if (live) {
       // For real: TikTok Shop's own facts for the link; the Product page then shows it, on Rezekii or not.
       findWishLink(url).then((r) => {
         setBusy(false);
-        if ("error" in r) return setErr(r.error);
+        if ("error" in r) return setErr(t(r.error));
         setUrl("");
         router.push(productHref(r.product.id));
       });
@@ -166,7 +192,7 @@ export function LinkFinder({ onFound }: { onFound?: (r: Lookup) => void }) {
     window.setTimeout(() => {
       setBusy(false);
       const r = lookupLink(url);
-      if (!r) return setErr("Couldn't find this product. Check the link.");
+      if (!r) return setErr(t("Couldn't find this product. Check the link."));
       setUrl("");
       if (onFound) onFound(r);
       else router.push(productHref(r.item.id));
@@ -176,9 +202,9 @@ export function LinkFinder({ onFound }: { onFound?: (r: Lookup) => void }) {
     <form className="wf-link" onSubmit={find} noValidate>
       <label className="sc-search">
         <Icon name="link" size={17} />
-        <input type="url" inputMode="url" value={url} onChange={(e) => { setUrl(e.target.value); setErr(""); }} placeholder="Paste a TikTok Shop product link" aria-label="TikTok Shop product link" aria-invalid={!!err} />
+        <input type="url" inputMode="url" value={url} onChange={(e) => { setUrl(e.target.value); setErr(""); }} placeholder={t("Paste a TikTok Shop product link")} aria-label={t("TikTok Shop product link")} aria-invalid={!!err} />
       </label>
-      <button type="submit" className="np-btn v2-btn-sm" disabled={busy}>{busy ? <span className="sl-spin" /> : "Find"}</button>
+      <button type="submit" className="np-btn v2-btn-sm" disabled={busy}>{busy ? <span className="sl-spin" /> : t("Find")}</button>
       {err && <p className="wf-err" role="alert">{err}</p>}
     </form>
   );

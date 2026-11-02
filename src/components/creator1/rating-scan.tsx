@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { updatedWhen } from "@/components/data-note";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Count, Flow, Lock, RemoveWarn, Tip } from "@/components/ui";
@@ -11,17 +11,23 @@ import { removeFromShowcase } from "@/lib/live";
 import { CREATOR, PRODUCTS } from "@/lib/mock";
 import { productHref } from "@/lib/product-view";
 import { NO_PHOTO, shortName } from "@/lib/live-perf";
+import { useT } from "@/lib/i18n/client";
+import { tx } from "@/lib/i18n/lang";
 import "@/app/creator1.css";
 
+/** A translated line whose {placeholders} are React elements (the climbing count). */
+const fillEl = (line: string, els: Record<string, React.ReactNode>) => line.split(/\{(\w+)\}/).map((s, i) => (i % 2 ? <Fragment key={i}>{els[s]}</Fragment> : s));
+
 /**
- * Three levels of low rating (owner, 31 Oct 2026): heavily low under 3.0, low under 3.5, slightly low under 4.0.
+ * Three levels of low rating (owner, 31 Oct 2026): heavily low under 3.0, low under 3.5, slightly low under 4.0. The English
+ * here is translated where it's shown.
  */
 type Level = "heavy" | "low" | "slight";
 const levelOf = (r: number): Level => (r < 3 ? "heavy" : r < 3.5 ? "low" : "slight");
 const LEVELS: { key: Level; title: string; range: string; note: string; dot: string; badge: string }[] = [
-  { key: "heavy", title: "Heavily low", range: "under 3.0★", note: "Most likely to hurt your account health. Consider removing them.", dot: "bad", badge: "badge-red" },
-  { key: "low", title: "Low", range: "3.0 to 3.4★", note: "Buyers are often unhappy with these. Pick a 4★ product instead when you can.", dot: "mid", badge: "badge-amber" },
-  { key: "slight", title: "Slightly low", range: "3.5 to 3.9★", note: "Keep an eye on these.", dot: "low", badge: "badge-gray" },
+  { key: "heavy", title: tx("Heavily low"), range: tx("under 3.0★"), note: tx("Most likely to hurt your account health. Consider removing them."), dot: "bad", badge: "badge-red" },
+  { key: "low", title: tx("Low"), range: tx("3.0 to 3.4★"), note: tx("Buyers are often unhappy with these. Pick a 4★ product instead when you can."), dot: "mid", badge: "badge-amber" },
+  { key: "slight", title: tx("Slightly low"), range: tx("3.5 to 3.9★"), note: tx("Keep an eye on these."), dot: "low", badge: "badge-gray" },
 ];
 /** Her orders for each low-rated product in the showcase (last 30 days, from TikTok): how many, and how many were cancelled or returned. */
 const SEEN: Record<string, { orders: number; cancel: number; returned: number }> = {
@@ -46,6 +52,7 @@ type Flag = { id: string; name: string; img: string; rating: number; reviews?: n
 const RC_STREAM: [string, string][] = [["4.8", "ok"], ["3.2", "mid"], ["4.6", "ok"], ["3.7", "low"], ["4.9", "ok"], ["2.8", "bad"], ["4.4", "ok"], ["3.9", "low"], ["4.7", "ok"], ["3.1", "mid"], ["4.5", "ok"], ["2.6", "bad"], ["4.2", "ok"], ["3.6", "low"]];
 
 export function RatingScan() {
+  const t = useT();
   const router = useRouter();
   const { linked, setLinked, toast, live: signedIn } = useDemo();
   const [run, setRun] = useState(0);
@@ -60,12 +67,12 @@ export function RatingScan() {
       fetch(`/api/v2/ratings${run ? "?fresh=1" : ""}`, { cache: "no-store" })
         .then((r) => (r.ok ? r.json() : null))
         .then((d) => { if (d) setReal(d); })
-        .catch(() => toast("Couldn't check your showcase. Please try again."))
+        .catch(() => toast(t("Couldn't check your showcase. Please try again.")))
         .finally(() => setScanning(false));
       return;
     }
-    const t = window.setTimeout(() => setScanning(false), window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : SCAN_MS);
-    return () => window.clearTimeout(t);
+    const timer = window.setTimeout(() => setScanning(false), window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : SCAN_MS);
+    return () => window.clearTimeout(timer);
   }, [run, signedIn]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const flagged: Flag[] = real
@@ -95,7 +102,7 @@ export function RatingScan() {
     // Gone from the list at once (owner, 1 Nov 2026: faster); if TikTok says no, they come back with the reason.
     setRemoved((r) => [...r, ...ids]);
     setPicked((p) => p.filter((x) => !ids.includes(x)));
-    toast(ids.length > 1 ? `${ids.length} products removed from your showcase` : "Removed from your showcase");
+    toast(ids.length > 1 ? t("{n} products removed from your showcase", { n: ids.length }) : t("Removed from your showcase"));
     // Signed in, TikTok takes them out of her real showcase (up to 200 a call); Rezekii forgets them too, so a reload agrees.
     if (real) {
       for (let i = 0; i < ids.length; i += 200) {
@@ -103,7 +110,7 @@ export function RatingScan() {
         const r = await removeFromShowcase(part);
         if (!r.ok) {
           setRemoved((x) => x.filter((id) => !ids.slice(i).includes(id)));
-          return toast(r.error);
+          return toast(t(r.error));
         }
       }
     }
@@ -112,21 +119,21 @@ export function RatingScan() {
 
   const row = (p: Flag) => (
     <li key={p.id} className={levelOf(p.rating)}>
-      <input type="checkbox" className="rc-pick" checked={picked.includes(p.id)} onChange={() => flip(p.id)} aria-label={`Select ${p.name}`} />
+      <input type="checkbox" className="rc-pick" checked={picked.includes(p.id)} onChange={() => flip(p.id)} aria-label={t("Select {name}", { name: p.name })} />
       {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
       <img className="pv-open" src={p.img} alt="" onClick={() => router.push(productHref(p.id))} />
       <span className="rc-name">
         <b><Link href={productHref(p.id)} className="pv-open">{real ? shortName(p.name) : p.name}</Link></b>
         <small>
-          {p.reviews ? `${p.reviews.toLocaleString("en-MY")} reviews · ` : ""}
-          {p.orders ? <>You sold {p.orders} in 30 days · <span className={p.cancel > 10 ? "rc-bad" : undefined}>{p.cancel}% cancelled</span></> : "No sales from you in 30 days"}
-          {p.videos?.length ? ` · ${p.videos.length} video${p.videos.length === 1 ? "" : "s"} sold it` : ""}
+          {p.reviews ? `${t("{n} reviews", { n: p.reviews.toLocaleString("en-MY") })} · ` : ""}
+          {p.orders ? <>{t("You sold {n} in 30 days", { n: p.orders })} · <span className={p.cancel > 10 ? "rc-bad" : undefined}>{t("{n}% cancelled", { n: p.cancel })}</span></> : t("No sales from you in 30 days")}
+          {p.videos?.length ? ` · ${p.videos.length === 1 ? t("{n} video sold it", { n: 1 }) : t("{n} videos sold it", { n: p.videos.length })}` : ""}
         </small>
       </span>
-      <span className="rc-stars" aria-label={`${p.rating.toFixed(1)} stars`}>
+      <span className="rc-stars" aria-label={t("{n} stars", { n: p.rating.toFixed(1) })}>
         <Icon name="star" size={14} width={2.4} /> {p.rating.toFixed(1)}
       </span>
-      <button type="button" className={levelOf(p.rating) === "heavy" ? "np-btn v2-btn-sm" : "btn-outline v2-btn-sm"} onClick={() => remove([p.id])}>Remove</button>
+      <button type="button" className={levelOf(p.rating) === "heavy" ? "np-btn v2-btn-sm" : "btn-outline v2-btn-sm"} onClick={() => remove([p.id])}>{t("Remove")}</button>
     </li>
   );
   // Videos only for products under 3.0★ (owner, 31 Oct 2026); the rest she decides on from the lists above.
@@ -135,20 +142,20 @@ export function RatingScan() {
   return (
     <>
       <section className="v2-card tight sh-howcard">
-        <span className="sh-howlbl">How the health check works</span>
+        <span className="sh-howlbl">{t("How the health check works")}</span>
         <Flow
-          label="How the health check works"
+          label={t("How the health check works")}
           steps={[
-            { icon: "scan", title: "We scan your showcase" },
-            { icon: "star", title: "Under 4★: slightly low" },
-            { icon: "alert", title: "Under 3.5★: low" },
-            { icon: "alert", title: "Under 3★: heavily low", tone: "red" },
+            { icon: "scan", title: t("We scan your showcase") },
+            { icon: "star", title: t("Under 4★: slightly low") },
+            { icon: "alert", title: t("Under 3.5★: low") },
+            { icon: "alert", title: t("Under 3★: heavily low"), tone: "red" },
           ]}
         />
       </section>
 
-      <Lock what="your product ratings">
-        <section className={`sh-hub rc-hub ${scanning ? "busy" : "done"}`} aria-label="Showcase health check">
+      <Lock what={t("your product ratings")}>
+        <section className={`sh-hub rc-hub ${scanning ? "busy" : "done"}`} aria-label={t("Showcase health check")}>
           <span className="sh-grid" aria-hidden="true" />
           {/* While it checks (owner, 1 Nov 2026: more techy): a beam sweeps the card inside HUD corners, and ratings stream past. */}
           <span className="rc-hud" aria-hidden="true"><i /><i /><i /><i /></span>
@@ -161,53 +168,52 @@ export function RatingScan() {
             </span>
           )}
           <div className="sh-left">
-            <span className="sh-kicker"><i />{scanning ? "Checking your showcase…" : real ? `Health check · Updated ${checkedAt}` : `Health check · today ${checkedAt}`}</span>
-            <h2><b><Count key={`${run}-${real?.total ?? 0}`} value={real ? real.total : CREATOR.showcaseSize} ms={SCAN_MS - 200} /></b> products checked</h2>
-            {real?.more && <small className="v2-small">The first {real.total} in your showcase</small>}
-            {!scanning && unrated > 0 && <small className="v2-small">Not Rated Yet <b>{unrated.toLocaleString("en-MY")}</b></small>}
+            <span className="sh-kicker"><i />{scanning ? t("Checking your showcase…") : real ? t("Health check · Updated {when}", { when: checkedAt }) : t("Health check · today {time}", { time: checkedAt })}</span>
+            <h2>{fillEl(t("{n} products checked"), { n: <b><Count key={`${run}-${real?.total ?? 0}`} value={real ? real.total : CREATOR.showcaseSize} ms={SCAN_MS - 200} /></b> })}</h2>
+            {real?.more && <small className="v2-small">{t("The first {n} in your showcase", { n: real.total })}</small>}
+            {!scanning && unrated > 0 && <small className="v2-small">{t("Not Rated Yet")} <b>{unrated.toLocaleString("en-MY")}</b></small>}
             {!scanning && health !== null && (
               <span className="rc-health">
-                Showcase Health <b>{health}%</b> <small>Rezekii&apos;s Estimate</small>
-                <Tip label="About showcase health" text="Rezekii's estimate: the share of your rated showcase products at 4★ or more. Not TikTok's account health score." />
+                {t("Showcase Health")} <b>{health}%</b> <small>{t("Rezekii's Estimate")}</small>
+                <Tip label={t("About showcase health")} text={t("Rezekii's estimate: the share of your rated showcase products at 4★ or more. Not TikTok's account health score.")} />
               </span>
             )}
           </div>
-          <div className="rc-bar" role="img" aria-label={`${healthy} fine, ${by("slight").length} slightly low, ${by("low").length} low, ${heavy.length} heavily low`}>
+          <div className="rc-bar" role="img" aria-label={t("{fine} fine, {slight} slightly low, {low} low, {heavy} heavily low", { fine: healthy, slight: by("slight").length, low: by("low").length, heavy: heavy.length })}>
             <i className="ok" style={{ flexGrow: healthy }} />
             <i className="low" style={{ flexGrow: Math.max(by("slight").length, 0.001) * 60 }} />
             <i className="mid" style={{ flexGrow: Math.max(by("low").length, 0.001) * 60 }} />
             <i className="bad" style={{ flexGrow: Math.max(heavy.length, 0.001) * 60 }} />
           </div>
           <div className={`rc-bands four${scanning ? "" : " rc-pop"}`}>
-            <span className="ok"><b>{scanning ? "…" : healthy.toLocaleString("en-MY")}</b><small>4★ and up · fine</small></span>
-            <span className="low"><b>{scanning ? "…" : by("slight").length}</b><small>3.5–3.9★ · slightly low</small></span>
-            <span className="mid"><b>{scanning ? "…" : by("low").length}</b><small>3.0–3.4★ · low</small></span>
-            <span className="bad"><b>{scanning ? "…" : heavy.length}</b><small>Under 3★ · heavily low</small></span>
+            <span className="ok"><b>{scanning ? "…" : healthy.toLocaleString("en-MY")}</b><small>{t("4★ and up · fine")}</small></span>
+            <span className="low"><b>{scanning ? "…" : by("slight").length}</b><small>{t("3.5–3.9★ · slightly low")}</small></span>
+            <span className="mid"><b>{scanning ? "…" : by("low").length}</b><small>{t("3.0–3.4★ · low")}</small></span>
+            <span className="bad"><b>{scanning ? "…" : heavy.length}</b><small>{t("Under 3★ · heavily low")}</small></span>
           </div>
           <div className="sh-acts">
             {heavy.length > 0 ? (
               <button type="button" className="sh-go rc-go" disabled={scanning} onClick={() => remove(heavy.map((p) => p.id))}>
-                <Icon name="x" size={17} width={2.6} /> Remove {heavy.length} heavily low
+                <Icon name="x" size={17} width={2.6} /> {t("Remove {n} heavily low", { n: heavy.length })}
               </button>
             ) : (
-              <span className="sh-clear"><Icon name="check" size={16} width={3} /> Nothing heavily low</span>
+              <span className="sh-clear"><Icon name="check" size={16} width={3} /> {t("Nothing heavily low")}</span>
             )}
-            <button type="button" className="sh-again" disabled={scanning} onClick={() => setRun((r) => r + 1)}><Icon name="refresh" size={16} /> Check Again</button>
+            <button type="button" className="sh-again" disabled={scanning} onClick={() => setRun((r) => r + 1)}><Icon name="refresh" size={16} /> {t("Check Again")}</button>
           </div>
         </section>
       </Lock>
 
       {!scanning && left.length > 0 && (
         <p className="rc-note">
-          <Icon name="info" size={15} /> Removing a product from your showcase doesn&apos;t take down your videos: the yellow bag stays on them. In future, TikTok may
-          remove it, and Rezekii can&apos;t guarantee it won&apos;t. You decide what to keep or remove.
+          <Icon name="info" size={15} /> {t("Removing a product from your showcase doesn't take down your videos: the yellow bag stays on them. In future, TikTok may remove it, and Rezekii can't guarantee it won't. You decide what to keep or remove.")}
         </p>
       )}
       {!scanning && picked.length > 0 && (
         <div className="rc-selbar">
-          <b>{picked.length} selected</b>
-          <button type="button" className="v2-link" onClick={() => setPicked([])}>Clear</button>
-          <button type="button" className="np-btn v2-btn-sm" onClick={() => remove(picked)}>Remove {picked.length} selected</button>
+          <b>{t("{n} selected", { n: picked.length })}</b>
+          <button type="button" className="v2-link" onClick={() => setPicked([])}>{t("Clear")}</button>
+          <button type="button" className="np-btn v2-btn-sm" onClick={() => remove(picked)}>{t("Remove {n} selected", { n: picked.length })}</button>
         </div>
       )}
       {!scanning && LEVELS.map((l) => {
@@ -217,13 +223,13 @@ export function RatingScan() {
         return (
           <section key={l.key} className="v2-card rc-list">
             <div className="v2-card-h">
-              <h2 className="v2-h2"><span className={`rc-dot ${l.dot}`} /> {l.title} · {l.range}</h2>
+              <h2 className="v2-h2"><span className={`rc-dot ${l.dot}`} /> {t(l.title)} · {t(l.range)}</h2>
               <span className={`badge ${l.badge}`}>{list.length}</span>
             </div>
-            <p className="v2-small" style={{ margin: 0 }}>{l.note}</p>
+            <p className="v2-small" style={{ margin: 0 }}>{t(l.note)}</p>
             <div className="rc-tools">
-              <button type="button" className="v2-link" onClick={() => setPicked((p) => (all ? p.filter((x) => !list.some((q) => q.id === x)) : [...new Set([...p, ...list.map((q) => q.id)])]))}>{all ? "Unselect All" : "Select All"}</button>
-              <button type="button" className="btn-outline v2-btn-sm" onClick={() => remove(list.map((p) => p.id))}>Remove all {list.length}</button>
+              <button type="button" className="v2-link" onClick={() => setPicked((p) => (all ? p.filter((x) => !list.some((q) => q.id === x)) : [...new Set([...p, ...list.map((q) => q.id)])]))}>{all ? t("Unselect All") : t("Select All")}</button>
+              <button type="button" className="btn-outline v2-btn-sm" onClick={() => remove(list.map((p) => p.id))}>{t("Remove all {n}", { n: list.length })}</button>
             </div>
             <ul>{list.map(row)}</ul>
           </section>
@@ -234,29 +240,28 @@ export function RatingScan() {
       {!scanning && real && withVideos.length > 0 && (
         <section className="v2-card rc-list rc-videos">
           <div className="v2-card-h">
-            <h2 className="v2-h2">Your Videos With Heavily Low Products</h2>
+            <h2 className="v2-h2">{t("Your Videos With Heavily Low Products")}</h2>
             <span className="badge badge-gray">{withVideos.reduce((n, p) => n + (p.videos?.length ?? 0), 0)}</span>
           </div>
           <div className="rc-advice">
-            <b>Our advice</b>
-            <p>These products are rated under 3.0★. It&apos;s better to delete their videos, as they may affect your creator health rating.</p>
-            <p>If a video already has a violation, don&apos;t delete it: TikTok needs the video to review your appeal, and without it the appeal can fail.</p>
-            <p>This is advice only. Videos are deleted in the TikTok app, and a deleted video can&apos;t be recovered.</p>
+            <b>{t("Our advice")}</b>
+            <p>{t("These products are rated under 3.0★. It's better to delete their videos, as they may affect your creator health rating.")}</p>
+            <p>{t("If a video already has a violation, don't delete it: TikTok needs the video to review your appeal, and without it the appeal can fail.")}</p>
+            <p>{t("This is advice only. Videos are deleted in the TikTok app, and a deleted video can't be recovered.")}</p>
           </div>
           <p className="v2-small" style={{ margin: 0 }}>
-            Only videos that sold the product at least once are found. TikTok doesn&apos;t tell apps which product a video carries, so videos with this product
-            but no sales of it won&apos;t show here.
+            {t("Only videos that sold the product at least once are found. TikTok doesn't tell apps which product a video carries, so videos with this product but no sales of it won't show here.")}
           </p>
           {withVideos.map((p) => (
             <div key={p.id} className="rc-vgroup">
-              <span className="rc-vhead"><span className={`rc-dot ${LEVELS.find((l) => l.key === levelOf(p.rating))!.dot}`} /> <b>{shortName(p.name)}</b> <small>{p.rating.toFixed(1)}★</small><i className="rc-tag del">Better to delete</i></span>
+              <span className="rc-vhead"><span className={`rc-dot ${LEVELS.find((l) => l.key === levelOf(p.rating))!.dot}`} /> <b>{shortName(p.name)}</b> <small>{p.rating.toFixed(1)}★</small><i className="rc-tag del">{t("Better to delete")}</i></span>
               <ul>
                 {p.videos!.map((v) => (
                   <li key={v.id}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={v.cover ?? NO_PHOTO} alt="" referrerPolicy="no-referrer" />
-                    <span className="rc-name"><b>{v.title?.trim() || "Video"}</b><small>{v.orders} order{v.orders === 1 ? "" : "s"} of this product · RM {v.gmv.toLocaleString("en-MY")}</small></span>
-                    <a className="btn-outline v2-btn-sm" href={v.url} target="_blank" rel="noreferrer">Open in TikTok</a>
+                    <span className="rc-name"><b>{v.title?.trim() || t("Video")}</b><small>{v.orders === 1 ? t("{n} order of this product", { n: 1 }) : t("{n} orders of this product", { n: v.orders })} · RM {v.gmv.toLocaleString("en-MY")}</small></span>
+                    <a className="btn-outline v2-btn-sm" href={v.url} target="_blank" rel="noreferrer">{t("Open in TikTok")}</a>
                   </li>
                 ))}
               </ul>
@@ -266,7 +271,7 @@ export function RatingScan() {
       )}
 
       {ask && <RemoveWarn items={ask.map((id) => flagged.find((p) => p.id === id)!).filter(Boolean).map((p) => ({ id: p.id, name: p.name, img: p.img }))} onConfirm={confirmRemove} onClose={() => setAsk(null)} />}
-      {real && !real.linked && <p className="v2-muted" style={{ margin: 0 }}>Link TikTok Shop to check your showcase.</p>}
+      {real && !real.linked && <p className="v2-muted" style={{ margin: 0 }}>{t("Link TikTok Shop to check your showcase.")}</p>}
     </>
   );
 }

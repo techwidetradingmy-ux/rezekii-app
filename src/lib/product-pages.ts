@@ -3,6 +3,7 @@ import { CAMPAIGNS, TICKETS } from "./mock-admin";
 import { daily, type Trend } from "./mock-creator2";
 import { WANTED, onBoard, type Wanted } from "./mock-showcase";
 import { productView } from "./product-view";
+import { tx } from "./i18n/lang";
 
 /**
  * Product (owner, 29 Oct 2026): helpers for the seller and admin Product pages (the creator one uses product-view.ts). Every
@@ -33,7 +34,8 @@ export function mostWantedRank(w: Wanted) {
 
 /** Techwide's TAP partner ID sellers invite to their own campaign (sample). */
 export const PARTNER_ID = "7495 1180 2264";
-export const BONUSES = ["Extra % for top sellers", "Cash bonus at a sales target", "Free samples for everyone who committed"] as const;
+/** The bonuses a seller can offer, in English; the seller's Product page translates each one where it shows it. */
+export const BONUSES = [tx("Extra % for top sellers"), tx("Cash bonus at a sales target"), tx("Free samples for everyone who committed")] as const;
 
 const n = (v: number) => v.toLocaleString("en-MY");
 /** The message for the seller: who wants it, what they already sell, and what they'll give. We negotiate for the creators. */

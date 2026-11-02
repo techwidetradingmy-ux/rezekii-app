@@ -2,6 +2,7 @@ import { CREATOR, LIVE_PRODUCTS, MY_SAMPLES, PRODUCTS, bestRate, product, rateFo
 import { SELLER_CONDS, canGetSample, type Cond } from "./mock-creator1";
 import { NICHE_BEST, daily, type Trend } from "./mock-creator2";
 import { NOT_YET, ON_IDS, ON_SOLD30, WANTED, wantedFor, type Wanted } from "./mock-showcase";
+import { makeT, type T } from "./i18n/lang";
 
 /**
  * One product as the shared Product page shows it (owner, 29 Oct 2026: every product opens the same page). Covers marketplace
@@ -102,18 +103,24 @@ export function productView(id: string): ProductView | null {
   };
 }
 
-/** The free-sample conditions for one product, ticked against Aisyah (Active, 16-day streak, Silver, TikTok Lv.4). */
-export function sampleConditions(p: Product): Cond[] {
+/**
+ * The free-sample conditions for one product, ticked against Aisyah (Active, 16-day streak, Silver, TikTok Lv.4), in the
+ * language of `t` (English when none is given). The seller's own extra conditions are sample text and stay as written.
+ */
+export function sampleConditions(p: Product, t: T = makeT(null)): Cond[] {
   const streak = p.samples ?? 0;
   const posting = MY_SAMPLES.find((s) => s.status === "Posting");
   const postingName = posting ? product(posting.productId).name : "";
   const base: Cond[] = [
-    { label: "TikTok Shop linked", ok: CREATOR.tiktokShopLinked, you: "Linked as @aisyah.glow", fix: "/app/account#connections" },
-    { label: "Basic profile complete (name, state, WhatsApp)", ok: true, you: "Complete", fix: "/app/account#profile" },
-    { label: "No overdue samples", ok: true, you: posting ? `${postingName}: ${posting.videos ? "first video posted. On time." : `first video due ${posting.due}.`}` : "None" },
+    { label: t("TikTok Shop linked"), ok: CREATOR.tiktokShopLinked, you: t("Linked as {handle}", { handle: "@aisyah.glow" }), fix: "/app/account#connections" },
+    { label: t("Basic profile complete (name, state, WhatsApp)"), ok: true, you: t("Complete"), fix: "/app/account#profile" },
+    {
+      label: t("No overdue samples"), ok: true,
+      you: posting ? (posting.videos ? t("{name}: first video posted. On time.", { name: postingName }) : t("{name}: first video due {date}.", { name: postingName, date: posting.due ?? "" })) : t("None"),
+    },
   ];
   // The only extra rule is the streak the seller asks for, if any.
-  if (streak > 0) base.push({ label: `Posting ${streak} days in a row`, ok: CREATOR.streak >= streak, you: CREATOR.streak >= streak ? `You're on day ${CREATOR.streak}` : `You're on day ${CREATOR.streak} (${streak - CREATOR.streak} to go)` });
+  if (streak > 0) base.push({ label: t("Posting {n} days in a row", { n: streak }), ok: CREATOR.streak >= streak, you: CREATOR.streak >= streak ? t("You're on day {n}", { n: CREATOR.streak }) : t("You're on day {n} ({left} to go)", { n: CREATOR.streak, left: streak - CREATOR.streak }) });
   return [...base, ...(SELLER_CONDS[p.id] ?? [])];
 }
 export const canRequest = (p: Product) => canGetSample(p.samples);
