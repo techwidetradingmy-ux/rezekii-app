@@ -70,6 +70,14 @@ export default function SellerAccount() {
   return (
     <div className="v2-stack v2-in v2-narrow">
       <Title title="Account" sub={live ? me?.sellerShop ?? "No shop connected yet" : `${SELLER.shop} · ${SELLER.state}, ${SELLER.country}`} />
+      {/* Their user ID, as on the creator Account page (owner, 2 Nov 2026), to quote to support. */}
+      {live && me && (
+        <p className="acc-uid">
+          <span>User ID</span>
+          <code>{me.id}</code>
+          <button type="button" className="v2-iconbtn" aria-label="Copy user ID" onClick={() => navigator.clipboard.writeText(me.id).then(() => toast("User ID copied"), () => toast(me.id))}><Icon name="doc" size={15} /></button>
+        </p>
+      )}
       <ConnBanner />
 
       {live ? <LiveShopAuth /> : (
