@@ -9,7 +9,7 @@ import { useSharedRange, type SharedRange } from "./range";
 export type LivePerf = {
   videos: VideoRow[];
   /** Each product in a LIVE: id, commission, orders, cancel rate, GMV, items, cancelled items. */
-  lives: { id: string; date: string; time: string; orders: number; gmv: number; commission: number; cancel: number; items?: number; cancelItems?: number; products: [string, number, number, number, number, number?, number?][] }[];
+  lives: { id: string; date: string; time: string; orders: number; gmv: number; commission: number; cancel: number; items?: number; cancelItems?: number; start?: number; end?: number; products: [string, number, number, number, number, number?, number?][] }[];
   products: { productId: string; commission: number; orders: number; cancel: number; items?: number; cancelItems?: number; prevOrders: number; split: { video: number; live: number; other: number } }[];
   names: Record<string, { name: string; img: string | null }>;
   /** Cancel rate by items (owner, 1 Nov 2026). */

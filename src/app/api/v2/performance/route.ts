@@ -1,4 +1,5 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { after, NextResponse, type NextRequest } from "next/server";
+import { learnLiveTimes, liveTimes } from "@/modules/sales/live-times.ts";
 import { keepFresh } from "@/modules/creator-accounts/fresh.ts";
 import { currentUser } from "@/app/current-user";
 import { supabaseRest } from "@/integrations/supabase/rest.ts";
@@ -96,7 +97,14 @@ export async function GET(req: NextRequest) {
   }
   // Each video's cover through Rezekii (TikTok's own stops working within a day) and its TikTok link (owner, 2 Nov 2026).
   const handle = user.tiktok_username;
-  const imgs = await productImages(user.id, [...products.keys()]).catch(() => new Map<string, string | null>());
+  // Each LIVE's start and end, once TikTok has sent them (owner, 3 Nov 2026: LIVE length and sales per hour); the ones not known
+  // yet are asked for after the answer, newest first.
+  const liveIds = [...lives.entries()].sort((a, b) => (a[1].first < b[1].first ? 1 : -1)).map(([id]) => id);
+  const [imgs, times] = await Promise.all([
+    productImages(user.id, [...products.keys()]).catch(() => new Map<string, string | null>()),
+    liveTimes(user.id, liveIds).catch(() => ({} as Awaited<ReturnType<typeof liveTimes>>)),
+  ]);
+  if (liveIds.some((id) => !times[id])) after(() => learnLiveTimes(user.id, liveIds).catch((err) => console.error("[live times]", err instanceof Error ? err.message : err)));
   const topProduct = (g: Group) => [...g.byProduct.entries()].sort((a, b) => b[1].gmv - a[1].gmv)[0]?.[0] ?? "";
 
   return NextResponse.json({
@@ -105,7 +113,7 @@ export async function GET(req: NextRequest) {
       return { id, title: m?.title?.trim() || "Video", date: day(m?.created_at ?? g.first), views: m?.views ?? null, orders: g.orders.size, gmv: r2(g.gmv), commission: r2(g.commission), ...cancelOf(g), productId: topProduct(g), refunds: g.badItems, cover: `/api/img/v/${id}`, url: `https://www.tiktok.com/${handle ? `@${handle}/` : ""}video/${id}` };
     }),
     lives: [...lives.entries()].map(([id, g]) => ({
-      id, ...when(g.first), orders: g.orders.size, gmv: r2(g.gmv), commission: r2(g.commission), ...cancelOf(g),
+      id, ...when(g.first), orders: g.orders.size, gmv: r2(g.gmv), commission: r2(g.commission), ...cancelOf(g), ...(times[id] ?? {}),
       products: [...g.byProduct.entries()].sort((a, b) => b[1].commission - a[1].commission).map(([pid, p]) => [pid, r2(p.commission), p.orders.size, pct(p.badItems, p.items), r2(p.gmv), p.items, p.badItems] as const),
     })),
     products: [...products.entries()].map(([id, g]) => ({ productId: id, commission: r2(g.commission), orders: g.orders.size, ...cancelOf(g), prevOrders: prevOrders.get(id)?.size ?? 0, split: { video: r2(g.split.video), live: r2(g.split.live), other: r2(g.split.other) } })),

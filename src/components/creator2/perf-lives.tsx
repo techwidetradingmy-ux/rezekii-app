@@ -11,6 +11,10 @@ import { perfProduct, useLivePerf } from "@/lib/live-perf";
 import { CancelChip, CancelRate, SortBar, cancelFlag, useSortPref } from "@/components/sort-bar";
 import "@/app/creator2.css";
 
+/** How long a LIVE ran, in seconds, once TikTok has sent its times (owner, 3 Nov 2026). */
+const span = (l: object) => { const { start, end } = l as { start?: number; end?: number }; return start && end && end > start ? end - start : null; };
+const hm = (s: number) => { const h = Math.floor(s / 3600), m = Math.round((s % 3600) / 60); return h ? `${h}h ${m}m` : `${m}m`; };
+
 const SORTS = ["GMV", "Commission", "Cancels"] as const;
 type Sort = (typeof SORTS)[number];
 type Item = readonly [string, number, number, number, number?, number?, number?];
@@ -38,7 +42,7 @@ export function LiveList() {
     <div className="v2-stack" style={{ gap: 14 }}>
       <p className="an-range">
         <b>{rows.length} LIVEs</b><span>{rm(total, 0)} commission</span>
-        <Tip text="Found from your orders tagged LIVE. TikTok doesn't share viewers or watch time with creators." />
+        <Tip text="Found from your orders tagged LIVE. LIVE length and sales per hour show once TikTok sends the LIVE's times (it can take a day)." />
       </p>
       <SortBar value={sort} options={SORTS} onChange={setSort} dir={dir} onFlip={flip} />
       <Lock what="what each LIVE sold">
@@ -68,6 +72,8 @@ export function LiveList() {
               {openId === l.id && (
                 <div className="pl-body">
                   <div className="cr2-mini">
+                    {span(l) && <span><small>LIVE Length</small><b>{hm(span(l)!)}</b></span>}
+                    {span(l) && <span><small>Sales per Hour</small><b>{rm(l.gmv / Math.max(span(l)! / 3600, 0.25), 0)}</b></span>}
                     <span><small>Orders</small><b>{l.orders}</b></span>
                     <span><small>Sales</small><b>{rm(l.gmv, 0)}</b></span>
                     <span><small>Cancel Rate</small><CancelRate pct={l.cancel} items={items} bad={"cancelItems" in l ? l.cancelItems : undefined} /></span>
