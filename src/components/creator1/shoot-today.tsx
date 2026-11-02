@@ -18,6 +18,9 @@ import { useKept } from "@/lib/keep";
 import { AddButton } from "@/components/add-button";
 import { GmvSpark } from "@/components/gmv-spark";
 import { NO_PHOTO, shortName } from "@/lib/live-perf";
+import { useLang, useT } from "@/lib/i18n/client";
+import { dateLocale, type Lang, type T } from "@/lib/i18n/lang";
+import { rich } from "@/components/publish/rich";
 
 /** Drafts made from Today's Ideas wait here until the Content Calendar picks them up (preview only: this browser tab). */
 export const IDEA_DRAFTS = "rz-idea-drafts";
@@ -38,10 +41,11 @@ export function useIdeasView(): [IdeasView, (v: IdeasView) => void] {
   return [view, pick];
 }
 export function ViewSwitch({ view, onChange }: { view: IdeasView; onChange: (v: IdeasView) => void }) {
+  const t = useT();
   return (
-    <span className="td-views master" role="group" aria-label="View">
-      <button type="button" aria-label="Cards" aria-pressed={view === "cards"} className={view === "cards" ? "on" : undefined} onClick={() => onChange("cards")}><Icon name="grid" size={16} /></button>
-      <button type="button" aria-label="List" aria-pressed={view === "list"} className={view === "list" ? "on" : undefined} onClick={() => onChange("list")}><Icon name="list" size={16} /></button>
+    <span className="td-views master" role="group" aria-label={t("Show as")}>
+      <button type="button" aria-label={t("Cards")} aria-pressed={view === "cards"} className={view === "cards" ? "on" : undefined} onClick={() => onChange("cards")}><Icon name="grid" size={16} /></button>
+      <button type="button" aria-label={t("List")} aria-pressed={view === "list"} className={view === "list" ? "on" : undefined} onClick={() => onChange("list")}><Icon name="list" size={16} /></button>
     </span>
   );
 }
@@ -233,12 +237,18 @@ type BestRow = {
 const rm = (v: number) => (v >= 1e6 ? `${(v / 1e6).toFixed(1)}M` : v >= 1e3 ? `${Math.round(v / 1e3)}K` : String(Math.round(v)));
 /** A 28-day graph with no two days in a row in TikTok's top 100 draws only dots, no line. */
 const dotsOnly = (t: (number | null)[]) => !t.some((v, i) => v != null && t[i - 1] != null);
-const dayName = (d: string) => new Date(`${d}T12:00:00+08:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+const dayName = (d: string, lang: Lang) => new Date(`${d}T12:00:00+08:00`).toLocaleDateString(dateLocale(lang), { day: "numeric", month: "short" });
 /** What a row's sales number means: TikTok's GMV for the day, units across TikTok in about the last day, or all-time units. */
-const salesLine = (s: LiveSales) =>
-  s.kind === "gmv" ? `RM ${rm(s.lo)}–${rm(s.hi)} sales on ${dayName(s.day)}` :
-  s.kind === "video" ? `RM ${rm(s.lo)}–${rm(s.hi)} from ${s.videos} top video${s.videos === 1 ? "" : "s"} ${s.week ? "this week" : `on ${dayName(s.day)}`}` :
-  s.kind === "others" ? `≈ RM ${rm(s.gmv)} outside top videos on ${dayName(s.day)}` : s.kind === "day" ? `~${short(s.units)} sold on TikTok in the last day` : `${short(s.units)} sold on TikTok`;
+const salesLine = (s: LiveSales, t: T, lang: Lang) => {
+  if (s.kind === "gmv") return t("RM {lo}–{hi} sales on {day}", { lo: rm(s.lo), hi: rm(s.hi), day: dayName(s.day, lang) });
+  if (s.kind === "video") {
+    const v = { lo: rm(s.lo), hi: rm(s.hi), n: s.videos, day: dayName(s.day, lang) };
+    if (s.week) return s.videos === 1 ? t("RM {lo}–{hi} from {n} top video this week", v) : t("RM {lo}–{hi} from {n} top videos this week", v);
+    return s.videos === 1 ? t("RM {lo}–{hi} from {n} top video on {day}", v) : t("RM {lo}–{hi} from {n} top videos on {day}", v);
+  }
+  if (s.kind === "others") return t("≈ RM {gmv} outside top videos on {day}", { gmv: rm(s.gmv), day: dayName(s.day, lang) });
+  return s.kind === "day" ? t("~{n} sold on TikTok in the last day", { n: short(s.units) }) : t("{n} sold on TikTok", { n: short(s.units) });
+};
 
 /**
  * Best sellers (owner, 29 Oct 2026). Marketplace: public TikTok Shop products in her top categories that aren't in her showcase
@@ -248,6 +258,8 @@ const salesLine = (s: LiveSales) =>
  */
 export function NicheBest({ view: shape = "list", inFrame = false, source = "market", channel = "all", onView }: { view?: IdeasView; inFrame?: boolean; source?: BestSource; channel?: "all" | "video" | "others"; onView?: (v: IdeasView) => void }) {
   const { linked: demoLinked, setLinked, toast, live, me } = useDemo();
+  const t = useT();
+  const lang = useLang();
   const linked = live ? !!me?.shop : demoLinked;
   const mine = source === "showcase";
   const week = (id: string) => NICHE_BEST.find((b) => b.productId === id)?.weekSold ?? Math.round(product(id).sold / 26);
@@ -281,7 +293,7 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
     ? (real?.rows ?? []).map((b) => ({
         productId: b.id, name: shortName(b.name), img: b.img ?? NO_PHOTO, category: b.category ?? "Other", rating: b.rating,
         // Sales across the whole of TikTok, not hers (owner, 31 Oct 2026).
-        line: salesLine(b.sales),
+        line: salesLine(b.sales, t, lang),
         rate: ((!b.rezekii || me?.level === "bronze" ? b.openRate : b.silverRate ?? b.openRate) ?? 0) / 100,
         points: null, pointsLabel: "", rezekii: b.rezekii, sample: b.sample, trend: b.trend, trendRange: b.trendRange,
       }))
@@ -292,8 +304,8 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
           const p = product(b.productId);
           return {
             productId: p.id, name: p.name, img: p.img, category: p.category, rating: p.rating,
-            line: `${short(b.weekSold)} sold this week${mine && ON_SOLD30[p.id] ? ` · You sold ${ON_SOLD30[p.id]}` : ""}`,
-            rate: Math.max(mine ? rateFor(p).rate : 0, bestRate(p).rate), points: daily(b.weekSold, b.trend), pointsLabel: "Sales, 7 days",
+            line: mine && ON_SOLD30[p.id] ? t("{n} sold this week · You sold {m}", { n: short(b.weekSold), m: ON_SOLD30[p.id] }) : t("{n} sold this week", { n: short(b.weekSold) }),
+            rate: Math.max(mine ? rateFor(p).rate : 0, bestRate(p).rate), points: daily(b.weekSold, b.trend), pointsLabel: t("Sales, 7 days"),
           };
         });
   // Short tab names so the row fits a phone: "Home & Kitchen" shows as "Home".
@@ -310,38 +322,39 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
   const lvl = me?.level ?? "bronze";
   const { rail, at } = useRail<HTMLOListElement>(shape);
   return (
-    <section className={inFrame ? "nb-box nb-in" : "v2-card nb-box"} aria-label={mine ? "Best sellers in your showcase" : "Best sellers in your niche"}>
+    <section className={inFrame ? "nb-box nb-in" : "v2-card nb-box"} aria-label={mine ? t("Best sellers in your showcase") : t("Best sellers in your niche")}>
       {/* The card's AI header sits above the tabs (owner, 29 Oct 2026: one AI label per card); each tab just says where it's from. */}
-      {inFrame ? <p className="nb-src">{mine ? (live ? (channel === "video" ? "Products in your showcase that are in TikTok's top-selling videos this week" : channel === "others" ? "Products in your showcase that sold most outside TikTok's top videos" : "Products in your showcase, by their sales across TikTok") : "Products in your showcase") : live ? (channel === "video" ? "Products in TikTok's top-selling videos, all categories · not in your showcase yet" : channel === "others" ? "Sold most outside TikTok's top videos: LIVE, showcase, search and shop page · not in your showcase yet" : "Sold the most on TikTok Shop, all categories, with Rezekii campaign products · not in your showcase yet") : "Live on TikTok Shop, not in your showcase yet"}</p> : <AiHead title={mine ? "Best Sellers in Your Showcase" : "Best Sellers on TikTok Shop"} sub="Best-selling first, updated daily" />}
-      {live && real?.locked && <DetailsLock missing={real.locked} what="Today's Ideas" />}
+      {inFrame ? <p className="nb-src">{mine ? (live ? (channel === "video" ? t("Products in your showcase that are in TikTok's top-selling videos this week") : channel === "others" ? t("Products in your showcase that sold most outside TikTok's top videos") : t("Products in your showcase, by their sales across TikTok")) : t("Products in your showcase")) : live ? (channel === "video" ? t("Products in TikTok's top-selling videos, all categories · not in your showcase yet") : channel === "others" ? t("Sold most outside TikTok's top videos: LIVE, showcase, search and shop page · not in your showcase yet") : t("Sold the most on TikTok Shop, all categories, with Rezekii campaign products · not in your showcase yet")) : t("Live on TikTok Shop, not in your showcase yet")}</p> : <AiHead title={mine ? t("Best Sellers in Your Showcase") : t("Best Sellers on TikTok Shop")} sub={t("Best-selling first, updated daily")} />}
+      {live && real?.locked && <DetailsLock missing={real.locked} what={t("Today's Ideas")} />}
       {live && channel === "others" && real && real.rows.length > 0 && (
-        <p className="v2-small nb-others"><Icon name="info" size={14} /> Others = a product&apos;s TikTok sales that day minus its sales in TikTok&apos;s top-100 videos. It includes people who buy from LIVEs, showcases, search and the shop page (and smaller videos), so it&apos;s an estimate.</p>
+        <p className="v2-small nb-others"><Icon name="info" size={14} /> {t("Others = a product's TikTok sales that day minus its sales in TikTok's top-100 videos. It includes people who buy from LIVEs, showcases, search and the shop page (and smaller videos), so it's an estimate.")}</p>
       )}
       {live && real?.day && (
         <p className="v2-small v2-upd">
-          <Icon name="clock" size={14} /> TikTok sales on {dayName(real.day)}{real.listAt ? ` · list updated ${updatedWhen(real.listAt)}` : ""}
-          <Tip label="When this updates" text="TikTok publishes each day's best sellers the next afternoon, around 4 PM. This list updates as soon as it's out, so it's always the newest day." />
+          <Icon name="clock" size={14} /> {real.listAt ? t("TikTok sales on {day} · list updated {when}", { day: dayName(real.day, lang), when: updatedWhen(real.listAt) }) : t("TikTok sales on {day}", { day: dayName(real.day, lang) })}
+          <Tip label={t("When this updates")} text={t("TikTok publishes each day's best sellers the next afternoon, around 4 PM. This list updates as soon as it's out, so it's always the newest day.")} />
         </p>
       )}
-      {live && failed && <p className="v2-muted" style={{ margin: 0 }}>Couldn&apos;t load this list. Please try again later.</p>}
-      {live && real && !loading && !real.locked && !real.rows.length && <p className="v2-muted" style={{ margin: 0 }}>{mine ? (channel === "video" ? "None of your showcase products are in TikTok's top-selling videos this week." : channel === "others" ? "None of your showcase products are in TikTok's best-seller lists for this day." : "Your showcase is empty. Add products from the Marketplace.") : "TikTok hasn't published a best-seller list yet. Check again later."}</p>}
+      {live && failed && <p className="v2-muted" style={{ margin: 0 }}>{t("Couldn't load this list. Please try again later.")}</p>}
+      {live && real && !loading && !real.locked && !real.rows.length && <p className="v2-muted" style={{ margin: 0 }}>{mine ? (channel === "video" ? t("None of your showcase products are in TikTok's top-selling videos this week.") : channel === "others" ? t("None of your showcase products are in TikTok's best-seller lists for this day.") : t("Your showcase is empty. Add products from the Marketplace.")) : t("TikTok hasn't published a best-seller list yet. Check again later.")}</p>}
       {onView && <ViewSwitch view={shape} onChange={onView} />}
-      <div className="nb-cats" role="group" aria-label="Category">
-        {cats.map((c) => <button key={c} type="button" className={`v2-chip${c === cat ? " on" : ""}`} aria-pressed={c === cat} onClick={() => setCat(c)}>{c}</button>)}
+      <div className="nb-cats" role="group" aria-label={t("Category")}>
+        {/* Category names come from TikTok (or the sample) and stay as they are; only "All" is Rezekii's. */}
+        {cats.map((c) => <button key={c} type="button" className={`v2-chip${c === cat ? " on" : ""}`} aria-pressed={c === cat} onClick={() => setCat(c)}>{c === "All" ? t("All") : c}</button>)}
       </div>
-      {busy && <Loading text="Checking which best sellers you can add…" />}
+      {busy && <Loading text={t("Checking which best sellers you can add…")} />}
       <ol ref={rail} className={`nb-list ${shape}`} key={cat}>
         {shown.map((b) => {
           return (
             <li key={b.productId}>
               <span className="nb-rank">{all.indexOf(b) + 1}</span>
-              <Link href={productHref(b.productId)} className="nb-view" aria-label={`View ${b.name}`}>
+              <Link href={productHref(b.productId)} className="nb-view" aria-label={t("View {name}", { name: b.name })}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={b.img} alt="" />
                 <span className="nb-main">
-                  {b.rezekii && <span className="nb-tags"><i className="nb-tag">Rezekii campaign</i>{b.sample && <i className="nb-tag gift">Free sample</i>}</span>}
+                  {b.rezekii && <span className="nb-tags"><i className="nb-tag">{t("Rezekii campaign")}</i>{b.sample && <i className="nb-tag gift">{t("Free sample")}</i>}</span>}
                   <b>{b.name}</b>
-                  <small>{b.line}{b.rate > 0 && <> · Earn <Hidden>{b.rate}%</Hidden></>}</small>
+                  <small>{b.rate > 0 ? rich(t("{line} · Earn {rate}"), { line: b.line, rate: <Hidden>{b.rate}%</Hidden> }) : b.line}</small>
                   {b.rating !== null && <span className="nb-score"><Icon name="star" size={12} width={2.4} /> {b.rating.toFixed(1)}</span>}
                 </span>
                 {b.points && b.points.some((v) => v > 0) && <Trend points={b.points} label={b.pointsLabel} />}
@@ -349,12 +362,12 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
                     ranges. A list saved before then still has 7 days, so the label says how many. A graph of lone dots says on
                     how many of those days it was in TikTok's top 100 (owner, 3 Nov 2026: "why some of the product the graph is
                     only 1 dot"). */}
-                {b.trend && b.trend.some((v) => v != null) && <span className="nb-spark"><GmvSpark points={b.trend} ranges={b.trendRange} /><small>{dotsOnly(b.trend) ? `Top 100 on ${b.trend.filter((v) => v != null).length} of ${b.trend.length} Days` : `Last ${b.trend.length} Days`}</small></span>}
+                {b.trend && b.trend.some((v) => v != null) && <span className="nb-spark"><GmvSpark points={b.trend} ranges={b.trendRange} /><small>{dotsOnly(b.trend) ? t("Top 100 on {n} of {days} Days", { n: b.trend.filter((v) => v != null).length, days: b.trend.length }) : t("Last {n} Days", { n: b.trend.length })}</small></span>}
               </Link>
               {/* Rezekii campaign products can ask for a free sample (owner, 31 Oct 2026); TikTok's other products only add. */}
-              {live && b.sample && <Link href={productHref(b.productId, { sample: true })} className="nb-add nb-sample" aria-label={`Request a free sample of ${b.name}`}><Icon name="gift" size={18} /></Link>}
+              {live && b.sample && <Link href={productHref(b.productId, { sample: true })} className="nb-add nb-sample" aria-label={t("Request a free sample of {name}", { name: b.name })}><Icon name="gift" size={18} /></Link>}
               {mine ? (
-                <Link href={`/app/publish?idea=${encodeURIComponent(`Show ${b.name}`)}`} className="nb-add" aria-label={`Plan a video for ${b.name}`}><Icon name="video" size={18} /></Link>
+                <Link href={`/app/publish?idea=${encodeURIComponent(t("Show {name}", { name: b.name }))}`} className="nb-add" aria-label={t("Plan a video for {name}", { name: b.name })}><Icon name="video" size={18} /></Link>
               ) : (
               <AddButton id={b.productId} name={b.name} rate={b.rate > 0 ? b.rate : null} size="sm" />
               )}
@@ -364,17 +377,17 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
       </ol>
       {shape === "cards" && <span className="td-dots" aria-hidden="true">{shown.map((b, n) => <i key={b.productId} className={n === at ? "on" : undefined} />)}</span>}
       {!busy && all.length > shown.length && (
-        <button type="button" className="btn-outline v2-btn-sm nb-more" onClick={() => setShownN((n) => n + per)}>Show More · {all.length - shown.length} left</button>
+        <button type="button" className="btn-outline v2-btn-sm nb-more" onClick={() => setShownN((n) => n + per)}>{t("Show More · {n} left", { n: all.length - shown.length })}</button>
       )}
       {live && real && !busy && real.rows.some((b) => b.trend?.some((v) => v != null)) && (
         <p className="v2-small nb-est">
-          Sales lines are estimated from TikTok&apos;s daily sales ranges.
-          <Tip label="About the sales lines" text="Each dot is a day the product was in TikTok's daily top 100 best sellers, and a gap is a day it wasn't. A single dot means it was in the top 100 on only one of the days shown." />
+          {t("Sales lines are estimated from TikTok's daily sales ranges.")}
+          <Tip label={t("About the sales lines")} text={t("Each dot is a day the product was in TikTok's daily top 100 best sellers, and a gap is a day it wasn't. A single dot means it was in the top 100 on only one of the days shown.")} />
         </p>
       )}
       {/* How deep she sees TikTok's top 100 (owner, 1 Nov 2026): Bronze 10, Silver 30, Gold all 100. */}
       {live && real && !busy && real.rows.length > 0 && lvl !== "gold" && (
-        <p className="nb-gold"><Icon name="lock" size={14} /> You see the top {want}. {lvl === "bronze" ? "Silver creators see the top 30, Gold the full top 100." : "Gold creators see the full top 100."}</p>
+        <p className="nb-gold"><Icon name="lock" size={14} /> {lvl === "bronze" ? t("You see the top {n}. Silver creators see the top 30, Gold the full top 100.", { n: want }) : t("You see the top {n}. Gold creators see the full top 100.", { n: want })}</p>
       )}
     </section>
   );

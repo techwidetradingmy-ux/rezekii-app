@@ -4,12 +4,16 @@ import { useEffect, useState } from "react";
 import { useDemo } from "@/components/demo";
 import type { Channel } from "@/components/publish/rules";
 import type { MyPost, PostStatus, PubBrand, PubChannel, PublishSetup } from "./mock-publish";
+import { makeT, type T } from "@/lib/i18n/lang";
 
 /**
  * Post Everywhere on real data for signed-in accounts (owner, 31 Oct 2026): her connected channels, brands and credits, real
  * uploads and posts through rezekii.com's posting (TikTok, then the other apps as one group), and the Content Calendar from her
- * real posts. Signed out, the screens keep their sample data.
+ * real posts. Signed out, the screens keep their sample data. Messages come in her language when the page passes its translator.
  */
+
+/** English, as written, when no translator is passed. */
+const EN: T = makeT(null);
 
 export type Side = "creator" | "seller";
 export type LiveSetup = { channels: PubChannel[]; brands: PubBrand[]; last: string[]; credits: number };
@@ -30,9 +34,9 @@ const json = async <T,>(r: Response, fallback: string): Promise<T> => {
 const post = (url: string, body: unknown) => fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
 
 /** Uploads the video straight to storage, reporting progress; returns its stored path. */
-export async function upload(file: File, onPct: (pct: number) => void): Promise<string> {
-  const u = await json<{ path?: string; uploadUrl?: string }>(await post("/api/posts/upload", { type: file.type, size: file.size }), "Upload couldn't start.");
-  if (!u.uploadUrl || !u.path) throw new Error("Upload couldn't start.");
+export async function upload(file: File, onPct: (pct: number) => void, t: T = EN): Promise<string> {
+  const u = await json<{ path?: string; uploadUrl?: string }>(await post("/api/posts/upload", { type: file.type, size: file.size }), t("Upload couldn't start."));
+  if (!u.uploadUrl || !u.path) throw new Error(t("Upload couldn't start."));
   const ok = await new Promise<boolean>((resolve) => {
     const x = new XMLHttpRequest();
     x.open("PUT", u.uploadUrl as string);
@@ -42,14 +46,14 @@ export async function upload(file: File, onPct: (pct: number) => void): Promise<
     x.onerror = () => resolve(false);
     x.send(file);
   });
-  if (!ok) throw new Error("The upload didn't finish. Try again.");
+  if (!ok) throw new Error(t("The upload didn't finish. Try again."));
   return u.path;
 }
 
 /** TikTok's rules for this account, asked fresh each time New post opens for it (TikTok requires it). */
 export type CreatorInfo = { creator_nickname?: string; privacy_level_options: string[]; comment_disabled?: boolean; duet_disabled?: boolean; stitch_disabled?: boolean; max_video_post_duration_sec?: number };
-export async function creatorInfo(openId: string): Promise<CreatorInfo> {
-  return json<CreatorInfo>(await fetch(`/api/posts/creator-info?account=${encodeURIComponent(openId)}`, { cache: "no-store" }), "Couldn't reach TikTok. Check your connection and try again.");
+export async function creatorInfo(openId: string, t: T = EN): Promise<CreatorInfo> {
+  return json<CreatorInfo>(await fetch(`/api/posts/creator-info?account=${encodeURIComponent(openId)}`, { cache: "no-store" }), t("Couldn't reach TikTok. Check your connection and try again."));
 }
 
 export type TikTokChoice = { mode: "direct" | "inbox"; caption: string; privacyLevel: string | null; allowComments: boolean; allowDuet: boolean; allowStitch: boolean; promo: boolean; brandOrganic: boolean; brandedContent: boolean; isAigc: boolean; durationSec: number | null };
@@ -62,12 +66,12 @@ export type OtherChannel = { accountId: string; caption: string; firstComment: s
 export async function sendPost(p: {
   side: Side; when: string; video: { source: "upload" | "link"; storagePath?: string; linkUrl?: string }; durationSec: number | null;
   tiktok?: { account: string; choice: TikTokChoice }; others: OtherChannel[];
-}): Promise<{ at: string | null }> {
+}, t: T = EN): Promise<{ at: string | null }> {
   let tiktokPost: { id: string; scheduled_at: string | null } | null = null;
   if (p.tiktok) {
     const d = await json<{ post?: { id: string; scheduled_at: string | null } }>(
       await post("/api/posts", { ...p.tiktok.choice, ...p.video, when: p.when, consent: true, account: p.tiktok.account, side: p.side }),
-      "TikTok post couldn't be saved.",
+      t("TikTok post couldn't be saved."),
     );
     tiktokPost = d.post ?? null;
   }
@@ -76,11 +80,12 @@ export async function sendPost(p: {
     try {
       const d = await json<{ posts?: { scheduled_at: string | null }[] }>(
         await post("/api/social/posts", { ...p.video, durationSec: p.durationSec, when: p.when, tiktokPostId: tiktokPost?.id, side: p.side, channels: p.others }),
-        "The other channels couldn't be saved.",
+        t("The other channels couldn't be saved."),
       );
       at ??= d.posts?.[0]?.scheduled_at ?? null;
     } catch (e) {
-      throw new Error(tiktokPost ? `The TikTok post was saved, but ${e instanceof Error ? e.message : "the other channels weren't."}` : e instanceof Error ? e.message : "Didn't go through.");
+      const why = e instanceof Error ? t(e.message) : "";
+      throw new Error(tiktokPost ? (why ? t("The TikTok post was saved, but {error}", { error: why }) : t("The TikTok post was saved, but the other channels weren't.")) : why || t("Didn't go through."));
     }
   }
   return { at };
@@ -124,15 +129,15 @@ export async function loadPosts(): Promise<MyPost[]> {
 }
 
 /** Cancels one channel's post before it goes out (its credits come back). */
-export async function cancelChannel(app: Channel, postId: string): Promise<void> {
+export async function cancelChannel(app: Channel, postId: string, t: T = EN): Promise<void> {
   const r = app === "tiktok" ? await post(`/api/posts/${postId}/cancel`, {}) : await post(`/api/social/posts/${postId}`, { action: "cancel" });
-  await json(r, "Couldn't cancel. Please try again.");
+  await json(r, t("Couldn't cancel. Please try again."));
 }
 
 /** Tries a failed channel again (it costs its credits again). */
-export async function retryChannel(app: Channel, postId: string): Promise<void> {
+export async function retryChannel(app: Channel, postId: string, t: T = EN): Promise<void> {
   const r = app === "tiktok" ? await post(`/api/posts/${postId}/retry`, {}) : await post(`/api/social/posts/${postId}`, { action: "retry" });
-  await json(r, "Couldn't try again. Please try again.");
+  await json(r, t("Couldn't try again. Please try again."));
 }
 
 /* ---------------- Hooks for the pages ---------------- */

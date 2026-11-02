@@ -1,3 +1,5 @@
+import { tx } from "@/lib/i18n/lang";
+
 /**
  * AI Video waitlist (owner, 29 Oct 2026): the tool isn't launched. Creators join a waitlist; the people on it become the first
  * trial batch at launch. Sample data only.
@@ -6,6 +8,11 @@ export const VIDEO_TYPES = ["Product demos", "Try-ons", "Reviews", "Expert advic
 export const PLATFORMS = ["TikTok", "Instagram", "Facebook", "Threads"] as const;
 export type VideoType = (typeof VIDEO_TYPES)[number];
 export type Platform = (typeof PLATFORMS)[number];
+/** Each kind of video as she reads it, translated where it's shown; the English above is what's saved (owner, 3 Nov 2026). */
+export const VIDEO_TYPE_LABEL: Record<VideoType, string> = {
+  "Product demos": tx("Product demos"), "Try-ons": tx("Try-ons"), Reviews: tx("Reviews"), "Expert advice": tx("Expert advice"),
+  "Mini dramas": tx("Mini dramas"), Unboxings: tx("Unboxings"), "Before & after": tx("Before & after"),
+};
 
 /** Videos our team already made with AI, cut to 15 seconds (owner, 29 Oct 2026), so she sees what to expect before it launches. */
 export const AI_EXAMPLES: { id: string; type: VideoType; product: string }[] = [

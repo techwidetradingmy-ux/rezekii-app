@@ -1,7 +1,12 @@
+import { makeT, tx, type T } from "@/lib/i18n/lang";
+
 /**
  * Posting rules from V1 (modules/social/rules.ts, settings.ts, posting/rules.ts), in plain English: caption limits, where the
- * product link goes in each app, Rezekii's version of the caption per app, and the checks that block or warn.
+ * product link goes in each app, Rezekii's version of the caption per app, and the checks that block or warn. Messages are
+ * written in the same words as V1's, in her language when New Post passes its translator (owner, 3 Nov 2026).
  */
+/** English, as written (the composer reads which section a problem belongs to from it). */
+const EN: T = makeT(null);
 
 export type Platform = "facebook" | "instagram" | "threads";
 export type Channel = Platform | "tiktok";
@@ -9,8 +14,6 @@ export const APPS: Channel[] = ["tiktok", "facebook", "instagram", "threads"];
 export const NAMES: Record<Channel, string> = { tiktok: "TikTok", facebook: "Facebook", instagram: "Instagram", threads: "Threads" };
 /** For V2's PlatformIcon. */
 export const ICON: Record<Channel, "TikTok" | "Facebook" | "Instagram" | "Threads"> = { tiktok: "TikTok", facebook: "Facebook", instagram: "Instagram", threads: "Threads" };
-/** What a channel is called in each app, for "Facebook · 3 Pages". */
-export const UNIT: Record<Channel, string> = { tiktok: "accounts", facebook: "Pages", instagram: "accounts", threads: "profiles" };
 
 export const CAPTION_MAX: Record<Channel, number> = { tiktok: 2200, facebook: 63206, instagram: 2200, threads: 500 };
 export const COMMENT_MAX: Record<Platform, number> = { facebook: 8000, instagram: 2200, threads: 500 };
@@ -32,7 +35,7 @@ export const DEFAULT_PLACEMENT: Record<Channel, Placement> = {
 };
 
 export type ReplyControl = "everyone" | "accounts_you_follow" | "followers_only" | "mentioned_only";
-export const REPLY_CONTROLS: [ReplyControl, string][] = [["everyone", "Everyone"], ["accounts_you_follow", "Accounts you follow"], ["followers_only", "Your followers"], ["mentioned_only", "Only accounts you mention"]];
+export const REPLY_CONTROLS: [ReplyControl, string][] = [["everyone", tx("Everyone")], ["accounts_you_follow", tx("Accounts you follow")], ["followers_only", tx("Your followers")], ["mentioned_only", tx("Only accounts you mention")]];
 export type TrialMode = "off" | "manual" | "auto";
 
 const URL_RE = /https?:\/\/\S+/g;
@@ -103,23 +106,23 @@ export function withHashtags(main: string, tags: string[]): string {
 const linkLine = (link: string, cta = "") => (cta.trim() ? `${cta.trim()} ${link}` : link);
 
 /** Problems that block scheduling this app (empty = OK). */
-export function channelProblems(ch: Platform, caption: string, comment: string, durationSec?: number | null): string[] {
+export function channelProblems(ch: Platform, caption: string, comment: string, durationSec?: number | null, t: T = EN): string[] {
   const out: string[] = [];
   const n = lengthFor(ch, caption);
-  const max = CAPTION_MAX[ch].toLocaleString("en-US");
-  if (n > CAPTION_MAX[ch]) out.push(ch === "threads" ? `Threads allows ${max} characters (an emoji counts as 2–4). This caption has ${n.toLocaleString("en-US")}.` : `${NAMES[ch]} allows ${max} characters. This caption has ${n.toLocaleString("en-US")}.`);
-  if (comment && lengthFor(ch, comment) > COMMENT_MAX[ch]) out.push(`${NAMES[ch]} first comment: ${COMMENT_MAX[ch].toLocaleString("en-US")} characters at most.`);
-  if (ch === "threads" && links(caption).length > THREADS_LINK_MAX) out.push(`Threads allows at most ${THREADS_LINK_MAX} links in a post.`);
-  if (ch === "threads" && durationSec && durationSec > 300) out.push("Threads takes videos up to 5 minutes.");
-  if (ch === "instagram" && durationSec && durationSec < 3) out.push("Instagram Reels must be at least 3 seconds long.");
+  const v = { app: NAMES[ch], max: CAPTION_MAX[ch].toLocaleString("en-US"), n: n.toLocaleString("en-US") };
+  if (n > CAPTION_MAX[ch]) out.push(ch === "threads" ? t("{app} allows {max} characters (an emoji counts as 2–4). This caption has {n}.", v) : t("{app} allows {max} characters. This caption has {n}.", v));
+  if (comment && lengthFor(ch, comment) > COMMENT_MAX[ch]) out.push(t("{app} first comment: {max} characters at most.", { app: NAMES[ch], max: COMMENT_MAX[ch].toLocaleString("en-US") }));
+  if (ch === "threads" && links(caption).length > THREADS_LINK_MAX) out.push(t("Threads allows at most {max} links in a post.", { max: THREADS_LINK_MAX }));
+  if (ch === "threads" && durationSec && durationSec > 300) out.push(t("Threads takes videos up to 5 minutes."));
+  if (ch === "instagram" && durationSec && durationSec < 3) out.push(t("Instagram Reels must be at least 3 seconds long."));
   return out;
 }
 
 /** Warnings that don't block (the app still takes the post). */
-export function channelWarnings(ch: Channel, caption: string): string[] {
+export function channelWarnings(ch: Channel, caption: string, t: T = EN): string[] {
   const n = hashtags(caption).length;
-  if ((ch === "instagram" || ch === "tiktok") && n > HASHTAG_MAX[ch]) return [`${NAMES[ch]} allows ${HASHTAG_MAX[ch]} hashtags. This caption has ${n}.`];
-  if (ch === "threads" && n > 0) return ["On Threads, hashtags in the text show as plain words. A post gets one topic: set it in the Topic box."];
+  if ((ch === "instagram" || ch === "tiktok") && n > HASHTAG_MAX[ch]) return [t("{app} allows {max} hashtags. This caption has {n}.", { app: NAMES[ch], max: HASHTAG_MAX[ch], n })];
+  if (ch === "threads" && n > 0) return [t("On Threads, hashtags in the text show as plain words. A post gets one topic: set it in the Topic box.")];
   return [];
 }
 
@@ -139,18 +142,18 @@ export const cleanTopic = (s: string) => s.trim().replace(/^#+/, "").replace(/[.
 export const threadsTopic = (main: string) => cleanTopic(hashtags(main)[0] ?? "");
 
 export type Privacy = "PUBLIC_TO_EVERYONE" | "MUTUAL_FOLLOW_FRIENDS" | "FOLLOWER_OF_CREATOR" | "SELF_ONLY";
-export const PRIVACY: [Privacy, string][] = [["PUBLIC_TO_EVERYONE", "Everyone"], ["MUTUAL_FOLLOW_FRIENDS", "Friends (followers you follow back)"], ["FOLLOWER_OF_CREATOR", "Followers"], ["SELF_ONLY", "Only me"]];
+export const PRIVACY: [Privacy, string][] = [["PUBLIC_TO_EVERYONE", tx("Everyone")], ["MUTUAL_FOLLOW_FRIENDS", tx("Friends (followers you follow back)")], ["FOLLOWER_OF_CREATOR", tx("Followers")], ["SELF_ONLY", tx("Only me")]];
 
 /** TikTok's Content Sharing Guidelines for a direct post (drafts sent to TikTok only need a video). */
-export function tiktokProblems(p: { mode: "direct" | "inbox"; caption: string; privacy: Privacy | ""; promo: boolean; own: boolean; branded: boolean }): string[] {
+export function tiktokProblems(p: { mode: "direct" | "inbox"; caption: string; privacy: Privacy | ""; promo: boolean; own: boolean; branded: boolean }, t: T = EN): string[] {
   const out: string[] = [];
-  if (p.caption.length > CAPTION_MAX.tiktok) out.push(`The caption is longer than ${CAPTION_MAX.tiktok} characters.`);
+  if (p.caption.length > CAPTION_MAX.tiktok) out.push(t("The caption is longer than {max} characters.", { max: CAPTION_MAX.tiktok }));
   if (p.mode === "inbox") return out;
-  if (!p.privacy) out.push("Choose who can view this post.");
-  if (p.promo && !p.own && !p.branded) out.push("You need to indicate if your content promotes yourself, a third party, or both.");
-  if (p.promo && p.branded && p.privacy === "SELF_ONLY") out.push("Branded content visibility cannot be set to private.");
+  if (!p.privacy) out.push(t("Choose who can view this post."));
+  if (p.promo && !p.own && !p.branded) out.push(t("You need to indicate if your content promotes yourself, a third party, or both."));
+  if (p.promo && p.branded && p.privacy === "SELF_ONLY") out.push(t("Branded content visibility cannot be set to private."));
   return out;
 }
 /** The consent line TikTok requires above the post button. */
-export const consentLine = (promo: boolean, branded: boolean) =>
-  promo && branded ? "By posting, you agree to TikTok's Branded Content Policy and Music Usage Confirmation." : "By posting, you agree to TikTok's Music Usage Confirmation.";
+export const consentLine = (promo: boolean, branded: boolean, t: T = EN) =>
+  promo && branded ? t("By posting, you agree to TikTok's Branded Content Policy and Music Usage Confirmation.") : t("By posting, you agree to TikTok's Music Usage Confirmation.");
