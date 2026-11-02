@@ -2,12 +2,14 @@
 
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { hashtags, threadsLength, type Channel } from "./rules";
+import { useT } from "@/lib/i18n/client";
 
 /**
  * Phone previews laid out like each app after posting (Oct 2026: TikTok For You, Instagram Reels viewer, Facebook Reels
  * and Feed, Threads feed), ported from V1. Rendered in the browser only: captions are cut
  * where each app cuts them by measuring the text. "more" expands the caption and the comment button opens the comments,
- * as in each app.
+ * as in each app. The apps' own words show in her language, as each app does on a phone set to it (owner, 3 Nov 2026);
+ * Reels, Marketplace and the facebook logo are names and stay as they are.
  */
 const TT_FONT = '"TikTok Sans", -apple-system, Roboto, Arial, sans-serif';
 const PT = 280 / 393;
@@ -113,13 +115,14 @@ export type PreviewProps = { channel: Channel; caption: string; comment: string;
 /** Starts muted (browsers only autoplay muted video); the speaker button turns the sound on and off. */
 function Video({ src, cover, s = 16 }: { src: string | null; cover?: string | null; s?: number }) {
   const [muted, setMuted] = useState(true);
+  const t = useT();
   // eslint-disable-next-line @next/next/no-img-element
   if (!src && cover) return <img className="cover" src={cover} alt="" />;
-  if (!src) return <span className="ph">Your video shows here</span>;
+  if (!src) return <span className="ph">{t("Your video shows here")}</span>;
   return (
     <>
       <video src={src} muted={muted} loop autoPlay playsInline />
-      <button type="button" className="pb-pv-mute" onClick={() => setMuted((m) => !m)} aria-pressed={!muted} aria-label={muted ? "Turn sound on" : "Turn sound off"}><Ic n={muted ? "mute" : "sound"} s={s} /></button>
+      <button type="button" className="pb-pv-mute" onClick={() => setMuted((m) => !m)} aria-pressed={!muted} aria-label={muted ? t("Turn sound on") : t("Turn sound off")}><Ic n={muted ? "mute" : "sound"} s={s} /></button>
     </>
   );
 }
@@ -141,19 +144,20 @@ const More = ({ label, onClick }: { label: ReactNode; onClick: () => void }) => 
 
 /** The comments panel Instagram and Facebook Reels open from the comment button, with the first comment when there is one. */
 function CommentSheet({ app, comment, image, who, onClose }: { app: "instagram" | "facebook"; comment: string; image?: string | null; who: Who; onClose: () => void }) {
+  const t = useT();
   const ig = app === "instagram";
   return (
     <>
       <div className="pb-pv-cs-dim" onClick={onClose} />
-      <div className={`pb-pv-cs${ig ? " ig" : ""}`} role="dialog" aria-label="Comments">
+      <div className={`pb-pv-cs${ig ? " ig" : ""}`} role="dialog" aria-label={t("Comments")}>
         <span className="grab" />
-        <div className="hd"><b>Comments</b><button type="button" className="x" onClick={onClose} aria-label="Close comments"><Ic n="x" s={18} /></button></div>
+        <div className="hd"><b>{t("Comments")}</b><button type="button" className="x" onClick={onClose} aria-label={t("Close comments")}><Ic n="x" s={18} /></button></div>
         <div className="list">
           {comment || image ? (
-            <div className="row"><Av who={who} size={32} /><div className="tx"><span className="nm">{ig ? who.username : who.name}<small>{ig ? "1m" : "Just now"}</small></span>{comment && <span className="body"><Rich text={comment} links at="link" /></span>}{image && <Pic className="pb-pv-cm-img" src={image} />}<small className="act">{ig ? "Reply" : "Like · Reply"}</small></div>{ig && <Ic n="heartO" s={14} />}</div>
-          ) : <p className="empty"><b>No comments yet</b><span>{ig ? "Start the conversation." : "Be the first to comment."}</span></p>}
+            <div className="row"><Av who={who} size={32} /><div className="tx"><span className="nm">{ig ? who.username : who.name}<small>{ig ? t("1m") : t("Just now")}</small></span>{comment && <span className="body"><Rich text={comment} links at="link" /></span>}{image && <Pic className="pb-pv-cm-img" src={image} />}<small className="act">{ig ? t("Reply") : `${t("Like")} · ${t("Reply")}`}</small></div>{ig && <Ic n="heartO" s={14} />}</div>
+          ) : <p className="empty"><b>{t("No comments yet")}</b><span>{ig ? t("Start the conversation.") : t("Be the first to comment.")}</span></p>}
         </div>
-        <div className="add"><Av who={who} size={28} /><span>Add a comment…</span></div>
+        <div className="add"><Av who={who} size={28} /><span>{t("Add a comment…")}</span></div>
       </div>
     </>
   );
@@ -161,12 +165,13 @@ function CommentSheet({ app, comment, image, who, onClose }: { app: "instagram" 
 
 function TikTok({ caption, video, cover, who }: PreviewProps) {
   const [open, setOpen] = useState(false);
-  const c = clamp(caption, `400 ${14.5 * PT}px ${TT_FONT}`, 280 - 98 * PT, 2, " more");
+  const t = useT();
+  const c = clamp(caption, `400 ${14.5 * PT}px ${TT_FONT}`, 280 - 98 * PT, 2, ` ${t("more")}`);
   return (
     <div className="pb-pv-scr pb-pv-tt">
       <StatusBar color="#fff" />
       <div className="pb-pv-vid" style={{ bottom: "calc(83 * var(--p))" }}><Video src={video} cover={cover} /></div>
-      <div className="pb-pv-tt-top pb-pv-sh"><span className="pb-pv-tt-live"><Ic n="live" s={27} /></span><div className="pb-pv-tt-tabs"><span>Following</span><b>For You</b></div><span className="pb-pv-tt-srch"><Ic n="search" s={25} /></span></div>
+      <div className="pb-pv-tt-top pb-pv-sh"><span className="pb-pv-tt-live"><Ic n="live" s={27} /></span><div className="pb-pv-tt-tabs"><span>{t("Following")}</span><b>{t("For You")}</b></div><span className="pb-pv-tt-srch"><Ic n="search" s={25} /></span></div>
       <div className="pb-pv-rail pb-pv-sh" style={{ "--rr": 25 } as CSSProperties}>
         <span className="it" style={{ top: "45%" }}><span className="pb-pv-tt-av"><Av who={who} size={46} /><i>+</i></span></span>
         <span className="it" style={{ top: "55.2%" }}><Ic n="heartF" s={35} /><span>0</span></span>
@@ -177,12 +182,12 @@ function TikTok({ caption, video, cover, who }: PreviewProps) {
       </div>
       {open && <div className="pb-pv-dim" onClick={() => setOpen(false)} />}
       <div className={`pb-pv-tt-txt pb-pv-sh${open ? " open" : ""}`}>
-        <div className="nm">{who.name} <small>· Just now</small></div>
-        {open ? <div className="cp" onClick={() => setOpen(false)}><Rich text={caption} tags="bold" at="bold" /> <More label={<b>less</b>} onClick={() => setOpen(false)} /></div>
-          : <div className="cp"><Rich text={c.text} tags="bold" at="bold" />{c.cut && <> <More label={<b>more</b>} onClick={() => setOpen(true)} /></>}</div>}
-        <div className="snd"><Ic n="music" s={13} /><span>original sound - {who.name}</span></div>
+        <div className="nm">{who.name} <small>· {t("Just now")}</small></div>
+        {open ? <div className="cp" onClick={() => setOpen(false)}><Rich text={caption} tags="bold" at="bold" /> <More label={<b>{t("less")}</b>} onClick={() => setOpen(false)} /></div>
+          : <div className="cp"><Rich text={c.text} tags="bold" at="bold" />{c.cut && <> <More label={<b>{t("more")}</b>} onClick={() => setOpen(true)} /></>}</div>}
+        <div className="snd"><Ic n="music" s={13} /><span>{t("original sound - {name}", { name: who.name })}</span></div>
       </div>
-      <div className="pb-pv-bar pb-pv-tt-bar"><Nav n="homeF" label="Home" on /><Nav n="bag" label="Shop" /><span className="b"><span className="pb-pv-tt-create"><Ic n="plus" s={19} /></span></span><Nav n="inbox" label="Inbox" /><Nav n="user" label="Profile" /></div>
+      <div className="pb-pv-bar pb-pv-tt-bar"><Nav n="homeF" label={t("Home")} on /><Nav n="bag" label={t("Shop")} /><span className="b"><span className="pb-pv-tt-create"><Ic n="plus" s={19} /></span></span><Nav n="inbox" label={t("Inbox")} /><Nav n="user" label={t("Profile")} /></div>
       <span className="pb-pv-hi" style={{ color: "#fff" }} />
     </div>
   );
@@ -191,15 +196,16 @@ function TikTok({ caption, video, cover, who }: PreviewProps) {
 function Instagram({ caption, comment, video, cover, who, collaborators }: PreviewProps) {
   const [open, setOpen] = useState(false);
   const [sheet, setSheet] = useState(false);
-  const c = clamp(caption, `400 ${14 * PT}px ${SYS}`, 280 - 78 * PT, 1, "… more");
+  const t = useT();
+  const c = clamp(caption, `400 ${14 * PT}px ${SYS}`, 280 - 78 * PT, 1, t("… more"));
   return (
     <div className="pb-pv-scr">
       <StatusBar color="#fff" />
       <div className="pb-pv-vid" style={{ bottom: "calc(74 * var(--p))" }}><Video src={video} cover={cover} /></div>
-      <div className="pb-pv-ig-top pb-pv-sh"><span className="plus"><Ic n="plus" s={26} /></span><b>Reels</b><span>Friends</span></div>
+      <div className="pb-pv-ig-top pb-pv-sh"><span className="plus"><Ic n="plus" s={26} /></span><b>Reels</b><span>{t("Friends")}</span></div>
       <div className="pb-pv-rail pb-pv-sh" style={{ "--rr": 22 } as CSSProperties}>
         <span className="it" style={{ top: "52.4%" }}><Ic n="heartO" s={28} /><span>0</span></span>
-        <button type="button" className="it pb-pv-btn" style={{ top: "60%" }} onClick={() => setSheet(true)} aria-label="Comments"><Ic n="cmtO" s={27} /><span>{comment ? 1 : 0}</span></button>
+        <button type="button" className="it pb-pv-btn" style={{ top: "60%" }} onClick={() => setSheet(true)} aria-label={t("Comments")}><Ic n="cmtO" s={27} /><span>{comment ? 1 : 0}</span></button>
         <span className="it" style={{ top: "67.6%" }}><Ic n="repost" s={27} /><span>0</span></span>
         <span className="it" style={{ top: "75.2%" }}><Ic n="plane" s={26} /><span>0</span></span>
         <span className="it" style={{ top: "82.4%" }}><Ic n="dots" s={24} /></span>
@@ -207,9 +213,9 @@ function Instagram({ caption, comment, video, cover, who, collaborators }: Previ
       </div>
       {open && <div className="pb-pv-dim" onClick={() => setOpen(false)} />}
       <div className={`pb-pv-ig-txt pb-pv-sh${open ? " open" : ""}`}>
-        <div className="u"><Av who={who} size={32} /><span className="un">{who.username}{collaborators?.length ? <> and {collaborators.length === 1 ? collaborators[0] : `${collaborators.length} others`}</> : null}</span><span className="pb-pv-follow">Follow</span></div>
-        <div className="au"><Ic n="music" s={12} />{who.username} · Original audio</div>
-        {open ? <div className="cp" onClick={() => setOpen(false)}><Rich text={caption} at="bold" /></div> : <div className="cp"><Rich text={c.text} at="bold" />{c.cut && <More label={<em>… more</em>} onClick={() => setOpen(true)} />}</div>}
+        <div className="u"><Av who={who} size={32} /><span className="un">{!collaborators?.length ? who.username : collaborators.length === 1 ? t("{user} and {name}", { user: who.username, name: collaborators[0] }) : t("{user} and {n} others", { user: who.username, n: collaborators.length })}</span><span className="pb-pv-follow">{t("Follow")}</span></div>
+        <div className="au"><Ic n="music" s={12} />{who.username} · {t("Original audio")}</div>
+        {open ? <div className="cp" onClick={() => setOpen(false)}><Rich text={caption} at="bold" /></div> : <div className="cp"><Rich text={c.text} at="bold" />{c.cut && <More label={<em>{t("… more")}</em>} onClick={() => setOpen(true)} />}</div>}
       </div>
       <div className="pb-pv-bar pb-pv-ig-bar"><Nav n="homeO" s={27} /><Nav n="reels" on s={27} /><Nav n="plane" s={27} /><Nav n="search" s={27} /><NavAv who={who} /></div>
       {sheet && <CommentSheet app="instagram" comment={comment} who={who} onClose={() => setSheet(false)} />}
@@ -221,8 +227,9 @@ function Instagram({ caption, comment, video, cover, who, collaborators }: Previ
 function Facebook({ caption, comment, commentImage, video, cover, who, fbView, theme }: PreviewProps) {
   const [open, setOpen] = useState(false);
   const [sheet, setSheet] = useState(false);
+  const t = useT();
   if (fbView === "reels") {
-    const c = clamp(caption, `400 ${14 * PT}px ${SYS}`, 280 - 74 * PT, 1, "… See more");
+    const c = clamp(caption, `400 ${14 * PT}px ${SYS}`, 280 - 74 * PT, 1, t("… See more"));
     return (
       <div className="pb-pv-scr">
         <StatusBar color="#fff" />
@@ -230,41 +237,42 @@ function Facebook({ caption, comment, commentImage, video, cover, who, fbView, t
         <div className="pb-pv-fbr-top pb-pv-sh"><Ic n="menu" /><span>Reels</span><Ic n="plus" /><Ic n="search" s={23} /></div>
         <div className="pb-pv-rail pb-pv-sh" style={{ "--rr": 21 } as CSSProperties}>
           <span className="it" style={{ top: "64.6%" }}><Ic n="thumb" s={28} /><span>0</span></span>
-          <button type="button" className="it pb-pv-btn" style={{ top: "72.6%" }} onClick={() => setSheet(true)} aria-label="Comments"><Ic n="cmtO" s={27} /><span>{comment || commentImage ? 1 : 0}</span></button>
+          <button type="button" className="it pb-pv-btn" style={{ top: "72.6%" }} onClick={() => setSheet(true)} aria-label={t("Comments")}><Ic n="cmtO" s={27} /><span>{comment || commentImage ? 1 : 0}</span></button>
           <span className="it" style={{ top: "80.6%" }}><Ic n="shareO" s={27} /><span>0</span></span>
           <span className="it" style={{ top: "87.7%" }}><Ic n="dots" s={24} /></span>
         </div>
         {open && <div className="pb-pv-dim" onClick={() => setOpen(false)} />}
         <div className={`pb-pv-fbr-txt pb-pv-sh${open ? " open" : ""}`}>
-          <div className="u"><Av who={who} size={32} />{who.name} <Ic n="globe" s={12} /><span className="pb-pv-follow">Follow</span></div>
-          {open ? <div className="cp" onClick={() => setOpen(false)}><Rich text={caption} at="bold" handles={false} /></div> : <div className="cp"><Rich text={c.text} at="bold" handles={false} />{c.cut && <More label={<em>… See more</em>} onClick={() => setOpen(true)} />}</div>}
+          <div className="u"><Av who={who} size={32} />{who.name} <Ic n="globe" s={12} /><span className="pb-pv-follow">{t("Follow")}</span></div>
+          {open ? <div className="cp" onClick={() => setOpen(false)}><Rich text={caption} at="bold" handles={false} /></div> : <div className="cp"><Rich text={c.text} at="bold" handles={false} />{c.cut && <More label={<em>{t("… See more")}</em>} onClick={() => setOpen(true)} />}</div>}
         </div>
-        <div className="pb-pv-bar pb-pv-fbr-bar"><Nav n="homeO" label="Home" /><Nav n="friends" label="Friends" /><Nav n="reels" label="Reels" on /><Nav n="store" label="Marketplace" /><Nav n="bell" label="Notifications" /><NavAv who={who} label="Profile" /></div>
+        <div className="pb-pv-bar pb-pv-fbr-bar"><Nav n="homeO" label={t("Home")} /><Nav n="friends" label={t("Friends")} /><Nav n="reels" label="Reels" on /><Nav n="store" label="Marketplace" /><Nav n="bell" label={t("Notifications")} /><NavAv who={who} label={t("Profile")} /></div>
         {sheet && <CommentSheet app="facebook" comment={comment} image={commentImage} who={who} onClose={() => setSheet(false)} />}
         <span className="pb-pv-hi" style={{ color: "#fff" }} />
       </div>
     );
   }
   const dark = theme === "dark";
-  const c = clamp(caption, `400 ${15 * PT}px ${SYS}`, 280 - 28 * PT, 3, "… See more");
+  const c = clamp(caption, `400 ${15 * PT}px ${SYS}`, 280 - 28 * PT, 3, t("… See more"));
   return (
     <div className={`pb-pv-scr pb-pv-fb${dark ? " dark" : ""}`}>
       <StatusBar color={dark ? "#E4E6EB" : "#050505"} />
       <div className="pb-pv-fb-hd"><Ic n="menu" s={22} /><span className="wm">facebook</span><span className="rc"><Ic n="plus" s={20} /></span><span className="rc"><Ic n="search" s={19} /></span><span className="rc"><Ic n="messenger" s={20} /></span></div>
       <div className="pb-pv-fb-card">
-        <div className="pb-pv-fb-ph"><Av who={who} size={40} /><span className="n"><b>{who.name}</b><small>Just now · <Ic n="globe" s={12} /></small></span><span className="x"><Ic n="dots" s={20} /><Ic n="x" s={20} /></span></div>
-        <div className="pb-pv-fb-tx">{open ? <Rich text={caption} links tags="link" at="link" handles={false} /> : <><Rich text={c.text} links tags="link" at="link" handles={false} />{c.cut && <More label={<span className="sm">… See more</span>} onClick={() => setOpen(true)} />}</>}</div>
+        <div className="pb-pv-fb-ph"><Av who={who} size={40} /><span className="n"><b>{who.name}</b><small>{t("Just now")} · <Ic n="globe" s={12} /></small></span><span className="x"><Ic n="dots" s={20} /><Ic n="x" s={20} /></span></div>
+        <div className="pb-pv-fb-tx">{open ? <Rich text={caption} links tags="link" at="link" handles={false} /> : <><Rich text={c.text} links tags="link" at="link" handles={false} />{c.cut && <More label={<span className="sm">{t("… See more")}</span>} onClick={() => setOpen(true)} />}</>}</div>
         <div className="pb-pv-fb-vid"><Video src={video} cover={cover} /></div>
         <div className="pb-pv-fb-act"><span><Ic n="thumb" s={19} /></span><span><Ic n="cmtO" s={18} /></span><span><Ic n="shareO" s={18} /></span></div>
-        {(comment || commentImage) && <div className="pb-pv-fb-cm"><Av who={who} size={32} /><div><span className="bub"><b>{who.name}</b>{comment && <span><Rich text={comment} links at="link" /></span>}</span>{commentImage && <Pic className="pb-pv-cm-img" src={commentImage} />}<small>Just now · Like · Reply</small></div></div>}
+        {(comment || commentImage) && <div className="pb-pv-fb-cm"><Av who={who} size={32} /><div><span className="bub"><b>{who.name}</b>{comment && <span><Rich text={comment} links at="link" /></span>}</span>{commentImage && <Pic className="pb-pv-cm-img" src={commentImage} />}<small>{t("Just now")} · {t("Like")} · {t("Reply")}</small></div></div>}
       </div>
-      <div className="pb-pv-bar pb-pv-fb-bar"><Nav n="homeF" label="Home" on /><Nav n="friends" label="Friends" /><Nav n="reels" label="Reels" /><Nav n="store" label="Marketplace" /><Nav n="bell" label="Notifications" /><NavAv who={who} label="Profile" /></div>
+      <div className="pb-pv-bar pb-pv-fb-bar"><Nav n="homeF" label={t("Home")} on /><Nav n="friends" label={t("Friends")} /><Nav n="reels" label="Reels" /><Nav n="store" label="Marketplace" /><Nav n="bell" label={t("Notifications")} /><NavAv who={who} label={t("Profile")} /></div>
       <span className="pb-pv-hi" style={{ color: dark ? "#E4E6EB" : "#050505" }} />
     </div>
   );
 }
 
 function Threads({ caption, comment, commentImage, video, cover, who, theme, topic: topicIn }: PreviewProps) {
+  const t = useT();
   const reply = !!comment || !!commentImage;
   const dark = theme === "dark";
   const topic = topicIn ?? hashtags(caption)[0]?.slice(1);
@@ -280,11 +288,11 @@ function Threads({ caption, comment, commentImage, video, cover, who, theme, top
     <div className={`pb-pv-scr pb-pv-th${dark ? " dark" : ""}`}>
       <StatusBar color={dark ? "#F3F5F7" : "#000"} />
       <div className="pb-pv-th-top"><Ic n="menu2" /><Ic n="threads" s={30} /><Ic n="search" s={23} /></div>
-      <div className="pb-pv-th-cmp"><Av who={who} size={36} />What&apos;s new?</div>
+      <div className="pb-pv-th-cmp"><Av who={who} size={36} />{t("What's new?")}</div>
       <div className="pb-pv-th-post">
         <div className="pb-pv-th-av"><Av who={who} size={36} />{reply && <span className="pb-pv-th-line" />}</div>
         <div>
-          <div className="pb-pv-th-h"><b>{who.username}</b>{topic && <span className="topic">› {topic}</span>}<small>1m</small><span className="dots"><Ic n="dots" s={18} /></span></div>
+          <div className="pb-pv-th-h"><b>{who.username}</b>{topic && <span className="topic">› {topic}</span>}<small>{t("1m")}</small><span className="dots"><Ic n="dots" s={18} /></span></div>
           <div className="pb-pv-th-tx"><Rich text={head} links at="link" />{tail && <span className="cut">{tail}</span>}</div>
           <div className="pb-pv-th-media"><Video src={video} cover={cover} s={14} /></div>
           <div className="pb-pv-th-act"><span><Ic n="heartO" s={20} /></span><span><Ic n="cmtO" s={19} /></span><span><Ic n="repost" s={19} /></span><span><Ic n="plane" s={19} /></span></div>
@@ -292,7 +300,7 @@ function Threads({ caption, comment, commentImage, video, cover, who, theme, top
         {reply && (
           <>
             <div className="pb-pv-th-av"><Av who={who} size={36} /></div>
-            <div><div className="pb-pv-th-h"><b>{who.username}</b><small>1m</small><span className="dots"><Ic n="dots" s={18} /></span></div>{comment && <div className="pb-pv-th-tx"><Rich text={comment} links at="link" /></div>}{commentImage && <Pic className="pb-pv-cm-img" src={commentImage} />}</div>
+            <div><div className="pb-pv-th-h"><b>{who.username}</b><small>{t("1m")}</small><span className="dots"><Ic n="dots" s={18} /></span></div>{comment && <div className="pb-pv-th-tx"><Rich text={comment} links at="link" /></div>}{commentImage && <Pic className="pb-pv-cm-img" src={commentImage} />}</div>
           </>
         )}
       </div>

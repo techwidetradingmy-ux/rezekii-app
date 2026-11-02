@@ -13,6 +13,9 @@ import { IDEA_DRAFTS, type IdeaDraft } from "@/components/creator1/shoot-today";
 import { openPost, takeEdits } from "./post-edits";
 import { cancelChannel, loadPosts, retryChannel } from "@/lib/live-publish";
 import { ICON, NAMES, type Channel } from "./rules";
+import { useLang, useT } from "@/lib/i18n/client";
+import { dateLocale, tx, type Lang, type T } from "@/lib/i18n/lang";
+import { rich } from "./rich";
 import "@/app/creator2.css";
 import "@/app/publish.css";
 
@@ -23,13 +26,25 @@ const WEEK = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const add = (s: string, n: number) => { const d = new Date(`${s}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 const dow = (s: string) => new Date(`${s}T00:00:00Z`).getUTCDay();
-const dayLabelOn = (s: string, today: string) => (s === today ? "Today" : s === add(today, 1) ? "Tomorrow" : s === add(today, -1) ? "Yesterday" : `${DOW[dow(s)]} ${dayName(s)}`);
+/** Dates and times in her language (owner, 3 Nov 2026): English as before; Malay and Chinese from the browser's own dates. */
+const inLang = (s: string, lang: Lang, o: Intl.DateTimeFormatOptions) => new Date(`${s}T00:00:00Z`).toLocaleDateString(dateLocale(lang), { ...o, timeZone: "UTC" });
+/** "28 Oct". */
+const dayShort = (s: string, lang: Lang) => (lang === "en" ? dayName(s) : inLang(s, lang, { day: "numeric", month: "short" }));
+const dayLabelOn = (s: string, today: string, lang: Lang, t: T) =>
+  s === today ? t("Today") : s === add(today, 1) ? t("Tomorrow") : s === add(today, -1) ? t("Yesterday")
+    : lang === "en" ? `${DOW[dow(s)]} ${dayName(s)}` : inLang(s, lang, { weekday: "short", day: "numeric", month: "short" });
 /** Today in Malaysia, for real posts (owner, 31 Oct 2026). */
 const mytToday = () => new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10);
-const clock = (t: string) => { const [h, m] = t.split(":").map(Number); return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`; };
+const clock = (time: string, lang: Lang) => {
+  const [h, m] = time.split(":").map(Number);
+  return lang === "en" ? `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}` : new Date(Date.UTC(2026, 0, 1, h, m)).toLocaleTimeString(dateLocale(lang), { hour: "numeric", minute: "2-digit", timeZone: "UTC" });
+};
+/** "October 2026" and the week's day letters, Monday first. */
+const monthTitle = (y: number, m: number, lang: Lang) => (lang === "en" ? `${MONTHS[m - 1]} ${y}` : new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString(dateLocale(lang), { month: "long", year: "numeric", timeZone: "UTC" }));
+const weekHeads = (lang: Lang) => (lang === "en" ? WEEK : WEEK.map((_, i) => inLang(add("2026-01-05", i), lang, { weekday: lang === "zh" ? "narrow" : "short" })));
 const views = (n = 0) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}K` : String(n));
 
-const PRESETS: [string, string][] = [["around", "Last 7 & next 7 days"], ["today", "Today"], ["next7", "Next 7 days"], ["week", "This week"], ["last7", "Last 7 days"], ["month", "This month"], ["last30", "Last 30 days"]];
+const PRESETS: [string, string][] = [["around", tx("Last 7 & next 7 days")], ["today", tx("Today")], ["next7", tx("Next 7 days")], ["week", tx("This week")], ["last7", tx("Last 7 days")], ["month", tx("This month")], ["last30", tx("Last 30 days")]];
 /** The date presets around a given today. */
 function rangesFor(t: string): Record<string, [string, string]> {
   const monday = add(t, -((dow(t) + 6) % 7));
@@ -54,25 +69,25 @@ const groupOf = (p: MyPost): Group =>
     : p.targets.some((t) => t.status === "scheduled") ? "sched"
     : "done";
 const GROUPS: { key: Group; title: string; tone: string; icon: "alert" | "send" | "clock" | "edit" | "check" }[] = [
-  { key: "sched", title: "Scheduled", tone: "violet", icon: "clock" },
-  { key: "done", title: "Posted", tone: "green", icon: "check" },
-  { key: "fail", title: "Needs You", tone: "red", icon: "alert" },
-  { key: "draft", title: "Drafts", tone: "gray", icon: "edit" },
+  { key: "sched", title: tx("Scheduled"), tone: "violet", icon: "clock" },
+  { key: "done", title: tx("Posted"), tone: "green", icon: "check" },
+  { key: "fail", title: tx("Needs You"), tone: "red", icon: "alert" },
+  { key: "draft", title: tx("Drafts"), tone: "gray", icon: "edit" },
 ];
 
 /** V1's live statuses, per app. */
-function statusText(s: PostStatus, app: Channel) {
+function statusText(s: PostStatus, app: Channel, t: T) {
   switch (s) {
-    case "draft": return "Draft";
-    case "scheduled": return "Scheduled";
-    case "uploading": return "Uploading video";
-    case "sending": return app === "tiktok" ? "Sending to TikTok" : `Publishing to ${NAMES[app]}`;
-    case "processing": return `${NAMES[app]} is processing`;
-    case "posted": return "Posted · live";
-    case "inbox": return "In your TikTok drafts";
-    case "failed": return "Failed";
-    case "removed": return "Deleted after posting";
-    case "pagedraft": return "Draft on your Page";
+    case "draft": return t("Draft");
+    case "scheduled": return t("Scheduled");
+    case "uploading": return t("Uploading video");
+    case "sending": return app === "tiktok" ? t("Sending to TikTok") : t("Publishing to {app}", { app: NAMES[app] });
+    case "processing": return t("{app} is processing", { app: NAMES[app] });
+    case "posted": return t("Posted · live");
+    case "inbox": return t("In your TikTok drafts");
+    case "failed": return t("Failed");
+    case "removed": return t("Deleted after posting");
+    case "pagedraft": return t("Draft on your Page");
   }
 }
 /** The steps a post goes through, for the little progress track. */
@@ -85,14 +100,16 @@ const next = (s: PostStatus): PostStatus => STEPS[Math.min(STEPS.indexOf(s) + 1,
  */
 export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup; posts: MyPost[]; newPost: string }) {
   const { toast } = useDemo();
+  const t = useT();
+  const lang = useLang();
   const router = useRouter();
   const [posts, setPosts] = useState(start);
   // Signed in (owner, 31 Oct 2026): her real posts, real dates, and Cancel / Try again that really happen.
   const live = !!setup.live;
   const TODAY = live ? mytToday() : SAMPLE_TODAY;
   const RANGE = rangesFor(TODAY);
-  const dayLabel = (s: string) => dayLabelOn(s, TODAY);
-  const reload = () => loadPosts().then(setPosts).catch(() => toast("Couldn't refresh your posts."));
+  const dayLabel = (s: string) => dayLabelOn(s, TODAY, lang, t);
+  const reload = () => loadPosts().then(setPosts).catch(() => toast(t("Couldn't refresh your posts.")));
   // Changes saved on the New Post page replace the old version of each post (owner, 28 Oct 2026).
   useEffect(() => {
     const { edits, message } = takeEdits();
@@ -123,7 +140,7 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
   const srcOk = (p: MyPost) => src === "all" || (src === "phone") === (p.source === "phone");
 
   // Posts going out move one step every couple of seconds, like V1's status updates while TikTok works on them.
-  const moving = posts.some((p) => p.targets.some((t) => MOVING.includes(t.status)));
+  const moving = posts.some((p) => p.targets.some((tg) => MOVING.includes(tg.status)));
   // Real posts: while one is going out, check its status again every 15 seconds.
   useEffect(() => {
     if (!live || !moving) return;
@@ -134,10 +151,10 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
     if (live || !moving) return;
     const id = window.setInterval(() => {
       setPosts((all) => all.map((p) => {
-        if (!p.targets.some((t) => MOVING.includes(t.status))) return p;
-        const targets = p.targets.map((t) => (MOVING.includes(t.status) ? { ...t, status: next(t.status) } : t));
+        if (!p.targets.some((tg) => MOVING.includes(tg.status))) return p;
+        const targets = p.targets.map((tg) => (MOVING.includes(tg.status) ? { ...tg, status: next(tg.status) } : tg));
         // The next app starts uploading once the first ones are processing.
-        const started = targets.map((t, i) => (t.status === "scheduled" && i > 0 && targets[i - 1].status === "processing" ? { ...t, status: "uploading" as const } : t));
+        const started = targets.map((tg, i) => (tg.status === "scheduled" && i > 0 && targets[i - 1].status === "processing" ? { ...tg, status: "uploading" as const } : tg));
         return { ...p, targets: started };
       }));
     }, 3500);
@@ -145,39 +162,40 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
   }, [moving, live]);
 
   const chan = (key: string) => setup.channels.find((c) => c.key === key);
-  const appOf = (t: PostTarget): Channel => chan(t.key)?.app ?? "facebook";
+  const appOf = (tg: PostTarget): Channel => chan(tg.key)?.app ?? "facebook";
   const inRange = (p: MyPost) => !p.date || (p.date >= from && p.date <= to);
   const shown = posts.filter((p) => srcOk(p) && inRange(p) && (!day || p.date === day) && (!only || groupOf(p) === only));
   const count = (g: Group) => posts.filter((p) => srcOk(p) && inRange(p) && groupOf(p) === g).length;
-  const SOURCES = [["all", "All"], ["rezekii", "Via Rezekii"], ["phone", "From Phone"]] as const;
+  const SOURCES = [["all", t("All")], ["rezekii", t("Via Rezekii")], ["phone", t("From Phone")]] as const;
   const needs = count("fail");
 
   const choose = (a: string, b: string, key: string | null) => { setRange([a, b]); setPreset(key); setDay(null); setMonth(b < TODAY ? b.slice(0, 7) : a > TODAY ? a.slice(0, 7) : TODAY.slice(0, 7)); };
-  const label = preset ? PRESETS.find(([k]) => k === preset)![1] : `${dayName(from)} – ${dayName(to)}`;
+  const range = `${dayShort(from, lang)} – ${dayShort(to, lang)}`;
+  const label = preset ? t(PRESETS.find(([k]) => k === preset)![1]) : range;
 
   const setTarget = (postId: string, key: string, patch: Partial<PostTarget>) =>
-    setPosts((all) => all.map((p) => (p.id !== postId ? p : { ...p, targets: p.targets.map((t) => (t.key === key ? { ...t, ...patch } : t)) })));
-  const fix = (p: MyPost, t: PostTarget) => {
-    const name = `${NAMES[appOf(t)]} ${chan(t.key)?.name ?? ""}`.trim();
-    if (live && t.postId) {
-      retryChannel(appOf(t), t.postId).then(() => { toast(`Trying ${name} again. ${POST_CREDITS} credits`); reload(); }).catch((e: unknown) => toast(e instanceof Error ? e.message : "Couldn't try again."));
+    setPosts((all) => all.map((p) => (p.id !== postId ? p : { ...p, targets: p.targets.map((tg) => (tg.key === key ? { ...tg, ...patch } : tg)) })));
+  const fix = (p: MyPost, tg: PostTarget) => {
+    const name = `${NAMES[appOf(tg)]} ${chan(tg.key)?.name ?? ""}`.trim();
+    if (live && tg.postId) {
+      retryChannel(appOf(tg), tg.postId, t).then(() => { toast(t("Trying {name} again. {n} credits", { name, n: POST_CREDITS })); reload(); }).catch((e: unknown) => toast(e instanceof Error ? t(e.message) : t("Couldn't try again.")));
       return;
     }
-    toast(`${t.fix === "Reconnect" ? `${name} reconnected. Posting again…` : `Trying ${name} again…`} ${POST_CREDITS} credits`);
-    setTarget(p.id, t.key, { status: "uploading", reason: undefined, fix: undefined });
+    toast(tg.fix === "Reconnect" ? t("{name} reconnected. Posting again… {n} credits", { name, n: POST_CREDITS }) : t("Trying {name} again… {n} credits", { name, n: POST_CREDITS }));
+    setTarget(p.id, tg.key, { status: "uploading", reason: undefined, fix: undefined });
   };
   const cancel = (p: MyPost) => {
     if (live) {
-      const go = p.targets.filter((t) => t.canCancel && t.postId);
-      Promise.all(go.map((t) => cancelChannel(appOf(t), t.postId!)))
-        .then(() => toast("Cancelled. Its credits come back to your wallet."))
-        .catch((e: unknown) => toast(e instanceof Error ? e.message : "Couldn't cancel."))
+      const go = p.targets.filter((tg) => tg.canCancel && tg.postId);
+      Promise.all(go.map((tg) => cancelChannel(appOf(tg), tg.postId!, t)))
+        .then(() => toast(t("Cancelled. Its credits come back to your wallet.")))
+        .catch((e: unknown) => toast(e instanceof Error ? t(e.message) : t("Couldn't cancel.")))
         .finally(() => { setCancelling(null); reload(); });
       return;
     }
-    setPosts((all) => all.map((x) => (x.id !== p.id ? x : { ...x, date: "", time: "", targets: x.targets.map((t) => ({ ...t, status: "draft" as const })) })));
+    setPosts((all) => all.map((x) => (x.id !== p.id ? x : { ...x, date: "", time: "", targets: x.targets.map((tg) => ({ ...tg, status: "draft" as const })) })));
     setCancelling(null);
-    toast(`Cancelled. ${p.targets.length * POST_CREDITS} credits refunded; moved to drafts.`);
+    toast(t("Cancelled. {n} credits refunded; moved to drafts.", { n: p.targets.length * POST_CREDITS }));
   };
 
   // The month map: each day shows a dot per post, in its group's colour.
@@ -189,8 +207,8 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
   const row = (p: MyPost) => {
     const g = groupOf(p);
     // Real posts can be cancelled here while scheduled; editing them comes later.
-    const editable = live ? g === "sched" && p.targets.some((t) => t.canCancel) : g === "sched" || g === "draft";
-    const link = p.targets.find((t) => t.permalink)?.permalink;
+    const editable = live ? g === "sched" && p.targets.some((tg) => tg.canCancel) : g === "sched" || g === "draft";
+    const link = p.targets.find((tg) => tg.permalink)?.permalink;
     return (
       <li key={p.id} className={`sq-post ${g}`}>
         <span className="sq-cover">
@@ -200,25 +218,26 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
         </span>
         <span className="sq-body">
           <span className="sq-when">
-            {p.date ? <><b>{dayLabel(p.date)}</b> · {clock(p.time)}</> : <b>No time yet</b>}
-            <span className={`sq-src${p.source === "phone" ? " phone" : ""}`}>{p.source === "phone" ? <><Icon name="phone" size={12} /> From Phone</> : "Via Rezekii"}</span>
+            {p.date ? <><b>{dayLabel(p.date)}</b> · {clock(p.time, lang)}</> : <b>{t("No time yet")}</b>}
+            <span className={`sq-src${p.source === "phone" ? " phone" : ""}`}>{p.source === "phone" ? <><Icon name="phone" size={12} /> {t("From Phone")}</> : t("Via Rezekii")}</span>
           </span>
           <strong className="sq-cap">{p.caption}</strong>
           <span className="sq-targets">
-            {p.targets.map((t) => {
-              const app = appOf(t);
-              const c = chan(t.key);
-              const step = STEPS.indexOf(t.status);
+            {p.targets.map((tg) => {
+              const app = appOf(tg);
+              const c = chan(tg.key);
+              const step = STEPS.indexOf(tg.status);
               return (
-                <span key={t.key} className={`sq-t ${t.status}`}>
+                <span key={tg.key} className={`sq-t ${tg.status}`}>
                   <span className="sq-t-app"><PlatformIcon name={ICON[app]} size={18} /><span>{c?.name ?? NAMES[app]}</span></span>
-                  <span className="sq-pill">{MOVING.includes(t.status) && <i className="sq-spin" aria-hidden="true" />}{t.status === "posted" && <i className="sq-live" aria-hidden="true" />}{statusText(t.status, app)}</span>
-                  {MOVING.includes(t.status) && <span className="sq-track" aria-hidden="true">{STEPS.slice(1).map((s, i) => <i key={s} className={i + 1 <= step ? "on" : ""} />)}</span>}
-                  {t.status === "posted" && t.views ? <small className="sq-views"><Icon name="eye" size={13} /> {views(t.views)} views</small> : null}
-                  {t.status === "failed" && (
+                  <span className="sq-pill">{MOVING.includes(tg.status) && <i className="sq-spin" aria-hidden="true" />}{tg.status === "posted" && <i className="sq-live" aria-hidden="true" />}{statusText(tg.status, app, t)}</span>
+                  {MOVING.includes(tg.status) && <span className="sq-track" aria-hidden="true">{STEPS.slice(1).map((s, i) => <i key={s} className={i + 1 <= step ? "on" : ""} />)}</span>}
+                  {tg.status === "posted" && tg.views ? <small className="sq-views"><Icon name="eye" size={13} /> {t("{n} views", { n: views(tg.views) })}</small> : null}
+                  {tg.status === "failed" && (
                     <span className="sq-why">
-                      <small>{t.reason}{t.fix || !live ? ` · ${POST_CREDITS} credits returned` : ""}</small>
-                      {(t.fix || !live) && <button type="button" className={t.fix === "Reconnect" ? "np-btn v2-btn-sm" : "btn-outline v2-btn-sm"} onClick={() => fix(p, t)}>{t.fix ?? "Retry"}</button>}
+                      {/* Why it failed is from TikTok or the app (or the sample), shown in her language where Rezekii knows the words. */}
+                      <small>{tg.fix || !live ? t("{reason} · {n} credits returned", { reason: t(tg.reason ?? ""), n: POST_CREDITS }) : t(tg.reason ?? "")}</small>
+                      {(tg.fix || !live) && <button type="button" className={tg.fix === "Reconnect" ? "np-btn v2-btn-sm" : "btn-outline v2-btn-sm"} onClick={() => fix(p, tg)}>{tg.fix === "Reconnect" ? t("Reconnect") : t("Retry")}</button>}
                     </span>
                   )}
                 </span>
@@ -227,18 +246,18 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
           </span>
           {editable && (cancelling === p.id ? (
             <span className="sq-confirm" role="alert">
-              <span>{g === "draft" ? "Delete this draft?" : "Cancel this post? It moves to Drafts."}</span>
-              <button type="button" className="btn-outline v2-btn-sm" onClick={() => setCancelling(null)}>Keep It</button>
-              <button type="button" className="sq-danger v2-btn-sm" onClick={() => (g === "draft" ? (setPosts((all) => all.filter((x) => x.id !== p.id)), toast("Draft deleted")) : cancel(p))}>{g === "draft" ? "Delete" : "Cancel Post"}</button>
+              <span>{g === "draft" ? t("Delete this draft?") : t("Cancel this post? It moves to Drafts.")}</span>
+              <button type="button" className="btn-outline v2-btn-sm" onClick={() => setCancelling(null)}>{t("Keep It")}</button>
+              <button type="button" className="sq-danger v2-btn-sm" onClick={() => (g === "draft" ? (setPosts((all) => all.filter((x) => x.id !== p.id)), toast(t("Draft deleted"))) : cancel(p))}>{g === "draft" ? t("Delete") : t("Cancel Post")}</button>
             </span>
           ) : (
             <span className="sq-acts">
-              {!live && <button type="button" className="btn-outline v2-btn-sm" onClick={() => { openPost(p); router.push(`${newPost}?edit=${encodeURIComponent(p.id)}`); }}><Icon name="edit" size={15} /> Edit</button>}
-              <button type="button" className="sq-ghost v2-btn-sm" onClick={() => setCancelling(p.id)}>{g === "draft" ? "Delete" : "Cancel"}</button>
+              {!live && <button type="button" className="btn-outline v2-btn-sm" onClick={() => { openPost(p); router.push(`${newPost}?edit=${encodeURIComponent(p.id)}`); }}><Icon name="edit" size={15} /> {t("Edit")}</button>}
+              <button type="button" className="sq-ghost v2-btn-sm" onClick={() => setCancelling(p.id)}>{g === "draft" ? t("Delete") : t("Cancel")}</button>
             </span>
           ))}
-          {g === "done" && !live && <span className="sq-acts"><button type="button" className="sq-ghost v2-btn-sm" onClick={() => toast("Preview: opens the post in the app")}>View Post <Icon name="arrow" size={14} /></button></span>}
-          {g === "done" && live && link && <span className="sq-acts"><a className="sq-ghost v2-btn-sm" href={link} target="_blank" rel="noopener noreferrer">View Post <Icon name="arrow" size={14} /></a></span>}
+          {g === "done" && !live && <span className="sq-acts"><button type="button" className="sq-ghost v2-btn-sm" onClick={() => toast(t("Preview: opens the post in the app"))}>{t("View Post")} <Icon name="arrow" size={14} /></button></span>}
+          {g === "done" && live && link && <span className="sq-acts"><a className="sq-ghost v2-btn-sm" href={link} target="_blank" rel="noopener noreferrer">{t("View Post")} <Icon name="arrow" size={14} /></a></span>}
         </span>
       </li>
     );
@@ -246,71 +265,83 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
 
   return (
     <div className="v2-stack v2-in sq-page" style={{ gap: 18 }}>
-      <Title title="Content Calendar" sub="Every post and its status · Malaysia time">
+      <Title title={t("Content Calendar")} sub={t("Every post and its status · Malaysia time")}>
         <CalendarPicker
           compact
           label={label}
-          sub={`${dayName(from)} – ${dayName(to)}`}
+          sub={range}
           today={TODAY}
           first={live ? add(TODAY, -180) : "2026-09-01"}
           last={live ? add(TODAY, 90) : "2026-12-31"}
           from={from}
           to={to}
           onRange={(a, b) => choose(a, b, null)}
-          presets={PRESETS}
+          presets={PRESETS.map(([k, l]) => [k, t(l)])}
           preset={preset}
           onPreset={(k) => choose(RANGE[k][0], RANGE[k][1], k)}
         />
       </Title>
-      <p className="an-range"><b>{label}</b><span>{dayName(from)} – {dayName(to)}</span></p>
+      <p className="an-range"><b>{label}</b><span>{range}</span></p>
 
       {needs > 0 && only !== "fail" && (
         <div className="sq-phonebar">
           <button type="button" className="sq-alert" onClick={() => { setOnly("fail"); setDay(null); }}>
-            <Icon name="alert" size={17} /><span>{needs} post{needs === 1 ? "" : "s"} need{needs === 1 ? "s" : ""} you</span><b>Fix</b>
+            <Icon name="alert" size={17} /><span>{needs === 1 ? t("{n} post needs you", { n: 1 }) : t("{n} posts need you", { n: needs })}</span><b>{t("Fix")}</b>
           </button>
         </div>
       )}
       {/* What's showing, in plain words, and every narrowing as a chip she can remove (owner, 1 Nov 2026). */}
       <div className="sq-showing">
-        <p>Showing <b>{shown.length} post{shown.length === 1 ? "" : "s"}</b>{only ? <> that are <b>{GROUPS.find((g) => g.key === only)!.title.toLowerCase()}</b></> : ""} {day ? <>on <b>{dayLabel(day)}</b></> : <>in <b>{label.toLowerCase()}</b></>}. Tap a status or a day to narrow it down.</p>
+        <p>
+          {/* One whole line per case, with the bold parts filled in (owner, 3 Nov 2026). */}
+          {rich(
+            only ? (day ? t("Showing {posts} that are {status} on {day}. Tap a status or a day to narrow it down.") : t("Showing {posts} that are {status} in {range}. Tap a status or a day to narrow it down."))
+              : day ? t("Showing {posts} on {day}. Tap a status or a day to narrow it down.") : t("Showing {posts} in {range}. Tap a status or a day to narrow it down."),
+            {
+              posts: <b>{shown.length === 1 ? t("{n} post", { n: 1 }) : t("{n} posts", { n: shown.length })}</b>,
+              status: <b>{only ? t(GROUPS.find((g) => g.key === only)!.title).toLowerCase() : ""}</b>,
+              day: <b>{day ? dayLabel(day) : ""}</b>,
+              range: <b>{label.toLowerCase()}</b>,
+            },
+          )}
+        </p>
         {(only || day || src !== "all") && (
           <span className="sq-chips">
-            {only && <button type="button" className="sq-chip" onClick={() => setOnly(null)} aria-label={`Remove ${GROUPS.find((g) => g.key === only)!.title}`}>{GROUPS.find((g) => g.key === only)!.title} <Icon name="x" size={13} width={2.6} /></button>}
-            {day && <button type="button" className="sq-chip" onClick={() => setDay(null)} aria-label={`Remove ${dayLabel(day)}`}>{dayLabel(day)} <Icon name="x" size={13} width={2.6} /></button>}
-            {src !== "all" && <button type="button" className="sq-chip" onClick={() => setSrc("all")} aria-label="Remove posted from">{SOURCES.find(([k]) => k === src)![1]} <Icon name="x" size={13} width={2.6} /></button>}
-            <button type="button" className="pb-link" onClick={() => { setOnly(null); setDay(null); setSrc("all"); }}>Show All</button>
+            {only && <button type="button" className="sq-chip" onClick={() => setOnly(null)} aria-label={t("Remove {name}", { name: t(GROUPS.find((g) => g.key === only)!.title) })}>{t(GROUPS.find((g) => g.key === only)!.title)} <Icon name="x" size={13} width={2.6} /></button>}
+            {day && <button type="button" className="sq-chip" onClick={() => setDay(null)} aria-label={t("Remove {name}", { name: dayLabel(day) })}>{dayLabel(day)} <Icon name="x" size={13} width={2.6} /></button>}
+            {src !== "all" && <button type="button" className="sq-chip" onClick={() => setSrc("all")} aria-label={t("Remove posted from")}>{SOURCES.find(([k]) => k === src)![1]} <Icon name="x" size={13} width={2.6} /></button>}
+            <button type="button" className="pb-link" onClick={() => { setOnly(null); setDay(null); setSrc("all"); }}>{t("Show All")}</button>
           </span>
         )}
       </div>
 
-      <div className="sq-tiles" role="group" aria-label="Show only">
+      <div className="sq-tiles" role="group" aria-label={t("Show only")}>
         {GROUPS.map((g) => (
           <button key={g.key} type="button" className={`sq-tile ${g.tone}`} aria-pressed={only === g.key} onClick={() => setOnly(only === g.key ? null : g.key)}>
             <span className="sq-tile-ico"><Icon name={g.icon} size={18} /></span>
             <b>{count(g.key)}</b>
-            <small>{g.title}</small>
+            <small>{t(g.title)}</small>
           </button>
         ))}
       </div>
 
       {!live && <div className="sq-srcbar">
-        <div className="v2-chips" role="group" aria-label="Posted from">
-          {([["all", "All Posts"], ["rezekii", "Via Rezekii"], ["phone", "From Phone"]] as const).map(([k, l]) => (
+        <div className="v2-chips" role="group" aria-label={t("Posted from")}>
+          {([["all", t("All Posts")], ["rezekii", t("Via Rezekii")], ["phone", t("From Phone")]] as const).map(([k, l]) => (
             <button key={k} type="button" className={`v2-chip${src === k ? " on" : ""}`} aria-pressed={src === k} onClick={() => setSrc(k)}>{k === "phone" && <Icon name="phone" size={15} />}{l}</button>
           ))}
         </div>
-        <span className="v2-small">Phone posts sync every 30 minutes.</span>
+        <span className="v2-small">{t("Phone posts sync every 30 minutes.")}</span>
       </div>}
 
       <section className="v2-card sq-map">
         <div className="sq-map-h">
-          <button type="button" className="cp-nav" aria-label="Previous month" onClick={() => moveMonth(-1)}><Icon name="back" size={16} /></button>
-          <h2 className="v2-h2">{MONTHS[m - 1]} {y}</h2>
-          <button type="button" className="cp-nav" aria-label="Next month" onClick={() => moveMonth(1)}><Icon name="arrow" size={16} /></button>
+          <button type="button" className="cp-nav" aria-label={t("Previous month")} onClick={() => moveMonth(-1)}><Icon name="back" size={16} /></button>
+          <h2 className="v2-h2">{monthTitle(y, m, lang)}</h2>
+          <button type="button" className="cp-nav" aria-label={t("Next month")} onClick={() => moveMonth(1)}><Icon name="arrow" size={16} /></button>
         </div>
-        <div className="sq-grid" role="grid" aria-label={`Posts in ${MONTHS[m - 1]} ${y}`}>
-          {WEEK.map((w) => <span key={w} className="sq-wd">{w}</span>)}
+        <div className="sq-grid" role="grid" aria-label={t("Posts in {month}", { month: monthTitle(y, m, lang) })}>
+          {weekHeads(lang).map((w, i) => <span key={i} className="sq-wd">{w}</span>)}
           {Array.from({ length: lead }, (_, i) => <span key={`b${i}`} />)}
           {Array.from({ length: daysIn }, (_, i) => {
             const d = `${month}-${String(i + 1).padStart(2, "0")}`;
@@ -319,7 +350,7 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
             // How many went up that day (owner, 1 Nov 2026), with a dot for anything else.
             const posted = list.filter((p) => groupOf(p) === "done").length;
             return (
-              <button key={d} type="button" className={`sq-day${d === TODAY ? " today" : ""}${day === d ? " on" : ""}${out ? " out" : ""}`} onClick={() => setDay(day === d ? null : d)} aria-label={`${dayName(d)}: ${posted} posted, ${list.length} post${list.length === 1 ? "" : "s"} in all`} aria-pressed={day === d}>
+              <button key={d} type="button" className={`sq-day${d === TODAY ? " today" : ""}${day === d ? " on" : ""}${out ? " out" : ""}`} onClick={() => setDay(day === d ? null : d)} aria-label={list.length === 1 ? t("{day}: {posted} posted, {n} post in all", { day: dayShort(d, lang), posted, n: 1 }) : t("{day}: {posted} posted, {n} posts in all", { day: dayShort(d, lang), posted, n: list.length })} aria-pressed={day === d}>
                 <b>{i + 1}</b>
                 {posted > 0 && <em className="sq-posted">{posted}</em>}
                 <span className="sq-dots">{list.filter((p) => groupOf(p) !== "done").slice(0, 3).map((p) => <i key={p.id} className={groupOf(p)} />)}</span>
@@ -328,8 +359,8 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
           })}
         </div>
         <div className="sq-legend">
-          <span><em className="sq-posted">2</em>Posted that day</span>
-          {GROUPS.filter((g) => g.key !== "draft" && g.key !== "done").map((g) => <span key={g.key}><i className={g.key} />{g.title}</span>)}
+          <span><em className="sq-posted">2</em>{t("Posted that day")}</span>
+          {GROUPS.filter((g) => g.key !== "draft" && g.key !== "done").map((g) => <span key={g.key}><i className={g.key} />{t(g.title)}</span>)}
         </div>
       </section>
 
@@ -339,7 +370,7 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
         return list.length > 0 && (
           <section key={g.key} className={`v2-card sq-group ${g.tone}`}>
             <div className="v2-card-h">
-              <h2 className="v2-h2"><span className={`sq-gico ${g.tone}`}><Icon name={g.icon} size={15} /></span>{g.title}</h2>
+              <h2 className="v2-h2"><span className={`sq-gico ${g.tone}`}><Icon name={g.icon} size={15} /></span>{t(g.title)}</h2>
               <span className="v2-small">{list.length}</span>
             </div>
             <ul className="sq-list">{list.map(row)}</ul>
@@ -348,12 +379,12 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
       })}
       {shown.length === 0 && (
         <section className="v2-card sq-empty">
-          <h2 className="v2-h2">Nothing Here</h2>
-          <p className="v2-small">No posts for these dates.</p>
-          <a href={newPost} className="np-btn v2-btn-sm">New Post</a>
+          <h2 className="v2-h2">{t("Nothing Here")}</h2>
+          <p className="v2-small">{t("No posts for these dates.")}</p>
+          <a href={newPost} className="np-btn v2-btn-sm">{t("New Post")}</a>
         </section>
       )}
-      <p className="v2-small" style={{ margin: 0 }}>{live ? "You can cancel until a post starts sending." : "You can edit or cancel until a post starts sending."}</p>
+      <p className="v2-small" style={{ margin: 0 }}>{live ? t("You can cancel until a post starts sending.") : t("You can edit or cancel until a post starts sending.")}</p>
 
 
     </div>
