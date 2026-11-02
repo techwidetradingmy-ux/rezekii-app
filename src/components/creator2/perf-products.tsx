@@ -11,9 +11,11 @@ import { ANALYTICS, product, rm } from "@/lib/mock";
 import { LIVES, PREV_ORDERS, SHORT, VIDEOS, channelSplit, type VideoRow } from "@/lib/mock-creator2";
 import { perfProduct, shortName, useLivePerf } from "@/lib/live-perf";
 import { CancelChip, CancelRate, SortBar, cancelFlag, useSortPref } from "@/components/sort-bar";
-import { cancelText } from "@/lib/cancel";
+import { useCancelText, useOptions } from "@/components/creator2/bits";
+import { useT } from "@/lib/i18n/client";
 
 const SORTS = ["Commission", "Orders", "Cancels"] as const;
+const SOURCES = ["All", "Video", "LIVE"] as const;
 type Sort = (typeof SORTS)[number];
 
 const COLORS = ["#00c073", "#2f80ed", "#f5a623", "#e8005a", "#8b7dff"];
@@ -27,6 +29,10 @@ type Source = "All" | "Video" | "LIVE";
  * in one of them.
  */
 export function ProductList() {
+  const t = useT();
+  const cancelText = useCancelText();
+  const sorts = useOptions(SORTS);
+  const sources = useOptions(SOURCES);
   const router = useRouter();
   const [source, setSource] = useState<Source>("All");
   // Signed in (owner, 31 Oct 2026): what each of her products earned in the days picked, and from videos or LIVE.
@@ -61,30 +67,30 @@ export function ProductList() {
   const other = Math.max(0, total - rows.reduce((a, b) => a + b.value, 0));
   const slices = [
     ...rows.map((b, i) => ({ id: b.productId, label: name(b.productId), value: b.value, color: COLORS[i % COLORS.length] })),
-    ...(other > 0 ? [{ id: "other", label: "Other", value: other, color: "#c9d3ce" }] : []),
+    ...(other > 0 ? [{ id: "other", label: t("Other"), value: other, color: "#c9d3ce" }] : []),
   ];
   const starts = slices.map((_, i) => slices.slice(0, i).reduce((a, x) => a + (x.value / total) * 100, 0));
   // The slice shown in the middle: the top earner until she taps another.
   const [sel, setSel] = useState<string | null>(null);
   const shown = slices.find((s) => s.id === sel) ?? slices[0];
-  if (perf === "wait") return <p className="v2-muted"><span className="cr1-spin xs" aria-hidden="true" /> Loading your products…</p>;
-  if (perf === "error") return <p className="v2-muted">Couldn&apos;t load your products. Please refresh.</p>;
+  if (perf === "wait") return <p className="v2-muted"><span className="cr1-spin xs" aria-hidden="true" /> {t("Loading your products…")}</p>;
+  if (perf === "error") return <p className="v2-muted">{t("Couldn't load your products. Please refresh.")}</p>;
   if (!top || !total) {
     return (
       <div className="v2-stack" style={{ gap: 20 }}>
-        <div className="pl-source"><Seg value={source} options={["All", "Video", "LIVE"] as const} onChange={(s) => { setSource(s); setOpenId(null); setSel(null); }} /></div>
-        <p className="v2-muted" style={{ margin: 0 }}>No sales {source === "All" ? "" : `from ${source === "Video" ? "videos" : "LIVEs"} `}in these days.</p>
+        <div className="pl-source"><Seg value={sources.label(source)} options={sources.labels} onChange={(l) => { setSource(sources.pick(l)); setOpenId(null); setSel(null); }} /></div>
+        <p className="v2-muted" style={{ margin: 0 }}>{source === "All" ? t("No sales in these days.") : source === "Video" ? t("No sales from videos in these days.") : t("No sales from LIVEs in these days.")}</p>
       </div>
     );
   }
 
   return (
     <div className="v2-stack" style={{ gap: 20 }}>
-      <div className="pl-source"><Seg value={source} options={["All", "Video", "LIVE"] as const} onChange={(s) => { setSource(s); setOpenId(null); setSel(null); }} /></div>
+      <div className="pl-source"><Seg value={sources.label(source)} options={sources.labels} onChange={(l) => { setSource(sources.pick(l)); setOpenId(null); setSel(null); }} /></div>
 
-      <Lock what="where your commission comes from">
-        <section className="v2-card pd-card" aria-label="Where your commission comes from">
-          <div className="pd-ring" role="group" aria-label="Share of commission by product">
+      <Lock what={t("where your commission comes from")}>
+        <section className="v2-card pd-card" aria-label={t("Where your commission comes from")}>
+          <div className="pd-ring" role="group" aria-label={t("Share of commission by product")}>
             <svg viewBox="0 0 42 42">
               {slices.map((s, i) => {
                 const pct = (s.value / total) * 100;
@@ -106,12 +112,12 @@ export function ProductList() {
               return <li key={s.id}>{s.id === "other" ? <span className="pd-row">{row}</span> : <a className="pd-row" href={`#pd-${s.id}`} onClick={(e) => { e.preventDefault(); const el = document.getElementById(`pd-${s.id}`); setOpenId(s.id); setSel(s.id); el?.scrollIntoView({ behavior: "smooth", block: "center" }); el?.classList.remove("pd-flash"); void el?.offsetWidth; el?.classList.add("pd-flash"); }}>{row}<Icon name="arrow" size={14} /></a>}</li>;
             })}
           </ul>
-          {topShare >= 35 && <Link href="/app/data/ai-picks" className="pd-tip">Too much from one product? See AI Picks <Icon name="arrow" size={14} /></Link>}
+          {topShare >= 35 && <Link href="/app/data/ai-picks" className="pd-tip">{t("Too much from one product? See AI Picks")} <Icon name="arrow" size={14} /></Link>}
         </section>
       </Lock>
 
-      <SortBar value={sort} options={SORTS} onChange={setSort} dir={dir} onFlip={flip} />
-      <Lock what="what each product earned">
+      <SortBar value={sorts.label(sort)} options={sorts.labels} onChange={(l) => setSort(sorts.pick(l))} dir={dir} onFlip={flip} />
+      <Lock what={t("what each product earned")}>
         <div className="cr2-list">
           {list.map((b) => {
             const p = info(b.productId);
@@ -123,44 +129,44 @@ export function ProductList() {
             const cflag = cancelFlag(b.cancel, b.items);
             const isTop = b.productId === top.productId;
             const vids = (real ? real.videos : VIDEOS).filter((v) => v.productId === b.productId).sort((x, y) => y.orders - x.orders);
-            const orders = `${b.orders} order${b.orders === 1 ? "" : "s"}`;
+            const orders = b.orders === 1 ? t("{n} order", { n: 1 }) : t("{n} orders", { n: b.orders });
             return (
               <article key={b.productId} id={`pd-${b.productId}`} className={`pl-row${openId === b.productId ? " open" : ""}`}>
                 {/* The photo and name open the product; the rest of the row shows its details here. The name has its own line,
                     the numbers a line below with the trend at its right end like a stock, then any tags (owner, 3 Nov 2026). */}
                 <div className="pl-head pl-prod">
-                  <button type="button" className="pv-hit" aria-expanded={openId === b.productId} aria-label={`${p.name} details`} onClick={() => setOpenId(openId === b.productId ? null : b.productId)} />
+                  <button type="button" className="pv-hit" aria-expanded={openId === b.productId} aria-label={t("{name} details", { name: p.name })} onClick={() => setOpenId(openId === b.productId ? null : b.productId)} />
                   {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
                   <img className="pv-open" src={p.img} alt="" onClick={() => router.push(productHref(p.id))} />
                   <strong><Link href={productHref(p.id)} className="pv-open">{p.name}</Link></strong>
                   <Icon name="arrow" size={16} />
                   <span className="pl-nums">
-                    <b className="v2-num">{sort === "Orders" ? orders : sort === "Cancels" ? `${cancelText(b.cancel, b.items, b.cancelItems)} cancelled` : rm(b.value, 0)}</b>
+                    <b className="v2-num">{sort === "Orders" ? orders : sort === "Cancels" ? t("{n} cancelled", { n: cancelText(b.cancel, b.items, b.cancelItems) }) : rm(b.value, 0)}</b>
                     <small>· {sort === "Orders" ? rm(b.value, 0) : orders}</small>
                     {change !== 0 && (
-                      <span className={`pl-chg ${change > 0 ? "up cr2-green" : "down cr2-red"}`} role="img" aria-label={`Orders ${change > 0 ? "up" : "down"} ${Math.abs(change)}%`} title="Orders against the same number of days before">
+                      <span className={`pl-chg ${change > 0 ? "up cr2-green" : "down cr2-red"}`} role="img" aria-label={change > 0 ? t("Orders up {pct}%", { pct: Math.abs(change) }) : t("Orders down {pct}%", { pct: Math.abs(change) })} title={t("Orders against the same number of days before")}>
                         <i aria-hidden="true">{change > 0 ? "▲" : "▼"}</i>{Math.abs(change)}%
                       </span>
                     )}
                   </span>
                   {(isTop || lowRated || cflag) && (
                     <span className="pl-tags">
-                      {isTop && <span className="badge">Top Earner</span>}
-                      {lowRated ? <span className="badge badge-red pl-end">Low Rating</span> : <CancelChip pct={b.cancel} items={b.items} />}
+                      {isTop && <span className="badge">{t("Top Earner")}</span>}
+                      {lowRated ? <span className="badge badge-red pl-end">{t("Low Rating")}</span> : <CancelChip pct={b.cancel} items={b.items} />}
                     </span>
                   )}
                 </div>
                 {openId === b.productId && <div className="pl-body">
                 <Split commission={b.commission} split={splitOf(b)} />
                 <div className="cr2-mini">
-                  <span><small>Orders</small><b>{b.orders}</b></span>
-                  <span><small>Cancel Rate</small><CancelRate pct={b.cancel} items={b.items} bad={b.cancelItems} /></span>
-                  {!real && <span><small>Rating</small><b className={lowRated ? "cr2-red" : undefined}>{p.rating.toFixed(1)} / 5</b></span>}
+                  <span><small>{t("Orders")}</small><b>{b.orders}</b></span>
+                  <span><small>{t("Cancel Rate")}</small><CancelRate pct={b.cancel} items={b.items} bad={b.cancelItems} /></span>
+                  {!real && <span><small>{t("Rating")}</small><b className={lowRated ? "cr2-red" : undefined}>{p.rating.toFixed(1)} / 5</b></span>}
                 </div>
 
                 {/* Top video as a button (owner, 28 Oct 2026: less text); it opens here, on Rezekii. */}
-                {vids[0] && <button type="button" className="pd-vid" onClick={() => setVideo(vids[0])}><Icon name="video" size={16} /> Top Video</button>}
-                {dropping && <p className="cr2-note"><Icon name="alert" size={15} /><span>Was {prev} orders, now {b.orders}. Try a fresh video.</span></p>}
+                {vids[0] && <button type="button" className="pd-vid" onClick={() => setVideo(vids[0])}><Icon name="video" size={16} /> {t("Top Video")}</button>}
+                {dropping && <p className="cr2-note"><Icon name="alert" size={15} /><span>{t("Was {prev} orders, now {n}. Try a fresh video.", { prev, n: b.orders })}</span></p>}
                 </div>}
               </article>
             );
@@ -175,7 +181,8 @@ export function ProductList() {
 
 /** One product's commission split into video, LIVE and the rest, as a thin bar. */
 function Split({ commission, split: s }: { commission: number; split: { video: number; live: number; other: number } }) {
-  const parts = [["Video", s.video, "v"], ["LIVE", s.live, "l"], ["Other", s.other, "o"]] as const;
+  const t = useT();
+  const parts = [[t("Video"), s.video, "v"], ["LIVE", s.live, "l"], [t("Other"), s.other, "o"]] as const;
   const pct = (v: number) => Math.round((v / commission) * 100);
   return (
     <div className="pl-split" role="img" aria-label={parts.map(([l, v]) => `${l} ${pct(v)}%`).join(", ")}>

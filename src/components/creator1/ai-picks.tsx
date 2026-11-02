@@ -14,20 +14,17 @@ import { canGetSample } from "@/lib/mock-creator1";
 import { AddButton } from "@/components/add-button";
 import { DirToggle, useSortPref } from "@/components/sort-bar";
 import { NO_PHOTO, shortName } from "@/lib/live-perf";
+import { rich, useOptions } from "@/components/creator2/bits";
+import { useT } from "@/lib/i18n/client";
+import { tx } from "@/lib/i18n/lang";
 
 type Fit = AiPick["fit"];
 // Title Case (owner, 1 Nov 2026).
 const SORTS = ["Best Match", "Best Selling", "Top Commission", "Lowest Price"] as const;
 type Sort = (typeof SORTS)[number];
 
-/** What the AI does, in order, with what it found at each step. */
-const STEPS: [string, string][] = [
-  ["Reading your sales", AI_PROFILE.categories.map(([c, v]) => `${c} ${v}%`).slice(0, 2).join(" · ")],
-  ["Finding what sells for you", `Video ${AI_PROFILE.video}% · LIVE ${100 - AI_PROFILE.video}%`],
-  ["Checking TikTok best-sellers", `${AI_PROFILE.compared.toLocaleString("en-MY")} products`],
-  ["Matching campaigns", "Rezekii rates and samples found"],
-  ["Ranking picks", `${AI_PICKS.length} picks`],
-];
+/** How many steps the AI shows (what each does and found is written in AiPicks, in her language). */
+const STEP_COUNT = 5;
 const STEP_MS = 650;
 /** How long her last real analysis took (owner, 1 Nov 2026: about a minute), so the steps keep pace with it. */
 const RUN_KEY = "rz2_ai_ms";
@@ -64,21 +61,23 @@ type LivePicks = {
   /** Saved picks shown straight away; `ms` is how long the analysis took. */
   saved?: boolean; ms?: number;
 };
-const SOURCE: Record<LivePick["source"], string> = { tiktok: "TikTok best seller", market: "TikTok marketplace", rezekii: "Rezekii campaign" };
+const SOURCE: Record<LivePick["source"], string> = { tiktok: tx("TikTok best seller"), market: tx("TikTok marketplace"), rezekii: tx("Rezekii campaign") };
 /** The product on TikTok Shop (owner, 3 Nov 2026), in the shop.tiktok.com/view/product/<id> format of TikTok's own product links. */
 const tiktokHref = (id: string) => `https://shop.tiktok.com/view/product/${id}?region=MY&locale=en`;
-const PER: Record<LivePicks["effort"][number]["per"], string> = { "1k": "per 1K views", video: "per video", live: "per LIVE" };
+const PER: Record<LivePicks["effort"][number]["per"], string> = { "1k": tx("per 1K views"), video: tx("per video"), live: tx("per LIVE") };
 
 /** One card, the same for sample and real picks. */
 type Item = {
-  id: string; name: string; img: string; price: number; sold: number; soldLabel: string; rankLabel: string | null; match: number;
+  /** soldLabel: the English line for how many sold, with {n}; rank: TikTok Shop rank in its category, sample only. */
+  id: string; name: string; img: string; price: number; sold: number; soldLabel: string; rank: { n: number; category: string } | null; match: number;
   video: number; live: number; fit: Fit; why: string; rate: number; sample: boolean; source?: string; parts?: LivePick["parts"];
   /** TikTok's buyer rating, when known (owner, 2 Nov 2026). */
   rating: number | null;
 };
 
 /** What the match score is made of (item 18, owner, 2 Nov 2026), in the order and with the maximums modules/picks/ai.ts uses. */
-const PARTS: [keyof LivePick["parts"], string, number][] = [["category", "Your Category", 35], ["price", "Price Range", 20], ["demand", "Sells on TikTok", 20], ["rate", "Commission", 15], ["rating", "Rating", 10]];
+const PARTS: [keyof LivePick["parts"], string, number][] = [["category", tx("Your Category"), 35], ["price", tx("Price Range"), 20], ["demand", tx("Sells on TikTok"), 20], ["rate", tx("Commission"), 15], ["rating", tx("Rating"), 10]];
+const CHANNELS = ["Overall", "Video", "LIVE"] as const;
 
 /**
  * AI picks on Home: the AI reads the creator's sales, compares TikTok Shop's best-sellers with Techwide's campaigns,
@@ -86,6 +85,8 @@ const PARTS: [keyof LivePick["parts"], string, number][] = [["category", "Your C
  * Signed in (owner, 31 Oct 2026): her own last 30 days of sales against Rezekii's campaign products, ranked by a rule score.
  */
 export function AiPicks() {
+  const t = useT();
+  const channels = useOptions(CHANNELS);
   const { linked: demoLinked, setLinked, toast, requireWa, live, me } = useDemo();
   const [run, setRun] = useState(0);
   const [phase, setPhase] = useState(0);
@@ -108,10 +109,10 @@ export function AiPicks() {
   const [now, setNow] = useState(0);
   useEffect(() => {
     if (!linked) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches && !live) return setPhase(STEPS.length);
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches && !live) return setPhase(STEP_COUNT);
     setPhase(0);
     if (!live) {
-      const timers = STEPS.map((_, i) => window.setTimeout(() => setPhase(i + 1), STEP_MS * (i + 1)));
+      const timers = Array.from({ length: STEP_COUNT }, (_, i) => window.setTimeout(() => setPhase(i + 1), STEP_MS * (i + 1)));
       return () => timers.forEach(clearTimeout);
     }
     const ms = lastRunMs();
@@ -120,7 +121,7 @@ export function AiPicks() {
     setStarted(t0);
     setNow(t0);
     // Steps 1 to 4 at their share of the expected time; step 5 waits for the answer.
-    const timers = STEPS.slice(0, -1).map((_, i) => window.setTimeout(() => setPhase((p) => Math.max(p, i + 1)), (ms * (i + 1)) / STEPS.length));
+    const timers = Array.from({ length: STEP_COUNT - 1 }, (_, i) => window.setTimeout(() => setPhase((p) => Math.max(p, i + 1)), (ms * (i + 1)) / STEP_COUNT));
     const tick = window.setInterval(() => setNow(Date.now()), 500);
     return () => { timers.forEach(clearTimeout); clearInterval(tick); };
   }, [run, linked, live, channel]);
@@ -138,7 +139,7 @@ export function AiPicks() {
         if (!d) return setFailed(true);
         if (!d.saved && d.ms) { try { localStorage.setItem(RUN_KEY, String(d.ms)); } catch {} }
         setReal(d);
-        setPhase(STEPS.length);
+        setPhase(STEP_COUNT);
         if (d.locked) return;
         // Open on the side she sells more on.
         setFit(d.profile.video >= 50 || !d.profile.orders ? "video" : "live");
@@ -146,37 +147,49 @@ export function AiPicks() {
       .catch(() => on && setFailed(true));
     return () => { on = false; };
   }, [run, live, linked, channel]);
-  const progress = live ? Math.min(0.95, started ? (now - started) / runMs : 0) : phase / STEPS.length;
+  const progress = live ? Math.min(0.95, started ? (now - started) / runMs : 0) : phase / STEP_COUNT;
   const left = live ? Math.max(0, Math.round((runMs - (now - started)) / 1000)) : 0;
 
   const level = me?.level ?? "silver";
   const items: Item[] = live
     ? (real?.picks ?? []).map((p) => ({
-        id: p.id, name: p.name, img: p.image ?? NO_PHOTO, price: p.priceLo ?? 0, sold: p.sold, soldLabel: "sold on TikTok", match: p.match, video: p.video, live: p.live, fit: p.fit,
-        rankLabel: null, why: p.why.join(" · ") || "Sells well on TikTok", source: SOURCE[p.source], parts: p.parts,
+        id: p.id, name: p.name, img: p.image ?? NO_PHOTO, price: p.priceLo ?? 0, sold: p.sold, soldLabel: tx("{n} sold on TikTok"), match: p.match, video: p.video, live: p.live, fit: p.fit,
+        rank: null, why: p.why.join(" · ") || t("Sells well on TikTok"), source: SOURCE[p.source], parts: p.parts,
         rate: ((p.source !== "rezekii" || level === "bronze" ? p.openRate : p.silverRate ?? p.openRate) ?? 0) / 100, sample: p.samples > 0, rating: p.rating,
       }))
     : AI_PICKS.map((pk) => {
         const p = product(pk.productId);
         return {
-          id: p.id, name: p.name, img: p.img, price: p.price, sold: pk.week, soldLabel: "sold this week", match: pk.match, video: pk.video, live: pk.live, fit: pk.fit,
-          rankLabel: pk.rank ? `#${pk.rank} in ${p.category}` : null, why: pk.why, rate: rateOf(pk),
+          id: p.id, name: p.name, img: p.img, price: p.price, sold: pk.week, soldLabel: tx("{n} sold this week"), match: pk.match, video: pk.video, live: pk.live, fit: pk.fit,
+          rank: pk.rank ? { n: pk.rank, category: p.category } : null, why: pk.why, rate: rateOf(pk),
           // A free sample only for Techwide campaign products, and only when this creator's level opens that sample pool.
           sample: pk.from === "tap" && canGetSample(p.samples), rating: p.rating,
         };
       });
 
+  const ordersLine = (n: number) => (n === 1 ? t("{n} order", { n: 1 }) : t("{n} orders", { n: n.toLocaleString("en-MY") }));
+  const picksLine = (n: number) => (n === 1 ? t("{n} pick", { n: 1 }) : t("{n} picks", { n }));
+  // One product's posts in Worth Your Effort: how many videos or LIVEs, what they sold and earned.
+  const effortLine = (k: "video" | "live", n: number, v: { gmv: string; commission: string }) => k === "video"
+    ? (n === 1 ? t("{n} video · {gmv} sales · {commission} commission", { n, ...v }) : t("{n} videos · {gmv} sales · {commission} commission", { n, ...v }))
+    : (n === 1 ? t("{n} LIVE · {gmv} sales · {commission} commission", { n, ...v }) : t("{n} LIVEs · {gmv} sales · {commission} commission", { n, ...v }));
   const steps: [string, string][] = live
     ? [
-        ["Reading your sales", real ? (real.profile.categories.slice(0, 2).map(([c, v]) => `${c} ${v}%`).join(" · ") || `${real.profile.orders} orders`) : ""],
-        ["Finding what sells for you", !real ? "" : real.profile.orders ? `Video ${real.profile.video}% · LIVE ${100 - real.profile.video}%` : "Not enough sales yet"],
-        ["Checking TikTok's best sellers, marketplace and Rezekii campaigns", real ? `${real.compared.toLocaleString("en-MY")} products you can add` : ""],
-        ["Matching your categories and prices", !real ? "" : real.profile.price ? `Your range ${real.profile.price}` : "Commission and sales"],
-        ["Ranking picks", real ? `${real.picks.length} picks` : ""],
+        [t("Reading your sales"), real ? (real.profile.categories.slice(0, 2).map(([c, v]) => `${c} ${v}%`).join(" · ") || ordersLine(real.profile.orders)) : ""],
+        [t("Finding what sells for you"), !real ? "" : real.profile.orders ? t("Video {video}% · LIVE {live}%", { video: real.profile.video, live: 100 - real.profile.video }) : t("Not enough sales yet")],
+        [t("Checking TikTok's best sellers, marketplace and Rezekii campaigns"), real ? t("{n} products you can add", { n: real.compared.toLocaleString("en-MY") }) : ""],
+        [t("Matching your categories and prices"), !real ? "" : real.profile.price ? t("Your range {price}", { price: real.profile.price }) : t("Commission and sales")],
+        [t("Ranking picks"), real ? picksLine(real.picks.length) : ""],
       ]
-    : STEPS;
+    : [
+        [t("Reading your sales"), AI_PROFILE.categories.map(([c, v]) => `${c} ${v}%`).slice(0, 2).join(" · ")],
+        [t("Finding what sells for you"), t("Video {video}% · LIVE {live}%", { video: AI_PROFILE.video, live: 100 - AI_PROFILE.video })],
+        [t("Checking TikTok best-sellers"), t("{n} products", { n: AI_PROFILE.compared.toLocaleString("en-MY") })],
+        [t("Matching campaigns"), t("Rezekii rates and samples found")],
+        [t("Ranking picks"), picksLine(AI_PICKS.length)],
+      ];
 
-  const done = phase >= STEPS.length;
+  const done = phase >= STEP_COUNT;
   const count = (f: Fit) => items.filter((pk) => pk.fit === f).length;
   // Signed in, the Overall / Video / LIVE switch at the top decides; the sample keeps its video and LIVE tabs.
   const sorted = items.filter((pk) => live || pk.fit === fit).sort((a, b) => {
@@ -190,46 +203,46 @@ export function AiPicks() {
 
   if (!linked || (live && real && !real.linked)) {
     return (
-      <section id="ai-picks" className="v2-aicard ai-box" aria-label="AI picks">
-        <AiHead title="AI Picks" sub="What should you sell next? Link TikTok Shop to get your picks." />
-        <button type="button" className="np-btn" style={{ alignSelf: "flex-start" }} onClick={() => setLinked(true)}>Link TikTok Shop</button>
+      <section id="ai-picks" className="v2-aicard ai-box" aria-label={t("AI picks")}>
+        <AiHead title={t("AI Picks")} sub={t("What should you sell next? Link TikTok Shop to get your picks.")} />
+        <button type="button" className="np-btn" style={{ alignSelf: "flex-start" }} onClick={() => setLinked(true)}>{t("Link TikTok Shop")}</button>
       </section>
     );
   }
 
   if (live && real?.locked) {
     return (
-      <section id="ai-picks" className="v2-aicard ai-box" aria-label="AI picks">
-        <AiHead title="AI Picks" sub="Your account analysed from the last 30 days, and the products that fit you best." />
-        <DetailsLock missing={real.locked} what="AI Picks" />
+      <section id="ai-picks" className="v2-aicard ai-box" aria-label={t("AI picks")}>
+        <AiHead title={t("AI Picks")} sub={t("Your account analysed from the last 30 days, and the products that fit you best.")} />
+        <DetailsLock missing={real.locked} what={t("AI Picks")} />
       </section>
     );
   }
   const at = real ? updatedWhen(real.at) : "09:12";
   const prof = real?.profile;
   return (
-    <section id="ai-picks" className="v2-aicard ai-box" aria-label="AI picks">
+    <section id="ai-picks" className="v2-aicard ai-box" aria-label={t("AI picks")}>
       <AiHead
-        title="AI Picks"
+        title={t("AI Picks")}
         busy={!done && !failed}
-        sub={failed ? "Couldn't load your picks." : done ? (live ? `Your account, last 30 days · Updated ${at} · ${(real?.compared ?? 0).toLocaleString("en-MY")} products compared` : `What to sell next · Today 09:12 · ${AI_PROFILE.compared.toLocaleString("en-MY")} best-sellers compared`) : live ? "Analysing your account. This can take about a minute." : "Analysing your account. Takes a few seconds."}
+        sub={failed ? t("Couldn't load your picks.") : done ? (live ? t("Your account, last 30 days · Updated {at} · {n} products compared", { at, n: (real?.compared ?? 0).toLocaleString("en-MY") }) : t("What to sell next · Today 09:12 · {n} best-sellers compared", { n: AI_PROFILE.compared.toLocaleString("en-MY") })) : live ? t("Analysing your account. This can take about a minute.") : t("Analysing your account. Takes a few seconds.")}
       >
         {(done || failed) && (
           <button type="button" className="btn-outline v2-btn-sm" onClick={() => setRun((r) => r + 1)}>
-            <Icon name="refresh" size={15} /> {failed ? "Try again" : "Analyse again"}
+            <Icon name="refresh" size={15} /> {failed ? t("Try again") : t("Analyse again")}
           </button>
         )}
       </AiHead>
 
       {live && (
         <div className="ai-channel">
-          <Seg value={channel} options={["Overall", "Video", "LIVE"] as const} onChange={setChannel} />
-          <small>{channel === "Overall" ? "All your sales" : channel === "Video" ? "Only your sales from videos, and products in TikTok's top-selling videos" : "Only your sales from LIVEs"}</small>
+          <Seg value={channels.label(channel)} options={channels.labels} onChange={(l) => setChannel(channels.pick(l))} />
+          <small>{channel === "Overall" ? t("All your sales") : channel === "Video" ? t("Only your sales from videos, and products in TikTok's top-selling videos") : t("Only your sales from LIVEs")}</small>
           {/* Where her sales come from, under the tabs (owner, 1 Nov 2026). */}
           {real?.profile.sales && real.profile.orders > 0 && (
-            <span className="ai-share" role="img" aria-label={`Your sales, last 30 days: video ${real.profile.sales.video}%, LIVE ${real.profile.sales.live}%, other ${real.profile.sales.other}%`}>
+            <span className="ai-share" role="img" aria-label={t("Your sales, last 30 days: video {video}%, LIVE {live}%, other {other}%", real.profile.sales)}>
               <span className="ai-share-bar"><i className="v" style={{ width: `${real.profile.sales.video}%` }} /><i className="l" style={{ width: `${real.profile.sales.live}%` }} /><i className="o" style={{ width: `${real.profile.sales.other}%` }} /></span>
-              <small><b>Video {real.profile.sales.video}%</b> · <b>LIVE {real.profile.sales.live}%</b>{real.profile.sales.other > 0 && <> · Other {real.profile.sales.other}%</>} of your sales</small>
+              <small>{rich(real.profile.sales.other > 0 ? t("**Video {video}%** · **LIVE {live}%** · Other {other}% of your sales", real.profile.sales) : t("**Video {video}%** · **LIVE {live}%** of your sales", real.profile.sales))}</small>
             </span>
           )}
         </div>
@@ -237,17 +250,17 @@ export function AiPicks() {
       {failed ? null : !done ? (
         <div className="ai-run" aria-live="polite">
           {live && (
-            <div className="ai-prog" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress * 100)} aria-label="Analysing your account">
+            <div className="ai-prog" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress * 100)} aria-label={t("Analysing your account")}>
               <span><i style={{ width: `${Math.round(progress * 100)}%` }} /></span>
-              <small>{left > 0 ? `About ${left >= 60 ? "a minute" : `${left} seconds`} left` : "Almost done…"}</small>
+              <small>{left >= 60 ? t("About a minute left") : left > 1 ? t("About {n} seconds left", { n: left }) : left === 1 ? t("About 1 second left") : t("Almost done…")}</small>
             </div>
           )}
           <ol className="ai-steps">
-            {steps.map(([t, found], i) => (
-              <li key={t} className={i < phase ? "done" : i === phase ? "now" : undefined}>
+            {steps.map(([step, found], i) => (
+              <li key={step} className={i < phase ? "done" : i === phase ? "now" : undefined}>
                 <i>{i < phase && <Icon name="check" size={12} width={3.2} />}</i>
                 <span>
-                  {t}
+                  {step}
                   {i < phase && found && <small>{found}</small>}
                 </span>
               </li>
@@ -262,7 +275,7 @@ export function AiPicks() {
                 ))}
               </div>
               <span className="ai-beam" />
-              <span className="ai-counted"><b><Count value={COUNTED[phase]} ms={600} /></b> products compared</span>
+              <span className="ai-counted">{rich(t("{n} products compared"), { n: <b><Count value={COUNTED[phase]} ms={600} /></b> })}</span>
             </div>
           )}
         </div>
@@ -271,7 +284,7 @@ export function AiPicks() {
           {live && prof ? (
             <div className="ai-insight">
               <div>
-                <small>Your top categories</small>
+                <small>{t("Your top categories")}</small>
                 {prof.categories.length ? (
                   <>
                     <span className="ai-stack">
@@ -280,11 +293,11 @@ export function AiPicks() {
                     <em>{prof.categories.map(([c, v]) => `${c} ${v}%`).join(" · ")}</em>
                   </>
                 ) : (
-                  <em>Not enough sales yet</em>
+                  <em>{t("Not enough sales yet")}</em>
                 )}
               </div>
               {channel === "Overall" && <div>
-                <small>Where you sell more</small>
+                <small>{t("Where you sell more")}</small>
                 {prof.orders ? (() => {
                   // By sales (owner, 1 Nov 2026), video against LIVE.
                   const s = prof.sales ?? { video: prof.video, live: 100 - prof.video, other: 0 };
@@ -292,90 +305,91 @@ export function AiPicks() {
                   const v = Math.round((s.video / vl) * 100);
                   return (
                     <>
-                      <b>{v >= 50 ? `Video ${s.video}%` : `LIVE ${s.live}%`}</b>
+                      <b>{v >= 50 ? t("Video {pct}%", { pct: s.video }) : t("LIVE {pct}%", { pct: s.live })}</b>
                       <span className="ai-split"><i style={{ width: `${v}%` }} /></span>
-                      <em>{v >= 50 ? `LIVE ${s.live}%` : `Video ${s.video}%`} of your sales</em>
+                      <em>{v >= 50 ? t("LIVE {pct}% of your sales", { pct: s.live }) : t("Video {pct}% of your sales", { pct: s.video })}</em>
                     </>
                   );
                 })() : (
-                  <em>No orders in the last 30 days</em>
+                  <em>{t("No orders in the last 30 days")}</em>
                 )}
               </div>}
               <div>
-                <small>Your price range</small>
-                <b>{prof.price ?? "Not enough sales yet"}</b>
-                {prof.price && <em>8 in 10 of the items you sold</em>}
+                <small>{t("Your price range")}</small>
+                <b>{prof.price ?? t("Not enough sales yet")}</b>
+                {prof.price && <em>{t("8 in 10 of the items you sold")}</em>}
               </div>
               <div>
-                <small>Your average order</small>
+                <small>{t("Your average order")}</small>
                 <b>{rm(prof.aov)}</b>
-                <em>{prof.orders.toLocaleString("en-MY")} orders · last 30 days</em>
+                <em>{prof.orders === 1 ? t("{n} order · last 30 days", { n: 1 }) : t("{n} orders · last 30 days", { n: prof.orders.toLocaleString("en-MY") })}</em>
               </div>
               <div>
-                <small>When your buyers order</small>
-                <b>{prof.hours[0]?.[0] ?? "Not enough sales yet"}</b>
-                {prof.hours.length > 1 && <em>Then {prof.hours.slice(1).map(([h]) => h).join(", ")}</em>}
+                <small>{t("When your buyers order")}</small>
+                <b>{prof.hours[0] ? t(prof.hours[0][0]) : t("Not enough sales yet")}</b>
+                {prof.hours.length > 1 && <em>{t("Then {times}", { times: prof.hours.slice(1).map(([h]) => t(h)).join(", ") })}</em>}
               </div>
               <div>
-                <small>Your followers</small>
+                <small>{t("Your followers")}</small>
                 {prof.audience ? (
                   <>
-                    <b>{prof.audience.female >= prof.audience.male ? `${prof.audience.female}% women` : `${prof.audience.male}% men`}</b>
-                    <em>{[prof.audience.age && `Mostly ${prof.audience.age}`, prof.audience.places].filter(Boolean).join(" · ")}</em>
+                    <b>{prof.audience.female >= prof.audience.male ? t("{pct}% women", { pct: prof.audience.female }) : t("{pct}% men", { pct: prof.audience.male })}</b>
+                    <em>{[prof.audience.age && t("Mostly {age}", { age: prof.audience.age }), prof.audience.places].filter(Boolean).join(" · ")}</em>
                   </>
                 ) : (
-                  <em>TikTok hasn&apos;t shared your followers with Rezekii yet</em>
+                  <em>{t("TikTok hasn't shared your followers with Rezekii yet")}</em>
                 )}
               </div>
               <div>
-                <small>You</small>
-                {prof.you?.gender ? <b>{[prof.you.gender, prof.you.race].filter(Boolean).join(" · ")}</b> : <em>Add your details in My Account</em>}
-                {prof.you?.gender && !prof.you.race && <em><Link href="/app/account" className="v2-link">Add Your Race</Link></em>}
+                <small>{t("You")}</small>
+                {/* Her gender and race are picked from fixed lists, whose words My Account translates. */}
+                {prof.you?.gender ? <b>{[prof.you.gender, prof.you.race].filter((x): x is string => !!x).map((x) => t(x)).join(" · ")}</b> : <em>{t("Add your details in My Account")}</em>}
+                {prof.you?.gender && !prof.you.race && <em><Link href="/app/account" className="v2-link">{t("Add Your Race")}</Link></em>}
               </div>
               <div>
-                <small>Your 30 days</small>
-                <b>{rm(prof.gmv)} sales</b>
-                <em>{rm(prof.commission)} commission</em>
+                <small>{t("Your 30 days")}</small>
+                <b>{t("{amount} sales", { amount: rm(prof.gmv) })}</b>
+                <em>{t("{amount} commission", { amount: rm(prof.commission) })}</em>
               </div>
             </div>
           ) : (
             <div className="ai-insight">
               <div>
-                <small>Your top categories</small>
+                <small>{t("Your top categories")}</small>
                 <span className="ai-stack">
                   {AI_PROFILE.categories.map(([c, v], i) => <i key={c} className={`c${i}`} style={{ width: `${v}%` }} title={`${c} ${v}%`} />)}
                 </span>
                 <em>{AI_PROFILE.categories.map(([c, v]) => `${c} ${v}%`).join(" · ")}</em>
               </div>
               <div>
-                <small>Where you sell more</small>
-                <b>Video {AI_PROFILE.video}%</b>
+                <small>{t("Where you sell more")}</small>
+                <b>{t("Video {pct}%", { pct: AI_PROFILE.video })}</b>
                 <span className="ai-split"><i style={{ width: `${AI_PROFILE.video}%` }} /></span>
-                <em>LIVE {100 - AI_PROFILE.video}% of your commission</em>
+                <em>{t("LIVE {pct}% of your commission", { pct: 100 - AI_PROFILE.video })}</em>
               </div>
               <div>
-                <small>Your price range</small>
+                <small>{t("Your price range")}</small>
                 <b>{AI_PROFILE.price}</b>
-                <em>8 in 10 of your orders</em>
+                <em>{t("8 in 10 of your orders")}</em>
               </div>
               <div>
-                <small>Your average order</small>
+                <small>{t("Your average order")}</small>
                 <b>RM {AI_PROFILE.aov.toFixed(2)}</b>
-                <em>Last 30 days</em>
+                <em>{t("Last 30 days")}</em>
               </div>
             </div>
           )}
 
           {live && real && real.effort.some((e) => e.kind) && (
             <div className="ai-more">
-              <h3>Worth Your Effort <Tip label="Worth your effort" text="For each product you sold in the last 30 days, most worthwhile first. Videos: sales per 1,000 views (then sales per video, where TikTok hasn't given Rezekii your views). LIVEs: sales per LIVE, as TikTok's LIVE length isn't reliable enough for per hour. A star marks a single post that took off. Only posts that made a sale are counted." /></h3>
+              <h3>{t("Worth Your Effort")} <Tip label={t("Worth your effort")} text={t("For each product you sold in the last 30 days, most worthwhile first. Videos: sales per 1,000 views (then sales per video, where TikTok hasn't given Rezekii your views). LIVEs: sales per LIVE, as TikTok's LIVE length isn't reliable enough for per hour. A star marks a single post that took off. Only posts that made a sale are counted.")} /></h3>
               {/* Videos and LIVEs apart, each sorted most worthwhile first (owner, 3 Nov 2026). */}
               <div className="ai-effort-sets">
                 {(["video", "live"] as const).map((k) => {
                   const rows = real.effort.filter((e) => e.kind === k);
                   return rows.length > 0 && (
                     <div key={k}>
-                      <small className="ai-effort-h">{k === "video" ? "Videos" : "LIVEs"}</small>
+                      <small className="ai-effort-h">{k === "video" ? t("Videos") : t("LIVEs")}</small>
                       <ol className="ai-effort">
                         {rows.map((e) => (
                           <li key={e.id}>
@@ -383,10 +397,10 @@ export function AiPicks() {
                             <Link href={productHref(e.id)} className="ai-effort-row">
                               <span>
                                 <b>{shortName(e.name)}</b>
-                                <small>{e.posts} {k === "video" ? "video" : "LIVE"}{e.posts === 1 ? "" : "s"} · {rm(e.gmv, 0)} sales · {rm(e.commission)} commission</small>
-                                {e.hit && <i className="ai-hit"><Icon name="star" size={12} width={2.4} /> 1 {k === "video" ? "video" : "LIVE"} made {rm(e.hit.gmv)}</i>}
+                                <small>{effortLine(k, e.posts, { gmv: rm(e.gmv, 0), commission: rm(e.commission) })}</small>
+                                {e.hit && <i className="ai-hit"><Icon name="star" size={12} width={2.4} /> {k === "video" ? t("1 video made {gmv}", { gmv: rm(e.hit.gmv) }) : t("1 LIVE made {gmv}", { gmv: rm(e.hit.gmv) })}</i>}
                               </span>
-                              <span className="ai-per"><b>{rm(e.worth)}</b><small>{PER[e.per]}</small></span>
+                              <span className="ai-per"><b>{rm(e.worth)}</b><small>{t(PER[e.per])}</small></span>
                               <Icon name="arrow" size={15} />
                             </Link>
                           </li>
@@ -399,28 +413,28 @@ export function AiPicks() {
             </div>
           )}
 
-          {!live && <div className="ai-fit" role="group" aria-label="Video or LIVE">
+          {!live && <div className="ai-fit" role="group" aria-label={t("Video or LIVE")}>
             <button type="button" className={fit === "video" ? "on" : undefined} aria-pressed={fit === "video"} onClick={() => setFit("video")}>
               <span className="ai-fico"><Icon name="video" size={18} /></span>
-              <span><b>Best for video <em>{count("video")}</em></b><small>Sells more on video</small></span>
+              <span><b>{rich(t("Best for video {n}"), { n: <em>{count("video")}</em> })}</b><small>{t("Sells more on video")}</small></span>
             </button>
             <button type="button" className={fit === "live" ? "on live" : "live"} aria-pressed={fit === "live"} onClick={() => setFit("live")}>
               <span className="ai-fico"><span className="ai-dot" />LIVE</span>
-              <span><b>Best for LIVE <em>{count("live")}</em></b><small>Needs a demo</small></span>
+              <span><b>{rich(t("Best for LIVE {n}"), { n: <em>{count("live")}</em> })}</b><small>{t("Needs a demo")}</small></span>
             </button>
           </div>}
 
-          <div className="ai-sort nv-noscroll" role="group" aria-label="Sort picks">
-            <span>Sort</span>
+          <div className="ai-sort nv-noscroll" role="group" aria-label={t("Sort picks")}>
+            <span>{t("Sort")}</span>
             {SORTS.map((s) => (
-              <button key={s} type="button" className={sort === s ? "on" : undefined} aria-pressed={sort === s} onClick={() => setSort(s)}>{s}</button>
+              <button key={s} type="button" className={sort === s ? "on" : undefined} aria-pressed={sort === s} onClick={() => setSort(s)}>{t(s)}</button>
             ))}
             <DirToggle dir={dir} onFlip={flip} />
           </div>
 
           {list.length === 0 && (
             <p className="v2-muted" style={{ margin: 0 }}>
-              {live && !prof?.orders ? `No ${channel === "Overall" ? "" : channel === "Video" ? "video " : "LIVE "}sales in the last 30 days to learn from yet.` : items.length === 0 ? "No picks right now. Rezekii adds products every day, so check again tomorrow." : fit === "video" ? "No video picks this time. Your sales in these categories come mostly from LIVE." : "No LIVE picks this time. Your sales in these categories come mostly from video."}
+              {live && !prof?.orders ? (channel === "Overall" ? t("No sales in the last 30 days to learn from yet.") : channel === "Video" ? t("No video sales in the last 30 days to learn from yet.") : t("No LIVE sales in the last 30 days to learn from yet.")) : items.length === 0 ? t("No picks right now. Rezekii adds products every day, so check again tomorrow.") : fit === "video" ? t("No video picks this time. Your sales in these categories come mostly from LIVE.") : t("No LIVE picks this time. Your sales in these categories come mostly from video.")}
             </p>
           )}
 
@@ -432,42 +446,42 @@ export function AiPicks() {
                   <Link href={productHref(it.id)} className="ai-img" aria-label={it.name}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={it.img} alt="" />
-                    {!live && it.rankLabel && <span className="ai-rank" title={`${it.rankLabel} on TikTok Shop Malaysia this week`}>{it.rankLabel.split(" ")[0]}</span>}
+                    {!live && it.rank && <span className="ai-rank" title={t("#{n} in {category} on TikTok Shop Malaysia this week", it.rank)}>#{it.rank.n}</span>}
                   </Link>
                   <span className="ai-body">
                     <span className="ai-row1">
                       {/* Short names throughout AI Picks (owner, 3 Nov 2026). */}
                       <Link href={productHref(it.id)} className="ai-name"><strong>{shortName(it.name)}</strong></Link>
                       {it.parts ? (
-                        <button type="button" className="ai-match" style={{ "--m": it.match } as React.CSSProperties} aria-expanded={scoreOf === it.id} aria-label={`Match ${it.match} out of 100. See what makes it up`} title="See what makes up this score" onClick={() => setScoreOf(scoreOf === it.id ? null : it.id)}><b>{it.match}</b></button>
+                        <button type="button" className="ai-match" style={{ "--m": it.match } as React.CSSProperties} aria-expanded={scoreOf === it.id} aria-label={t("Match {n} out of 100. See what makes it up", { n: it.match })} title={t("See what makes up this score")} onClick={() => setScoreOf(scoreOf === it.id ? null : it.id)}><b>{it.match}</b></button>
                       ) : (
-                        <span className="ai-match" style={{ "--m": it.match } as React.CSSProperties} title="Match with you, out of 100"><b>{it.match}</b></span>
+                        <span className="ai-match" style={{ "--m": it.match } as React.CSSProperties} title={t("Match with you, out of 100")}><b>{it.match}</b></span>
                       )}
                     </span>
                     {it.parts && scoreOf === it.id && (
-                      <span className="ai-parts" role="group" aria-label="Match score">
+                      <span className="ai-parts" role="group" aria-label={t("Match score")}>
                         {PARTS.map(([k, label, max]) => (
                           <span key={k} className="ai-part">
-                            <span>{label}</span>
+                            <span>{t(label)}</span>
                             <i style={{ "--p": `${Math.round((it.parts![k] / max) * 100)}%` } as React.CSSProperties} />
                             <b>{it.parts![k]}/{max}</b>
                           </span>
                         ))}
-                        <small>How well it fits your sales so far. It isn&apos;t a sales forecast.</small>
+                        <small>{t("How well it fits your sales so far. It isn't a sales forecast.")}</small>
                       </span>
                     )}
-                    <small className="ai-meta">{rm(it.price)} · {short(it.sold)} {it.soldLabel}{it.rankLabel ? ` · ${it.rankLabel}` : ""}{it.rating ? <> · <span className="ai-score"><Icon name="star" size={11} width={2.4} /> {it.rating.toFixed(1)}</span></> : null}</small>
-                    {it.source && <i className={`ai-src${it.source === "Rezekii campaign" ? " rz" : ""}`}>{it.source}</i>}
+                    <small className="ai-meta">{rm(it.price)} · {t(it.soldLabel, { n: short(it.sold) })}{it.rank ? ` · ${t("#{n} in {category}", it.rank)}` : ""}{it.rating ? <> · <span className="ai-score"><Icon name="star" size={11} width={2.4} /> {it.rating.toFixed(1)}</span></> : null}</small>
+                    {it.source && <i className={`ai-src${it.source === "Rezekii campaign" ? " rz" : ""}`}>{t(it.source)}</i>}
                     <span className="ai-why">{it.why}</span>
                     <span className="ai-foot">
-                      <span className="ai-earn">Earn <b><Hidden>{it.rate}%</Hidden></b></span>
+                      <span className="ai-earn">{rich(t("Earn {rate}"), { rate: <b><Hidden>{it.rate}%</Hidden></b> })}</span>
                       {/* Every card opens its product on TikTok Shop (owner, 3 Nov 2026); the sample's products aren't real ones. */}
                       {live
-                        ? <a className="ai-btn ghost" href={tiktokHref(it.id)} target="_blank" rel="noreferrer">Open in TikTok</a>
-                        : <button type="button" className="ai-btn ghost" onClick={() => toast("Opening the product in TikTok…")}>Open in TikTok</button>}
+                        ? <a className="ai-btn ghost" href={tiktokHref(it.id)} target="_blank" rel="noreferrer">{t("Open in TikTok")}</a>
+                        : <button type="button" className="ai-btn ghost" onClick={() => toast(t("Opening the product in TikTok…"))}>{t("Open in TikTok")}</button>}
                       {it.sample && (
                         <button type="button" className={`ai-btn ghost ${asked ? "asked" : ""}`} disabled={asked} onClick={() => requireWa(() => router.push(productHref(it.id, { sample: true })))}>
-                          <Icon name={asked ? "check" : "gift"} size={14} width={asked ? 2.8 : 1.9} /> {asked ? "Requested" : "Free sample"}
+                          <Icon name={asked ? "check" : "gift"} size={14} width={asked ? 2.8 : 1.9} /> {asked ? t("Requested") : t("Free sample")}
                         </button>
                       )}
                       <AddButton id={it.id} name={shortName(it.name)} rate={it.rate} size="sm" />
@@ -482,24 +496,24 @@ export function AiPicks() {
             <div className="ai-extras">
               {real.rising.length > 0 && (
                 <div className="ai-more">
-                  <h3>Rising in Your Niche</h3>
+                  <h3>{t("Rising in Your Niche")}</h3>
                   {real.rising.map((r) => (
-                    <p key={r.category} className="ai-rise"><b>{r.category}</b> <span className={r.change >= 0 ? "up" : "down"}>{r.change >= 0 ? "+" : ""}{r.change}%</span><small>TikTok&apos;s top 100 sales, last 7 days against the 7 before</small></p>
+                    <p key={r.category} className="ai-rise"><b>{r.category}</b> <span className={r.change >= 0 ? "up" : "down"}>{r.change >= 0 ? "+" : ""}{r.change}%</span><small>{t("TikTok's top 100 sales, last 7 days against the 7 before")}</small></p>
                   ))}
                 </div>
               )}
               {real.peers.length > 0 && (
                 <div className="ai-more">
-                  <h3>Creators Like You <Tip label="Creators like you" text="TikTok's top creators in your main category over the last 30 days who sell the way you do: mostly LIVE if most of your sales come from LIVE, mostly video if from video (the Video and LIVE tabs choose for you). Those with sales nearest yours and a video share closest to yours come first, so you know who to learn from." /></h3>
+                  <h3>{t("Creators Like You")} <Tip label={t("Creators like you")} text={t("TikTok's top creators in your main category over the last 30 days who sell the way you do: mostly LIVE if most of your sales come from LIVE, mostly video if from video (the Video and LIVE tabs choose for you). Those with sales nearest yours and a video share closest to yours come first, so you know who to learn from.")} /></h3>
                   {real.peersWhy && <small className="ai-peers-why">{real.peersWhy}</small>}
                   <ol className="ai-peers">
                     {real.peers.map((c) => (
                       <li key={c.user}>
                         {/* Each creator opens their TikTok profile (owner, 1 Nov 2026). */}
-                        <a href={`https://www.tiktok.com/@${encodeURIComponent(c.user)}`} target="_blank" rel="noreferrer" className="ai-peer" aria-label={`${c.name} on TikTok`}>
+                        <a href={`https://www.tiktok.com/@${encodeURIComponent(c.user)}`} target="_blank" rel="noreferrer" className="ai-peer" aria-label={t("{name} on TikTok", { name: c.name })}>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           {c.img ? <img src={c.img} alt="" referrerPolicy="no-referrer" /> : <span className="ai-av">{c.name.slice(0, 1)}</span>}
-                          <span><b>{c.name}</b><small>@{c.user} · {short(c.followers)} followers{c.video >= 0 ? ` · ${c.video >= 50 ? `video ${c.video}%` : `LIVE ${100 - c.video}%`}` : ""}</small></span>
+                          <span><b>{c.name}</b><small>@{c.user} · {c.video < 0 ? t("{n} followers", { n: short(c.followers) }) : c.video >= 50 ? t("{n} followers · video {pct}%", { n: short(c.followers), pct: c.video }) : t("{n} followers · LIVE {pct}%", { n: short(c.followers), pct: 100 - c.video })}</small></span>
                           <em>RM {short(c.lo)}–{short(c.hi)}</em>
                         </a>
                       </li>
@@ -509,8 +523,8 @@ export function AiPicks() {
               )}
               {real.swap.count > 0 && (
                 <div className="ai-more">
-                  <h3>Swap Out <Tip label="Swap out" text="Products in your showcase with no orders from you in the last 30 days. Swap them for picks above. Low-rated products are in Risk Check." /></h3>
-                  <p className="v2-small" style={{ margin: 0 }}>{real.swap.count} product{real.swap.count === 1 ? "" : "s"} in your showcase didn&apos;t sell in 30 days, for example:</p>
+                  <h3>{t("Swap Out")} <Tip label={t("Swap out")} text={t("Products in your showcase with no orders from you in the last 30 days. Swap them for picks above. Low-rated products are in Risk Check.")} /></h3>
+                  <p className="v2-small" style={{ margin: 0 }}>{real.swap.count === 1 ? t("{n} product in your showcase didn't sell in 30 days, for example:", { n: 1 }) : t("{n} products in your showcase didn't sell in 30 days, for example:", { n: real.swap.count })}</p>
                   <ol className="ai-swap">
                     {real.swap.items.map((x) => (
                       <li key={x.id}>
@@ -527,9 +541,9 @@ export function AiPicks() {
 
           {/* No explanation of Match down here (owner, 3 Nov 2026): the score itself shows what makes it up. */}
           {live ? (
-            <p className="ai-fine"><b>Earn</b>: the product&apos;s commission; on Rezekii campaign products, your Rezekii rate.</p>
+            <p className="ai-fine">{rich(t("**Earn**: the product's commission; on Rezekii campaign products, your Rezekii rate."))}</p>
           ) : (
-            <p className="ai-fine"><b>Earn</b>: Techwide&apos;s rate, or your own rate if it&apos;s higher.</p>
+            <p className="ai-fine">{rich(t("**Earn**: Techwide's rate, or your own rate if it's higher."))}</p>
           )}
         </>
       )}

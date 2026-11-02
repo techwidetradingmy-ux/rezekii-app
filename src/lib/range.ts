@@ -1,7 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { tx } from "@/lib/i18n/lang";
 import type { RangeKey } from "./mock-creator2";
+
+/** Each range's name on the calendar's quick choices, in English; shown in her language with t() (owner, 3 Nov 2026). */
+export const RANGE_LABEL: Record<RangeKey, string> = {
+  "3 days": tx("Last 3 days"),
+  "7 days": tx("Last 7 days"),
+  "14 days": tx("Last 14 days"),
+  "30 days": tx("Last 30 days"),
+  "90 days": tx("Last 90 days"),
+  Lifetime: tx("Lifetime"),
+};
 
 /**
  * The date range she picked, shared by Analytics and Performance (owner, 1 Nov 2026): change it on one and the other opens on

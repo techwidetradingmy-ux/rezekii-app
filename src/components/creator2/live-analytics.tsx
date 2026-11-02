@@ -10,6 +10,9 @@ import { NO_PHOTO, shortName } from "@/lib/live-perf";
 import { productHref } from "@/lib/product-view";
 import { short } from "@/lib/mock";
 import type { BestTime, Market, ViewSlot } from "@/modules/stats/best-time";
+import { rich } from "@/components/creator2/bits";
+import { useT } from "@/lib/i18n/client";
+import { tx, type T } from "@/lib/i18n/lang";
 
 type Flag = { id: string; name: string; img: string | null; rating: number; reviews: number; orders: number; cancel: number; returned: number };
 type Ratings = { linked: boolean; total: number; checked: number; more: boolean; flagged: Flag[]; at: string };
@@ -41,15 +44,18 @@ const topSlot = (b: Best | null): { label: string; views: ViewSlot | null } | nu
   return o.length ? { label: o.reduce((a, c) => (c[1] > a[1] ? c : a))[0], views: null } : null;
 };
 const full = (n: number) => n.toLocaleString("en-MY");
-const usually = (s: ViewSlot) => `Posts at ${s.label} usually got ${full(s.lo)}–${full(s.hi)} views (typical ${full(s.typical)}, from ${s.posts} posts).`;
-const FINAL = "Based on your past posts. Your content decides the final result.";
+/** A time slot's name (Rezekii's own, from modules/stats/best-time) in her language. */
+const slotName = (t: T, label: string) => t(label);
+const usually = (t: T, s: ViewSlot) => t("Posts at {time} usually got {lo}–{hi} views (typical {typical}, from {n} posts).", { time: slotName(t, s.label), lo: full(s.lo), hi: full(s.hi), typical: full(s.typical), n: s.posts });
+const FINAL = tx("Based on your past posts. Your content decides the final result.");
 const riskOf = (flagged: Flag[], cancel: number) => {
   const under3 = flagged.filter((f) => f.rating < 3).length;
-  return { under3, under4: flagged.length - under3, level: under3 >= 3 || cancel > 15 ? "High" : under3 > 0 || cancel > 10 ? "Watch" : "Low" };
+  return { under3, under4: flagged.length - under3, level: under3 >= 3 || cancel > 15 ? tx("High") : under3 > 0 || cancel > 10 ? tx("Watch") : tx("Low") };
 };
 
 /** AI Summary: where her money came from, when to post, and low-rated showcase products, all from her own data. */
-export function LiveAiSummary({ sig, span, cancel, lead }: { sig: Signals; span: string; cancel: number; lead: React.ReactNode }) {
+export function LiveAiSummary({ sig, sub, cancel, lead }: { sig: Signals; sub: string; cancel: number; lead: React.ReactNode }) {
+  const t = useT();
   const { toast } = useDemo();
   const [gone, setGone] = useState<string[]>([]);
   const [ask, setAsk] = useState<Flag | null>(null);
@@ -61,31 +67,33 @@ export function LiveAiSummary({ sig, span, cancel, lead }: { sig: Signals; span:
     if (!ask) return;
     const f = ask;
     setAsk(null);
-    toast("Removing from your TikTok showcase…");
+    toast(t("Removing from your TikTok showcase…"));
     const r = await removeFromShowcase([f.id]);
     if (!r.ok) return toast(r.error);
     setGone((g) => [...g, f.id]);
-    toast("Removed from your showcase");
+    toast(t("Removed from your showcase"));
   };
   return (
-    <section className="v2-aicard cr2-aisum" aria-label="AI summary">
-      <AiHead title="AI Summary" sub={`From your TikTok Shop sales, ${span}`} />
+    <section className="v2-aicard cr2-aisum" aria-label={t("AI summary")}>
+      <AiHead title={t("AI Summary")} sub={sub} />
       <ul className="an-lines">
         {lead}
-        <li><Icon name="clock" size={18} /><span>{!best ? "Reading your videos…" : slot ? <><b>{slot.label}</b> {slot.views ? "best time to post" : "when your buyers order most"}</> : "Best time to post: not enough posts yet"}</span></li>
-        <li className={flagged.length ? "warn" : undefined}><Icon name={flagged.length ? "alert" : "check"} size={18} /><span>{!ratings ? "Checking your showcase ratings…" : !ratings.linked ? "Connect TikTok Shop to check ratings" : flagged.length ? <><b>{flagged.length} product{flagged.length === 1 ? "" : "s"}</b> to avoid</> : <b>No products to avoid</b>}</span></li>
+        <li><Icon name="clock" size={18} /><span>{!best ? t("Reading your videos…") : slot ? rich(slot.views ? t("**{time}** best time to post", { time: slotName(t, slot.label) }) : t("**{time}** when your buyers order most", { time: slotName(t, slot.label) })) : t("Best time to post: not enough posts yet")}</span></li>
+        <li className={flagged.length ? "warn" : undefined}><Icon name={flagged.length ? "alert" : "check"} size={18} /><span>{!ratings ? t("Checking your showcase ratings…") : !ratings.linked ? t("Connect TikTok Shop to check ratings") : flagged.length ? rich(flagged.length === 1 ? t("**{n} product** to avoid", { n: 1 }) : t("**{n} products** to avoid", { n: flagged.length })) : <b>{t("No products to avoid")}</b>}</span></li>
       </ul>
 
       <div className="cr2-watch">
         <div className="cr2-watch-h">
           <span>
-            <b><Icon name="alert" size={17} /> {flagged.length ? `Avoid ${flagged.length === 1 ? "this product" : `these ${flagged.length}`}` : "No low-rated products"} <Tip label="Why avoid" text="Buyers rated these under 4★ on TikTok Shop. Low ratings and many cancels can hurt your TikTok account." /></b>
+            <b><Icon name="alert" size={17} /> {flagged.length ? (flagged.length === 1 ? t("Avoid this product") : t("Avoid these {n}", { n: flagged.length })) : t("No low-rated products")} <Tip label={t("Why avoid")} text={t("Buyers rated these under 4★ on TikTok Shop. Low ratings and many cancels can hurt your TikTok account.")} /></b>
           </span>
           {ratings?.linked && (
-            <span className={`cr2-risk ${risk.level.toLowerCase()}`} title="Rezekii's risk level, from your product ratings and cancelled orders">
-              <small>Risk level</small>
+            <span className={`cr2-risk ${risk.level.toLowerCase()}`} title={t("Rezekii's risk level, from your product ratings and cancelled orders")}>
+              <small>{t("Risk level")}</small>
               <span className="cr2-risk-bar" aria-hidden="true">{["Low", "Watch", "High"].map((l) => <i key={l} className={l === risk.level ? "on" : ""} />)}</span>
-              <b>{risk.level} <Tip label="About risk level" text={`Rezekii's own check of the first ${ratings.total} products in your showcase: ${risk.under3} under 3★, ${risk.under4} at 3–3.9★, ${Math.round(cancel * 10) / 10}% of your orders cancelled. TikTok's own account health is in your TikTok Shop app.`} /></b>
+              <b>{t(risk.level)} <Tip label={t("About risk level")} text={ratings.total === 1
+                ? t("Rezekii's own check of the first {total} product in your showcase: {under3} under 3★, {under4} at 3–3.9★, {pct}% of your orders cancelled. TikTok's own account health is in your TikTok Shop app.", { total: 1, under3: risk.under3, under4: risk.under4, pct: Math.round(cancel * 10) / 10 })
+                : t("Rezekii's own check of the first {total} products in your showcase: {under3} under 3★, {under4} at 3–3.9★, {pct}% of your orders cancelled. TikTok's own account health is in your TikTok Shop app.", { total: ratings.total, under3: risk.under3, under4: risk.under4, pct: Math.round(cancel * 10) / 10 })} /></b>
             </span>
           )}
         </div>
@@ -96,15 +104,15 @@ export function LiveAiSummary({ sig, span, cancel, lead }: { sig: Signals; span:
             <span>
               <strong><Link href={productHref(f.id)} className="pv-open">{shortName(f.name)}</Link></strong>
               <span className="cr2-flags">
-                {f.orders > 0 && <i>{f.cancel}% cancelled</i>}
+                {f.orders > 0 && <i>{t("{pct}% cancelled", { pct: f.cancel })}</i>}
                 <i>{f.rating.toFixed(1)} ★</i>
               </span>
             </span>
-            <button type="button" className="btn-outline v2-btn-sm" onClick={() => setAsk(f)}>Remove from Showcase</button>
+            <button type="button" className="btn-outline v2-btn-sm" onClick={() => setAsk(f)}>{t("Remove from Showcase")}</button>
           </div>
         ))}
-        {ratings && !ratings.linked && <Link href="/app/account#connections" className="np-btn v2-btn-sm" style={{ alignSelf: "flex-start" }}>Connect TikTok Shop</Link>}
-        <Link href="/app/data/risk" className="v2-link" style={{ fontSize: 13.5, padding: "4px 2px 0" }}>{flagged.length > 5 ? `See All ${flagged.length} →` : "See All Ratings →"}</Link>
+        {ratings && !ratings.linked && <Link href="/app/account#connections" className="np-btn v2-btn-sm" style={{ alignSelf: "flex-start" }}>{t("Connect TikTok Shop")}</Link>}
+        <Link href="/app/data/risk" className="v2-link" style={{ fontSize: 13.5, padding: "4px 2px 0" }}>{flagged.length > 5 ? t("See All {n} →", { n: flagged.length }) : t("See All Ratings →")}</Link>
       </div>
       {ask && <RemoveWarn items={[{ id: ask.id, name: shortName(ask.name), img: ask.img ?? NO_PHOTO }]} onConfirm={() => void confirm()} onClose={() => setAsk(null)} />}
     </section>
@@ -117,36 +125,37 @@ export function LiveAiSummary({ sig, span, cancel, lead }: { sig: Signals; span:
  * her category were posted, as a reference that works for new creators too.
  */
 export function LiveBestTime({ sig }: { sig: Signals }) {
+  const t = useT();
   const { best } = sig;
   const v = best?.views;
   const shown = shownSlots(best);
   const slot = topSlot(best);
   const avg = shown.length ? shown.reduce((t, s) => t + s.typical, 0) / shown.length : 0;
-  const days = !v ? "" : v.test === "better" ? `Based on your last ${v.days} days, which matched your past posts better than ${v.days === 60 ? 30 : 60} days.` : v.test === "same" ? "Based on your last 60 days, which matched your past posts as well as 30 days." : "Based on your last 60 days: not enough posts yet to test 30 days.";
+  const days = !v ? "" : v.test === "better" ? t("Based on your last {n} days, which matched your past posts better than {other} days.", { n: v.days, other: v.days === 60 ? 30 : 60 }) : v.test === "same" ? t("Based on your last 60 days, which matched your past posts as well as 30 days.") : t("Based on your last 60 days: not enough posts yet to test 30 days.");
   const orders = best?.orders;
   return (
     <section className="v2-card v2-aicard an-time an-split">
       <AiHead
-        title="Best Time to Post"
-        sub={slot ? <span className="an-hv">{slot.views ? "Most views" : "Most orders"} · {slot.label}</span> : undefined}
-        tip={<Tip label="About best time" text={v ? `From your own ${v.count} TikTok videos that are at least 7 days old (newer ones are still getting views), by the Malaysia time you posted. Bar: typical views (the middle one, so one viral video doesn't skew it). Number: the usual range (the middle half). A time shows from 3 posts. ${days} Rezekii now also saves each video's views at 1, 7 and 30 days old, to compare videos at the same age later.` : "You have fewer than 5 TikTok videos that are at least 7 days old (last 60 days), so this shows when your buyers ordered in the last 30 days (Malaysia time). It switches to your video views once you post more."} />}
+        title={t("Best Time to Post")}
+        sub={slot ? <span className="an-hv">{slot.views ? t("Most views · {time}", { time: slotName(t, slot.label) }) : t("Most orders · {time}", { time: slotName(t, slot.label) })}</span> : undefined}
+        tip={<Tip label={t("About best time")} text={v ? t("From your own {n} TikTok videos that are at least 7 days old (newer ones are still getting views), by the Malaysia time you posted. Bar: typical views (the middle one, so one viral video doesn't skew it). Number: the usual range (the middle half). A time shows from 3 posts. {days} Rezekii now also saves each video's views at 1, 7 and 30 days old, to compare videos at the same age later.", { n: v.count, days }) : t("You have fewer than 5 TikTok videos that are at least 7 days old (last 60 days), so this shows when your buyers ordered in the last 30 days (Malaysia time). It switches to your video views once you post more.")} />}
       />
-      {!best ? <p className="v2-muted" style={{ margin: 0 }}>Reading your videos…</p> : v ? (
+      {!best ? <p className="v2-muted" style={{ margin: 0 }}>{t("Reading your videos…")}</p> : v ? (
         shown.length && slot?.views ? (
           <>
-            <p className="v2-small" style={{ margin: 0 }}>{usually(slot.views)}</p>
-            <Bars rows={shown.map((s) => ({ label: s.label, value: s.typical, display: `${short(s.lo)}–${short(s.hi)}`, tone: s.typical < avg ? ("blue" as const) : undefined }))} />
-            {shown.length < v.slots.length && <p className="v2-small" style={{ margin: 0 }}>Other times: not enough posts yet.</p>}
-            <p className="v2-small" style={{ margin: 0 }}>{FINAL}</p>
+            <p className="v2-small" style={{ margin: 0 }}>{usually(t, slot.views)}</p>
+            <Bars rows={shown.map((s) => ({ label: slotName(t, s.label), value: s.typical, display: `${short(s.lo)}–${short(s.hi)}`, tone: s.typical < avg ? ("blue" as const) : undefined }))} />
+            {shown.length < v.slots.length && <p className="v2-small" style={{ margin: 0 }}>{t("Other times: not enough posts yet.")}</p>}
+            <p className="v2-small" style={{ margin: 0 }}>{t(FINAL)}</p>
           </>
-        ) : <p className="v2-muted" style={{ margin: 0 }}>Not enough posts yet. A time shows once it has 3 videos that are at least 7 days old.</p>
+        ) : <p className="v2-muted" style={{ margin: 0 }}>{t("Not enough posts yet. A time shows once it has 3 videos that are at least 7 days old.")}</p>
       ) : slot && orders ? (
         <>
-          <Bars rows={orders.slots.map(([label, n]) => ({ label, value: n, display: `${n} order${n === 1 ? "" : "s"}`, tone: n < orders.count / orders.slots.length ? ("blue" as const) : undefined }))} />
-          <p className="v2-small" style={{ margin: 0 }}>Based on your past orders. Your content decides the final result.</p>
+          <Bars rows={orders.slots.map(([label, n]) => ({ label: slotName(t, label), value: n, display: n === 1 ? t("{n} order", { n: 1 }) : t("{n} orders", { n }), tone: n < orders.count / orders.slots.length ? ("blue" as const) : undefined }))} />
+          <p className="v2-small" style={{ margin: 0 }}>{t("Based on your past orders. Your content decides the final result.")}</p>
         </>
       ) : (
-        <p className="v2-muted" style={{ margin: 0 }}>Not enough of your own videos or orders yet. Post a few videos and this fills in.</p>
+        <p className="v2-muted" style={{ margin: 0 }}>{t("Not enough of your own videos or orders yet. Post a few videos and this fills in.")}</p>
       )}
       {best?.market && <MarketTimes m={best.market} />}
     </section>
@@ -155,16 +164,19 @@ export function LiveBestTime({ sig }: { sig: Signals }) {
 
 /** When TikTok's best-selling videos in her category were posted: winners, not a promise (owner, 3 Nov 2026). */
 function MarketTimes({ m }: { m: Market }) {
+  const t = useT();
   const top = m.slots.reduce((a, c) => (c.videos > a.videos ? c : a));
-  const cat = m.category ? `in ${m.category} ` : "";
+  const most = { time: slotName(t, top.label), pct: top.share, n: full(m.videos) };
   return (
     <div className="an-ref">
       <h3>
-        Best Sellers&apos; Times{" "}
-        <Tip label="About best sellers' times" text={`TikTok's daily top-100 best-selling videos in Malaysia from the last ${m.days} days, by the Malaysia time they were posted. ${m.category ? `A video counts for ${m.category}, your main category from what you sell most, when it sells a product from TikTok's top 100 in that category.` : "Your main category isn't known yet, so this is every category."} Bar: share of the videos. Number after it: their typical views. These are winners, not a promise.`} />
+        {t("Best Sellers' Times")}{" "}
+        <Tip label={t("About best sellers' times")} text={m.category
+          ? t("TikTok's daily top-100 best-selling videos in Malaysia from the last {n} days, by the Malaysia time they were posted. A video counts for {category}, your main category from what you sell most, when it sells a product from TikTok's top 100 in that category. Bar: share of the videos. Number after it: their typical views. These are winners, not a promise.", { n: m.days, category: m.category })
+          : t("TikTok's daily top-100 best-selling videos in Malaysia from the last {n} days, by the Malaysia time they were posted. Your main category isn't known yet, so this is every category. Bar: share of the videos. Number after it: their typical views. These are winners, not a promise.", { n: m.days })} />
       </h3>
-      <p className="v2-small" style={{ margin: 0 }}>Best-selling videos {cat}were mostly posted {top.label} ({top.share}% of {full(m.videos)} videos).</p>
-      <Bars rows={m.slots.filter((s) => s.videos > 0).map((s) => ({ label: s.label, value: s.share, display: s.typical === null ? `${s.share}%` : `${s.share}% · ${short(s.typical)}` }))} />
+      <p className="v2-small" style={{ margin: 0 }}>{m.category ? t("Best-selling videos in {category} were mostly posted {time} ({pct}% of {n} videos).", { ...most, category: m.category }) : t("Best-selling videos were mostly posted {time} ({pct}% of {n} videos).", most)}</p>
+      <Bars rows={m.slots.filter((s) => s.videos > 0).map((s) => ({ label: slotName(t, s.label), value: s.share, display: s.typical === null ? `${s.share}%` : `${s.share}% · ${short(s.typical)}` }))} />
     </div>
   );
 }
@@ -172,6 +184,7 @@ function MarketTimes({ m }: { m: Market }) {
 type Step = { id: string; tag: "Fix now" | "This week" | "Grow"; short: string; why: string; href: string };
 /** Action Plan from her own signals only: low-rated products, cancels, best sellers not on Rezekii, best time, channels. */
 export function LiveActionPlan({ sig, cancel }: { sig: Signals; cancel: number }) {
+  const t = useT();
   const [ticked, setTicked] = useState<string[]>([]);
   const [all, setAll] = useState(false);
   const { ratings, best, coverage, channels } = sig;
@@ -181,42 +194,42 @@ export function LiveActionPlan({ sig, cancel }: { sig: Signals; cancel: number }
   const wish = coverage?.notYet[0];
   const missing = channels ? (["facebook", "instagram", "threads"] as const).filter((a) => !channels.includes(a)) : [];
   const steps: Step[] = [
-    ...(ratings && !ratings.linked ? [{ id: "link", tag: "Fix now" as const, short: "Connect TikTok Shop", why: "Rezekii needs your TikTok Shop to check your showcase and orders.", href: "/app/account#connections" }] : []),
-    ...(under3 ? [{ id: "under3", tag: "Fix now" as const, short: `Remove ${under3} under-3★ product${under3 === 1 ? "" : "s"}`, why: "Buyers rated them under 3★. Low-rated products in your showcase can hurt your TikTok account.", href: "/app/data/risk" }] : []),
-    ...(cancel > 10 ? [{ id: "cancel", tag: "Fix now" as const, short: `${Math.round(cancel * 10) / 10}% of orders cancelled: check why`, why: "Many cancelled orders can hurt your TikTok account. See which products get cancelled most.", href: "/app/data/risk" }] : []),
-    ...(flagged.length > under3 ? [{ id: "under4", tag: "This week" as const, short: `Check ${flagged.length - under3} product${flagged.length - under3 === 1 ? "" : "s"} rated 3–3.9★`, why: "Not in the danger zone yet, but buyers aren't happy with them.", href: "/app/data/risk" }] : []),
-    ...(slot?.views ? [{ id: "time", tag: "This week" as const, short: `Post at ${slot.label}`, why: `${usually(slot.views)} ${FINAL}`, href: "/app/publish/plan" }] : []),
-    ...(wish ? [{ id: "wish", tag: "Grow" as const, short: `Ask for a better rate: ${shortName(wish.name)}`, why: `Your best seller not on Rezekii yet (${wish.sold} sold in 30 days). Add it to your Wish List and we ask the seller.`, href: productHref(wish.id) }] : []),
-    ...(missing.length === 3 ? [{ id: "social", tag: "Grow" as const, short: "Connect Facebook, Instagram or Threads", why: "Post one video to every app at once from Publish.", href: "/app/account#connections" }] : []),
+    ...(ratings && !ratings.linked ? [{ id: "link", tag: "Fix now" as const, short: t("Connect TikTok Shop"), why: t("Rezekii needs your TikTok Shop to check your showcase and orders."), href: "/app/account#connections" }] : []),
+    ...(under3 ? [{ id: "under3", tag: "Fix now" as const, short: under3 === 1 ? t("Remove {n} under-3★ product", { n: 1 }) : t("Remove {n} under-3★ products", { n: under3 }), why: t("Buyers rated them under 3★. Low-rated products in your showcase can hurt your TikTok account."), href: "/app/data/risk" }] : []),
+    ...(cancel > 10 ? [{ id: "cancel", tag: "Fix now" as const, short: t("{pct}% of orders cancelled: check why", { pct: Math.round(cancel * 10) / 10 }), why: t("Many cancelled orders can hurt your TikTok account. See which products get cancelled most."), href: "/app/data/risk" }] : []),
+    ...(flagged.length > under3 ? [{ id: "under4", tag: "This week" as const, short: flagged.length - under3 === 1 ? t("Check {n} product rated 3–3.9★", { n: 1 }) : t("Check {n} products rated 3–3.9★", { n: flagged.length - under3 }), why: t("Not in the danger zone yet, but buyers aren't happy with them."), href: "/app/data/risk" }] : []),
+    ...(slot?.views ? [{ id: "time", tag: "This week" as const, short: t("Post at {time}", { time: slotName(t, slot.label) }), why: `${usually(t, slot.views)} ${t(FINAL)}`, href: "/app/publish/plan" }] : []),
+    ...(wish ? [{ id: "wish", tag: "Grow" as const, short: t("Ask for a better rate: {name}", { name: shortName(wish.name) }), why: t("Your best seller not on Rezekii yet ({n} sold in 30 days). Add it to your Wish List and we ask the seller.", { n: wish.sold }), href: productHref(wish.id) }] : []),
+    ...(missing.length === 3 ? [{ id: "social", tag: "Grow" as const, short: t("Connect Facebook, Instagram or Threads"), why: t("Post one video to every app at once from Publish."), href: "/app/account#connections" }] : []),
   ];
   const loading = !ratings || !best || !coverage || !channels;
   const done = steps.filter((s) => ticked.includes(s.id)).length;
   return (
-    <section className="v2-card cr2-plan" aria-label="Your action plan">
+    <section className="v2-card cr2-plan" aria-label={t("Your action plan")}>
       <div className="v2-card-h">
-        <h2 className="v2-h2">Your Action Plan</h2>
-        {steps.length > 0 && <span className="v2-small">{done} of {steps.length} done</span>}
+        <h2 className="v2-h2">{t("Your Action Plan")}</h2>
+        {steps.length > 0 && <span className="v2-small">{t("{done} of {total} done", { done, total: steps.length })}</span>}
       </div>
       {steps.length > 0 && <Progress value={done} max={steps.length} />}
       {!steps.length ? (
-        <p className="v2-muted" style={{ margin: 0 }}>{loading ? "Reading your showcase, orders and videos…" : "Nothing to fix. Your showcase ratings and cancels look fine."}</p>
+        <p className="v2-muted" style={{ margin: 0 }}>{loading ? t("Reading your showcase, orders and videos…") : t("Nothing to fix. Your showcase ratings and cancels look fine.")}</p>
       ) : (
         <ol className="an-plan">
           {(all ? steps : steps.slice(0, 3)).map((a, n) => {
             const on = ticked.includes(a.id);
             return (
               <li key={a.id} className={on ? "done" : undefined}>
-                <button type="button" role="checkbox" aria-checked={on} aria-label={`Mark done: ${a.short}`} className="an-num" onClick={() => setTicked((t) => (t.includes(a.id) ? t.filter((x) => x !== a.id) : [...t, a.id]))}>
+                <button type="button" role="checkbox" aria-checked={on} aria-label={t("Mark done: {task}", { task: a.short })} className="an-num" onClick={() => setTicked((ids) => (ids.includes(a.id) ? ids.filter((x) => x !== a.id) : [...ids, a.id]))}>
                   {on ? <Icon name="check" size={14} width={3.2} /> : n + 1}
                 </button>
-                <span className="an-plan-t">{a.short} <Tip label={`Why: ${a.short}`} text={a.why} /></span>
-                <Link href={a.href} className="an-go">Go <Icon name="arrow" size={14} /></Link>
+                <span className="an-plan-t">{a.short} <Tip label={t("Why: {task}", { task: a.short })} text={a.why} /></span>
+                <Link href={a.href} className="an-go">{t("Go")} <Icon name="arrow" size={14} /></Link>
               </li>
             );
           })}
         </ol>
       )}
-      {steps.length > 3 && <button type="button" className="v2-link an-more" onClick={() => setAll((x) => !x)}>{all ? "Show Less" : `+${steps.length - 3} More`}</button>}
+      {steps.length > 3 && <button type="button" className="v2-link an-more" onClick={() => setAll((x) => !x)}>{all ? t("Show Less") : t("+{n} More", { n: steps.length - 3 })}</button>}
     </section>
   );
 }

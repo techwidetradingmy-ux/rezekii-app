@@ -2,11 +2,15 @@
 
 import { useRef, useState } from "react";
 import { Seg } from "@/components/ui";
+import { useOptions } from "@/components/creator2/bits";
+import { useT } from "@/lib/i18n/client";
 import { rm } from "@/lib/mock";
 
 type Unit = "day" | "week" | "month";
 /** Round totals worth celebrating; the chart marks where she crossed them. */
 const MARKS = [100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000];
+/** The switch's second choice for each unit. */
+const PER: Record<Unit, string> = { day: "Per day", week: "Per week", month: "Per month" };
 
 /**
  * Commission over the chosen range (owner, 28 Oct 2026): a running total by default, or per day/week/month. Drag or tap across
@@ -14,7 +18,9 @@ const MARKS = [100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000];
  * day/week/month gets a label, and gold dots mark where her total crossed a round number (options A + C), all from her own sales.
  */
 export function CommissionChart({ points, unit, range }: { points: [string, number][]; unit: Unit; range: string }) {
-  const per = `Per ${unit}`;
+  const t = useT();
+  const per = PER[unit];
+  const opts = useOptions(["Total", per] as const);
   const [mode, setMode] = useState<"Total" | string>("Total");
   const [at, setAt] = useState<number | null>(null);
   const running = points.reduce<number[]>((acc, [, v]) => [...acc, (acc.at(-1) ?? 0) + v], []);
@@ -56,17 +62,30 @@ export function CommissionChart({ points, unit, range }: { points: [string, numb
   const bestAt = points.reduce((b, [, v], i) => (v > points[b][1] ? i : b), 0);
   const end = running[last];
   const marks = MARKS.filter((m) => m < end && m >= end * 0.15).slice(-3).map((m) => ({ m, i: running.findIndex((v) => v >= m) })).filter((x) => x.i > 0 && x.i < last);
+  // The latest point's name: today, this week, or the month itself.
+  const now = { point: points[last][0] };
+  const latest = unit === "day" ? t("{point} · today", now) : unit === "week" ? t("{point} · this week", now) : t("{point} · this month", now);
+  const amount = rm(running[last]);
+  const plot = total
+    ? t("Commission running total, {range}: {amount}", { range, amount })
+    : unit === "day"
+    ? t("Commission per day, {range}: {amount}", { range, amount })
+    : unit === "week"
+    ? t("Commission per week, {range}: {amount}", { range, amount })
+    : t("Commission per month, {range}: {amount}", { range, amount });
+  const bestAmount = rm(points[bestAt][1], 0);
+  const best = unit === "day" ? t("Best day · {amount}", { amount: bestAmount }) : unit === "week" ? t("Best week · {amount}", { amount: bestAmount }) : t("Best month · {amount}", { amount: bestAmount });
 
   return (
     <div className="cc">
       <div className="cc-head">
         <span className="cc-now">
-          <small>{at === null ? (total ? `Total · ${range}` : `${points[last][0]} · ${unit === "day" ? "today" : `this ${unit}`}`) : total ? `Total by ${points[at][0]}` : points[at][0]}</small>
+          <small>{at === null ? (total ? t("Total · {range}", { range }) : latest) : total ? t("Total by {point}", { point: points[at][0] }) : points[at][0]}</small>
           <b className="v2-num">{rm(values[shown])}</b>
         </span>
-        <Seg value={mode} options={["Total", per] as const} onChange={(m) => { setMode(m); setAt(null); }} />
+        <Seg value={opts.label(total ? "Total" : per)} options={opts.labels} onChange={(m) => { setMode(opts.pick(m)); setAt(null); }} />
       </div>
-      <div className="cc-plot" role="img" aria-label={`Commission ${total ? "running total" : per.toLowerCase()}, ${range}: ${rm(running[last])}`} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={() => { press.current = null; }} onPointerLeave={(e) => { if (e.pointerType === "mouse") setAt(null); }}>
+      <div className="cc-plot" role="img" aria-label={plot} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={() => { press.current = null; }} onPointerLeave={(e) => { if (e.pointerType === "mouse") setAt(null); }}>
         {total ? (
           <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
             <defs>
@@ -84,7 +103,7 @@ export function CommissionChart({ points, unit, range }: { points: [string, numb
             {values.map((v, i) => <i key={points[i][0]} className={i === shown ? "on" : undefined} style={{ height: `${(v / max) * 88}%` }} />)}
           </span>
         )}
-        {total && <span className={`cc-best${at === null ? "" : " off"}`} aria-hidden="true">Best {unit} · {rm(points[bestAt][1], 0)}</span>}
+        {total && <span className={`cc-best${at === null ? "" : " off"}`} aria-hidden="true">{best}</span>}
         {total && marks.map(({ m, i }, k) => (
           <span key={m} className="cc-mark" style={{ left: `${xOf(i)}%`, top: `${yOf(running[i])}%`, animationDelay: `${0.9 + k * 0.25}s` }} aria-hidden="true">
             <em className={xOf(i) > 70 ? "right" : xOf(i) < 30 ? "left" : undefined}>{rm(m, 0)} · {points[i][0]}</em>
@@ -93,7 +112,7 @@ export function CommissionChart({ points, unit, range }: { points: [string, numb
         {at !== null && <i className="cc-cursor" style={{ left: `${xOf(shown)}%` }} aria-hidden="true" />}
         {total && <i className={`cc-dot${at === null ? " live" : ""}`} style={{ left: `${xOf(shown)}%`, top: `${yOf(values[shown])}%` }} aria-hidden="true" />}
       </div>
-      <div className="cc-axis" aria-hidden="true"><span>{points[0][0]}</span><span>{unit === "day" ? "Today" : unit === "week" ? "This week" : points[last][0]}</span></div>
+      <div className="cc-axis" aria-hidden="true"><span>{points[0][0]}</span><span>{unit === "day" ? t("Today") : unit === "week" ? t("This week") : points[last][0]}</span></div>
     </div>
   );
 }

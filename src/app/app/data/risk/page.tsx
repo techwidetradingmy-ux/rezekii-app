@@ -14,21 +14,25 @@ import { productHref } from "@/lib/product-view";
 import { perfProduct, useLivePerf, shortName } from "@/lib/live-perf";
 import { useDemo } from "@/components/demo";
 import { DirToggle, SortHead, cancelFlag, useSortPref } from "@/components/sort-bar";
-import { CANCEL_MIN_ITEMS, CANCEL_TIP, cancelText } from "@/lib/cancel";
+import { CANCEL_MIN_ITEMS, CANCEL_TIP } from "@/lib/cancel";
+import { rich, useCancelText, useOptions } from "@/components/creator2/bits";
+import { useT } from "@/lib/i18n/client";
 import "@/app/creator2.css";
 
 const cancelled = (orders: number, rate: number) => Math.round((orders * rate) / 100);
 /** Rezekii's standard (owner, 1 Nov 2026): red from 20%, orange from 10%, judged from 5 items sold. */
 const tone = (rate: number, items?: number): "red" | "amber" | undefined => { const f = cancelFlag(rate, items); return f === "high" ? "red" : f === "watch" ? "amber" : undefined; };
 const COLS = ["Items", "Cancelled", "Rate"] as const;
+const BY = ["By Video", "By LIVE", "By Product"] as const;
 type Col = (typeof COLS)[number];
 type Rated = { items: number; cancelled: number; cancel: number };
 /** A rate only from 5 items sold (owner, 2 Nov 2026): below that the counts, "2 of 2", and no bar, so it doesn't read as the worst. */
 const judged = (r: Rated) => r.items >= CANCEL_MIN_ITEMS;
-const bar = (r: Rated) => ({ value: judged(r) ? r.cancel : 0, display: cancelText(r.cancel, r.items, r.cancelled), tone: tone(r.cancel, r.items) });
+const bar = (r: Rated, cancelText: ReturnType<typeof useCancelText>) => ({ value: judged(r) ? r.cancel : 0, display: cancelText(r.cancel, r.items, r.cancelled), tone: tone(r.cancel, r.items) });
 function RateCell({ r }: { r: Rated }) {
-  const t = tone(r.cancel, r.items);
-  return <td className={t === "red" ? "cr2-red" : t === "amber" ? "cr2-orange-v" : undefined} style={{ fontWeight: 800 }}>{cancelText(r.cancel, r.items, r.cancelled)}</td>;
+  const cancelText = useCancelText();
+  const c = tone(r.cancel, r.items);
+  return <td className={c === "red" ? "cr2-red" : c === "amber" ? "cr2-orange-v" : undefined} style={{ fontWeight: 800 }}>{cancelText(r.cancel, r.items, r.cancelled)}</td>;
 }
 
 /**
@@ -36,6 +40,9 @@ function RateCell({ r }: { r: Rated }) {
  * cancellations and refunds: which videos and products they come from, and what to do next.
  */
 export default function DataRisk() {
+  const t = useT();
+  const cancelText = useCancelText();
+  const byOpts = useOptions(BY);
   const router = useRouter();
   const [by, setBy] = useState<"By Video" | "By LIVE" | "By Product">("By Video");
   const [openVideo, setOpenVideo] = useState<VideoRow | null>(null);
@@ -78,25 +85,25 @@ export default function DataRisk() {
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 20 }}>
-      <Title title="Risk Check" sub={live ? "Ratings, cancels and returns" : "Ratings, cancels and returns · updated today 09:12"} />
+      <Title title={t("Risk Check")} sub={live ? t("Ratings, cancels and returns") : t("Ratings, cancels and returns · updated today 09:12")} />
       {live && <Updated at={perf && typeof perf === "object" ? perf.updated : null} />}
       <RatingScan />
-      <h2 className="v2-h2" style={{ marginTop: 8 }}>Cancellations and Returns · Last 30 Days</h2>
+      <h2 className="v2-h2" style={{ marginTop: 8 }}>{t("Cancellations and Returns · Last 30 Days")}</h2>
 
-      <Lock what="your cancellations and refunds">
+      <Lock what={t("your cancellations and refunds")}>
         <div className="cr2-stats">
-          <Stat label="Cancelled Items" value={<span className="v2-num">{totalCancelled}</span>} note={`of ${items} items sold`} />
-          <Stat label="Refunds and Returns" value={<span className="v2-num">{refunds}</span>} note="After delivery" />
-          <Stat label="Cancel Rate" value={`${rate}%`} note={items < 5 ? "Too few items to judge" : rate < 10 ? "Normal · under 10%" : rate < 20 ? "Watch · 10–20%" : "High · 20% and over"} tone={items < 5 ? undefined : rate < 10 ? "up" : "down"} />
-          <Stat label="Commission Clawed Back" value={rm(clawback)} note="After cancels and returns" tone="down" />
+          <Stat label={t("Cancelled Items")} value={<span className="v2-num">{totalCancelled}</span>} note={items === 1 ? t("of {n} item sold", { n: 1 }) : t("of {n} items sold", { n: items })} />
+          <Stat label={t("Refunds and Returns")} value={<span className="v2-num">{refunds}</span>} note={t("After delivery")} />
+          <Stat label={t("Cancel Rate")} value={`${rate}%`} note={items < 5 ? t("Too few items to judge") : rate < 10 ? t("Normal · under 10%") : rate < 20 ? t("Watch · 10–20%") : t("High · 20% and over")} tone={items < 5 ? undefined : rate < 10 ? "up" : "down"} />
+          <Stat label={t("Commission Clawed Back")} value={rm(clawback)} note={t("After cancels and returns")} tone="down" />
         </div>
       </Lock>
 
       {worst && worstP && worst.cancelled > 0 && (
       <section className="v2-card">
         <div className="v2-card-h">
-          <h2 className="v2-h2">Most Cancellations</h2>
-          <span className="badge badge-red">{worst.cancelled} cancelled</span>
+          <h2 className="v2-h2">{t("Most Cancellations")}</h2>
+          <span className="badge badge-red">{t("{n} cancelled", { n: worst.cancelled })}</span>
         </div>
         <div className="cr2-spot">
           {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
@@ -104,8 +111,8 @@ export default function DataRisk() {
           <span>
             <strong><Link href={productHref(worstP.id)} className="pv-open" title={worstP.name}>{nameOf(worst.productId)}</Link></strong>
             <small>
-              {worst.cancelled} of {worst.items} items cancelled{judged(worst) ? ` (${worst.cancel}%)` : ""}.{" "}
-              {worstVid && worstVid.cancelled > 0 && <><b>{worstVid.cancelled}</b> from your {worstVid.date} video{real ? "" : <> &ldquo;{worstVid.title}&rdquo;</>}.</>}
+              {judged(worst) ? t("{bad} of {n} items cancelled ({pct}%).", { bad: worst.cancelled, n: worst.items, pct: worst.cancel }) : worst.items === 1 ? t("{bad} of {n} item cancelled.", { bad: worst.cancelled, n: 1 }) : t("{bad} of {n} items cancelled.", { bad: worst.cancelled, n: worst.items })}{" "}
+              {worstVid && worstVid.cancelled > 0 && rich(real ? t("**{n}** from your {date} video.", { n: worstVid.cancelled, date: worstVid.date }) : t("**{n}** from your {date} video “{title}”.", { n: worstVid.cancelled, date: worstVid.date, title: worstVid.title }))}
             </small>
           </span>
         </div>
@@ -114,24 +121,24 @@ export default function DataRisk() {
 
       <section className="v2-card">
         <div className="v2-card-h">
-          <h2 className="v2-h2">Cancel Rate <Tip label="About cancel rate" text={CANCEL_TIP} /></h2>
-          <span className="sb-bar"><Seg value={by} options={["By Video", "By LIVE", "By Product"] as const} onChange={setBy} /><DirToggle dir={dir} onFlip={flipDir} /></span>
+          <h2 className="v2-h2">{t("Cancel Rate")} <Tip label={t("About cancel rate")} text={t(CANCEL_TIP)} /></h2>
+          <span className="sb-bar"><Seg value={byOpts.label(by)} options={byOpts.labels} onChange={(l) => setBy(byOpts.pick(l))} /><DirToggle dir={dir} onFlip={flipDir} /></span>
         </div>
-        <Lock what="cancel rates">
+        <Lock what={t("cancel rates")}>
           {by === "By Video" ? (
-            <Bars key={`v${col}${dir}`} rows={sorted(vids).slice(0, 12).map((v) => ({ label: real ? `${v.date} · ${nameOf(v.productId)}` : v.title, ...bar(v), onPick: () => setOpenVideo(allVideos.find((x) => x.id === v.id) ?? null) }))} />
+            <Bars key={`v${col}${dir}`} rows={sorted(vids).slice(0, 12).map((v) => ({ label: real ? `${v.date} · ${nameOf(v.productId)}` : v.title, ...bar(v, cancelText), onPick: () => setOpenVideo(allVideos.find((x) => x.id === v.id) ?? null) }))} />
           ) : by === "By LIVE" ? (
-            <Bars key={`l${col}${dir}`} rows={sorted(lives).slice(0, 12).map((l) => ({ label: `${l.date} · First order ${l.time}`, ...bar(l) }))} />
+            <Bars key={`l${col}${dir}`} rows={sorted(lives).slice(0, 12).map((l) => ({ label: t("{date} · First order {time}", { date: l.date, time: l.time }), ...bar(l, cancelText) }))} />
           ) : (
-            <Bars key={`p${col}${dir}`} rows={sorted(prods).slice(0, 12).map((b) => ({ label: nameOf(b.productId), ...bar(b), href: productHref(b.productId) }))} />
+            <Bars key={`p${col}${dir}`} rows={sorted(prods).slice(0, 12).map((b) => ({ label: nameOf(b.productId), ...bar(b, cancelText), href: productHref(b.productId) }))} />
           )}
         </Lock>
         <div className="v2-tablewrap">
           <table className="v2-table">
             <thead>
               <tr>
-                <th>{by === "By Video" ? "Video" : by === "By LIVE" ? "LIVE" : "Product"}</th>
-                {COLS.map((c) => <th key={c}><SortHead label={c} k={c} value={col} dir={dir} onSort={setSort} /></th>)}
+                <th>{by === "By Video" ? t("Video") : by === "By LIVE" ? "LIVE" : t("Product")}</th>
+                {COLS.map((c) => <th key={c}><SortHead label={t(c)} k={c} value={col} dir={dir} onSort={setSort} /></th>)}
               </tr>
             </thead>
             <tbody>
@@ -151,7 +158,7 @@ export default function DataRisk() {
                       {/* Like Performance › By LIVE: the LIVE mark, its day, and the products it sold. */}
                       <td style={{ minWidth: 180 }}>
                         <b><span className="lv-mark sm" aria-hidden="true">LIVE</span>{l.date}</b><br />
-                        <span className="v2-small">First order {l.time}</span>{" "}
+                        <span className="v2-small">{t("First order {time}", { time: l.time })}</span>{" "}
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <span className="lv-thumbs">{l.ids.map((id) => <img key={id} src={info(id).img} alt="" />)}</span>
                       </td>
