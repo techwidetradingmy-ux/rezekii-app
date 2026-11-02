@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { joinBeta, tappedGroup, type BetaSide } from "@/modules/beta/access.ts";
+import { getLang, tFor } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -9,12 +10,13 @@ export const dynamic = "force-dynamic";
  * they stand; { side, group: true } notes that they tapped Join Our WhatsApp Group.
  */
 export async function POST(req: NextRequest) {
+  const t = tFor(await getLang());
   const origin = req.headers.get("origin");
-  if (origin && origin !== req.nextUrl.origin) return NextResponse.json({ error: "Please do this from Rezekii." }, { status: 403 });
+  if (origin && origin !== req.nextUrl.origin) return NextResponse.json({ error: t("Please do this from Rezekii.") }, { status: 403 });
   const user = await currentUser();
-  if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  if (!user) return NextResponse.json({ error: t("Sign in first.") }, { status: 401 });
   const b = (await req.json().catch(() => ({}))) as { side?: unknown; group?: unknown };
-  if (b.side !== "creator" && b.side !== "seller") return NextResponse.json({ error: "Say which app." }, { status: 400 });
+  if (b.side !== "creator" && b.side !== "seller") return NextResponse.json({ error: t("Say which app.") }, { status: 400 });
   const side = b.side as BetaSide;
   if (b.group === true) {
     await tappedGroup(user.id, side);

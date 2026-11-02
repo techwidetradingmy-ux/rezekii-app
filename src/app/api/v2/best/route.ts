@@ -6,6 +6,7 @@ import { levelOf } from "@/modules/levels/store.ts";
 import { listDay, type Channel, type Idea } from "@/modules/picks/today.ts";
 import { ideasFor, ideasKey, savedIdeas } from "@/modules/picks/ideas-cache.ts";
 import { herOffers } from "@/modules/tap/for-creator.ts";
+import { getLang, tFor } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -18,8 +19,9 @@ const NO_STORE = { headers: { "cache-control": "private, no-store" } };
  * refresh and shown at once until TikTok's next list; ?fresh=1 makes it again.
  */
 export async function GET(req: NextRequest) {
+  const t = tFor(await getLang());
   const user = await currentUser();
-  if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  if (!user) return NextResponse.json({ error: t("Sign in first.") }, { status: 401 });
   const q = req.nextUrl.searchParams;
   const source = q.get("source") === "showcase" ? "showcase" : "market";
   // Overall by default; Video from TikTok's top-selling videos (owner, 31 Oct 2026).

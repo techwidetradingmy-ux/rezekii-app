@@ -1,4 +1,8 @@
 import { randomBytes, scrypt as scryptCb, timingSafeEqual, type ScryptOptions } from "node:crypto";
+import { makeT, type T } from "../../lib/i18n/lang.ts";
+
+/** English, as written; routes pass the reader's language. */
+const EN: T = makeT(null);
 
 /** Passwords are stored as "scrypt$N$r$p$salt$hash" (base64url). Only the hash is kept, never the password. */
 const N = 16384, R = 8, P = 1, KEYLEN = 32;
@@ -42,19 +46,19 @@ export function cleanEmail(email: unknown): string | null {
  * email is its own address, so it needn't match a Google email (27 Oct 2026); no other account may use it (checked in
  * setEmailLogin).
  */
-export function emailLoginProblem(a: { role: string; hasPassword: boolean; currentOk: boolean; email?: string | null; password?: string }): string | null {
-  if (a.hasPassword && !a.currentOk) return "Your current password is wrong.";
-  if (!a.hasPassword && a.email === undefined) return "Enter your email.";
-  if (!a.hasPassword && a.password === undefined) return "Choose a password.";
-  if (a.email === undefined && a.password === undefined) return "Nothing to change.";
-  if (a.email !== undefined && !a.email) return "Enter a valid email address.";
-  return a.password === undefined ? null : passwordProblem(a.password);
+export function emailLoginProblem(a: { role: string; hasPassword: boolean; currentOk: boolean; email?: string | null; password?: string }, t: T = EN): string | null {
+  if (a.hasPassword && !a.currentOk) return t("Your current password is wrong.");
+  if (!a.hasPassword && a.email === undefined) return t("Enter your email.");
+  if (!a.hasPassword && a.password === undefined) return t("Choose a password.");
+  if (a.email === undefined && a.password === undefined) return t("Nothing to change.");
+  if (a.email !== undefined && !a.email) return t("Enter a valid email address.");
+  return a.password === undefined ? null : passwordProblem(a.password, t);
 }
 
 /** Why a new password is not accepted, or null when it is fine. */
-export function passwordProblem(password: unknown): string | null {
+export function passwordProblem(password: unknown, t: T = EN): string | null {
   const pw = String(password ?? "");
-  if (pw.length < PASSWORD_MIN) return `Use at least ${PASSWORD_MIN} characters.`;
-  if (pw.length > PASSWORD_MAX) return `Use at most ${PASSWORD_MAX} characters.`;
+  if (pw.length < PASSWORD_MIN) return t("Use at least {n} characters.", { n: PASSWORD_MIN });
+  if (pw.length > PASSWORD_MAX) return t("Use at most {n} characters.", { n: PASSWORD_MAX });
   return null;
 }

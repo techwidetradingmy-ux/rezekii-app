@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { getAccountStats, listRecentVideos, queryVideos } from "@/integrations/tiktok/stats.ts";
 import { freshTikTokToken, postedVideoIds, userTikTokOpenId } from "@/modules/posting/store.ts";
+import { getLang, tFor } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -10,8 +11,9 @@ export const dynamic = "force-dynamic";
  * plus views and likes for posts sent through Rezekii (video.list). Loaded by the browser so pages open without waiting on TikTok.
  */
 export async function GET(req: NextRequest) {
+  const t = tFor(await getLang());
   const user = await currentUser();
-  if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  if (!user) return NextResponse.json({ error: t("Sign in first.") }, { status: 401 });
   const openId = await userTikTokOpenId(user.id);
   if (!openId) return NextResponse.json({ account: null, videos: [], posts: {} });
   const token = await freshTikTokToken(openId);

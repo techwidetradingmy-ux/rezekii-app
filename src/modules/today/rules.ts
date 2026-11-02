@@ -1,4 +1,4 @@
-import { tx, type Lang } from "../../lib/i18n/lang.ts";
+import { dateLocale, tx, type Lang } from "../../lib/i18n/lang.ts";
 import { translate } from "../../lib/i18n/translate.ts";
 import type { TapProduct } from "../tap/catalog.ts";
 import { unixSeconds } from "../tap/stages.ts";
@@ -119,9 +119,9 @@ export function greeting(now: number, lang: Lang = "en"): string {
   return h < 12 ? translate(lang, "Good morning") : h < 18 ? translate(lang, "Good afternoon") : translate(lang, "Good evening");
 }
 
-/** "Saturday, 14 October" in Malaysia time ("10月14日星期六" in Chinese). */
+/** "Saturday, 14 October" in Malaysia time ("10月14日星期六" in Chinese, "Sabtu, 14 Oktober" in Malay). */
 export function longDay(now: number, lang: Lang = "en"): string {
-  if (lang === "zh") return new Date(now).toLocaleDateString("zh-CN", { month: "long", day: "numeric", weekday: "long", timeZone: "Asia/Kuala_Lumpur" });
+  if (lang !== "en") return new Date(now).toLocaleDateString(dateLocale(lang), { month: "long", day: "numeric", weekday: "long", timeZone: "Asia/Kuala_Lumpur" });
   const part = (o: Intl.DateTimeFormatOptions) => new Date(now).toLocaleDateString("en-GB", { ...o, timeZone: "Asia/Kuala_Lumpur" });
   return `${part({ weekday: "long" })}, ${part({ day: "numeric" })} ${part({ month: "long" })}`;
 }
@@ -129,11 +129,12 @@ export function longDay(now: number, lang: Lang = "en"): string {
 /** "Today · 8:00 pm", "Tomorrow · 12:00 pm", "Posted today · 6:00 am", "Sat 18 Oct · 8:00 pm" (Chinese: "明天 · 下午8:00"). */
 export function postWhen(at: number, now: number, posted: boolean, lang: Lang = "en"): string {
   const day = (t: number) => new Date(t + MYT).toISOString().slice(0, 10);
-  if (lang === "zh") {
+  // Chinese and Malay (owner, 3 Nov 2026): the same, with that language's dates and times.
+  if (lang !== "en") {
     const d = day(at);
     const rel = d === day(now) ? translate(lang, "Today") : d === day(now + 86400_000) ? translate(lang, "Tomorrow") : d === day(now - 86400_000) ? translate(lang, "Yesterday") : "";
-    const when = rel || new Date(at).toLocaleDateString("zh-CN", { weekday: "short", month: "long", day: "numeric", timeZone: "Asia/Kuala_Lumpur" });
-    const time = new Date(at).toLocaleTimeString("zh-CN", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kuala_Lumpur" });
+    const when = rel || new Date(at).toLocaleDateString(dateLocale(lang), { weekday: "short", month: lang === "zh" ? "long" : "short", day: "numeric", timeZone: "Asia/Kuala_Lumpur" });
+    const time = new Date(at).toLocaleTimeString(dateLocale(lang), { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kuala_Lumpur" });
     return `${posted ? translate(lang, "Posted {when}", { when }) : when} · ${time}`;
   }
   const time = new Date(at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kuala_Lumpur" }).toLowerCase();

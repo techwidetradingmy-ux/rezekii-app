@@ -1,5 +1,5 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
-import type { Lang } from "../../lib/i18n/lang.ts";
+import { dateLocale, type Lang, type Vars } from "../../lib/i18n/lang.ts";
 import { translate } from "../../lib/i18n/translate.ts";
 import { lookupProducts } from "../../integrations/tiktok-shop/creator.ts";
 import { approvedCreatorToken } from "../creator-accounts/access.ts";
@@ -85,6 +85,27 @@ function nextPostsFrom(posts: Awaited<ReturnType<typeof listPosts>>, now: number
   });
 }
 
+/**
+ * Why these picks, as one whole line in `lang` (owner, 3 Nov 2026: no sentences glued from pieces): her top category and how
+ * many more, her best sellers, and the seasons coming up (listed the way each language lists things).
+ */
+function basisLine(lang: Lang, b: { top: string | null; others: number; best: boolean; seasons: string[] }): string {
+  const tr = (en: string, vars?: Vars) => translate(lang, en, vars);
+  const seasons = b.seasons.length ? new Intl.ListFormat(dateLocale(lang), { type: "conjunction" }).format(b.seasons.map((s) => tr(s))) : "";
+  const v = { top: b.top ?? "", n: b.others, seasons };
+  const more = b.top && b.others > 0;
+  if (seasons) {
+    if (!b.top && !b.best) return translate(lang, "Picked from what is selling on TikTok Shop right now, with {seasons} coming up.", v);
+    if (!b.top) return translate(lang, "Picked for your niche and your best sellers this month, with {seasons} coming up.", v);
+    if (b.best) return more ? translate(lang, "Picked for your niche ({top} and {n} more) and your best sellers this month, with {seasons} coming up.", v) : translate(lang, "Picked for your niche ({top}) and your best sellers this month, with {seasons} coming up.", v);
+    return more ? translate(lang, "Picked for your niche ({top} and {n} more), with {seasons} coming up.", v) : translate(lang, "Picked for your niche ({top}), with {seasons} coming up.", v);
+  }
+  if (!b.top && !b.best) return translate(lang, "Picked from what is selling on TikTok Shop right now.");
+  if (!b.top) return translate(lang, "Picked for your niche and your best sellers this month.");
+  if (b.best) return more ? translate(lang, "Picked for your niche ({top} and {n} more) and your best sellers this month.", v) : translate(lang, "Picked for your niche ({top}) and your best sellers this month.", v);
+  return more ? translate(lang, "Picked for your niche ({top} and {n} more).", v) : translate(lang, "Picked for your niche ({top}).", v);
+}
+
 /** Everything the Today page shows for one creator, from Rezekii's own data and Techwide's TAP campaigns (words in `lang`). */
 export async function todayData(user: { id: string; tiktok_username: string | null }, lang: Lang = "en"): Promise<TodayData> {
   const now = Date.now();
@@ -110,19 +131,13 @@ export async function todayData(user: { id: string; tiktok_username: string | nu
     stats: [
       { key: "links", value: links[0], delta: weekDelta(links[0], links[1]), note: links[1] ? translate(lang, "vs last week") : translate(lang, "made in the last 7 days") },
       showcase
-        ? { key: "showcase", value: showcase.count, delta: "", note: `${translate(lang, "{n} through Rezekii", { n: showcase.tap })}${showcase.more ? translate(lang, " · first 200") : ""}` }
+        ? { key: "showcase", value: showcase.count, delta: "", note: showcase.more ? translate(lang, "{n} through Rezekii · first 200", { n: showcase.tap }) : translate(lang, "{n} through Rezekii", { n: showcase.tap }) }
         : { key: "showcase", value: onTikTok.length, delta: "", note: translate(lang, "through Rezekii") },
       { key: "samples", value: samples.length, delta: "", note: translate(lang, "{a} pending approval · {b} delivered", { a: samples.filter((r) => r.stage === 1).length, b: samples.filter((r) => r.stage === 4).length }) },
       { key: "open", value: all.length, delta: fresh ? `+${fresh}` : "", note: fresh === null ? translate(lang, "in Techwide's live campaigns") : translate(lang, "new this week") },
     ],
     picks,
-    basis: [
-      top || best.size
-        ? `${translate(lang, "Picked for your niche")}${top ? (others > 0 ? translate(lang, " ({top} and {n} more)", { top, n: others }) : translate(lang, " ({top})", { top })) : ""}${best.size ? translate(lang, " and your best sellers this month") : ""}`
-        : translate(lang, "Picked from what is selling on TikTok Shop right now"),
-      seasons.length ? translate(lang, ", with {seasons} coming up", { seasons: seasons.map((x) => translate(lang, x.name)).join(translate(lang, " and ")) }) : "",
-      translate(lang, "."),
-    ].join(""),
+    basis: basisLine(lang, { top, others, best: best.size > 0, seasons: seasons.map((x) => x.name) }),
     camp: closingSoon(all, Math.floor(now / 1000)),
     best: selling,
     products: all.filter((p) => wanted.has(p.id)),

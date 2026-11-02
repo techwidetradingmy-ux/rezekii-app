@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { unlinkCreator } from "@/modules/creator-accounts/access.ts";
+import { getLang, tFor } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
 /** Unlink TikTok Shop: the link and the approval go, and the place frees up for the next creator on the waitlist. */
 export async function POST() {
+  const t = tFor(await getLang());
   const user = await currentUser();
-  if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  if (!user) return NextResponse.json({ error: t("Sign in first.") }, { status: 401 });
   await unlinkCreator(user.id, user.tiktok_username);
   return NextResponse.json({ ok: true });
 }

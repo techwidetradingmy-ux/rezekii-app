@@ -1,3 +1,5 @@
+import { makeT, type T } from "../../lib/i18n/lang.ts";
+
 /**
  * Picking channels in New post (docs/flows/social-posting.md B1–B8), kept free of I/O. A channel key is a social account
  * id or "tiktok:<open_id>". A post goes to at most one TikTok account, since each TikTok post is its own upload.
@@ -43,12 +45,12 @@ export function toggleBrand(picked: Set<string>, channels: string[], connected: 
 }
 
 /** Checks a brand from the browser: a name and at least one of the owner's own channels. */
-export function brandInput(body: { name?: unknown; channels?: unknown }, mine: Set<string>): { name: string; channels: string[] } | { error: string } {
+export function brandInput(body: { name?: unknown; channels?: unknown }, mine: Set<string>, t: T = makeT(null)): { name: string; channels: string[] } | { error: string } {
   const name = typeof body.name === "string" ? body.name.trim().replace(/\s+/g, " ") : "";
-  if (!name) return { error: "Give the brand a name." };
-  if (name.length > BRAND_NAME_MAX) return { error: `Brand names can be up to ${BRAND_NAME_MAX} characters.` };
+  if (!name) return { error: t("Give the brand a name.") };
+  if (name.length > BRAND_NAME_MAX) return { error: t("Brand names can be up to {n} characters.", { n: BRAND_NAME_MAX }) };
   const list = Array.isArray(body.channels) ? body.channels.filter((k): k is string => typeof k === "string") : [];
   const channels = [...new Set(list)].filter((k) => mine.has(k));
-  if (!channels.length) return { error: "Pick at least one channel for the brand." };
+  if (!channels.length) return { error: t("Pick at least one channel for the brand.") };
   return { name, channels };
 }

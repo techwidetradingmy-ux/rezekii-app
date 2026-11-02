@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { supabaseRest } from "@/integrations/supabase/rest.ts";
 import { PLATFORMS, VIDEO_TYPES } from "@/lib/mock-ai-video";
+import { getLang, tFor } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -20,22 +21,24 @@ async function entryOf(userId: string) {
 
 /** AI Video waitlist (owner, 31 Oct 2026: real storage): her answers and place, or null before she joins. */
 export async function GET() {
+  const t = tFor(await getLang());
   const user = await currentUser();
-  if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  if (!user) return NextResponse.json({ error: t("Sign in first.") }, { status: 401 });
   return NextResponse.json({ entry: await entryOf(user.id) }, { headers: { "cache-control": "private, no-store" } });
 }
 
 /** Joins the waitlist, or changes her answers (she keeps her place). */
 export async function POST(req: NextRequest) {
+  const t = tFor(await getLang());
   const user = await currentUser();
-  if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  if (!user) return NextResponse.json({ error: t("Sign in first.") }, { status: 401 });
   const b = (await req.json().catch(() => ({}))) as { types?: unknown; videos?: unknown; platforms?: unknown; note?: unknown };
   const types = VIDEO_TYPES.filter((t) => Array.isArray(b.types) && b.types.includes(t));
   const platforms = PLATFORMS.filter((p) => Array.isArray(b.platforms) && b.platforms.includes(p));
   const videos = Math.round(Number(b.videos));
-  if (!types.length) return NextResponse.json({ error: "Pick at least 1 type of video." }, { status: 400 });
-  if (!platforms.length) return NextResponse.json({ error: "Pick at least 1 platform." }, { status: 400 });
-  if (!(videos >= 1 && videos <= 60)) return NextResponse.json({ error: "Choose 1 to 60 videos a month." }, { status: 400 });
+  if (!types.length) return NextResponse.json({ error: t("Pick at least 1 type of video.") }, { status: 400 });
+  if (!platforms.length) return NextResponse.json({ error: t("Pick at least 1 platform.") }, { status: 400 });
+  if (!(videos >= 1 && videos <= 60)) return NextResponse.json({ error: t("Choose 1 to 60 videos a month.") }, { status: 400 });
   const note = typeof b.note === "string" ? b.note.trim().slice(0, 200) || null : null;
   const res = await supabaseRest("ai_video_waitlist?on_conflict=user_id", {
     method: "POST",
@@ -43,6 +46,6 @@ export async function POST(req: NextRequest) {
     // joined_at is left out so a change keeps her place.
     body: JSON.stringify({ user_id: user.id, types, videos, platforms, note, updated_at: new Date().toISOString() }),
   });
-  if (!res.ok) return NextResponse.json({ error: "Didn't save. Please try again." }, { status: 500 });
+  if (!res.ok) return NextResponse.json({ error: t("Didn't save. Please try again.") }, { status: 500 });
   return NextResponse.json({ entry: await entryOf(user.id) });
 }

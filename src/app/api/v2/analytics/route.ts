@@ -4,6 +4,8 @@ import { currentUser } from "@/app/current-user";
 import { supabaseRest } from "@/integrations/supabase/rest.ts";
 import { linesBetween, productImages } from "@/modules/sales/frames.ts";
 import { lineEarned, lineGmv, techwideCampaigns, type OrderLine } from "@/modules/sales/summary.ts";
+import { getLang, tFor } from "@/lib/i18n/server";
+import { dateLocale } from "@/lib/i18n/lang";
 
 /**
  * The full commission on each order, as TikTok Shop shows it to her (owner, 30 Oct 2026): for a creator with an agency, TikTok
@@ -15,14 +17,12 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 90;
 
 const DAY = 86_400_000;
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const FULL = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+/** The keys of the ranges the page asks for (it shows its own labels for them). */
 const RANGES = [["3 days", 3], ["7 days", 7], ["14 days", 14], ["30 days", 30], ["90 days", 90], ["Lifetime", 0]] as const;
 const r2 = (v: number) => Math.round(v * 100) / 100;
 /** Malaysia time, so a day starts at midnight in KL. */
 const MYT = 8 * 3_600_000;
 const dayStart = (t: number) => Math.floor((t + MYT) / DAY) * DAY - MYT;
-const label = (t: number) => { const d = new Date(t + MYT); return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`; };
 const settled = (s: string | null) => /SETTLED|COMPLETED/i.test(s ?? "") && !/TO.?SETTLE/i.test(s ?? "");
 const cancelled = (s: string | null) => /REFUND|RETURN|CANCEL|INELIGIBLE|INVALID/i.test(s ?? "");
 const channelOf = (t: string | null) => (/LIVE/i.test(t ?? "") ? 1 : /VIDEO/i.test(t ?? "") ? 0 : 2);
@@ -33,8 +33,17 @@ const channelOf = (t: string | null) => (/LIVE/i.test(t ?? "") ? 1 : /VIDEO/i.te
  * open plan pays for those products.
  */
 export async function GET(req: NextRequest) {
+  const lang = await getLang();
+  const t = tFor(lang);
+  // Chart dates and month names in her language (owner, 3 Nov 2026): "3 Nov" in English, "11月3日" in Chinese.
+  const label = (ms: number) => new Date(ms).toLocaleDateString(dateLocale(lang), { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" });
+  const monthName = (y: number, m: number, form: "short" | "long") => new Date(Date.UTC(y, m, 15)).toLocaleDateString(dateLocale(lang), form === "short" ? { month: "short", timeZone: "UTC" } : { month: "long", year: "numeric", timeZone: "UTC" });
+  const noteFor = (c: { orders: number; channel: number[]; cancelItems: number; items: number; cancel: number }, empty: string) =>
+    !c.orders ? empty
+      : c.channel[1] >= 30 ? t("LIVE brought {live}% of your commission. Cancels and returns: {bad} of {items} items ({rate}%).", { live: c.channel[1], bad: c.cancelItems, items: c.items, rate: c.cancel })
+      : t("Cancels and returns: {bad} of {items} items ({rate}%).", { bad: c.cancelItems, items: c.items, rate: c.cancel });
   const user = await currentUser();
-  if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  if (!user) return NextResponse.json({ error: t("Sign in first.") }, { status: 401 });
   const now = Date.now();
   const read = await keepFresh(user.id, ["orders"], 4000);
   const [lines, techwide] = await Promise.all([linesBetween(user.id, 0, now + DAY), techwideCampaigns()]);
@@ -50,7 +59,7 @@ export async function GET(req: NextRequest) {
 
   const first = lines.length ? Math.min(...lines.map((l) => Date.parse(l.created_at))) : now;
   const names = new Map<string, { name: string; shop: string }>();
-  for (const l of lines) if (l.product_id && !names.has(l.product_id)) names.set(l.product_id, { name: l.product_name ?? "Product", shop: l.shop_name ?? "" });
+  for (const l of lines) if (l.product_id && !names.has(l.product_id)) names.set(l.product_id, { name: l.product_name ?? t("Product"), shop: l.shop_name ?? "" });
 
   const sum = (from: number, to: number) => {
     const inRange = lines.filter((l) => { const t = Date.parse(l.created_at); return t >= from && t < to; });
@@ -96,14 +105,13 @@ export async function GET(req: NextRequest) {
     const cur = sum(cFrom, end);
     const prev = sum(cFrom - n * DAY, cFrom);
     const change = (a: number, b: number) => (b ? Math.round(((a - b) / b) * 100) : null);
-    const lv = cur.channel[1];
-    const note = !cur.orders ? "No orders in these days." : `${lv >= 30 ? `LIVE brought ${lv}% of your commission. ` : ""}Cancels and returns: ${cur.cancelItems} of ${cur.items} items (${cur.cancel}%).`;
+    const note = noteFor(cur, t("No orders in these days."));
     const chart = n <= 31
       ? { unit: "day" as const, points: Array.from({ length: n }, (_, i) => { const d = cFrom + i * DAY; return [label(d), sum(d, d + DAY).est] as [string, number]; }) }
       : { unit: "week" as const, points: Array.from({ length: Math.ceil(n / 7) }, (_, i) => { const d = cFrom + i * 7 * DAY; return [label(d), sum(d, Math.min(d + 7 * DAY, end)).est] as [string, number]; }) };
     const ids = cur.byProduct.map((b) => b.productId);
     const imgs = await productImages(user.id, ids).catch(() => new Map<string, string | null>());
-    const products = Object.fromEntries(ids.map((id) => [id, { ...(names.get(id) ?? { name: "Product", shop: "" }), img: imgs.get(id) ?? null }]));
+    const products = Object.fromEntries(ids.map((id) => [id, { ...(names.get(id) ?? { name: t("Product"), shop: "" }), img: imgs.get(id) ?? null }]));
     return NextResponse.json({ range: { ...cur, gmvChange: change(cur.gmv, prev.gmv), ordersChange: change(cur.orders, prev.orders), note }, chart, products }, { headers: { "cache-control": "private, no-store" } });
   }
 
@@ -116,15 +124,14 @@ export async function GET(req: NextRequest) {
     const prev = n ? sum(from - n * DAY, from) : null;
     const change = (a: number, b: number | undefined) => (prev && b ? Math.round(((a - b) / b) * 100) : null);
     // The note says only what the numbers show.
-    const live = cur.channel[1];
-    const note = !cur.orders ? "No orders in this period yet." : `${live >= 30 ? `LIVE brought ${live}% of your commission. ` : ""}Cancels and returns: ${cur.cancelItems} of ${cur.items} items (${cur.cancel}%).`;
+    const note = noteFor(cur, t("No orders in this period yet."));
     ranges[key] = { ...cur, gmvChange: change(cur.gmv, prev?.gmv), ordersChange: change(cur.orders, prev?.orders), note };
     if (n && n <= 30) charts[key] = { unit: "day", points: Array.from({ length: n }, (_, i) => { const d = from + i * DAY; return [label(d), sum(d, d + DAY).est] as [string, number]; }) };
     else if (n) charts[key] = { unit: "week", points: Array.from({ length: Math.ceil(n / 7) }, (_, i) => { const d = from + i * 7 * DAY; return [label(d), sum(d, Math.min(d + 7 * DAY, now + 1)).est] as [string, number]; }) };
     else {
       const pts: [string, number][] = [];
       const s = new Date(first + MYT);
-      for (let y = s.getUTCFullYear(), m = s.getUTCMonth(); Date.UTC(y, m, 1) - MYT <= now; m === 11 ? (y++, m = 0) : m++) pts.push([MONTHS[m], sum(Date.UTC(y, m, 1) - MYT, Date.UTC(y, m + 1, 1) - MYT).est]);
+      for (let y = s.getUTCFullYear(), m = s.getUTCMonth(); Date.UTC(y, m, 1) - MYT <= now; m === 11 ? (y++, m = 0) : m++) pts.push([monthName(y, m, "short"), sum(Date.UTC(y, m, 1) - MYT, Date.UTC(y, m + 1, 1) - MYT).est]);
       charts[key] = { unit: "month", points: pts.slice(-12) };
     }
   }
@@ -151,7 +158,7 @@ export async function GET(req: NextRequest) {
     }
     const when = new Date(from + MYT);
     months.push({
-      month: `${FULL[when.getUTCMonth()]} ${when.getUTCFullYear()}`, est: r2(est), paid: r2(paid), pending: r2(pending), clawed: r2(clawed), extra: r2(extra),
+      month: monthName(when.getUTCFullYear(), when.getUTCMonth(), "long"), est: r2(est), paid: r2(paid), pending: r2(pending), clawed: r2(clawed), extra: r2(extra),
       status: pending > 0 ? "Settling" : "Paid", year: when.getUTCFullYear(), monthIndex: when.getUTCMonth(),
       days: days.map((d) => ({ ...d, est: r2(d.est), extra: r2(d.extra), clawed: r2(d.clawed) })),
     });

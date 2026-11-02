@@ -4,6 +4,7 @@ import { approvedCreatorToken } from "../creator-accounts/access.ts";
 import { allProducts } from "./catalog.ts";
 import { levelOf } from "../levels/store.ts";
 import { makeTapLink } from "./links.ts";
+import { tx } from "../../lib/i18n/lang.ts";
 
 /** `already`: it was in her showcase before (owner, 1 Nov 2026: say "Already in your showcase" only then). */
 export type AddResult = { added: true; already?: boolean } | { added: false; link?: string; error?: string; status: number };
@@ -32,7 +33,7 @@ export async function addByTapLink(userId: string, token: string, link: string, 
   const failed = r.data?.errors?.[0];
   if (r.code !== 0 || failed) {
     console.error("[showcase add]", r.code, r.message, failed?.code, failed?.message);
-    return { added: false, link, error: failed?.message || r.message || "TikTok Shop didn't add it. Open the link to add it in TikTok Shop.", status: 502 };
+    return { added: false, link, error: failed?.message || r.message || tx("TikTok Shop didn't add it. Open the link to add it in TikTok Shop."), status: 502 };
   }
   if (count && productId) await countAdded(userId, [productId], true);
   return { added: true };
@@ -43,7 +44,7 @@ async function addById(userId: string, token: string, productId: string, count: 
   const failed = r.data?.errors?.[0];
   if (r.code !== 0 || failed) {
     console.error("[showcase add by id]", r.code, r.message, failed?.code, failed?.message);
-    return { added: false, error: failed?.message || r.message || "TikTok Shop didn't add it. Please try again.", status: 502 };
+    return { added: false, error: failed?.message || r.message || tx("TikTok Shop didn't add it. Please try again."), status: 502 };
   }
   if (count) await countAdded(userId, [productId], false);
   return { added: true };

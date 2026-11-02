@@ -1,5 +1,6 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
-import { dateLocale, type Lang } from "../../lib/i18n/lang.ts";
+import { dateLocale, tx, type Lang } from "../../lib/i18n/lang.ts";
+import { translate } from "../../lib/i18n/translate.ts";
 import { getCreatorProfile } from "../../integrations/tiktok-shop/creator.ts";
 import { approvedCreatorToken } from "../creator-accounts/access.ts";
 import { KEEP_MONTHLY, type Level } from "../levels/rules.ts";
@@ -23,8 +24,9 @@ export type AccountPageData = {
   now: number;
 };
 
-const REGION: Record<string, string> = { MY: "Malaysia", SG: "Singapore", ID: "Indonesia", TH: "Thailand", PH: "Philippines", VN: "Vietnam" };
-const PERMISSION: Record<string, string> = { ADD_AFFILIATE_PERMISSION: "Can add affiliate products", LIVE_STREAM_PERMISSION: "Can go LIVE" };
+// Kept in English (an hour per account) and shown in her language below.
+const REGION: Record<string, string> = { MY: tx("Malaysia"), SG: tx("Singapore"), ID: tx("Indonesia"), TH: tx("Thailand"), PH: tx("Philippines"), VN: tx("Vietnam") };
+const PERMISSION: Record<string, string> = { ADD_AFFILIATE_PERMISSION: tx("Can add affiliate products"), LIVE_STREAM_PERMISSION: tx("Can go LIVE") };
 const day = (iso: string | null | undefined, lang: Lang) => (iso ? new Date(iso).toLocaleDateString(dateLocale(lang), { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kuala_Lumpur" }) : null);
 
 /** TikTok's "your token has been deauthorized": TikTok cancelled the link (seen several times on 16 Oct 2026). */
@@ -57,7 +59,7 @@ export async function accountPage(user: AppUser, lang: Lang = "en"): Promise<Acc
   const withSample = tap.rows.filter((r) => r.stage > 0);
   return {
     overview,
-    shop: conn ? { username: conn.username, avatar: conn.avatar_url, linkedAt: day(conn.connected_at, lang), approvedAt: access?.status === "approved" ? day(access.decided_at, lang) : null, region: profile.region, permissions: profile.permissions, ttLevel: conn.tt_level, agency: conn.agency, cancelled: profile.cancelled } : null,
+    shop: conn ? { username: conn.username, avatar: conn.avatar_url, linkedAt: day(conn.connected_at, lang), approvedAt: access?.status === "approved" ? day(access.decided_at, lang) : null, region: profile.region && translate(lang, profile.region), permissions: profile.permissions.map((p) => translate(lang, p)), ttLevel: conn.tt_level, agency: conn.agency, cancelled: profile.cancelled } : null,
     sales,
     level: { level: level.level, monthSales: level.month?.sales ?? 0, keep: KEEP_MONTHLY, lifetime: level.lifetime },
     samples: {

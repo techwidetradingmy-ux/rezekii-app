@@ -1,4 +1,8 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import type { Lang, T } from "../../lib/i18n/lang.ts";
+import { translate } from "../../lib/i18n/translate.ts";
+import { errorLine } from "../posting/errors.ts";
+import { creditLine } from "../rewards/ledger.ts";
 import { REASON_TEXT, type Review } from "../tap/reviews.ts";
 import { myWishes } from "../wishes/wishes.ts";
 import { systemNotes } from "./system.ts";
@@ -35,9 +39,11 @@ const APP = { tiktok: "TikTok", facebook: "Facebook", instagram: "Instagram", th
 
 /**
  * Notifications from real events (owner, 31 Oct 2026), newest first: credits in and out, invites that joined, posts that went out
- * or failed, connections that need renewing, and sample requests. Nothing is stored but what she has read.
+ * or failed, connections that need renewing, and sample requests. Nothing is stored but what she has read, so every line is
+ * written as it's read, in her language (owner, 3 Nov 2026).
  */
-export async function notesFor(userId: string, side: Side): Promise<Note[]> {
+export async function notesFor(userId: string, side: Side, lang: Lang = "en"): Promise<Note[]> {
+  const t: T = (en, vars) => translate(lang, en, vars);
   const since = new Date(Date.now() - 30 * DAY).toISOString();
   const base = side === "seller" ? "/seller/app" : "/app";
   const walletHref = side === "seller" ? "/seller/app/rewards/wallet" : "/app/account#wallet";
@@ -73,90 +79,99 @@ export async function notesFor(userId: string, side: Side): Promise<Note[]> {
           sh.length ? rows<Review>(`product_reviews?shop_id=in.(${sh.map((x) => x.shop_id).join(",")})&decided_at=gte.${enc(since)}&decided_by=neq.backfill&select=*&order=decided_at.desc&limit=30`) : [],
         )
       : Promise.resolve([] as Review[]),
-    systemNotes(side).catch(() => []),
+    systemNotes(side, t).catch(() => []),
   ]);
 
   const notes: Note[] = [];
   const credit = { welcome: "gift", mission: "trophy", chest: "gift", streak: "flame", referral: "users", refund: "refresh", admin: "wallet", expired: "wallet" } as const;
+  const seeWallet = t("See wallet");
   for (const r of ledger) {
     if (r.kind === "expired") {
-      notes.push({ id: `l:${r.id}`, at: r.created_at, icon: "wallet", title: `${Math.abs(r.amount)} credits expired`, line: "Credits last 12 months. The oldest are used first.", href: walletHref, cta: "See wallet", urgent: null });
+      const n = Math.abs(r.amount);
+      notes.push({ id: `l:${r.id}`, at: r.created_at, icon: "wallet", title: n === 1 ? t("{n} credit expired", { n }) : t("{n} credits expired", { n }), line: t("Credits last 12 months. The oldest are used first."), href: walletHref, cta: seeWallet, urgent: null });
       continue;
     }
     if (r.amount <= 0) continue;
-    const title = r.kind === "refund" ? `${r.amount} credits back` : r.kind === "mission" ? `Mission done: ${r.what.replace(/^Mission:\s*/i, "")}` : r.kind === "referral" ? "Your invite counted" : r.what;
-    notes.push({ id: `l:${r.id}`, at: r.created_at, icon: credit[r.kind as keyof typeof credit] ?? "wallet", title, line: `+${r.amount} credits are in your wallet.${r.kind === "refund" ? ` ${r.what}.` : ""}`, href: walletHref, cta: "See wallet", urgent: null });
+    const n = r.amount;
+    const title = r.kind === "refund" ? (n === 1 ? t("{n} credit back", { n }) : t("{n} credits back", { n }))
+      : r.kind === "mission" ? t("Mission done: {name}", { name: t(r.what.replace(/^Mission:\s*/i, "")) })
+      : r.kind === "referral" ? t("Your invite counted")
+      : creditLine(t, r.what);
+    const line = r.kind === "refund" ? t("+{n} credits are in your wallet. {what}.", { n, what: creditLine(t, r.what) }) : n === 1 ? t("+{n} credit is in your wallet.", { n }) : t("+{n} credits are in your wallet.", { n });
+    notes.push({ id: `l:${r.id}`, at: r.created_at, icon: credit[r.kind as keyof typeof credit] ?? "wallet", title, line, href: walletHref, cta: seeWallet, urgent: null });
   }
   for (const r of invites) {
-    notes.push({ id: `j:${r.friend_id}`, at: r.joined_at, icon: "users", title: "A friend joined with your invite", line: side === "seller" ? "It counts when they link their TikTok Shop within 14 days." : "It counts when they link TikTok Shop within 14 days.", href: side === "seller" ? "/seller/app/rewards/referral" : "/app/account#referral", cta: "See invites", urgent: null });
+    notes.push({ id: `j:${r.friend_id}`, at: r.joined_at, icon: "users", title: t("A friend joined with your invite"), line: side === "seller" ? t("It counts when they link their TikTok Shop within 14 days.") : t("It counts when they link TikTok Shop within 14 days."), href: side === "seller" ? "/seller/app/rewards/referral" : "/app/account#referral", cta: t("See invites"), urgent: null });
   }
   for (const p of posts) {
-    const what = (p.caption ?? "").split("\n")[0].slice(0, 60) || "Your video";
-    if (p.status === "posted") notes.push({ id: `p:${p.id}:ok`, at: p.posted_at ?? p.updated_at, icon: "video", title: "Posted to TikTok", line: what, href: `${base}/publish/calendar`, cta: "See posts", urgent: null });
-    else notes.push({ id: `p:${p.id}:fail`, at: p.updated_at, icon: "x", title: "TikTok post didn't go out", line: p.last_error ?? what, href: `${base}/publish/calendar`, cta: "Try again", urgent: "Failed" });
+    const what = (p.caption ?? "").split("\n")[0].slice(0, 60) || t("Your video");
+    if (p.status === "posted") notes.push({ id: `p:${p.id}:ok`, at: p.posted_at ?? p.updated_at, icon: "video", title: t("Posted to TikTok"), line: what, href: `${base}/publish/calendar`, cta: t("See posts"), urgent: null });
+    else notes.push({ id: `p:${p.id}:fail`, at: p.updated_at, icon: "x", title: t("TikTok post didn't go out"), line: p.last_error ? errorLine(t, p.last_error) : what, href: `${base}/publish/calendar`, cta: t("Try again"), urgent: t("Failed") });
   }
   for (const p of social) {
     const app = APP[p.platform] ?? p.platform;
-    const what = (p.caption ?? "").split("\n")[0].slice(0, 60) || "Your post";
-    if (p.status === "failed") notes.push({ id: `s:${p.id}:fail`, at: p.updated_at, icon: "x", title: `${app} post didn't go out`, line: p.last_error ?? what, href: `${base}/publish/calendar`, cta: "Try again", urgent: "Failed" });
-    else if (p.posted_at) notes.push({ id: `s:${p.id}:ok`, at: p.posted_at, icon: "video", title: `Posted to ${app}${p.account_name ? ` · ${p.account_name}` : ""}`, line: what, href: p.permalink ?? `${base}/publish/calendar`, cta: p.permalink ? "Open post" : "See posts", urgent: null });
+    const what = (p.caption ?? "").split("\n")[0].slice(0, 60) || t("Your post");
+    if (p.status === "failed") notes.push({ id: `s:${p.id}:fail`, at: p.updated_at, icon: "x", title: t("{app} post didn't go out", { app }), line: p.last_error ? errorLine(t, p.last_error) : what, href: `${base}/publish/calendar`, cta: t("Try again"), urgent: t("Failed") });
+    else if (p.posted_at) notes.push({ id: `s:${p.id}:ok`, at: p.posted_at, icon: "video", title: p.account_name ? t("Posted to {app} · {name}", { app, name: p.account_name }) : t("Posted to {app}", { app }), line: what, href: p.permalink ?? `${base}/publish/calendar`, cta: p.permalink ? t("Open post") : t("See posts"), urgent: null });
   }
   const connections = side === "seller" ? "/seller/app/account" : "/app/account#connections";
+  const left = (iso: string) => { const n = daysLeft(iso); return n === 1 ? t("{n} day left", { n }) : t("{n} days left", { n }); };
   for (const a of accounts) {
     const app = APP[a.platform] ?? a.platform;
     const soon = a.token_expires_at && daysLeft(a.token_expires_at) <= 7;
     if (a.status !== "reconnect" && !soon) continue;
     notes.push({
       id: `a:${a.id}:${a.status === "reconnect" ? "re" : a.token_expires_at}`, at: a.status === "reconnect" || !a.token_expires_at ? a.updated_at : new Date(Date.parse(a.token_expires_at) - 7 * DAY).toISOString(),
-      icon: "link", title: `Reconnect ${app}${a.name ? `: ${a.name}` : ""}`, line: `${app} asks you to sign in again from time to time. Until then, posts to it can't go out.`,
-      href: side === "seller" ? connections : `/api/auth/meta/${a.platform}/start?from=account`, cta: "Reconnect", urgent: a.status === "reconnect" ? "Needs reconnecting" : `${daysLeft(a.token_expires_at!)} days left`,
+      icon: "link", title: a.name ? t("Reconnect {app}: {name}", { app, name: a.name }) : t("Reconnect {app}", { app }), line: t("{app} asks you to sign in again from time to time. Until then, posts to it can't go out.", { app }),
+      href: side === "seller" ? connections : `/api/auth/meta/${a.platform}/start?from=account`, cta: t("Reconnect"), urgent: a.status === "reconnect" ? t("Needs reconnecting") : left(a.token_expires_at!),
     });
   }
-  for (const t of tiktok) {
-    const soon = t.refresh_token_expires_at && daysLeft(t.refresh_token_expires_at) <= 7;
-    if (t.status !== "reconnect" && !soon) continue;
+  for (const c of tiktok) {
+    const soon = c.refresh_token_expires_at && daysLeft(c.refresh_token_expires_at) <= 7;
+    if (c.status !== "reconnect" && !soon) continue;
     notes.push({
-      id: `t:${t.open_id}:${t.status === "reconnect" ? "re" : t.refresh_token_expires_at}`, at: t.status === "reconnect" || !t.refresh_token_expires_at ? t.updated_at : new Date(Date.parse(t.refresh_token_expires_at) - 7 * DAY).toISOString(),
-      icon: "link", title: `Reconnect TikTok${t.username ? ` @${t.username}` : ""}`, line: "TikTok asks you to sign in again from time to time, so your posts keep going out.",
-      href: "/api/auth/tiktok/start", cta: "Reconnect", urgent: t.status === "reconnect" ? "Needs reconnecting" : `${daysLeft(t.refresh_token_expires_at!)} days left`,
+      id: `t:${c.open_id}:${c.status === "reconnect" ? "re" : c.refresh_token_expires_at}`, at: c.status === "reconnect" || !c.refresh_token_expires_at ? c.updated_at : new Date(Date.parse(c.refresh_token_expires_at) - 7 * DAY).toISOString(),
+      icon: "link", title: c.username ? t("Reconnect TikTok @{name}", { name: c.username }) : t("Reconnect TikTok"), line: t("TikTok asks you to sign in again from time to time, so your posts keep going out."),
+      href: "/api/auth/tiktok/start", cta: t("Reconnect"), urgent: c.status === "reconnect" ? t("Needs reconnecting") : left(c.refresh_token_expires_at!),
     });
   }
   const shopEnd = shop[0]?.refresh_token_expires_at;
   if (shopEnd && daysLeft(shopEnd) <= 30) {
-    const left = daysLeft(shopEnd);
+    const n = daysLeft(shopEnd);
     notes.push({
       id: `shop:${shopEnd}`, at: new Date(Date.parse(shopEnd) - 30 * DAY).toISOString(), icon: "alert",
-      title: left ? `Reconnect TikTok Shop in ${left} day${left === 1 ? "" : "s"}` : "Reconnect TikTok Shop",
-      line: "TikTok asks you to approve access again every year. Reconnect so scans and commission numbers keep working.",
-      href: "/api/auth/tiktokshop/start", cta: "Reconnect", urgent: left ? `${left} day${left === 1 ? "" : "s"} left` : "Expired",
+      title: !n ? t("Reconnect TikTok Shop") : n === 1 ? t("Reconnect TikTok Shop in {n} day", { n }) : t("Reconnect TikTok Shop in {n} days", { n }),
+      line: t("TikTok asks you to approve access again every year. Reconnect so scans and commission numbers keep working."),
+      href: "/api/auth/tiktokshop/start", cta: t("Reconnect"), urgent: n ? left(shopEnd) : t("Expired"),
     });
   }
-  const STEP: Record<string, [Note["icon"], string, string]> = {
-    approved: ["check", "passed Techwide's review", "Next: we send it to TikTok for the TAP campaign."],
-    with_tiktok: ["refresh", "is with TikTok", "TikTok checks it before it joins the TAP campaign."],
-    live: ["check", "is live in the TAP campaign", "Creators can now find it on Rezekii and add it to their showcase."],
-    not_approved: ["x", "wasn't approved", "See why, change it and send it again."],
+  // Each step of a product she submitted, as whole lines with its name.
+  const STEP: Record<string, [Note["icon"], (name: string) => string, string]> = {
+    approved: ["check", (name) => t("{name} passed Techwide's review", { name }), t("Next: we send it to TikTok for the TAP campaign.")],
+    with_tiktok: ["refresh", (name) => t("{name} is with TikTok", { name }), t("TikTok checks it before it joins the TAP campaign.")],
+    live: ["check", (name) => t("{name} is live in the TAP campaign", { name }), t("Creators can now find it on Rezekii and add it to their showcase.")],
+    not_approved: ["x", (name) => t("{name} wasn't approved", { name }), t("See why, change it and send it again.")],
   };
-  for (const t of submissions) {
-    const [icon, what, line] = STEP[t.status] ?? ["check", "was updated", ""];
-    notes.push({ id: `sub:${t.id}:${t.status}`, at: t.updated_at, icon, title: `${t.product_name ?? "Your product"} ${what}`, line: t.status === "not_approved" && t.reason ? t.reason : line, href: "/seller/app/progress", cta: "See progress", urgent: null });
+  for (const s of submissions) {
+    const [icon, title, line] = STEP[s.status] ?? ["check", (name: string) => t("{name} was updated", { name }), ""];
+    notes.push({ id: `sub:${s.id}:${s.status}`, at: s.updated_at, icon, title: title(s.product_name ?? t("Your product")), line: s.status === "not_approved" && s.reason ? s.reason : line, href: "/seller/app/progress", cta: t("See progress"), urgent: null });
   }
   for (const r of reviews) {
-    const name = r.product_name ?? "Your product";
-    if (r.decision === "approved") notes.push({ id: `rv:${r.id}`, at: r.decided_at, icon: "check", title: `Approved: ${name}`, line: "Creators can now find it on Rezekii and add it to their showcase.", href: "/seller/app/submit", cta: "See products", urgent: null });
-    else notes.push({ id: `rv:${r.id}`, at: r.decided_at, icon: "x", title: `Not approved: ${name}`, line: `${r.reason ? `${REASON_TEXT[r.reason] ?? r.reason}. ` : ""}Change it in Seller Center and register again.`, href: "/seller/app/submit", cta: "See why", urgent: null });
+    const name = r.product_name ?? t("Your product");
+    if (r.decision === "approved") notes.push({ id: `rv:${r.id}`, at: r.decided_at, icon: "check", title: t("Approved: {name}", { name }), line: t("Creators can now find it on Rezekii and add it to their showcase."), href: "/seller/app/submit", cta: t("See products"), urgent: null });
+    else notes.push({ id: `rv:${r.id}`, at: r.decided_at, icon: "x", title: t("Not approved: {name}", { name }), line: r.reason ? t("{reason}. Change it in Seller Center and register again.", { reason: t(REASON_TEXT[r.reason] ?? r.reason) }) : t("Change it in Seller Center and register again."), href: "/seller/app/submit", cta: t("See why"), urgent: null });
   }
   // Her wishes: launched on Rezekii, or the seller said no.
   for (const w of wishes) {
-    if (w.status === "On Rezekii") notes.push({ id: `w:${w.id}:live`, at: w.changed ?? w.at, icon: "check", title: `Now on Rezekii: ${w.name}`, line: w.raise ? `+${w.raise}% for you. Add it to your showcase.` : "Add it to your showcase from the product page.", href: `/app/product/${w.id}`, cta: "Open product", urgent: null });
-    if (w.status === "Seller said no") notes.push({ id: `w:${w.id}:no`, at: w.changed ?? w.at, icon: "x", title: `Seller said no: ${w.name}`, line: "It stays off Rezekii for now.", href: "/app/account#wish", cta: "See wish list", urgent: null });
+    if (w.status === "On Rezekii") notes.push({ id: `w:${w.id}:live`, at: w.changed ?? w.at, icon: "check", title: t("Now on Rezekii: {name}", { name: w.name }), line: w.raise ? t("+{n}% for you. Add it to your showcase.", { n: w.raise }) : t("Add it to your showcase from the product page."), href: `/app/product/${w.id}`, cta: t("Open product"), urgent: null });
+    if (w.status === "Seller said no") notes.push({ id: `w:${w.id}:no`, at: w.changed ?? w.at, icon: "x", title: t("Seller said no: {name}", { name: w.name }), line: t("It stays off Rezekii for now."), href: "/app/account#wish", cta: t("See wish list"), urgent: null });
   }
   for (const s of samples) {
-    notes.push({ id: `r:${s.id}`, at: s.created_at, icon: "box", title: `Sample requested: ${s.product_name ?? "a product"}`, line: "You'll see TikTok's steps (approved, shipped, received) in Samples & Delivery.", href: "/app/account#samples", cta: "See sample", urgent: null });
+    notes.push({ id: `r:${s.id}`, at: s.created_at, icon: "box", title: s.product_name ? t("Sample requested: {name}", { name: s.product_name }) : t("Sample requested"), line: t("You'll see TikTok's steps (approved, shipped, received) in Samples & Delivery."), href: "/app/account#samples", cta: t("See sample"), urgent: null });
   }
-  // Techwide's announcements and late or failed data updates, for everyone.
+  // Techwide's announcements (as Techwide wrote them) and late or failed data updates, for everyone.
   for (const n of system) {
-    notes.push({ id: n.id, at: n.at, icon: n.important ? "alert" : "check", title: n.title, line: n.line, href: null, cta: null, urgent: n.important ? "Important" : null });
+    notes.push({ id: n.id, at: n.at, icon: n.important ? "alert" : "check", title: n.title, line: n.line, href: null, cta: null, urgent: n.important ? t("Important") : null });
   }
   return notes.sort((a, b) => (a.at < b.at ? 1 : -1));
 }
@@ -174,8 +189,8 @@ const upsertState = (body: Record<string, unknown>) =>
   });
 
 /** Her notifications with what's unread: anything after she last marked all as read that she hasn't opened. */
-export async function feedFor(userId: string, side: Side): Promise<Feed> {
-  const [notes, state] = await Promise.all([notesFor(userId, side), stateOf(userId, side)]);
+export async function feedFor(userId: string, side: Side, lang: Lang = "en"): Promise<Feed> {
+  const [notes, state] = await Promise.all([notesFor(userId, side, lang), stateOf(userId, side)]);
   const read = new Set(state.read_ids);
   const shown = notes.filter((n) => { const t = topicOf(n.id); return !t || state.prefs[t] !== false; });
   const out = shown.map((n) => ({ ...n, cat: categoryOf(n.id), unread: n.at > state.seen_at && !read.has(n.id) }));

@@ -5,6 +5,8 @@ import { currentUser } from "@/app/current-user";
 import { supabaseRest } from "@/integrations/supabase/rest.ts";
 import { linesBetween, productImages } from "@/modules/sales/frames.ts";
 import { lineEarned, lineGmv, type OrderLine } from "@/modules/sales/summary.ts";
+import { getLang, tFor } from "@/lib/i18n/server";
+import { dateLocale, type Lang } from "@/lib/i18n/lang";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -18,8 +20,15 @@ const pct = (part: number, all: number) => (all ? Math.round((part / all) * 1000
 const cancelled = (s: string | null) => /REFUND|RETURN|CANCEL|INELIGIBLE|INVALID/i.test(s ?? "");
 const kind = (t: string | null) => (/LIVE/i.test(t ?? "") ? "live" : /VIDEO/i.test(t ?? "") ? "video" : "other");
 const myt = (t: string) => new Date(Date.parse(t) + MYT);
-const day = (t: string) => { const d = myt(t); return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`; };
-const when = (t: string) => { const d = myt(t); const h = d.getUTCHours(); return { date: `${DOW[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`, time: `${h % 12 || 12}${d.getUTCMinutes() ? `:${String(d.getUTCMinutes()).padStart(2, "0")}` : ""} ${h < 12 ? "AM" : "PM"}` }; };
+/** Dates and times in her language (owner, 3 Nov 2026): English as before ("Mon 3 Nov", "8 PM"), the others as their locale writes them. */
+const KL = { timeZone: "Asia/Kuala_Lumpur" } as const;
+const dayIn = (lang: Lang) => (t: string) => { if (lang !== "en") return new Date(t).toLocaleDateString(dateLocale(lang), { ...KL, day: "numeric", month: "short" }); const d = myt(t); return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`; };
+const whenIn = (lang: Lang) => (t: string) => {
+  const d = myt(t);
+  const h = d.getUTCHours();
+  if (lang !== "en") return { date: new Date(t).toLocaleDateString(dateLocale(lang), { ...KL, weekday: "short", day: "numeric", month: "short" }), time: new Date(t).toLocaleTimeString(dateLocale(lang), { ...KL, hour: "numeric", ...(d.getUTCMinutes() ? { minute: "2-digit" } : {}), hour12: true }) };
+  return { date: `${DOW[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`, time: `${h % 12 || 12}${d.getUTCMinutes() ? `:${String(d.getUTCMinutes()).padStart(2, "0")}` : ""} ${h < 12 ? "AM" : "PM"}` };
+};
 
 /** Orders, and items sold and cancelled (owner, 1 Nov 2026: cancel rates are by items). */
 type Count = { orders: Set<string>; items: number; badItems: number; gmv: number; commission: number };
@@ -50,8 +59,12 @@ const cancelOf = (c: Count) => ({ cancel: pct(c.badItems, c.items), items: c.ite
  * come from her TikTok account when it's connected; the same number of days before is each product's trend.
  */
 export async function GET(req: NextRequest) {
+  const lang = await getLang();
+  const t = tFor(lang);
+  const day = dayIn(lang);
+  const when = whenIn(lang);
   const user = await currentUser();
-  if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  if (!user) return NextResponse.json({ error: t("Sign in first.") }, { status: 401 });
   const read = await keepFresh(user.id);
   const now = Date.now();
   const q = req.nextUrl.searchParams;
@@ -72,7 +85,7 @@ export async function GET(req: NextRequest) {
     if (k === "video" && l.content_id) add(videos.get(l.content_id) ?? videos.set(l.content_id, empty(l.created_at)).get(l.content_id)!, l);
     if (k === "live" && l.content_id) add(lives.get(l.content_id) ?? lives.set(l.content_id, empty(l.created_at)).get(l.content_id)!, l);
     if (l.product_id) {
-      names.set(l.product_id, l.product_name ?? "Product");
+      names.set(l.product_id, l.product_name ?? t("Product"));
       const p = products.get(l.product_id) ?? products.set(l.product_id, { ...empty(l.created_at), split: { video: 0, live: 0, other: 0 } }).get(l.product_id)!;
       add(p, l);
       p.split[k] += lineEarned(l);
@@ -110,7 +123,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     videos: [...videos.entries()].map(([id, g]) => {
       const m = meta.get(id);
-      return { id, title: m?.title?.trim() || "Video", date: day(m?.created_at ?? g.first), views: m?.views ?? null, orders: g.orders.size, gmv: r2(g.gmv), commission: r2(g.commission), ...cancelOf(g), productId: topProduct(g), refunds: g.badItems, cover: `/api/img/v/${id}`, url: `https://www.tiktok.com/${handle ? `@${handle}/` : ""}video/${id}` };
+      return { id, title: m?.title?.trim() || t("Video"), date: day(m?.created_at ?? g.first), views: m?.views ?? null, orders: g.orders.size, gmv: r2(g.gmv), commission: r2(g.commission), ...cancelOf(g), productId: topProduct(g), refunds: g.badItems, cover: `/api/img/v/${id}`, url: `https://www.tiktok.com/${handle ? `@${handle}/` : ""}video/${id}` };
     }),
     lives: [...lives.entries()].map(([id, g]) => ({
       id, ...when(g.first), orders: g.orders.size, gmv: r2(g.gmv), commission: r2(g.commission), ...cancelOf(g), ...(times[id] ?? {}),

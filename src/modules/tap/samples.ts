@@ -6,6 +6,7 @@ import { linkedCreators } from "../sales/orders.ts";
 import { makeTapLink } from "./links.ts";
 import { addByTapLink, showcaseIds } from "./showcase.ts";
 import { sampleStage } from "./stages.ts";
+import { tx } from "../../lib/i18n/lang.ts";
 
 /** A free sample a creator asked for on Rezekii. Since 14 Oct 2026 they submit it in TikTok themselves (status "applied"); older rows were Rezekii's own queue. */
 export type SampleRequest = {
@@ -72,11 +73,11 @@ export const offersSamples = (label: SampleLabel | undefined): boolean =>
  */
 export function sampleChoice(label: SampleLabel | undefined): { ok: true; skuId: string } | { ok: false; error: string; status: number } {
   const verdict = sampleVerdict(label);
-  if (verdict === "requested") return { ok: false, error: "You already requested this sample in TikTok. Follow it in My Samples.", status: 409 };
-  if (verdict === "limit") return { ok: false, error: "You've reached TikTok's limit on open sample requests. Post content for the samples you have, then try again.", status: 409 };
-  if (label?.can_apply === false || !(label?.sample_product?.sample_sku_list ?? []).length) return { ok: false, error: "TikTok doesn't offer a free sample of this product to your account.", status: 409 };
+  if (verdict === "requested") return { ok: false, error: tx("You already requested this sample in TikTok. Follow it in My Samples."), status: 409 };
+  if (verdict === "limit") return { ok: false, error: tx("You've reached TikTok's limit on open sample requests. Post content for the samples you have, then try again."), status: 409 };
+  if (label?.can_apply === false || !(label?.sample_product?.sample_sku_list ?? []).length) return { ok: false, error: tx("TikTok doesn't offer a free sample of this product to your account."), status: 409 };
   const sku = label?.sample_product?.sample_sku_list?.find((o) => o.is_available)?.id;
-  if (!sku) return { ok: false, error: "Every option of this product is out of stock for samples right now.", status: 409 };
+  if (!sku) return { ok: false, error: tx("Every option of this product is out of stock for samples right now."), status: 409 };
   return { ok: true, skuId: sku };
 }
 
@@ -212,7 +213,7 @@ async function patiently<T>(call: () => Promise<ApiReply<T>>): Promise<ApiReply<
   return r;
 }
 
-const RELINK = "TikTok has cancelled Rezekii's link to your TikTok Shop. In Account, unlink TikTok Shop and link it again.";
+const RELINK = tx("TikTok has cancelled Rezekii's link to your TikTok Shop. In Account, unlink TikTok Shop and link it again.");
 
 /**
  * Request sample through Techwide's TAP campaign, opening TikTok's own sample request page (TikTok has no API to submit it:
@@ -221,13 +222,13 @@ const RELINK = "TikTok has cancelled Rezekii's link to your TikTok Shop. In Acco
  * creator may ask and which options allow a sample. The click is logged; only TikTok's own status counts as requested.
  */
 export async function sampleLink(userId: string, productId: string): Promise<SampleLinkResult> {
-  if (!/^\d{6,25}$/.test(productId)) return { ok: false, error: "This product is no longer in the Marketplace.", status: 404 };
+  if (!/^\d{6,25}$/.test(productId)) return { ok: false, error: tx("This product is no longer in the Marketplace."), status: 404 };
   // Fast (owner, 16 Oct 2026: no waiting): steps that don't depend on each other run at the same time.
   const [token, t] = await Promise.all([approvedCreatorToken(userId), sampleTarget(productId)]);
-  if (!token) return { ok: false, error: "Link your TikTok Shop first, then request the sample.", status: 403 };
-  if (!t) return { ok: false, error: "This product is no longer in the Marketplace.", status: 404 };
+  if (!token) return { ok: false, error: tx("Link your TikTok Shop first, then request the sample."), status: 403 };
+  if (!t) return { ok: false, error: tx("This product is no longer in the Marketplace."), status: 404 };
   // Samples go through Techwide's TAP campaign, so the seller must have registered samples there (owner, 16 Oct 2026).
-  if (t.samples <= 0) return { ok: false, error: "This product has no free samples through Rezekii.", status: 409 };
+  if (t.samples <= 0) return { ok: false, error: tx("This product has no free samples through Rezekii."), status: 409 };
   // TikTok's live check and the TAP link together (making the link doesn't touch the showcase): the product goes into the
   // showcase only when TikTok really offers this creator the sample.
   // Her saved showcase too (owner, 1 Nov 2026): a product already there isn't added again first.
@@ -235,7 +236,7 @@ export async function sampleLink(userId: string, productId: string): Promise<Sam
   if (label.code !== 0) {
     console.error("[sample label]", label.code, label.message);
     if (label.code === DEAUTHORIZED) return { ok: false, error: RELINK, status: 401 };
-    return { ok: false, error: "TikTok couldn't check this product's samples right now. Please try again in a minute.", status: 502 };
+    return { ok: false, error: tx("TikTok couldn't check this product's samples right now. Please try again in a minute."), status: 502 };
   }
   const pick = sampleChoice(label.data?.label);
   if (!pick.ok) return pick;
@@ -243,7 +244,7 @@ export async function sampleLink(userId: string, productId: string): Promise<Sam
   // TikTok needs the product in her showcase first; one already there is asked for straight away.
   const add = async () => {
     const added = await addByTapLink(userId, token, tap.link, true, productId);
-    return added.added ? null : { ok: false as const, error: added.error || "Your showcase couldn't take this product, so the sample can't be requested yet.", status: added.status || 502 };
+    return added.added ? null : { ok: false as const, error: added.error || tx("Your showcase couldn't take this product, so the sample can't be requested yet."), status: added.status || 502 };
   };
   const there = have.has(productId);
   if (!there) {
@@ -257,7 +258,7 @@ export async function sampleLink(userId: string, productId: string): Promise<Sam
   if (r.code !== 0) r = await ask();
   if (r.code !== 0 || !r.data?.deeplink) {
     console.error("[sample link]", r.code, r.message, r.request_id);
-    return { ok: false, error: "TikTok couldn't open the sample request for this product right now. Please try again later.", status: 502 };
+    return { ok: false, error: tx("TikTok couldn't open the sample request for this product right now. Please try again later."), status: 502 };
   }
   // The creator submits it in TikTok next: My Samples reads their TikTok sample list afresh, and the click is logged.
   appCache.delete(userId);
@@ -271,7 +272,7 @@ async function logRequest(userId: string, productId: string, t: { name: string; 
   await supabaseRest("sample_requests", {
     method: "POST",
     headers: { prefer: "return=minimal" },
-    body: JSON.stringify({ user_id: userId, product_id: productId, product_name: t.name, shop: t.shop, image: t.image, status: "applied", note: "Requested in TikTok through Techwide's TAP campaign" }),
+    body: JSON.stringify({ user_id: userId, product_id: productId, product_name: t.name, shop: t.shop, image: t.image, status: "applied", note: tx("Requested in TikTok through Techwide's TAP campaign") }),
   });
 }
 

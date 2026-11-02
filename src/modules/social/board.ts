@@ -1,5 +1,6 @@
 import { tx, type Lang } from "../../lib/i18n/lang.ts";
 import { translate } from "../../lib/i18n/translate.ts";
+import { errorLine } from "../posting/errors.ts";
 import { listPosts, type PostRow } from "../posting/store.ts";
 import { tiktokKey } from "./picker.ts";
 import { NAMES, type Channel } from "./rules.ts";
@@ -31,7 +32,8 @@ export type BoardPost = { key: string; at: string | null; caption: string; chann
 function tiktokChannel(p: PostRow, lang: Lang): BoardChannel {
   const now = due(p.status, p.next_attempt_at);
   const state: BoardState = p.status === "draft" ? "draft" : p.status === "scheduled" && !now ? "scheduled" : p.status === "publishing" || p.status === "processing" || now ? "posting" : p.status === "failed" ? "failed" : "posted";
-  const note = p.status === "sent_to_inbox" ? translate(lang, "In your TikTok drafts") : p.status === "failed" ? translate(lang, p.last_error ?? tx("TikTok didn't take it.")) : p.status === "processing" ? translate(lang, "TikTok is processing") : p.last_error && p.status === "scheduled" ? (now ? translate(lang, "Trying again now: {error}", { error: translate(lang, p.last_error) }) : translate(lang, "Trying again soon: {error}", { error: translate(lang, p.last_error) })) : now ? translate(lang, "Starting within a minute") : "";
+  const why = (e: string) => errorLine((en, vars) => translate(lang, en, vars), e);
+  const note = p.status === "sent_to_inbox" ? translate(lang, "In your TikTok drafts") : p.status === "failed" ? why(p.last_error ?? tx("TikTok didn't take it.")) : p.status === "processing" ? translate(lang, "TikTok is processing") : p.last_error && p.status === "scheduled" ? (now ? translate(lang, "Trying again now: {error}", { error: why(p.last_error) }) : translate(lang, "Trying again soon: {error}", { error: why(p.last_error) })) : now ? translate(lang, "Starting within a minute") : "";
   return { id: p.id, kind: "tiktok", account: tiktokKey(p.tiktok_open_id), name: NAMES.tiktok, state, note, permalink: null, canCancel: p.status === "scheduled" || p.status === "failed", canRetry: p.status === "failed", commentFailed: false, active: p.status === "publishing" || p.status === "processing" || (p.status === "scheduled" && soon(p.next_attempt_at)) };
 }
 
@@ -44,14 +46,15 @@ function socialChannel(s: SocialPostRow, lang: Lang): BoardChannel {
   const state: BoardState = s.status === "draft" ? "draft" : s.status === "scheduled" ? (now ? "posting" : "scheduled") : s.status === "publishing" || s.status === "processing" ? "posting" : s.status === "failed" ? "failed" : removed ? "removed" : fbDraft ? "fbdraft" : "posted";
   const app = NAMES[s.platform];
   const users = dropped.map((u) => `@${u}`).join(", ");
-  const note = s.status === "failed" ? translate(lang, s.last_error ?? tx("The channel didn't take it."))
+  const why = (e: string) => errorLine((en, vars) => translate(lang, en, vars), e);
+  const note = s.status === "failed" ? why(s.last_error ?? tx("The channel didn't take it."))
     : removed ? translate(lang, "Deleted in {app} after it was posted", { app })
     : fbDraft ? translate(lang, "Saved as a draft on the Page: publish it from Facebook or Meta Business Suite")
-    : posted && s.comment_status === "failed" ? translate(lang, "First comment failed: {error}", { error: translate(lang, s.comment_error ?? tx("try again")) })
+    : posted && s.comment_status === "failed" ? translate(lang, "First comment failed: {error}", { error: why(s.comment_error ?? tx("try again")) })
     : posted && s.comment_status === "pending" ? translate(lang, "Posting the first comment")
     : posted && dropped.length ? (dropped.length > 1 ? translate(lang, "Posted without {users}: Instagram couldn't reach those accounts (it must exist and be public)", { users }) : translate(lang, "Posted without {users}: Instagram couldn't reach that account (it must exist and be public)", { users }))
     : s.status === "processing" ? translate(lang, "{app} is processing the video", { app })
-    : s.status === "scheduled" && s.last_error ? (now ? translate(lang, "Trying again now: {error}", { error: translate(lang, s.last_error) }) : translate(lang, "Trying again soon: {error}", { error: translate(lang, s.last_error) }))
+    : s.status === "scheduled" && s.last_error ? (now ? translate(lang, "Trying again now: {error}", { error: why(s.last_error) }) : translate(lang, "Trying again soon: {error}", { error: why(s.last_error) }))
     : now ? translate(lang, "Starting within a minute") : "";
   return { id: s.id, kind: s.platform, account: s.account_id ?? "", name: s.account_name ?? NAMES[s.platform], state, note, permalink: removed ? null : s.permalink, canCancel: s.status === "scheduled" || s.status === "draft" || s.status === "failed", canRetry: s.status === "failed", commentFailed: posted && s.comment_status === "failed", active: s.status === "publishing" || s.status === "processing" || (posted && s.comment_status === "pending") || (s.status === "scheduled" && soon(s.next_attempt_at)) };
 }

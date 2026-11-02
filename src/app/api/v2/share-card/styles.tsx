@@ -4,15 +4,20 @@
  * Portrait 1080×1920 or wide 1200×675. Moments: an invite (ticket with her code), a Daily Story page, an achievement, and her
  * Rate Card (packages and prices).
  */
+import { makeT, type T } from "@/lib/i18n/lang";
+
 export type CardData = {
   moment: "invite" | "story" | "achievement" | "rate";
   kicker: string; label: string; big: string; tag: string; sub: string; reward: string; code: string; date: string; bless: string;
   handle: string; name: string; lines: string[]; contacts: string[]; link: string; qr: string; photo: string | null; rimau: string | null; logo: string;
   /** A Daily Story page's own accent (green for good news, amber for a heads-up…). */
   accent?: string;
+  /** The card's own words in her language (English when not given). */
+  words?: CardWords;
 };
 
-let fonts: Promise<{ name: string; data: ArrayBuffer; weight: 600 | 800 | 900; style: "normal" }[]> | null = null;
+type Font = { name: string; data: ArrayBuffer; weight: 600 | 800 | 900; style: "normal" };
+let fonts: Promise<Font[]> | null = null;
 /** Albert Sans from Google Fonts (TrueType, which the card maker reads), loaded once per server. */
 export function cardFonts() {
   fonts ??= (async () => {
@@ -25,6 +30,38 @@ export function cardFonts() {
   });
   return fonts;
 }
+
+/** Chinese characters (and their punctuation), which Albert Sans can't draw. */
+const CJK = /[⺀-鿿　-〿豈-﫿︰-﹏＀-￯]/;
+/** The card's font family: Albert Sans as always, and Noto Sans SC behind it when the card has Chinese on it. */
+export const CARD_FAMILY = "Albert Sans, Noto Sans SC";
+
+/**
+ * Albert Sans, plus Noto Sans SC for the Chinese characters on this card (owner, 3 Nov 2026: the card in 中文 came out as
+ * boxes). Google Fonts makes a small font of just those characters (`text=`), so it stays quick; a card with no Chinese loads
+ * nothing more and looks exactly as before. If the Chinese font can't be read, the card is still made.
+ */
+export async function cardFontsFor(text: string): Promise<Font[]> {
+  const base = await cardFonts();
+  const chars = [...new Set(text)].filter((c) => CJK.test(c)).join("");
+  if (!chars) return base;
+  try {
+    const css = await (await fetch(`https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@600;800;900&text=${encodeURIComponent(chars)}`)).text();
+    const faces = [...css.matchAll(/font-weight: (\d+);[\s\S]*?src: url\((https:[^)]+)\) format\('(?:truetype|opentype)'\)/g)];
+    const cjk = await Promise.all(faces.map(async ([, w, url]) => ({ name: "Noto Sans SC", data: await (await fetch(url)).arrayBuffer(), weight: Number(w) as 600 | 800 | 900, style: "normal" as const })));
+    return [...base, ...cjk];
+  } catch {
+    return base;
+  }
+}
+
+/** The words the card itself draws, in her language (the rest comes from the page, already in her language). */
+export type CardWords = { scan: string; credits: string; code: string; join: string; invited: string; rate: string; proud: string };
+export const cardWords = (t: T): CardWords => ({
+  scan: t("Scan to join me on Rezekii"), credits: t("credits for you"), code: t("Invite code"), join: t("Join me on Rezekii"),
+  invited: t("You're invited"), rate: t("Rate Card"), proud: t("Proud moment"),
+});
+const EN_WORDS = cardWords(makeT(null));
 
 const INK = "#ffffff", SOFT = "#b4dccb", GREEN = "#00c073", GLOW = "#5ef0ae", GLASS = "rgba(255,255,255,0.10)";
 const BG = "#06120d";
@@ -63,7 +100,7 @@ function Footer({ d, s }: { d: CardData; s: number }) {
       <Face d={d} size={116 * s} />
       <div style={{ ...col, flex: 1, gap: 4 * s }}>
         <span style={{ ...row, fontSize: 42 * s, fontWeight: 900, color: INK }}>{d.handle || d.name}</span>
-        <span style={{ ...row, fontSize: 29 * s, fontWeight: 600, color: SOFT }}>Scan to join me on Rezekii</span>
+        <span style={{ ...row, fontSize: 29 * s, fontWeight: 600, color: SOFT }}>{(d.words ?? EN_WORDS).scan}</span>
         <span style={{ ...row, fontSize: 27 * s, fontWeight: 800, color: GLOW }}>{d.link.replace(/^https?:\/\//, "")}</span>
       </div>
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -78,10 +115,10 @@ function Ticket({ d, s }: { d: CardData; s: number }) {
     <div style={{ ...row, borderRadius: 36 * s, overflow: "hidden", boxShadow: "0 24px 60px -20px rgba(0,192,115,0.55)" }}>
       <div style={{ ...col, padding: `${30 * s}px ${38 * s}px`, background: GREEN, color: INK, justifyContent: "center" }}>
         <span style={{ ...row, fontSize: 92 * s, fontWeight: 900, lineHeight: 1 }}>+{d.reward || "50"}</span>
-        <span style={{ ...row, fontSize: 29 * s, fontWeight: 800 }}>credits for you</span>
+        <span style={{ ...row, fontSize: 29 * s, fontWeight: 800 }}>{(d.words ?? EN_WORDS).credits}</span>
       </div>
       <div style={{ ...col, flex: 1, padding: `${30 * s}px ${38 * s}px`, background: INK, justifyContent: "center", borderLeft: `6px dashed ${GREEN}` }}>
-        <span style={{ ...row, fontSize: 27 * s, fontWeight: 800, color: "#4f6259", letterSpacing: 4, textTransform: "uppercase" }}>Invite code</span>
+        <span style={{ ...row, fontSize: 27 * s, fontWeight: 800, color: "#4f6259", letterSpacing: 4, textTransform: "uppercase" }}>{(d.words ?? EN_WORDS).code}</span>
         <span style={{ ...row, fontSize: 80 * s, fontWeight: 900, color: "#06120d", letterSpacing: 3 }}>{d.code}</span>
       </div>
     </div>
@@ -111,11 +148,12 @@ function Rates({ d, s }: { d: CardData; s: number }) {
 function Words({ d, s, center }: { d: CardData; s: number; center: boolean }) {
   const invite = d.moment === "invite", rate = d.moment === "rate";
   const accent = d.accent ?? GLOW;
-  const big = invite ? d.big || "Join me on Rezekii" : rate ? d.handle : d.big;
+  const w = d.words ?? EN_WORDS;
+  const big = invite ? d.big || w.join : rate ? d.handle : d.big;
   const align = center ? "center" : "flex-start";
   return (
     <div style={{ ...col, alignItems: align, gap: 20 * s, textAlign: center ? "center" : "left" }}>
-      <span style={{ ...row, padding: `${10 * s}px ${24 * s}px`, borderRadius: 999, background: "rgba(94,240,174,0.14)", color: accent, fontSize: 30 * s, fontWeight: 900, letterSpacing: 3, textTransform: "uppercase" }}>{d.kicker || (invite ? "You're invited" : rate ? "Rate Card" : "Proud moment")}</span>
+      <span style={{ ...row, padding: `${10 * s}px ${24 * s}px`, borderRadius: 999, background: "rgba(94,240,174,0.14)", color: accent, fontSize: 30 * s, fontWeight: 900, letterSpacing: 3, textTransform: "uppercase" }}>{d.kicker || (invite ? w.invited : rate ? w.rate : w.proud)}</span>
       {!invite && !rate && d.label && <span style={{ ...row, fontSize: 50 * s, fontWeight: 800, color: INK, lineHeight: 1.15, justifyContent: align }}>{d.label}</span>}
       {big && <span style={{ ...row, fontSize: (invite || rate ? 100 : 196) * s, fontWeight: 900, color: INK, lineHeight: 1, letterSpacing: -3, justifyContent: align, textShadow: `0 0 ${40 * s}px rgba(94,240,174,0.35)` }}>{big}</span>}
       {(invite ? d.tag : rate ? d.label : d.sub) && <span style={{ ...row, fontSize: 36 * s, fontWeight: 600, color: SOFT, lineHeight: 1.3, justifyContent: align }}>{invite ? d.tag : rate ? d.label : d.sub}</span>}
@@ -139,7 +177,7 @@ export function StyledCard({ d, wide = false }: { d: CardData; wide?: boolean })
   if (wide) {
     const s = 0.6;
     return (
-      <div style={{ ...col, width: 1200, height: 675, padding: 44, gap: 22, background: BG, backgroundImage: LIGHTS, fontFamily: "Albert Sans" }}>
+      <div style={{ ...col, width: 1200, height: 675, padding: 44, gap: 22, background: BG, backgroundImage: LIGHTS, fontFamily: CARD_FAMILY }}>
         <Brand d={d} s={s} />
         <div style={{ ...row, flex: 1, alignItems: "center", gap: 36 }}>
           {d.moment !== "rate" && <Rimau d={d} size={230} />}
@@ -154,7 +192,7 @@ export function StyledCard({ d, wide = false }: { d: CardData; wide?: boolean })
     );
   }
   return (
-    <div style={{ ...col, width: 1080, height: 1920, padding: 72, gap: 34, background: BG, backgroundImage: LIGHTS, fontFamily: "Albert Sans" }}>
+    <div style={{ ...col, width: 1080, height: 1920, padding: 72, gap: 34, background: BG, backgroundImage: LIGHTS, fontFamily: CARD_FAMILY }}>
       <Brand d={d} s={1} />
       <div style={{ ...col, flex: 1, alignItems: "center", justifyContent: "center", gap: 28 }}>
         {d.moment === "rate" ? <Face d={d} size={200} /> : <Rimau d={d} size={d.moment === "invite" ? 400 : 430} />}

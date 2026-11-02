@@ -3,6 +3,7 @@ import { getTikTokUser, refreshTikTokToken } from "../../integrations/tiktok/log
 import type { PrivacyLevel } from "../../integrations/tiktok/posting.ts";
 import { decryptToken, encryptToken } from "../creator-accounts/token-crypto.ts";
 import type { PostChoice } from "./rules.ts";
+import { tx } from "../../lib/i18n/lang.ts";
 
 export type PostStatus = "draft" | "scheduled" | "publishing" | "processing" | "posted" | "sent_to_inbox" | "failed" | "cancelled";
 
@@ -100,7 +101,8 @@ export async function isTimerToken(token: string): Promise<boolean> {
  * token from another app key): it needs connecting again. Anything else (a slow or busy TikTok) is tried again later.
  */
 export const TIKTOK_LOST = new Set(["invalid_grant", "access_token_invalid", "scope_not_authorized"]);
-export const RECONNECT_TIKTOK = "This TikTok account needs reconnecting in Rezekii (Posts → Channels).";
+/** Saved as a post's reason in English; routes and lists show it in her language. */
+export const RECONNECT_TIKTOK = tx("This TikTok account needs reconnecting in Rezekii (Posts → Channels).");
 
 /** TikTok stopped accepting the connection: it shows "Reconnect" until it is connected again. */
 export async function markTikTokReconnect(openId: string): Promise<void> {
@@ -111,7 +113,7 @@ export async function markTikTokReconnect(openId: string): Promise<void> {
 export async function freshTikTokToken(openId: string, evenIfMarked = false): Promise<string> {
   const res = await supabaseRest(`tiktok_connections?open_id=eq.${encodeURIComponent(openId)}&select=access_token_enc,access_token_expires_at,refresh_token_enc,status&limit=1`);
   const [row] = (await res.json()) as { access_token_enc: string; access_token_expires_at: string; refresh_token_enc: string; status: string }[];
-  if (!row) throw new Error("This TikTok account isn't connected to Rezekii any more. Continue with TikTok again.");
+  if (!row) throw new Error(tx("This TikTok account isn't connected to Rezekii any more. Continue with TikTok again."));
   if (row.status === "reconnect" && !evenIfMarked) throw new Error(RECONNECT_TIKTOK);
   if (new Date(row.access_token_expires_at).getTime() > Date.now() + 10 * 60e3) return decryptToken(row.access_token_enc);
   const t = await refreshTikTokToken(decryptToken(row.refresh_token_enc));

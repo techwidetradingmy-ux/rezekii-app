@@ -1,16 +1,17 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { listCampaignProducts, type ProductReviewStatus } from "../../integrations/tiktok-shop/partner.ts";
 import { storedSessions } from "../refresh/sessions.ts";
+import { tx } from "../../lib/i18n/lang.ts";
 
 export type Decision = "approved" | "declined";
 export type Review = { id: string; campaign_id: string; product_id: string; shop_id: string | null; product_name: string | null; decision: Decision; reason: string | null; decided_by: string | null; decided_at: string };
 
-/** The reason a shop sees, for TikTok's reason codes. */
+/** The reason a shop sees, for TikTok's reason codes (in English; shown in her language where it's read). */
 export const REASON_TEXT: Record<string, string> = {
-  COMMISSION_TOO_LOW: "Commission too low",
-  PRODUCT_HARD_TO_PROMOTE: "Hard to promote",
-  PRODUCT_TOO_EXPENSIVE: "Too expensive",
-  NO_SUITABLE_CREATOR: "No suitable creator",
+  COMMISSION_TOO_LOW: tx("Commission too low"),
+  PRODUCT_HARD_TO_PROMOTE: tx("Hard to promote"),
+  PRODUCT_TOO_EXPENSIVE: tx("Too expensive"),
+  NO_SUITABLE_CREATOR: tx("No suitable creator"),
 };
 
 async function shopOfCampaign(campaignId: string): Promise<string | null> {

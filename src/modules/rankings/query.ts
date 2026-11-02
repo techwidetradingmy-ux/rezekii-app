@@ -1,6 +1,7 @@
 /** Rankings queries over the built data: the mockup's filters, sorts and pages, done on the server. Pure. */
 import { CAT, SLOTS, type CreatorRow, type Detail, type FindRow, type LiveRow, type ProductMeta, type ProductRow, type Slot, type VideoRow } from "./build.ts";
 import type { Built } from "./store.ts";
+import { makeT, type T } from "../../lib/i18n/lang.ts";
 
 export const PAGE_FIRST = 20;
 export const PAGE_MORE = 50;
@@ -95,13 +96,13 @@ export function creatorPanel(b: Built, user: string) {
 }
 
 /** What the video player shows: from TikTok's bestselling-video lists, or the creator's best video. */
-export function videoInfo(b: Built, id: string) {
-  const t = SLOTS.map((s) => b.videos[s].find((r) => r[1] === id)).find(Boolean);
-  if (t) return { id, title: `Video by ${t[2]}`, seconds: t[3], stats: [t[4], t[5], t[6], t[7]], products: t[11], lo: t[8], hi: t[9], conv: !!t[12], posted: t[10] };
+export function videoInfo(b: Built, id: string, t: T = makeT(null)) {
+  const v = SLOTS.map((s) => b.videos[s].find((r) => r[1] === id)).find(Boolean);
+  if (v) return { id, title: t("Video by {name}", { name: v[2] }), seconds: v[3], stats: [v[4], v[5], v[6], v[7]], products: v[11], lo: v[8], hi: v[9], conv: !!v[12], posted: v[10] };
   const x = b.vid[id];
   if (!x) return null;
   const user = Object.keys(b.cbest).find((u) => b.cbest[u] === id) ?? "";
-  return { id, title: `Video by @${user}`, seconds: x[6], stats: [x[0], x[1], x[2], x[3]], products: x[7], lo: x[8], hi: x[9], conv: false, posted: x[4] };
+  return { id, title: t("Video by {name}", { name: `@${user}` }), seconds: x[6], stats: [x[0], x[1], x[2], x[3]], products: x[7], lo: x[8], hi: x[9], conv: false, posted: x[4] };
 }
 
 export const FIND_FILTERS: [string, (c: FindRow) => boolean][] = [

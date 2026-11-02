@@ -1,4 +1,8 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
+import { makeT, type T } from "../../lib/i18n/lang.ts";
+
+/** English, as written (Techwide's alert emails); the notifications pass the reader's language. */
+const EN: T = makeT(null);
 
 /**
  * System notices for everyone (owner, 31 Oct 2026: "if data is late or fails, tell users"): Techwide's own announcements, and an
@@ -19,19 +23,19 @@ export async function activeAnnouncements(side: "creator" | "seller" | "all" = "
 }
 
 /** Today's data update: late (not finished by 2:00 AM) or partly failed. Null when it's fine or not due yet. */
-export async function dataNotice(now = Date.now()): Promise<SystemNote | null> {
+export async function dataNotice(now = Date.now(), t: T = EN): Promise<SystemNote | null> {
   const today = day(now);
   if (new Date(now + MYT).getUTCHours() < 2) return null;
   const rows = (await (await supabaseRest(`refresh_tasks?run_date=eq.${today}&kind=in.(${CORE.join(",")})&select=status`)).json()) as { status: string }[];
   const at = new Date(Date.parse(`${today}T02:00:00+08:00`)).toISOString();
-  if (!rows.length) return { id: `sys:data:${today}:late`, at, title: "Today's data update is late", line: "Rezekii hasn't updated today's TikTok data yet. Numbers may be from yesterday for now.", important: true };
-  if (rows.some((r) => r.status === "failed")) return { id: `sys:data:${today}:failed`, at, title: "Some of today's data didn't update", line: "TikTok didn't send part of today's data. Some numbers may be from yesterday; we're on it.", important: true };
-  if (rows.some((r) => r.status === "pending" || r.status === "running")) return { id: `sys:data:${today}:late`, at, title: "Today's data update is late", line: "Rezekii is still updating today's TikTok data. Some numbers may be from yesterday until it finishes.", important: true };
+  if (!rows.length) return { id: `sys:data:${today}:late`, at, title: t("Today's data update is late"), line: t("Rezekii hasn't updated today's TikTok data yet. Numbers may be from yesterday for now."), important: true };
+  if (rows.some((r) => r.status === "failed")) return { id: `sys:data:${today}:failed`, at, title: t("Some of today's data didn't update"), line: t("TikTok didn't send part of today's data. Some numbers may be from yesterday; we're on it."), important: true };
+  if (rows.some((r) => r.status === "pending" || r.status === "running")) return { id: `sys:data:${today}:late`, at, title: t("Today's data update is late"), line: t("Rezekii is still updating today's TikTok data. Some numbers may be from yesterday until it finishes."), important: true };
   return null;
 }
 
-/** Everything under System for one side of the app. */
-export async function systemNotes(side: "creator" | "seller"): Promise<SystemNote[]> {
-  const [list, data] = await Promise.all([activeAnnouncements(side).catch(() => []), dataNotice().catch(() => null)]);
+/** Everything under System for one side of the app: the data notice in her language, Techwide's announcements as written. */
+export async function systemNotes(side: "creator" | "seller", t: T = EN): Promise<SystemNote[]> {
+  const [list, data] = await Promise.all([activeAnnouncements(side).catch(() => []), dataNotice(Date.now(), t).catch(() => null)]);
   return [...(data ? [data] : []), ...list.map((a) => ({ id: `sys:a:${a.id}`, at: a.starts_at, title: a.title, line: a.body, important: a.level === "important" }))];
 }

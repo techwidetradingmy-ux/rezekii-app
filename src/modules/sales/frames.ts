@@ -20,11 +20,16 @@ const dayStart = (t: number) => Math.floor((t + MYT) / DAY) * DAY - MYT;
 /** Midnight in Malaysia of the first day of the month `add` months after the month containing `t`. */
 const monthStart = (t: number, add = 0) => { const d = new Date(t + MYT); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + add, 1) - MYT; };
 const ymd = (t: number) => { const d = new Date(t + MYT); return { y: d.getUTCFullYear(), m: d.getUTCMonth(), d: d.getUTCDate() }; };
+// Malay month names (owner, 3 Nov 2026: Rezekii in Bahasa Melayu): "7 Okt", "Disember".
+const MONTHS_MS = ["Jan", "Feb", "Mac", "Apr", "Mei", "Jun", "Jul", "Ogo", "Sep", "Okt", "Nov", "Dis"];
+const FULL_MS = ["Januari", "Februari", "Mac", "April", "Mei", "Jun", "Julai", "Ogos", "September", "Oktober", "November", "Disember"];
+const short = (m: number, lang: Lang) => (lang === "ms" ? MONTHS_MS : MONTHS)[m];
+const full = (m: number, lang: Lang) => (lang === "ms" ? FULL_MS : FULL)[m];
 // Dates in the reader's language: "7 Oct", "Oct 2026", "October", "7 Oct 2026" or "10月7日", "2026年10月", "10月", "2026年10月7日".
-const dayLabel = (t: number, lang: Lang = "en") => { const x = ymd(t); return lang === "zh" ? `${x.m + 1}月${x.d}日` : `${x.d} ${MONTHS[x.m]}`; };
-const monthLabel = (t: number, lang: Lang = "en") => { const x = ymd(t); return lang === "zh" ? `${x.y}年${x.m + 1}月` : `${MONTHS[x.m]} ${x.y}`; };
-const monthName = (m: number, lang: Lang) => (lang === "zh" ? `${m + 1}月` : FULL[m]);
-const fullDay = (t: number, lang: Lang) => { const x = ymd(t); return lang === "zh" ? `${x.y}年${x.m + 1}月${x.d}日` : `${x.d} ${MONTHS[x.m]} ${x.y}`; };
+const dayLabel = (t: number, lang: Lang = "en") => { const x = ymd(t); return lang === "zh" ? `${x.m + 1}月${x.d}日` : `${x.d} ${short(x.m, lang)}`; };
+const monthLabel = (t: number, lang: Lang = "en") => { const x = ymd(t); return lang === "zh" ? `${x.y}年${x.m + 1}月` : `${short(x.m, lang)} ${x.y}`; };
+const monthName = (m: number, lang: Lang) => (lang === "zh" ? `${m + 1}月` : full(m, lang));
+const fullDay = (t: number, lang: Lang) => { const x = ymd(t); return lang === "zh" ? `${x.y}年${x.m + 1}月${x.d}日` : `${x.d} ${short(x.m, lang)} ${x.y}`; };
 const monthsBetween = (a: number, b: number) => { const x = ymd(a), y = ymd(b); return (y.y - x.y) * 12 + (y.m - x.m); };
 
 /**
@@ -33,7 +38,6 @@ const monthsBetween = (a: number, b: number) => { const x = ymd(a), y = ymd(b); 
  */
 export function frameRange(key: string, now: number, first: number | null, lang: Lang = "en"): Range | null {
   const today = dayStart(now), end = today + DAY;
-  const w = (en: string) => translate(lang, en);
   const days = (n: number, label: string): Range => ({ key, from: today - (n - 1) * DAY, to: end, unit: "day", buckets: n, label, dates: `${dayLabel(today - (n - 1) * DAY, lang)} – ${dayLabel(today, lang)}` });
   switch (key) {
     case "yesterday": return { key, from: today - DAY, to: today, unit: "hour", buckets: 24, label: translate(lang, "Yesterday"), dates: dayLabel(today - DAY, lang) };
@@ -64,7 +68,7 @@ export function frameRange(key: string, now: number, first: number | null, lang:
   const from = Date.UTC(Number(m[1]), Number(m[2]) - 1, 1) - MYT;
   if (from > now) return null;
   const to = Math.min(monthStart(from, 1), end);
-  return { key, from, to, unit: "day", buckets: Math.round((to - from) / DAY), label: lang === "zh" ? `${m[1]}年${Number(m[2])}月` : `${FULL[Number(m[2]) - 1]} ${m[1]}`, dates: w("Whole month") };
+  return { key, from, to, unit: "day", buckets: Math.round((to - from) / DAY), label: lang === "zh" ? `${m[1]}年${Number(m[2])}月` : `${full(Number(m[2]) - 1, lang)} ${m[1]}`, dates: translate(lang, "Whole month") };
 }
 
 /** The range a time frame is compared with: the same length just before, or the same dates a year earlier. */

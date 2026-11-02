@@ -8,6 +8,7 @@ import { profileOf, type CreatorDetails } from "../rewards/profiles.ts";
 import { ratingsOf, salesProfile, showcaseOf, type Channel } from "./mine.ts";
 import { queuePhotos } from "../photos/queue.ts";
 import { ensurePhotos } from "../photos/ensure.ts";
+import { tx } from "../../lib/i18n/lang.ts";
 
 /**
  * AI Picks (owner, 31 Oct 2026): a deep look at her last 30 days, then the products on TikTok Shop that fit her best.
@@ -304,8 +305,12 @@ export async function aiPicks(userId: string, token: string, username: string | 
         .slice(0, 5)
     : [];
   const peers = like.map(({ r, vs, img }) => ({ user: r[1], name: r[2] || r[1], img, followers: r[3], lo: r[5], hi: r[6], video: vs }));
-  const range = like.every((x) => x.gap === 0) ? "in your sales range" : "closest to your sales";
-  const peersWhy = side ? `Mostly ${side === "video" ? "video" : "LIVE"}${channel === "all" ? " like you" : ""}, ${range}` : range[0].toUpperCase() + range.slice(1);
+  // Whole lines, saved in English and shown in her language by the route (owner, 3 Nov 2026).
+  const near = like.every((x) => x.gap === 0);
+  const peersWhy = !side ? (near ? tx("In your sales range") : tx("Closest to your sales"))
+    : side === "video"
+      ? channel === "all" ? (near ? tx("Mostly video like you, in your sales range") : tx("Mostly video like you, closest to your sales")) : near ? tx("Mostly video, in your sales range") : tx("Mostly video, closest to your sales")
+      : channel === "all" ? (near ? tx("Mostly LIVE like you, in your sales range") : tx("Mostly LIVE like you, closest to your sales")) : near ? tx("Mostly LIVE, in your sales range") : tx("Mostly LIVE, closest to your sales");
   // Every creator shows a photo (owner, 1 Nov 2026): one without a saved photo is saved now; any still missing go to the
   // front of the daily photo task.
   const noPhoto = peers.filter((c) => !c.img).map((c) => c.user);

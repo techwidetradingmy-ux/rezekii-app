@@ -2,11 +2,12 @@ import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { userTikTokAccounts } from "../posting/store.ts";
 import { listAccounts } from "./accounts.ts";
 import { tiktokKey } from "./picker.ts";
+import { tx } from "../../lib/i18n/lang.ts";
 
 /** A named group of channels posted to together (B1–B8). A channel is a social account id or "tiktok:<open_id>". */
 export type Brand = { id: string; name: string; channels: string[] };
 const COLS = "id,name,channels";
-const DUPLICATE: { error: string } = { error: "You already have a brand with this name." };
+const DUPLICATE: { error: string } = { error: tx("You already have a brand with this name.") };
 
 /** The owner's own channels as channel keys: only these can go in a brand. */
 export async function myChannelKeys(userId: string): Promise<Set<string>> {
@@ -29,7 +30,7 @@ export async function saveBrand(userId: string, b: { id?: string; name: string; 
       ? await supabaseRest(`social_brands?id=eq.${b.id}&user_id=eq.${userId}&select=${COLS}`, { method: "PATCH", headers: { prefer: "return=representation" }, body: JSON.stringify({ name: b.name, channels: b.channels, updated_at: new Date().toISOString() }) })
       : await supabaseRest(`social_brands?select=${COLS}`, { method: "POST", headers: { prefer: "return=representation" }, body: JSON.stringify({ user_id: userId, name: b.name, channels: b.channels }) });
     const [row] = (await res.json()) as Brand[];
-    return row ?? { error: "That brand doesn't exist." };
+    return row ?? { error: tx("That brand doesn't exist.") };
   } catch (err) {
     if (err instanceof Error && err.message.startsWith("Supabase 409")) return DUPLICATE;
     throw err;

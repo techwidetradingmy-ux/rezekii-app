@@ -4,6 +4,7 @@ import type { Recipe } from "../social/recipe.ts";
 import { cleanUpGroup, signedMediaUrl, type SocialPostRow } from "../social/store.ts";
 import { deleteUpload } from "./media.ts";
 import { getUserPost, type PostRow } from "./store.ts";
+import { tx } from "../../lib/i18n/lang.ts";
 
 /**
  * Details and Edit for a post (owner, 23 Oct 2026): everything that was put in when it was scheduled can be checked, and
@@ -117,7 +118,7 @@ const patch = (path: string, body: Record<string, unknown>) =>
  */
 export async function swapPost(userId: string, oldKey: string, newKey: string): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
   const [old, next] = await Promise.all([parts(userId, oldKey), parts(userId, newKey)]);
-  if (!old || !next || oldKey === newKey) return { ok: false, error: "That post wasn't found.", status: 404 };
+  if (!old || !next || oldKey === newKey) return { ok: false, error: tx("That post wasn't found."), status: 404 };
   const drop = async () => {
     if (next.tiktok) await patch(`posts?id=eq.${next.tiktok.id}&status=eq.draft`, { status: "cancelled", next_attempt_at: null });
     if (next.group) {
@@ -125,7 +126,7 @@ export async function swapPost(userId: string, oldKey: string, newKey: string): 
       await cleanUpGroup(next.group);
     }
   };
-  const started = { ok: false as const, error: "It has already started sending, so it can't be changed now. Your changes weren't saved.", status: 409 };
+  const started = { ok: false as const, error: tx("It has already started sending, so it can't be changed now. Your changes weren't saved."), status: 409 };
   if (!editable(old)) return (await drop(), started);
 
   // Off the schedule, only where it hasn't started; anything taken off is put back if another part had started.
