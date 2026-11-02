@@ -342,8 +342,9 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
                   {b.rating !== null && <span className="nb-score"><Icon name="star" size={12} width={2.4} /> {b.rating.toFixed(1)}</span>}
                 </span>
                 {b.points && b.points.some((v) => v > 0) && <Trend points={b.points} label={b.pointsLabel} />}
-                {/* Its last 7 days of TikTok sales (owner, 1 Nov 2026), estimated from TikTok's daily ranges. */}
-                {b.trend && b.trend.some((v) => v != null) && <span className="nb-spark"><GmvSpark points={b.trend} ranges={b.trendRange} /><small>7 days</small></span>}
+                {/* Its TikTok sales over the same 28 days as the product page (owner, 2 Nov 2026), estimated from TikTok's daily
+                    ranges. A list saved before then still has 7 days, so the label says how many. */}
+                {b.trend && b.trend.some((v) => v != null) && <span className="nb-spark"><GmvSpark points={b.trend} ranges={b.trendRange} /><small>Last {b.trend.length} Days</small></span>}
               </Link>
               {/* Rezekii campaign products can ask for a free sample (owner, 31 Oct 2026); TikTok's other products only add. */}
               {live && b.sample && <Link href={productHref(b.productId, { sample: true })} className="nb-add nb-sample" aria-label={`Request a free sample of ${b.name}`}><Icon name="gift" size={18} /></Link>}

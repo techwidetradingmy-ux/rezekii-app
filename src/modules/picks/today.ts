@@ -17,7 +17,8 @@ const CATEGORY_LISTS = CATEGORIES.length;
  *   day when the product is in TikTok's daily top-100 lists, otherwise the units Rezekii saw it sell in the last day, otherwise
  *   its all-time units.
  * How deep she sees TikTok's top 100 (owner, 1 Nov 2026): Bronze the top 10, Silver the top 30, Gold all 100. A category shows
- * that category's own TikTok list. Each idea carries its 7-day sales line from TikTok's daily lists.
+ * that category's own TikTok list. Each idea carries its 28-day sales line from TikTok's daily lists (owner, 2 Nov 2026: the same
+ * period as the product page).
  */
 export type Sales =
   | { kind: "gmv"; lo: number; hi: number; day: string }
@@ -35,7 +36,7 @@ export type Idea = {
   /** Commission × 100: TikTok's open rate; for Rezekii campaign products, Rezekii's rate (Bronze gets the open rate). */
   openRate: number | null; silverRate: number | null;
   rezekii: boolean; sample: boolean; sales: Sales;
-  /** The last 7 Malaysia days, oldest first: the middle of TikTok's GMV range, null on a day it wasn't in a top 100. */
+  /** The last 28 Malaysia days, oldest first: the middle of TikTok's GMV range, null on a day it wasn't in a top 100. */
   trend?: (number | null)[];
   trendRange?: ([number, number] | null)[];
 };
@@ -133,8 +134,8 @@ async function listCats(): Promise<string[]> {
   return [...sums.entries()].sort((a, b) => b[1] - a[1]).map(([c]) => c);
 }
 
-/** Each idea's last 7 days of sales from TikTok's daily lists (middle of the GMV range; null when not in a top 100). */
-export async function withTrends(rows: Idea[], days = 7): Promise<Idea[]> {
+/** Each idea's last 28 days of sales from TikTok's daily lists (middle of the GMV range; null when not in a top 100). */
+export async function withTrends(rows: Idea[], days = 28): Promise<Idea[]> {
   if (!rows.length) return rows;
   const end = Date.now() + MYT;
   const dayList = Array.from({ length: days }, (_, i) => new Date(end - (days - i) * 86_400_000).toISOString().slice(0, 10));

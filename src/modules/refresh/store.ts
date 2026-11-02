@@ -259,3 +259,23 @@ export function mergeCreatorRows(rows: Record<string, unknown>[]): Record<string
 export async function upsertCreatorProducts(rows: Record<string, unknown>[]): Promise<void> {
   await supabaseRest("tap_creator_products?on_conflict=campaign_id,product_id,username", json(mergeCreatorRows(rows), "resolution=merge-duplicates,return=minimal"));
 }
+
+/**
+ * One day's products list (1 day, RM) into each product's sales per day (owner, 2 Nov 2026: the sales graph reads one product's
+ * own rows). TikTok's GMV range is read as the graph's function read it: the first number is the low end, the number after "~"
+ * the high end (the low end when there's none). A product in several category lists keeps the highest of each. A failed save
+ * leaves a gap for that list; it never stops the refresh.
+ */
+export async function saveDailyGmv(day: string, items: unknown[]): Promise<void> {
+  const rows: { id: string; lo: number; hi: number }[] = [];
+  for (const x of items as { id?: unknown; gmv_range?: unknown }[]) {
+    const id = String(x?.id ?? "");
+    if (!id) continue;
+    const s = String(x.gmv_range ?? "");
+    const first = s.match(/[0-9.]+/)?.[0];
+    const lo = Number(first ?? 0) || 0;
+    rows.push({ id, lo, hi: Number(s.match(/~[^0-9]*([0-9.]+)/)?.[1] ?? first ?? 0) || lo });
+  }
+  if (rows.length)
+    await supabaseRest("rpc/add_product_daily_gmv", json({ p_day: day, p_rows: rows })).catch((err) => console.error("[daily gmv]", err instanceof Error ? err.message : err));
+}

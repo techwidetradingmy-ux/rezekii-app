@@ -3,8 +3,9 @@ import { detailsMissing } from "@/modules/rewards/profiles.ts";
 import { currentUser } from "@/app/current-user";
 import { approvedCreatorToken } from "@/modules/creator-accounts/access.ts";
 import { levelOf } from "@/modules/levels/store.ts";
-import { listDay, type Channel } from "@/modules/picks/today.ts";
+import { listDay, type Channel, type Idea } from "@/modules/picks/today.ts";
 import { ideasFor, ideasKey, savedIdeas } from "@/modules/picks/ideas-cache.ts";
+import { herOffers } from "@/modules/tap/for-creator.ts";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -26,19 +27,25 @@ export async function GET(req: NextRequest) {
   const channel: Channel = c === "video" || c === "others" ? c : "all";
   const cat = source === "market" ? (q.get("cat") || "").slice(0, 60) || null : null;
   const blank = { source, channel, day: null, listAt: null, rows: [], gold: false, at: new Date().toISOString() };
-  const [token, missing, level, day, saved] = await Promise.all([
+  const [token, missing, level, day, saved, her] = await Promise.all([
     approvedCreatorToken(user.id),
     detailsMissing(user.id).catch(() => null),
     levelOf(user.id).catch(() => "bronze" as const),
     listDay(),
     savedIdeas(user.id, ideasKey(source, channel, cat)),
+    herOffers(user.id),
   ]);
   if (!token) return NextResponse.json({ linked: false, ...blank });
   // Locked until her details are complete (owner, 31 Oct 2026).
   if (missing) return NextResponse.json({ linked: true, locked: missing, ...blank });
+  // Free samples from her own TikTok check, as the Marketplace shows them, and no product TikTok refused to add for her
+  // (owner, 2 Nov 2026), applied to saved lists too.
+  const forHer = (rows: Idea[]) => rows
+    .filter((x) => source !== "market" || !her.refused[x.id])
+    .map((x) => (x.rezekii && her.offers ? { ...x, sample: her.offers[x.id] === 2 } : x));
   // The saved list while TikTok hasn't published a newer one, made for her current level.
   if (saved && !q.get("fresh") && saved.day === day && saved.level === level)
-    return NextResponse.json({ linked: true, ...saved.data, saved: true }, NO_STORE);
+    return NextResponse.json({ linked: true, ...saved.data, rows: forHer(saved.data.rows), saved: true }, NO_STORE);
   const r = await ideasFor(user.id, token, level, source, channel, cat);
-  return NextResponse.json({ linked: true, ...r }, NO_STORE);
+  return NextResponse.json({ linked: true, ...r, rows: forHer(r.rows) }, NO_STORE);
 }

@@ -16,14 +16,6 @@ export async function findWishLink(link: string): Promise<Found | { error: strin
   return d;
 }
 
-/** A product that isn't on Rezekii, opened straight from a link. */
-export async function loadOff(id: string): Promise<boolean> {
-  const d = (await fetch(`/api/v2/wishes?part=product&id=${encodeURIComponent(id)}`).then((r) => (r.ok ? r.json() : null)).catch(() => null)) as Found | null;
-  if (!d) return false;
-  remember(d);
-  return !d.onRezekii;
-}
-
 export async function loadMyWishes(): Promise<LiveWish[] | null> {
   const d = await fetch("/api/v2/wishes?part=mine", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   return d?.wishes ?? null;

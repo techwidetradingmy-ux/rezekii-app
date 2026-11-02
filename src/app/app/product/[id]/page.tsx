@@ -5,18 +5,17 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { Hidden } from "@/components/ui";
+import { Hidden, Tip } from "@/components/ui";
 import { SampleTag } from "@/components/creator1/brand";
 import { Trend } from "@/components/creator1/shoot-today";
 import { WishForm, WishSteps, useWishes } from "@/components/creator1/wish";
-import { LIVE_STUBS, product, rm, short } from "@/lib/mock";
+import { LIVE_STUBS, product, rm } from "@/lib/mock";
 import { AddButton } from "@/components/add-button";
-import { GmvSpark } from "@/components/gmv-spark";
+import { GmvChart } from "@/components/gmv-spark";
 import { sampleCount } from "@/lib/mock-creator1";
 import { commitText } from "@/lib/mock-showcase";
 import { canRequest, markRequested, productView, requestedSamples, sampleConditions } from "@/lib/product-view";
 import { loadProduct, requestSample } from "@/lib/live";
-import { loadOff } from "@/lib/live-wishes";
 import { useLivePerf } from "@/lib/live-perf";
 import "@/app/creator1.css";
 
@@ -34,17 +33,16 @@ export default function ProductPage() {
   // Signed in (owner, 30 Oct 2026): a real product opened straight from a link is fetched first.
   // Not on Rezekii (owner, 31 Oct 2026): TikTok Shop's facts and the wish list numbers instead.
   // Always the full product (owner, 1 Nov 2026): a name-and-photo stand-in from Analytics or the scan is never shown as the
-  // product. Rezekii's catalog and TikTok's facts are asked at the same time, and the page shows as soon as one has it.
+  // product. One request (owner, 2 Nov 2026): Rezekii's catalog, or TikTok's facts for a product not on Rezekii, with TikTok's
+  // rating and categories, her free sample as the Marketplace shows it, and whether it has left the Marketplace. A product she
+  // came from a list with shows at once and is brought up to date when the answer is back.
   const [, setLoaded] = useState(0);
   const [missing, setMissing] = useState(false);
   useEffect(() => {
-    if (!live || productView(id)) return;
+    if (!live) return;
     let on = true;
     setMissing(false);
-    const off = loadOff(id).catch(() => false);
-    loadProduct(id, me?.level ?? "bronze")
-      .then(async (x) => (x ? true : off))
-      .then((ok) => { if (on) (ok ? setLoaded((n) => n + 1) : setMissing(true)); });
+    loadProduct(id, me?.level ?? "bronze").then((ok) => { if (on) (ok ? setLoaded((n) => n + 1) : !productView(id) && setMissing(true)); });
     return () => { on = false; };
   }, [live, id, me?.level]);
   const p = productView(id);
@@ -97,6 +95,8 @@ export default function ProductPage() {
             <i className="pp-sk" style={{ height: 70, borderRadius: 16 }} />
             <i className="pp-sk" style={{ height: 48, borderRadius: 14 }} />
             <i className="pp-sk" style={{ height: 48, borderRadius: 14 }} />
+            {/* So people wait (owner, 2 Nov 2026). */}
+            <p className="pp-wait-msg" role="status"><span className="cr1-spin xs" aria-hidden="true" /> Getting this product from TikTok…</p>
           </div>
         </div>
       );
@@ -178,12 +178,15 @@ export default function ProductPage() {
         : <button type="button" className="btn-outline" onClick={canSample ? request : () => document.getElementById("sample")?.scrollIntoView({ behavior: "smooth" })}><Icon name="gift" size={18} /> {canSample ? "Request Free Sample" : `Free Sample at ${m.samples}-Day Streak`}</button>
   );
   // One buy box for every product (owner, 30 Oct 2026): Add to Showcase, then Free Sample. The wish list is a small link at the end.
-  // Nothing says "In your showcase" until she taps Add on one that is (owner, 1 Nov 2026).
+  // Nothing says "In your showcase" until she taps Add on one that is (owner, 1 Nov 2026). A product TikTok refused to add for
+  // her isn't offered again (owner, 2 Nov 2026).
   const buy = (
     <>
       {keepPlan
         ? <button type="button" className="np-btn" disabled><Icon name="shield" size={18} width={2.4} /> Your Target Plan Pays More</button>
-        : <AddButton id={p.id} name={p.name} rate={p.tapRate} size="lg" label="Add to Showcase" inShowcase={p.inShowcase} />}
+        : p.refused
+          ? <button type="button" className="np-btn" disabled><Icon name="x" size={18} width={2.4} /> TikTok Won&apos;t Add This</button>
+          : <AddButton id={p.id} name={p.name} rate={p.tapRate} size="lg" label="Add to Showcase" inShowcase={p.inShowcase} />}
       {sampleBtn}
     </>
   );
@@ -198,7 +201,7 @@ export default function ProductPage() {
 
       <div className="pp-info">
         <h1 className={`pp-name${fullName ? " full" : ""}`} onClick={() => setFullName((f) => !f)} title={p.name}>{p.name}</h1>
-        <p className="pp-meta">{p.shop} · {rm(p.price)}{p.sold !== null ? ` · ${short(p.sold)} sold` : ""}</p>
+        <p className="pp-meta">{p.shop} · {rm(p.price)}</p>
         {/* Has she sold it? (owner, 29 Oct 2026) From her TikTok Shop orders, and our campaign data for TAP products. */}
         {linked && (!live || mySold !== null) ? (
           <p className={`pp-sold${mySold ? " ok" : ""}`}>
@@ -210,14 +213,14 @@ export default function ProductPage() {
           {p.rating !== null && <span className="pp-chip score"><Icon name="star" size={13} width={2.4} /> {p.rating.toFixed(1)}</span>}
           {m && m.samples !== null && <SampleTag streak={m.samples} />}
           {p.special && <span className="pp-chip special"><Icon name="star" size={13} width={2.4} /> Your Special Rate</span>}
-          {p.tapRate === null && <span className="pp-chip muted">Not on Rezekii Yet</span>}
+          {p.tapRate === null && <span className="pp-chip muted">{p.gone ? "No Longer in Rezekii's Marketplace" : "Not on Rezekii Yet"}</span>}
         </div>
 
         {p.tapRate !== null ? (
           extra > 0 ? (
             <div className="pp-rate">
               <span className="pp-extra"><b><Hidden>+{rm(extra)}</Hidden></b> extra per sale on Rezekii</span>
-              <span className="pp-rate-line">{p.nowPlan === "Target plan" && "Target plan "}<s>{p.nowRate}%</s> <Icon name="arrow" size={14} /> <b><Hidden>{p.tapRate}%</Hidden></b> · <Hidden>{rm(earn ?? 0)}</Hidden> a sale</span>
+              <span className="pp-rate-line">{p.nowPlan === "Target plan" ? "Target Plan " : "Open Plan "}<s>{p.nowRate}%</s> <Icon name="arrow" size={14} /> <b><Hidden>{p.tapRate}%</Hidden></b> · <Hidden>{rm(earn ?? 0)}</Hidden> a sale</span>
               <small>
                 {mySold ? <>At your {mySold} sales last 30 days: <b><Hidden>+{rm(month)}</Hidden></b> a month</> : <>Sell 100 a month: <b><Hidden>+{rm(month)}</Hidden></b> more</>}
                 {p.special ? ` · your special rate${p.special.until ? ` until ${p.special.until}` : ""}` : ""}
@@ -229,14 +232,15 @@ export default function ProductPage() {
               <small>More than Rezekii&apos;s <Hidden>{p.tapRate}%</Hidden>, so it stays as it is.</small>
             </div>
           ) : (
+            // The Open Plan rate is always shown (owner, 2 Nov 2026), also when Rezekii pays the same (Bronze).
             <div className="pp-rate">
               <span className="pp-rate-line"><b><Hidden>{p.tapRate}%</Hidden></b> on Rezekii</span>
-              <small>You earn <b><Hidden>{rm(earn ?? 0)}</Hidden></b> per sale{p.special ? ` · your special rate${p.special.until ? ` until ${p.special.until}` : ""}` : ""}</small>
+              <small>Open Plan {p.nowRate === null ? "—" : `${p.nowRate}%`} · You earn <b><Hidden>{rm(earn ?? 0)}</Hidden></b> per sale{p.special ? ` · your special rate${p.special.until ? ` until ${p.special.until}` : ""}` : ""}</small>
             </div>
           )
         ) : (
           <div className="pp-rate off">
-            <span className="pp-rate-line">{p.nowPlan} {p.nowRate === null ? "—" : `${p.nowRate}%`}</span>
+            <span className="pp-rate-line">{p.nowPlan === "Target plan" ? "Target Plan" : "Open Plan"} {p.nowRate === null ? "—" : `${p.nowRate}%`}</span>
             <small>{p.wanted ? `${p.wanted.creators} creators want it on Rezekii` : "Ask us to bring it to Rezekii"}</small>
           </div>
         )}
@@ -245,22 +249,26 @@ export default function ProductPage() {
 
         <section className="v2-card pp-card">
           {p.week.length > 0 && <Trend points={p.week} label="Sales, last 7 days" />}
+          {/* Labelled (owner, 2 Nov 2026): the period, RM up the side, dates along the bottom; tap a day for its range. */}
           {live && trend28 && (
             <div className="pp-month">
-              <span className="pp-month-h"><b>Sales on TikTok, last 28 days</b><small>{trend28.ranges.filter(Boolean).length} of 28 days in TikTok&apos;s top 100</small></span>
+              <span className="pp-month-h">
+                <b>Sales on TikTok, Last 28 Days <Tip label="Where these numbers come from" text="From TikTok's daily best-seller lists (top 100 products). TikTok gives each day's sales as a range in RM: the shading is that range and the line its middle. A gap is a day it wasn't in a top 100." /></b>
+                <small>{trend28.ranges.filter(Boolean).length} of 28 days in TikTok&apos;s top 100</small>
+              </span>
               {trend28.ranges.some(Boolean) ? (
-                <GmvSpark points={trend28.ranges.map((r) => (r ? (r[0] + r[1]) / 2 : null))} ranges={trend28.ranges} width={320} height={84} days={trend28.days} label="Sales on TikTok, last 28 days" />
+                <GmvChart days={trend28.days} ranges={trend28.ranges} label="Sales on TikTok, last 28 days" />
               ) : (
                 <p className="v2-small" style={{ margin: 0 }}>Not in TikTok&apos;s daily top 100 in the last 28 days.</p>
               )}
-              <small className="pp-month-note">Estimated from TikTok&apos;s daily sales ranges. A gap is a day it wasn&apos;t in a top 100.</small>
             </div>
           )}
           <div className="pp-facts">
-            {p.sold !== null && <span><small>Total sold</small><b>{short(p.sold)}</b></span>}
             {mySold !== null && <span><small>Your sales, 30 days</small><b>{mySold}</b></span>}
             {p.wanted && <span><small>Creators want it</small><b>{p.wanted.creators}</b></span>}
-            {p.category && <span><small>Category</small><b>{p.category}</b></span>}
+            {/* TikTok's main and sub category once the page has read them (owner, 2 Nov 2026). */}
+            {p.category && <span><small>{p.sub ? "Main Category" : "Category"}</small><b>{p.category}</b></span>}
+            {p.sub && <span><small>Sub Category</small><b>{p.sub}</b></span>}
           </div>
         </section>
 

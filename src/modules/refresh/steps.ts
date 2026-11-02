@@ -28,7 +28,7 @@ import { getBestselling, getMarketplaceCreator, searchMarketplaceCreators, type 
 import { TT_LEVELS, bestSlot, mytDay, mytWeekday, type PlannedTask } from "./plan.ts";
 import { TAG_START, tagFilters, tagNext, tagTask, type TagState } from "../accounts/tags.ts";
 import type { Sessions } from "./sessions.ts";
-import { carryTapSnapshots, creatorsNeedingDetail, lastSnapshot, linkedUsername, marketplaceOpen, openTaskCount, photoSources, rebuildTapCatalog, samplesUnderway, saveDetail, saveSnapshot, saveTags, tagsDue, trimMarket, type TaskRow, upsertCreatorProducts, upsertCreators } from "./store.ts";
+import { carryTapSnapshots, creatorsNeedingDetail, lastSnapshot, linkedUsername, marketplaceOpen, openTaskCount, photoSources, rebuildTapCatalog, samplesUnderway, saveDailyGmv, saveDetail, saveSnapshot, saveTags, tagsDue, trimMarket, type TaskRow, upsertCreatorProducts, upsertCreators } from "./store.ts";
 
 /** TikTok's "too many requests" code, shared by the app's whole API group. */
 export const RATE_LIMITED = 36009002;
@@ -84,6 +84,7 @@ async function best(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
   }
   const items = data[p.kind] ?? [];
   await saveSnapshot(p.kind, bestSlot(p), p.date, items);
+  if (p.kind === "products" && p.timeSlot === "1D" && p.currency === "LOCAL") await saveDailyGmv(p.date, items);
   if (p.kind === "creators")
     await upsertCreators(
       (items as BestCreator[])

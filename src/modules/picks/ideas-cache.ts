@@ -1,5 +1,6 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { IDEAS_FOR, marketIdeas, showcaseIdeas, type Channel, type TodayIdeas } from "./today.ts";
+import { keepRatings } from "../tap/product-facts.ts";
 
 /**
  * Today's Ideas saved per creator and view (owner, 1 Nov 2026): the daily refresh prepares each creator's main lists ahead, and
@@ -17,10 +18,14 @@ export async function savedIdeas(userId: string, key: string): Promise<{ day: st
 export async function ideasFor(userId: string, token: string, level: Level, source: "market" | "showcase", channel: Channel, cat: string | null): Promise<TodayIdeas> {
   const want = IDEAS_FOR[level] ?? IDEAS_FOR.bronze;
   const r = source === "showcase" ? await showcaseIdeas(token, want, channel) : await marketIdeas(token, want, channel, cat);
-  await supabaseRest("ideas_cache?on_conflict=user_id,key", {
-    method: "POST",
-    headers: { prefer: "resolution=merge-duplicates,return=minimal" },
-    body: JSON.stringify({ user_id: userId, key: ideasKey(source, channel, cat), day: r.day, data: { ...r, level }, at: new Date().toISOString() }),
-  }).catch(() => undefined);
+  // Their TikTok ratings are kept too, so Marketplace cards can show them (owner, 2 Nov 2026).
+  await Promise.all([
+    supabaseRest("ideas_cache?on_conflict=user_id,key", {
+      method: "POST",
+      headers: { prefer: "resolution=merge-duplicates,return=minimal" },
+      body: JSON.stringify({ user_id: userId, key: ideasKey(source, channel, cat), day: r.day, data: { ...r, level }, at: new Date().toISOString() }),
+    }).catch(() => undefined),
+    keepRatings(r.rows).catch(() => undefined),
+  ]);
   return r;
 }

@@ -64,7 +64,7 @@ export type LookedUpProduct = {
   units_sold?: number;
   has_inventory?: boolean;
   shop?: { name: string };
-  category_chains?: { id: string; local_name: string; is_leaf: boolean }[];
+  category_chains?: { id: string; local_name: string; is_leaf: boolean; parent_id?: string }[];
 };
 
 /** Product Lookup: open-collaboration facts for up to 20 product IDs (sent comma-joined, like TikTok's SDK). */
