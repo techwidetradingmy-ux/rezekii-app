@@ -105,22 +105,25 @@ export type LevelPage = {
 /** Everything the Levels page shows for one creator, as of today (Malaysia time). */
 export async function levelPage(userId: string, username: string | null): Promise<LevelPage> {
   const today = mytDay(Date.now());
-  // The level, the daily totals and where the sales come from are read at the same time.
-  const [[row], days, fromOrders] = await Promise.all([
-    supabaseRest(`creator_levels?user_id=eq.${userId}&select=*&limit=1`).then((r) => r.json() as Promise<LevelRow[]>),
-    username ? dailyRows(username.toLowerCase(), today) : Promise.resolve([] as DailyRow[]),
-    linkedCreators().then(async (l) => (await salesSource(userId, new Set(l))) === "orders"),
-  ]);
-  const last = days.at(-1);
   const month = today.slice(0, 7);
   const prev = previousMonth(today);
+  // Where the sales come from, as salesSource: her own orders once her whole history is read. Both are asked at once.
+  const doneP = historyDone(userId);
+  doneP.catch(() => {});
+  const fromOrdersP = linkedCreators().then(async (l) => l.includes(userId) && (await doneP));
+  // Everything is read at the same time (owner, 3 Nov 2026: Level, Streak & Badges was slow): the level, the daily totals, her
+  // order sales when Rezekii reads her orders, and videos for Rezekii samples, video by video from TikTok's records (1 Nov 2026).
+  const [[row], days, orderSales, counted] = await Promise.all([
+    supabaseRest(`creator_levels?user_id=eq.${userId}&select=*&limit=1`).then((r) => r.json() as Promise<LevelRow[]>),
+    username ? dailyRows(username.toLowerCase(), today) : Promise.resolve([] as DailyRow[]),
+    fromOrdersP.then((yes) => yes ? Promise.all([tapSales(userId, "2000-01-01T00:00:00Z", new Date().toISOString()), tapSales(userId, monthStart(month), new Date().toISOString()), tapSales(userId, monthStart(prev), monthStart(month))]) : null),
+    username ? sampleVideoMonths(username).catch(() => null) : Promise.resolve(null),
+  ]);
+  const fromOrders = !!orderSales;
+  const last = days.at(-1);
   const before = [...days].filter((d) => d.day < `${month}-01`).at(-1) ?? days.find((d) => d.day.startsWith(month));
   // TAP sales from the creator's own orders when Rezekii reads them (the full history); otherwise from TikTok's TAP data.
-  const [lifetime, thisMonth, lastMonth] = fromOrders
-    ? await Promise.all([tapSales(userId, "2000-01-01T00:00:00Z", new Date().toISOString()), tapSales(userId, monthStart(month), new Date().toISOString()), tapSales(userId, monthStart(prev), monthStart(month))])
-    : [last?.paid ?? 0, last && before ? monthSales(days, month) ?? 0 : null, monthSales(days, prev)];
-  // Videos for Rezekii samples this month, video by video from TikTok's records (owner, 1 Nov 2026); else the daily totals.
-  const counted = username ? await sampleVideoMonths(username).catch(() => null) : null;
+  const [lifetime, thisMonth, lastMonth] = orderSales ?? [last?.paid ?? 0, last && before ? monthSales(days, month) ?? 0 : null, monthSales(days, prev)];
   const monthVideos = counted ? counted[month] ?? 0 : last && before ? Math.max(0, last.sample_videos - before.sample_videos) : 0;
   const reached = silverReached(thisMonth, monthVideos);
   // Up as soon as she reaches it (owner, 1 Nov 2026), not only at the next daily update.

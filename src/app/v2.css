@@ -917,6 +917,9 @@ a[href*="/product/"] { text-decoration: none; }
 .ap-tools { display: flex; flex-direction: column; gap: 4px; }
 /* The level-frame photo keeps its own round size; the name stays on one line (owner, 29 Oct 2026). */
 .ap-me > .tr-face { flex: 0 0 auto; }
+/* Her photo and name open Your Profile (owner, 3 Nov 2026). */
+.ap-me > .ap-face { flex: 0 0 auto; display: flex; border-radius: 50%; }
+.ap-me .ap-name { display: grid; min-width: 0; color: inherit; text-decoration: none; }
 .ap-me .tr-face img { width: 100%; height: 100%; box-shadow: none; }
 .ap-me > span:not(.tr-face):not(.ap-tools) { flex: 1; min-width: 0; }
 .ap-me b, .ap-me small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1169,10 +1172,6 @@ html[data-wait="1"] .v2-main::after { content: "Loading your Rezekii…"; positi
 .ap-chips a.lv.bronze { color: #6b3a17; background: linear-gradient(145deg, #fff5ec, #e9a77c); box-shadow: inset 0 0 0 1px #e3a477; }
 .ap-chips a.lv.gold { color: #6b4e0b; background: linear-gradient(145deg, #fffbe8, #f0c04a); box-shadow: inset 0 0 0 1px #e0b23a; }
 .ap-chips a.st { color: #ffffff; background: linear-gradient(145deg, #ffb347, #ff6a1a); }
-.ap-more { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 12px; border: 0; border-top: 1px solid var(--line); background: none; color: var(--text); font: inherit; font-size: 14.5px; font-weight: 800; text-align: left; cursor: pointer; }
-.ap-more small { flex: 1; min-width: 0; font-size: 12px; font-weight: 700; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ap-more > svg { color: var(--muted); transform: rotate(90deg); transition: transform 0.2s var(--ease); }
-.ap-more.open > svg { transform: rotate(-90deg); }
 .ap-help { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .ap-hbtn { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 6px 8px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; font-size: 13.5px; font-weight: 800; text-decoration: none; cursor: pointer; }
 .ap-hbtn .ap-ic { width: 24px; height: 24px; border-radius: 8px; }

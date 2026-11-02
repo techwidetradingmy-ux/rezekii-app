@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { badgesFor } from "@/modules/rewards/badges.ts";
-import { levelPage } from "@/modules/levels/store.ts";
+import { levelOf, levelPage } from "@/modules/levels/store.ts";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,8 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const user = await currentUser();
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
-  const page = await levelPage(user.id, user.tiktok_username).catch(() => null);
-  const b = await badgesFor(user.id);
+  // Read in one go (owner, 3 Nov 2026: the tab was slow); the badges use the level the page settles on, as before.
+  const pageP = levelPage(user.id, user.tiktok_username).catch(() => null);
+  const [page, b] = await Promise.all([pageP, badgesFor(user.id, pageP.then((p) => p?.level ?? levelOf(user.id)))]);
   return NextResponse.json({ ...b, level: page?.level ?? b.level, silver: page?.silver ?? null }, { headers: { "cache-control": "private, no-store" } });
 }

@@ -619,6 +619,10 @@ li.done .cr2-check { background: #00c073; border-color: #00c073; animation: v2Po
 .pf-card.locked .pf-v { min-height: 0; padding: 0; background: none; justify-content: flex-end; text-align: right; font-size: 14.5px; }
 .pf-card.locked .pf-sub { grid-column: 1 / -1; justify-content: flex-end; }
 .pf-card.locked .pf-sub:empty { display: none; }
+/* Her short user ID with a copy button, in Your Profile only (owner, 3 Nov 2026). */
+.pf-uid { gap: 8px; }
+.pf-uid code { flex: 1; min-width: 0; font: inherit; letter-spacing: 0.04em; }
+.pf-uid .v2-iconbtn { width: 30px; height: 30px; flex-shrink: 0; }
 /* My account side bar (owner, 28 Oct 2026): profile and sections on the left, the open section on the right. */
 .acc-side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 @media (min-width: 900px) {

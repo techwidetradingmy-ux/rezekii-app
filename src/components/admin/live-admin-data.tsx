@@ -7,6 +7,7 @@ import { Title, Loading } from "@/components/ui";
 import { Av, Chips, Pill, Search } from "@/components/admin/bits";
 import { NO_PHOTO, shortName } from "@/lib/live-perf";
 import { adminProductHref } from "@/lib/product-pages";
+import { shortId, shortIdMatches } from "@/lib/short-id";
 
 /** Loads one admin data part (admins only), with a plain message for anyone else. */
 function useData<T>(url: string): [T | null, string | null] {
@@ -34,13 +35,14 @@ export function LiveCreators() {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<CFilter>("Everyone");
   const pick = (f: CFilter) => (list ?? []).filter((c) => f === "Everyone" || (f === "Admins" ? c.admin : f === "TikTok Shop linked" ? c.shop : !c.shop && !c.admin));
-  const shown = pick(filter).filter((c) => !q || `${c.handle} ${c.name} ${c.signIn}`.toLowerCase().includes(q.toLowerCase()));
+  // Her short user ID or the full one finds her too (owner, 3 Nov 2026: creators quote it to support).
+  const shown = pick(filter).filter((c) => !q || `${c.handle} ${c.name} ${c.signIn} ${c.id}`.toLowerCase().includes(q.trim().toLowerCase()) || shortIdMatches(c.id, q));
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
       <Title title="Creators" sub="Every account on Rezekii, how they sign in and what they've connected." />
       {!list ? <p className="v2-muted">{err ?? "Loading…"}</p> : (
         <>
-          <div className="ad-bar"><Search value={q} onChange={setQ} placeholder="Search name, handle or email" /></div>
+          <div className="ad-bar"><Search value={q} onChange={setQ} placeholder="Search name, handle, email or user ID" /></div>
           <Chips<CFilter> label="Filter" value={filter} onChange={setFilter} options={(["Everyone", "TikTok Shop linked", "Not linked", "Admins"] as CFilter[]).map((f) => [f, pick(f).length])} />
           <section className="v2-card" style={{ padding: "8px 12px" }}>
             <div className="v2-tablewrap">
@@ -49,7 +51,7 @@ export function LiveCreators() {
                 <tbody>
                   {shown.map((c) => (
                     <tr key={c.id}>
-                      <td className="ad-nowrap"><span className="ad-cell"><Av name={c.name} size={30} /><span><b>{c.name}{c.admin && <> <Pill tone="info">Admin</Pill></>}</b><small>{c.handle || "No TikTok"}</small></span></span></td>
+                      <td className="ad-nowrap"><span className="ad-cell"><Av name={c.name} size={30} /><span><b>{c.name}{c.admin && <> <Pill tone="info">Admin</Pill></>}</b><small>{c.handle || "No TikTok"} · {shortId(c.id)}</small></span></span></td>
                       <td style={{ minWidth: 180 }}><small>{c.signIn}</small></td>
                       <td style={{ minWidth: 170 }}><small>{[c.shopAccount && `Shop ${c.shopAccount}`, c.tiktokAccount && `TikTok ${c.tiktokAccount}`, ...c.social.map((s) => `${s.platform} ${s.name}${s.active ? "" : " (reconnect)"}`)].filter(Boolean).join(" · ") || "Nothing yet"}</small></td>
                       <td>{c.level}</td>

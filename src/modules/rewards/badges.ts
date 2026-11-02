@@ -30,25 +30,28 @@ function bestRun(days: string[]): number {
 
 const json = async <T>(path: string): Promise<T[]> => (await supabaseRest(path)).json() as Promise<T[]>;
 
-export async function badgesFor(userId: string): Promise<Badges> {
-  const [level, [conn], tt, social, ledger, earned, [user], perks] = await Promise.all([
-    levelOf(userId).catch(() => "bronze" as const),
-    json<{ username: string; showcase_at: string | null; tt_level: number | null }>(`affiliate_connections?user_id=eq.${userId}&select=username,showcase_at,tt_level&limit=1`),
+/** `level`: her level when the caller is already working it out (the badges route), so nothing waits for it twice. */
+export async function badgesFor(userId: string, levelP: Promise<Badges["level"]> = levelOf(userId)): Promise<Badges> {
+  const connP = json<{ username: string; showcase_at: string | null; tt_level: number | null }>(`affiliate_connections?user_id=eq.${userId}&select=username,showcase_at,tt_level&limit=1`);
+  // Everything at once (owner, 3 Nov 2026), Sample Star as soon as her TikTok Shop name is known.
+  const [level, [conn], tt, social, ledger, earned, [user], perks, sampleStar] = await Promise.all([
+    levelP.catch(() => "bronze" as const),
+    connP,
     json<{ open_id: string }>(`tiktok_connections?user_id=eq.${userId}&select=open_id&limit=1`),
     json<{ id: string }>(`social_accounts?user_id=eq.${userId}&select=id&limit=1`),
     json<{ kind: string; ref: string; day: string | null }>(`credit_ledger?user_id=eq.${userId}&side=eq.creator&or=(kind.eq.mission,kind.eq.streak)&select=kind,ref,day&limit=5000`),
     supabaseRest("rpc/commission_total", { method: "POST", body: JSON.stringify({ p_user: userId }) }).then((r) => r.json() as Promise<number>).catch(() => 0),
     json<{ created_at: string }>(`app_users?id=eq.${userId}&select=created_at&limit=1`),
     benefits().then((b) => b.list).catch(() => []),
+    connP.then(async ([c]) => c?.username
+      ? (await json<{ product_id: string }>(`tap_creator_products?username=eq.${encodeURIComponent(c.username.toLowerCase())}&videos=gte.3&sample_status=not.is.null&sample_status=neq.NotRequested&select=product_id&limit=1`)).length > 0
+      : false),
   ]);
   const levels = ["Bronze", "Silver", "Gold"].map((name, i) => ({
     name,
     how: perks.find((r) => /how you get it/i.test(r.label))?.v[i] ?? "",
     gives: perks.filter((r) => !/how you (get|keep) it/i.test(r.label) && r.v[i] !== "no").map((r) => (r.v[i] === "yes" ? r.label : `${r.label}: ${r.v[i]}`)),
   }));
-  const sampleStar = conn?.username
-    ? (await json<{ product_id: string }>(`tap_creator_products?username=eq.${encodeURIComponent(conn.username.toLowerCase())}&videos=gte.3&sample_status=not.is.null&sample_status=neq.NotRequested&select=product_id&limit=1`)).length > 0
-    : false;
   const tiers = new Set(ledger.filter((r) => r.kind === "streak").map((r) => r.ref));
   const counted = missionDays(ledger);
   const today = dayOf(Date.now());

@@ -1462,6 +1462,15 @@ li.sc-row { cursor: default; }
 .ad-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
 .ad-fields .wide { grid-column: 1 / -1; }
 @media (max-width: 420px) { .ad-fields { grid-template-columns: minmax(0, 1fr); } }
+/* Save Address (owner, 3 Nov 2026): a missing field turns red, the state filled in from the city reads as set, and the button says Saved. */
+.ad-fields .np-input[aria-invalid="true"] { border-color: var(--red); }
+.ad-fields .np-input[readonly] { background: var(--surface2); color: var(--text); font-weight: 700; cursor: default; }
+.ad-save { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.ad-save .btn-outline { display: inline-flex; align-items: center; gap: 6px; }
+.ad-save .np-btn { flex: 1 1 100%; }
+.ad-save .saved { border-color: var(--green); background: var(--gsoft); color: var(--gink); animation: cr1Pulse 0.9s ease-out 1; }
+.ad-save .saved svg { animation: cr1Pop 0.35s cubic-bezier(0.2, 0.9, 0.25, 1.3) both; }
+.ad-save > small { flex: 1 1 200px; font-size: 13.5px; }
 /* Her special rate (owner, 29 Oct 2026): a product an admin set just for her. */
 .pp-chip.special { background: #fff3d6; color: #a46a00; }
 .mka-special { margin-left: 6px; padding: 1px 6px; border-radius: 99px; background: #fff3d6; color: #a46a00; font-style: normal; font-size: 11px; font-weight: 800; }
