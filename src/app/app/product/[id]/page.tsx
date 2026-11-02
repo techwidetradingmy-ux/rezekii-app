@@ -20,6 +20,15 @@ import { useLivePerf } from "@/lib/live-perf";
 import "@/app/creator1.css";
 
 /**
+ * Back goes to the screen she came from when that was a page in Rezekii; opened from a link, to the Marketplace (owner,
+ * 3 Nov 2026). The browser's Navigation API counts only this site's pages; without it, any page before this one.
+ */
+const fromApp = () => {
+  const nav = (window as unknown as { navigation?: { canGoBack: boolean } }).navigation;
+  return nav ? nav.canGoBack : window.history.length > 1;
+};
+
+/**
  * Product (owner, 29 Oct 2026): every product in the app opens this one page instead of a slide-up sheet. Big photo, the
  * numbers that say why it's worth it (score, sales, a 7-day sales line, her own sales), then the buttons stacked like a shop's
  * buy box, the same for every product (owner, 30 Oct 2026): Add to Showcase on top, Free Sample below. Add to Wish List is a
@@ -86,7 +95,7 @@ export default function ProductPage() {
       const stub = LIVE_STUBS.get(id);
       return (
         <div className="pp pp-wait" aria-busy="true" aria-label="Loading the product">
-          <button type="button" className="pp-back" onClick={() => (window.history.length > 1 ? router.back() : router.push("/app/market"))} aria-label="Back"><Icon name="back" size={20} /></button>
+          <button type="button" className="pp-back" onClick={() => (fromApp() ? router.back() : router.push("/app/market"))} aria-label="Back"><Icon name="back" size={20} /></button>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <div className="pp-photo">{stub?.img && <img src={stub.img} alt="" />}</div>
           <div className="pp-info">
@@ -131,7 +140,7 @@ export default function ProductPage() {
   const extra = p.tapRate !== null && p.nowRate !== null ? (p.price * (p.tapRate - p.nowRate)) / 100 : 0;
   const keepPlan = p.tapRate !== null && p.nowRate !== null && p.nowRate >= p.tapRate && p.nowPlan === "Target plan";
   const month = extra * (mySold || 100);
-  const back = () => (window.history.length > 1 ? router.back() : router.push("/app/market"));
+  const back = () => (fromApp() ? router.back() : router.push("/app/market"));
   const request = () => {
     if (!linked) return setLinked(true);
     requireWa(() => {

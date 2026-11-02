@@ -46,7 +46,7 @@
 
 /* Video and product cards */
 .cr2-list { display: flex; flex-direction: column; gap: 12px; }
-.cr2-vhead { display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.cr2-vhead { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 12px; align-items: center; }
 .cr2-thumb { position: relative; width: 58px; height: 76px; border-radius: 12px; overflow: hidden; background: var(--surface2); flex-shrink: 0; }
 .cr2-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .cr2-thumb::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 50%, rgba(0, 0, 0, 0.45)); }
@@ -54,10 +54,16 @@
 .cr2-thumb.sq { height: 58px; }
 .cr2-thumb.sq::after { display: none; }
 .cr2-vhead > span:nth-child(2) { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.cr2-vhead strong { font-size: 15px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+/* One line each for the title and for when and what it sold (owner, 3 Nov 2026); the full title is in the video. */
+.cr2-vhead :is(strong, small) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cr2-vhead strong { font-size: 15px; line-height: 1.3; }
 .cr2-vhead small { font-size: 13px; color: var(--muted); }
-.cr2-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-@media (max-width: 560px) { .cr2-vhead { grid-template-columns: 52px minmax(0, 1fr); } .cr2-vhead > :nth-child(3) { grid-column: 1 / -1; } .cr2-thumb { width: 52px; height: 68px; } .cr2-thumb.sq { height: 52px; } }
+.cr2-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+/* A video card plays the video on tap (owner, 3 Nov 2026); Risk Check sits above that. */
+.cr2-vcard { transition: transform 0.12s var(--ease); }
+.cr2-vcard:active { transform: scale(0.99); }
+.cr2-vrisk { position: relative; z-index: 2; align-self: flex-start; }
+@media (max-width: 560px) { .cr2-vhead { grid-template-columns: 52px minmax(0, 1fr); } .cr2-thumb { width: 52px; height: 68px; } .cr2-thumb.sq { height: 52px; } }
 .cr2-rank { width: 28px; height: 28px; border-radius: 9px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 13px; color: var(--muted); }
 
 /* Share-of-income meter */
@@ -879,14 +885,30 @@ span.pd-row { grid-template-columns: 12px minmax(0, 1fr) auto 14px; }
 /* Performance by product as a compact list (owner, 28 Oct 2026); tap a row for its details. */
 .pl-row { border-radius: 16px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); overflow: hidden; }
 .cr2-list:has(.pl-row) { gap: 8px; }
-.pl-head { width: 100%; display: grid; grid-template-columns: 52px minmax(0, 1fr) auto 16px; gap: 12px; align-items: center; padding: 10px 12px; border: 0; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.pl-head { width: 100%; display: grid; column-gap: 12px; align-items: center; padding: 10px 12px; color: var(--text); cursor: pointer; }
 .pl-head img { width: 52px; height: 52px; border-radius: 12px; object-fit: cover; }
-.pl-head > svg { color: var(--muted); transition: transform 0.2s var(--ease); }
+.pl-head > svg { grid-area: arr; color: var(--muted); transition: transform 0.2s var(--ease); }
 .pl-row.open .pl-head > svg { transform: rotate(90deg); }
-.pl-main { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.pl-main strong { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pl-tags { display: flex; gap: 4px; flex-wrap: wrap; }
-.pl-head > b { font-size: 16px; font-weight: 900; white-space: nowrap; }
+/* Rows on two or three lines, the same on phone and desktop (owner, 3 Nov 2026): the LIVE's time or the product's name on its
+   own line (up to two), the numbers below with the trend at the right end like a stock, then any tags, the cancels chip at
+   their right end. Nothing is squeezed beside the name. */
+.pl-live { grid-template: "pic top num arr" auto "pic tags tags tags" 1fr / 52px minmax(0, 1fr) auto 16px; }
+.pl-prod { grid-template: "pic name arr" auto "pic nums nums" auto "pic tags tags" 1fr / 52px minmax(0, 1fr) 16px; }
+.pl-head > :is(.lv-mark, img) { grid-area: pic; align-self: start; }
+.pl-head > strong { min-width: 0; font-size: 15px; overflow: hidden; }
+.pl-live > strong { grid-area: top; text-overflow: ellipsis; white-space: nowrap; }
+.pl-prod > strong { grid-area: name; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.pl-head > b { grid-area: num; font-size: 16px; font-weight: 900; white-space: nowrap; }
+.pl-tags { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.pl-head > .pl-tags { grid-area: tags; align-self: start; margin-top: 6px; }
+.pl-nums { grid-area: nums; display: flex; align-items: center; gap: 6px; min-width: 0; margin-top: 6px; }
+.pl-nums b { font-size: 16px; font-weight: 900; white-space: nowrap; }
+.pl-nums small { min-width: 0; font-size: 13px; font-weight: 700; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Orders against the same days before, as a stock does it: green ▲ or red ▼. */
+.pl-chg { flex-shrink: 0; margin-left: auto; display: inline-flex; align-items: center; gap: 3px; height: 24px; padding: 0 8px; border-radius: 8px; font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pl-chg i { font-style: normal; font-size: 10px; }
+.pl-chg.up { background: var(--gsoft); }
+.pl-chg.down { background: var(--rsoft); }
 .pl-body { display: flex; flex-direction: column; gap: 10px; padding: 0 12px 12px; animation: v2Rise2 0.2s var(--ease) both; }
 .pl-body .cr2-mini { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .cr2-chips .cr2-lvchip.ico { width: 26px; height: 26px; min-height: 0; padding: 0; justify-content: center; align-self: center; flex: 0 0 auto; }
@@ -1165,6 +1187,13 @@ button.rf-pill { border: 0; cursor: pointer; font: inherit; font-size: 12.5px; f
 .sb-head i { font-style: normal; font-size: 10px; opacity: 0.4; }
 .sb-head.on i { opacity: 1; color: var(--gink); }
 .cr-items { display: block; font-style: normal; font-size: 11.5px; font-weight: 700; color: var(--muted); }
+/* Cancels as one chip with its ⓘ (owner, 3 Nov 2026): amber from 10%, red from 20%, at the right end of a row's tags. */
+.cx-chip { position: relative; z-index: 2; display: inline-flex; align-items: center; height: 24px; padding: 0 2px 0 9px; border-radius: 999px; background: var(--asoft); color: var(--amber); font-size: 12px; font-weight: 800; white-space: nowrap; }
+.cx-chip.high { background: var(--rsoft); color: var(--red); }
+.cx-chip .v2-tipbtn.sm { width: 20px; height: 20px; margin-left: 1px; color: inherit; }
+.cx-chip .v2-tipbtn:is(:hover, [aria-expanded="true"]) { color: inherit; background: color-mix(in srgb, currentColor 16%, transparent); }
+:is(.cr2-tags, .pl-tags) > :is(.cx-chip, .pl-end) { margin-left: auto; }
+@media (max-width: 760px) { .cx-chip { font-size: 13px; } }
 
 /* Payout calendar, option A (owner, 1 Nov 2026): each day filled in its status colour, stronger the more it earned, and a
    violet strip along the bottom for what came extra through Rezekii. */
