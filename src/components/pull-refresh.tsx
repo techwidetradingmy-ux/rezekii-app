@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
+import { useT } from "@/lib/i18n/client";
 
 const PULL = 72;
 
@@ -11,6 +12,7 @@ const PULL = 72;
  * a sheet is open or an inner list is scrolled.
  */
 export function PullRefresh() {
+  const t = useT();
   const [pull, setPull] = useState(0);
   const [going, setGoing] = useState(false);
   const from = useRef<number | null>(null);
@@ -62,7 +64,7 @@ export function PullRefresh() {
 
   if (!pull && !going) return null;
   return (
-    <div className={`v2-pull${going ? " going" : ""}`} style={{ transform: `translateY(${pull}px)` }} role="status" aria-label={going ? "Refreshing" : pull >= PULL ? "Let go to refresh" : "Pull to refresh"}>
+    <div className={`v2-pull${going ? " going" : ""}`} style={{ transform: `translateY(${pull}px)` }} role="status" aria-label={going ? t("Refreshing") : pull >= PULL ? t("Let go to refresh") : t("Pull to refresh")}>
       <span style={{ transform: going ? undefined : `rotate(${(pull / PULL) * 270}deg)`, opacity: Math.min(1, pull / PULL) }}><Icon name="refresh" size={20} width={2.4} /></span>
     </div>
   );

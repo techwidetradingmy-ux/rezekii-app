@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
+import { useT } from "@/lib/i18n/client";
 import "@/app/creator1.css";
 
 /**
@@ -9,11 +10,12 @@ import "@/app/creator1.css";
  * scrolling). One choice, or several (`multi`) up to `max`. Options are [value, label]. Shared since 3 Nov 2026 (sign-up, the
  * delivery address's City).
  */
-export function PickList({ label, options, value, onChange, max, multi = false, invalid, placeholder = "Choose", compact = false, shown: showAs }: {
+export function PickList({ label, options, value, onChange, max, multi = false, invalid, placeholder, compact = false, shown: showAs }: {
   label: string; options: [string, string][]; value: string[]; onChange: (v: string[]) => void; max?: number; multi?: boolean; invalid?: boolean; placeholder?: string; compact?: boolean;
   /** What the closed dropdown shows for the choice, when shorter than its label (e.g. "+60"). */
   shown?: (v: string) => string;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const box = useRef<HTMLDivElement>(null);
@@ -43,14 +45,14 @@ export function PickList({ label, options, value, onChange, max, multi = false, 
   return (
     <div className={`su-pick${compact ? " sm" : ""}`} ref={box}>
       <button type="button" className="np-input su-pick-btn" aria-label={label} aria-haspopup="listbox" aria-expanded={open} aria-invalid={invalid} onClick={() => setOpen((o) => !o)}>
-        <span className={value.length ? undefined : "ph"}>{value.length ? (showAs ? showAs(value[0]) : labelOf(value[0])) : max && multi ? `Up to ${max}` : placeholder}</span>
+        <span className={value.length ? undefined : "ph"}>{value.length ? (showAs ? showAs(value[0]) : labelOf(value[0])) : max && multi ? t("Up to {n}", { n: max }) : placeholder ?? t("Choose")}</span>
         {value.length > 1 && <em>+{value.length - 1}</em>}
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
       </button>
       {open && (
         <div className="su-pick-list" role="listbox" aria-multiselectable={multi} aria-label={label}>
           {options.length > 7 && (
-            <input className="np-input su-pick-q" autoFocus placeholder="Type to search" value={q} onChange={(e) => setQ(e.target.value)} aria-label={`Search ${label}`}
+            <input className="np-input su-pick-q" autoFocus placeholder={t("Type to search")} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t("Search {label}", { label })}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (shown[0]) pick(shown[0][0]); } }} />
           )}
           {shown.map(([v, l]) => {
@@ -62,8 +64,8 @@ export function PickList({ label, options, value, onChange, max, multi = false, 
               </button>
             );
           })}
-          {!shown.length && <p className="su-pick-none">No match</p>}
-          {multi && <button type="button" className="su-pick-done" onClick={() => setOpen(false)}>Done</button>}
+          {!shown.length && <p className="su-pick-none">{t("No match")}</p>}
+          {multi && <button type="button" className="su-pick-done" onClick={() => setOpen(false)}>{t("Done")}</button>}
         </div>
       )}
     </div>

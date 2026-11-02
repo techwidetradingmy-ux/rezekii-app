@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { Sheet } from "@/components/ui";
+import { useT } from "@/lib/i18n/client";
 import "@/app/creator2.css";
 
 /**
@@ -13,30 +14,32 @@ import "@/app/creator2.css";
  */
 export function WaGate() {
   const { waAsking, waDone, waCancel, toast } = useDemo();
+  const t = useT();
   const [waiting, setWaiting] = useState(false);
   if (!waAsking) return null;
   const send = () => {
     setWaiting(true);
-    toast("Opening WhatsApp…");
+    toast(t("Opening WhatsApp…"));
     window.setTimeout(() => {
       setWaiting(false);
-      toast("WhatsApp verified");
+      toast(t("WhatsApp verified"));
       waDone();
     }, 1800);
   };
+  // The code line is what Rezekii matches, so it stays as it is in every language.
   return (
-    <Sheet title="Verify Your WhatsApp First" onClose={waCancel}>
-      <p className="v2-muted" style={{ margin: 0 }}>Free Samples need a verified WhatsApp. Takes 10 seconds.</p>
+    <Sheet title={t("Verify Your WhatsApp First")} onClose={waCancel}>
+      <p className="v2-muted" style={{ margin: 0 }}>{t("Free Samples need a verified WhatsApp. Takes 10 seconds.")}</p>
       <ol className="cr2-steps">
-        <li><i>1</i><span><b>Tap Open WhatsApp.</b></span></li>
-        <li><i>2</i><span><b>Send the message as it is.</b></span></li>
-        <li><i>3</i><span><b>Come back here.</b></span></li>
+        <li><i>1</i><span><b>{t("Tap Open WhatsApp.")}</b></span></li>
+        <li><i>2</i><span><b>{t("Send the message as it is.")}</b></span></li>
+        <li><i>3</i><span><b>{t("Come back here.")}</b></span></li>
       </ol>
-      <div className="cr2-wamsg">REZEKII verify 482 913<br />Please send this message as it is.</div>
+      <div className="cr2-wamsg">REZEKII verify 482 913<br />{t("Please send this message as it is.")}</div>
       <button type="button" className="np-btn cr2-wabtn" disabled={waiting} onClick={send}>
-        <Icon name="whatsapp" size={18} /> {waiting ? "Waiting for your message…" : "Open WhatsApp"}
+        <Icon name="whatsapp" size={18} /> {waiting ? t("Waiting for your message…") : t("Open WhatsApp")}
       </button>
-      <button type="button" className="btn-outline" style={{ height: 46 }} onClick={waCancel}>Not Now</button>
+      <button type="button" className="btn-outline" style={{ height: 46 }} onClick={waCancel}>{t("Not Now")}</button>
     </Sheet>
   );
 }

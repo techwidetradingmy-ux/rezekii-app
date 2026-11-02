@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import type { IconName } from "@/components/icons";
+import { dateLocale, makeT, tx, type Lang, type T } from "@/lib/i18n/lang";
 
 /** One notification from /api/v2/notifications (signed in). */
 export type NoteCategory = "system" | "account" | "products" | "posts" | "rewards" | "chances";
 export type LiveNote = { id: string; at: string; icon: IconName; title: string; line: string; href: string | null; cta: string | null; urgent: string | null; unread: boolean; cat: NoteCategory };
-/** Labels for the categories, in the order the filter shows them (owner, 31 Oct 2026). */
-export const NOTE_CATEGORIES: [NoteCategory, string][] = [["system", "System"], ["account", "Account"], ["products", "Products"], ["posts", "Posts"], ["rewards", "Rewards"], ["chances", "Chances"]];
+/** Labels for the categories, in the order the filter shows them (owner, 31 Oct 2026). English; shown with t(label). */
+export const NOTE_CATEGORIES: [NoteCategory, string][] = [["system", tx("System")], ["account", tx("Account")], ["products", tx("Products")], ["posts", tx("Posts")], ["rewards", tx("Rewards")], ["chances", tx("Chances")]];
 export type Side = "creator" | "seller";
 
 export async function loadNotes(side: Side): Promise<{ notes: LiveNote[]; unread: number } | null> {
@@ -30,18 +31,18 @@ export const notesChanged = (unread?: number) => window.dispatchEvent(new Custom
 const MYT = 8 * 3_600_000;
 const dayNo = (t: number) => Math.floor((t + MYT) / 86_400_000);
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const hm = (t: number) => new Date(t).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kuala_Lumpur" });
+const hm = (ms: number, lang: Lang) => new Date(ms).toLocaleTimeString(dateLocale(lang), { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kuala_Lumpur" });
 
 /** "Today" or "Earlier", by the Malaysia day. */
 export const noteDay = (at: string): "Today" | "Earlier" => (dayNo(Date.parse(at)) >= dayNo(Date.now()) ? "Today" : "Earlier");
-/** "10:24", "Yesterday 21:40" or "26 Oct". */
-export function noteWhen(at: string): string {
-  const t = Date.parse(at);
-  const ago = dayNo(Date.now()) - dayNo(t);
-  if (ago <= 0) return hm(t);
-  if (ago === 1) return `Yesterday ${hm(t)}`;
-  const d = new Date(t + MYT);
-  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+/** "10:24", "Yesterday 21:40" or "26 Oct". In her language when the screen passes `t` and `lang`. */
+export function noteWhen(at: string, t: T = makeT(null), lang: Lang = "en"): string {
+  const ms = Date.parse(at);
+  const ago = dayNo(Date.now()) - dayNo(ms);
+  if (ago <= 0) return hm(ms, lang);
+  if (ago === 1) return t("Yesterday {time}", { time: hm(ms, lang) });
+  const d = new Date(ms + MYT);
+  return lang === "en" ? `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}` : d.toLocaleDateString(dateLocale(lang), { day: "numeric", month: "short", timeZone: "UTC" });
 }
 
 const BG: Partial<Record<IconName, string>> = {

@@ -1,4 +1,7 @@
+"use client";
+
 import "@/app/level-ring.css";
+import { useT } from "@/lib/i18n/client";
 
 /** TikTok Shop creator level icons, Lv0-8, redrawn from TikTok Shop's own (owner's screenshots, 14 Oct 2026). Static markup we own. */
 const spiky = (fill: string) => `<polygon points="12,1 14.6,5.7 20,4 18.3,9.4 23,12 18.3,14.6 20,20 14.6,18.3 12,23 9.4,18.3 4,20 5.7,14.6 1,12 5.7,9.4 4,4 9.4,5.7" fill="${fill}"/>`;
@@ -39,6 +42,7 @@ export function LevelIcon({ lv, size = 14 }: { lv: number; size?: number }) {
  * Lv2, glows at Lv7 and spins in TikTok's colours with sparkles at Lv8, and the level icon underneath. No level: a plain photo.
  */
 export function LevelFace({ lv, size, img, name, badge = true }: { lv: number | null | undefined; size: number; img?: string | null; name: string; badge?: boolean }) {
+  const t = useT();
   const letter = (name.replace(/^[^a-z0-9]+/i, "")[0] ?? "?").toUpperCase();
   const color = COL[[...name].reduce((a, ch) => a + ch.charCodeAt(0), 0) % COL.length];
   const has = typeof lv === "number" && lv >= 0 && lv <= 8;
@@ -54,7 +58,7 @@ export function LevelFace({ lv, size, img, name, badge = true }: { lv: number | 
   );
   if (!has) return <span className="tr-face" style={{ width: size, height: size }}>{inner}</span>;
   return (
-    <span className="tr-face" style={{ width: size, height: size }} role="img" aria-label={`TikTok Shop level ${lv}`}>
+    <span className="tr-face" style={{ width: size, height: size }} role="img" aria-label={t("TikTok Shop level {n}", { n: lv })}>
       <span className={`tr-ring ${lv === 8 ? "tr-tt" : lv === 7 ? "tr-glow" : ""}`} style={{ background: RING[lv] }} aria-hidden="true" />
       {inner}
       {lv >= 2 && <span className="tr-shine" aria-hidden="true" />}

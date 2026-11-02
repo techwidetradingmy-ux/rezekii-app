@@ -2,7 +2,8 @@
 
 import "@/app/join-board.css";
 import { useEffect, useState } from "react";
-import { Tip } from "@/components/ui";
+import { Tip, withParts } from "@/components/ui";
+import { useT } from "@/lib/i18n/client";
 
 type Joiner = { name: string; role: "Creator" | "Seller"; state: string; gap: number; img?: string };
 
@@ -44,11 +45,11 @@ function useJoins(creators: number, sellers: number) {
   const [tick, setTick] = useState({ step: 0, creators, sellers });
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const t = window.setInterval(() => setTick((s) => {
+    const id = window.setInterval(() => setTick((s) => {
       const next = pick(s.step + 1);
       return { step: s.step + 1, creators: s.creators + (next.role === "Creator" ? 1 : 0), sellers: s.sellers + (next.role === "Seller" ? 1 : 0) };
     }), EVERY);
-    return () => window.clearInterval(t);
+    return () => window.clearInterval(id);
   }, []);
   return tick;
 }
@@ -69,25 +70,28 @@ function Avatar({ j, className }: { j: Joiner; className: string }) {
  * the totals show on wider screens. Same people and rules as the board.
  */
 export function JoinBar({ creators = 1248, sellers = 312 }: { creators?: number; sellers?: number }) {
+  const t = useT();
   const tick = useJoins(creators, sellers);
   const j = pick(tick.step);
+  const who = <b>{maskName(j.name)}</b>;
   return (
     <div className="jbar">
       <div className="site-wrap jbar-in">
-        <span className="jb-live"><i aria-hidden="true" /> Live</span>
+        <span className="jb-live"><i aria-hidden="true" /> {t("Live")}</span>
         <span className="jbar-win">
           <span key={tick.step} className="jbar-msg">
             <Avatar j={j} className="jbar-av" />
-            <b>{maskName(j.name)}</b> from {j.state} joined as a {j.role.toLowerCase()}
+            {withParts(j.role === "Seller" ? t("{name} from {state} joined as a seller") : t("{name} from {state} joined as a creator"), { name: who, state: j.state })}
           </span>
         </span>
-        <span className="jbar-tot"><b>{n(tick.creators)}</b> creators · <b>{n(tick.sellers)}</b> sellers</span>
+        <span className="jbar-tot">{withParts(t("{creators} creators · {sellers} sellers"), { creators: <b>{n(tick.creators)}</b>, sellers: <b>{n(tick.sellers)}</b> })}</span>
       </div>
     </div>
   );
 }
 
 export function JoinBoard({ title, creators = 1248, sellers = 312 }: { title?: string; creators?: number; sellers?: number }) {
+  const t = useT();
   const tick = useJoins(creators, sellers);
 
   // Newest first. One extra row sits below the window so the list can slide down by one.
@@ -102,25 +106,25 @@ export function JoinBoard({ title, creators = 1248, sellers = 312 }: { title?: s
     <div className="jb">
       <div className="jb-head">
         {title && <h2 className="v2-h2">{title}</h2>}
-        <span className="jb-note">Names hidden<Tip text="Only people who agreed to be shown appear here. Names are hidden." label="About this list" /></span>
-        <span className="jb-live"><i aria-hidden="true" /> Live</span>
+        <span className="jb-note">{t("Names hidden")}<Tip text={t("Only people who agreed to be shown appear here. Names are hidden.")} label={t("About this list")} /></span>
+        <span className="jb-live"><i aria-hidden="true" /> {t("Live")}</span>
       </div>
       <div className="jb-body">
         <p className="jb-tot">
-          <span><b>{n(tick.creators)}</b> creators</span>
-          <span><b>{n(tick.sellers)}</b> sellers</span>
-          <small>TikTok Shop people on Rezekii</small>
+          <span>{withParts(t("{n} creators"), { n: <b>{n(tick.creators)}</b> })}</span>
+          <span>{withParts(t("{n} sellers"), { n: <b>{n(tick.sellers)}</b> })}</span>
+          <small>{t("TikTok Shop people on Rezekii")}</small>
         </p>
         <div className="jb-win">
-          <ol key={tick.step} className={`jb-list ${tick.step ? "go" : ""}`} aria-label="People who joined recently">
+          <ol key={tick.step} className={`jb-list ${tick.step ? "go" : ""}`} aria-label={t("People who joined recently")}>
             {rows.map(({ id, j, mins: m }, k) => (
               <li key={id} className="jb-row" aria-hidden={k === ROWS || undefined}>
                 <Avatar j={j} className="jb-av" />
                 <span className="jb-who">
                   <b>{maskName(j.name)}</b>
-                  <small>{j.state} · {m ? `${m} min ago` : "Just now"}</small>
+                  <small>{j.state} · {m ? t("{n} min ago", { n: m }) : t("Just now")}</small>
                 </span>
-                <span className={`badge ${j.role === "Seller" ? "badge-blue" : ""}`}>{j.role}</span>
+                <span className={`badge ${j.role === "Seller" ? "badge-blue" : ""}`}>{t(j.role)}</span>
               </li>
             ))}
           </ol>

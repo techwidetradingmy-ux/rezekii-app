@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./icons";
 import { Emblem, type Level } from "./emblems";
@@ -9,28 +9,41 @@ import { BrandLogo, type Brand } from "./brand-logos";
 import { useDemo, useWho } from "./demo";
 import { cardImage, cardVideo, saveFile, shareFile } from "@/lib/share-card";
 import { loadReferral } from "@/lib/live-rewards";
+import { useLang, useT } from "@/lib/i18n/client";
+import { dateLocale, tx } from "@/lib/i18n/lang";
 import QRCode from "qrcode";
+
+/**
+ * A translated line with parts that aren't plain words (a link, a bold number) put in at their {placeholders}, so the line stays
+ * one whole sentence in every language (owner, 3 Nov 2026). Pass the line from t() without values, so its {placeholders} are
+ * still there, and each part under its placeholder's name.
+ */
+export function withParts(text: string, parts: Record<string, React.ReactNode>): React.ReactNode[] {
+  return text.split(/\{(\w+)\}/g).map((s, i) => (i % 2 ? <Fragment key={i}>{s in parts ? parts[s] : `{${s}}`}</Fragment> : s));
+}
 
 /** A small ⓘ beside a word; tap it to read the explanation (owner, 28 Oct 2026: tooltips instead of text on the page). */
 /**
  * Anything still loading (owner, 2 Nov 2026: never just "Loading…", so people keep waiting): a moving circle and what's
  * happening; after a few seconds it adds that it's still working.
  */
-export function Loading({ text, slow = "Still working. This can take a few seconds.", inline = false }: { text: string; slow?: string; inline?: boolean }) {
+export function Loading({ text, slow, inline = false }: { text: string; slow?: string; inline?: boolean }) {
+  const t = useT();
   const [late, setLate] = useState(false);
   useEffect(() => {
-    const t = window.setTimeout(() => setLate(true), 4000);
-    return () => window.clearTimeout(t);
+    const id = window.setTimeout(() => setLate(true), 4000);
+    return () => window.clearTimeout(id);
   }, []);
   return (
     <p className={`v2-loading${inline ? " inline" : ""}`} role="status">
       <span className="v2-spinner" aria-hidden="true" />
-      <span>{text}{late && <small>{slow}</small>}</span>
+      <span>{text}{late && <small>{slow ?? t("Still working. This can take a few seconds.")}</small>}</span>
     </p>
   );
 }
 
-export function Tip({ text, label = "What's this?", big = false }: { text: React.ReactNode; label?: string; big?: boolean }) {
+export function Tip({ text, label, big = false }: { text: React.ReactNode; label?: string; big?: boolean }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const btn = useRef<HTMLButtonElement>(null);
   const bubble = useRef<HTMLSpanElement>(null);
@@ -55,7 +68,7 @@ export function Tip({ text, label = "What's this?", big = false }: { text: React
   }, [open]);
   return (
     <span className="v2-tipwrap">
-      <button ref={btn} type="button" className={big ? "v2-tipbtn" : "v2-tipbtn sm"} aria-label={label} aria-expanded={open} onClick={() => setOpen((o) => !o)} onBlur={() => setOpen(false)}>
+      <button ref={btn} type="button" className={big ? "v2-tipbtn" : "v2-tipbtn sm"} aria-label={label ?? t("What's this?")} aria-expanded={open} onClick={() => setOpen((o) => !o)} onBlur={() => setOpen(false)}>
         <Icon name="info" size={big ? 18 : 15} />
       </button>
       {open && createPortal(<span ref={bubble} className="v2-tip v2-tipfix" role="note" style={pos ?? { left: 0, top: 0, visibility: "hidden" }}>{text}</span>, document.body)}
@@ -69,6 +82,7 @@ export function Tip({ text, label = "What's this?", big = false }: { text: React
  */
 export function Title({ title, sub, ai = false, children }: { title: string; sub?: React.ReactNode; ai?: boolean; children?: React.ReactNode }) {
   // Same floating bubble as every other ⓘ, so it stays on screen and on top (owner, 29 Oct 2026: the title tip couldn't be seen).
+  const t = useT();
   return (
     <div className="v2-title">
       <div className="v2-title-main">
@@ -76,7 +90,7 @@ export function Title({ title, sub, ai = false, children }: { title: string; sub
           {/* AI tool pages lead with the AI mark (owner, 30 Oct 2026). */}
           {ai && <AiMark size={34} />}
           {title}
-          {sub && <Tip big text={sub} label={`About ${title}`} />}
+          {sub && <Tip big text={sub} label={t("About {title}", { title })} />}
         </h1>
       </div>
       {children && <div className="v2-row">{children}</div>}
@@ -177,13 +191,17 @@ export function Progress({ value, max = 100 }: { value: number; max?: number }) 
   );
 }
 
-/** iOS segmented control. */
-export function Seg<T extends string>({ value, options, onChange }: { value: T; options: readonly T[] | T[]; onChange: (v: T) => void }) {
+/**
+ * iOS segmented control. Each option is English and shows in her language (owner, 3 Nov 2026), so the values a page checks stay
+ * the same; an option no word list has (a number, "7D") shows as it is.
+ */
+export function Seg<O extends string>({ value, options, onChange }: { value: O; options: readonly O[] | O[]; onChange: (v: O) => void }) {
+  const t = useT();
   return (
     <div className="np-seg" role="group">
       {options.map((o) => (
         <button key={o} type="button" className={o === value ? "on" : undefined} aria-pressed={o === value} onClick={() => onChange(o)}>
-          {o}
+          {t(o)}
         </button>
       ))}
     </div>
@@ -192,11 +210,12 @@ export function Seg<T extends string>({ value, options, onChange }: { value: T; 
 
 /** − n + for small whole numbers (wish-list commitments, admin thresholds). */
 export function Stepper({ value, onChange, label, min = 0, max = 99 }: { value: number; onChange: (n: number) => void; label: string; min?: number; max?: number }) {
+  const t = useT();
   return (
     <span className="v2-stepper" role="group" aria-label={label}>
-      <button type="button" aria-label={`Less: ${label}`} disabled={value <= min} onClick={() => onChange(value - 1)}><Icon name="minus" size={16} width={2.4} /></button>
+      <button type="button" aria-label={t("Less: {label}", { label })} disabled={value <= min} onClick={() => onChange(value - 1)}><Icon name="minus" size={16} width={2.4} /></button>
       <b aria-live="polite">{value}</b>
-      <button type="button" aria-label={`More: ${label}`} disabled={value >= max} onClick={() => onChange(value + 1)}><Icon name="plus" size={16} width={2.4} /></button>
+      <button type="button" aria-label={t("More: {label}", { label })} disabled={value >= max} onClick={() => onChange(value + 1)}><Icon name="plus" size={16} width={2.4} /></button>
     </span>
   );
 }
@@ -210,6 +229,7 @@ export function Portal({ children }: { children: React.ReactNode }) {
 
 /** Bottom sheet on phones, centred card on desktop (`wide` for two columns). Escape or a tap outside closes it. */
 export function Sheet({ title, onClose, children, wide = false }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean }) {
+  const t = useT();
   useEffect(() => {
     const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", k);
@@ -225,7 +245,7 @@ export function Sheet({ title, onClose, children, wide = false }: { title: strin
         <div className={`v2-sheet ${wide ? "wide" : ""}`} role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()} style={{ position: "relative" }}>
           <span className="v2-sheet-grab" />
           <h2>{title}</h2>
-          <button type="button" className="v2-iconbtn v2-sheet-x" aria-label="Close" onClick={onClose}>
+          <button type="button" className="v2-iconbtn v2-sheet-x" aria-label={t("Close")} onClick={onClose}>
             <Icon name="x" size={18} />
           </button>
           {children}
@@ -240,10 +260,11 @@ export function Sheet({ title, onClose, children, wide = false }: { title: strin
  * keep working, so she sees the risk and confirms she takes responsibility. The Remove button works only after the tick.
  */
 export function RemoveWarn({ items, onConfirm, onClose }: { items: { id: string; name: string; img: string }[]; onConfirm: () => void; onClose: () => void }) {
+  const t = useT();
   const [ok, setOk] = useState(false);
   const many = items.length > 1;
   return (
-    <Sheet title={many ? `Remove ${items.length} products?` : "Remove this product?"} onClose={onClose}>
+    <Sheet title={many ? t("Remove {n} products?", { n: items.length }) : t("Remove this product?")} onClose={onClose}>
       <div className="rw-items">
         {items.slice(0, 4).map((p) => (
           <span key={p.id}>
@@ -252,20 +273,20 @@ export function RemoveWarn({ items, onConfirm, onClose }: { items: { id: string;
             <b>{p.name}</b>
           </span>
         ))}
-        {items.length > 4 && <small>+{items.length - 4} more</small>}
+        {items.length > 4 && <small>{t("+{n} more", { n: items.length - 4 })}</small>}
       </div>
       {/* What removing means (owner, 31 Oct 2026), said plainly before she confirms. */}
       <ul className="rw-risk">
-        <li><Icon name="alert" size={16} /> Your videos keep their yellow bag for now. In future, TikTok may remove it from videos with {many ? "these products" : "this product"}, and Rezekii can&apos;t guarantee it won&apos;t.</li>
-        <li><Icon name="alert" size={16} /> Rezekii can&apos;t bring back a removed product. A locked commission rate may also end.</li>
+        <li><Icon name="alert" size={16} /> {many ? t("Your videos keep their yellow bag for now. In future, TikTok may remove it from videos with these products, and Rezekii can't guarantee it won't.") : t("Your videos keep their yellow bag for now. In future, TikTok may remove it from videos with this product, and Rezekii can't guarantee it won't.")}</li>
+        <li><Icon name="alert" size={16} /> {t("Rezekii can't bring back a removed product. A locked commission rate may also end.")}</li>
       </ul>
       <label className="rw-ok">
         <input type="checkbox" checked={ok} onChange={(e) => setOk(e.target.checked)} />
-        <span>I understand. I decide to remove {many ? "them" : "it"}, and I&apos;m responsible for the result.</span>
+        <span>{many ? t("I understand. I decide to remove them, and I'm responsible for the result.") : t("I understand. I decide to remove it, and I'm responsible for the result.")}</span>
       </label>
       <div className="v2-row" style={{ gap: 8 }}>
-        <button type="button" className="btn-outline" style={{ flex: 1 }} onClick={onClose}>Keep</button>
-        <button type="button" className="np-btn rw-go" style={{ flex: 1 }} disabled={!ok} onClick={onConfirm}>Remove</button>
+        <button type="button" className="btn-outline" style={{ flex: 1 }} onClick={onClose}>{t("Keep")}</button>
+        <button type="button" className="np-btn rw-go" style={{ flex: 1 }} disabled={!ok} onClick={onConfirm}>{t("Remove")}</button>
       </div>
     </Sheet>
   );
@@ -276,6 +297,7 @@ export function RemoveWarn({ items, onConfirm, onClose }: { items: { id: string;
  * pattern for sample screens.
  */
 export function Qr({ value }: { value?: string } = {}) {
+  const t = useT();
   const cells: [number, number][] = [];
   let size = 21;
   if (value) {
@@ -294,7 +316,7 @@ export function Qr({ value }: { value?: string } = {}) {
       } else if (seed / 233280 > 0.55) cells.push([x, y]);
     }
   return (
-    <span className="v2-qr" aria-label="Invite QR code">
+    <span className="v2-qr" aria-label={t("Invite QR code")}>
       <svg viewBox={`0 0 ${size} ${size}`} shapeRendering="crispEdges">
         {cells.map(([x, y]) => (
           <rect key={`${x}-${y}`} x={x} y={y} width="1" height="1" fill="#0b1a13" />
@@ -310,6 +332,7 @@ const CONFETTI = ["#00c073", "#22dc95", "#f5a623", "#e8005a", "#25f4ee", "#ffd34
 export function Celebrate({ title, line, cheer, onShare, onClose, tone = "gold", icon = "trophy" }: {
   title: string; line: string; cheer: string; onShare?: () => void; onClose: () => void; tone?: "gold" | "green"; icon?: Parameters<typeof Icon>[0]["name"];
 }) {
+  const t = useT();
   return (
     <Portal>
     <div className="v2-celebrate" onClick={onClose}>
@@ -326,10 +349,10 @@ export function Celebrate({ title, line, cheer, onShare, onClose, tone = "gold",
         <div className="v2-stack" style={{ width: "100%", marginTop: 6 }}>
           {onShare && (
             <button type="button" className="np-btn" onClick={onShare}>
-              <Icon name="share" size={18} /> Share this moment
+              <Icon name="share" size={18} /> {t("Share this moment")}
             </button>
           )}
-          <button type="button" className="btn-outline" onClick={onClose}>Continue</button>
+          <button type="button" className="btn-outline" onClick={onClose}>{t("Continue")}</button>
         </div>
       </div>
     </div>
@@ -341,8 +364,8 @@ const SHARE_TO: (Brand | "More")[] = ["TikTok", "WhatsApp", "Instagram", "Facebo
 
 /** Where a card goes, and its real size there. Portrait or landscape only (owner, 30 Oct 2026): more sizes squeezed the words. */
 const FORMATS = [
-  { key: "story", label: "Portrait", ratio: "9 / 16" },
-  { key: "wide", label: "Landscape", ratio: "16 / 9" },
+  { key: "story", label: tx("Portrait"), ratio: "9 / 16" },
+  { key: "wide", label: tx("Landscape"), ratio: "16 / 9" },
 ] as const;
 /** What is being shared. Every moment gets its own hero inside the same branded frame (owner, 28 Oct 2026). */
 export type MomentKind = "streak" | "level" | "badge" | "credits" | "mission" | "sample" | "invite";
@@ -354,9 +377,10 @@ export type InviteInfo = { code: string; reward: number; link: string; photo?: s
  * ticket. Her photo shows once, at the bottom. Few words so nothing is squeezed. Same frame, sizes and styles as other cards.
  */
 function InviteCard({ invite, big, handle, fmt, design, video, ratio }: { invite: InviteInfo; big: string; handle: string; fmt: string; design: number; video: boolean; ratio: string }) {
+  const t = useT();
   const initials = handle.replace("@", "").slice(0, 2).toUpperCase();
   return (
-    <div className={`v2-story ds${design} ${fmt} ${video ? "vid" : ""} inv-card`} style={{ aspectRatio: ratio }} role="img" aria-label={`${big}. Use code ${invite.code} for +${invite.reward} credits. ${invite.link}`}>
+    <div className={`v2-story ds${design} ${fmt} ${video ? "vid" : ""} inv-card`} style={{ aspectRatio: ratio }} role="img" aria-label={t("{big}. Use code {code} for +{n} credits. {link}", { big, code: invite.code, n: invite.reward, link: invite.link })}>
       {video && <span className="v2-vbar" aria-hidden="true"><span /></span>}
       <span className="st-head">
         <span className="st-brand">
@@ -373,12 +397,12 @@ function InviteCard({ invite, big, handle, fmt, design, video, ratio }: { invite
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="inv-rimau" src="/mascot/rimau-wave.webp" alt="" />
         <span className="inv-text">
-          <span className="inv-kick">{invite.kick ?? "You're invited"}</span>
+          <span className="inv-kick">{invite.kick ?? t("You're invited")}</span>
           <strong className="inv-h">{big}</strong>
           {invite.tag && <span className="inv-tag">{invite.tag}</span>}
           <span className="inv-tk">
-            <span className="l"><b>+{invite.reward}</b><small>credits for you</small></span>
-            <span className="r"><small>Code</small><b>{invite.code}</b></span>
+            <span className="l"><b>+{invite.reward}</b><small>{t("credits for you")}</small></span>
+            <span className="r"><small>{t("Code")}</small><b>{invite.code}</b></span>
           </span>
         </span>
       </span>
@@ -397,6 +421,7 @@ const num = (s: string) => Number(/\d+/.exec(s.replace(/,/g, ""))?.[0] ?? 0);
 
 /** The picture in the middle of a share card: a flame, a podium, a rosette, a receipt, a stamp card, a parcel label or a ticket. */
 function MomentHero({ moment, big, lines, level, size }: { moment: MomentKind; big: string; lines: string[]; level?: Level; size: number }) {
+  const t = useT();
   const n = num(big);
   if (moment === "streak") return (
     <span className="mo-streak">
@@ -425,9 +450,9 @@ function MomentHero({ moment, big, lines, level, size }: { moment: MomentKind; b
   );
   if (moment === "credits") return (
     <span className="mo-receipt">
-      <b className="mo-rc-h">Credits earned</b>
+      <b className="mo-rc-h">{t("Credits earned")}</b>
       {lines.map((l) => <span key={l} className="mo-rc-row"><span>{l}</span><Icon name="check" size={12} width={3} /></span>)}
-      <span className="mo-rc-total"><span>Total</span><b>{big}</b></span>
+      <span className="mo-rc-total"><span>{t("Total")}</span><b>{big}</b></span>
     </span>
   );
   if (moment === "mission") return (
@@ -437,33 +462,33 @@ function MomentHero({ moment, big, lines, level, size }: { moment: MomentKind; b
   );
   if (moment === "sample") return (
     <span className="mo-label">
-      <span className="mo-lb-top"><Icon name="box" size={16} /><b>Free sample</b></span>
+      <span className="mo-lb-top"><Icon name="box" size={16} /><b>{t("Free sample")}</b></span>
       <span className="mo-bars" aria-hidden="true" />
-      <span className="mo-lb-stamp"><Icon name="check" size={12} width={3} /> Delivered on time</span>
+      <span className="mo-lb-stamp"><Icon name="check" size={12} width={3} /> {t("Delivered on time")}</span>
     </span>
   );
   return (
     <span className="mo-ticket">
       <Icon name="users" size={22} />
-      <b>Invite</b>
-      <small>Admit one</small>
+      <b>{t("Invite")}</b>
+      <small>{t("Admit one")}</small>
     </span>
   );
 }
-/** The blessing line on every card, from V1. */
+/** The blessing line on every card, from V1. English here; shown and put on the card in her language. */
 const BLESS = [
-  "Rezeki tak pernah salah alamat. Today it found you.",
-  "May every post bring more rezeki, and every sale bring more joy.",
-  "Semoga rezeki terus melimpah dan usaha dipermudahkan.",
-  "Small steps, big blessings. Keep shining, keep sharing.",
-  "Your hard work became someone else's good find. Thank you for sharing it.",
+  tx("Rezeki tak pernah salah alamat. Today it found you."),
+  tx("May every post bring more rezeki, and every sale bring more joy."),
+  tx("Semoga rezeki terus melimpah dan usaha dipermudahkan."),
+  tx("Small steps, big blessings. Keep shining, keep sharing."),
+  tx("Your hard work became someone else's good find. Thank you for sharing it."),
 ];
 
 /**
  * "Share your proud moment" (V1's share window): the card in 3 designs, sized for each platform, as an image or a 5-second
  * video, with a blessing, a caption and the apps to send it to. Shows achievements, never sales.
  */
-export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow", level, kicker = "Proud moment", caption: captionInit, onShared, title, card, moment, extra, invite, story, rate }: {
+export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow", level, kicker: kickerIn, caption: captionInit, onShared, title, card, moment, extra, invite, story, rate }: {
   onClose: () => void; big: string; label: string; lines: string[]; handle?: string; level?: Level; kicker?: string; caption?: string;
   /** An invite: the card shows her code and reward, and Copy link copies her own invite link. */
   invite?: InviteInfo;
@@ -483,6 +508,10 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
 }) {
   const { toast, live } = useDemo();
   const you = useWho();
+  // The card's words go out in her language too (owner, 3 Nov 2026); the caption stays as written, it's hers to post.
+  const t = useT();
+  const lang = useLang();
+  const kicker = kickerIn ?? t("Proud moment");
   const [fmt, setFmt] = useState<(typeof FORMATS)[number]["key"]>("story");
   // One look for every card (owner, 3 Nov 2026); the in-page preview below only shows until the real picture is ready.
   const design = 2;
@@ -505,18 +534,19 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
   );
   const copyLink = () => {
     if (!link) return;
-    navigator.clipboard?.writeText(link).then(() => toast(`Link copied: ${link.replace(/^https?:\/\//, "")}`), () => toast(link));
+    navigator.clipboard?.writeText(link).then(() => toast(t("Link copied: {link}", { link: link.replace(/^https?:\/\//, "") })), () => toast(link));
   };
+  const blessing = t(BLESS[bless]);
   const f = FORMATS.find((x) => x.key === fmt)!;
   const initials = handle.startsWith("@") ? handle.slice(1, 3).toUpperCase() : handle.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
   // The real picture (owner, 1 Nov 2026): made on the server, the same file for the preview, the share menu and Save.
   const cardUrl = (() => {
     if (!origin || !link) return "";
-    const q = new URLSearchParams({ fmt, kicker, label, big, handle: you.handle || handle, name: you.name || "", link, bless: BLESS[bless] });
+    const q = new URLSearchParams({ fmt, kicker, label, big, handle: you.handle || handle, name: you.name || "", link, bless: blessing });
     // The invite keeps its ticket and Rimau; a Daily Story page keeps its own look (owner, 1 Nov 2026).
     if (invite) {
       q.set("moment", "invite");
-      q.set("kicker", invite.kick ?? "You're invited");
+      q.set("kicker", invite.kick ?? t("You're invited"));
       q.set("code", invite.code);
       q.set("reward", String(invite.reward));
       if (invite.tag) q.set("tag", invite.tag);
@@ -526,7 +556,7 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
       for (const l of story.lines ?? []) q.append("line", l);
     } else if (rate) {
       q.set("moment", "rate");
-      q.set("kicker", "Rate Card");
+      q.set("kicker", t("Rate Card"));
       q.set("label", rate.label);
       q.set("sub", rate.valid);
       for (const l of rate.lines) q.append("line", l);
@@ -554,14 +584,16 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
     try {
       const file = await makeFile();
       const r = await shareFile(file, `${caption} ${link}`.trim());
-      if (r === "shared") { toast("Shared"); onShared?.(app); }
+      if (r === "shared") { toast(t("Shared")); onShared?.(app); }
       else if (r === "unsupported") {
         saveFile(file);
         navigator.clipboard?.writeText(`${caption} ${link}`.trim()).catch(() => {});
-        toast(`${video ? "Video" : "Image"} saved and caption copied. Post it in ${app === "More" ? "any app" : app}.`);
-      } else if (r === "failed") toast("Couldn't open the share menu. Use Save instead.");
+        toast(app === "More"
+          ? (video ? t("Video saved and caption copied. Post it in any app.") : t("Image saved and caption copied. Post it in any app."))
+          : (video ? t("Video saved and caption copied. Post it in {app}.", { app }) : t("Image saved and caption copied. Post it in {app}.", { app })));
+      } else if (r === "failed") toast(t("Couldn't open the share menu. Use Save instead."));
     } catch {
-      toast(video ? "Couldn't make the video on this browser. Try the image." : "Couldn't make the card. Please try again.");
+      toast(video ? t("Couldn't make the video on this browser. Try the image.") : t("Couldn't make the card. Please try again."));
     } finally {
       setBusy(null);
     }
@@ -574,23 +606,23 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
       // On a phone (owner, 3 Nov 2026: Save Image never reached her Photos): the phone's own menu, where Save Image keeps it.
       const r = window.matchMedia("(pointer: coarse)").matches ? await shareFile(file, "") : "unsupported";
       if (r === "unsupported" || r === "failed") saveFile(file);
-      if (r !== "cancelled") toast(video ? "Video saved" : "Image saved");
+      if (r !== "cancelled") toast(video ? t("Video saved") : t("Image saved"));
     } catch {
-      toast(video ? "Couldn't make the video on this browser. Try the image." : "Couldn't save the card. Please try again.");
+      toast(video ? t("Couldn't make the video on this browser. Try the image.") : t("Couldn't save the card. Please try again."));
     } finally {
       setBusy(null);
     }
   };
 
   return (
-    <Sheet title={title ?? (invite ? "Share your invite" : "Share your proud moment")} onClose={onClose} wide>
+    <Sheet title={title ?? (invite ? t("Share your invite") : t("Share your proud moment"))} onClose={onClose} wide>
       <div className="v2-shgrid">
         <div className="v2-shleft">
           {/* Size as two small icons above the card (owner, 30 Oct 2026), not a big row. */}
           {(!card || story) && (
-            <div className="v2-shsize" role="group" aria-label="Size">
+            <div className="v2-shsize" role="group" aria-label={t("Size")}>
               {FORMATS.map((x) => (
-                <button key={x.key} type="button" className={fmt === x.key ? "on" : undefined} aria-pressed={fmt === x.key} aria-label={`${x.label} ${x.ratio.replace(" / ", ":")}`} title={`${x.label} ${x.ratio.replace(" / ", ":")}`} onClick={() => setFmt(x.key)}>
+                <button key={x.key} type="button" className={fmt === x.key ? "on" : undefined} aria-pressed={fmt === x.key} aria-label={`${t(x.label)} ${x.ratio.replace(" / ", ":")}`} title={`${t(x.label)} ${x.ratio.replace(" / ", ":")}`} onClick={() => setFmt(x.key)}>
                   <i className={x.key} />
                 </button>
               ))}
@@ -602,7 +634,7 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
           ) : invite ? (
             <InviteCard invite={invite} big={big} handle={handle} fmt={fmt} design={design} video={video} ratio={f.ratio} />
           ) : (
-          <div className={`v2-story ds${design} ${fmt} ${video ? "vid" : ""} ${moment ? `mo mo-${moment}-card` : ""}`} style={{ aspectRatio: f.ratio }} role="img" aria-label={`${label}: ${big}. ${BLESS[bless]}`}>
+          <div className={`v2-story ds${design} ${fmt} ${video ? "vid" : ""} ${moment ? `mo mo-${moment}-card` : ""}`} style={{ aspectRatio: f.ratio }} role="img" aria-label={`${label}: ${big}. ${blessing}`}>
             {video && <span className="v2-vbar" aria-hidden="true"><span /></span>}
             <span className="st-head">
               <span className="st-brand">
@@ -620,16 +652,16 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
                 {moment ? <MomentHero moment={moment} big={big} lines={lines} level={level} size={fmt === "wide" ? 52 : 64} /> : level ? <Emblem level={level} size={fmt === "wide" ? 60 : 78} animate /> : <span className="st-medal"><Icon name="medal" size={30} width={2.2} /></span>}
               </span>
               <span className="st-body">
-                <span className="st-kick st-t">{kicker} · Oct 2026</span>
+                <span className="st-kick st-t">{kicker} · {new Date(Date.UTC(2026, 9, 15)).toLocaleDateString(dateLocale(lang), { month: "short", year: "numeric", timeZone: "UTC" })}</span>
                 <span className="st-lbl st-t">{label}</span>
                 <strong className="st-big st-t">{big}</strong>
                 {lines.length > 0 && <span className="st-pills st-t">{lines.map((l) => <span key={l}>{l}</span>)}</span>}
               </span>
             </span>
-            {fmt === "story" && <span className="st-quote">&ldquo;{BLESS[bless]}&rdquo;</span>}
+            {fmt === "story" && <span className="st-quote">&ldquo;{blessing}&rdquo;</span>}
             <span className="st-foot">
               <span className="v2-av">{initials}</span>
-              <span className="st-foot-txt"><b>{handle}</b><small>Join me on Rezekii</small></span>
+              <span className="st-foot-txt"><b>{handle}</b><small>{t("Join me on Rezekii")}</small></span>
               <Qr />
             </span>
           </div>
@@ -638,20 +670,20 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
 
         <div className="v2-shright">
           {extra}
-          {!extra && <Seg value={video ? "Video · 5 Sec" : "Image"} options={["Image", "Video · 5 Sec"] as const} onChange={(v) => setVideo(v !== "Image")} />}
+          {!extra && <Seg value={video ? "Video · 5 Sec" : "Image"} options={[tx("Image"), tx("Video · 5 Sec")]} onChange={(v) => setVideo(v !== "Image")} />}
           {!card && !invite && <div className="v2-bless">
             <span aria-hidden="true">✨</span>
-            <span><b>Blessing on your card</b><small>{BLESS[bless]}</small></span>
-            <button type="button" className="btn-outline v2-btn-sm" onClick={() => setBless((b) => (b + 1) % BLESS.length)}>Another</button>
+            <span><b>{t("Blessing on your card")}</b><small>{blessing}</small></span>
+            <button type="button" className="btn-outline v2-btn-sm" onClick={() => setBless((b) => (b + 1) % BLESS.length)}>{t("Another")}</button>
           </div>}
           <label className="v2-field">
-            Caption
+            {t("Caption")}
             <textarea className="np-input v2-caption" rows={5} value={caption} onChange={(e) => setCaption(e.target.value.slice(0, 300))} />
           </label>
-          <div className="v2-apps" role="group" aria-label="Share to">
+          <div className="v2-apps" role="group" aria-label={t("Share to")}>
             {/* Real logos only, no names (owner, 30 Oct 2026); the name is still read out and shown on hover. */}
             {SHARE_TO.map((name) => (
-              <button key={name} type="button" className={`v2-app${busy === name ? " busy" : ""}`} disabled={!!busy} onClick={() => send(name)} aria-label={`Share to ${name}`} title={name}>
+              <button key={name} type="button" className={`v2-app${busy === name ? " busy" : ""}`} disabled={!!busy} onClick={() => send(name)} aria-label={t("Share to {name}", { name: name === "More" ? t("More") : name })} title={name === "More" ? t("More") : name}>
                 <span className={name === "More" ? "ic more" : "ic"}>
                   {name === "More" ? <Icon name="share" size={20} /> : <BrandLogo name={name} size={42} />}
                 </span>
@@ -659,29 +691,33 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
             ))}
           </div>
           <div className="v2-row" style={{ gap: 8 }}>
-            <button type="button" className="btn-outline" style={{ flex: 1 }} onClick={copyLink} disabled={!link}><Icon name="link" size={17} /> Copy Link</button>
-            <button type="button" className="np-btn" style={{ flex: 1 }} onClick={save} disabled={!!busy || !cardUrl}>{busy === "save" ? <><span className="cr1-spin xs" aria-hidden="true" /> {video ? "Making video…" : "Saving…"}</> : <><Icon name="arrow" size={17} /> Save {video ? "Video" : "Image"}</>}</button>
+            <button type="button" className="btn-outline" style={{ flex: 1 }} onClick={copyLink} disabled={!link}><Icon name="link" size={17} /> {t("Copy Link")}</button>
+            <button type="button" className="np-btn" style={{ flex: 1 }} onClick={save} disabled={!!busy || !cardUrl}>{busy === "save" ? <><span className="cr1-spin xs" aria-hidden="true" /> {video ? t("Making video…") : t("Saving…")}</> : <><Icon name="arrow" size={17} /> {video ? t("Save Video") : t("Save Image")}</>}</button>
           </div>
-          {busy && busy !== "save" && <p className="v2-small" style={{ margin: 0 }}><span className="cr1-spin xs" aria-hidden="true" /> {video ? "Making your 5-second video…" : "Getting your card ready…"}</p>}
-          {!card && <p className="v2-small" style={{ margin: 0 }}>Shows your achievement and invite QR, never your sales.</p>}
+          {busy && busy !== "save" && <p className="v2-small" style={{ margin: 0 }}><span className="cr1-spin xs" aria-hidden="true" /> {video ? t("Making your 5-second video…") : t("Getting your card ready…")}</p>}
+          {!card && <p className="v2-small" style={{ margin: 0 }}>{t("Shows your achievement and invite QR, never your sales.")}</p>}
         </div>
       </div>
     </Sheet>
   );
 }
 
-/** Blurs key numbers until TikTok Shop is linked (blueprint 7.3); everything else stays usable. */
+/**
+ * Blurs key numbers until TikTok Shop is linked (blueprint 7.3); everything else stays usable. `what` is written in English
+ * ("your payouts") and shows in her language, so it needs a line in a word list.
+ */
 export function Lock({ children, what = "commission" }: { children: React.ReactNode; what?: string }) {
   const { linked, setLinked } = useDemo();
+  const t = useT();
   if (linked) return <>{children}</>;
   return (
     <div className="v2-lock" style={{ borderRadius: 22 }}>
       <div className="v2-blur" aria-hidden="true">{children}</div>
       <div className="v2-lock-cover">
         <Icon name="lock" size={26} />
-        <b>Link TikTok Shop to see {what}</b>
-        <span className="v2-small">It also proves you're a real creator.</span>
-        <button type="button" className="np-btn v2-btn-sm" onClick={() => setLinked(true)}>Link TikTok Shop</button>
+        <b>{t("Link TikTok Shop to see {what}", { what: t(what) })}</b>
+        <span className="v2-small">{t("It also proves you're a real creator.")}</span>
+        <button type="button" className="np-btn v2-btn-sm" onClick={() => setLinked(true)}>{t("Link TikTok Shop")}</button>
       </div>
     </div>
   );

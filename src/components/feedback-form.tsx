@@ -4,12 +4,15 @@ import { useState } from "react";
 import { Icon, type IconName } from "@/components/icons";
 import { Seg } from "@/components/ui";
 import { useDemo } from "@/components/demo";
+import { useT } from "@/lib/i18n/client";
+import { tx } from "@/lib/i18n/lang";
 
+/** What it's about. `key` is also what the team sees, so it stays English; the words show in her language. */
 const TYPES: { key: string; icon: IconName; hint: string }[] = [
-  { key: "Idea", icon: "spark", hint: "What would make Rezekii better for you?" },
-  { key: "Something's broken", icon: "alert", hint: "What happened, and what did you expect instead?" },
-  { key: "Question", icon: "info", hint: "What would you like to know?" },
-  { key: "Compliment", icon: "star", hint: "What do you like? We'll share it with the team." },
+  { key: tx("Idea"), icon: "spark", hint: tx("What would make Rezekii better for you?") },
+  { key: tx("Something's broken"), icon: "alert", hint: tx("What happened, and what did you expect instead?") },
+  { key: tx("Question"), icon: "info", hint: tx("What would you like to know?") },
+  { key: tx("Compliment"), icon: "star", hint: tx("What do you like? We'll share it with the team.") },
 ];
 const FACES = ["😞", "😕", "😐", "🙂", "😍"];
 const MAX = 500;
@@ -20,6 +23,7 @@ const MAX = 500;
  * along so the team can act on it fast.
  */
 export function FeedbackForm({ onDone }: { onDone: () => void }) {
+  const t = useT();
   const [type, setType] = useState(TYPES[0]);
   const [msg, setMsg] = useState("");
   const [shot, setShot] = useState<string | null>(null);
@@ -53,15 +57,15 @@ export function FeedbackForm({ onDone }: { onDone: () => void }) {
     return (
       <div className="fb-done" aria-live="polite">
         <span className="v2-medal green" style={{ width: 64, height: 64 }}><Icon name="check" size={28} width={2.6} /></span>
-        <b>Thanks, we got it!</b>
-        <p className="v2-muted" style={{ margin: 0 }}>Every message is read by the team.</p>
-        <button type="button" className="np-btn" onClick={onDone}>Done</button>
+        <b>{t("Thanks, we got it!")}</b>
+        <p className="v2-muted" style={{ margin: 0 }}>{t("Every message is read by the team.")}</p>
+        <button type="button" className="np-btn" onClick={onDone}>{t("Done")}</button>
       </div>
     );
   }
 
   const send = () => {
-    if (!msg.trim()) return setErr("Write a few words first.");
+    if (!msg.trim()) return setErr(t("Write a few words first."));
     if (!live) return setSent(true);
     setBusy(true);
     fetch("/api/v2/feedback", {
@@ -69,56 +73,56 @@ export function FeedbackForm({ onDone }: { onDone: () => void }) {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ kind: type.key, message: msg, mood: face === null ? null : face + 1, page: window.location.pathname, screenshot: img }),
     })
-      .then(async (r) => (r.ok ? setSent(true) : setErr(((await r.json().catch(() => ({}))) as { error?: string }).error ?? "Didn't send. Please try again.")))
-      .catch(() => setErr("Didn't send. Please try again."))
+      .then(async (r) => (r.ok ? setSent(true) : setErr(((await r.json().catch(() => ({}))) as { error?: string }).error ?? t("Didn't send. Please try again."))))
+      .catch(() => setErr(t("Didn't send. Please try again.")))
       .finally(() => setBusy(false));
   };
 
   return (
     <div className="fb-form">
-      <p className="v2-muted" style={{ margin: 0 }}>Tell us anything. Every message is read by a real person.</p>
+      <p className="v2-muted" style={{ margin: 0 }}>{t("Tell us anything. Every message is read by a real person.")}</p>
 
       <div className="fb-sec">
-        <b>What&apos;s it about?</b>
-        <div className="fb-types" role="radiogroup" aria-label="What it's about">
-          {TYPES.map((t) => (
-            <button key={t.key} type="button" role="radio" aria-checked={type.key === t.key} className={type.key === t.key ? "on" : undefined} onClick={() => setType(t)}>
-              <Icon name={t.icon} size={18} width={2.2} />
-              {t.key}
+        <b>{t("What's it about?")}</b>
+        <div className="fb-types" role="radiogroup" aria-label={t("What it's about")}>
+          {TYPES.map((ty) => (
+            <button key={ty.key} type="button" role="radio" aria-checked={type.key === ty.key} className={type.key === ty.key ? "on" : undefined} onClick={() => setType(ty)}>
+              <Icon name={ty.icon} size={18} width={2.2} />
+              {t(ty.key)}
             </button>
           ))}
         </div>
       </div>
 
       <label className="fb-sec">
-        <b>Tell us more</b>
-        <textarea className="np-input" rows={4} maxLength={MAX} placeholder={type.hint} value={msg} onChange={(e) => { setMsg(e.target.value); setErr(""); }} aria-invalid={!!err} />
+        <b>{t("Tell us more")}</b>
+        <textarea className="np-input" rows={4} maxLength={MAX} placeholder={t(type.hint)} value={msg} onChange={(e) => { setMsg(e.target.value); setErr(""); }} aria-invalid={!!err} />
         <span className="fb-meta">{err ? <em className="fb-err">{err}</em> : <span />}<small>{msg.length}/{MAX}</small></span>
       </label>
 
       <div className="fb-sec">
-        <b>Screenshot <span className="pf-opt">Optional</span></b>
+        <b>{t("Screenshot")} <span className="pf-opt">{t("Optional")}</span></b>
         {shot ? (
-          <span className="fb-file"><Icon name="doc" size={16} /><span>{shot}</span><button type="button" className="v2-iconbtn" aria-label="Remove screenshot" onClick={() => { setShot(null); setImg(null); }}><Icon name="x" size={15} /></button></span>
+          <span className="fb-file"><Icon name="doc" size={16} /><span>{shot}</span><button type="button" className="v2-iconbtn" aria-label={t("Remove screenshot")} onClick={() => { setShot(null); setImg(null); }}><Icon name="x" size={15} /></button></span>
         ) : (
           <label className="btn-outline v2-btn-sm fb-add">
-            <Icon name="plus" size={15} /> Add a screenshot
+            <Icon name="plus" size={15} /> {t("Add a screenshot")}
             <input type="file" accept="image/*" hidden onChange={(e) => pickShot(e.target.files?.[0])} />
           </label>
         )}
       </div>
 
       <div className="fb-sec">
-        <b>How&apos;s Rezekii so far? <span className="pf-opt">Optional</span></b>
-        <div className="fb-faces" role="radiogroup" aria-label="Your rating">
+        <b>{t("How's Rezekii so far?")} <span className="pf-opt">{t("Optional")}</span></b>
+        <div className="fb-faces" role="radiogroup" aria-label={t("Your rating")}>
           {FACES.map((f, i) => (
-            <button key={f} type="button" role="radio" aria-checked={face === i} aria-label={`${i + 1} of 5`} className={face === i ? "on" : undefined} onClick={() => setFace(face === i ? null : i)}>{f}</button>
+            <button key={f} type="button" role="radio" aria-checked={face === i} aria-label={t("{n} of 5", { n: i + 1 })} className={face === i ? "on" : undefined} onClick={() => setFace(face === i ? null : i)}>{f}</button>
           ))}
         </div>
       </div>
 
-      <small className="fb-note"><Icon name="info" size={14} /> We attach this page and your device, so we can fix things faster.</small>
-      <button type="button" className="np-btn" disabled={busy} onClick={send}>{busy ? <span className="sl-spin" /> : <><Icon name="send" size={17} /> Send Feedback</>}</button>
+      <small className="fb-note"><Icon name="info" size={14} /> {t("We attach this page and your device, so we can fix things faster.")}</small>
+      <button type="button" className="np-btn" disabled={busy} onClick={send}>{busy ? <span className="sl-spin" /> : <><Icon name="send" size={17} /> {t("Send Feedback")}</>}</button>
     </div>
   );
 }
