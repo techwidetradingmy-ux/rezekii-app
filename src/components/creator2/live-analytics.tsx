@@ -88,7 +88,7 @@ export function LiveAiSummary({ sig, span, cancel, lead }: { sig: Signals; span:
                 <i>{f.rating.toFixed(1)} ★</i>
               </span>
             </span>
-            <button type="button" className="btn-outline v2-btn-sm" onClick={() => setAsk(f)}>Remove from showcase</button>
+            <button type="button" className="btn-outline v2-btn-sm" onClick={() => setAsk(f)}>Remove from Showcase</button>
           </div>
         ))}
         {ratings && !ratings.linked && <Link href="/app/account#connections" className="np-btn v2-btn-sm" style={{ alignSelf: "flex-start" }}>Connect TikTok Shop</Link>}

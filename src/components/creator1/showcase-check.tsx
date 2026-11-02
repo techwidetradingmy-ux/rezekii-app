@@ -84,7 +84,7 @@ export function ShowcaseCheck() {
         </div>
         {tried && err && <span className="sc-err" role="alert">{err}</span>}
         {/* Price is just "free to join", by the button (owner, 29 Oct 2026). */}
-        <p className="sc-free"><b>Beta open now. Join now for free.</b> · <a href="#how" className="sc-how">How it works</a></p>
+        <p className="sc-free"><b>Beta open now. Join now for free.</b> · <a href="#how" className="sc-how">How It Works</a></p>
       </form>
     );
   }
@@ -154,7 +154,7 @@ export function ShowcaseCheck() {
         <span className="sc-trust-logo"><Image src="/tiktok-shop-partner-logo.png" alt="TikTok Shop Partner" width={62} height={18} /></span>
         Official TikTok Shop Partner App
       </span>
-      <button type="button" className="v2-link sc-again" onClick={() => { setStage("type"); setTried(false); }}>Use another username</button>
+      <button type="button" className="v2-link sc-again" onClick={() => { setStage("type"); setTried(false); }}>Use Another Username</button>
     </div>
   );
 }

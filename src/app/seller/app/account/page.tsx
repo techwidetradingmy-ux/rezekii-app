@@ -90,9 +90,9 @@ export default function SellerAccount() {
       )}
 
       <section className="v2-card">
-        <div className="v2-card-h"><h2 className="v2-h2">Contact &amp; Phone</h2><button type="button" className="v2-link" onClick={() => { setEdit(contact); setTried(false); }}>Edit</button></div>
+        <div className="v2-card-h"><h2 className="v2-h2">Contact &Amp; Phone</h2><button type="button" className="v2-link" onClick={() => { setEdit(contact); setTried(false); }}>Edit</button></div>
         <div className="sl-set"><span><small>Contact name</small><b>{contact.name || "Not added yet"}</b></span></div>
-        <div className="sl-set"><span><small>Phone</small><b>{phone.ok ? phone.pretty : contact.raw || "Not added yet"}</b></span>{!live && <span className="badge">Verified</span>}{live && !saved && <span className="badge badge-amber">Add it</span>}</div>
+        <div className="sl-set"><span><small>Phone</small><b>{phone.ok ? phone.pretty : contact.raw || "Not added yet"}</b></span>{!live && <span className="badge">Verified</span>}{live && !saved && <span className="badge badge-amber">Add It</span>}</div>
       </section>
 
       {live ? <LiveSellerSocials /> : (
@@ -129,13 +129,13 @@ export default function SellerAccount() {
 
       {live ? <LiveSellerSecurity /> : (
       <section className="v2-card">
-        <h2 className="v2-h2">Login &amp; Security</h2>
+        <h2 className="v2-h2">Login &Amp; Security</h2>
         <div className="sl-set"><span><b>Signed in with Google</b><small>meiling@seriliving.my</small></span></div>
-        <div className="sl-set"><span><b>This device</b><small>Chrome on Windows · Kuala Lumpur · now</small></span><span className="badge badge-gray">Current</span></div>
+        <div className="sl-set"><span><b>This Device</b><small>Chrome on Windows · Kuala Lumpur · now</small></span><span className="badge badge-gray">Current</span></div>
         <div className="sl-set"><span><b>iPhone</b><small>Rezekii in Safari · Kuala Lumpur · 2 days ago</small></span></div>
         <div className="v2-row">
-          <button type="button" className="btn-outline" onClick={() => toast("Signed out of your other devices")}>Sign out other devices</button>
-          <Link href="/seller" className="v2-link" style={{ color: "#d92d20" }} onClick={(e) => { if (!live) return; e.preventDefault(); fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/seller"; }); }}>Sign out</Link>
+          <button type="button" className="btn-outline" onClick={() => toast("Signed out of your other devices")}>Sign Out Other Devices</button>
+          <Link href="/seller" className="v2-link" style={{ color: "#d92d20" }} onClick={(e) => { if (!live) return; e.preventDefault(); fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/seller"; }); }}>Sign Out</Link>
         </div>
       </section>
       )}
@@ -147,7 +147,7 @@ export default function SellerAccount() {
 
       {live ? <LiveSellerHelp /> : (
       <section className="v2-card">
-        <h2 className="v2-h2">Help &amp; Feedback</h2>
+        <h2 className="v2-h2">Help &Amp; Feedback</h2>
         <div className="v2-chips">
           {["Question", "Something's wrong", "Idea"].map((k) => (
             <button key={k} type="button" className={`v2-chip ${kind === k ? "on" : ""}`} style={{ height: 36, fontSize: 13.5 }} onClick={() => setKind(k)}>{k}</button>

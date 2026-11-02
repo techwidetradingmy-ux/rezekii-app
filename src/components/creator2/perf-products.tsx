@@ -150,7 +150,7 @@ export function ProductList() {
                 </div>
 
                 {/* Top video as a button (owner, 28 Oct 2026: less text); it opens here, on Rezekii. */}
-                {vids[0] && <button type="button" className="pd-vid" onClick={() => setVideo(vids[0])}><Icon name="video" size={16} /> Top video</button>}
+                {vids[0] && <button type="button" className="pd-vid" onClick={() => setVideo(vids[0])}><Icon name="video" size={16} /> Top Video</button>}
                 {dropping && <p className="cr2-note"><Icon name="alert" size={15} /><span>Was {prev} orders, now {b.orders}. Try a fresh video.</span></p>}
                 </div>}
               </article>

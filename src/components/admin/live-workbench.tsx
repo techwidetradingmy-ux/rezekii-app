@@ -46,11 +46,11 @@ export function LiveWorkbench() {
               </div>
               <Qr value={link} />
               <b style={{ wordBreak: "break-all" }}>{link.replace(/^https?:\/\//, "")}</b>
-              <button type="button" className="btn-outline v2-btn-sm" onClick={() => void copy(link)}><Icon name="link" size={15} /> Copy link</button>
+              <button type="button" className="btn-outline v2-btn-sm" onClick={() => void copy(link)}><Icon name="link" size={15} /> Copy Link</button>
               <small className="v2-small">Code {d.links.code}. Show the QR at an expo; sign-ups through it are yours.</small>
             </section>
             <section className="v2-card" style={{ padding: "6px 20px" }}>
-              <div className="v2-card-h"><h2 className="v2-h2">Follow-ups Due</h2><span className="badge">{d.follow.length}</span></div>
+              <div className="v2-card-h"><h2 className="v2-h2">Follow-Ups Due</h2><span className="badge">{d.follow.length}</span></div>
               <div className="ad-list">
                 {d.follow.map((f) => (
                   <Link key={f.id} href="/admin/tap" className="ad-row ad-rowbtn click" style={{ textDecoration: "none" }}>

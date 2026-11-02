@@ -55,15 +55,15 @@ export function RegisterProducts({ title = true }: { title?: boolean }) {
         <section className="v2-card flat" style={{ alignItems: "flex-start" }}>
           <b>Connect your Seller Center shop</b>
           <p className="v2-muted" style={{ margin: 0 }}>Rezekii opens your own campaign as soon as your shop is connected.</p>
-          <a href="/seller/connect" className="np-btn v2-btn-sm">Connect shop</a>
+          <a href="/seller/connect" className="np-btn v2-btn-sm">Connect Shop</a>
         </section>
       ) : !c ? (
-        <section className="v2-card flat"><p className="v2-muted" style={{ margin: 0 }}>{d.error ?? "Your campaign isn't ready yet. Please try again."}</p><button type="button" className="btn-outline v2-btn-sm" style={{ alignSelf: "flex-start" }} onClick={() => load()}>Try again</button></section>
+        <section className="v2-card flat"><p className="v2-muted" style={{ margin: 0 }}>{d.error ?? "Your campaign isn't ready yet. Please try again."}</p><button type="button" className="btn-outline v2-btn-sm" style={{ alignSelf: "flex-start" }} onClick={() => load()}>Try Again</button></section>
       ) : (
         <div className="v2-split" style={{ alignItems: "start" }}>
           <section className="v2-card" style={{ gap: 14 }}>
             <div className="v2-card-h">
-              <span><small className="v2-small">Your campaign</small><h2 className="v2-h2" style={{ margin: 0 }}>{c.name}</h2></span>
+              <span><small className="v2-small">Your Campaign</small><h2 className="v2-h2" style={{ margin: 0 }}>{c.name}</h2></span>
               {c.status && <span className={`badge ${c.status === "ONGOING" ? "" : "badge-gray"}`}>{c.status === "ONGOING" ? "Open" : c.status.charAt(0) + c.status.slice(1).toLowerCase()}</span>}
             </div>
             <div className="v2-grid3">

@@ -74,7 +74,7 @@ export function Referral() {
         <div className="rf-story-body">
           <span className="rf-story-head">
             <small>Our Mission</small>
-            <h2>Good rezeki is meant to be <em>shared.</em></h2>
+            <h2>Good Rezeki is Meant to Be <em>shared.</em></h2>
           </span>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img className="rf-story-rimau" src="/mascot/rimau-parcel.webp" alt="" />
@@ -166,7 +166,7 @@ export function Referral() {
         <ol className="cr2-rules">
           <li><span><b>Successful</b> means your friend links TikTok Shop within 14 days.</span></li>
           <li><span><b>Last click wins.</b> Your link works for 14 days after your friend taps it. If they tap another creator&apos;s link after yours, that one counts, so share early.</span></li>
-          <li><span>Your credits show in your <Link href="/app/account#wallet" className="v2-link">Wallet</Link>.</span></li>
+          <li><span>Your Credits Show in Your <Link href="/app/account#wallet" className="v2-link">Wallet</Link>.</span></li>
         </ol>
       </section>
     </div>

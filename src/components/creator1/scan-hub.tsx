@@ -363,7 +363,7 @@ export function ScanHub() {
                     <b>{deck.kept.length ? `${deck.kept.length} picked` : "Nothing picked"}</b>
                     <small>{deck.kept.length ? "Add them now, or keep them ticked in your list." : "They stay in your list if you change your mind."}</small>
                     {deck.kept.length > 0 && <button type="button" className="sh-go" onClick={() => closeDeck(true)}><Icon name="plus" size={18} width={2.6} /> Add {deck.kept.length}</button>}
-                    <button type="button" className="sh-again" onClick={() => closeDeck(false)}>Back to the list</button>
+                    <button type="button" className="sh-again" onClick={() => closeDeck(false)}>Back to the List</button>
                   </div>
                 )}
               </div>
@@ -472,7 +472,7 @@ export function ScanHub() {
           {!linked ? (
             <button type="button" className="sh-go" onClick={() => setLinked(true)}>Link TikTok Shop <Icon name="arrow" size={18} /></button>
           ) : view === "silver" ? (
-            <Link href="/app/account#level" className="sh-go"><Icon name="medal" size={18} /> How to reach Silver</Link>
+            <Link href="/app/account#level" className="sh-go"><Icon name="medal" size={18} /> How to Reach Silver</Link>
           ) : list.length > 0 ? (
             <button type="button" className="sh-go" onClick={() => add(picked)} disabled={scanning || picked.length === 0}>
               <Icon name="plus" size={18} width={2.6} /> {allPicked ? `Add all ${list.length}${view === "similar" ? " similar" : ""} in one tap` : `Add ${picked.length} selected`}

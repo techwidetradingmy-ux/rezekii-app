@@ -81,7 +81,7 @@ export default function GrowthReferrals() {
           </div>
           <div className="v2-tablewrap">
             <table className="v2-table ad-table">
-              <thead><tr><th>Invited by</th><th>New account</th><th>Pair</th><th>Status</th><th className="num">Reward</th><th>When</th></tr></thead>
+              <thead><tr><th>Invited by</th><th>New Account</th><th>Pair</th><th>Status</th><th className="num">Reward</th><th>When</th></tr></thead>
               <tbody>
                 {shown.map((x) => (
                   <tr key={x.id} className={`click ${x.status.startsWith("Held") ? "bad" : ""}`} onClick={() => { setOpen(x.id); setMode(null); setReason(null); setNote(""); }}>
@@ -115,9 +115,9 @@ export default function GrowthReferrals() {
           )}
           {!mode ? (
             <div className="v2-row">
-              {r.status.startsWith("Held") && <button type="button" className="np-btn v2-btn-sm" onClick={() => { set({ status: "Reward paid", flag: "" }); toast("Reward released to both sides · logged"); setOpen(null); }}>Release reward</button>}
-              {r.reward > 0 && !r.status.startsWith("Reversed") && <button type="button" className="ad-btn-ghost danger" onClick={() => setMode("Reverse")}>Reverse reward</button>}
-              <button type="button" className="ad-btn-ghost" onClick={() => setMode("Correct")}>Correct referrer</button>
+              {r.status.startsWith("Held") && <button type="button" className="np-btn v2-btn-sm" onClick={() => { set({ status: "Reward paid", flag: "" }); toast("Reward released to both sides · logged"); setOpen(null); }}>Release Reward</button>}
+              {r.reward > 0 && !r.status.startsWith("Reversed") && <button type="button" className="ad-btn-ghost danger" onClick={() => setMode("Reverse")}>Reverse Reward</button>}
+              <button type="button" className="ad-btn-ghost" onClick={() => setMode("Correct")}>Correct Referrer</button>
             </div>
           ) : (
             <>

@@ -13,7 +13,7 @@ import { VideoSheet } from "@/components/creator2/view-sheets";
 import { productHref } from "@/lib/product-view";
 import { perfProduct, useLivePerf, shortName } from "@/lib/live-perf";
 import { useDemo } from "@/components/demo";
-import { SortHead, cancelFlag, useSortPref } from "@/components/sort-bar";
+import { DirToggle, SortHead, cancelFlag, useSortPref } from "@/components/sort-bar";
 import { CANCEL_TIP } from "@/lib/cancel";
 import "@/app/creator2.css";
 
@@ -29,7 +29,7 @@ type Col = (typeof COLS)[number];
  */
 export default function DataRisk() {
   const router = useRouter();
-  const [by, setBy] = useState<"By video" | "By product">("By video");
+  const [by, setBy] = useState<"By Video" | "By Product">("By Video");
   const [openVideo, setOpenVideo] = useState<VideoRow | null>(null);
 
   // Signed in (owner, 31 Oct 2026): her real cancellations and returns from the last 30 days of orders.
@@ -48,7 +48,7 @@ export default function DataRisk() {
   const rate = real ? real.totals.cancelRate : ANALYTICS.cancelRate;
   const totalCancelled = real ? real.totals.cancelItems ?? real.totals.cancelled : cancelled(ANALYTICS.orders, ANALYTICS.cancelRate);
   // The table sorts by any column, highest or lowest first, remembered (owner, 1 Nov 2026).
-  const [col, , dir, , setSort] = useSortPref<Col>("risk-table", COLS, "Cancelled");
+  const [col, , dir, flipDir, setSort] = useSortPref<Col>("risk-table", COLS, "Cancelled");
   const colVal = (r: { items: number; cancelled: number; cancel: number }) => (col === "Items" ? r.items : col === "Cancelled" ? r.cancelled : r.cancel);
   const sorted = <T extends { items: number; cancelled: number; cancel: number }>(rows: T[]) => [...rows].sort((a, b) => (dir === "desc" ? colVal(b) - colVal(a) : colVal(a) - colVal(b)));
   const refunds = real ? real.totals.returns : vids.reduce((s, v) => s + v.refunds, 0);
@@ -74,10 +74,10 @@ export default function DataRisk() {
 
       <Lock what="your cancellations and refunds">
         <div className="cr2-stats">
-          <Stat label="Cancelled items" value={<span className="v2-num">{totalCancelled}</span>} note={`of ${items} items sold`} />
-          <Stat label="Refunds and returns" value={<span className="v2-num">{refunds}</span>} note="After delivery" />
-          <Stat label="Cancel rate" value={`${rate}%`} note={items < 5 ? "Too few items to judge" : rate < 10 ? "Normal · under 10%" : rate < 20 ? "Watch · 10–20%" : "High · 20% and over"} tone={items < 5 ? undefined : rate < 10 ? "up" : "down"} />
-          <Stat label="Commission clawed back" value={rm(clawback)} note="After cancels and returns" tone="down" />
+          <Stat label="Cancelled Items" value={<span className="v2-num">{totalCancelled}</span>} note={`of ${items} items sold`} />
+          <Stat label="Refunds and Returns" value={<span className="v2-num">{refunds}</span>} note="After delivery" />
+          <Stat label="Cancel Rate" value={`${rate}%`} note={items < 5 ? "Too few items to judge" : rate < 10 ? "Normal · under 10%" : rate < 20 ? "Watch · 10–20%" : "High · 20% and over"} tone={items < 5 ? undefined : rate < 10 ? "up" : "down"} />
+          <Stat label="Commission Clawed Back" value={rm(clawback)} note="After cancels and returns" tone="down" />
         </div>
       </Lock>
 
@@ -104,25 +104,25 @@ export default function DataRisk() {
       <section className="v2-card">
         <div className="v2-card-h">
           <h2 className="v2-h2">Cancel Rate <span title={CANCEL_TIP} className="v2-small">ⓘ</span></h2>
-          <Seg value={by} options={["By video", "By product"] as const} onChange={setBy} />
+          <span className="sb-bar"><Seg value={by} options={["By Video", "By Product"] as const} onChange={setBy} /><DirToggle dir={dir} onFlip={flipDir} /></span>
         </div>
         <Lock what="cancel rates">
-          {by === "By video" ? (
-            <Bars key="v" rows={[...vids].sort((a, b) => (real ? b.cancelled - a.cancelled : 0) || b.cancel - a.cancel).slice(0, 12).map((v) => ({ label: real ? `${v.date} · ${nameOf(v.productId)}` : v.title, value: v.cancel, display: `${v.cancel}%`, tone: tone(v.cancel, v.items), onPick: () => setOpenVideo(allVideos.find((x) => x.id === v.id) ?? null) }))} />
+          {by === "By Video" ? (
+            <Bars key={`v${col}${dir}`} rows={sorted(vids).slice(0, 12).map((v) => ({ label: real ? `${v.date} · ${nameOf(v.productId)}` : v.title, value: v.cancel, display: `${v.cancel}%`, tone: tone(v.cancel, v.items), onPick: () => setOpenVideo(allVideos.find((x) => x.id === v.id) ?? null) }))} />
           ) : (
-            <Bars key="p" rows={[...prods].sort((a, b) => (real ? b.cancelled - a.cancelled : 0) || b.cancel - a.cancel).slice(0, 12).map((b) => ({ label: nameOf(b.productId), value: b.cancel, display: `${b.cancel}%`, tone: tone(b.cancel, b.items), href: productHref(b.productId) }))} />
+            <Bars key={`p${col}${dir}`} rows={sorted(prods).slice(0, 12).map((b) => ({ label: nameOf(b.productId), value: b.cancel, display: `${b.cancel}%`, tone: tone(b.cancel, b.items), href: productHref(b.productId) }))} />
           )}
         </Lock>
         <div className="v2-tablewrap">
           <table className="v2-table">
             <thead>
               <tr>
-                <th>{by === "By video" ? "Video" : "Product"}</th>
+                <th>{by === "By Video" ? "Video" : "Product"}</th>
                 {COLS.map((c) => <th key={c}><SortHead label={c} k={c} value={col} dir={dir} onSort={setSort} /></th>)}
               </tr>
             </thead>
             <tbody>
-              {by === "By video"
+              {by === "By Video"
                 ? sorted(vids).map((v) => (
                     <tr key={v.id}>
                       {/* Tap a video to watch it here (owner, 30 Oct 2026). */}

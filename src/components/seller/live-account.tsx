@@ -122,13 +122,13 @@ export function LiveSellerSecurity() {
   const ways = me?.signIn;
   return (
     <section className="v2-card">
-      <h2 className="v2-h2">Login &amp; Security</h2>
+      <h2 className="v2-h2">Login &Amp; Security</h2>
       {ways?.google && <div className="sl-set"><span><b>Signed in with Google</b><small>{ways.google}</small></span></div>}
       {ways?.tiktok && <div className="sl-set"><span><b>TikTok</b><small>{ways.tiktok}</small></span></div>}
       {ways?.password && <div className="sl-set"><span><b>Email and password</b><small>{ways.email ?? me?.email ?? ""}</small></span></div>}
       {!ways?.google && !ways?.tiktok && !ways?.password && <div className="sl-set"><span><b>Email</b><small>{me?.email ?? ""}</small></span></div>}
       <div className="v2-row">
-        <button type="button" className="v2-link" style={{ color: "#d92d20" }} onClick={() => { fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/seller"; }); }}>Sign out</button>
+        <button type="button" className="v2-link" style={{ color: "#d92d20" }} onClick={() => { fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/seller"; }); }}>Sign Out</button>
       </div>
     </section>
   );
@@ -150,7 +150,7 @@ export function LiveSellerHelp() {
   };
   return (
     <section className="v2-card">
-      <h2 className="v2-h2">Help &amp; Feedback</h2>
+      <h2 className="v2-h2">Help &Amp; Feedback</h2>
       <div className="v2-chips">
         {KINDS.map((k) => <button key={k[0]} type="button" className={`v2-chip ${kind[0] === k[0] ? "on" : ""}`} style={{ height: 36, fontSize: 13.5 }} onClick={() => setKind(k)}>{k[0]}</button>)}
       </div>

@@ -14,8 +14,8 @@ import { useSharedRange } from "@/lib/range";
 import { RANGES, type RangeKey } from "@/lib/mock-creator2";
 import "@/app/creator1.css";
 
-type View = "By video" | "By LIVE" | "By product";
-const HASH: Record<string, View> = { "#product": "By product", "#live": "By LIVE" };
+type View = "By Video" | "By LIVE" | "By Product";
+const HASH: Record<string, View> = { "#product": "By Product", "#live": "By LIVE" };
 const PRESETS: [string, string][] = RANGES.map((r) => [r, r === "Lifetime" ? "Lifetime" : `Last ${r}`]);
 const DAYS: Record<RangeKey, number> = { "3 days": 3, "7 days": 7, "14 days": 14, "30 days": 30, "90 days": 90, Lifetime: 9999 };
 
@@ -24,7 +24,7 @@ const DAYS: Record<RangeKey, number> = { "3 days": 3, "7 days": 7, "14 days": 14
  * days (owner, 1 Nov 2026), the same ones Analytics shows, and the lists load again for them.
  */
 export default function DataPerformance() {
-  const [by, setBy] = useState<View>("By video");
+  const [by, setBy] = useState<View>("By Video");
   const { live } = useDemo();
   const perf = useLivePerf(true);
   const [range, setRange] = useSharedRange();
@@ -62,11 +62,11 @@ export default function DataPerformance() {
           onPreset={(k) => setRange({ preset: k as RangeKey, custom: null })}
         />
       </Title>
-      <Seg value={by} options={["By video", "By LIVE", "By product"] as const} onChange={setBy} />
+      <Seg value={by} options={["By Video", "By LIVE", "By Product"] as const} onChange={setBy} />
       {live && <Updated at={perf && typeof perf === "object" ? perf.updated : null} />}
-      {by === "By video" && <VideoList />}
+      {by === "By Video" && <VideoList />}
       {by === "By LIVE" && <LiveList />}
-      {by === "By product" && <ProductList />}
+      {by === "By Product" && <ProductList />}
     </div>
   );
 }

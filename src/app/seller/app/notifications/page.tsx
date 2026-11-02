@@ -58,13 +58,13 @@ export default function SellerNotifications() {
   return (
     <div className="v2-stack v2-in v2-narrow">
       <Title title="Notifications" sub={state === "wait" ? "Loading…" : state === "failed" ? "Couldn't load your notifications" : unread ? `${unread} unread` : "You're all caught up"}>
-        <button type="button" className="btn-outline" disabled={!unread} onClick={() => { setNotes((all) => all.map((x) => ({ ...x, unread: false }))); if (live) void markNote("seller", null); toast("All marked as read"); }}>Mark all as read</button>
+        <button type="button" className="btn-outline" disabled={!unread} onClick={() => { setNotes((all) => all.map((x) => ({ ...x, unread: false }))); if (live) void markNote("seller", null); toast("All marked as read"); }}>Mark All as Read</button>
       </Title>
       {live && notes.length > 0 && <NoteFilter notes={notes} value={show} onChange={setShow} />}
       <section className="v2-card">
         {urgent.length > 0 && (
           <>
-            <h3 className="sl-group-h" style={{ color: "#d92d20" }}>Needs you</h3>
+            <h3 className="sl-group-h" style={{ color: "#d92d20" }}>Needs You</h3>
             <div>{list(urgent)}</div>
           </>
         )}
@@ -82,7 +82,7 @@ export default function SellerNotifications() {
           </>
         )}
       </section>
-      <p className="v2-small" style={{ margin: 0 }}>{live ? "Showing the last 30 days." : <>Change alerts in <Link href="/seller/app/account">Account</Link>.</>}</p>
+      <p className="v2-small" style={{ margin: 0 }}>{live ? "Showing the last 30 days." : <>Change Alerts in <Link href="/seller/app/account">Account</Link>.</>}</p>
     </div>
   );
 }

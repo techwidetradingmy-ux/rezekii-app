@@ -2,6 +2,7 @@ import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { tx } from "../../lib/i18n/lang.ts";
 import { mytDay } from "../refresh/plan.ts";
 import { historyDone, linkedCreators } from "../sales/orders.ts";
+import { sampleVideoMonths } from "./sample-videos.ts";
 import { SILVER_SALES, SILVER_VIDEOS, monthDelta, monthSales, nextLevel, previousMonth, silverReached, type Level, type LevelState } from "./rules.ts";
 
 const json = (body: unknown, prefer = "return=minimal"): RequestInit => ({ method: "POST", headers: { prefer }, body: JSON.stringify(body) });
@@ -74,7 +75,9 @@ export async function updateLevels(today: string): Promise<number> {
     const [lastMonthSales, monthSalesNow] = source === "orders"
       ? await Promise.all([tapSales(u.id, monthStart(last), monthStart(month)), tapSales(u.id, monthStart(month), new Date().toISOString())])
       : [monthSales(days, last), monthSales(days, month)];
-    const sv = (m: string) => monthDelta(days, m, (d) => d.sample_videos ?? 0);
+    // Videos for samples counted video by video from TikTok's records (owner, 1 Nov 2026); the daily totals if TikTok can't be read.
+    const counted = await sampleVideoMonths(u.tiktok_username, 20 * 3_600_000).catch(() => null);
+    const sv = (m: string) => (counted ? counted[m] ?? 0 : monthDelta(days, m, (d) => d.sample_videos ?? 0));
     const after = nextLevel(before, { today, lastMonthSales, lastMonthSampleVideos: sv(last), monthSales: monthSalesNow, monthSampleVideos: sv(month) });
     if (after.level !== before.level) changed++;
     await supabaseRest("creator_levels?on_conflict=user_id", json({
@@ -116,7 +119,9 @@ export async function levelPage(userId: string, username: string | null): Promis
   const [lifetime, thisMonth, lastMonth] = fromOrders
     ? await Promise.all([tapSales(userId, "2000-01-01T00:00:00Z", new Date().toISOString()), tapSales(userId, monthStart(month), new Date().toISOString()), tapSales(userId, monthStart(prev), monthStart(month))])
     : [last?.paid ?? 0, last && before ? monthSales(days, month) ?? 0 : null, monthSales(days, prev)];
-  const monthVideos = last && before ? Math.max(0, last.sample_videos - before.sample_videos) : 0;
+  // Videos for Rezekii samples this month, video by video from TikTok's records (owner, 1 Nov 2026); else the daily totals.
+  const counted = username ? await sampleVideoMonths(username).catch(() => null) : null;
+  const monthVideos = counted ? counted[month] ?? 0 : last && before ? Math.max(0, last.sample_videos - before.sample_videos) : 0;
   const reached = silverReached(thisMonth, monthVideos);
   // Up as soon as she reaches it (owner, 1 Nov 2026), not only at the next daily update.
   let level: Level = row?.level ?? "bronze";

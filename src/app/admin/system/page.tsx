@@ -59,7 +59,7 @@ export default function SystemSettings() {
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
       <Title title="Settings & Presets" sub="Defaults for sellers and creators. Every change is logged.">
-        <Link href="/admin/system/audit" className="ad-btn-ghost"><Icon name="doc" size={15} /> Audit log</Link>
+        <Link href="/admin/system/audit" className="ad-btn-ghost"><Icon name="doc" size={15} /> Audit Log</Link>
       </Title>
 
       <div className="v2-grid2">
@@ -76,7 +76,7 @@ export default function SystemSettings() {
           </div>
           <div className="v2-row">
             <input className="np-input" style={{ flex: "1 1 120px", minHeight: 40 }} inputMode="numeric" value={newUp} placeholder="Add, e.g. 10" onChange={(e) => setNewUp(e.target.value.replace(/[^\d]/g, ""))} />
-            <button type="button" className="ad-btn-ghost" onClick={addUplift}><Icon name="plus" size={15} /> Add preset</button>
+            <button type="button" className="ad-btn-ghost" onClick={addUplift}><Icon name="plus" size={15} /> Add Preset</button>
           </div>
         </section>
 
@@ -93,7 +93,7 @@ export default function SystemSettings() {
           </div>
           <div className="v2-row">
             <input className="np-input" style={{ flex: "1 1 120px", minHeight: 40 }} inputMode="numeric" value={newQty} placeholder="Add, e.g. 60" onChange={(e) => setNewQty(e.target.value.replace(/[^\d]/g, ""))} />
-            <button type="button" className="ad-btn-ghost" onClick={addQty}><Icon name="plus" size={15} /> Add preset</button>
+            <button type="button" className="ad-btn-ghost" onClick={addQty}><Icon name="plus" size={15} /> Add Preset</button>
           </div>
         </section>
       </div>
@@ -138,7 +138,7 @@ export default function SystemSettings() {
           <span className="v2-small">Sellers agree on first connect, and again for each new version.</span>
           <div className="v2-row">
             <button type="button" className="ad-btn-ghost" onClick={() => toast("Terms v2 opened for reading")}><Icon name="doc" size={15} /> Read v{terms.v}</button>
-            <button type="button" className="ad-btn-ghost" onClick={() => { setTerms({ v: terms.v + 1, since: "Today", agreed: 0 }); toast(`Terms v${terms.v + 1} published · logged`); }}>Publish new version</button>
+            <button type="button" className="ad-btn-ghost" onClick={() => { setTerms({ v: terms.v + 1, since: "Today", agreed: 0 }); toast(`Terms v${terms.v + 1} published · logged`); }}>Publish New Version</button>
           </div>
         </section>
       </div>
@@ -179,7 +179,7 @@ export default function SystemSettings() {
         <div className="ad-batch" role="region" aria-label="Unsaved changes">
           <span>Unsaved changes</span>
           <button type="button" className="ad-btn-ghost" onClick={() => window.location.reload()}>Discard</button>
-          <button type="button" className="np-btn v2-btn-sm" onClick={() => { setDirty(false); toast("Saved · logged"); }}><Icon name="check" size={16} /> Save changes</button>
+          <button type="button" className="np-btn v2-btn-sm" onClick={() => { setDirty(false); toast("Saved · logged"); }}><Icon name="check" size={16} /> Save Changes</button>
         </div>
       )}
     </div>

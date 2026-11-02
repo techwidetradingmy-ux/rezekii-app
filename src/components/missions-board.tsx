@@ -283,7 +283,7 @@ export function MissionsBoard(p: {
               ))}
             </ol>
           </section>
-          <button type="button" className="btn-outline" onClick={() => { setStreakOpen(false); setShare(streakCard); }}><Icon name="share" size={16} /> Share my streak</button>
+          <button type="button" className="btn-outline" onClick={() => { setStreakOpen(false); setShare(streakCard); }}><Icon name="share" size={16} /> Share My Streak</button>
         </Sheet>
       )}
       {moment && (

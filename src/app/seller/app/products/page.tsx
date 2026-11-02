@@ -65,7 +65,7 @@ export default function ShopProducts() {
         <button type="button" className="btn-outline" onClick={sync} disabled={syncing}>
           {syncing ? <span className="sl-spin" /> : <Icon name="refresh" size={18} />} Sync now
         </button>
-        <Link href="/seller/app/submit" className="np-btn v2-btn-sm" style={{ height: 42 }}>Register products</Link>
+        <Link href="/seller/app/submit" className="np-btn v2-btn-sm" style={{ height: 42 }}>Register Products</Link>
       </Title>
 
       <ConnBanner shop={live ? !noShop : undefined} />
@@ -111,7 +111,7 @@ export default function ShopProducts() {
                   )}
                   {st === "Not submitted" && p.listing !== "PENDING" && <Link href="/seller/app/submit" className="np-btn v2-btn-sm">Register</Link>}
                   {st === "Not approved" && (p.real
-                    ? <Link href="/seller/app/submit" className="np-btn v2-btn-sm">Register again</Link>
+                    ? <Link href="/seller/app/submit" className="np-btn v2-btn-sm">Register Again</Link>
                     : <button type="button" className="np-btn v2-btn-sm" onClick={() => setFix(p)}>Fix</button>)}
                   {st === "Live" && <Link href="/seller/app/changes" className="v2-link" style={{ fontSize: 13.5 }}>Change</Link>}
                   {st === "Under review" && p.register && <a href={p.register} target="_blank" rel="noopener noreferrer" className="np-btn v2-btn-sm">Register in Seller Center</a>}

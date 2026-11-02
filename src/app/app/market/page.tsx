@@ -199,13 +199,13 @@ export default function Marketplace() {
       </div>
       </div>
       {live && real && real.items.length < real.total && (
-        <button type="button" className="btn-outline" style={{ alignSelf: "center" }} onClick={() => setPage((n) => n + 1)}>Show more products</button>
+        <button type="button" className="btn-outline" style={{ alignSelf: "center" }} onClick={() => setPage((n) => n + 1)}>Show More Products</button>
       )}
       {list.length === 0 && (
         <div className="v2-card flat" style={{ alignItems: "flex-start" }}>
           <b>No products match</b>
           <span className="v2-muted">Try other filters.</span>
-          <button type="button" className="np-btn v2-btn-sm" onClick={() => { setQ(""); setCat("All"); setOnlySamples(false); }}>Show all</button>
+          <button type="button" className="np-btn v2-btn-sm" onClick={() => { setQ(""); setCat("All"); setOnlySamples(false); }}>Show All</button>
         </div>
       )}
 

@@ -419,7 +419,7 @@ export default function SignIn() {
       <AddressFields value={addr} onChange={setAddr} tried={tried && addrStarted} />
     </div>
   ) : (
-    <button type="button" className="cr1-addaddr" onClick={() => setShowAddr(true)}><Icon name="plus" size={16} /> Add sample delivery address <small>(optional)</small></button>
+    <button type="button" className="cr1-addaddr" onClick={() => setShowAddr(true)}><Icon name="plus" size={16} /> Add Sample Delivery Address <small>(optional)</small></button>
   );
   const signupBad = name.trim().length < 2 || !state.trim() || !!tel.error || !!kindError || !!bErr || !gender || !race || !niches.length || addrBad;
   const keep = () => {
@@ -467,7 +467,7 @@ export default function SignIn() {
               }}
             >
               <div className="su-head">
-                <h1>Create your account</h1>
+                <h1>Create Your Account</h1>
                 <p>Free to join. No minimum followers.</p>
               </div>
               {handle && (
@@ -533,7 +533,7 @@ export default function SignIn() {
     </label>
   );
   const again = (purpose: "signup" | "signin" | "reset") => (
-    <button type="button" className="v2-link cr1-forgot" disabled={busy} onClick={() => void sendCode(purpose)}>Send a new code</button>
+    <button type="button" className="v2-link cr1-forgot" disabled={busy} onClick={() => void sendCode(purpose)}>Send a New Code</button>
   );
   const pwField = (label: string) => (
     <label className="v2-field">
@@ -558,9 +558,9 @@ export default function SignIn() {
         </div>
         <button type="button" className="btn-google cr1-authbtn" onClick={() => oauth("Google")}><GoogleMark /> Continue with Google</button>
         <button type="button" className="btn-tiktok cr1-authbtn" onClick={() => oauth("TikTok")}><TikTokMark /> Continue with TikTok</button>
-        <button type="button" className="btn-email cr1-authbtn" onClick={() => go("email")}><Icon name="inbox" size={20} /> Continue with email</button>
-        <p className="cr1-center cr1-switch">New to Rezekii? <button type="button" className="v2-link" onClick={() => go("create")}>Create account</button></p>
-        <p className="cr1-center cr1-fine">By continuing you agree to Rezekii&apos;s <a className="v2-link" href="https://rezekii.com/terms" target="_blank" rel="noreferrer">Terms of Service</a> and <a className="v2-link" href="https://rezekii.com/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.</p>
+        <button type="button" className="btn-email cr1-authbtn" onClick={() => go("email")}><Icon name="inbox" size={20} /> Continue with Email</button>
+        <p className="cr1-center cr1-switch">New to Rezekii? <button type="button" className="v2-link" onClick={() => go("create")}>Create Account</button></p>
+        <p className="cr1-center cr1-fine">By Continuing You Agree to Rezekii&apos;s <a className="v2-link" href="https://rezekii.com/terms" target="_blank" rel="noreferrer">Terms of Service</a> and <a className="v2-link" href="https://rezekii.com/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.</p>
       </>
     );
   } else if (step === "oauth") {
@@ -577,7 +577,7 @@ export default function SignIn() {
     card = (
       <form className="cr1-form" onSubmit={(e) => { e.preventDefault(); setTried(true); if (!isEmail(email)) return; if (codeSent) { if (code.length === 6) void signInCode(); } else if (pw) void signInEmail(); }}>
         {back("start")}
-        <h1>Sign in with email</h1>
+        <h1>Sign in with Email</h1>
         {emailField}
         {codeSent ? (
           <>
@@ -585,17 +585,17 @@ export default function SignIn() {
             {codeField}
             <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? spin : "Sign in"}</button>
             {again("signin")}
-            <button type="button" className="v2-link" onClick={() => setCodeSent(false)}>Use my password instead</button>
+            <button type="button" className="v2-link" onClick={() => setCodeSent(false)}>Use My Password Instead</button>
           </>
         ) : (
           <>
             {pwField("Password")}
             <button type="button" className="v2-link cr1-forgot" disabled={busy} onClick={() => void sendCode("reset", "reset")}>Forgot password?</button>
             <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? spin : "Sign in"}</button>
-            <button type="button" className="v2-link" disabled={busy} onClick={() => { setTried(true); void sendCode("signin"); }}>Email me a sign-in code instead</button>
+            <button type="button" className="v2-link" disabled={busy} onClick={() => { setTried(true); void sendCode("signin"); }}>Email Me a Sign-In Code Instead</button>
           </>
         )}
-        <p className="cr1-center cr1-switch">New to Rezekii? <button type="button" className="v2-link" onClick={() => go("create")}>Create account</button></p>
+        <p className="cr1-center cr1-switch">New to Rezekii? <button type="button" className="v2-link" onClick={() => go("create")}>Create Account</button></p>
       </form>
     );
   } else if (step === "create") {
@@ -603,7 +603,7 @@ export default function SignIn() {
     card = (
       <form className="cr1-form" onSubmit={(e) => { e.preventDefault(); setTried(true); if (name.trim().length < 2 || !isEmail(email) || pw.length < 8) return; if (codeSent) { if (code.length === 6) void signUpEmail(); } else void sendCode("signup"); }}>
         {back("start")}
-        <h1>Create your account</h1>
+        <h1>Create Your Account</h1>
         {nameField}
         {emailField}
         {pwField("Password")}
@@ -624,13 +624,13 @@ export default function SignIn() {
     card = (
       <form className="cr1-form" onSubmit={(e) => { e.preventDefault(); setTried(true); if (code.length === 6 && pw.length >= 8) void resetPassword(); }}>
         {back("email")}
-        <h1>Choose a new password</h1>
+        <h1>Choose a New Password</h1>
         {sentTo}
         {codeField}
         {pwField("New password")}
         <button type="submit" className="np-btn np-submit" disabled={busy}>{busy ? <span className="cr1-spin sm" /> : "Save and sign in"}</button>
         {again("reset")}
-        <p className="cr1-small" style={{ margin: 0 }}>No access to this email? Write to <a className="v2-link" href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a>.</p>
+        <p className="cr1-small" style={{ margin: 0 }}>No Access to This Email? Write to <a className="v2-link" href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a>.</p>
       </form>
     );
   } else {

@@ -36,7 +36,7 @@ export function LiveMissions() {
           <section className="v2-card" style={{ padding: "8px 12px" }}>
             <div className="v2-tablewrap">
               <table className="v2-table ad-table">
-                <thead><tr><th>Mission</th><th>Type</th><th>Reward</th><th>Claims</th><th>Last 7 days</th><th>People</th><th>Credits given</th></tr></thead>
+                <thead><tr><th>Mission</th><th>Type</th><th>Reward</th><th>Claims</th><th>Last 7 Days</th><th>People</th><th>Credits Given</th></tr></thead>
                 <tbody>
                   {shown.map((m) => (
                     <tr key={`${m.side}-${m.id}`}>

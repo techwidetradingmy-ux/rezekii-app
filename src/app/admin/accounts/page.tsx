@@ -36,7 +36,7 @@ export default function Ledger() {
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
       <Title title="Ledger" sub="Every credit in and out. Balances come from these rows.">
-        <button type="button" className="np-btn v2-btn-sm" onClick={() => setAdjust(true)}><Icon name="plus" size={16} /> Adjust credits</button>
+        <button type="button" className="np-btn v2-btn-sm" onClick={() => setAdjust(true)}><Icon name="plus" size={16} /> Adjust Credits</button>
       </Title>
 
       <div className="v2-grid4 ad-stats">
@@ -86,7 +86,7 @@ export default function Ledger() {
       <section className="v2-card" style={{ padding: "8px 12px" }}>
         <div className="v2-tablewrap">
           <table className="v2-table ad-table">
-            <thead><tr><th>When</th><th>Account</th><th>Type</th><th className="num">Credits</th><th>Source</th><th>Expires</th><th>By · reason</th></tr></thead>
+            <thead><tr><th>When</th><th>Account</th><th>Type</th><th className="num">Credits</th><th>Source</th><th>Expires</th><th>By · Reason</th></tr></thead>
             <tbody>
               {shown.map((r) => (
                 <tr key={r.id}>
@@ -138,7 +138,7 @@ function AdjustSheet({ onClose, onSubmit }: { onClose: () => void; onSubmit: (p:
         <label className="v2-field">Credits<input className="np-input" inputMode="numeric" value={amount} placeholder="e.g. 200" onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ""))} /><small>Max 5,000</small></label>
       </div>
       <Sec>Reason</Sec>
-      <Reasons options={["Make-good for an outage", "Correction", "Goodwill", "Other"]} value={reason} onChange={setReason} note={note} onNote={setNote} notePlaceholder="Required: what happened + case number" />
+      <Reasons options={["Make-Good for an Outage", "Correction", "Goodwill", "Other"]} value={reason} onChange={setReason} note={note} onNote={setNote} notePlaceholder="Required: what happened + case number" />
       <label className="v2-field">
         Second approver
         <select className="np-input" value={approver} onChange={(e) => setApprover(e.target.value)}>

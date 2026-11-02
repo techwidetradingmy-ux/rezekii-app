@@ -61,8 +61,8 @@ export default function OpenCampaigns() {
                 <Progress value={c.joined} max={c.spots} />
               </div>
               <div className="v2-row">
-                <button type="button" className="np-btn v2-btn-sm" onClick={() => openInvite(c)}><Icon name="doc" size={16} /> Copy invite</button>
-                <button type="button" className="ad-btn-ghost" onClick={() => toast("Campaign link copied")}><Icon name="link" size={15} /> Copy link</button>
+                <button type="button" className="np-btn v2-btn-sm" onClick={() => openInvite(c)}><Icon name="doc" size={16} /> Copy Invite</button>
+                <button type="button" className="ad-btn-ghost" onClick={() => toast("Campaign link copied")}><Icon name="link" size={15} /> Copy Link</button>
               </div>
             </section>
           );

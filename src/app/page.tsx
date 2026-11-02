@@ -209,7 +209,7 @@ export default function Landing() {
         <div className="site-wrap">
           <span>© 2026 Rezekii</span>
           <span className="site-spacer" />
-          <Link href="/seller">For sellers</Link>
+          <Link href="/seller">For Sellers</Link>
           <Link href="/signin?in=1">Sign in</Link>
           <a href="https://rezekii.com/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>
           <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer">Terms of Service</a>

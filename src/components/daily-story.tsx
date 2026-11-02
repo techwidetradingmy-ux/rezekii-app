@@ -150,7 +150,8 @@ function StoryPlayer({ pages, onClose }: { pages: StoryPage[]; onClose: () => vo
         lines={[]}
         caption={mask(share.caption, hide && !!share.money)}
         card={<StoryCard page={share} hide={hide} date={date} />}
-        extra={share.money ? <Seg value={hide ? "Hide amounts" : "Show amounts"} options={["Show amounts", "Hide amounts"] as const} onChange={(v) => setHide(v === "Hide amounts")} /> : undefined}
+        story={{ tone: share.tone, pose: share.pose, kick: share.kick, big: mask(share.big, hide && !!share.money) ?? "", head: mask(share.head, hide && !!share.money) ?? "", sub: share.sub ? mask(share.sub, hide && !!share.money) : undefined, lines: share.lines?.map((l) => `${l.tag}: ${mask(l.text, hide && !!share.money)}`), date }}
+        extra={share.money ? <Seg value={hide ? "Hide Amounts" : "Show Amounts"} options={["Show Amounts", "Hide Amounts"] as const} onChange={(v) => setHide(v === "Hide Amounts")} /> : undefined}
       />
     );
   }

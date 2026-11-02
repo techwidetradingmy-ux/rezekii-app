@@ -56,7 +56,7 @@ export function LivePerformance() {
             <section className="v2-card" style={{ padding: "8px 12px" }}>
               <div className="v2-tablewrap">
                 <table className="v2-table ad-table">
-                  <thead><tr><th>Merchant</th><th>Products</th><th>Selling</th><th>Orders</th><th>Creators</th><th>Samples asked</th><th style={{ textAlign: "right" }}>Sales</th></tr></thead>
+                  <thead><tr><th>Merchant</th><th>Products</th><th>Selling</th><th>Orders</th><th>Creators</th><th>Samples Asked</th><th style={{ textAlign: "right" }}>Sales</th></tr></thead>
                   <tbody>
                     {shown.map((m) => (
                       <Fragment key={m.shop}>

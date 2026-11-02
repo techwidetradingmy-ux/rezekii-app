@@ -59,8 +59,8 @@ export default function BusinessHome() {
               <div className="ad-linkrow"><Icon name="briefcase" size={16} /><code>{shopLink}</code><button type="button" className="ad-btn-ghost" onClick={() => copy(shopLink)}>Copy</button></div>
               <div className="ad-linkrow"><Icon name="user" size={16} /><code>{creatorLink}</code><button type="button" className="ad-btn-ghost" onClick={() => copy(creatorLink)}>Copy</button></div>
               <div className="v2-row">
-                <button type="button" className="np-btn v2-btn-sm" onClick={() => setExpo(true)}><Icon name="qr" size={16} /> Show full screen</button>
-                <button type="button" className="ad-btn-ghost" onClick={() => toast("Poster saved as PDF")}>Print poster</button>
+                <button type="button" className="np-btn v2-btn-sm" onClick={() => setExpo(true)}><Icon name="qr" size={16} /> Show Full Screen</button>
+                <button type="button" className="ad-btn-ghost" onClick={() => toast("Poster saved as PDF")}>Print Poster</button>
               </div>
             </div>
           </div>
@@ -74,7 +74,7 @@ export default function BusinessHome() {
           </div>
           <section className="v2-card">
             <div className="v2-card-h">
-              <h2 className="v2-h2">Follow-ups Due</h2>
+              <h2 className="v2-h2">Follow-Ups Due</h2>
               <span className={`badge ${due.some((f) => f.late) ? "badge-red" : ""}`}>{due.length}</span>
             </div>
             <div className="ad-list">
@@ -99,7 +99,7 @@ export default function BusinessHome() {
 
       <section className="v2-card">
         <div className="v2-card-h">
-          <h2 className="v2-h2">Your Sign-ups</h2>
+          <h2 className="v2-h2">Your Sign-Ups</h2>
           <Seg value={tab} options={["Merchants", "Creators"] as const} onChange={setTab} />
         </div>
         <div className="ad-list">

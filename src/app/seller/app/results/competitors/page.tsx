@@ -96,7 +96,7 @@ export default function Competitors() {
           </section>
 
           <section className="v2-card">
-            <div className="v2-card-h"><h2 className="v2-h2">Top Videos</h2><span className="v2-small">By sales</span></div>
+            <div className="v2-card-h"><h2 className="v2-h2">Top Videos</h2><span className="v2-small">By Sales</span></div>
             <div className="sl-vgrid sl-reveal">
               {vids.map((v) => (
                 <button key={v.title} type="button" className="sl-vid" onClick={() => toast(`Opening ${v.handle}'s video on TikTok`)}>
@@ -116,7 +116,7 @@ export default function Competitors() {
           <section className="v2-card">
             <div className="v2-card-h">
               <h2 className="v2-h2">Top Creators in {cat}</h2>
-              <button type="button" className="np-btn v2-btn-sm" onClick={() => toast(SOON)}><Icon name="users" size={16} /> Invite creators</button>
+              <button type="button" className="np-btn v2-btn-sm" onClick={() => toast(SOON)}><Icon name="users" size={16} /> Invite Creators</button>
             </div>
             <div className="sl-reveal">
               {creators.map((c) => (
@@ -128,7 +128,7 @@ export default function Competitors() {
                     <small>Sold {c.sold} units in {cat} · {c.videos} videos</small>
                   </span>
                   <span className="sl-pside">
-                    {c.note.startsWith("Already") ? <span className="badge">Sells for you</span> : <button type="button" className="btn-outline" style={{ height: 36, fontSize: 13.5 }} onClick={() => toast(SOON)}>Invite</button>}
+                    {c.note.startsWith("Already") ? <span className="badge">Sells for You</span> : <button type="button" className="btn-outline" style={{ height: 36, fontSize: 13.5 }} onClick={() => toast(SOON)}>Invite</button>}
                   </span>
                 </div>
               ))}

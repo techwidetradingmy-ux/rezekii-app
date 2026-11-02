@@ -71,8 +71,8 @@ export default function WishListAdmin() {
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
       <Title title="Wish List" sub="Products creators want on Rezekii, with what they'll commit if it launches. Most wanted first.">
-        <button type="button" className="ad-btn-ghost" onClick={() => setEditLine(true)}><Icon name="gear" size={16} /> Ready line</button>
-        <button type="button" className="btn-outline v2-btn-sm" onClick={() => toast("Seller list exported (CSV)")}><Icon name="arrow" size={16} /> Export sellers</button>
+        <button type="button" className="ad-btn-ghost" onClick={() => setEditLine(true)}><Icon name="gear" size={16} /> Ready Line</button>
+        <button type="button" className="btn-outline v2-btn-sm" onClick={() => toast("Seller list exported (CSV)")}><Icon name="arrow" size={16} /> Export Sellers</button>
       </Title>
 
       <Chips<Filter>
@@ -159,8 +159,8 @@ export default function WishListAdmin() {
           {!closed(sel) && (
             <>
               <div className="v2-row">
-                <button type="button" className="ad-btn-ghost" onClick={() => copy(sel)}><Icon name="doc" size={16} /> Copy seller pitch</button>
-                {sel.status === "New" && <button type="button" className="ad-btn-ghost" onClick={() => update(sel.id, { status: "Contacting" }, `Marked contacting. ${sel.creators} creators told.`)}>Mark contacting</button>}
+                <button type="button" className="ad-btn-ghost" onClick={() => copy(sel)}><Icon name="doc" size={16} /> Copy Seller Pitch</button>
+                {sel.status === "New" && <button type="button" className="ad-btn-ghost" onClick={() => update(sel.id, { status: "Contacting" }, `Marked contacting. ${sel.creators} creators told.`)}>Mark Contacting</button>}
               </div>
               <div className="ad-wl-sec">
                 <h3>Log Seller Reply</h3>
@@ -170,7 +170,7 @@ export default function WishListAdmin() {
                   ))}
                 </div>
                 {reply === "Joined" && <div className="ad-wl-line"><span>Raise for these creators</span><span className="ad-wl-raise">+<Stepper label="Raise in percent" value={raise} min={1} max={30} onChange={setRaise} />%</span></div>}
-                {reply && <button type="button" className="np-btn" onClick={() => log(sel)}>Save reply</button>}
+                {reply && <button type="button" className="np-btn" onClick={() => log(sel)}>Save Reply</button>}
               </div>
             </>
           )}

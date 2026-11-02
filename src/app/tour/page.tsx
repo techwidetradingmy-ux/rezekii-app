@@ -24,7 +24,7 @@ export default function Tour() {
             <span><Image src="/master-logo-transparent.png" alt="" width={30} height={30} /></span>
           </span>
           <div>
-            <h1 style={{ margin: 0, fontSize: 32, fontWeight: 800, letterSpacing: "-0.02em" }}>Rezekii 2.0 · all pages</h1>
+            <h1 style={{ margin: 0, fontSize: 32, fontWeight: 800, letterSpacing: "-0.02em" }}>Rezekii 2.0 · All Pages</h1>
             <p className="v2-muted" style={{ margin: "4px 0 0" }}>Sample data only. Switch apps from the top strip.</p>
           </div>
         </div>

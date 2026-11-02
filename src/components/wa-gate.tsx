@@ -36,7 +36,7 @@ export function WaGate() {
       <button type="button" className="np-btn cr2-wabtn" disabled={waiting} onClick={send}>
         <Icon name="whatsapp" size={18} /> {waiting ? "Waiting for your message…" : "Open WhatsApp"}
       </button>
-      <button type="button" className="btn-outline" style={{ height: 46 }} onClick={waCancel}>Not now</button>
+      <button type="button" className="btn-outline" style={{ height: 46 }} onClick={waCancel}>Not Now</button>
     </Sheet>
   );
 }

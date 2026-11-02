@@ -242,7 +242,7 @@ const USPS: Usp[] = [
           <span><small>Hire staff</small><span className="lp-u-cbar red"><i /></span><b>RM 3,000+</b></span>
           <span><small>Rezekii</small><span className="lp-u-cbar"><i /></span><b>RM 0</b></span>
         </div>
-        <span className="lp-u-chip">Commission only on sales</span>
+        <span className="lp-u-chip">Commission Only on Sales</span>
       </div>
     ),
   },

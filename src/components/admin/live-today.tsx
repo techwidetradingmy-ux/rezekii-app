@@ -125,7 +125,7 @@ export function LiveAdminToday() {
             <section className="v2-card">
               <div className="v2-card-h">
                 <h2 className="v2-h2">Staff Actions</h2>
-                <Link href="/admin/system/audit">Audit log</Link>
+                <Link href="/admin/system/audit">Audit Log</Link>
               </div>
               <div className="ad-list">
                 {d.actions.map((a, i) => (

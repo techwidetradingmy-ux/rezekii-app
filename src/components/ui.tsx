@@ -446,7 +446,7 @@ const BLESS = [
  * "Share your proud moment" (V1's share window): the card in 3 designs, sized for each platform, as an image or a 5-second
  * video, with a blessing, a caption and the apps to send it to. Shows achievements, never sales.
  */
-export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow", level, kicker = "Proud moment", caption: captionInit, onShared, title, card, moment, extra, invite }: {
+export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow", level, kicker = "Proud moment", caption: captionInit, onShared, title, card, moment, extra, invite, story }: {
   onClose: () => void; big: string; label: string; lines: string[]; handle?: string; level?: Level; kicker?: string; caption?: string;
   /** An invite: the card shows her code and reward, and Copy link copies her own invite link. */
   invite?: InviteInfo;
@@ -457,6 +457,8 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
   title?: string;
   /** A ready-made 9:16 card (like a recap cover) shared as it is, instead of the achievement card and its styles. */
   card?: React.ReactNode;
+  /** A Daily Story page, made into the real picture that's shared (owner, 1 Nov 2026). */
+  story?: { tone: string; pose: string; kick: string; big: string; head: string; sub?: string; lines?: string[]; date: string };
   /** Called once the card has gone out to an app (on a phone: when the share menu reports it was sent). */
   onShared?: (where: string) => void;
 }) {
@@ -490,8 +492,19 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
   // The real picture (owner, 1 Nov 2026): made on the server, the same file for the preview, the share menu and Save.
   const cardUrl = (() => {
     if (!origin || !link) return "";
-    const q = new URLSearchParams({ fmt, design: String(design), kicker: invite ? "Invite" : kicker, label, big, handle: you.handle || handle, name: you.name || "", link, bless: BLESS[bless] });
-    for (const l of invite ? [`Code ${invite.code}`, `+${invite.reward} credits for you`] : lines) q.append("line", l);
+    const q = new URLSearchParams({ fmt, design: String(design), kicker, label, big, handle: you.handle || handle, name: you.name || "", link, bless: BLESS[bless] });
+    // The invite keeps its ticket and Rimau; a Daily Story page keeps its own look (owner, 1 Nov 2026).
+    if (invite) {
+      q.set("moment", "invite");
+      q.set("kicker", invite.kick ?? "You're invited");
+      q.set("code", invite.code);
+      q.set("reward", String(invite.reward));
+      if (invite.tag) q.set("tag", invite.tag);
+    } else if (story) {
+      q.set("moment", "story");
+      for (const [k, v] of Object.entries({ tone: story.tone, pose: story.pose, kicker: story.kick, big: story.big, label: story.head, sub: story.sub ?? "", date: story.date })) q.set(k, v);
+      for (const l of story.lines ?? []) q.append("line", l);
+    } else for (const l of lines) q.append("line", l);
     if (you.photo?.startsWith("/api/img/")) q.set("photo", you.photo);
     return `/api/v2/share-card?${q}`;
   })();
@@ -503,7 +516,7 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
   // Shares the real file through the phone's menu; it counts only when the menu says it went out (owner, 1 Nov 2026).
   const send = async (app: string) => {
     if (busy) return;
-    if (card) {
+    if (card && !story) {
       const nav = navigator as Navigator;
       if (nav.share) nav.share({ text: `${caption} ${link}`.trim() }).then(() => onShared?.(app), () => {});
       else copyLink();
@@ -544,7 +557,7 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
       <div className="v2-shgrid">
         <div className="v2-shleft">
           {/* Size as two small icons above the card (owner, 30 Oct 2026), not a big row. */}
-          {!card && (
+          {(!card || story) && (
             <div className="v2-shsize" role="group" aria-label="Size">
               {FORMATS.map((x) => (
                 <button key={x.key} type="button" className={fmt === x.key ? "on" : undefined} aria-pressed={fmt === x.key} aria-label={`${x.label} ${x.ratio.replace(" / ", ":")}`} title={`${x.label} ${x.ratio.replace(" / ", ":")}`} onClick={() => setFmt(x.key)}>
@@ -553,7 +566,7 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
               ))}
             </div>
           )}
-          {card ? <div className="v2-shcover">{card}</div> : cardUrl ? (
+          {card && !(story && cardUrl) ? <div className="v2-shcover">{card}</div> : cardUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img className={`v2-shimg${video ? " vid" : ""}`} src={cardUrl} alt={`${label}: ${big}`} style={{ aspectRatio: f.ratio }} />
           ) : invite ? (
@@ -596,7 +609,7 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
         <div className="v2-shright">
           {!card && <Seg value={DESIGNS[design]} options={DESIGNS} onChange={(d) => setDesign(DESIGNS.indexOf(d))} />}
           {extra}
-          {!extra && <Seg value={video ? "Video · 5 sec" : "Image"} options={["Image", "Video · 5 sec"] as const} onChange={(v) => setVideo(v !== "Image")} />}
+          {!extra && <Seg value={video ? "Video · 5 Sec" : "Image"} options={["Image", "Video · 5 Sec"] as const} onChange={(v) => setVideo(v !== "Image")} />}
           {!card && !invite && <div className="v2-bless">
             <span aria-hidden="true">✨</span>
             <span><b>Blessing on your card</b><small>{BLESS[bless]}</small></span>

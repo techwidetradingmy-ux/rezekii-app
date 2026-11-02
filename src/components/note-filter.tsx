@@ -12,7 +12,7 @@ export function NoteFilter({ notes, value, onChange }: { notes: { cat?: NoteCate
   return (
     <div className="v2-chips" role="group" aria-label="Show">
       <button type="button" className={`v2-chip ${value === "all" ? "on" : ""}`} onClick={() => onChange("all")}>All <small>({notes.length})</small></button>
-      {urgent > 0 && <button type="button" className={`v2-chip ${value === "urgent" ? "on" : ""}`} onClick={() => onChange("urgent")}>Needs you <small>({urgent})</small></button>}
+      {urgent > 0 && <button type="button" className={`v2-chip ${value === "urgent" ? "on" : ""}`} onClick={() => onChange("urgent")}>Needs You <small>({urgent})</small></button>}
       {cats.map(([c, label]) => (
         <button key={c} type="button" className={`v2-chip ${value === c ? "on" : ""}`} onClick={() => onChange(c)}>{label} <small>({notes.filter((n) => n.cat === c).length})</small></button>
       ))}

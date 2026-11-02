@@ -20,14 +20,14 @@ const open = (f: F) => f.status === "New" || f.status === "In progress";
 export default function FeedbackInbox() {
   const { toast, live } = useDemo();
   const [list, setList] = useState<F[]>(FEEDBACK);
-  const [show, setShow] = useState<"To do" | "Done">("To do");
+  const [show, setShow] = useState<"To Do" | "Done">("To Do");
   const [type, setType] = useState<TypeF>("All");
   const [sel, setSel] = useState<string | null>(null);
   const [reply, setReply] = useState("");
   // Signed in (owner, 31 Oct 2026): real data.
   if (live) return <LiveFeedback />;
 
-  const base = list.filter((f) => (show === "To do" ? open(f) : !open(f)));
+  const base = list.filter((f) => (show === "To Do" ? open(f) : !open(f)));
   const shown = base.filter((f) => type === "All" || f.type === type);
   const f = list.find((x) => x.id === sel) ?? null;
   const set = (id: string, patch: Partial<F>) => setList((l) => l.map((x) => (x.id === id ? { ...x, ...patch } : x)));
@@ -37,7 +37,7 @@ export default function FeedbackInbox() {
       <Title title="Feedback Inbox" sub="From creators and sellers. Page and device attached." />
 
       <div className="ad-bar">
-        <Seg value={show} options={["To do", "Done"] as const} onChange={setShow} />
+        <Seg value={show} options={["To Do", "Done"] as const} onChange={setShow} />
       </div>
       <Chips<TypeF> label="Type" value={type} onChange={setType} options={(["All", "Idea", "Bug", "Complaint"] as TypeF[]).map((t) => [t, base.filter((x) => t === "All" || x.type === t).length] as [TypeF, number])} />
 
@@ -57,7 +57,7 @@ export default function FeedbackInbox() {
               {open(x) && <button type="button" className="ad-btn-ghost" onClick={() => { set(x.id, { status: "Handled" }); toast("Marked handled"); }}><Icon name="check" size={15} /> Handled</button>}
             </div>
           ))}
-          {shown.length === 0 && <p className="v2-muted" style={{ padding: "14px 0", margin: 0 }}>{show === "To do" ? "All done." : "Nothing handled yet."}</p>}
+          {shown.length === 0 && <p className="v2-muted" style={{ padding: "14px 0", margin: 0 }}>{show === "To Do" ? "All done." : "Nothing handled yet."}</p>}
         </div>
       </section>
 
@@ -75,8 +75,8 @@ export default function FeedbackInbox() {
           {f.reply && <div className="ad-note"><small>{ME} replied</small>{f.reply}</div>}
           <textarea className="np-input" rows={3} value={reply} placeholder={`Goes to app and email`} onChange={(e) => setReply(e.target.value)} />
           <div className="v2-row">
-            <button type="button" className="np-btn v2-btn-sm" disabled={!reply.trim()} onClick={() => { set(f.id, { reply: reply.trim(), status: f.status === "New" ? "In progress" : f.status }); setReply(""); toast(`Reply sent to ${f.from}`); }}><Icon name="send" size={15} /> Send reply</button>
-            <button type="button" className="ad-btn-ghost" onClick={() => { set(f.id, { status: "Handled" }); toast(`Handled · ${f.from} notified`); setSel(null); }}><Icon name="check" size={15} /> Mark handled</button>
+            <button type="button" className="np-btn v2-btn-sm" disabled={!reply.trim()} onClick={() => { set(f.id, { reply: reply.trim(), status: f.status === "New" ? "In progress" : f.status }); setReply(""); toast(`Reply sent to ${f.from}`); }}><Icon name="send" size={15} /> Send Reply</button>
+            <button type="button" className="ad-btn-ghost" onClick={() => { set(f.id, { status: "Handled" }); toast(`Handled · ${f.from} notified`); setSel(null); }}><Icon name="check" size={15} /> Mark Handled</button>
           </div>
         </Sheet>
       )}

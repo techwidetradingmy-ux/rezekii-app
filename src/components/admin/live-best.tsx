@@ -59,7 +59,7 @@ export function LiveBestSellers() {
           </div>
           <div className="v2-tablewrap">
             <table className="v2-table ad-table">
-              <thead><tr><th>#</th><th>{list === "products" ? "Product" : "Creator"}</th>{list === "products" ? <th>Rating</th> : <th>Followers</th>}<th style={{ textAlign: "right" }}>GMV range (TikTok&apos;s figure)</th></tr></thead>
+              <thead><tr><th>#</th><th>{list === "products" ? "Product" : "Creator"}</th>{list === "products" ? <th>Rating</th> : <th>Followers</th>}<th style={{ textAlign: "right" }}>GMV Range (TikTok&apos;s Figure)</th></tr></thead>
               <tbody>{d.items.map((x) => (
                 <tr key={`${x.rank}-${x.id}`}>
                   <td className="num">{x.rank}</td>

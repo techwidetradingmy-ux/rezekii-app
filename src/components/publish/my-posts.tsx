@@ -228,7 +228,7 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
           {editable && (cancelling === p.id ? (
             <span className="sq-confirm" role="alert">
               <span>{g === "draft" ? "Delete this draft?" : "Cancel this post? It moves to Drafts."}</span>
-              <button type="button" className="btn-outline v2-btn-sm" onClick={() => setCancelling(null)}>Keep it</button>
+              <button type="button" className="btn-outline v2-btn-sm" onClick={() => setCancelling(null)}>Keep It</button>
               <button type="button" className="sq-danger v2-btn-sm" onClick={() => (g === "draft" ? (setPosts((all) => all.filter((x) => x.id !== p.id)), toast("Draft deleted")) : cancel(p))}>{g === "draft" ? "Delete" : "Cancel post"}</button>
             </span>
           ) : (
@@ -237,8 +237,8 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
               <button type="button" className="sq-ghost v2-btn-sm" onClick={() => setCancelling(p.id)}>{g === "draft" ? "Delete" : "Cancel"}</button>
             </span>
           ))}
-          {g === "done" && !live && <span className="sq-acts"><button type="button" className="sq-ghost v2-btn-sm" onClick={() => toast("Preview: opens the post in the app")}>View post <Icon name="arrow" size={14} /></button></span>}
-          {g === "done" && live && link && <span className="sq-acts"><a className="sq-ghost v2-btn-sm" href={link} target="_blank" rel="noopener noreferrer">View post <Icon name="arrow" size={14} /></a></span>}
+          {g === "done" && !live && <span className="sq-acts"><button type="button" className="sq-ghost v2-btn-sm" onClick={() => toast("Preview: opens the post in the app")}>View Post <Icon name="arrow" size={14} /></button></span>}
+          {g === "done" && live && link && <span className="sq-acts"><a className="sq-ghost v2-btn-sm" href={link} target="_blank" rel="noopener noreferrer">View Post <Icon name="arrow" size={14} /></a></span>}
         </span>
       </li>
     );

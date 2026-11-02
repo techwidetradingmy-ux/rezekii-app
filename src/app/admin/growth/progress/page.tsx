@@ -10,12 +10,12 @@ import { Progress, Seg, Title } from "@/components/ui";
 import { Av, Funnel, Meta, Pill, Search } from "@/components/admin/bits";
 import { MISSION_DEFS, MISSION_FUNNELS, PROGRESS_PEOPLE } from "@/lib/mock-admin";
 
-type View = "Per person" | "Per mission";
+type View = "Per Person" | "Per Mission";
 
 /** Progress per person (where each creator or seller is in each mission) and per mission (where people get stuck). */
 export default function GrowthProgress() {
   const { toast, live } = useDemo();
-  const [view, setView] = useState<View>("Per person");
+  const [view, setView] = useState<View>("Per Person");
   const [q, setQ] = useState("");
   const [who, setWho] = useState(PROGRESS_PEOPLE[0].key);
   const withFunnel = MISSION_DEFS.filter((m) => MISSION_FUNNELS[m.id]);
@@ -38,9 +38,9 @@ export default function GrowthProgress() {
         <button type="button" className="ad-btn-ghost" onClick={() => toast("Exported as CSV")}><Icon name="doc" size={15} /> Export</button>
       </Title>
 
-      <Seg value={view} options={["Per person", "Per mission"] as const} onChange={setView} />
+      <Seg value={view} options={["Per Person", "Per Mission"] as const} onChange={setView} />
 
-      {view === "Per person" ? (
+      {view === "Per Person" ? (
         <div className="v2-split" style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1.6fr)" }}>
           <section className="v2-card">
             <Search value={q} onChange={setQ} placeholder="Search a creator or seller" />
@@ -65,7 +65,7 @@ export default function GrowthProgress() {
                   <span className="v2-small">{person.who} · {person.role} · joined {person.joined}</span>
                 </span>
               </div>
-              <Link href="/admin/analytics" className="v2-link">Activity timeline</Link>
+              <Link href="/admin/analytics" className="v2-link">Activity Timeline</Link>
             </div>
             <div className="ad-list">
               {person.missions.map((x) => {
@@ -106,7 +106,7 @@ export default function GrowthProgress() {
           <section className="v2-card">
             <div className="v2-card-h">
               <h2 className="v2-h2">Where People Get Stuck</h2>
-              <Link href="/admin/growth" className="v2-link">Edit mission</Link>
+              <Link href="/admin/growth" className="v2-link">Edit Mission</Link>
             </div>
             <Funnel steps={steps} />
             <div className="v2-alert" style={{ background: "var(--bsoft)", color: "var(--blue)" }}>

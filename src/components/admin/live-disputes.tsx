@@ -42,7 +42,7 @@ export function LiveDisputes() {
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
       <Title title="Disputes" sub="Problems between creators and sellers. Open a case when someone reports one.">
-        <button type="button" className="np-btn v2-btn-sm" onClick={() => setForm({ kind: "Sample not received", creator: "", shop: "", product: "", detail: "" })}><Icon name="plus" size={15} /> Open a case</button>
+        <button type="button" className="np-btn v2-btn-sm" onClick={() => setForm({ kind: "Sample not received", creator: "", shop: "", product: "", detail: "" })}><Icon name="plus" size={15} /> Open a Case</button>
       </Title>
       {!data ? <p className="v2-muted">{err ?? "Loading…"}</p> : (
         <>
@@ -67,7 +67,7 @@ export function LiveDisputes() {
                 <div key={i} className="ad-row">
                   <Av name={w.creator} />
                   <span className="main"><b>{w.creator}</b><small>{w.product ?? "Product"}{w.shop ? ` · ${w.shop}` : ""} · {w.videos} video{w.videos === 1 ? "" : "s"} · TikTok status since {day(w.since)}</small></span>
-                  <button type="button" className="ad-btn-ghost" onClick={() => setForm({ kind: "Creator overdue", creator: w.creator, shop: w.shop ?? "", product: w.product ?? "", detail: "Sample received, no video yet." })}>Open a case</button>
+                  <button type="button" className="ad-btn-ghost" onClick={() => setForm({ kind: "Creator overdue", creator: w.creator, shop: w.shop ?? "", product: w.product ?? "", detail: "Sample received, no video yet." })}>Open a Case</button>
                 </div>
               ))}
               {!data.waiting.length && <p className="v2-muted" style={{ padding: "14px 0" }}>Everyone with a sample has posted.</p>}
@@ -86,7 +86,7 @@ export function LiveDisputes() {
           <label className="v2-field">Shop (optional)<input className="np-input" value={form.shop} onChange={(e) => setForm({ ...form, shop: e.target.value })} /></label>
           <label className="v2-field">Product (optional)<input className="np-input" value={form.product} onChange={(e) => setForm({ ...form, product: e.target.value })} /></label>
           <label className="v2-field">What happened<textarea className="np-input" rows={4} maxLength={1000} value={form.detail} onChange={(e) => setForm({ ...form, detail: e.target.value })} /></label>
-          <button type="button" className="np-btn" disabled={!form.detail.trim()} onClick={async () => { if (await post({ open: form }, "Case opened")) setForm(null); }}>Open case</button>
+          <button type="button" className="np-btn" disabled={!form.detail.trim()} onClick={async () => { if (await post({ open: form }, "Case opened")) setForm(null); }}>Open Case</button>
         </Sheet>
       )}
 

@@ -22,7 +22,7 @@ export default function BusinessPerformance() {
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
       <Title title="Live Performance" sub="How each merchant's products are doing with our creators.">
-        <button type="button" className="ad-btn-ghost" onClick={() => toast(`Report sent to ${shop}`)}><Icon name="share" size={16} /> Send report</button>
+        <button type="button" className="ad-btn-ghost" onClick={() => toast(`Report sent to ${shop}`)}><Icon name="share" size={16} /> Send Report</button>
       </Title>
 
       <Chips label="Merchant" value={shop} onChange={setShop} options={MERCHANT_PERF.map((x) => [x.shop] as [string])} />

@@ -82,7 +82,7 @@ export function LiveReview() {
                   <div key={c.id} className="ad-row">
                     <Av name={c.name} />
                     <span className="main"><b>{c.name} {c.shopAccount ?? c.handle}</b><small>{c.reason ?? "No reason given"}</small></span>
-                    <button type="button" className="ad-btn-ghost" onClick={() => void decide(c.id, true)}>Approve now</button>
+                    <button type="button" className="ad-btn-ghost" onClick={() => void decide(c.id, true)}>Approve Now</button>
                   </div>
                 ))}
               </div>
@@ -216,7 +216,7 @@ export function LiveAdminAccess() {
           <section className="v2-card">
             <form className="v2-row" style={{ gap: 8 }} onSubmit={(e) => { e.preventDefault(); void add(); }}>
               <input type="email" className="np-input" style={{ flex: 1 }} placeholder="name@gmail.com" value={email} onChange={(e) => setEmail(e.target.value)} aria-label="Google email to add" />
-              <button type="submit" className="np-btn v2-btn-sm" disabled={!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)}><Icon name="plus" size={15} /> Add admin</button>
+              <button type="submit" className="np-btn v2-btn-sm" disabled={!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)}><Icon name="plus" size={15} /> Add Admin</button>
             </form>
           </section>
           <section className="v2-card" style={{ padding: "6px 20px" }}>

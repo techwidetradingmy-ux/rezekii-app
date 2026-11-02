@@ -7,6 +7,7 @@ import { allProducts, type TapProduct } from "../tap/catalog.ts";
 import { profileOf, type CreatorDetails } from "../rewards/profiles.ts";
 import { ratingsOf, salesProfile, showcaseOf, type Channel } from "./mine.ts";
 import { queuePhotos } from "../photos/queue.ts";
+import { ensurePhotos } from "../photos/ensure.ts";
 
 /**
  * AI Picks (owner, 31 Oct 2026): a deep look at her last 30 days, then the products on TikTok Shop that fit her best.
@@ -40,7 +41,7 @@ export type Pick = {
  */
 export type Effort = {
   id: string; name: string; videos: number; lives: number; gmv: number; commission: number; perPost: number; hit: { gmv: number } | null;
-  videoGmv: number; liveGmv: number; per1k: number | null; perLive: number | null; gmvPerPost: number;
+  videoGmv: number; liveGmv: number; per1k: number | null; perVideo: number | null; perLive: number | null; gmvPerPost: number;
 };
 export type AiResult = {
   linked: boolean;
@@ -184,6 +185,8 @@ export async function aiPicks(userId: string, token: string, username: string | 
         perPost: r2(a.commission / posts.length),
         videoGmv: r2(videoGmv), liveGmv: r2(liveGmv),
         per1k: seenViews >= 100 ? r2((seenGmv / seenViews) * 1000) : null,
+        // Without view counts a video is judged by its sales per video (owner, 1 Nov 2026: the fallback standard).
+        perVideo: vids.length ? r2(videoGmv / vids.length) : null,
         perLive: lvs.length ? r2(liveGmv / lvs.length) : null,
         gmvPerPost: r2((videoGmv + liveGmv) / posts.length),
         // One video or LIVE that took off: RM1,000+ in sales on its own, or nearly all of the product's sales from one post.
@@ -294,9 +297,15 @@ export async function aiPicks(userId: string, token: string, username: string | 
         .slice(0, 5)
         .map((r) => ({ user: r[1], name: r[2] || r[1], img: built.details[r[1]]?.a ?? null, followers: r[3], lo: r[5], hi: r[6], video: built.details[r[1]]?.vs ?? -1 }))
     : [];
-  // Every creator shows a photo (owner, 1 Nov 2026): any without a saved one go to the front of the daily photo task.
+  // Every creator shows a photo (owner, 1 Nov 2026): one without a saved photo is saved now; any still missing go to the
+  // front of the daily photo task.
   const noPhoto = peers.filter((c) => !c.img).map((c) => c.user);
-  if (noPhoto.length) await queuePhotos(noPhoto).catch(() => undefined);
+  if (noPhoto.length) {
+    const got = await ensurePhotos(noPhoto).catch(() => new Map<string, string>());
+    for (const c of peers) if (!c.img) c.img = got.get(c.user.toLowerCase()) ?? null;
+    const still = peers.filter((c) => !c.img).map((c) => c.user);
+    if (still.length) await queuePhotos(still).catch(() => undefined);
+  }
 
   // Swap out: showcase products she had no orders for in 30 days (low ratings are in Risk Check).
   const idle = showcase.items.filter((p) => !mine.has(p.id));

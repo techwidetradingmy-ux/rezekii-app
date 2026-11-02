@@ -64,7 +64,7 @@ export default function GrowthMissions() {
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
       <Title title="Missions" sub="Change missions and rewards any time, no code.">
-        <button type="button" className="np-btn v2-btn-sm" onClick={() => setEdit(blank(who === "Creators" ? "Creator" : "Seller"))}><Icon name="plus" size={16} /> New mission</button>
+        <button type="button" className="np-btn v2-btn-sm" onClick={() => setEdit(blank(who === "Creators" ? "Creator" : "Seller"))}><Icon name="plus" size={16} /> New Mission</button>
       </Title>
 
       <Seg value={who} options={["Creators", "Sellers"] as const} onChange={setWho} />
@@ -193,7 +193,7 @@ function Editor({ m: init, onClose, onSave }: { m: Def; onClose: () => void; onS
 
       <div className="v2-row">
         <button type="button" className="np-btn" disabled={!m.title.trim() || !m.goal.trim() || !reward} onClick={() => onSave(m, "Live", start)}><Icon name="cal" size={17} /> Schedule</button>
-        <button type="button" className="ad-btn-ghost" disabled={!m.title.trim()} onClick={() => onSave(m, "Draft", start)}>Save draft</button>
+        <button type="button" className="ad-btn-ghost" disabled={!m.title.trim()} onClick={() => onSave(m, "Draft", start)}>Save Draft</button>
       </div>
     </Sheet>
   );

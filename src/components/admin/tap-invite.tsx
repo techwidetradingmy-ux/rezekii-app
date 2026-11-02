@@ -26,7 +26,7 @@ export function TapInvites() {
     <section className="v2-card" style={{ gap: 14 }}>
       <div className="v2-card-h">
         <h2 className="v2-h2">Invites to Sellers</h2>
-        <button type="button" className="np-btn v2-btn-sm" onClick={() => setOpen(true)}><Icon name="plus" size={16} /> Invite a seller</button>
+        <button type="button" className="np-btn v2-btn-sm" onClick={() => setOpen(true)}><Icon name="plus" size={16} /> Invite a Seller</button>
       </div>
       <Flow
         label="Two ways a TAP campaign starts"
@@ -49,9 +49,9 @@ export function TapInvites() {
               {i.status === "Sent" || i.status === "Opened" ? (
                 <button type="button" className="ad-btn-ghost" onClick={() => toast(`Reminder sent to ${i.shop} on WhatsApp`)}>Remind</button>
               ) : i.status === "Expired" ? (
-                <button type="button" className="ad-btn-ghost" onClick={() => { setList((l) => l.map((x) => (x.code === i.code ? { ...x, status: "Sent", when: "28 Oct", by: "Aina" } : x))); toast(`Sent again to ${i.shop}`); }}>Send again</button>
+                <button type="button" className="ad-btn-ghost" onClick={() => { setList((l) => l.map((x) => (x.code === i.code ? { ...x, status: "Sent", when: "28 Oct", by: "Aina" } : x))); toast(`Sent again to ${i.shop}`); }}>Send Again</button>
               ) : (
-                <Link href="/admin/tap" className="ad-btn-ghost">See in pipeline</Link>
+                <Link href="/admin/tap" className="ad-btn-ghost">See in Pipeline</Link>
               )}
             </span>
           </div>
@@ -91,7 +91,7 @@ function InviteSheet({ onClose, onSent }: { onClose: () => void; onSent: (shop: 
           <small>rezekii.com/i/{TAP_INVITE.code} · expires {TAP_INVITE.expires}</small>
         </div>
         <p className="v2-small" style={{ margin: 0 }}>Once registered, products show as New in the TAP pipeline.</p>
-        <Link href="/seller/app/invite" className="np-btn" target="_blank">Preview seller view <Icon name="arrow" size={16} /></Link>
+        <Link href="/seller/app/invite" className="np-btn" target="_blank">Preview Seller View <Icon name="arrow" size={16} /></Link>
         <button type="button" className="btn-outline" style={{ height: 48 }} onClick={onClose}>Done</button>
       </Sheet>
     );

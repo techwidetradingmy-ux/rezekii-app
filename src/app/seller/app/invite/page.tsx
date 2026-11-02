@@ -35,8 +35,8 @@ export default function TapInvite() {
           <h2>No Problem</h2>
           <p className="v2-muted" style={{ margin: 0, maxWidth: 440 }}>We&apos;ve told {I.from}. This link works until {I.expires}.</p>
           <div className="v2-row" style={{ justifyContent: "center" }}>
-            <button type="button" className="np-btn" onClick={() => setDeclined(false)}>Look again</button>
-            <Link href="/seller/app/submit" className="btn-outline" style={{ height: 48 }}>Submit other products</Link>
+            <button type="button" className="np-btn" onClick={() => setDeclined(false)}>Look Again</button>
+            <Link href="/seller/app/submit" className="btn-outline" style={{ height: 48 }}>Submit Other Products</Link>
           </div>
         </section>
       </div>
@@ -56,7 +56,7 @@ export default function TapInvite() {
             <div className="later"><i /><b>With TikTok</b><small>1–3 working days</small></div>
             <div className="later"><i /><b>Live</b><small>Creators can apply</small></div>
           </div>
-          <Link href="/seller/app/progress" className="np-btn">See progress</Link>
+          <Link href="/seller/app/progress" className="np-btn">See Progress</Link>
         </section>
       </div>
     );
@@ -120,7 +120,7 @@ export default function TapInvite() {
           {sel.length === 0 ? <span className="sl-err" style={{ fontSize: 12.5 }}>Pick at least 1 product.</span> : <span>Registers today, {TODAY}</span>}
         </span>
         <span className="si-acts">
-          <button type="button" className="btn-outline" style={{ height: 48 }} onClick={() => setDeclined(true)}>Not now</button>
+          <button type="button" className="btn-outline" style={{ height: 48 }} onClick={() => setDeclined(true)}>Not Now</button>
           <button type="button" className="np-btn" disabled={sel.length === 0} onClick={() => { setDone(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Register {sel.length || ""}</button>
         </span>
       </div>

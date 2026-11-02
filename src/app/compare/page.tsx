@@ -58,9 +58,9 @@ export default function Compare() {
             </optgroup>
           ))}
         </select>
-        <button type="button" onClick={() => setKey((k) => k + 1)}>Reload both</button>
+        <button type="button" onClick={() => setKey((k) => k + 1)}>Reload Both</button>
         <span className="cmp-path">{path}</span>
-        <a href="/tour">All pages</a>
+        <a href="/tour">All Pages</a>
       </div>
       <div className="cmp-stage">
         <figure className="cmp-phone">

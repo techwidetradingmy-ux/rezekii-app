@@ -109,7 +109,7 @@ export default function AdminAccess() {
                 </select>
                 {revoking === s.email ? (
                   <span className="acts">
-                    <button type="button" className="np-btn v2-btn-sm ad-btn-danger" onClick={() => { setStaff((l) => l.filter((x) => x.email !== s.email)); addLog(`${ME} removed access for ${s.email}`); setRevoking(null); toast(`Access removed · ${s.short} signed out`); }}>Revoke now</button>
+                    <button type="button" className="np-btn v2-btn-sm ad-btn-danger" onClick={() => { setStaff((l) => l.filter((x) => x.email !== s.email)); addLog(`${ME} removed access for ${s.email}`); setRevoking(null); toast(`Access removed · ${s.short} signed out`); }}>Revoke Now</button>
                     <button type="button" className="ad-btn-ghost" onClick={() => setRevoking(null)}>Keep</button>
                   </span>
                 ) : (
@@ -125,7 +125,7 @@ export default function AdminAccess() {
       <section className="v2-card flat">
         <div className="v2-card-h">
           <b>Access changes</b>
-          <Link href="/admin/system/audit">Audit log</Link>
+          <Link href="/admin/system/audit">Audit Log</Link>
         </div>
         <ul className="ad-tl">
           {log.map((l, i) => (

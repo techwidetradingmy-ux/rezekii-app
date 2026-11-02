@@ -180,7 +180,7 @@ export function RatingScan() {
             ) : (
               <span className="sh-clear"><Icon name="check" size={16} width={3} /> Nothing heavily low</span>
             )}
-            <button type="button" className="sh-again" disabled={scanning} onClick={() => setRun((r) => r + 1)}><Icon name="refresh" size={16} /> Check again</button>
+            <button type="button" className="sh-again" disabled={scanning} onClick={() => setRun((r) => r + 1)}><Icon name="refresh" size={16} /> Check Again</button>
           </div>
         </section>
       </Lock>

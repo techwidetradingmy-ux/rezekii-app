@@ -429,8 +429,8 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
             <div className="pb-bar">
               <h2>Post to <Req /></h2>
               <span className="pb-links">
-                <button type="button" className="pb-link" onClick={sameAsLast}>Same as last post</button>
-                <button type="button" className="pb-link" onClick={() => setSheet("brands")}>Manage brands</button>
+                <button type="button" className="pb-link" onClick={sameAsLast}>Same as Last Post</button>
+                <button type="button" className="pb-link" onClick={() => setSheet("brands")}>Manage Brands</button>
                 <button type="button" className="pb-link" onClick={() => setSheet("channels")}>Channels · {channels.length}</button>
               </span>
             </div>
@@ -449,7 +449,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
                 })}
                 {missing.map((c) => <button key={c.key} type="button" className="pb-chip add" onClick={() => connectApp(c)}>+ {NAMES[c.app]}</button>)}
               </div>
-              {!brands.length && <p className="np-muted">Group channels to pick them in one tap. <button type="button" className="pb-link" onClick={() => setSheet("brands")}>Create a brand</button></p>}
+              {!brands.length && <p className="np-muted">Group channels to pick them in one tap. <button type="button" className="pb-link" onClick={() => setSheet("brands")}>Create a Brand</button></p>}
             </div>
             <div className="pb-finder" ref={finder}>
               <label className="pb-search">
@@ -489,14 +489,14 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
             <h2>Video <Req /></h2>
             <div className="np-seg" role="radiogroup" aria-label="Video source">
               <button type="button" role="radio" aria-checked={source === "upload"} className={source === "upload" ? "on" : ""} onClick={() => setSource("upload")}>Upload</button>
-              <button type="button" role="radio" aria-checked={source === "link"} className={source === "link" ? "on" : ""} onClick={() => setSource("link")}>Paste a link</button>
+              <button type="button" role="radio" aria-checked={source === "link"} className={source === "link" ? "on" : ""} onClick={() => setSource("link")}>Paste a Link</button>
             </div>
             {source === "upload" ? (
               sample && !file ? (
                 <div className="pb-file">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={vid.cover} alt="" />
-                  <span><b>{vid.file}</b><small>9:16 · {vid.seconds} seconds{editing ? "" : " · sample"}</small><button type="button" className="pb-link" style={{ justifySelf: "start" }} onClick={() => { setSample(false); setDurationSec(null); }}>Replace video</button></span>
+                  <span><b>{vid.file}</b><small>9:16 · {vid.seconds} seconds{editing ? "" : " · sample"}</small><button type="button" className="pb-link" style={{ justifySelf: "start" }} onClick={() => { setSample(false); setDurationSec(null); }}>Replace Video</button></span>
                 </div>
               ) : (
                 <label className="np-drop"><input type="file" accept="video/mp4,video/quicktime,video/webm" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setDurationSec(null); setSample(false); }} /><span>{file ? `${file.name} · ${(file.size / 1048576).toFixed(1)} MB` : "Choose an MP4, MOV or WebM video (up to 50 MB)"}</span></label>
@@ -544,7 +544,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
                 <label className="pb-field"><span className="pb-row"><b>Hashtags <Tip label="Hashtag tips" text="Up to 5 on TikTok and Instagram, none on Threads." /></b><Opt /></span><input className="np-input" type="text" value={tagsText} onChange={(e) => setTagsText(e.target.value)} placeholder="#thermos #kopi #tiktokshopmy" aria-label="Hashtags" /></label>
                 {apps.includes("threads") && (
                   <label className="pb-field">
-                    <span className="pb-row"><b>Threads topic <Tip label="Topic tips" text="One topic per post. No periods or &." /></b>{topicOver !== null ? <button type="button" className="pb-link" onClick={() => setTopicOver(null)}>Use the first hashtag</button> : <Opt />}</span>
+                    <span className="pb-row"><b>Threads Topic <Tip label="Topic tips" text="One topic per post. No periods or &." /></b>{topicOver !== null ? <button type="button" className="pb-link" onClick={() => setTopicOver(null)}>Use the First Hashtag</button> : <Opt />}</span>
                     <input className="np-input" type="text" value={topicOver ?? threadsTopic(mainFull)} maxLength={60} onChange={(e) => setTopicOver(e.target.value)} placeholder="e.g. Dapur" aria-label="Threads topic" />
                   </label>
                 )}
@@ -585,7 +585,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
               <h2>TikTok Settings</h2>
               <div className="np-seg" role="radiogroup" aria-label="Where to send it">
                 <button type="button" role="radio" aria-checked={mode === "direct"} className={mode === "direct" ? "on" : ""} onClick={() => setMode("direct")}>Post to TikTok</button>
-                <button type="button" role="radio" aria-checked={mode === "inbox"} className={mode === "inbox" ? "on" : ""} onClick={() => setMode("inbox")}>Send to TikTok drafts</button>
+                <button type="button" role="radio" aria-checked={mode === "inbox"} className={mode === "inbox" ? "on" : ""} onClick={() => setMode("inbox")}>Send to TikTok Drafts</button>
               </div>
               {mode === "direct" && (
                 <>
@@ -628,7 +628,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
                   <span className="pb-gh"><PlatformIcon name="Facebook" size={16} />Facebook</span>
                   <div className="np-seg" role="radiogroup" aria-label="Facebook">
                     <button type="button" role="radio" aria-checked={!fbDraft} className={!fbDraft ? "on" : ""} onClick={() => setFbDraft(false)}>Publish</button>
-                    <button type="button" role="radio" aria-checked={fbDraft} className={fbDraft ? "on" : ""} onClick={() => setFbDraft(true)}>Save as draft</button>
+                    <button type="button" role="radio" aria-checked={fbDraft} className={fbDraft ? "on" : ""} onClick={() => setFbDraft(true)}>Save as Draft</button>
                   </div>
                   <p className="np-muted">@names don&apos;t link on Facebook.</p>
                   {fbDraft && <p className="np-muted">Hidden until you publish it in Facebook. No first comment. Reels (3–90 s) only.</p>}
@@ -738,7 +738,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
             <Icon name="wallet" size={14} />
             <span><b>{credits.toLocaleString("en-MY")}</b> credits</span>
             <Tip text={`${POST_CREDITS} credits per channel. Drafts are free. Refunded if a channel fails or is cancelled.`} />
-            <Link href={setup.earn}>Earn more</Link>
+            <Link href={setup.earn}>Earn More</Link>
           </p>
         </aside>
       </form>
@@ -803,7 +803,7 @@ function ChannelPane(p: { ch: Channel; name: string; text: string; edited: boole
   const tt = p.ch === "tiktok";
   return (
     <>
-      <div className="pb-row"><b>{p.name} caption</b>{p.edited ? <button type="button" className="pb-link" onClick={p.onResetText}>Use suggested</button> : <small className="pb-sug">✦ Suggested for {p.name}</small>}</div>
+      <div className="pb-row"><b>{p.name} caption</b>{p.edited ? <button type="button" className="pb-link" onClick={p.onResetText}>Use Suggested</button> : <small className="pb-sug">✦ Suggested for {p.name}</small>}</div>
       <textarea className="np-input" rows={5} value={p.text} onChange={(e) => p.onText(e.target.value)} aria-label={`${p.name} caption`} />
       <span className={`np-count${p.captionLength > CAPTION_MAX[p.ch] ? " over" : ""}`}>{p.captionLength.toLocaleString("en-US")} / {CAPTION_MAX[p.ch].toLocaleString("en-US")}</span>
       {p.extra}
@@ -811,7 +811,7 @@ function ChannelPane(p: { ch: Channel; name: string; text: string; edited: boole
         <p className="pb-info">No comments or links on TikTok. Use the yellow basket (beg kuning).</p>
       ) : (
         <>
-          <div className="pb-row"><b>{p.name} first comment</b>{p.commentEdited ? <button type="button" className="pb-link" onClick={p.onResetComment}>Use suggested</button> : <Opt />}</div>
+          <div className="pb-row"><b>{p.name} first comment</b>{p.commentEdited ? <button type="button" className="pb-link" onClick={p.onResetComment}>Use Suggested</button> : <Opt />}</div>
           <textarea className="np-input" rows={3} value={p.comment} onChange={(e) => p.onComment(e.target.value)} placeholder="Your call to action and product link." aria-label={`${p.name} first comment`} />
           <span className="np-count">{lengthFor(p.ch, p.comment).toLocaleString("en-US")} / {COMMENT_MAX[p.ch as Platform].toLocaleString("en-US")}</span>
           {p.ch === "instagram" && links(p.comment).length > 0 && <p className="pb-warn">Instagram links can&apos;t be tapped.</p>}
@@ -846,7 +846,7 @@ function ChannelsSheet({ channels, connectable, onConnect, onConnectApp, onRecon
                 <Face ch={c} />
                 <span><b>{c.name}</b><small>{c.sub}{c.status === "reconnect" ? " · needs reconnecting" : ""}</small></span>
                 <div className="pb-acts">
-                  {c.status === "reconnect" ? <button type="button" className="np-btn v2-btn-sm" onClick={() => onReconnect(c)}>Reconnect</button> : <button type="button" className="btn-outline v2-btn-sm pb-icobtn" aria-label={`Check ${c.name}`} title="Check now" onClick={() => onCheck(c)}><Icon name="refresh" size={16} /><span>Check now</span></button>}
+                  {c.status === "reconnect" ? <button type="button" className="np-btn v2-btn-sm" onClick={() => onReconnect(c)}>Reconnect</button> : <button type="button" className="btn-outline v2-btn-sm pb-icobtn" aria-label={`Check ${c.name}`} title="Check now" onClick={() => onCheck(c)}><Icon name="refresh" size={16} /><span>Check Now</span></button>}
                   <button type="button" className="pb-link pb-off pb-icobtn" aria-label={`Disconnect ${c.name}`} title="Disconnect" onClick={() => onDisconnect(c)}><Icon name="x" size={16} /><span>Disconnect</span></button>
                 </div>
               </div>
@@ -888,11 +888,11 @@ function BrandsSheet({ brands, channels, byKey, connected, onSaved, onDeleted, o
             </div>
           ) : null;
         })}
-        <button type="button" className="np-btn" disabled={!edit.name.trim() || !edit.channels.length} onClick={() => { onSaved({ id: edit.id ?? `b${Date.now()}`, name: edit.name.trim(), channels: edit.channels }); setEdit(null); }}>Save brand</button>
+        <button type="button" className="np-btn" disabled={!edit.name.trim() || !edit.channels.length} onClick={() => { onSaved({ id: edit.id ?? `b${Date.now()}`, name: edit.name.trim(), channels: edit.channels }); setEdit(null); }}>Save Brand</button>
         {edit.id && (confirmDelete ? (
           <div className="pb-row"><span className="np-muted">Delete &ldquo;{edit.name}&rdquo;? Its channels stay connected.</span><span className="pb-links"><button type="button" className="pb-link pb-danger" onClick={() => { onDeleted(edit.id!); setEdit(null); }}>Delete</button><button type="button" className="pb-link" onClick={() => setConfirmDelete(false)}>Keep</button></span></div>
         ) : (
-          <button type="button" className="pb-link pb-danger" style={{ justifySelf: "start" }} onClick={() => setConfirmDelete(true)}>Delete brand</button>
+          <button type="button" className="pb-link pb-danger" style={{ justifySelf: "start" }} onClick={() => setConfirmDelete(true)}>Delete Brand</button>
         ))}
       </Sheet>
     );

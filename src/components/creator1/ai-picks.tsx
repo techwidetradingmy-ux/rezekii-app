@@ -12,6 +12,7 @@ import { productHref, requestedSamples } from "@/lib/product-view";
 import { AI_PICKS, AI_PROFILE, PRODUCTS, bestRate, product, rateFor, rm, short, type AiPick } from "@/lib/mock";
 import { canGetSample } from "@/lib/mock-creator1";
 import { AddButton } from "@/components/add-button";
+import { DirToggle, useSortPref } from "@/components/sort-bar";
 import { NO_PHOTO, shortName } from "@/lib/live-perf";
 
 type Fit = AiPick["fit"];
@@ -52,7 +53,7 @@ type LivePicks = {
     sales?: { video: number; live: number; other: number };
     hours: [string, number][]; you: { gender: string | null; race: string | null } | null; audience: { female: number; male: number; age: string; places: string } | null;
   };
-  effort: { id: string; name: string; videos: number; lives: number; gmv: number; commission: number; perPost: number; hit: { gmv: number } | null; per1k?: number | null; perLive?: number | null; gmvPerPost?: number }[];
+  effort: { id: string; name: string; videos: number; lives: number; gmv: number; commission: number; perPost: number; hit: { gmv: number } | null; per1k?: number | null; perVideo?: number | null; perLive?: number | null; gmvPerPost?: number }[];
   compared: number; picks: LivePick[];
   rising: { category: string; change: number }[];
   peers: { user: string; name: string; img: string | null; followers: number; lo: number; hi: number; video: number }[];
@@ -79,7 +80,8 @@ export function AiPicks() {
   const [run, setRun] = useState(0);
   const [phase, setPhase] = useState(0);
   const [fit, setFit] = useState<Fit>("video");
-  const [sort, setSort] = useState<Sort>("Best Match");
+  // Each sort can run either way, remembered (owner, 1 Nov 2026).
+  const [sort, setSort, dir, flip] = useSortPref<Sort>("ai-picks", SORTS, "Best Match");
   const router = useRouter();
   const [requested, setRequested] = useState<string[]>([]);
   useEffect(() => setRequested(requestedSamples()), []);
@@ -166,12 +168,13 @@ export function AiPicks() {
   const done = phase >= STEPS.length;
   const count = (f: Fit) => items.filter((pk) => pk.fit === f).length;
   // Signed in, the Overall / Video / LIVE switch at the top decides; the sample keeps its video and LIVE tabs.
-  const list = items.filter((pk) => live || pk.fit === fit).sort((a, b) => {
+  const sorted = items.filter((pk) => live || pk.fit === fit).sort((a, b) => {
     if (sort === "Best Selling") return b.sold - a.sold;
     if (sort === "Top Commission") return b.rate - a.rate || b.match - a.match;
     if (sort === "Lowest Price") return a.price - b.price;
     return b.match - a.match;
   });
+  const list = dir === "asc" ? sorted.reverse() : sorted;
 
 
   if (!linked || (live && real && !real.linked)) {
@@ -316,7 +319,7 @@ export function AiPicks() {
               <div>
                 <small>You</small>
                 {prof.you?.gender ? <b>{[prof.you.gender, prof.you.race].filter(Boolean).join(" · ")}</b> : <em>Add your details in My Account</em>}
-                {prof.you?.gender && !prof.you.race && <em><Link href="/app/account" className="v2-link">Add your race</Link></em>}
+                {prof.you?.gender && !prof.you.race && <em><Link href="/app/account" className="v2-link">Add Your Race</Link></em>}
               </div>
               <div>
                 <small>Your 30 days</small>
@@ -354,7 +357,7 @@ export function AiPicks() {
 
           {live && real && real.effort.length > 0 && (
             <div className="ai-more">
-              <h3>Worth Your Effort <Tip label="Worth your effort" text="For each product you sold in the last 30 days: sales per 1,000 views on your videos (where TikTok gives Rezekii your views), and sales per LIVE (TikTok doesn't share how long a LIVE ran). Best sales per post first. A star marks a single video or LIVE that took off. Only posts that made a sale are counted." /></h3>
+              <h3>Worth Your Effort <Tip label="Worth your effort" text="For each product you sold in the last 30 days: sales per 1,000 views on your videos (sales per video where TikTok hasn't given Rezekii your views), and sales per LIVE (TikTok doesn't share how long a LIVE ran, so it can't be per hour). Best sales per post first. A star marks a single video or LIVE that took off. Only posts that made a sale are counted." /></h3>
               <ol className="ai-effort">
                 {real.effort.map((e) => (
                   <li key={e.id}>
@@ -362,9 +365,8 @@ export function AiPicks() {
                     <Link href={productHref(e.id)} className="ai-effort-row">
                       <span><b>{shortName(e.name)}</b><small>{[e.videos && `${e.videos} video${e.videos === 1 ? "" : "s"}`, e.lives && `${e.lives} LIVE${e.lives === 1 ? "" : "s"}`].filter(Boolean).join(" · ")} · {rm(e.commission)} commission</small></span>
                       <span className="ai-per">
-                        {e.per1k != null && <span><b>{rm(e.per1k)}</b><small>per 1K views</small></span>}
+                        {e.per1k != null ? <span><b>{rm(e.per1k)}</b><small>per 1K views</small></span> : e.videos > 0 && <span><b>{rm(e.perVideo ?? e.gmvPerPost ?? e.perPost)}</b><small>per video</small></span>}
                         {e.perLive != null && <span><b>{rm(e.perLive)}</b><small>per LIVE</small></span>}
-                        {e.per1k == null && e.perLive == null && <span><b>{rm(e.gmvPerPost ?? e.perPost)}</b><small>per video</small></span>}
                       </span>
                       <Icon name="arrow" size={15} />
                     </Link>
@@ -391,6 +393,7 @@ export function AiPicks() {
             {SORTS.map((s) => (
               <button key={s} type="button" className={sort === s ? "on" : undefined} aria-pressed={sort === s} onClick={() => setSort(s)}>{s}</button>
             ))}
+            <DirToggle dir={dir} onFlip={flip} />
           </div>
 
           {list.length === 0 && (
@@ -399,7 +402,7 @@ export function AiPicks() {
             </p>
           )}
 
-          <div className="ai-grid" key={`${fit}-${sort}-${run}`}>
+          <div className="ai-grid" key={`${fit}-${sort}-${dir}-${run}`}>
             {list.map((it, i) => {
               const asked = requested.includes(it.id);
               return (

@@ -93,7 +93,7 @@ export default function TapCampaigns() {
           ))}
           {out.failed.length > 0 && (
             <div className="v2-row">
-              <button type="button" className="np-btn v2-btn-sm" disabled={busy} onClick={retry}><Icon name="refresh" size={16} /> Retry failed only</button>
+              <button type="button" className="np-btn v2-btn-sm" disabled={busy} onClick={retry}><Icon name="refresh" size={16} /> Retry Failed Only</button>
             </div>
           )}
         </section>
@@ -139,7 +139,7 @@ export default function TapCampaigns() {
                 </span>
               )}
               {c.status === "Ended" && (
-                <button type="button" className="ad-btn-ghost" onClick={() => toast("Draft added to TAP pipeline")}>Run again</button>
+                <button type="button" className="ad-btn-ghost" onClick={() => toast("Draft added to TAP pipeline")}>Run Again</button>
               )}
             </div>
           ))}

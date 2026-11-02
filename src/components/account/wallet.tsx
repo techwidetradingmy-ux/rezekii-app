@@ -39,7 +39,7 @@ export function Wallet() {
         </div>
         {expiring && <span className="cr2-exp"><Icon name="clock" size={14} /> {expiring.amount} expire on {w ? whenLabel(expiring.on) : expiring.on}</span>}
         <div className="cr2-bacts">
-          <Link href="/app/rewards" className="cr2-bbtn"><Icon name="gift" size={16} /> Earn more</Link>
+          <Link href="/app/rewards" className="cr2-bbtn"><Icon name="gift" size={16} /> Earn More</Link>
           <ShareButton big={`${credits.toLocaleString("en-MY")} credits`} label="Earned on Rezekii" lines={["From posting and inviting", `${w ? w.streak : CREATOR.streak} days in a row`]} moment="credits" />
         </div>
       </section>

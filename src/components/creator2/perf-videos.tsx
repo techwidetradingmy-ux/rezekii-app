@@ -59,11 +59,11 @@ export function VideoList() {
                     <span className="cr2-tags">
                       {i === 0 && dir === "desc" && <span className="badge">{TOP[sort]}</span>}
                       {flag && <span className={`badge ${high ? "badge-red" : "badge-amber"}`}>{high ? "High Cancels" : "Watch Cancels"} · {v.cancel}%</span>}
-                      {v.views === null && !real && <span className="badge badge-gray">Private video</span>}
+                      {v.views === null && !real && <span className="badge badge-gray">Private Video</span>}
                     </span>
                   </span>
                   {high ? (
-                    <Link href="/app/data/risk" className="btn-outline v2-btn-sm">See risk check</Link>
+                    <Link href="/app/data/risk" className="btn-outline v2-btn-sm">See Risk Check</Link>
                   ) : (
                     <span />
                   )}

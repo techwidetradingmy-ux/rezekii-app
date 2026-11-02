@@ -181,7 +181,7 @@ export default function TapPipeline() {
               <button type="button" className="np-btn v2-btn-sm" disabled={running} onClick={retryFailed}>
                 {running ? <span className="ad-spin"><Icon name="refresh" size={16} /></span> : <Icon name="refresh" size={16} />} Retry failed only
               </button>
-              <button type="button" className="ad-btn-ghost" onClick={() => toast("Result exported as CSV")}>Export result</button>
+              <button type="button" className="ad-btn-ghost" onClick={() => toast("Result exported as CSV")}>Export Result</button>
             </div>
           )}
         </section>
@@ -321,15 +321,15 @@ function TicketSheet({ t, onClose, update, submit, extId, real }: { t: Ticket; o
 
       {/* Main action for this status */}
       <div className="v2-row">
-        {t.col === "New" && real && <button type="button" className="np-btn v2-btn-sm" disabled={busyStep} onClick={() => step({ action: "start" }, "Moved to In review · assigned to you")}>Start review</button>}
+        {t.col === "New" && real && <button type="button" className="np-btn v2-btn-sm" disabled={busyStep} onClick={() => step({ action: "start" }, "Moved to In review · assigned to you")}>Start Review</button>}
         {t.col === "New" && !real && (
-          <button type="button" className="np-btn v2-btn-sm" onClick={() => { update((x) => ({ ...x, col: "In review", owner: x.owner ?? ME, what: `${products} products · ${x.owner ?? ME}`, history: [...x.history, log("Review started")] })); toast("Moved to In review · assigned to you"); }}>Start review</button>
+          <button type="button" className="np-btn v2-btn-sm" onClick={() => { update((x) => ({ ...x, col: "In review", owner: x.owner ?? ME, what: `${products} products · ${x.owner ?? ME}`, history: [...x.history, log("Review started")] })); toast("Moved to In review · assigned to you"); }}>Start Review</button>
         )}
         {t.col === "In review" && !rejecting && (
           <>
-            <button type="button" className="np-btn v2-btn-sm" disabled={busyStep} onClick={() => { if (real) return void step({ action: "pass" }, "Review passed · moved to To submit"); update((x) => ({ ...x, col: "To submit", late: false, what: `${products} products · ready`, history: [...x.history, log("Review passed")] })); toast("Review passed · moved to To submit"); }}>Pass review</button>
-            {!real && <button type="button" className="ad-btn-ghost" onClick={() => toast("Change requested · seller notified")}>Ask seller to change</button>}
-            <button type="button" className="ad-btn-ghost danger" onClick={() => setRejecting(true)}>Not approve</button>
+            <button type="button" className="np-btn v2-btn-sm" disabled={busyStep} onClick={() => { if (real) return void step({ action: "pass" }, "Review passed · moved to To submit"); update((x) => ({ ...x, col: "To submit", late: false, what: `${products} products · ready`, history: [...x.history, log("Review passed")] })); toast("Review passed · moved to To submit"); }}>Pass Review</button>
+            {!real && <button type="button" className="ad-btn-ghost" onClick={() => toast("Change requested · seller notified")}>Ask Seller to Change</button>}
+            <button type="button" className="ad-btn-ghost danger" onClick={() => setRejecting(true)}>Not Approve</button>
           </>
         )}
         {t.col === "To submit" && needsPerson(t) && !hasFail(t) && (
@@ -356,19 +356,19 @@ function TicketSheet({ t, onClose, update, submit, extId, real }: { t: Ticket; o
           </button>
         )}
         {t.col === "Waiting on TikTok" && real && t.real?.pendingOnTikTok && <button type="button" className="np-btn v2-btn-sm" disabled={busyStep} onClick={() => step({ action: "approve" }, "Approved on TikTok · live")}><Icon name="check" size={16} /> Approve on TikTok</button>}
-        {t.col === "Waiting on TikTok" && real && !t.real?.pendingOnTikTok && <button type="button" className="ad-btn-ghost" onClick={() => real.reload().then(() => toast("Checked TikTok"))}><Icon name="refresh" size={16} /> Check now</button>}
-        {t.col === "Waiting on TikTok" && !real && <button type="button" className="ad-btn-ghost" onClick={() => toast("Still waiting · next check 11:00")}><Icon name="refresh" size={16} /> Check now</button>}
-        {t.col === "Not approved" && !real && <button type="button" className="ad-btn-ghost" onClick={() => toast("Seller reminded in app and by email")}>Remind seller</button>}
-        {t.col === "Live" && <Link href="/admin/tap/campaigns" className="ad-btn-ghost">End date & auto-extend</Link>}
+        {t.col === "Waiting on TikTok" && real && !t.real?.pendingOnTikTok && <button type="button" className="ad-btn-ghost" onClick={() => real.reload().then(() => toast("Checked TikTok"))}><Icon name="refresh" size={16} /> Check Now</button>}
+        {t.col === "Waiting on TikTok" && !real && <button type="button" className="ad-btn-ghost" onClick={() => toast("Still waiting · next check 11:00")}><Icon name="refresh" size={16} /> Check Now</button>}
+        {t.col === "Not approved" && !real && <button type="button" className="ad-btn-ghost" onClick={() => toast("Seller reminded in app and by email")}>Remind Seller</button>}
+        {t.col === "Live" && <Link href="/admin/tap/campaigns" className="ad-btn-ghost">End Date & Auto-Extend</Link>}
       </div>
 
       {rejecting && (
         <div className="v2-card flat">
           <b>Why not approved?</b>
           <span className="v2-small">Seller sees this.</span>
-          <Reasons options={["Samples are 0", "Commission under +2%", "Product not allowed in TAP", "Other"]} value={why} onChange={setWhy} note={whyNote} onNote={setWhyNote} notePlaceholder="What should the seller change?" />
+          <Reasons options={["Samples Are 0", "Commission under +2%", "Product Not Allowed in TAP", "Other"]} value={why} onChange={setWhy} note={whyNote} onNote={setWhyNote} notePlaceholder="What should the seller change?" />
           <div className="v2-row">
-            <button type="button" className="np-btn v2-btn-sm ad-btn-danger" disabled={!why || busyStep} onClick={() => { if (real) { void step({ action: "reject", reason: `${why}${whyNote ? `: ${whyNote}` : ""}` }, "Not approved · the seller sees why").then((ok) => ok && setRejecting(false)); return; } update((x) => ({ ...x, col: "Not approved", late: false, reason: `${why}${whyNote ? `: ${whyNote}` : ""}. Seller notified.`, what: why ?? "", history: [...x.history, log(`Not approved: ${why}`)] })); setRejecting(false); toast("Not approved · seller notified · logged"); }}>Confirm not approved</button>
+            <button type="button" className="np-btn v2-btn-sm ad-btn-danger" disabled={!why || busyStep} onClick={() => { if (real) { void step({ action: "reject", reason: `${why}${whyNote ? `: ${whyNote}` : ""}` }, "Not approved · the seller sees why").then((ok) => ok && setRejecting(false)); return; } update((x) => ({ ...x, col: "Not approved", late: false, reason: `${why}${whyNote ? `: ${whyNote}` : ""}. Seller notified.`, what: why ?? "", history: [...x.history, log(`Not approved: ${why}`)] })); setRejecting(false); toast("Not approved · seller notified · logged"); }}>Confirm Not Approved</button>
             <button type="button" className="ad-btn-ghost" onClick={() => setRejecting(false)}>Cancel</button>
           </div>
         </div>
@@ -428,8 +428,8 @@ function TicketSheet({ t, onClose, update, submit, extId, real }: { t: Ticket; o
                 <>
                   <p>TikTok said: <b>{k.message}</b> · tried {k.retry?.[0]} of {k.retry?.[1]} · next retry {k.nextRetry}</p>
                   <div className="v2-row">
-                    <button type="button" className="np-btn v2-btn-sm" disabled={busy === k.id} onClick={() => retry(k)}>Retry now</button>
-                    <button type="button" className="ad-btn-ghost" onClick={() => { setTask(k.id, { state: "Person", why: "Handed to a person after TikTok kept refusing." }, `${k.name}: handed to a person`); toast("Handed to a person"); }}>Hand to a person</button>
+                    <button type="button" className="np-btn v2-btn-sm" disabled={busy === k.id} onClick={() => retry(k)}>Retry Now</button>
+                    <button type="button" className="ad-btn-ghost" onClick={() => { setTask(k.id, { state: "Person", why: "Handed to a person after TikTok kept refusing." }, `${k.name}: handed to a person`); toast("Handed to a person"); }}>Hand to a Person</button>
                   </div>
                 </>
               )}
@@ -439,7 +439,7 @@ function TicketSheet({ t, onClose, update, submit, extId, real }: { t: Ticket; o
                   {marking !== k.id ? (
                     <div className="v2-row">
                       <button type="button" className="ad-btn-ghost" onClick={() => toast("Partner Center opened")}><Icon name="link" size={15} /> Open Partner Center</button>
-                      <button type="button" className="np-btn v2-btn-sm" onClick={() => setMarking(k.id)}>Mark done</button>
+                      <button type="button" className="np-btn v2-btn-sm" onClick={() => setMarking(k.id)}>Mark Done</button>
                     </div>
                   ) : (
                     <div className="v2-stack" style={{ gap: 8, marginTop: 4 }}>
@@ -493,7 +493,7 @@ function TicketSheet({ t, onClose, update, submit, extId, real }: { t: Ticket; o
       ))}
       <div className="v2-row" style={{ alignItems: "flex-end" }}>
         <textarea className="np-input" rows={2} style={{ flex: "1 1 220px" }} value={note} placeholder="Only staff see notes" onChange={(e) => setNote(e.target.value)} />
-        <button type="button" className="ad-btn-ghost" disabled={!note.trim() || busyStep} onClick={() => { if (real) { void step({ action: "note", text: note.trim() }, "Note added").then((ok) => ok && setNote("")); return; } update((x) => ({ ...x, notes: [...x.notes, { who: ME, when: "Now", text: note.trim() }] })); setNote(""); }}>Add note</button>
+        <button type="button" className="ad-btn-ghost" disabled={!note.trim() || busyStep} onClick={() => { if (real) { void step({ action: "note", text: note.trim() }, "Note added").then((ok) => ok && setNote("")); return; } update((x) => ({ ...x, notes: [...x.notes, { who: ME, when: "Now", text: note.trim() }] })); setNote(""); }}>Add Note</button>
       </div>
 
       <Sec>History</Sec>

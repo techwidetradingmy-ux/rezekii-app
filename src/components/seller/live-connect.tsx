@@ -50,7 +50,7 @@ export function LiveSellerConnect() {
               <p>Sign in first. It takes about 3 minutes in all.</p>
               <a className="btn-google sl-ob-btn" style={{ font: "inherit", fontWeight: 600 }} href="/api/auth/google/start?next=/seller/connect"><GoogleMark /> Continue with Google</a>
               <a className="btn-tiktok sl-ob-btn" style={{ border: 0, font: "inherit", fontWeight: 800 }} href="/api/auth/tiktok/start?next=/seller/connect"><TikTokMark size={20} /> Continue with TikTok</a>
-              {ready && <Link href="/signin?next=/seller/connect" className="btn-outline sl-ob-btn" style={{ font: "inherit", fontWeight: 700 }}><Icon name="inbox" size={18} /> Continue with email</Link>}
+              {ready && <Link href="/signin?next=/seller/connect" className="btn-outline sl-ob-btn" style={{ font: "inherit", fontWeight: 700 }}><Icon name="inbox" size={18} /> Continue with Email</Link>}
             </>
           ) : (
             <>
@@ -58,7 +58,7 @@ export function LiveSellerConnect() {
               <h1>Connect Your TikTok Shop</h1>
               <p style={{ margin: 0 }}>
                 Signed in as <b>{me.name ?? me.email}</b> ·{" "}
-                <button type="button" className="v2-link" onClick={() => { fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/seller/connect"; }); }}>Switch account</button>
+                <button type="button" className="v2-link" onClick={() => { fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/seller/connect"; }); }}>Switch Account</button>
               </p>
               <ul className="sl-ob-list">
                 <li><Icon name="check" size={16} width={2.6} /> Your own campaign, opened for you</li>
@@ -67,7 +67,7 @@ export function LiveSellerConnect() {
               </ul>
               <label className="sl-agree" style={{ display: "flex", gap: 10, alignItems: "center" }}>
                 <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
-                <span>I agree to the <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer" className="v2-link">Terms</a>, <a href="https://rezekii.com/privacy" target="_blank" rel="noreferrer" className="v2-link">Privacy Policy</a> and sample terms <Tip label="Sample terms" text={`${TERMS_VERSION}: 1 sample = at least 1 video by the due date. Samples sent can't be taken back.`} /></span>
+                <span>I Agree to the <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer" className="v2-link">Terms</a>, <a href="https://rezekii.com/privacy" target="_blank" rel="noreferrer" className="v2-link">Privacy Policy</a> and sample terms <Tip label="Sample terms" text={`${TERMS_VERSION}: 1 sample = at least 1 video by the due date. Samples sent can't be taken back.`} /></span>
               </label>
               <button type="button" className="btn-tiktok sl-ob-btn" style={{ border: 0, font: "inherit", fontWeight: 800, cursor: "pointer" }} disabled={!agreed || busy} onClick={connect}>
                 {busy ? <span className="sl-spin" /> : <TikTokMark size={20} />} Connect TikTok Shop

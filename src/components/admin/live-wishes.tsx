@@ -88,14 +88,14 @@ export function LiveWishAdmin() {
           </div>
           <p className="v2-muted" style={{ margin: 0 }}>{pitch(open)}</p>
           <div className="pp-stack">
-            <button type="button" className="btn-outline" onClick={() => void copy(open)}><Icon name="doc" size={16} /> Copy seller pitch</button>
+            <button type="button" className="btn-outline" onClick={() => void copy(open)}><Icon name="doc" size={16} /> Copy Seller Pitch</button>
             <span className="v2-row" style={{ gap: 8, alignItems: "center" }}>
               <label className="v2-field" style={{ flex: 1 }}>Extra rate agreed (%)<input type="number" className="np-input" min={0.5} max={30} step={0.5} value={raise} onChange={(e) => setRaise(e.target.value)} /></label>
-              <button type="button" className="np-btn" onClick={() => void answer(open, { raise: Number(raise) }, `Logged +${raise}% agreed`)}>Seller agreed</button>
+              <button type="button" className="np-btn" onClick={() => void answer(open, { raise: Number(raise) }, `Logged +${raise}% agreed`)}>Seller Agreed</button>
             </span>
             {open.declined
               ? <button type="button" className="btn-outline" onClick={() => void answer(open, { declined: false }, "Reopened")}>Reopen</button>
-              : <button type="button" className="btn-outline" onClick={() => void answer(open, { declined: true }, "Logged. It leaves the public wish list.")}>Seller said no</button>}
+              : <button type="button" className="btn-outline" onClick={() => void answer(open, { declined: true }, "Logged. It leaves the public wish list.")}>Seller Said No</button>}
           </div>
           <p className="v2-small" style={{ margin: 0 }}>The product joins Rezekii when the seller registers it in Techwide&apos;s TAP campaign.</p>
         </Sheet>

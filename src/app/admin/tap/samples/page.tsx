@@ -13,16 +13,16 @@ import { SAMPLES, type SampleReq } from "@/lib/mock-admin";
 import { product, type Verdict } from "@/lib/mock";
 import { adminProductHref } from "@/lib/product-pages";
 
-type Filter = "Suggest approve" | "Needs a look" | "Suggest reject";
-const OF: Record<Filter, Verdict> = { "Suggest approve": "Approve", "Needs a look": "Look", "Suggest reject": "Reject" };
-const VERDICT_LABEL: Record<Verdict, string> = { Approve: "Suggest approve", Look: "Needs a look", Reject: "Suggest reject" };
+type Filter = "Suggest Approve" | "Needs a look" | "Suggest reject";
+const OF: Record<Filter, Verdict> = { "Suggest Approve": "Approve", "Needs a look": "Look", "Suggest reject": "Reject" };
+const VERDICT_LABEL: Record<Verdict, string> = { Approve: "Suggest Approve", Look: "Needs a look", Reject: "Suggest reject" };
 
 type Done = { result?: "Approved" | "Rejected" | "Waiting"; at?: string; overruled?: { reason: string; note: string; to: "Approve" | "Reject" } };
 
 /** Sample review: the system pre-checks every request against fixed rules; staff decide in Partner Center. */
 export default function SampleReview() {
   const { toast, live } = useDemo();
-  const [filter, setFilter] = useState<Filter>("Suggest approve");
+  const [filter, setFilter] = useState<Filter>("Suggest Approve");
   const [done, setDone] = useState<Record<string, Done>>({});
   const [handled, setHandled] = useState(31);
   const [overruled, setOverruled] = useState(2);
@@ -64,7 +64,7 @@ export default function SampleReview() {
         <span>Decide in Partner Center. We read it back and notify the creator.</span>
       </div>
 
-      <Chips<Filter> label="Filter by system verdict" value={filter} onChange={setFilter} options={[["Suggest approve", count("Suggest approve")], ["Needs a look", count("Needs a look")], ["Suggest reject", count("Suggest reject")]]} />
+      <Chips<Filter> label="Filter by system verdict" value={filter} onChange={setFilter} options={[["Suggest Approve", count("Suggest Approve")], ["Needs a look", count("Needs a look")], ["Suggest reject", count("Suggest reject")]]} />
 
       <div className="v2-stack" style={{ gap: 14 }}>
         {list.map((s) => (
@@ -189,7 +189,7 @@ function DisagreeSheet({ s, onClose, onSave }: { s: SampleReq; onClose: () => vo
       <p className="v2-muted" style={{ margin: 0 }}>
         System says <b>{s.verdict === "Approve" ? "approve" : "reject"}</b> {s.handle}. You want to <b>{to === "Approve" ? "approve" : "reject"}</b>. Pick a reason.
       </p>
-      <Reasons options={["Seller asked", "Data wrong", "Other"]} value={reason} onChange={setReason} note={note} onNote={setNote} notePlaceholder={to === "Reject" ? "Creator sees this" : "What's different?"} />
+      <Reasons options={["Seller asked", "Data Wrong", "Other"]} value={reason} onChange={setReason} note={note} onNote={setNote} notePlaceholder={to === "Reject" ? "Creator sees this" : "What's different?"} />
       <button type="button" className="np-btn" disabled={!reason || (reason === "Other" && !note.trim())} onClick={() => reason && onSave(reason, note.trim(), to)}>
         Save decision
       </button>

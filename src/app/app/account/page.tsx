@@ -483,7 +483,7 @@ export default function Account() {
               ) : (
                 <>
                   <span>Once saved, only support can change it.</span>
-                  <button type="button" className="np-btn" onClick={() => { setTried(true); if (!profileErrors.length) setConfirmSave(true); }}>Save profile</button>
+                  <button type="button" className="np-btn" onClick={() => { setTried(true); if (!profileErrors.length) setConfirmSave(true); }}>Save Profile</button>
                 </>
               )}
             </div>
@@ -537,7 +537,7 @@ export default function Account() {
             <div className="cr2-cell row">
               <BrandLogo name="Shopee" size={34} className="cr2-pi" />
               <span className="cr2-conn"><b>Shopee</b><small>Shopee Affiliate, on the way</small></span>
-              <span className="badge badge-amber">Coming soon</span>
+              <span className="badge badge-amber">Coming Soon</span>
             </div>
           </div>
         </section>
@@ -554,7 +554,7 @@ export default function Account() {
                   <small>{s.detail}</small>
                 </span>
                 {s.soon ? (
-                  <span className="badge badge-amber">Coming soon</span>
+                  <span className="badge badge-amber">Coming Soon</span>
                 ) : s.on && s.key === "TikTok Shop" ? (
                   <button type="button" className="btn-outline v2-btn-sm" onClick={() => setUnlink(true)}>Unlink</button>
                 ) : s.on ? (
@@ -612,7 +612,7 @@ export default function Account() {
                   <span className="si-ico em" aria-hidden="true"><Icon name="lock" size={15} /></span>
                   <span><b>Email and password</b><small>{ways.password ? `${ways.email ?? me?.email ?? ""}` : "No password yet"}</small></span>
                   <span className="si-acts">
-                    {ways.password && <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setNewEmail(""); setCurPw(""); setEmailSheet(true); }}>Change email</button>}
+                    {ways.password && <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setNewEmail(""); setCurPw(""); setEmailSheet(true); }}>Change Email</button>}
                     <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setPw(["", "", ""]); setPwSheet(true); }}>{ways.password ? "Change password" : "Set password"}</button>
                   </span>
                 </span>
@@ -628,11 +628,11 @@ export default function Account() {
                     <span className={`si-ico ${key}`} aria-hidden="true">{key === "tt" ? <TikTokMark size={18} /> : key === "gg" ? <GoogleMark /> : <Icon name="lock" size={15} />}</span>
                     <span><b>{label}</b><small>{detail}</small></span>
                     {/* Each way in names its account (owner, 29 Oct 2026): her TikTok handle and her Gmail. */}
-                    {key === "tt" ? <span className="badge">Last used</span>
+                    {key === "tt" ? <span className="badge">Last Used</span>
                       : key === "gg" ? <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setGoogleOn(!googleOn); toast(googleOn ? "Google unlinked" : "Google linked"); }}>{googleOn ? "Unlink" : "Link"}</button>
                       : (
                         <span className="si-acts">
-                          <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setNewEmail(""); setEmailSheet(true); }}>Change email</button>
+                          <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setNewEmail(""); setEmailSheet(true); }}>Change Email</button>
                           <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setPw(["", "", ""]); setPwSheet(true); }}>{hasPw ? "Change password" : "Set password"}</button>
                         </span>
                       )}
@@ -741,7 +741,7 @@ export default function Account() {
             <a className="cr2-cell acc-link" href="https://rezekii.com/privacy" target="_blank" rel="noreferrer"><span className="lbl">Privacy Policy</span><Icon name="arrow" size={16} /></a>
             <a className="cr2-cell acc-link" href="https://rezekii.com/terms" target="_blank" rel="noreferrer"><span className="lbl">Terms of Service</span><Icon name="arrow" size={16} /></a>
             {/* The same full feedback form as the account panel (owner, 30 Oct 2026). */}
-            <button type="button" className="cr2-cell cr2-cellbtn acc-link" onClick={() => setFeedback(true)}><span className="lbl">Send feedback</span><span className="v2-small">Ideas, bugs, questions</span><Icon name="arrow" size={16} /></button>
+            <button type="button" className="cr2-cell cr2-cellbtn acc-link" onClick={() => setFeedback(true)}><span className="lbl">Send Feedback</span><span className="v2-small">Ideas, Bugs, Questions</span><Icon name="arrow" size={16} /></button>
             <a href={`mailto:${SUPPORT.email}`} className="cr2-cell cr2-cellbtn">
               <span className="lbl">Email Support</span>
               <span className="chev">support@rezekii.com <Icon name="arrow" size={16} /></span>
@@ -756,7 +756,7 @@ export default function Account() {
         <section className="cr2-group">
           <h2>Account</h2>
           <div className="cr2-cells">
-            <button type="button" className="cr2-cell cr2-cellbtn danger" onClick={() => { setDelText(""); setDelSheet(true); }}>Delete account</button>
+            <button type="button" className="cr2-cell cr2-cellbtn danger" onClick={() => { setDelText(""); setDelSheet(true); }}>Delete Account</button>
           </div>
         </section>
 
@@ -777,7 +777,7 @@ export default function Account() {
             <div><dt>Niches</dt><dd>{[niche, sub1, sub2].filter(Boolean).join(" · ")}</dd></div>
           </dl>
           <button type="button" className="np-btn" disabled={saving} onClick={() => { if (live) { void saveReal(); return; } setLocked(true); setConfirmSave(false); toast("Profile saved"); }}>{saving ? "Saving…" : "Save profile"}</button>
-          <button type="button" className="btn-outline" style={{ height: 48 }} onClick={() => setConfirmSave(false)}>Keep editing</button>
+          <button type="button" className="btn-outline" style={{ height: 48 }} onClick={() => setConfirmSave(false)}>Keep Editing</button>
         </Sheet>
       )}
       {feedback && (
@@ -830,7 +830,7 @@ export default function Account() {
             <li>Added products keep their rate until the campaign ends.</li>
           </ul>
           <button type="button" className="np-btn cr2-delbtn" onClick={() => { setLinked(false); setUnlink(false); toast("TikTok Shop unlinked"); }}>Unlink TikTok Shop</button>
-          <button type="button" className="btn-outline" onClick={() => setUnlink(false)}>Keep it linked</button>
+          <button type="button" className="btn-outline" onClick={() => setUnlink(false)}>Keep It Linked</button>
         </Sheet>
       )}
 
@@ -875,7 +875,7 @@ export default function Account() {
           <button type="button" className="np-btn cr2-delbtn" disabled={delText !== "DELETE" || busyAcct} onClick={() => { if (live) return void deleteReal(); setDelSheet(false); toast("Preview only: nothing was deleted"); }}>
             Delete my account
           </button>
-          <button type="button" className="btn-outline" onClick={() => setDelSheet(false)}>Keep my account</button>
+          <button type="button" className="btn-outline" onClick={() => setDelSheet(false)}>Keep My Account</button>
         </Sheet>
       )}
 
@@ -886,7 +886,7 @@ export default function Account() {
             <label className="v2-field">
               Current password
               <input type="password" className="np-input" autoComplete="current-password" value={pw[0]} onChange={(e) => setPw([e.target.value, pw[1], pw[2]])} />
-              {!ways && <button type="button" className="v2-link" style={{ alignSelf: "flex-start", fontSize: 13 }} onClick={() => { setPwSheet(false); toast(`Reset link sent to ${email}`); }}>Email me a reset link</button>}
+              {!ways && <button type="button" className="v2-link" style={{ alignSelf: "flex-start", fontSize: 13 }} onClick={() => { setPwSheet(false); toast(`Reset link sent to ${email}`); }}>Email Me a Reset Link</button>}
             </label>
           )}
           <label className="v2-field">

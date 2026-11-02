@@ -62,7 +62,7 @@ export type MyTapDetail = {
 };
 
 /** TikTok's creator id for a product lasts about an hour; a fresh one is found by paging the product's creators. */
-async function creatorEntry(token: string, cipher: string, row: Row): Promise<ProductCreator | null> {
+export async function creatorEntry(token: string, cipher: string, row: Pick<Row, "campaign_id" | "product_id" | "username" | "temp_id" | "temp_id_at" | "affiliate_product_id">): Promise<ProductCreator | null> {
   if (row.temp_id && row.temp_id_at && Date.now() - Date.parse(row.temp_id_at) < 50 * 60_000)
     return { affiliate_product_id: row.affiliate_product_id ?? row.product_id, creator: { creator_temp_id: row.temp_id, user_name: row.username } };
   let pageToken: string | undefined;

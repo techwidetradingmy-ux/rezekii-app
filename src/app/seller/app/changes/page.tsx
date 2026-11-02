@@ -89,7 +89,7 @@ export default function Changes() {
           <label className="v2-field">Note <small>Optional</small>
             <textarea className="np-input" rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Raya promo starts 1 Dec" />
           </label>
-          <button type="button" className="np-btn" onClick={send}>Send request</button>
+          <button type="button" className="np-btn" onClick={send}>Send Request</button>
         </section>
 
         <section className="v2-card">

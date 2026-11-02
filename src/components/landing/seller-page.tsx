@@ -258,11 +258,11 @@ export function SellerLanding() {
         <div className="site-wrap">
           <span>© 2026 Rezekii · TikTok Shop Partner</span>
           <span className="site-spacer" />
-          <Link href="/">For creators</Link>
+          <Link href="/">For Creators</Link>
           <a href="#faq">FAQ</a>
           <a href="https://rezekii.com/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>
           <a href="https://rezekii.com/terms" target="_blank" rel="noreferrer">Terms of Service</a>
-          <a href="#" onClick={(e) => { e.preventDefault(); setTalk(true); }}>Talk to us</a>
+          <a href="#" onClick={(e) => { e.preventDefault(); setTalk(true); }}>Talk to Us</a>
           <a href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a>
           <small className="ft-note">Screens show sample products, creators and numbers. Results vary.</small>
         </div>

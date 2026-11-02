@@ -65,7 +65,7 @@ export default function AdminToday() {
         <div className="v2-alert red" role="alert">
           <Icon name="alert" size={20} />
           <span>{recon.length} days don&apos;t match. 27 Oct: wallets 120 credits above ledger.</span>
-          <Link href="/admin/accounts/reconcile">Open reconciliation</Link>
+          <Link href="/admin/accounts/reconcile">Open Reconciliation</Link>
         </div>
       )}
 
@@ -132,7 +132,7 @@ export default function AdminToday() {
         <section className="v2-card">
           <div className="v2-card-h">
             <h2 className="v2-h2">Staff Actions</h2>
-            <Link href="/admin/system/audit">Audit log</Link>
+            <Link href="/admin/system/audit">Audit Log</Link>
           </div>
           <div className="ad-list">
             {AUDIT.slice(0, 5).map((a) => (

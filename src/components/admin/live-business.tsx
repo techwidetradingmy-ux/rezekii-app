@@ -22,7 +22,7 @@ export function LiveSellers() {
           <section className="v2-card" style={{ padding: "8px 12px" }}>
             <div className="v2-tablewrap">
               <table className="v2-table ad-table">
-                <thead><tr><th>Shop</th><th>Contact</th><th>Live in TAP</th><th>On the way</th><th>Not approved</th><th>Connected</th></tr></thead>
+                <thead><tr><th>Shop</th><th>Contact</th><th>Live in TAP</th><th>On the Way</th><th>Not Approved</th><th>Connected</th></tr></thead>
                 <tbody>
                   {shown.map((s) => (
                     <tr key={s.id}>
@@ -80,7 +80,7 @@ export function LiveOpenCampaigns() {
               <div key={c.id} className="ad-row">
                 <span className="main"><b>{c.name}</b><small>{c.products} products · {c.creators} creators{c.upto ? ` · up to ${c.upto / 100}% total` : ""} · open until {longDay(c.end)}</small></span>
                 {c.status === "upcoming" ? <Pill tone="warn">Starts {longDay(c.start)}</Pill> : <Pill tone="ok">Open</Pill>}
-                <button type="button" className="ad-btn-ghost" onClick={() => { setInvite(c); setShop(""); setText(message(c, "")); }}><Icon name="send" size={14} /> Invite a merchant</button>
+                <button type="button" className="ad-btn-ghost" onClick={() => { setInvite(c); setShop(""); setText(message(c, "")); }}><Icon name="send" size={14} /> Invite a Merchant</button>
               </div>
             ))}
             {!list.length && <p className="v2-muted" style={{ padding: "14px 0" }}>No campaigns are open right now.</p>}
@@ -91,7 +91,7 @@ export function LiveOpenCampaigns() {
         <Sheet title={`Invite to ${invite.name}`} onClose={() => setInvite(null)}>
           <label className="v2-field">Merchant name<input className="np-input" value={shop} onChange={(e) => { setShop(e.target.value); setText(message(invite, e.target.value)); }} /></label>
           <label className="v2-field">Message<textarea className="np-input" rows={8} value={text} onChange={(e) => setText(e.target.value)} /></label>
-          <button type="button" className="np-btn" onClick={() => void copy()}>Copy message</button>
+          <button type="button" className="np-btn" onClick={() => void copy()}>Copy Message</button>
         </Sheet>
       )}
     </div>

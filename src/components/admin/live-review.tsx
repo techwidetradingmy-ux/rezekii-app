@@ -46,7 +46,7 @@ export function LiveProductReview() {
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
       <Title title="Product Review" sub="Products shops registered in their own campaign in Seller Center, waiting for Techwide. Decisions go straight to TikTok, and the shop is told in Rezekii.">
-        <button type="button" className="ad-btn-ghost" onClick={() => { setD(null); void load(); }}><Icon name="refresh" size={15} /> Check again</button>
+        <button type="button" className="ad-btn-ghost" onClick={() => { setD(null); void load(); }}><Icon name="refresh" size={15} /> Check Again</button>
       </Title>
       {!d ? <p className="v2-muted">{err ?? "Reading every shop's campaign from TikTok…"}</p> : (
         <>

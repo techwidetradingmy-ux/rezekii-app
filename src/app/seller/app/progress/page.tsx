@@ -65,7 +65,7 @@ export default function Progress() {
   return (
     <div className="v2-stack v2-in">
       <Title title="Progress" sub={live ? "Registered in your campaign → Techwide's review → live for creators. Statuses come from TikTok." : "Submitted → our review → TikTok → live."}>
-        <Link href="/seller/app/submit" className="np-btn v2-btn-sm" style={{ height: 42 }}>Register products</Link>
+        <Link href="/seller/app/submit" className="np-btn v2-btn-sm" style={{ height: 42 }}>Register Products</Link>
       </Title>
 
       <div className="sl-chipline" role="group" aria-label="Filter">

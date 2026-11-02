@@ -9,6 +9,7 @@ import { rm } from "@/lib/mock";
 import { useDemo } from "@/components/demo";
 import { loadAnalytics, type LiveAnalytics } from "@/lib/live";
 import { PAYOUTS, payoutDays, type PayoutDay } from "@/lib/mock-creator2";
+import { SortBar, useSortPref } from "@/components/sort-bar";
 import "@/app/creator2.css";
 
 const TODAY = "2026-10-28";
@@ -70,6 +71,8 @@ function Payouts({ MONTHS, DAYS, RANGE, TODAY, FIRST, updated }: typeof SAMPLE &
   const [range, setRange] = useState<[string, string]>(RANGE.month);
   const [preset, setPreset] = useState<string | null>("month");
   const [view, setView] = useState<"Calendar" | "List">("Calendar");
+  // The list sorts by date or amount, newest or highest first by default, remembered (owner, 1 Nov 2026).
+  const [listBy, setListBy, listDir, flipList] = useSortPref("payouts-list", ["Date", "Amount"] as const, "Date");
   const [calIdx, setCalIdx] = useState(MONTHS.length - 1);
   const [picked, setPicked] = useState<Day | null>(null);
 
@@ -156,7 +159,7 @@ function Payouts({ MONTHS, DAYS, RANGE, TODAY, FIRST, updated }: typeof SAMPLE &
       <div className="cr2-stats">
         <Stat label="Paid" value={rm(total.paid)} note="In your TikTok Shop balance" tone="up" />
         <Stat label="Pending" value={rm(total.pending)} note={total.pending ? "Next release about 4 Nov" : "Nothing waiting"} />
-        <Stat label="Clawed back" value={rm(total.clawed)} note="Orders cancelled or returned" tone="down" />
+        <Stat label="Clawed Back" value={rm(total.clawed)} note="Orders cancelled or returned" tone="down" />
       </div>
 
       <section className="v2-card">
@@ -228,7 +231,8 @@ function Payouts({ MONTHS, DAYS, RANGE, TODAY, FIRST, updated }: typeof SAMPLE &
             </div>
           ) : (
             <div className="v2-divide">
-              {[...inRange].reverse().slice(0, 31).map((d) => (
+              <SortBar value={listBy} options={["Date", "Amount"] as const} onChange={setListBy} dir={listDir} onFlip={flipList} />
+              {[...inRange].sort((a, b) => { const x = listBy === "Date" ? a.date.localeCompare(b.date) : a.est - b.est; return listDir === "desc" ? -x : x; }).slice(0, 31).map((d) => (
                 <div key={d.date} className="cr2-month">
                   <span>
                     <strong>{dayName(d.date)}</strong>
@@ -240,7 +244,7 @@ function Payouts({ MONTHS, DAYS, RANGE, TODAY, FIRST, updated }: typeof SAMPLE &
                   </span>
                 </div>
               ))}
-              {inRange.length > 31 && <p className="v2-small" style={{ margin: "12px 0 0" }}>Latest 31 days shown.</p>}
+              {inRange.length > 31 && <p className="v2-small" style={{ margin: "12px 0 0" }}>31 of {inRange.length} days shown.</p>}
             </div>
           )}
         </Lock>

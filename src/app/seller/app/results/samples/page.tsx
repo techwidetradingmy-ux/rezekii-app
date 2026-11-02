@@ -50,9 +50,9 @@ export default function SamplesWent() {
 
       <section className="v2-grid4">
         <Stat label="Delivered" value={<Count value={s.delivered} />} note={`${Math.round((s.delivered / s.sent) * 100)}% of samples`} tone="up" />
-        <Stat label="Posting, on time" value={<Count value={s.onTime} />} />
+        <Stat label="Posting, on Time" value={<Count value={s.onTime} />} />
         <Stat label="Overdue" value={<Count value={s.overdue} />} note="All reminded" tone="down" />
-        <Stat label="Videos posted" value={<Count value={s.videos} />} note={`${(s.videos / s.delivered).toFixed(1)} per sample + ${s.lives} LIVEs`} />
+        <Stat label="Videos Posted" value={<Count value={s.videos} />} note={`${(s.videos / s.delivered).toFixed(1)} per sample + ${s.lives} LIVEs`} />
       </section>
 
       <div className="sl-chipline" role="group" aria-label="Filter">
@@ -82,9 +82,9 @@ export default function SamplesWent() {
                 <span className="sl-pside">
                   <span className={`badge ${d.state === "Overdue" ? "badge-red" : d.state === "On time" ? "badge-amber" : ""}`}>{label(d)}</span>
                   {d.videos > 0 ? (
-                    <button type="button" className="v2-link" style={{ fontSize: 13.5 }} onClick={() => toast(`Opening ${d.handle}'s videos on TikTok`)}>Watch videos</button>
+                    <button type="button" className="v2-link" style={{ fontSize: 13.5 }} onClick={() => toast(`Opening ${d.handle}'s videos on TikTok`)}>Watch Videos</button>
                   ) : d.state === "Overdue" ? (
-                    <button type="button" className="v2-link" style={{ fontSize: 13.5 }} onClick={() => toast("We'll follow up within 1 working day")}>Ask our team</button>
+                    <button type="button" className="v2-link" style={{ fontSize: 13.5 }} onClick={() => toast("We'll follow up within 1 working day")}>Ask Our Team</button>
                   ) : null}
                 </span>
               </div>

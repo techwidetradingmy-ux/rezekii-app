@@ -53,7 +53,7 @@ export function LiveNext({ items }: { items: ShopItem[] | null }) {
         <p>{broken[0].name}{broken[0].reason ? `: ${broken[0].reason}` : " needs a change before it can go back in."}</p>
         <div className="v2-row">
           <Link href={`/seller/app/product/${broken[0].id}`} className="v2-btn-white" style={{ color: "#b42318" }}>Fix and Resubmit</Link>
-          <Link href="/seller/app/progress" className="v2-btn-ghostw">See progress</Link>
+          <Link href="/seller/app/progress" className="v2-btn-ghostw">See Progress</Link>
         </div>
       </section>
     );
@@ -72,7 +72,7 @@ export function LiveNext({ items }: { items: ShopItem[] | null }) {
           <span>Live</span>
         </div>
         <div className="v2-row">
-          <Link href="/seller/app/progress" className="v2-btn-white">See progress</Link>
+          <Link href="/seller/app/progress" className="v2-btn-white">See Progress</Link>
           {fresh > 0 && <Link href="/seller/app/submit" className="v2-btn-ghostw">Register {fresh} more</Link>}
         </div>
       </section>
@@ -85,7 +85,7 @@ export function LiveNext({ items }: { items: ShopItem[] | null }) {
         <h2>Register Your First Products</h2>
         <p>Pick products. AI suggests the commission; samples are set to 40.</p>
         <div className="v2-row">
-          <Link href="/seller/app/submit" className="v2-btn-white">Register products <Icon name="arrow" size={18} /></Link>
+          <Link href="/seller/app/submit" className="v2-btn-white">Register Products <Icon name="arrow" size={18} /></Link>
         </div>
       </section>
     );
@@ -96,8 +96,8 @@ export function LiveNext({ items }: { items: ShopItem[] | null }) {
       <h2>All {live} product{live === 1 ? " is" : "s are"} live</h2>
       <p>{fresh ? `${fresh} product${fresh === 1 ? "" : "s"} not in TAP yet.` : "Every product you sent is in TAP."}</p>
       <div className="v2-row">
-        <Link href="/seller/app/results" className="v2-btn-white">See results</Link>
-        {fresh > 0 && <Link href="/seller/app/submit" className="v2-btn-ghostw">Add more products</Link>}
+        <Link href="/seller/app/results" className="v2-btn-white">See Results</Link>
+        {fresh > 0 && <Link href="/seller/app/submit" className="v2-btn-ghostw">Add More Products</Link>}
       </div>
     </section>
   );
@@ -109,7 +109,7 @@ export function LiveSummary({ totals, failed }: { totals: Totals | null; failed:
     <section className="v2-card">
       <div className="v2-card-h">
         <h2 className="v2-h2">Your TAP Results</h2>
-        <Link href="/seller/app/results">See all</Link>
+        <Link href="/seller/app/results">See All</Link>
       </div>
       <Source text="Data from TikTok" when="today" />
       {!totals ? (
@@ -118,7 +118,7 @@ export function LiveSummary({ totals, failed }: { totals: Totals | null; failed:
         <div className="v2-grid4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))" }}>
           <Stat label="Sales" value={<Count value={totals.gmv} format={(n) => rm(n, 0)} />} note="Since live" />
           <Stat label="Orders" value={<Count value={totals.orders} />} />
-          <Stat label="Creators promoting" value={<Count value={totals.creators} />} />
+          <Stat label="Creators Promoting" value={<Count value={totals.creators} />} />
           <Stat label="Videos" value={<Count value={totals.videos} />} />
         </div>
       )}

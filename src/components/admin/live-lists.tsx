@@ -127,7 +127,7 @@ type Wait = { spot: number; name: string; handle: string | null; types: string[]
 export function LiveWaitlist() {
   const { toast } = useDemo();
   const [items, err] = useList<Wait>("waitlist");
-  const [sort, setSort] = useState<"Joining order" | "Most videos">("Joining order");
+  const [sort, setSort] = useState<"Joining Order" | "Most videos">("Joining Order");
   const shown = [...(items ?? [])].sort((a, b) => (sort === "Most videos" ? b.videos - a.videos : a.spot - b.spot));
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
@@ -136,11 +136,11 @@ export function LiveWaitlist() {
       </Title>
       {!items ? <p className="v2-muted">{err ?? "Loading…"}</p> : (
         <>
-          <Chips label="Sort" value={sort} onChange={setSort} options={[["Joining order", items.length], ["Most videos"]]} />
+          <Chips label="Sort" value={sort} onChange={setSort} options={[["Joining Order", items.length], ["Most videos"]]} />
           <section className="v2-card" style={{ padding: "8px 12px" }}>
             <div className="v2-tablewrap">
               <table className="v2-table ad-table">
-                <thead><tr><th>#</th><th>Creator</th><th>Videos a month</th><th>Types</th><th>Apps</th><th>Joined</th></tr></thead>
+                <thead><tr><th>#</th><th>Creator</th><th>Videos a Month</th><th>Types</th><th>Apps</th><th>Joined</th></tr></thead>
                 <tbody>
                   {shown.map((w) => (
                     <tr key={w.spot}>

@@ -64,7 +64,7 @@ export function LiveResults() {
         <section className="v2-card flat" style={{ alignItems: "flex-start" }}>
           <b>Connect your Seller Center shop</b>
           <p className="v2-muted" style={{ margin: 0 }}>Your TAP results show here once your shop is connected.</p>
-          <Link href="/seller/app/account" className="np-btn v2-btn-sm">Connect shop</Link>
+          <Link href="/seller/app/account" className="np-btn v2-btn-sm">Connect Shop</Link>
         </section>
       </div>
     );
@@ -80,22 +80,22 @@ export function LiveResults() {
       <section className="v2-grid4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
         <Stat label="Sales (GMV)" value={<Count value={t.gmv} format={(n) => rm(n, 0)} />} note="Since each product went live" />
         <Stat label="Orders" value={<Count value={t.orders} />} />
-        <Stat label="Creators promoting" value={<Count value={t.creators} />} />
+        <Stat label="Creators Promoting" value={<Count value={t.creators} />} />
         <Stat label="Videos" value={<Count value={t.videos} />} />
         <Stat label="LIVEs" value={<Count value={t.lives} />} />
-        <Stat label="Products live" value={<Count value={t.live} />} note="In Techwide's TAP" />
+        <Stat label="Products Live" value={<Count value={t.live} />} note="In Techwide's TAP" />
       </section>
 
       {!r.products.length ? (
         <section className="v2-card flat" style={{ alignItems: "flex-start" }}>
           <b>No products live in TAP yet</b>
           <p className="v2-muted" style={{ margin: 0 }}>Register products and their results show here once they&apos;re live.</p>
-          <Link href="/seller/app/submit" className="np-btn v2-btn-sm">Register products</Link>
+          <Link href="/seller/app/submit" className="np-btn v2-btn-sm">Register Products</Link>
         </section>
       ) : (
         <div className="v2-split">
           <section className="v2-card">
-            <div className="v2-card-h"><h2 className="v2-h2">Top Creators</h2><span className="v2-small">Since live</span></div>
+            <div className="v2-card-h"><h2 className="v2-h2">Top Creators</h2><span className="v2-small">Since Live</span></div>
             {r.creators.length ? (
               <div className="v2-tablewrap">
                 <table className="v2-table">

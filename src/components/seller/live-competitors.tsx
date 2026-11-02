@@ -34,7 +34,7 @@ export function LiveCompetitors() {
         <section className="v2-card flat" style={{ alignItems: "flex-start" }}>
           <b>Connect your Seller Center shop</b>
           <p className="v2-muted" style={{ margin: 0 }}>Competitors show here for the categories your products are in.</p>
-          <Link href="/seller/app/account" className="np-btn v2-btn-sm">Connect shop</Link>
+          <Link href="/seller/app/account" className="np-btn v2-btn-sm">Connect Shop</Link>
         </section>
       ) : !d.categories.length ? (
         <section className="v2-card flat"><p className="v2-muted" style={{ margin: 0 }}>None of Techwide&apos;s campaign products are in your categories yet.</p></section>
@@ -46,7 +46,7 @@ export function LiveCompetitors() {
           {c && (
             <div className="v2-split">
               <section className="v2-card">
-                <div className="v2-card-h"><h2 className="v2-h2">Best Sellers</h2><span className="v2-small">All-time sold on TikTok Shop</span></div>
+                <div className="v2-card-h"><h2 className="v2-h2">Best Sellers</h2><span className="v2-small">All-Time Sold on TikTok Shop</span></div>
                 <div className="v2-divide">
                   {c.products.map((p, i) => (
                     <div key={p.id} className="sl-act" style={{ gridTemplateColumns: "24px 40px minmax(0,1fr)" }}>
@@ -59,7 +59,7 @@ export function LiveCompetitors() {
                 </div>
               </section>
               <section className="v2-card">
-                <div className="v2-card-h"><h2 className="v2-h2">Creators Selling Here</h2><span className="v2-small">Through Techwide&apos;s campaigns</span></div>
+                <div className="v2-card-h"><h2 className="v2-h2">Creators Selling Here</h2><span className="v2-small">Through Techwide&apos;s Campaigns</span></div>
                 <div className="v2-divide">
                   {c.creators.map((x) => (
                     <div key={x.handle} className="sl-act" style={{ gridTemplateColumns: "36px minmax(0,1fr)" }}>

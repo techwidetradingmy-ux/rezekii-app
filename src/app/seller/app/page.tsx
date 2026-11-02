@@ -68,7 +68,7 @@ export default function SellerHome() {
           <p>{broken.name} has no samples, so creators can&apos;t apply.</p>
           <div className="v2-row">
             <Link href={`/seller/app/product/${broken.id}`} className="v2-btn-white" style={{ color: "#b42318" }}>Fix and Resubmit</Link>
-            <Link href="/seller/app/progress" className="v2-btn-ghostw">See progress</Link>
+            <Link href="/seller/app/progress" className="v2-btn-ghostw">See Progress</Link>
           </div>
         </section>
       )}
@@ -84,7 +84,7 @@ export default function SellerHome() {
             <span>Live</span>
           </div>
           <div className="v2-row">
-            <Link href="/seller/app/progress" className="v2-btn-white">See progress</Link>
+            <Link href="/seller/app/progress" className="v2-btn-white">See Progress</Link>
             <Link href="/seller/app/submit" className="v2-btn-ghostw">Register {fresh} more</Link>
           </div>
         </section>
@@ -95,7 +95,7 @@ export default function SellerHome() {
           <h2>Register Your First Products</h2>
           <p>Your own campaign is ready in Seller Center. Pick products there once; Techwide reviews each one.</p>
           <div className="v2-row">
-            <Link href="/seller/app/submit" className="v2-btn-white">Register products <Icon name="arrow" size={18} /></Link>
+            <Link href="/seller/app/submit" className="v2-btn-white">Register Products <Icon name="arrow" size={18} /></Link>
             <span style={{ fontSize: 13, opacity: 0.9 }}>Signed in ✓ · Seller Center ✓ · Register</span>
           </div>
         </section>
@@ -106,8 +106,8 @@ export default function SellerHome() {
           <h2>All {live} products are live</h2>
           <p>{SELLER_RESULTS.units.toLocaleString("en-MY")} units sold in 30 days. {fresh} products not in TAP yet.</p>
           <div className="v2-row">
-            <Link href="/seller/app/results" className="v2-btn-white">See results</Link>
-            <Link href="/seller/app/submit" className="v2-btn-ghostw">Add more products</Link>
+            <Link href="/seller/app/results" className="v2-btn-white">See Results</Link>
+            <Link href="/seller/app/submit" className="v2-btn-ghostw">Add More Products</Link>
           </div>
         </section>
       )}
@@ -135,13 +135,13 @@ export default function SellerHome() {
         {signedIn ? <LiveSummary totals={real.totals} failed={real.failed} /> : <section className="v2-card">
           <div className="v2-card-h">
             <h2 className="v2-h2">Last 30 Days in TAP</h2>
-            <Link href="/seller/app/results">See all</Link>
+            <Link href="/seller/app/results">See All</Link>
           </div>
           <Source />
           <div className="v2-grid4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))" }}>
             <Stat label="Sales" value={<Count value={SELLER_RESULTS.gmv} format={(n) => rm(n, 0)} />} note="+31% vs last month" tone="up" />
-            <Stat label="Units sold" value={<Count value={SELLER_RESULTS.units} />} />
-            <Stat label="Creators selling" value={<Count value={SELLER_RESULTS.creators} />} />
+            <Stat label="Units Sold" value={<Count value={SELLER_RESULTS.units} />} />
+            <Stat label="Creators Selling" value={<Count value={SELLER_RESULTS.creators} />} />
             <Stat label="Videos" value={<Count value={SELLER_RESULTS.videos} />} />
           </div>
           <div className="sl-cols"><Columns values={RESULTS["30 days"].daily.slice(-14)} labels={["15 Oct", "", "", "", "", "", "", "22 Oct", "", "", "", "", "", "Today"]} /></div>

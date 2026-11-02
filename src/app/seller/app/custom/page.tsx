@@ -76,7 +76,7 @@ export default function CustomServicePage() {
         <h2>Let Our Team Run It for You</h2>
         <p>Pick the services you want. We WhatsApp you within 1 working day with a plan and a quote. You see every result here in Rezekii.</p>
         <span className="cs-hero-acts">
-          <a href="#request" className="cs-jump">Send a request <Icon name="arrow" size={16} /></a>
+          <a href="#request" className="cs-jump">Send a Request <Icon name="arrow" size={16} /></a>
           <a href={waLink(shopName)} target="_blank" rel="noopener noreferrer" className="cs-jump cs-wa"><Icon name="whatsapp" size={16} /> Chat on WhatsApp</a>
         </span>
       </section>
@@ -107,7 +107,7 @@ export default function CustomServicePage() {
                 <div><dt>Monthly budget</dt><dd>{budget ?? "Not sure yet"}</dd></div>
                 {goal.trim() && <div><dt>Goal</dt><dd>{goal.trim()}</dd></div>}
               </dl>
-              <button type="button" className="v2-link" onClick={reset}>Send another request</button>
+              <button type="button" className="v2-link" onClick={reset}>Send Another Request</button>
             </div>
           ) : (
             <>
@@ -131,8 +131,8 @@ export default function CustomServicePage() {
               </label>
               <PhoneField dial={phone.dial} raw={phone.raw} onChange={(dial, raw) => setPhone({ dial, raw })} showError={tried} label="WhatsApp number" />
               {tried && !picked.length && <p className="sl-err"><Icon name="alert" size={16} /> Pick at least 1 service.</p>}
-              <button type="button" className="np-btn" disabled={busy} onClick={submit}>{busy ? <span className="sl-spin" /> : <>Send request <Icon name="send" size={17} /></>}</button>
-              <small className="v2-small">No payment now. We quote first. Prefer to chat? <a href={waLink(shopName)} target="_blank" rel="noopener noreferrer" className="v2-link">WhatsApp us</a>.</small>
+              <button type="button" className="np-btn" disabled={busy} onClick={submit}>{busy ? <span className="sl-spin" /> : <>Send Request <Icon name="send" size={17} /></>}</button>
+              <small className="v2-small">No payment now. We quote first. Prefer to chat? <a href={waLink(shopName)} target="_blank" rel="noopener noreferrer" className="v2-link">WhatsApp Us</a>.</small>
             </>
           )}
         </section>

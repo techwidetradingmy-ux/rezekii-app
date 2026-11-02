@@ -56,7 +56,7 @@ export function ConsentSheet({ role, onAgree, onClose }: { role: Role; onAgree: 
       <button type="button" className="np-btn" disabled={!tick} onClick={onAgree}>
         Agree and {role === "creator" ? "link TikTok Shop" : "connect"}
       </button>
-      <button type="button" className="btn-outline" onClick={onClose}>Not now</button>
+      <button type="button" className="btn-outline" onClick={onClose}>Not Now</button>
       <p className="v2-small" style={{ margin: 0 }}>We save a record of this consent (time, versions, permissions).</p>
     </Sheet>
   );

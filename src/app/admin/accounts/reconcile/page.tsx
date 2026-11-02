@@ -34,7 +34,7 @@ export default function Reconcile() {
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
       <Title title="Reconciliation" sub="Credits and commission checked nightly at 02:00.">
-        <button type="button" className="ad-btn-ghost" onClick={() => toast("Check done · all matching so far")}><Icon name="refresh" size={15} /> Run today&apos;s check</button>
+        <button type="button" className="ad-btn-ghost" onClick={() => toast("Check done · all matching so far")}><Icon name="refresh" size={15} /> Run Today&apos;s Check</button>
       </Title>
 
       {issues.length > 0 ? (
@@ -58,7 +58,7 @@ export default function Reconcile() {
           <table className="v2-table ad-table ad-tight">
             <thead>
               <tr>
-                <th>Day</th><th className="num">Issued</th><th className="num">Used</th><th className="num">Referral</th><th className="num">Ledger</th><th className="num">Wallets</th><th className="num">Diff</th><th className="num">Partner, ours</th><th className="num">TikTok</th><th className="num">RM diff</th><th>Status</th>
+                <th>Day</th><th className="num">Issued</th><th className="num">Used</th><th className="num">Referral</th><th className="num">Ledger</th><th className="num">Wallets</th><th className="num">Diff</th><th className="num">Partner, Ours</th><th className="num">TikTok</th><th className="num">RM Diff</th><th>Status</th>
               </tr>
             </thead>
             <tbody>
@@ -111,13 +111,13 @@ export default function Reconcile() {
                     {busy ? <span className="ad-spin"><Icon name="refresh" size={16} /></span> : <Icon name="refresh" size={16} />} Re-read TikTok orders
                   </button>
                 )}
-                {creditDiff(d) !== 0 && <Link href="/admin/accounts" className="np-btn v2-btn-sm">Correct in ledger</Link>}
+                {creditDiff(d) !== 0 && <Link href="/admin/accounts" className="np-btn v2-btn-sm">Correct in Ledger</Link>}
               </div>
               <label className="v2-field">
                 Or explain it
                 <textarea className="np-input" rows={2} value={why} placeholder="e.g. Held referral rewards, reversed on 28 Oct" onChange={(e) => setWhy(e.target.value)} />
               </label>
-              <button type="button" className="ad-btn-ghost" disabled={!why.trim()} onClick={() => { set({ explained: why.trim() }); toast("Marked as explained · logged"); }}>Mark as explained</button>
+              <button type="button" className="ad-btn-ghost" disabled={!why.trim()} onClick={() => { set({ explained: why.trim() }); toast("Marked as explained · logged"); }}>Mark as Explained</button>
             </>
           )}
         </Sheet>

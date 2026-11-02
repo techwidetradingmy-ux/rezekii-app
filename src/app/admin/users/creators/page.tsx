@@ -10,7 +10,7 @@ import { Av, Chips, Pill, Reasons, Search, Sec, Switch } from "@/components/admi
 import { DIRECTORY, SAMPLE_HISTORY, type Person } from "@/lib/mock-admin";
 import { rm } from "@/lib/mock";
 
-type Level = "Any level" | "Bronze" | "Silver" | "Gold";
+type Level = "Any Level" | "Bronze" | "Silver" | "Gold";
 const uniq = (xs: string[]) => Array.from(new Set(xs)).sort();
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 /** "2026-11-01" -> "1 Nov 2026" */
@@ -24,7 +24,7 @@ export default function CreatorDirectory() {
   const { live } = useDemo();
   const [people, setPeople] = useState<Person[]>(DIRECTORY);
   const [q, setQ] = useState("");
-  const [level, setLevel] = useState<Level>("Any level");
+  const [level, setLevel] = useState<Level>("Any Level");
   const [state, setState] = useState("Any state");
   const [activity, setActivity] = useState("Any activity");
   const [tt, setTt] = useState("Any TikTok level");
@@ -35,7 +35,7 @@ export default function CreatorDirectory() {
 
   const shown = people.filter(
     (p) =>
-      (level === "Any level" || p.level === level) &&
+      (level === "Any Level" || p.level === level) &&
       (state === "Any state" || p.state === state) &&
       (activity === "Any activity" || p.activity === activity) &&
       (tt === "Any TikTok level" || (tt === "Lv.1–2" ? p.tt <= 2 : tt === "Lv.3–4" ? p.tt >= 3 && p.tt <= 4 : p.tt >= 5)) &&
@@ -44,7 +44,7 @@ export default function CreatorDirectory() {
   );
   const p = people.find((x) => x.handle === open) ?? null;
   const set = (handle: string, patch: Partial<Person>) => setPeople((l) => l.map((x) => (x.handle === handle ? { ...x, ...patch } : x)));
-  const filtersOn = [state, activity, tt, niche].filter((x) => !x.startsWith("Any")).length + (level !== "Any level" ? 1 : 0);
+  const filtersOn = [state, activity, tt, niche].filter((x) => !x.startsWith("Any")).length + (level !== "Any Level" ? 1 : 0);
 
   return (
     <div className="v2-stack v2-in" style={{ gap: 16 }}>
@@ -66,10 +66,10 @@ export default function CreatorDirectory() {
         </select>
       </div>
       <div className="ad-bar">
-        <Chips<Level> label="Rezekii level" value={level} onChange={setLevel} options={(["Any level", "Bronze", "Silver", "Gold"] as Level[]).map((l) => [l, l === "Any level" ? people.length : people.filter((x) => x.level === l).length] as [Level, number])} />
+        <Chips<Level> label="Rezekii level" value={level} onChange={setLevel} options={(["Any Level", "Bronze", "Silver", "Gold"] as Level[]).map((l) => [l, l === "Any Level" ? people.length : people.filter((x) => x.level === l).length] as [Level, number])} />
         <span className="sp" />
         {filtersOn > 0 && (
-          <button type="button" className="v2-link" onClick={() => { setLevel("Any level"); setState("Any state"); setActivity("Any activity"); setTt("Any TikTok level"); setNiche("Any niche"); setQ(""); }}>
+          <button type="button" className="v2-link" onClick={() => { setLevel("Any Level"); setState("Any state"); setActivity("Any activity"); setTt("Any TikTok level"); setNiche("Any niche"); setQ(""); }}>
             Clear {filtersOn} filter{filtersOn > 1 ? "s" : ""}
           </button>
         )}
@@ -79,7 +79,7 @@ export default function CreatorDirectory() {
         <div className="v2-tablewrap">
           <table className="v2-table ad-table">
             <thead>
-              <tr><th>Creator</th><th>State</th><th>Level</th><th>Activity</th><th>TikTok</th><th>Niche</th><th className="num">Days in a row</th><th className="num">GMV 30 days</th><th>Status</th></tr>
+              <tr><th>Creator</th><th>State</th><th>Level</th><th>Activity</th><th>TikTok</th><th>Niche</th><th className="num">Days in a Row</th><th className="num">GMV 30 Days</th><th>Status</th></tr>
             </thead>
             <tbody>
               {shown.map((x) => (
@@ -196,13 +196,13 @@ function Profile({ p, onClose, set }: { p: Person; onClose: () => void; set: (pa
         </div>
       ) : !action ? (
         <div className="v2-row">
-          <button type="button" className="ad-btn-ghost danger" onClick={() => { setAction("Freeze"); setReason(null); setNote(""); }}>Freeze or ban</button>
+          <button type="button" className="ad-btn-ghost danger" onClick={() => { setAction("Freeze"); setReason(null); setNote(""); }}>Freeze or Ban</button>
         </div>
       ) : (
         <div className="v2-card flat">
           <Seg value={action} options={["Freeze", "Ban"] as const} onChange={setAction} />
           <span className="v2-small">{action === "Freeze" ? "Pauses samples and missions until restored." : "Closes the account for good. Note required."}</span>
-          <Reasons options={["Overdue samples", "Fake or duplicate account", "Broke the sample terms", "Other"]} value={reason} onChange={setReason} note={note} onNote={setNote} notePlaceholder={action === "Ban" ? "Required: what happened?" : "Note (optional). Creator sees the reason."} />
+          <Reasons options={["Overdue samples", "Fake or Duplicate Account", "Broke the Sample Terms", "Other"]} value={reason} onChange={setReason} note={note} onNote={setNote} notePlaceholder={action === "Ban" ? "Required: what happened?" : "Note (optional). Creator sees the reason."} />
           <div className="v2-row">
             <button type="button" className="np-btn v2-btn-sm ad-btn-danger" disabled={!reason || (action === "Ban" && !note.trim())} onClick={() => { set({ status: action === "Freeze" ? "Frozen" : "Banned" }); setAction(null); toast(`${p.handle} ${action === "Freeze" ? "frozen" : "banned"} · reason sent · logged`); }}>{action} now</button>
             <button type="button" className="ad-btn-ghost" onClick={() => setAction(null)}>Cancel</button>

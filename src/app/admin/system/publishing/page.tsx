@@ -75,7 +75,7 @@ export default function PublishingOps() {
               ) : p.retry ? (
                 <button type="button" className="np-btn v2-btn-sm" onClick={() => retry([p.id])}><Icon name="refresh" size={15} /> Retry</button>
               ) : (
-                <button type="button" className="ad-btn-ghost" onClick={() => { set(p.id, { state: "User notified" }); toast(`${p.who} notified (app and email)`); }}><Icon name="bell" size={15} /> Notify user</button>
+                <button type="button" className="ad-btn-ghost" onClick={() => { set(p.id, { state: "User notified" }); toast(`${p.who} notified (app and email)`); }}><Icon name="bell" size={15} /> Notify User</button>
               )}
             </div>
           ))}

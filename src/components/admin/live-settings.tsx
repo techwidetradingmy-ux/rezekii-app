@@ -52,7 +52,7 @@ export function LiveSettings() {
   return (
     <div className="v2-stack v2-in" style={{ gap: 18 }}>
       <Title title="Settings" sub="What's connected and running, and the settings that change how Rezekii works. Changes are logged.">
-        <Link href="/admin/system/audit" className="ad-btn-ghost"><Icon name="doc" size={15} /> Audit log</Link>
+        <Link href="/admin/system/audit" className="ad-btn-ghost"><Icon name="doc" size={15} /> Audit Log</Link>
       </Title>
       {!d ? <p className="v2-muted">{err ?? "Loading…"}</p> : (
         <>
@@ -78,7 +78,7 @@ export function LiveSettings() {
           </section>
 
           <section className="v2-card">
-            <div className="v2-card-h"><h2 className="v2-h2">Recommended Posting Times</h2><span className="v2-small">Malaysia time, shown in New Post</span></div>
+            <div className="v2-card-h"><h2 className="v2-h2">Recommended Posting Times</h2><span className="v2-small">Malaysia Time, Shown in New Post</span></div>
             <div className="v2-row" style={{ gap: 8, flexWrap: "wrap" }}>
               {times.map((t) => (
                 <span key={t} className="badge" style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
@@ -89,7 +89,7 @@ export function LiveSettings() {
             </div>
             <form className="v2-row" style={{ gap: 8 }} onSubmit={(e) => { e.preventDefault(); if (!times.includes(newTime)) void saveTimes([...times, newTime]); }}>
               <input type="time" className="np-input" style={{ width: "auto" }} value={newTime} onChange={(e) => setNewTime(e.target.value)} aria-label="New posting time" />
-              <button type="submit" className="btn-outline v2-btn-sm" disabled={times.includes(newTime) || times.length >= 12}><Icon name="plus" size={15} /> Add time</button>
+              <button type="submit" className="btn-outline v2-btn-sm" disabled={times.includes(newTime) || times.length >= 12}><Icon name="plus" size={15} /> Add Time</button>
             </form>
           </section>
 
@@ -151,7 +151,7 @@ function SellerCampaignCard({ value }: { value: { name: string; commission: numb
   };
   return (
     <section className="v2-card" style={{ gap: 12 }}>
-      <div className="v2-card-h"><h2 className="v2-h2">New Seller Campaigns</h2><span className="v2-small">Made when a shop connects Seller Center</span></div>
+      <div className="v2-card-h"><h2 className="v2-h2">New Seller Campaigns</h2><span className="v2-small">Made When a Shop Connects Seller Center</span></div>
       <p className="v2-small" style={{ margin: 0 }}>Each shop gets its own public campaign. Every seller in Seller Center can see its name and description. {"{shop}"} becomes the shop&apos;s name and {"{creators}"} the number of creators promoting Techwide&apos;s campaigns, rounded down to the hundred (write {"{creators}+"}); TikTok cuts names at 49 characters.</p>
       <label className="v2-small" style={{ display: "grid", gap: 6, maxWidth: 420 }}>Campaign name
         <input className="np-input" value={name} onChange={(e) => setName(e.target.value)} aria-label="Campaign name" />
@@ -195,7 +195,7 @@ function AnnouncementsCard() {
   const active = (a: Ann) => !a.ends_at || Date.parse(a.ends_at) > Date.now();
   return (
     <section className="v2-card" style={{ gap: 12 }}>
-      <div className="v2-card-h"><h2 className="v2-h2">Announcements</h2><span className="v2-small">Shown in Notifications under System</span></div>
+      <div className="v2-card-h"><h2 className="v2-h2">Announcements</h2><span className="v2-small">Shown in Notifications Under System</span></div>
       <p className="v2-small" style={{ margin: 0 }}>Late or failed daily data updates are announced automatically after 2:00 AM.</p>
       <input className="np-input" maxLength={80} placeholder="Title, e.g. TikTok data is late today" value={title} onChange={(e) => setTitle(e.target.value)} aria-label="Title" />
       <textarea className="np-input" rows={3} maxLength={300} placeholder="Message" value={body} onChange={(e) => setBody(e.target.value)} aria-label="Message" />

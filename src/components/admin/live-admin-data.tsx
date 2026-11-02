@@ -45,7 +45,7 @@ export function LiveCreators() {
           <section className="v2-card" style={{ padding: "8px 12px" }}>
             <div className="v2-tablewrap">
               <table className="v2-table ad-table">
-                <thead><tr><th>Account</th><th>Signs in with</th><th>Connected</th><th>Level</th><th>Links</th><th>Samples</th><th>Joined</th><th>Last seen</th></tr></thead>
+                <thead><tr><th>Account</th><th>Signs in with</th><th>Connected</th><th>Level</th><th>Links</th><th>Samples</th><th>Joined</th><th>Last Seen</th></tr></thead>
                 <tbody>
                   {shown.map((c) => (
                     <tr key={c.id}>
@@ -105,7 +105,7 @@ export function LivePublishing() {
 }
 
 type Sample = { id: string; creator: string; productId: string; name: string; shop: string | null; image: string | null; askedAt: string; tiktok: { status: string; variant: string; dueAt: number | null } | null; checked: boolean };
-type SFilter = "All" | "Waiting in TikTok" | "Not sent in TikTok";
+type SFilter = "All" | "Waiting in TikTok" | "Not Sent in TikTok";
 /** TAP › Sample Review on real data: samples asked for on Rezekii, with TikTok's own status. Creators finish the request in TikTok. */
 export function LiveSampleReview() {
   const [list, err] = useData<Sample[]>("/api/admin/samples");
@@ -116,7 +116,7 @@ export function LiveSampleReview() {
       <Title title="Sample Review" sub="Samples creators asked for on Rezekii, with TikTok's status. Approve them in Partner Center." />
       {!list ? <p className="v2-muted">{err ?? "Loading samples and their TikTok status…"}</p> : (
         <>
-          <Chips<SFilter> label="Filter" value={filter} onChange={setFilter} options={(["All", "Waiting in TikTok", "Not sent in TikTok"] as SFilter[]).map((f) => [f, pick(f).length])} />
+          <Chips<SFilter> label="Filter" value={filter} onChange={setFilter} options={(["All", "Waiting in TikTok", "Not Sent in TikTok"] as SFilter[]).map((f) => [f, pick(f).length])} />
           <section className="v2-card" style={{ padding: "6px 20px" }}>
             <div className="ad-list">
               {pick(filter).map((s) => (
@@ -124,7 +124,7 @@ export function LiveSampleReview() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img className="ad-reqimg" src={s.image ?? NO_PHOTO} alt="" />
                   <span className="main"><b><Link href={adminProductHref(s.productId)} className="pv-open">{shortName(s.name)}</Link></b><small>{s.creator} · {s.shop ?? ""} · asked {day(s.askedAt)}</small></span>
-                  {s.tiktok ? <Pill tone="info">{s.tiktok.status.toLowerCase().replace(/_/g, " ")}</Pill> : <Pill tone={s.checked ? "warn" : "mute"}>{s.checked ? "Not sent in TikTok" : "Couldn't check"}</Pill>}
+                  {s.tiktok ? <Pill tone="info">{s.tiktok.status.toLowerCase().replace(/_/g, " ")}</Pill> : <Pill tone={s.checked ? "warn" : "mute"}>{s.checked ? "Not Sent in TikTok" : "Couldn't check"}</Pill>}
                 </div>
               ))}
               {!pick(filter).length && <p className="v2-muted" style={{ padding: "14px 0" }}>Nothing here.</p>}

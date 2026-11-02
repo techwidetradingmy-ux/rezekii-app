@@ -160,7 +160,7 @@ export function LiveRankings() {
           </div>
           {l.shown < l.total && (
             <div style={{ display: "flex", justifyContent: "center", padding: 10 }}>
-              <button type="button" className="btn-outline v2-btn-sm" onClick={() => setPg((p) => p + 1)}>Show more</button>
+              <button type="button" className="btn-outline v2-btn-sm" onClick={() => setPg((p) => p + 1)}>Show More</button>
             </div>
           )}
         </section>

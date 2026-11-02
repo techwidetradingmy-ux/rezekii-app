@@ -47,10 +47,10 @@ export function LiveSamples() {
       <Title title="Where Samples Went" sub="Creators who asked for a free sample of your TAP products, from TikTok" />
 
       <section className="v2-grid4">
-        <Stat label="Samples asked" value={<Count value={list.length} />} />
-        <Stat label="Shipped or received" value={<Count value={got.length} />} />
-        <Stat label="With a video" value={<Count value={withVideo.length} />} tone={withVideo.length ? "up" : undefined} />
-        <Stat label="Videos posted" value={<Count value={videos} />} note={lives ? `+ ${lives} LIVEs` : undefined} />
+        <Stat label="Samples Asked" value={<Count value={list.length} />} />
+        <Stat label="Shipped or Received" value={<Count value={got.length} />} />
+        <Stat label="With a Video" value={<Count value={withVideo.length} />} tone={withVideo.length ? "up" : undefined} />
+        <Stat label="Videos Posted" value={<Count value={videos} />} note={lives ? `+ ${lives} LIVEs` : undefined} />
       </section>
 
       <div className="sl-chipline" role="group" aria-label="Filter">
@@ -77,7 +77,7 @@ export function LiveSamples() {
               </span>
               <span className="sl-pside">
                 <span className={`badge ${STEP[d.stage]?.[1] ?? ""}`}>{STEP[d.stage]?.[0] ?? "Asked"}</span>
-                {d.videos > 0 && <a className="v2-link" style={{ fontSize: 13.5 }} href={`https://www.tiktok.com/@${d.handle}`} target="_blank" rel="noreferrer">Watch videos</a>}
+                {d.videos > 0 && <a className="v2-link" style={{ fontSize: 13.5 }} href={`https://www.tiktok.com/@${d.handle}`} target="_blank" rel="noreferrer">Watch Videos</a>}
               </span>
             </div>
           ))}

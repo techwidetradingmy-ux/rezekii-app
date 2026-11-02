@@ -48,7 +48,7 @@ export default function SellersList() {
         <div className="v2-tablewrap">
           <table className="v2-table ad-table">
             <thead>
-              <tr><th>Shop</th><th>Country · state</th><th>Type</th><th>Status</th><th className="num">Live products</th><th>Joined</th><th>BD</th></tr>
+              <tr><th>Shop</th><th>Country · State</th><th>Type</th><th>Status</th><th className="num">Live Products</th><th>Joined</th><th>BD</th></tr>
             </thead>
             <tbody>
               {shown.map((x) => (
@@ -78,16 +78,16 @@ export default function SellersList() {
               {s.status === "Frozen" ? (
                 <button type="button" className="np-btn v2-btn-sm" onClick={() => { setList((l) => l.map((x) => (x.shop === s.shop ? { ...x, status: "Active" } : x))); toast("Unfrozen · logged"); }}>Unfreeze</button>
               ) : (
-                <button type="button" className="ad-btn-ghost danger" onClick={() => { setFreezing(true); setReason(null); setNote(""); }}>Freeze account</button>
+                <button type="button" className="ad-btn-ghost danger" onClick={() => { setFreezing(true); setReason(null); setNote(""); }}>Freeze Account</button>
               )}
-              <button type="button" className="ad-btn-ghost" onClick={() => toast(`Message sent to ${s.shop}`)}>Message seller</button>
+              <button type="button" className="ad-btn-ghost" onClick={() => toast(`Message sent to ${s.shop}`)}>Message Seller</button>
             </div>
           ) : (
             <>
               <Sec>Why freeze?</Sec>
-              <Reasons options={["Fake or unsafe products", "Didn't ship samples", "Payment or fraud concern", "Other"]} value={reason} onChange={setReason} note={note} onNote={setNote} notePlaceholder="Note (seller sees the reason)" />
+              <Reasons options={["Fake or Unsafe Products", "Didn't Ship Samples", "Payment or Fraud Concern", "Other"]} value={reason} onChange={setReason} note={note} onNote={setNote} notePlaceholder="Note (seller sees the reason)" />
               <div className="v2-row">
-                <button type="button" className="np-btn v2-btn-sm ad-btn-danger" disabled={!reason} onClick={() => { setList((l) => l.map((x) => (x.shop === s.shop ? { ...x, status: "Frozen" } : x))); setFreezing(false); toast(`${s.shop} frozen · TAP requests paused · logged`); }}>Freeze now</button>
+                <button type="button" className="np-btn v2-btn-sm ad-btn-danger" disabled={!reason} onClick={() => { setList((l) => l.map((x) => (x.shop === s.shop ? { ...x, status: "Frozen" } : x))); setFreezing(false); toast(`${s.shop} frozen · TAP requests paused · logged`); }}>Freeze Now</button>
                 <button type="button" className="ad-btn-ghost" onClick={() => setFreezing(false)}>Cancel</button>
               </div>
             </>

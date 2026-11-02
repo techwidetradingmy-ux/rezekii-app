@@ -165,7 +165,7 @@ export function MySamples() {
               <div className="v2-row">
                 {s.status === "Posting" && (
                   <>
-                    <button type="button" className="np-btn v2-btn-sm" onClick={() => { setSubmit(s); setLinkErr(false); }}><Icon name="link" size={16} /> Submit video link</button>
+                    <button type="button" className="np-btn v2-btn-sm" onClick={() => { setSubmit(s); setLinkErr(false); }}><Icon name="link" size={16} /> Submit Video Link</button>
                     {s.videos === 0 && (
                       <button type="button" className="btn-outline v2-btn-sm" disabled={extended.includes(s.id)} onClick={() => { setExtend(s); setWhy(null); }}>
                         {extended.includes(s.id) ? "More time requested" : "Ask for more time"}
@@ -174,12 +174,12 @@ export function MySamples() {
                   </>
                 )}
                 {s.status === "Shipped" && <button type="button" className="btn-outline v2-btn-sm" onClick={() => toast("Opening the delivery in TikTok…")}>Track in TikTok</button>}
-                {s.status === "Approved" && <button type="button" className="btn-outline v2-btn-sm" onClick={() => toast("We'll tell you when the seller ships it")}>Remind me when it ships</button>}
+                {s.status === "Approved" && <button type="button" className="btn-outline v2-btn-sm" onClick={() => toast("We'll tell you when the seller ships it")}>Remind Me When It Ships</button>}
                 {s.status === "Done" && <button type="button" className="btn-outline v2-btn-sm" onClick={() => setShare(s)}><Icon name="share" size={16} /> Share</button>}
                 {s.status === "Not approved" && (
                   <>
                     <Link href="/app/market" className="np-btn v2-btn-sm">See Free Samples</Link>
-                    <Link href="/app/rewards" className="btn-outline v2-btn-sm">Daily missions</Link>
+                    <Link href="/app/rewards" className="btn-outline v2-btn-sm">Daily Missions</Link>
                   </>
                 )}
               </div>
@@ -190,7 +190,7 @@ export function MySamples() {
           <div className="v2-card flat" style={{ alignItems: "flex-start" }}>
             <b>Nothing here</b>
             <span className="v2-muted">{tab === "Not approved" ? "No rejected requests." : "Request a sample to start."}</span>
-            <Link href="/app/market" className="np-btn v2-btn-sm">Browse samples</Link>
+            <Link href="/app/market" className="np-btn v2-btn-sm">Browse Samples</Link>
           </div>
         )}
       </div>
@@ -230,8 +230,8 @@ export function MySamples() {
             />
             {linkErr ? <small className="cr1-err">Paste a TikTok video link, e.g. https://www.tiktok.com/@you/video/123</small> : <small>In TikTok: Share, then Copy link.</small>}
           </label>
-          <button type="button" className="np-btn" onClick={addVideo}>Add video</button>
-          <button type="button" className="v2-link" onClick={() => setLink("https://www.tiktok.com/@aisyah.glow/video/7431190024")}>Use a sample link (preview)</button>
+          <button type="button" className="np-btn" onClick={addVideo}>Add Video</button>
+          <button type="button" className="v2-link" onClick={() => setLink("https://www.tiktok.com/@aisyah.glow/video/7431190024")}>Use a Sample Link (Preview)</button>
         </Sheet>
       )}
 
@@ -346,7 +346,7 @@ export function LiveSamples() {
           <div className="v2-card flat" style={{ alignItems: "flex-start" }}>
             <b>Nothing here</b>
             <span className="v2-muted">{tab === "Not approved" ? "No rejected requests." : "Request a free sample to start."}</span>
-            <Link href="/app/market" className="np-btn v2-btn-sm">Browse samples</Link>
+            <Link href="/app/market" className="np-btn v2-btn-sm">Browse Samples</Link>
           </div>
         )}
       </div>

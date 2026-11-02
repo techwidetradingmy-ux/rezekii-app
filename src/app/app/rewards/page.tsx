@@ -69,7 +69,7 @@ export default function Missions() {
       <section className="v2-card mx-card">
         <div className="v2-card-h">
           <h2 className="v2-h2">Branded Missions</h2>
-          <span className="badge badge-amber">Coming soon</span>
+          <span className="badge badge-amber">Coming Soon</span>
         </div>
         <p className="v2-small" style={{ margin: 0 }}>Brands pay you for videos, on top of your commission.</p>
         <div className="mx-brands">

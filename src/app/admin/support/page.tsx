@@ -77,7 +77,7 @@ export default function Disputes() {
               <button key={s} type="button" className={`v2-chip ${d.status === s ? "on" : ""}`} style={{ height: 34, fontSize: 13 }} onClick={() => { set({ status: s }); toast(`Status: ${s}`); }}>{s}</button>
             ))}
           </div>
-          {!d.owner && <button type="button" className="ad-btn-ghost" onClick={() => { set({ owner: ME }); toast("Assigned to you"); }}><Icon name="user" size={15} /> Assign to me</button>}
+          {!d.owner && <button type="button" className="ad-btn-ghost" onClick={() => { set({ owner: ME }); toast("Assigned to you"); }}><Icon name="user" size={15} /> Assign to Me</button>}
 
           <Sec>What happened</Sec>
           <ul className="ad-tl">
@@ -89,14 +89,14 @@ export default function Disputes() {
           <Sec>Reply</Sec>
           <Seg value={to} options={["Creator", "Seller", "Both"] as const} onChange={setTo} />
           <textarea className="np-input" rows={3} value={msg} placeholder={`Message to ${to === "Both" ? "both" : `the ${to.toLowerCase()}`} (in app and by email)`} onChange={(e) => setMsg(e.target.value)} />
-          <button type="button" className="ad-btn-ghost" disabled={!msg.trim()} onClick={() => { addLog(`Replied to ${to.toLowerCase()}: ${msg.trim()}`); setMsg(""); toast("Reply sent"); }}><Icon name="send" size={15} /> Send reply</button>
+          <button type="button" className="ad-btn-ghost" disabled={!msg.trim()} onClick={() => { addLog(`Replied to ${to.toLowerCase()}: ${msg.trim()}`); setMsg(""); toast("Reply sent"); }}><Icon name="send" size={15} /> Send Reply</button>
 
           {d.status !== "Resolved" && (
             <>
               <Sec>Decide</Sec>
               <div className="v2-row">
-                <button type="button" className="np-btn v2-btn-sm" onClick={() => { set({ status: "Resolved", log: [...d.log, { when: "28 Oct 10:52", who: ME, text: "Decided for the creator. Closed." }] }); toast("Closed · added to both reliability records"); }}>Creator is right</button>
-                <button type="button" className="np-btn v2-btn-sm" onClick={() => { set({ status: "Resolved", log: [...d.log, { when: "28 Oct 10:52", who: ME, text: "Decided for the seller. Closed." }] }); toast("Closed · added to both reliability records"); }}>Seller is right</button>
+                <button type="button" className="np-btn v2-btn-sm" onClick={() => { set({ status: "Resolved", log: [...d.log, { when: "28 Oct 10:52", who: ME, text: "Decided for the creator. Closed." }] }); toast("Closed · added to both reliability records"); }}>Creator is Right</button>
+                <button type="button" className="np-btn v2-btn-sm" onClick={() => { set({ status: "Resolved", log: [...d.log, { when: "28 Oct 10:52", who: ME, text: "Decided for the seller. Closed." }] }); toast("Closed · added to both reliability records"); }}>Seller is Right</button>
               </div>
               <span className="v2-small">Goes on both records. Both are notified.</span>
             </>

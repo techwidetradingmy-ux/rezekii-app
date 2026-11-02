@@ -39,13 +39,13 @@ export function DemoStrip() {
         {/* Signed in, every screen shows her real data (owner, 31 Oct 2026); the sample switches are for the signed-out preview. */}
         <span>{live ? "Rezekii 2.0 preview · your real data" : "Rezekii 2.0 preview · sample data, nothing is saved"}</span>
         <span style={{ flex: 1 }} />
-        <Link href="/">Creator site</Link>
-        <Link href="/app">Creator app</Link>
-        <Link href="/seller">Seller site</Link>
-        <Link href="/seller/app">Seller app</Link>
+        <Link href="/">Creator Site</Link>
+        <Link href="/app">Creator App</Link>
+        <Link href="/seller">Seller Site</Link>
+        <Link href="/seller/app">Seller App</Link>
         <Link href="/admin">Admin</Link>
-        <Link href="/tour">All pages</Link>
-        <Link href="/compare">Compare views</Link>
+        <Link href="/tour">All Pages</Link>
+        <Link href="/compare">Compare Views</Link>
         {!live && (
           <>
             <button type="button" className="v2-demo-toggle" onClick={() => setLinked(!linked)}>

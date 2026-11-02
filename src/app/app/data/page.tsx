@@ -75,7 +75,7 @@ export default function DataOverview() {
     loadAnalyticsRange(custom[0], custom[1]).then((x) => { if (on) setPicked(x ? { status: "idle", data: x } : { status: "failed", data: null }); });
     return () => { on = false; };
   }, [live, custom, pickTry]);
-  const [split, setSplit] = useKept<"By channel" | "By product">("data-split", "By channel");
+  const [split, setSplit] = useKept<"By Channel" | "By Product">("data-split", "By Channel");
   // Highest or lowest first in Commission Sources, remembered (owner, 1 Nov 2026).
   const [, , srcDir, flipSrc] = useSortPref("data-sources", ["Share"] as const, "Share");
   const [removed, setRemoved] = useState<string[]>([]);
@@ -162,7 +162,7 @@ export default function DataOverview() {
       <Lock what="your sales and commission">
         <div className="v2-stack" style={{ gap: 10 }}>
           <p className="an-range"><b>{rangeLabel}</b>{range !== "Lifetime" && <span>vs the {custom ? `${between(from, to)} days` : range} before</span>}</p>
-          {failed && <p className="an-failed"><Icon name="alert" size={16} /> Couldn&apos;t load these days. <button type="button" className="v2-link" onClick={retry}>Try again</button></p>}
+          {failed && <p className="an-failed"><Icon name="alert" size={16} /> Couldn&apos;t load these days. <button type="button" className="v2-link" onClick={retry}>Try Again</button></p>}
           <div className="cr2-stats">
             <Stat label="GMV" value={wait(<Count key={`g${range}${from}${to}`} value={dd.gmv} format={(n) => rm(n, 0)} />)} note={d ? change(dd.gmvChange) : undefined} tone={tone(dd.gmvChange)} />
             <Stat label="Orders" value={wait(<Count key={`o${range}${from}${to}`} value={dd.orders} />)} note={d ? change(dd.ordersChange) : undefined} tone={tone(dd.ordersChange)} />
@@ -182,12 +182,12 @@ export default function DataOverview() {
           <h2 className="v2-h2">Commission Sources</h2>
         </div>
         <div className="sb-bar">
-          <Seg value={split} options={["By channel", "By product"] as const} onChange={setSplit} />
+          <Seg value={split} options={["By Channel", "By Product"] as const} onChange={setSplit} />
           <DirToggle dir={srcDir} onFlip={flipSrc} />
         </div>
         <Lock what="where your commission comes from">
           <div style={{ paddingTop: 4 }}>
-            {!d ? <p className="v2-muted an-loading">{failed ? "Couldn't load these days." : "Loading…"}</p> : split === "By channel" ? <Bars key="ch" rows={channelRows} /> : (
+            {!d ? <p className="v2-muted an-loading">{failed ? "Couldn't load these days." : "Loading…"}</p> : split === "By Channel" ? <Bars key="ch" rows={channelRows} /> : (
               <>
                 <Bars key={`pr${topN}${srcDir}`} rows={productRows} />
                 {ranked.length > 5 && (
@@ -249,12 +249,12 @@ export default function DataOverview() {
                 {gone ? (
                   <span className="badge badge-gray"><Icon name="check" size={12} width={3} /> Removed</span>
                 ) : (
-                  <button type="button" className="btn-outline v2-btn-sm" onClick={() => remove(w.productId)}>Remove from showcase</button>
+                  <button type="button" className="btn-outline v2-btn-sm" onClick={() => remove(w.productId)}>Remove from Showcase</button>
                 )}
               </div>
             );
           })}
-          <Link href="/app/data/risk" className="v2-link" style={{ fontSize: 13.5, padding: "4px 2px 0" }}>See all ratings →</Link>
+          <Link href="/app/data/risk" className="v2-link" style={{ fontSize: 13.5, padding: "4px 2px 0" }}>See All Ratings →</Link>
         </div>
       </section>
       )}
@@ -272,7 +272,7 @@ export default function DataOverview() {
       <section className="v2-card an-top">
         <div className="v2-card-h">
           <h2 className="v2-h2">Top Earning Products</h2>
-          <Link href="/app/data/performance#product">All products</Link>
+          <Link href="/app/data/performance#product">All Products</Link>
         </div>
         <div className="v2-divide">
           {ranked.slice(0, 3).map((b, i) => {
