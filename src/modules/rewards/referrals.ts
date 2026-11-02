@@ -125,14 +125,26 @@ async function nameOf(userId: string, side: Side): Promise<string> {
 
 export type Friend = { name: string; joined: string; successful: boolean; next: string | null };
 
-/** The friends who joined with this account's code on one side, newest first. */
+/** The friends who joined with this account's code on one side, newest first: their names and shops read in one go each. */
 export async function friendsOf(userId: string, side: Side): Promise<Friend[]> {
   const rows = (await (await supabaseRest(`referrals?inviter_id=eq.${userId}&side=eq.${side}&select=friend_id,joined_at,qualified_at&order=joined_at.desc&limit=200`)).json()) as { friend_id: string; joined_at: string; qualified_at: string | null }[];
-  return Promise.all(rows.map(async (r) => {
-    if (r.qualified_at) return { name: await nameOf(r.friend_id, side), joined: r.joined_at, successful: true, next: null };
+  if (!rows.length) return [];
+  const ids = `in.(${[...new Set(rows.map((r) => r.friend_id))].join(",")})`;
+  const [users, shops] = await Promise.all([
+    supabaseRest(`app_users?id=${ids}&select=id,display_name,tiktok_username`).then((r) => r.json() as Promise<{ id: string; display_name: string | null; tiktok_username: string | null }[]>),
+    side === "seller"
+      ? supabaseRest(`seller_connections?connected_by=${ids}&select=who:connected_by,shop_name&order=connected_at.asc`).then((r) => r.json() as Promise<{ who: string; shop_name: string | null }[]>)
+      : supabaseRest(`affiliate_connections?user_id=${ids}&select=who:user_id`).then((r) => r.json() as Promise<{ who: string; shop_name?: null }[]>),
+  ]);
+  const user = new Map(users.map((u) => [u.id, u]));
+  const shop = new Map<string, string | null>();
+  for (const s of shops) if (!shop.has(s.who)) shop.set(s.who, s.shop_name ?? null);
+  // Same names as nameOf: the seller's first shop, else her TikTok handle, else her name.
+  const name = (id: string) => (side === "seller" && shop.get(id)) || (user.get(id)?.tiktok_username ? `@${user.get(id)!.tiktok_username}` : user.get(id)?.display_name ?? "A friend");
+  return rows.map((r) => {
+    if (r.qualified_at) return { name: name(r.friend_id), joined: r.joined_at, successful: true, next: null };
     const late = Date.now() > Date.parse(r.joined_at) + REFERRAL_DAYS * DAY;
-    const shop = await shopOf(r.friend_id, side);
-    const next = late ? "Missed the 14 days" : shop ? "Counting soon" : side === "seller" ? "Connect Seller Center" : "Link TikTok Shop";
-    return { name: await nameOf(r.friend_id, side), joined: r.joined_at, successful: false, next };
-  }));
+    const next = late ? "Missed the 14 days" : shop.has(r.friend_id) ? "Counting soon" : side === "seller" ? "Connect Seller Center" : "Link TikTok Shop";
+    return { name: name(r.friend_id), joined: r.joined_at, successful: false, next };
+  });
 }

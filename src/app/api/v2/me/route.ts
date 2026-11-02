@@ -1,5 +1,7 @@
 import { after, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { currentUser } from "@/app/current-user";
+import { SESSION_COOKIE, SIGNED_IN_COOKIE, renewSession, sessionCookieOptions, signedInCookieOptions } from "@/modules/accounts/session.ts";
 import { accessFor } from "@/modules/creator-accounts/access.ts";
 import { connectionForUser } from "@/modules/creator-accounts/affiliate-connections.ts";
 import { sellerShopName } from "@/modules/marketplace/seller-connection.ts";
@@ -23,7 +25,8 @@ export async function GET() {
   // When she last used Rezekii, noted at most once an hour (owner, 2 Nov 2026: the nightly refresh does active creators first).
   const hourAgo = new Date(Date.now() - 3_600_000).toISOString();
   after(() => supabaseRest(`app_users?id=eq.${user.id}&or=${encodeURIComponent(`(last_seen_at.is.null,last_seen_at.lt."${hourAgo}")`)}`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ last_seen_at: new Date().toISOString() }) }).catch(() => null));
-  const [link, access, level, sellerShop, tt, profile, beta] = await Promise.all([
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  const [link, access, level, sellerShop, tt, profile, beta, ways, renewed] = await Promise.all([
     connectionForUser(user.id).catch(() => null), accessFor(user.id).catch(() => null), levelOf(user.id).catch(() => "bronze" as const), sellerShopName(user).catch(() => null),
     // Her TikTok Shop creator level, read by the refresh queue after linking (owner, 14 Oct 2026).
     supabaseRest(`affiliate_connections?user_id=eq.${user.id}&select=tt_level&limit=1`).then((r) => r.json() as Promise<{ tt_level: number | null }[]>).catch(() => []),
@@ -31,10 +34,14 @@ export async function GET() {
     profileOf<CreatorDetails>(user.id, "creator").catch(() => null),
     // Beta sign-up approval for the creator and the seller app (owner, 2 Nov 2026); null on a side she hasn't opened yet.
     betaRows(user.id).then(async (rows) => ({ creator: await betaState(rows.find((r) => r.side === "creator")), seller: await betaState(rows.find((r) => r.side === "seller")) })).catch(() => null),
+    // How she can sign in (owner, 31 Oct 2026: Settings shows the real ways in). No secrets leave the server.
+    supabaseRest(`app_users?id=eq.${user.id}&select=google_sub,tiktok_open_id,tiktok_username,password_hash,login_email,email&limit=1`)
+      .then((r) => r.json() as Promise<{ google_sub: string | null; tiktok_open_id: string | null; tiktok_username: string | null; password_hash: string | null; login_email: string | null; email: string | null }[]>)
+      .then((r) => r[0]).catch(() => undefined),
+    // Signed in for 90 days from her latest visit (owner, 2 Nov 2026).
+    renewSession(token).catch(() => null),
   ]);
-  // How she can sign in (owner, 31 Oct 2026: Settings shows the real ways in). No secrets leave the server.
-  const [ways] = (await supabaseRest(`app_users?id=eq.${user.id}&select=google_sub,tiktok_open_id,tiktok_username,password_hash,login_email,email&limit=1`).then((r) => r.json()).catch(() => [])) as { google_sub: string | null; tiktok_open_id: string | null; tiktok_username: string | null; password_hash: string | null; login_email: string | null; email: string | null }[];
-  return NextResponse.json(
+  const res = NextResponse.json(
     {
       me: {
         id: user.id,
@@ -59,4 +66,9 @@ export async function GET() {
     },
     NO_STORE,
   );
+  if (renewed && token) {
+    res.cookies.set(SESSION_COOKIE, token, sessionCookieOptions(renewed));
+    res.cookies.set(SIGNED_IN_COOKIE, "1", signedInCookieOptions(renewed));
+  }
+  return res;
 }

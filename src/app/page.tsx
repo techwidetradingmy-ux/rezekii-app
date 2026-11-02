@@ -1,4 +1,6 @@
 import Image from "next/image";
+import { redirect } from "next/navigation";
+import { currentUser } from "@/app/current-user";
 import { SUPPORT } from "@/lib/support";
 import Link from "next/link";
 import { DemoStrip } from "@/components/shell";
@@ -49,7 +51,10 @@ const NEVER = [
  * creators through their journey, free during Beta. The page is a live demo: what you get → without vs with → a day with
  * Rezekii → everything in one app → what you'll see → 3 steps → peace of mind → FAQ → one CTA.
  */
-export default function Landing() {
+export default async function Landing() {
+  // Signed in (owner, 2 Nov 2026): straight into the app. Admins still see the site.
+  const user = await currentUser();
+  if (user && user.role !== "admin") redirect("/app");
   return (
     <>
       <ForceLight />

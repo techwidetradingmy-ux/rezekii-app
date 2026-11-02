@@ -13,6 +13,8 @@ export const metadata: Metadata = {
   title: "Rezekii",
   description: "Rezekii: an AI-powered affiliate platform for TikTok Shop creators and sellers.",
   robots: { index: false, follow: false },
+  // On an iPhone's home screen too: full screen, Rezekii's name and logo (owner, 2 Nov 2026).
+  appleWebApp: { capable: true, title: "Rezekii", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#00874f", viewportFit: "cover" };

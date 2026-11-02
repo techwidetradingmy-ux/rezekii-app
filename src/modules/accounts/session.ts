@@ -4,7 +4,9 @@ import { USER_COLUMNS, type AppUser } from "./users.ts";
 
 /** Sessions: a random token in an HTTP-only cookie; the database keeps only its SHA-256 hash. */
 export const SESSION_COOKIE = "rz_session";
-const SESSION_DAYS = 30;
+/** Signed in for 90 days, renewed while she uses Rezekii (owner, 2 Nov 2026: the home-screen app kept asking to sign in). */
+const SESSION_DAYS = 90;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const hashToken = (token: string) => createHash("sha256").update(token).digest("hex");
 
@@ -21,7 +23,7 @@ export const signedInCookieOptions = (expires: Date) => ({ httpOnly: false, secu
 
 export async function createSession(userId: string): Promise<{ token: string; expires: Date }> {
   const token = randomBytes(32).toString("base64url");
-  const expires = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
+  const expires = new Date(Date.now() + SESSION_DAYS * DAY_MS);
   await supabaseRest("app_sessions", {
     method: "POST",
     headers: { prefer: "return=minimal" },
@@ -38,6 +40,16 @@ export async function userForSession(token: string | undefined): Promise<AppUser
   );
   const [row] = (await res.json()) as { app_users: AppUser | null }[];
   return row?.app_users ?? null;
+}
+
+/** Moves a session's end to 90 days from now, at most once a day. The new end when it was moved (to set the cookies again), else null. */
+export async function renewSession(token: string | undefined): Promise<Date | null> {
+  if (!token) return null;
+  const now = Date.now();
+  const expires = new Date(now + SESSION_DAYS * DAY_MS);
+  const due = `and=(expires_at.gt.${new Date(now).toISOString()},expires_at.lt.${new Date(now + (SESSION_DAYS - 1) * DAY_MS).toISOString()})`;
+  const res = await supabaseRest(`app_sessions?token_hash=eq.${hashToken(token)}&${due}`, { method: "PATCH", headers: { prefer: "return=representation" }, body: JSON.stringify({ expires_at: expires.toISOString() }) });
+  return ((await res.json()) as unknown[]).length ? expires : null;
 }
 
 export async function deleteSession(token: string | undefined): Promise<void> {

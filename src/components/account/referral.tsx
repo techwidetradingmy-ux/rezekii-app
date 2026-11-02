@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo, useWho } from "@/components/demo";
 import { Qr, Tip } from "@/components/ui";
@@ -28,10 +28,14 @@ export function Referral() {
   const [qr, setQr] = useState(false);
   // Signed in (owner, 31 Oct 2026): her real code, link and the friends who joined with it.
   const [real, setReal] = useState<LiveReferral | null | "error">(null);
+  // Asked for at once when she's signed in (owner, 2 Nov 2026: the gift box was slow), not after her account loads.
+  const asked = useRef(false);
   useEffect(() => {
-    if (live) loadReferral("creator").then(setReal).catch(() => setReal("error"));
+    if (asked.current || !(live || document.cookie.includes("rz_in=1"))) return;
+    asked.current = true;
+    loadReferral("creator").then(setReal).catch(() => setReal("error"));
   }, [live]);
-  const r = live && real && real !== "error" ? real : null;
+  const r = real && real !== "error" ? real : null;
   const CODE = r?.code ?? SAMPLE_CODE;
   const LINK = r ? r.link.replace(/^https?:\/\//, "") : SAMPLE_LINK;
   const reward = r?.reward ?? REFERRAL_REWARD;

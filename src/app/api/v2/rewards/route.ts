@@ -29,17 +29,16 @@ export async function GET(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   const q = req.nextUrl.searchParams;
   const side = sideOf(q.get("side"));
-  // Friends who became successful get paid, and failed or cancelled posts get their credits back, whenever she looks.
-  await Promise.all([
-    settleReferrals(user.id).catch((e) => console.error("[referrals] settle", e instanceof Error ? e.message : e)),
-    settlePostRefunds(user.id).catch((e) => console.error("[post credits] refunds", e instanceof Error ? e.message : e)),
-  ]);
   const part = q.get("part");
-  if (part === "wallet") return NextResponse.json(await wallet(user.id, side), NO_STORE);
+  const settle = () => settleReferrals(user.id).catch((e) => console.error("[referrals] settle", e instanceof Error ? e.message : e));
+  // Her invite (owner, 2 Nov 2026: the gift box was slow): friends settled and her code read together, then her friends.
   if (part === "referral") {
-    const code = await codeFor(user);
+    const [, code] = await Promise.all([settle(), codeFor(user)]);
     return NextResponse.json({ code, link: `${process.env.APP_URL ?? req.nextUrl.origin}/${side === "seller" ? "s" : "r"}/${code}`, friends: await friendsOf(user.id, side), reward: REFERRAL_REWARD, days: REFERRAL_DAYS }, NO_STORE);
   }
+  // Friends who became successful get paid, and failed or cancelled posts get their credits back, whenever she looks.
+  await Promise.all([settle(), settlePostRefunds(user.id).catch((e) => console.error("[post credits] refunds", e instanceof Error ? e.message : e))]);
+  if (part === "wallet") return NextResponse.json(await wallet(user.id, side), NO_STORE);
   return NextResponse.json(await missionBoard({ id: user.id, created_at: await joined(user.id) }, side), NO_STORE);
 }
 
