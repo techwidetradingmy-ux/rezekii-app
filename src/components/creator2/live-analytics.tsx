@@ -9,10 +9,11 @@ import { removeFromShowcase } from "@/lib/live";
 import { NO_PHOTO, shortName } from "@/lib/live-perf";
 import { productHref } from "@/lib/product-view";
 import { short } from "@/lib/mock";
+import type { BestTime, Market, ViewSlot } from "@/modules/stats/best-time";
 
 type Flag = { id: string; name: string; img: string | null; rating: number; reviews: number; orders: number; cancel: number; returned: number };
 type Ratings = { linked: boolean; total: number; checked: number; more: boolean; flagged: Flag[]; at: string };
-type Best = { basis: "views" | "orders"; count: number; slots: [string, number][] };
+type Best = BestTime;
 type Coverage = { linked: boolean; notYet: { id: string; name: string; sold: number }[] };
 export type Signals = { ratings: Ratings | null; best: Best | null; coverage: Coverage | null; channels: string[] | null };
 
@@ -23,14 +24,25 @@ export function useAnalyticsSignals(on: boolean): Signals {
     if (!on) return;
     const get = <T,>(url: string) => fetch(url, { cache: "no-store" }).then((r) => (r.ok ? (r.json() as Promise<T>) : null)).catch(() => null);
     void get<Ratings>("/api/v2/ratings").then((ratings) => setS((x) => ({ ...x, ratings: ratings ?? { linked: false, total: 0, checked: 0, more: false, flagged: [], at: "" } })));
-    void get<Best>("/api/v2/best-time").then((best) => setS((x) => ({ ...x, best: best ?? { basis: "orders", count: 0, slots: [] } })));
+    void get<Best>("/api/v2/best-time").then((best) => setS((x) => ({ ...x, best: best ?? { views: null, orders: null, market: null } })));
     void get<Coverage>("/api/v2/coverage").then((coverage) => setS((x) => ({ ...x, coverage: coverage ?? { linked: false, notYet: [] } })));
     void get<{ channels?: { app: string; status: string }[] }>("/api/v2/publish?part=setup&side=creator").then((d) => setS((x) => ({ ...x, channels: (d?.channels ?? []).filter((c) => c.status !== "reconnect").map((c) => c.app) })));
   }, [on]);
   return s;
 }
 
-const topSlot = (b: Best | null) => (b && b.slots.some(([, v]) => v > 0) ? b.slots.reduce((a, c) => (c[1] > a[1] ? c : a)) : null);
+// A time slot shows only with 3 settled posts (owner, 3 Nov 2026).
+const shownSlots = (b: Best | null) => b?.views?.slots.filter((s) => s.posts >= 3) ?? [];
+/** Her best time: most typical views, else (under 5 settled videos) when her buyers ordered most. */
+const topSlot = (b: Best | null): { label: string; views: ViewSlot | null } | null => {
+  const v = shownSlots(b);
+  if (v.length) { const s = v.reduce((a, c) => (c.typical > a.typical ? c : a)); return { label: s.label, views: s }; }
+  const o = (b?.orders?.slots ?? []).filter(([, n]) => n > 0);
+  return o.length ? { label: o.reduce((a, c) => (c[1] > a[1] ? c : a))[0], views: null } : null;
+};
+const full = (n: number) => n.toLocaleString("en-MY");
+const usually = (s: ViewSlot) => `Posts at ${s.label} usually got ${full(s.lo)}–${full(s.hi)} views (typical ${full(s.typical)}, from ${s.posts} posts).`;
+const FINAL = "Based on your past posts. Your content decides the final result.";
 const riskOf = (flagged: Flag[], cancel: number) => {
   const under3 = flagged.filter((f) => f.rating < 3).length;
   return { under3, under4: flagged.length - under3, level: under3 >= 3 || cancel > 15 ? "High" : under3 > 0 || cancel > 10 ? "Watch" : "Low" };
@@ -60,7 +72,7 @@ export function LiveAiSummary({ sig, span, cancel, lead }: { sig: Signals; span:
       <AiHead title="AI Summary" sub={`From your TikTok Shop sales, ${span}`} />
       <ul className="an-lines">
         {lead}
-        <li><Icon name="clock" size={18} /><span>{!best ? "Reading your videos…" : slot ? <><b>{slot[0]}</b> {best.basis === "views" ? "best time to post" : "when your buyers order most"}</> : "Best time to post: not enough videos yet"}</span></li>
+        <li><Icon name="clock" size={18} /><span>{!best ? "Reading your videos…" : slot ? <><b>{slot.label}</b> {slot.views ? "best time to post" : "when your buyers order most"}</> : "Best time to post: not enough posts yet"}</span></li>
         <li className={flagged.length ? "warn" : undefined}><Icon name={flagged.length ? "alert" : "check"} size={18} /><span>{!ratings ? "Checking your showcase ratings…" : !ratings.linked ? "Connect TikTok Shop to check ratings" : flagged.length ? <><b>{flagged.length} product{flagged.length === 1 ? "" : "s"}</b> to avoid</> : <b>No products to avoid</b>}</span></li>
       </ul>
 
@@ -99,25 +111,61 @@ export function LiveAiSummary({ sig, span, cancel, lead }: { sig: Signals; span:
   );
 }
 
-/** Best Time to Post: average views of her own videos by the hour she posted, or when her buyers ordered. */
+/**
+ * Best Time to Post (owner, 3 Nov 2026): her settled videos' typical views and usual range per time slot, from 30 or 60 days,
+ * whichever matched her past posts better; when her buyers ordered when she has under 5; and when TikTok's best-selling videos in
+ * her category were posted, as a reference that works for new creators too.
+ */
 export function LiveBestTime({ sig }: { sig: Signals }) {
   const { best } = sig;
+  const v = best?.views;
+  const shown = shownSlots(best);
   const slot = topSlot(best);
-  const avg = best && best.slots.length ? best.slots.reduce((t, [, v]) => t + v, 0) / best.slots.length : 0;
-  const views = best?.basis === "views";
+  const avg = shown.length ? shown.reduce((t, s) => t + s.typical, 0) / shown.length : 0;
+  const days = !v ? "" : v.test === "better" ? `Based on your last ${v.days} days, which matched your past posts better than ${v.days === 60 ? 30 : 60} days.` : v.test === "same" ? "Based on your last 60 days, which matched your past posts as well as 30 days." : "Based on your last 60 days: not enough posts yet to test 30 days.";
+  const orders = best?.orders;
   return (
     <section className="v2-card v2-aicard an-time an-split">
       <AiHead
         title="Best Time to Post"
-        sub={slot ? <span className="an-hv">{views ? "Most views" : "Most orders"} · {slot[0]}</span> : undefined}
-        tip={<Tip label="About best time" text={views ? `From your own ${best!.count} TikTok videos in the last 60 days: the average views in each time slot, by the Malaysia time you posted. Everyone's best time is different.` : "You have fewer than 5 TikTok videos in the last 60 days, so this shows when your buyers ordered in the last 30 days (Malaysia time). It switches to your video views once you post more."} />}
+        sub={slot ? <span className="an-hv">{slot.views ? "Most views" : "Most orders"} · {slot.label}</span> : undefined}
+        tip={<Tip label="About best time" text={v ? `From your own ${v.count} TikTok videos that are at least 7 days old (newer ones are still getting views), by the Malaysia time you posted. Bar: typical views (the middle one, so one viral video doesn't skew it). Number: the usual range (the middle half). A time shows from 3 posts. ${days} Rezekii now also saves each video's views at 1, 7 and 30 days old, to compare videos at the same age later.` : "You have fewer than 5 TikTok videos that are at least 7 days old (last 60 days), so this shows when your buyers ordered in the last 30 days (Malaysia time). It switches to your video views once you post more."} />}
       />
-      {!best ? <p className="v2-muted" style={{ margin: 0 }}>Reading your videos…</p> : !slot ? (
-        <p className="v2-muted" style={{ margin: 0 }}>Not enough of your own videos or orders yet. Post a few videos and this fills in.</p>
+      {!best ? <p className="v2-muted" style={{ margin: 0 }}>Reading your videos…</p> : v ? (
+        shown.length && slot?.views ? (
+          <>
+            <p className="v2-small" style={{ margin: 0 }}>{usually(slot.views)}</p>
+            <Bars rows={shown.map((s) => ({ label: s.label, value: s.typical, display: `${short(s.lo)}–${short(s.hi)}`, tone: s.typical < avg ? ("blue" as const) : undefined }))} />
+            {shown.length < v.slots.length && <p className="v2-small" style={{ margin: 0 }}>Other times: not enough posts yet.</p>}
+            <p className="v2-small" style={{ margin: 0 }}>{FINAL}</p>
+          </>
+        ) : <p className="v2-muted" style={{ margin: 0 }}>Not enough posts yet. A time shows once it has 3 videos that are at least 7 days old.</p>
+      ) : slot && orders ? (
+        <>
+          <Bars rows={orders.slots.map(([label, n]) => ({ label, value: n, display: `${n} order${n === 1 ? "" : "s"}`, tone: n < orders.count / orders.slots.length ? ("blue" as const) : undefined }))} />
+          <p className="v2-small" style={{ margin: 0 }}>Based on your past orders. Your content decides the final result.</p>
+        </>
       ) : (
-        <Bars rows={best.slots.map(([label, v]) => ({ label, value: v, display: views ? `${short(v)} views` : `${v} order${v === 1 ? "" : "s"}`, tone: v < avg ? ("blue" as const) : undefined }))} />
+        <p className="v2-muted" style={{ margin: 0 }}>Not enough of your own videos or orders yet. Post a few videos and this fills in.</p>
       )}
+      {best?.market && <MarketTimes m={best.market} />}
     </section>
+  );
+}
+
+/** When TikTok's best-selling videos in her category were posted: winners, not a promise (owner, 3 Nov 2026). */
+function MarketTimes({ m }: { m: Market }) {
+  const top = m.slots.reduce((a, c) => (c.videos > a.videos ? c : a));
+  const cat = m.category ? `in ${m.category} ` : "";
+  return (
+    <div className="an-ref">
+      <h3>
+        Best Sellers&apos; Times{" "}
+        <Tip label="About best sellers' times" text={`TikTok's daily top-100 best-selling videos in Malaysia from the last ${m.days} days, by the Malaysia time they were posted. ${m.category ? `A video counts for ${m.category}, your main category from what you sell most, when it sells a product from TikTok's top 100 in that category.` : "Your main category isn't known yet, so this is every category."} Bar: share of the videos. Number after it: their typical views. These are winners, not a promise.`} />
+      </h3>
+      <p className="v2-small" style={{ margin: 0 }}>Best-selling videos {cat}were mostly posted {top.label} ({top.share}% of {full(m.videos)} videos).</p>
+      <Bars rows={m.slots.filter((s) => s.videos > 0).map((s) => ({ label: s.label, value: s.share, display: s.typical === null ? `${s.share}%` : `${s.share}% · ${short(s.typical)}` }))} />
+    </div>
   );
 }
 
@@ -137,7 +185,7 @@ export function LiveActionPlan({ sig, cancel }: { sig: Signals; cancel: number }
     ...(under3 ? [{ id: "under3", tag: "Fix now" as const, short: `Remove ${under3} under-3★ product${under3 === 1 ? "" : "s"}`, why: "Buyers rated them under 3★. Low-rated products in your showcase can hurt your TikTok account.", href: "/app/data/risk" }] : []),
     ...(cancel > 10 ? [{ id: "cancel", tag: "Fix now" as const, short: `${Math.round(cancel * 10) / 10}% of orders cancelled: check why`, why: "Many cancelled orders can hurt your TikTok account. See which products get cancelled most.", href: "/app/data/risk" }] : []),
     ...(flagged.length > under3 ? [{ id: "under4", tag: "This week" as const, short: `Check ${flagged.length - under3} product${flagged.length - under3 === 1 ? "" : "s"} rated 3–3.9★`, why: "Not in the danger zone yet, but buyers aren't happy with them.", href: "/app/data/risk" }] : []),
-    ...(slot && best?.basis === "views" ? [{ id: "time", tag: "This week" as const, short: `Post at ${slot[0]}`, why: "Your videos posted in this time slot got the most views on average in the last 60 days.", href: "/app/publish/plan" }] : []),
+    ...(slot?.views ? [{ id: "time", tag: "This week" as const, short: `Post at ${slot.label}`, why: `${usually(slot.views)} ${FINAL}`, href: "/app/publish/plan" }] : []),
     ...(wish ? [{ id: "wish", tag: "Grow" as const, short: `Ask for a better rate: ${shortName(wish.name)}`, why: `Your best seller not on Rezekii yet (${wish.sold} sold in 30 days). Add it to your Wish List and we ask the seller.`, href: productHref(wish.id) }] : []),
     ...(missing.length === 3 ? [{ id: "social", tag: "Grow" as const, short: "Connect Facebook, Instagram or Threads", why: "Post one video to every app at once from Publish.", href: "/app/account#connections" }] : []),
   ];

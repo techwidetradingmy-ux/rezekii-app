@@ -265,7 +265,7 @@ export default function DataOverview() {
       {/* An AI feature (owner, 29 Oct 2026): worked out from her own posts, so everyone's best time is different. */}
       {live ? <LiveBestTime sig={sig} /> : (
       <section className="v2-card v2-aicard an-time an-split">
-        <AiHead title="Best Time to Post" sub={<span className="an-hv">High virality · {bestTime[0]}</span>} tip={<Tip label="About best time" text="Rezekii AI looks at your own videos from the last 30 days and the average views in each time slot. Everyone's best time is different." />} />
+        <AiHead title="Best Time to Post" sub={<span className="an-hv">High virality · {bestTime[0]}</span>} tip={<Tip label="About best time" text="Rezekii AI looks at your own videos that are at least 7 days old and the typical views in each time slot. Everyone's best time is different." />} />
         <Bars rows={POST_TIMES.map(([label, v]) => ({ label, value: v, display: `${short(v)} views`, tone: v < avgViews ? ("blue" as const) : undefined }))} />
       </section>
       )}

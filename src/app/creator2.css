@@ -824,6 +824,9 @@ li.done .cr2-check.num { background: #00c073; border-color: #00c073; }
   .an-hv { font-size: 13px; }
 }
 .an-time .v2-bar { grid-template-columns: minmax(80px, 28%) minmax(0, 1fr) 96px; }
+/* Best sellers' posting times under her own (owner, 3 Nov 2026). */
+.an-ref { display: flex; flex-direction: column; gap: 10px; padding-top: 12px; border-top: 1px solid var(--line); }
+.an-ref h3 { margin: 0; font-size: 15px; font-weight: 800; }
 /* Chart, options A + C (owner, 28 Oct 2026): draws in, glows, pulses at today, best period label, gold milestone dots. */
 .cc-plot svg { animation: ccDraw 1.4s cubic-bezier(0.4, 0, 0.2, 1) both; }
 @keyframes ccDraw { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
