@@ -11,12 +11,14 @@ import { ConnBanner } from "@/components/seller/seller-ui";
 import { rm } from "@/lib/mock";
 import { SHOP_ITEMS, TAP_INVITE as I, TODAY } from "@/lib/mock-seller";
 import { sellerProductHref } from "@/lib/product-pages";
+import { useT } from "@/lib/i18n/client";
 
 /**
  * The page a seller opens from Techwide's invite (owner, 28 Oct 2026): the campaign Techwide set up, the products it suggests,
  * and one button to register. Registering puts the products in the same TAP pipeline as Submit products, in sync both ways.
  */
 export default function TapInvite() {
+  const t = useT();
   const router = useRouter();
   const { toast, live } = useDemo();
   const open = SHOP_ITEMS.filter((p) => p.stage === "Not submitted");
@@ -32,11 +34,11 @@ export default function TapInvite() {
     return (
       <div className="v2-stack v2-in">
         <section className="v2-card sl-done">
-          <h2>No Problem</h2>
-          <p className="v2-muted" style={{ margin: 0, maxWidth: 440 }}>We&apos;ve told {I.from}. This link works until {I.expires}.</p>
+          <h2>{t("No Problem")}</h2>
+          <p className="v2-muted" style={{ margin: 0, maxWidth: 440 }}>{t("We've told {name}. This link works until {date}.", { name: I.from, date: I.expires })}</p>
           <div className="v2-row" style={{ justifyContent: "center" }}>
-            <button type="button" className="np-btn" onClick={() => setDeclined(false)}>Look Again</button>
-            <Link href="/seller/app/submit" className="btn-outline" style={{ height: 48 }}>Submit Other Products</Link>
+            <button type="button" className="np-btn" onClick={() => setDeclined(false)}>{t("Look Again")}</button>
+            <Link href="/seller/app/submit" className="btn-outline" style={{ height: 48 }}>{t("Submit Other Products")}</Link>
           </div>
         </section>
       </div>
@@ -48,15 +50,15 @@ export default function TapInvite() {
       <div className="v2-stack v2-in">
         <section className="v2-card sl-done">
           <span className="sl-check"><Icon name="check" size={38} width={2.8} /></span>
-          <h2>{sel.length} product{sel.length === 1 ? "" : "s"} registered</h2>
-          <p className="v2-muted" style={{ margin: 0, maxWidth: 460, lineHeight: 1.55 }}>We&apos;ll WhatsApp you when they&apos;re live.</p>
+          <h2>{sel.length === 1 ? t("{n} product registered", { n: 1 }) : t("{n} products registered", { n: sel.length })}</h2>
+          <p className="v2-muted" style={{ margin: 0, maxWidth: 460, lineHeight: 1.55 }}>{t("We'll WhatsApp you when they're live.")}</p>
           <div className="sl-track" style={{ width: "100%", maxWidth: 520, marginTop: 6 }}>
-            <div className="done"><i><Icon name="check" size={14} width={3} /></i><b>Registered</b><small>Now</small></div>
-            <div className="now"><i /><b>Our review</b><small>Within 1 working day</small></div>
-            <div className="later"><i /><b>With TikTok</b><small>1–3 working days</small></div>
-            <div className="later"><i /><b>Live</b><small>Creators can apply</small></div>
+            <div className="done"><i><Icon name="check" size={14} width={3} /></i><b>{t("Registered")}</b><small>{t("Now")}</small></div>
+            <div className="now"><i /><b>{t("Our review")}</b><small>{t("Within 1 working day")}</small></div>
+            <div className="later"><i /><b>{t("With TikTok")}</b><small>{t("1–3 working days")}</small></div>
+            <div className="later"><i /><b>{t("Live")}</b><small>{t("Creators can apply")}</small></div>
           </div>
-          <Link href="/seller/app/progress" className="np-btn">See Progress</Link>
+          <Link href="/seller/app/progress" className="np-btn">{t("See Progress")}</Link>
         </section>
       </div>
     );
@@ -64,7 +66,7 @@ export default function TapInvite() {
 
   return (
     <div className="v2-stack v2-in">
-      <Title title="You're Invited to a TAP Campaign" sub={`From ${I.from}, ${I.team} · sent ${I.sent} · open until ${I.expires}`} />
+      <Title title={t("You're Invited to a TAP Campaign")} sub={t("From {name}, {team} · sent {sent} · open until {date}", { name: I.from, team: I.team, sent: I.sent, date: I.expires })} />
       <ConnBanner />
 
       <section className="v2-card si-hero">
@@ -72,15 +74,15 @@ export default function TapInvite() {
         <p className="si-note">&ldquo;{I.note}&rdquo;</p>
         <h2 className="si-name">{I.name}</h2>
         <div className="si-terms">
-          <span><Icon name="tag" size={18} /><b>Public rate +{I.raise}%</b><small>For creators</small></span>
-          <span><Icon name="gift" size={18} /><b>{I.samples} samples</b><small>Per SKU</small></span>
-          <span><Icon name="cal" size={18} /><b>Until {I.end}</b><small>{I.extend ? "Auto-extends before it ends" : "Ends on this date"}</small></span>
-          <span><Icon name="users" size={18} /><b>{I.niche}</b><small>Picked by Techwide</small></span>
+          <span><Icon name="tag" size={18} /><b>{t("Public rate +{n}%", { n: I.raise })}</b><small>{t("For creators")}</small></span>
+          <span><Icon name="gift" size={18} /><b>{t("{n} samples", { n: I.samples })}</b><small>{t("Per SKU")}</small></span>
+          <span><Icon name="cal" size={18} /><b>{t("Until {date}", { date: I.end })}</b><small>{I.extend ? t("Auto-extends before it ends") : t("Ends on this date")}</small></span>
+          <span><Icon name="users" size={18} /><b>{I.niche}</b><small>{t("Picked by Techwide")}</small></span>
         </div>
       </section>
 
       <section className="v2-card">
-        <div className="sl-step-h"><span className="n">1</span><h2>Products {I.from} suggests</h2><span className="v2-small">{sel.length} picked</span></div>
+        <div className="sl-step-h"><span className="n">1</span><h2>{t("Products {name} suggests", { name: I.from })}</h2><span className="v2-small">{t("{n} picked", { n: sel.length })}</span></div>
         <div>
           {open.map((p) => {
             const on = picked.includes(p.id);
@@ -92,36 +94,36 @@ export default function TapInvite() {
                 <img className="pv-open" src={p.img} alt="" onClick={(e) => { e.preventDefault(); router.push(sellerProductHref(p.id)); }} />
                 <span className="sl-pinfo">
                   <strong><Link href={sellerProductHref(p.id)} className="pv-open">{p.name}</Link></strong>
-                  <small>{rm(p.price)}{I.products.includes(p.id) ? " · suggested" : ""}</small>
+                  <small>{rm(p.price)}{I.products.includes(p.id) ? ` · ${t("suggested")}` : ""}</small>
                 </span>
                 <span className="sl-pick-rate">
-                  <span className="sl-rate">{p.publicRate === null ? "Public ?" : `${p.publicRate}%`} <Icon name="arrow" size={12} /> <b>{p.publicRate === null ? `+${I.raise}%` : `${p.publicRate + I.raise}%`}</b></span>
-                  <small>{p.publicRate === null ? "Public rate unknown" : `Public ${p.publicRate}% now`}</small>
+                  <span className="sl-rate">{p.publicRate === null ? t("Public ?") : `${p.publicRate}%`} <Icon name="arrow" size={12} /> <b>{p.publicRate === null ? `+${I.raise}%` : `${p.publicRate + I.raise}%`}</b></span>
+                  <small>{p.publicRate === null ? t("Public rate unknown") : t("Public {rate}% now", { rate: p.publicRate })}</small>
                 </span>
               </label>
             );
           })}
         </div>
-        <p className="v2-small" style={{ margin: 0 }}>Change rate or samples? <button type="button" className="v2-link" style={{ fontSize: 13 }} onClick={() => toast(`Opening WhatsApp with ${I.from}…`)}>Ask {I.from}</button></p>
+        <p className="v2-small" style={{ margin: 0 }}>{t("Change rate or samples?")} <button type="button" className="v2-link" style={{ fontSize: 13 }} onClick={() => toast(t("Opening WhatsApp with {name}…", { name: I.from }))}>{t("Ask {name}", { name: I.from })}</button></p>
       </section>
 
       <section className="v2-card">
-        <div className="sl-step-h"><span className="n">2</span><h2>How It Works</h2></div>
+        <div className="sl-step-h"><span className="n">2</span><h2>{t("How It Works")}</h2></div>
         <ul className="si-sync">
-          <li><Icon name="refresh" size={16} /><span>Changes sync to {I.from} and TikTok.</span></li>
-          <li><Icon name="kanban" size={16} /><span>Our review, then TikTok, then live.</span></li>
-          <li><Icon name="shield" size={16} /><span>Change it later in Change or End.</span></li>
+          <li><Icon name="refresh" size={16} /><span>{t("Changes sync to {name} and TikTok.", { name: I.from })}</span></li>
+          <li><Icon name="kanban" size={16} /><span>{t("Our review, then TikTok, then live.")}</span></li>
+          <li><Icon name="shield" size={16} /><span>{t("Change it later in Change or End.")}</span></li>
         </ul>
       </section>
 
       <div className="sl-sticky">
         <span>
-          <b>{sel.length} product{sel.length === 1 ? "" : "s"} · +{I.raise}% · {I.samples} samples</b>
-          {sel.length === 0 ? <span className="sl-err" style={{ fontSize: 12.5 }}>Pick at least 1 product.</span> : <span>Registers today, {TODAY}</span>}
+          <b>{sel.length === 1 ? t("{n} product", { n: 1 }) : t("{n} products", { n: sel.length })} · +{I.raise}% · {t("{n} samples", { n: I.samples })}</b>
+          {sel.length === 0 ? <span className="sl-err" style={{ fontSize: 12.5 }}>{t("Pick at least 1 product.")}</span> : <span>{t("Registers today, {date}", { date: TODAY })}</span>}
         </span>
         <span className="si-acts">
-          <button type="button" className="btn-outline" style={{ height: 48 }} onClick={() => setDeclined(true)}>Not Now</button>
-          <button type="button" className="np-btn" disabled={sel.length === 0} onClick={() => { setDone(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Register {sel.length || ""}</button>
+          <button type="button" className="btn-outline" style={{ height: 48 }} onClick={() => setDeclined(true)}>{t("Not Now")}</button>
+          <button type="button" className="np-btn" disabled={sel.length === 0} onClick={() => { setDone(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}>{sel.length ? t("Register {n}", { n: sel.length }) : t("Register")}</button>
         </span>
       </div>
     </div>

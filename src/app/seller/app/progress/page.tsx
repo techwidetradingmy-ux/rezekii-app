@@ -11,12 +11,15 @@ import { SHOP_ITEMS, type ShopItem, type Stage } from "@/lib/mock-seller";
 import { sellerProductHref } from "@/lib/product-pages";
 import { loadShop } from "@/lib/live";
 import { labelCase } from "@/lib/label-case";
+import { Rich } from "@/components/seller/seller-ui";
+import { useT } from "@/lib/i18n/client";
+import { tx } from "@/lib/i18n/lang";
 
 const STEPS: [Exclude<Stage, "Not submitted" | "Not approved">, string, string][] = [
-  ["Submitted", "Submitted", ""],
-  ["Under review", "Our review", "Within 1 working day"],
-  ["Submitted to TikTok", "With TikTok", "1–3 working days"],
-  ["Live", "Live", "Creators can apply"],
+  ["Submitted", tx("Submitted"), ""],
+  ["Under review", tx("Our review"), tx("Within 1 working day")],
+  ["Submitted to TikTok", tx("With TikTok"), tx("1–3 working days")],
+  ["Live", tx("Live"), tx("Creators can apply")],
 ];
 const FILTERS = ["All", "In progress", "Live", "Not approved"] as const;
 type Filter = (typeof FILTERS)[number];
@@ -24,19 +27,20 @@ const group = (s: Stage): Filter => (s === "Live" ? "Live" : s === "Not approved
 const ORDER: Record<Filter, number> = { "In progress": 0, "Not approved": 1, Live: 2, All: 3 };
 
 function Tracker({ item }: { item: ShopItem }) {
+  const t = useT();
   const failed = item.stage === "Not approved";
   const reached = STEPS.filter(([k]) => item.dates?.[k]).length;
   const cur = failed ? reached - 1 : STEPS.findIndex(([k]) => k === item.stage);
   return (
-    <div className="sl-track" aria-label={`Status: ${item.stage}`}>
+    <div className="sl-track" aria-label={t("Status: {status}", { status: t(labelCase(item.stage)) })}>
       {STEPS.map(([key, label, eta], k) => {
         const live = item.stage === "Live";
         const state = failed ? (k < cur ? "done" : k === cur ? "stop" : "later") : live || k < cur ? "done" : k === cur ? "now" : "later";
         return (
           <div key={key} className={state}>
             <i>{state === "done" && <Icon name="check" size={14} width={3} />}{state === "stop" && <Icon name="x" size={13} width={3} />}</i>
-            <b>{state === "stop" ? "Not approved" : label}</b>
-            <small>{item.dates?.[key] ?? (state === "later" && !failed ? eta : "")}</small>
+            <b>{state === "stop" ? t("Not approved") : t(label)}</b>
+            <small>{item.dates?.[key] ? t(item.dates[key]) : state === "later" && !failed && eta ? t(eta) : ""}</small>
           </div>
         );
       })}
@@ -46,6 +50,7 @@ function Tracker({ item }: { item: ShopItem }) {
 
 /** Every product submitted to Techwide's TAP, and where it is now. */
 export default function Progress() {
+  const t = useT();
   const router = useRouter();
   const { toast, live } = useDemo();
   const [items, setItems] = useState(SHOP_ITEMS.filter((s) => s.stage !== "Not submitted"));
@@ -65,14 +70,14 @@ export default function Progress() {
 
   return (
     <div className="v2-stack v2-in">
-      <Title title="Progress" sub={live ? "Registered in your campaign → Techwide's review → live for creators. Statuses come from TikTok." : "Submitted → our review → TikTok → live."}>
-        <Link href="/seller/app/submit" className="np-btn v2-btn-sm" style={{ height: 42 }}>Register Products</Link>
+      <Title title={t("Progress")} sub={live ? t("Registered in your campaign → Techwide's review → live for creators. Statuses come from TikTok.") : t("Submitted → our review → TikTok → live.")}>
+        <Link href="/seller/app/submit" className="np-btn v2-btn-sm" style={{ height: 42 }}>{t("Register Products")}</Link>
       </Title>
 
-      <div className="sl-chipline" role="group" aria-label="Filter">
+      <div className="sl-chipline" role="group" aria-label={t("Filter")}>
         {FILTERS.map((f) => (
           <button key={f} type="button" className={`v2-chip ${filter === f ? "on" : ""}`} onClick={() => setFilter(f)}>
-            {labelCase(f)} <small>{f === "All" ? items.length : items.filter((i) => group(i.stage) === f).length}</small>
+            {t(labelCase(f))} <small>{f === "All" ? items.length : items.filter((i) => group(i.stage) === f).length}</small>
           </button>
         ))}
       </div>
@@ -87,39 +92,39 @@ export default function Progress() {
                 <img className="pv-open" src={p.img} alt="" onClick={() => router.push(sellerProductHref(p.id))} />
                 <span className="sl-pinfo">
                   <strong><Link href={sellerProductHref(p.id)} className="pv-open">{p.name}</Link></strong>
-                  <small>Public {p.publicRate ?? "?"}% → {p.tapRate !== undefined ? `TAP ${p.tapRate}%` : `+${p.raise ?? 0}%`} · {p.samples} samples per SKU</small>
-                  {p.fromSellerCenter && <span className="v2-row"><span className="badge badge-blue">From Seller Center</span></span>}
+                  <small>{t("Public {rate}%", { rate: p.publicRate ?? "?" })} → {p.tapRate !== undefined ? `TAP ${p.tapRate}%` : `+${p.raise ?? 0}%`} · {t("{n} samples per SKU", { n: p.samples ?? "" })}</small>
+                  {p.fromSellerCenter && <span className="v2-row"><span className="badge badge-blue">{t("From Seller Center")}</span></span>}
                 </span>
                 <span className="sl-pside">
-                  <span className={`badge ${g === "Live" ? "" : g === "Not approved" ? "badge-red" : "badge-amber"}`}>{p.stage === "Submitted to TikTok" ? "With TikTok" : labelCase(p.stage)}</span>
+                  <span className={`badge ${g === "Live" ? "" : g === "Not approved" ? "badge-red" : "badge-amber"}`}>{p.stage === "Submitted to TikTok" ? t("With TikTok") : t(labelCase(p.stage))}</span>
                 </span>
               </div>
               <Tracker item={p} />
               {p.register && (
                 <div className="v2-alert">
-                  <span>Techwide&apos;s campaign is ready. Register this product in it in Seller Center, then we approve it.</span>
-                  <button type="button" onClick={() => window.open(p.register, "_blank", "noopener")}>Register in Seller Center</button>
+                  <span>{t("Techwide's campaign is ready. Register this product in it in Seller Center, then we approve it.")}</span>
+                  <button type="button" onClick={() => window.open(p.register, "_blank", "noopener")}>{t("Register in Seller Center")}</button>
                 </div>
               )}
               {p.stage === "Not approved" && (
                 <div className="v2-alert red">
-                  <span><b>Why:</b> {p.reason}</span>
-                  <button type="button" onClick={() => (p.real ? router.push("/seller/app/submit") : setFix(p))}>{p.real ? "Register Again" : "Fix and Resubmit"}</button>
+                  <span><Rich text={t("<b>Why:</b> {reason}", { reason: p.reason ? t(p.reason) : "" })} /></span>
+                  <button type="button" onClick={() => (p.real ? router.push("/seller/app/submit") : setFix(p))}>{p.real ? t("Register Again") : t("Fix and Resubmit")}</button>
                 </div>
               )}
-              {p.note && <p className="v2-small" style={{ margin: 0, display: "flex", gap: 8 }}><Icon name="doc" size={16} /> {p.note}</p>}
+              {p.note && <p className="v2-small" style={{ margin: 0, display: "flex", gap: 8 }}><Icon name="doc" size={16} /> {t(p.note)}</p>}
             </section>
           );
         })}
       </div>
 
-      {live && shown.length === 0 && <p className="v2-muted" style={{ margin: 0 }}>{loaded === null ? "Loading your requests…" : loaded === "no-shop" ? "Connect Seller Center to see your requests." : "Nothing submitted yet."}</p>}
-      <p className="v2-small" style={{ margin: 0 }}>Most rejections: <b>0 samples</b>, or commission <b>less than +2%</b> above the public rate.</p>
+      {live && shown.length === 0 && <p className="v2-muted" style={{ margin: 0 }}>{loaded === null ? t("Loading your requests…") : loaded === "no-shop" ? t("Connect Seller Center to see your requests.") : t("Nothing submitted yet.")}</p>}
+      <p className="v2-small" style={{ margin: 0 }}><Rich text={t("Most rejections: <b>0 samples</b>, or commission <b>less than +2%</b> above the public rate.")} /></p>
 
       {fix && (
-        <Sheet title="Fix and Resubmit" onClose={() => setFix(null)}>
-          <p className="v2-muted" style={{ margin: 0 }}>{fix.name}: {fix.reason}</p>
-          <div className="v2-field">Samples per SKU <small>Must be more than 0.</small>
+        <Sheet title={t("Fix and Resubmit")} onClose={() => setFix(null)}>
+          <p className="v2-muted" style={{ margin: 0 }}>{fix.name}: {fix.reason && t(fix.reason)}</p>
+          <div className="v2-field">{t("Samples per SKU")} <small>{t("Must be more than 0.")}</small>
             <div className="v2-chips">
               {[30, 40, 50].map((n) => (
                 <button key={n} type="button" className={`v2-chip ${samples === n ? "on" : ""}`} onClick={() => setSamples(n)}>{n}</button>
@@ -129,8 +134,8 @@ export default function Progress() {
           <button type="button" className="np-btn" onClick={() => {
             setItems((all) => all.map((i) => (i.id === fix.id ? { ...i, stage: "Under review", samples, reason: undefined, dates: { Submitted: "Today", "Under review": "Today" } } : i)));
             setFix(null);
-            toast("Resubmitted · review within 1 working day");
-          }}>Resubmit with {samples} samples</button>
+            toast(t("Resubmitted · review within 1 working day"));
+          }}>{t("Resubmit with {n} samples", { n: samples })}</button>
         </Sheet>
       )}
     </div>
