@@ -1,14 +1,16 @@
 /**
- * Three new looks for the share card (owner, 2 Nov 2026: "the sharing card is not well designed"), for the owner to pick one:
- * A Bold Ticket (Rezekii green, white ticket), B Night Glow (dark with a green glow), C Poster (a big colour block over a white
- * panel). All in Rezekii's own font, Albert Sans, with its logo and Rimau. Portrait 1080×1920.
+ * The share card (owner, 3 Nov 2026: picked "Night Glow" from three looks, with less empty space and a code that's easy to
+ * read): near-black with green and blue light, Rimau in a glow, everything centred, in Rezekii's own font, Albert Sans.
+ * Portrait 1080×1920 or wide 1200×675. Moments: an invite (ticket with her code), a Daily Story page, an achievement, and her
+ * Rate Card (packages and prices).
  */
 export type CardData = {
-  moment: "invite" | "story" | "achievement";
-  kicker: string; label: string; big: string; tag: string; sub: string; reward: string; code: string; date: string;
-  handle: string; name: string; lines: string[]; link: string; qr: string; photo: string | null; rimau: string | null; logo: string;
+  moment: "invite" | "story" | "achievement" | "rate";
+  kicker: string; label: string; big: string; tag: string; sub: string; reward: string; code: string; date: string; bless: string;
+  handle: string; name: string; lines: string[]; contacts: string[]; link: string; qr: string; photo: string | null; rimau: string | null; logo: string;
+  /** A Daily Story page's own accent (green for good news, amber for a heads-up…). */
+  accent?: string;
 };
-export type Style = "a" | "b" | "c";
 
 let fonts: Promise<{ name: string; data: ArrayBuffer; weight: 600 | 800 | 900; style: "normal" }[]> | null = null;
 /** Albert Sans from Google Fonts (TrueType, which the card maker reads), loaded once per server. */
@@ -24,139 +26,143 @@ export function cardFonts() {
   return fonts;
 }
 
-const T = { green: "#00c073", deep: "#00874f", teal: "#25c8f4", ink: "#0d1f17", gold: "#ffc700" };
+const INK = "#ffffff", SOFT = "#b4dccb", GREEN = "#00c073", GLOW = "#5ef0ae", GLASS = "rgba(255,255,255,0.10)";
+const BG = "#06120d";
+const LIGHTS = "radial-gradient(circle at 85% 12%, rgba(37,200,244,0.32), transparent 40%), radial-gradient(circle at 12% 70%, rgba(0,192,115,0.38), transparent 46%)";
 const row = { display: "flex" } as const;
 const col = { display: "flex", flexDirection: "column" } as const;
 
-/** Her photo, or her initials in a circle. */
-function Face({ d, size, ring }: { d: CardData; size: number; ring: string }) {
+function Face({ d, size }: { d: CardData; size: number }) {
   const initials = (d.name || d.handle.replace("@", "")).slice(0, 2).toUpperCase();
   return d.photo ? (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={d.photo} width={size} height={size} alt="" style={{ borderRadius: 999, objectFit: "cover", border: `6px solid ${ring}` }} />
+    <img src={d.photo} width={size} height={size} alt="" style={{ borderRadius: 999, objectFit: "cover", border: `5px solid ${GLOW}` }} />
   ) : (
-    <span style={{ ...row, width: size, height: size, borderRadius: 999, alignItems: "center", justifyContent: "center", background: T.green, color: "#fff", fontSize: size * 0.4, fontWeight: 900, border: `6px solid ${ring}` }}>{initials}</span>
+    <span style={{ ...row, width: size, height: size, borderRadius: 999, alignItems: "center", justifyContent: "center", background: GREEN, color: INK, fontSize: size * 0.4, fontWeight: 900, border: `5px solid ${GLOW}` }}>{initials}</span>
   );
 }
 
-/** Who shares it, her link and the QR. */
-function Footer({ d, bg, ink, soft, ring }: { d: CardData; bg: string; ink: string; soft: string; ring: string }) {
-  return (
-    <div style={{ ...row, alignItems: "center", gap: 28, padding: 30, borderRadius: 44, background: bg }}>
-      <Face d={d} size={124} ring={ring} />
-      <div style={{ ...col, flex: 1, gap: 4 }}>
-        <span style={{ ...row, fontSize: 44, fontWeight: 900, color: ink }}>{d.handle || d.name}</span>
-        <span style={{ ...row, fontSize: 30, fontWeight: 600, color: soft }}>Scan to join me on Rezekii</span>
-        <span style={{ ...row, fontSize: 28, fontWeight: 800, color: soft }}>{d.link.replace(/^https?:\/\//, "")}</span>
-      </div>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={d.qr} width={190} height={190} alt="" style={{ borderRadius: 22, background: "#fff", padding: 8 }} />
-    </div>
-  );
-}
-
-function Brand({ d, ink, tile }: { d: CardData; ink: string; tile: string }) {
+function Brand({ d, s }: { d: CardData; s: number }) {
   return (
     <div style={{ ...row, alignItems: "center", justifyContent: "space-between" }}>
-      <div style={{ ...row, alignItems: "center", gap: 18 }}>
-        <span style={{ ...row, width: 96, height: 96, borderRadius: 28, background: tile, alignItems: "center", justifyContent: "center" }}>
+      <div style={{ ...row, alignItems: "center", gap: 16 * s }}>
+        <span style={{ ...row, width: 92 * s, height: 92 * s, borderRadius: 26 * s, background: INK, alignItems: "center", justifyContent: "center" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={d.logo} width={80} height={80} alt="" />
+          <img src={d.logo} width={76 * s} height={76 * s} alt="" />
         </span>
-        <span style={{ ...row, fontSize: 56, fontWeight: 900, color: ink, letterSpacing: -1 }}>Rezekii</span>
+        <span style={{ ...row, fontSize: 54 * s, fontWeight: 900, color: INK, letterSpacing: -1 }}>Rezekii</span>
       </div>
-      <span style={{ ...row, fontSize: 28, fontWeight: 800, color: ink, opacity: 0.75 }}>{d.moment === "story" && d.date ? d.date : "TikTok Shop Partner"}</span>
+      <span style={{ ...row, fontSize: 28 * s, fontWeight: 800, color: SOFT }}>{d.moment === "story" && d.date ? d.date : "TikTok Shop Partner"}</span>
     </div>
   );
 }
 
-/** The middle of every look: kicker, the big number or title, the line under it, and the chips. */
-function Middle({ d, ink, soft, accent, chipBg, chipInk, bigSize }: { d: CardData; ink: string; soft: string; accent: string; chipBg: string; chipInk: string; bigSize: number }) {
-  const invite = d.moment === "invite";
-  const big = invite ? d.big || "Join me on Rezekii" : d.big;
+function Footer({ d, s }: { d: CardData; s: number }) {
   return (
-    <div style={{ ...col, gap: 22 }}>
-      <span style={{ ...row, alignSelf: "flex-start", padding: "10px 22px", borderRadius: 999, background: chipBg, color: accent, fontSize: 30, fontWeight: 900, letterSpacing: 3, textTransform: "uppercase" }}>{d.kicker || (invite ? "You're invited" : "Proud moment")}</span>
-      {!invite && d.label && <span style={{ ...row, fontSize: 52, fontWeight: 800, color: ink, lineHeight: 1.15 }}>{d.label}</span>}
-      {big && <span style={{ ...row, fontSize: invite ? 104 : bigSize, fontWeight: 900, color: ink, lineHeight: 1, letterSpacing: -4 }}>{big}</span>}
-      {(invite ? d.tag : d.sub) && <span style={{ ...row, fontSize: 38, fontWeight: 600, color: soft, lineHeight: 1.3 }}>{invite ? d.tag : d.sub}</span>}
-      {d.lines.length > 0 && (
-        <div style={{ ...row, flexWrap: "wrap", gap: 14 }}>
-          {d.lines.map((l) => <span key={l} style={{ ...row, padding: "14px 26px", borderRadius: 999, background: chipBg, color: chipInk, fontSize: 34, fontWeight: 800 }}>{l}</span>)}
-        </div>
-      )}
+    <div style={{ ...row, alignItems: "center", gap: 26 * s, padding: 28 * s, borderRadius: 40 * s, background: GLASS, border: "2px solid rgba(255,255,255,0.10)" }}>
+      <Face d={d} size={116 * s} />
+      <div style={{ ...col, flex: 1, gap: 4 * s }}>
+        <span style={{ ...row, fontSize: 42 * s, fontWeight: 900, color: INK }}>{d.handle || d.name}</span>
+        <span style={{ ...row, fontSize: 29 * s, fontWeight: 600, color: SOFT }}>Scan to join me on Rezekii</span>
+        <span style={{ ...row, fontSize: 27 * s, fontWeight: 800, color: GLOW }}>{d.link.replace(/^https?:\/\//, "")}</span>
+      </div>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={d.qr} width={180 * s} height={180 * s} alt="" style={{ borderRadius: 20 * s, background: INK, padding: 8 * s }} />
     </div>
   );
 }
 
-/** The invite's ticket: her credits and her code. */
-function Ticket({ d, main, stub, mainInk, stubInk, line }: { d: CardData; main: string; stub: string; mainInk: string; stubInk: string; line: string }) {
-  if (d.moment !== "invite") return null;
+/** The invite's ticket: a solid green half with her credits and a white half with her code in dark ink, easy to read. */
+function Ticket({ d, s }: { d: CardData; s: number }) {
   return (
-    <div style={{ ...row, borderRadius: 40, overflow: "hidden", boxShadow: "0 30px 60px -20px rgba(0,0,0,0.35)" }}>
-      <div style={{ ...col, padding: "34px 40px", background: main, color: mainInk, justifyContent: "center" }}>
-        <span style={{ ...row, fontSize: 92, fontWeight: 900, lineHeight: 1 }}>+{d.reward || "50"}</span>
-        <span style={{ ...row, fontSize: 30, fontWeight: 800 }}>credits for you</span>
+    <div style={{ ...row, borderRadius: 36 * s, overflow: "hidden", boxShadow: "0 24px 60px -20px rgba(0,192,115,0.55)" }}>
+      <div style={{ ...col, padding: `${30 * s}px ${38 * s}px`, background: GREEN, color: INK, justifyContent: "center" }}>
+        <span style={{ ...row, fontSize: 92 * s, fontWeight: 900, lineHeight: 1 }}>+{d.reward || "50"}</span>
+        <span style={{ ...row, fontSize: 29 * s, fontWeight: 800 }}>credits for you</span>
       </div>
-      <div style={{ ...col, flex: 1, padding: "34px 40px", background: stub, justifyContent: "center", borderLeft: `5px dashed ${line}` }}>
-        <span style={{ ...row, fontSize: 28, fontWeight: 800, color: stubInk, opacity: 0.6, letterSpacing: 4, textTransform: "uppercase" }}>Invite code</span>
-        <span style={{ ...row, fontSize: 76, fontWeight: 900, color: stubInk, letterSpacing: 3 }}>{d.code}</span>
+      <div style={{ ...col, flex: 1, padding: `${30 * s}px ${38 * s}px`, background: INK, justifyContent: "center", borderLeft: `6px dashed ${GREEN}` }}>
+        <span style={{ ...row, fontSize: 27 * s, fontWeight: 800, color: "#4f6259", letterSpacing: 4, textTransform: "uppercase" }}>Invite code</span>
+        <span style={{ ...row, fontSize: 80 * s, fontWeight: 900, color: "#06120d", letterSpacing: 3 }}>{d.code}</span>
       </div>
     </div>
   );
 }
 
-export function StyledCard({ style, d }: { style: Style; d: CardData }) {
-  const rimau = (w: number) => (d.rimau ? (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={d.rimau} width={w} height={w * 1.22} alt="" />
-  ) : null);
-
-  if (style === "a") {
-    // A · Bold Ticket: Rezekii green, white text, Rimau up top, a white ticket.
-    return (
-      <div style={{ ...col, width: 1080, height: 1920, padding: 72, gap: 40, background: `linear-gradient(165deg, ${T.green} 0%, ${T.deep} 70%, #005a34 100%)`, fontFamily: "Albert Sans" }}>
-        <Brand d={d} ink="#ffffff" tile="#ffffff" />
-        <div style={{ ...row, flex: 1, alignItems: "flex-end", justifyContent: "center" }}>{rimau(430)}</div>
-        <Middle d={d} ink="#ffffff" soft="#d9fbe9" accent={T.deep} chipBg="#ffffff" chipInk={T.deep} bigSize={190} />
-        <Ticket d={d} main={T.gold} stub="#ffffff" mainInk="#3b2a00" stubInk={T.ink} line={T.gold} />
-        <Footer d={d} bg="rgba(255,255,255,0.14)" ink="#ffffff" soft="#d9fbe9" ring="#ffffff" />
-      </div>
-    );
-  }
-  if (style === "b") {
-    // B · Night Glow: near-black with green and blue light, the number glowing, glass chips.
-    return (
-      <div style={{ ...col, width: 1080, height: 1920, padding: 72, gap: 40, background: "#06120d", backgroundImage: `radial-gradient(circle at 85% 18%, rgba(37,200,244,0.35), transparent 42%), radial-gradient(circle at 10% 62%, rgba(0,192,115,0.42), transparent 48%)`, fontFamily: "Albert Sans" }}>
-        <Brand d={d} ink="#eafff4" tile="#ffffff" />
-        <div style={{ ...row, flex: 1, alignItems: "center", justifyContent: "flex-end" }}>{rimau(380)}</div>
-        <Middle d={d} ink="#ffffff" soft="#a9d8c3" accent="#5ef0ae" chipBg="rgba(255,255,255,0.10)" chipInk="#eafff4" bigSize={200} />
-        <Ticket d={d} main={T.green} stub="rgba(255,255,255,0.10)" mainInk="#ffffff" stubInk="#ffffff" line="#5ef0ae" />
-        <Footer d={d} bg="rgba(255,255,255,0.08)" ink="#ffffff" soft="#a9d8c3" ring="#5ef0ae" />
-      </div>
-    );
-  }
-  // C · Poster: a big colour block with Rimau and the number, then a white panel.
+/** Her Rate Card: packages and prices as rows, then how to reach her. */
+function Rates({ d, s }: { d: CardData; s: number }) {
   return (
-    <div style={{ ...col, width: 1080, height: 1920, background: "#ffffff", fontFamily: "Albert Sans" }}>
-      <div style={{ ...col, height: 1080, padding: 72, gap: 30, background: `linear-gradient(150deg, ${T.green} 0%, ${T.teal} 100%)`, borderBottomLeftRadius: 90, borderBottomRightRadius: 90 }}>
-        <Brand d={d} ink="#ffffff" tile="#ffffff" />
-        <div style={{ ...row, flex: 1, alignItems: "flex-end", justifyContent: "space-between" }}>
-          <div style={{ ...col, gap: 10, maxWidth: 560 }}>
-            <span style={{ ...row, fontSize: 32, fontWeight: 900, color: "#ffffff", letterSpacing: 3, textTransform: "uppercase" }}>{d.kicker || (d.moment === "invite" ? "You're invited" : "Proud moment")}</span>
-            <span style={{ ...row, fontSize: d.moment === "invite" ? 96 : 170, fontWeight: 900, color: "#ffffff", lineHeight: 1, letterSpacing: -4 }}>{d.moment === "invite" ? d.big || "Join me on Rezekii" : d.big}</span>
+    <div style={{ ...col, gap: 14 * s, width: "100%" }}>
+      {d.lines.map((l) => {
+        const [name, price] = l.split("|");
+        return (
+          <div key={l} style={{ ...row, alignItems: "center", justifyContent: "space-between", gap: 20 * s, padding: `${22 * s}px ${30 * s}px`, borderRadius: 28 * s, background: GLASS, border: "2px solid rgba(255,255,255,0.10)" }}>
+            <span style={{ ...row, flex: 1, fontSize: 36 * s, fontWeight: 800, color: INK }}>{name}</span>
+            <span style={{ ...row, fontSize: 40 * s, fontWeight: 900, color: GLOW }}>{price}</span>
           </div>
-          {rimau(360)}
+        );
+      })}
+      {d.contacts.length > 0 && <div style={{ ...row, flexWrap: "wrap", gap: 12 * s, justifyContent: "center" }}>{d.contacts.map((c) => <span key={c} style={{ ...row, padding: `${12 * s}px ${24 * s}px`, borderRadius: 999, background: INK, color: BG, fontSize: 30 * s, fontWeight: 800 }}>{c}</span>)}</div>}
+      {d.sub && <span style={{ ...row, justifyContent: "center", fontSize: 28 * s, fontWeight: 600, color: SOFT }}>{d.sub}</span>}
+    </div>
+  );
+}
+
+/** Kicker, the big number or title, the line under it, chips and the blessing, centred. */
+function Words({ d, s, center }: { d: CardData; s: number; center: boolean }) {
+  const invite = d.moment === "invite", rate = d.moment === "rate";
+  const accent = d.accent ?? GLOW;
+  const big = invite ? d.big || "Join me on Rezekii" : rate ? d.handle : d.big;
+  const align = center ? "center" : "flex-start";
+  return (
+    <div style={{ ...col, alignItems: align, gap: 20 * s, textAlign: center ? "center" : "left" }}>
+      <span style={{ ...row, padding: `${10 * s}px ${24 * s}px`, borderRadius: 999, background: "rgba(94,240,174,0.14)", color: accent, fontSize: 30 * s, fontWeight: 900, letterSpacing: 3, textTransform: "uppercase" }}>{d.kicker || (invite ? "You're invited" : rate ? "Rate Card" : "Proud moment")}</span>
+      {!invite && !rate && d.label && <span style={{ ...row, fontSize: 50 * s, fontWeight: 800, color: INK, lineHeight: 1.15, justifyContent: align }}>{d.label}</span>}
+      {big && <span style={{ ...row, fontSize: (invite || rate ? 100 : 196) * s, fontWeight: 900, color: INK, lineHeight: 1, letterSpacing: -3, justifyContent: align, textShadow: `0 0 ${40 * s}px rgba(94,240,174,0.35)` }}>{big}</span>}
+      {(invite ? d.tag : rate ? d.label : d.sub) && <span style={{ ...row, fontSize: 36 * s, fontWeight: 600, color: SOFT, lineHeight: 1.3, justifyContent: align }}>{invite ? d.tag : rate ? d.label : d.sub}</span>}
+      {!rate && d.lines.length > 0 && <div style={{ ...row, flexWrap: "wrap", gap: 14 * s, justifyContent: align }}>{d.lines.map((l) => <span key={l} style={{ ...row, padding: `${14 * s}px ${26 * s}px`, borderRadius: 999, background: GLASS, color: INK, fontSize: 32 * s, fontWeight: 800 }}>{l}</span>)}</div>}
+      {d.moment === "achievement" && d.bless && <span style={{ ...row, fontSize: 32 * s, fontWeight: 600, color: SOFT, lineHeight: 1.35, justifyContent: align }}>&ldquo;{d.bless}&rdquo;</span>}
+    </div>
+  );
+}
+
+function Rimau({ d, size }: { d: CardData; size: number }) {
+  if (!d.rimau) return null;
+  return (
+    <div style={{ ...row, alignItems: "center", justifyContent: "center", width: size * 1.25, height: size * 1.25, borderRadius: 999, background: "radial-gradient(circle, rgba(94,240,174,0.30), rgba(94,240,174,0) 68%)" }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={d.rimau} width={size} height={size * 1.22} alt="" />
+    </div>
+  );
+}
+
+export function StyledCard({ d, wide = false }: { d: CardData; wide?: boolean }) {
+  if (wide) {
+    const s = 0.6;
+    return (
+      <div style={{ ...col, width: 1200, height: 675, padding: 44, gap: 22, background: BG, backgroundImage: LIGHTS, fontFamily: "Albert Sans" }}>
+        <Brand d={d} s={s} />
+        <div style={{ ...row, flex: 1, alignItems: "center", gap: 36 }}>
+          {d.moment !== "rate" && <Rimau d={d} size={230} />}
+          <div style={{ ...col, flex: 1, gap: 18 }}>
+            <Words d={d} s={s} center={false} />
+            {d.moment === "invite" && <Ticket d={d} s={s} />}
+            {d.moment === "rate" && <Rates d={d} s={s} />}
+          </div>
         </div>
+        <Footer d={d} s={0.55} />
       </div>
-      <div style={{ ...col, flex: 1, padding: 72, gap: 34 }}>
-        {d.moment !== "invite" && d.label && <span style={{ ...row, fontSize: 54, fontWeight: 900, color: T.ink, lineHeight: 1.15 }}>{d.label}</span>}
-        {(d.moment === "invite" ? d.tag : d.sub) && <span style={{ ...row, fontSize: 38, fontWeight: 600, color: "#4f6259", lineHeight: 1.3 }}>{d.moment === "invite" ? d.tag : d.sub}</span>}
-        {d.lines.length > 0 && <div style={{ ...row, flexWrap: "wrap", gap: 14 }}>{d.lines.map((l) => <span key={l} style={{ ...row, padding: "14px 26px", borderRadius: 999, background: "#e9fbf2", color: T.deep, fontSize: 34, fontWeight: 800 }}>{l}</span>)}</div>}
-        <Ticket d={d} main={T.green} stub="#f1f8f4" mainInk="#ffffff" stubInk={T.ink} line={T.green} />
-        <div style={{ ...row, flex: 1 }} />
-        <Footer d={d} bg="#f1f8f4" ink={T.ink} soft="#4f6259" ring="#ffffff" />
+    );
+  }
+  return (
+    <div style={{ ...col, width: 1080, height: 1920, padding: 72, gap: 34, background: BG, backgroundImage: LIGHTS, fontFamily: "Albert Sans" }}>
+      <Brand d={d} s={1} />
+      <div style={{ ...col, flex: 1, alignItems: "center", justifyContent: "center", gap: 28 }}>
+        {d.moment === "rate" ? <Face d={d} size={200} /> : <Rimau d={d} size={d.moment === "invite" ? 400 : 430} />}
+        <Words d={d} s={1} center />
+        {d.moment === "rate" && <Rates d={d} s={1} />}
       </div>
+      {d.moment === "invite" && <Ticket d={d} s={1} />}
+      <Footer d={d} s={1} />
     </div>
   );
 }

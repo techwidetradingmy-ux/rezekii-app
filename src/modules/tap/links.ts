@@ -3,6 +3,8 @@ import { campaignProductLink } from "../../integrations/tiktok-shop/partner.ts";
 import { levelOf } from "../levels/store.ts";
 import { storedSessions } from "../refresh/sessions.ts";
 import { creatorRateFor, linkTarget } from "./catalog.ts";
+import { askFacts, saveFacts, savedFacts } from "./product-facts.ts";
+import { approvedCreatorToken } from "../creator-accounts/access.ts";
 
 export type LinkResult = { ok: true; link: string; name: string; image: string | null } | { ok: false; error: string; status: number };
 export type MadeLink = { productId: string; name: string | null; image: string | null; tag: string | null; link: string };
@@ -35,7 +37,16 @@ export async function makeTapLink(userId: string, productId: string, level?: Awa
   try {
     const [again, partner] = await Promise.all([recentLink(userId, productId, lv), storedSessions().partner()]);
     if (again) return { ok: true, link: again, name: target.name, image: target.image };
-    const r = await campaignProductLink(partner.token, partner.cipher, target.campaignId, productId, creatorRateFor(lv, target.openRate, target.totalRate));
+    // No open rate in Rezekii's catalog (owner, 3 Nov 2026: such links were made at 0%): TikTok's rate for the product, or no link.
+    let open = target.openRate ?? (await savedFacts(productId).catch(() => null))?.openRate ?? null;
+    if (open === null) {
+      const token = await approvedCreatorToken(userId);
+      const facts = token ? await askFacts(token, productId).catch(() => null) : null;
+      if (facts) await saveFacts(productId, facts).catch(() => undefined);
+      open = facts?.openRate ?? null;
+    }
+    if (open === null) return { ok: false, error: "We couldn't confirm this product's commission rate with TikTok. Please try again later.", status: 409 };
+    const r = await campaignProductLink(partner.token, partner.cipher, target.campaignId, productId, creatorRateFor(lv, open, target.totalRate));
     const link = r.data?.product_promotion_link;
     if (r.code !== 0 || !link) return { ok: false, error: `TikTok could not make the link right now (${r.code}). Please try again.`, status: 502 };
     await logLinks(userId, [{ productId, name: target.name, image: target.image, tag: null, link, level: lv }]);

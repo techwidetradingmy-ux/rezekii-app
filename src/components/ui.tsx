@@ -344,7 +344,6 @@ const FORMATS = [
   { key: "story", label: "Portrait", ratio: "9 / 16" },
   { key: "wide", label: "Landscape", ratio: "16 / 9" },
 ] as const;
-const DESIGNS = ["Pastel", "Certificate", "Night"] as const;
 /** What is being shared. Every moment gets its own hero inside the same branded frame (owner, 28 Oct 2026). */
 export type MomentKind = "streak" | "level" | "badge" | "credits" | "mission" | "sample" | "invite";
 /** An invite card's own details (owner, 30 Oct 2026): her code, what the friend gets, her own invite link and photo. */
@@ -464,7 +463,7 @@ const BLESS = [
  * "Share your proud moment" (V1's share window): the card in 3 designs, sized for each platform, as an image or a 5-second
  * video, with a blessing, a caption and the apps to send it to. Shows achievements, never sales.
  */
-export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow", level, kicker = "Proud moment", caption: captionInit, onShared, title, card, moment, extra, invite, story }: {
+export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow", level, kicker = "Proud moment", caption: captionInit, onShared, title, card, moment, extra, invite, story, rate }: {
   onClose: () => void; big: string; label: string; lines: string[]; handle?: string; level?: Level; kicker?: string; caption?: string;
   /** An invite: the card shows her code and reward, and Copy link copies her own invite link. */
   invite?: InviteInfo;
@@ -477,13 +476,16 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
   card?: React.ReactNode;
   /** A Daily Story page, made into the real picture that's shared (owner, 1 Nov 2026). */
   story?: { tone: string; pose: string; kick: string; big: string; head: string; sub?: string; lines?: string[]; date: string };
+  /** Her Rate Card as the real picture (owner, 3 Nov 2026: Save Image saved an empty card): rows of "name|price", contacts. */
+  rate?: { label: string; lines: string[]; contacts: string[]; valid: string };
   /** Called once the card has gone out to an app (on a phone: when the share menu reports it was sent). */
   onShared?: (where: string) => void;
 }) {
   const { toast, live } = useDemo();
   const you = useWho();
   const [fmt, setFmt] = useState<(typeof FORMATS)[number]["key"]>("story");
-  const [design, setDesign] = useState(0);
+  // One look for every card (owner, 3 Nov 2026); the in-page preview below only shows until the real picture is ready.
+  const design = 2;
   const [video, setVideo] = useState(false);
   const [bless, setBless] = useState(0);
   // Every link is her invite link on this site (owner, 1 Nov 2026): /r/CODE, which opens, and the QR on the card points there.
@@ -510,7 +512,7 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
   // The real picture (owner, 1 Nov 2026): made on the server, the same file for the preview, the share menu and Save.
   const cardUrl = (() => {
     if (!origin || !link) return "";
-    const q = new URLSearchParams({ fmt, design: String(design), kicker, label, big, handle: you.handle || handle, name: you.name || "", link, bless: BLESS[bless] });
+    const q = new URLSearchParams({ fmt, kicker, label, big, handle: you.handle || handle, name: you.name || "", link, bless: BLESS[bless] });
     // The invite keeps its ticket and Rimau; a Daily Story page keeps its own look (owner, 1 Nov 2026).
     if (invite) {
       q.set("moment", "invite");
@@ -522,6 +524,13 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
       q.set("moment", "story");
       for (const [k, v] of Object.entries({ tone: story.tone, pose: story.pose, kicker: story.kick, big: story.big, label: story.head, sub: story.sub ?? "", date: story.date })) q.set(k, v);
       for (const l of story.lines ?? []) q.append("line", l);
+    } else if (rate) {
+      q.set("moment", "rate");
+      q.set("kicker", "Rate Card");
+      q.set("label", rate.label);
+      q.set("sub", rate.valid);
+      for (const l of rate.lines) q.append("line", l);
+      for (const c of rate.contacts) q.append("contact", c);
     } else for (const l of lines) q.append("line", l);
     if (you.photo?.startsWith("/api/img/")) q.set("photo", you.photo);
     return `/api/v2/share-card?${q}`;
@@ -534,7 +543,7 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
   // Shares the real file through the phone's menu; it counts only when the menu says it went out (owner, 1 Nov 2026).
   const send = async (app: string) => {
     if (busy) return;
-    if (card && !story) {
+    if (card && !story && !rate) {
       const nav = navigator as Navigator;
       if (nav.share) nav.share({ text: `${caption} ${link}`.trim() }).then(() => onShared?.(app), () => {});
       else copyLink();
@@ -584,7 +593,7 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
               ))}
             </div>
           )}
-          {card && !(story && cardUrl) ? <div className="v2-shcover">{card}</div> : cardUrl ? (
+          {card && !((story || rate) && cardUrl) ? <div className="v2-shcover">{card}</div> : cardUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img className={`v2-shimg${video ? " vid" : ""}`} src={cardUrl} alt={`${label}: ${big}`} style={{ aspectRatio: f.ratio }} />
           ) : invite ? (
@@ -625,7 +634,6 @@ export function ShareSheet({ onClose, big, label, lines, handle = "@aisyah.glow"
         </div>
 
         <div className="v2-shright">
-          {!card && <Seg value={DESIGNS[design]} options={DESIGNS} onChange={(d) => setDesign(DESIGNS.indexOf(d))} />}
           {extra}
           {!extra && <Seg value={video ? "Video · 5 Sec" : "Image"} options={["Image", "Video · 5 Sec"] as const} onChange={(v) => setVideo(v !== "Image")} />}
           {!card && !invite && <div className="v2-bless">

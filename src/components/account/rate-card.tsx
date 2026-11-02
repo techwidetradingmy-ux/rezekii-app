@@ -347,6 +347,15 @@ export function RateCard() {
           lines={[]}
           caption={signedIn ? `My rate card for paid videos.${who.whatsapp ? ` WhatsApp me: ${who.whatsapp}.` : ""} ${who.linkLabel}` : `My rate card for TikTok, Instagram and Facebook videos. Book me on Rezekii: ${who.linkLabel}`}
           card={<RateShare packs={show === "À la carte" ? [] : ready} best={best} items={show === "Packages" ? [] : priced} line={packLine} price={(it) => rm(num(rates[it.key].price))} unit={rightsFor} showOn={showOn} who={who} live={signedIn} />}
+          rate={{
+            label: `${who.level} creator on Rezekii`,
+            lines: [
+              ...(show === "À la carte" ? [] : ready).slice(0, 3).map((p) => `${p.name}|RM ${Math.round(Number(p.price)).toLocaleString("en-MY")}`),
+              ...(show === "Packages" ? [] : priced).map((it) => `${it.label} ${rightsFor(it)}|${rm(num(rates[it.key].price))}`),
+            ].slice(0, 7),
+            contacts: [...(showOn.whatsapp && who.whatsapp ? [`WhatsApp ${who.whatsapp}`] : []), ...(showOn.email && you.email ? [you.email] : [])],
+            valid: `Quote valid ${QUOTE.days} days · until ${signedIn ? untilDay() : QUOTE.until}`,
+          }}
           extra={
             <div className="rcs-pick" role="group" aria-label="Show on the card">
               <b>Show on the card</b>

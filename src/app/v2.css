@@ -1125,7 +1125,9 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { display
 
 /* Signed in last time (owner, 31 Oct 2026): the page's content stays hidden until her account loads, so sample data never flashes. */
 html[data-wait="1"] .v2-main > *, html[data-wait="1"] .v2-acct, html[data-wait="1"] .v2-iconbtn, html[data-wait="1"] .v2-demo .site-wrap { visibility: hidden; }
-html[data-wait="1"] .v2-main::before { content: ""; display: block; width: 28px; height: 28px; margin: 40px auto; border-radius: 50%; border: 3px solid var(--line); border-top-color: #00c073; animation: v2Spin 0.8s linear infinite; }
+/* Always in the middle of the screen (owner, 3 Nov 2026: it sat under the header, looking stuck, when the page was scrolled). */
+html[data-wait="1"] .v2-main::before { content: ""; position: fixed; z-index: 20; top: calc(50% - 30px); left: calc(50% - 17px); width: 34px; height: 34px; box-sizing: border-box; border-radius: 50%; border: 3px solid var(--line); border-top-color: #00c073; border-right-color: #25c8f4; animation: v2Spin 0.8s linear infinite; }
+html[data-wait="1"] .v2-main::after { content: "Loading your Rezekii…"; position: fixed; z-index: 20; top: calc(50% + 16px); left: 0; right: 0; text-align: center; color: var(--muted); font-weight: 700; font-size: 14px; }
 @keyframes v2Spin { to { transform: rotate(360deg); } }
 
 /* "Updated 3:42 pm" under a page title (owner, 31 Oct 2026). */
