@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { CREATOR } from "@/lib/mock";
+import { useT } from "@/lib/i18n/client";
 import type { BetaState } from "@/modules/beta/access.ts";
 
 export type Role = "creator" | "seller";
@@ -49,6 +50,7 @@ const now = () => new Date().toLocaleString("en-MY", { day: "numeric", month: "s
 const FIRST: Consent = { role: "creator", at: "3 Mar 2026, 10:24 pm", terms: "1.0", privacy: "1.0" };
 
 export function DemoProvider({ children }: { children: React.ReactNode }) {
+  const t = useT();
   const [linked, setLinkedState] = useState(true);
   const [consent, setConsent] = useState<Consent | null>(FIRST);
   const [asking, setAsking] = useState<Role | null>(null);
@@ -142,7 +144,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     store(true);
-    toast("TikTok Shop linked. Consent saved.");
+    toast(t("TikTok Shop linked. Consent saved."));
   };
 
   return (
@@ -154,7 +156,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         // WhatsApp checks aren't connected yet, so real accounts aren't asked to verify (owner, 31 Oct 2026).
         requireWa: (then) => (me || waVerified ? then() : setWaNext(() => then)),
         waAsking: !!waNext,
-        waDone: () => { setWaVerified(true); const t = waNext; setWaNext(null); t?.(); },
+        waDone: () => { setWaVerified(true); const then = waNext; setWaNext(null); then?.(); },
         waCancel: () => setWaNext(null),
         bronze,
         setBronze: (on) => {
@@ -180,8 +182,9 @@ export const useDemo = () => useContext(Ctx);
 /** Her name, photo and handle on every screen: the real account when signed in (owner, 30 Oct 2026), else the sample creator. */
 export function useWho() {
   const { me } = useContext(Ctx);
+  const t = useT();
   if (!me) return { name: CREATOR.name, first: CREATOR.first, photo: CREATOR.photo, initials: CREATOR.initials, handle: CREATOR.handle, email: CREATOR.email };
-  const name = me.name?.trim() || me.email?.split("@")[0] || "You";
+  const name = me.name?.trim() || me.email?.split("@")[0] || t("You");
   const handle = me.shop?.handle ?? me.handle;
   return {
     name,

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Icon } from "./icons";
 import { useDemo } from "./demo";
 import { SUPPORT } from "@/lib/support";
+import { useT } from "@/lib/i18n/client";
 import type { BetaState } from "@/modules/beta/access.ts";
 
 /**
@@ -13,6 +14,7 @@ import type { BetaState } from "@/modules/beta/access.ts";
  */
 export function BetaWait({ side, state }: { side: "creator" | "seller"; state: BetaState | null }) {
   const { me, refreshMe } = useDemo();
+  const t = useT();
   const [beta, setBeta] = useState<BetaState | null>(state);
   const [failed, setFailed] = useState(false);
   const post = (body: object) => fetch("/api/v2/beta", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ side, ...body }) });
@@ -36,47 +38,48 @@ export function BetaWait({ side, state }: { side: "creator" | "seller"; state: B
       <div className="bw-card v2-in">
         <span className="bw-brand"><Image src="/master-logo-transparent.png" alt="" width={28} height={28} priority /> Rezekii</span>
         <Image className="bw-mascot" src={s === "declined" ? "/mascot/rimau-sad.webp" : "/mascot/rimau-wave.webp"} alt="" width={150} height={183} priority />
-        {!beta && !failed && <p className="v2-muted">Checking your place…</p>}
-        {failed && <p className="v2-muted">Couldn't load your place. Please refresh the page.</p>}
+        {!beta && !failed && <p className="v2-muted">{t("Checking your place…")}</p>}
+        {failed && <p className="v2-muted">{t("Couldn't load your place. Please refresh the page.")}</p>}
         {s === "waiting" && (
           <>
-            <h1>You&apos;re on the List{name ? `, ${name}` : ""}</h1>
-            <p>Rezekii is in beta, with {beta!.cap} places for creators. We check every sign-up and let you in soon. We&apos;ll email you when you&apos;re in.</p>
+            <h1>{name ? t("You're on the List, {name}", { name }) : t("You're on the List")}</h1>
+            <p>{t("Rezekii is in beta, with {n} places for creators. We check every sign-up and let you in soon. We'll email you when you're in.", { n: beta!.cap })}</p>
             <div className="bw-stats">
-              <span><b>{beta!.place}</b><small>Your Place in the Queue</small></span>
-              <span><b>{beta!.taken} of {beta!.cap}</b><small>Places Taken</small></span>
+              <span><b>{beta!.place}</b><small>{t("Your Place in the Queue")}</small></span>
+              <span><b>{t("{taken} of {cap}", { taken: beta!.taken, cap: beta!.cap })}</b><small>{t("Places Taken")}</small></span>
             </div>
           </>
         )}
         {s === "waitlist" && (
           <>
-            <h1>You&apos;re on the Waitlist{name ? `, ${name}` : ""}</h1>
+            <h1>{name ? t("You're on the Waitlist, {name}", { name }) : t("You're on the Waitlist")}</h1>
             <p>
               {side === "seller"
-                ? "Seller accounts open after the creator beta. You're on the seller waitlist, and we'll email you when you're in."
-                : `All ${beta!.cap} beta places are taken. You're on the waitlist, and we'll email you when a place opens.`}
+                ? t("Seller accounts open after the creator beta. You're on the seller waitlist, and we'll email you when you're in.")
+                : t("All {n} beta places are taken. You're on the waitlist, and we'll email you when a place opens.", { n: beta!.cap })}
             </p>
             <div className="bw-stats">
-              <span><b>{beta!.place}</b><small>Your Place on the Waitlist</small></span>
+              <span><b>{beta!.place}</b><small>{t("Your Place on the Waitlist")}</small></span>
             </div>
           </>
         )}
         {s === "declined" && (
           <>
-            <h1>We Can&apos;t Let You In Yet</h1>
-            <p>{beta!.reason ? beta!.reason.replace(/[.!?]?$/, ".") : "Your sign-up wasn't approved this time."} Message us on WhatsApp if you have questions.</p>
+            <h1>{t("We Can't Let You In Yet")}</h1>
+            {/* The reason is Techwide's own words, so it shows as written. */}
+            <p>{beta!.reason ? beta!.reason.replace(/[.!?]?$/, ".") : t("Your sign-up wasn't approved this time.")} {t("Message us on WhatsApp if you have questions.")}</p>
           </>
         )}
         {(s === "waiting" || s === "waitlist") && beta!.group && (
           <a className="np-btn bw-group" href={beta!.group} target="_blank" rel="noreferrer" onClick={() => void post({ group: true })}>
-            <Icon name="whatsapp" size={18} /> Join Our WhatsApp Group
+            <Icon name="whatsapp" size={18} /> {t("Join Our WhatsApp Group")}
           </a>
         )}
         <div className="bw-acts">
-          <a className="btn-outline" href={SUPPORT.waLink} target="_blank" rel="noreferrer"><Icon name="whatsapp" size={16} /> Contact Support</a>
-          <button type="button" className="btn-outline" onClick={() => void signOut()}><Icon name="back" size={16} /> Sign Out</button>
+          <a className="btn-outline" href={SUPPORT.waLink} target="_blank" rel="noreferrer"><Icon name="whatsapp" size={16} /> {t("Contact Support")}</a>
+          <button type="button" className="btn-outline" onClick={() => void signOut()}><Icon name="back" size={16} /> {t("Sign Out")}</button>
         </div>
-        {me?.email && <small className="v2-muted">Signed in as {me.email}</small>}
+        {me?.email && <small className="v2-muted">{t("Signed in as {email}", { email: me.email })}</small>}
       </div>
     </div>
   );

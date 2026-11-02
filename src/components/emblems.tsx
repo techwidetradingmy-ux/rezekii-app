@@ -1,5 +1,12 @@
+"use client";
+
+import { useT } from "@/lib/i18n/client";
+import { tx } from "@/lib/i18n/lang";
+
 /** Rezekii creator level emblems from V1: a rosette with a face and ribbon. Bronze = sprout, Silver = star, Gold = crown. */
 export type Level = "bronze" | "silver" | "gold";
+const NAME: Record<Level, string> = { bronze: tx("Bronze"), silver: tx("Silver"), gold: tx("Gold") };
+const esc = (s: string) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
 
 // Fixed SVG markup (our own artwork, no user input), so it is rendered as-is. __S__ = size, __ID__ = unique id prefix.
 const SVG: Record<Level, string> = {
@@ -10,7 +17,12 @@ const SVG: Record<Level, string> = {
 
 /** `animate` adds the float, shine, blink and twinkle (they stop for people who prefer reduced motion). */
 export function Emblem({ level, size = 74, animate = false, dim = false }: { level: Level; size?: number; animate?: boolean; dim?: boolean }) {
-  const html = SVG[level].replaceAll("__S__", String(size)).replaceAll("__ID__", `rzem-${level}-${size}`);
+  // The ribbon's word and the read-out name in her language (owner, 3 Nov 2026).
+  const t = useT();
+  const name = t(NAME[level]);
+  const html = SVG[level].replaceAll("__S__", String(size)).replaceAll("__ID__", `rzem-${level}-${size}`)
+    .replace(`aria-label="${NAME[level]} emblem"`, `aria-label="${esc(t("{metal} emblem", { metal: name }))}"`)
+    .replace(`>${NAME[level].toUpperCase()}</text>`, `>${esc(name.toUpperCase())}</text>`);
   return <span className={`rz-emblem ${animate ? "rz-emblem-anim" : ""} ${dim ? "dim" : ""}`} style={{ width: size, height: size }} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 

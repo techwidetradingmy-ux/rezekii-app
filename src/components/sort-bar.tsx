@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Seg, Tip } from "@/components/ui";
 import { CANCEL_MIN_ITEMS, cancelLevel } from "@/lib/cancel";
+import { useT } from "@/lib/i18n/client";
 
 export type Dir = "desc" | "asc";
 
@@ -31,18 +32,20 @@ export const byDir = <T,>(rows: T[], val: (r: T) => number, dir: Dir) => [...row
 
 /** The ↓ / ↑ switch beside a sort. */
 export function DirToggle({ dir, onFlip }: { dir: Dir; onFlip: () => void }) {
+  const t = useT();
   return (
-    <button type="button" className="sb-dir" onClick={onFlip} aria-label={dir === "desc" ? "Highest first. Tap for lowest first" : "Lowest first. Tap for highest first"} title={dir === "desc" ? "Highest first" : "Lowest first"}>
+    <button type="button" className="sb-dir" onClick={onFlip} aria-label={dir === "desc" ? t("Highest first. Tap for lowest first") : t("Lowest first. Tap for highest first")} title={dir === "desc" ? t("Highest first") : t("Lowest first")}>
       <span aria-hidden="true">{dir === "desc" ? "↓" : "↑"}</span>
     </button>
   );
 }
 
-/** "Sort by" with its options and the ↓ / ↑ switch. */
+/** "Sort by" with its options (English, shown in her language by Seg) and the ↓ / ↑ switch. */
 export function SortBar<K extends string>({ value, options, onChange, dir, onFlip }: { value: K; options: readonly K[]; onChange: (k: K) => void; dir: Dir; onFlip: () => void }) {
+  const t = useT();
   return (
     <div className="cr2-segfit sb-bar">
-      <span className="cr2-sortlbl">Sort by</span>
+      <span className="cr2-sortlbl">{t("Sort by")}</span>
       <Seg value={value} options={options} onChange={onChange} />
       <DirToggle dir={dir} onFlip={onFlip} />
     </div>
@@ -64,12 +67,13 @@ export function SortHead<K extends string>({ label, k, value, dir, onSort }: { l
  * "x of y items" under it.
  */
 export function CancelRate({ pct, items, bad }: { pct: number; items?: number; bad?: number }) {
+  const t = useT();
   const judged = items === undefined || items >= CANCEL_MIN_ITEMS;
   const lv = cancelLevel(pct);
   return (
     <>
       <b className={!judged ? undefined : lv === "high" ? "cr2-red" : lv === "watch" ? "cr2-orange-v" : undefined}>{pct}%</b>
-      {items !== undefined && <em className="cr-items">{bad ?? 0} of {items} item{items === 1 ? "" : "s"}</em>}
+      {items !== undefined && <em className="cr-items">{items === 1 ? t("{bad} of {n} item", { bad: bad ?? 0, n: items }) : t("{bad} of {n} items", { bad: bad ?? 0, n: items })}</em>}
     </>
   );
 }
@@ -82,12 +86,13 @@ export const cancelFlag = (pct: number, items?: number) => (items !== undefined 
  * red from 20%, only from 5 items sold, with a ⓘ. The same place on every row and every sort.
  */
 export function CancelChip({ pct, items }: { pct: number; items?: number }) {
+  const t = useT();
   const flag = cancelFlag(pct, items);
   if (!flag) return null;
   return (
     <span className={`cx-chip${flag === "high" ? " high" : ""}`}>
-      Cancels {pct}%
-      <Tip label="About Cancels" text="Share of items cancelled or returned. Amber from 10%, red from 20%, counted once 5 or more items sold." />
+      {t("Cancels {pct}%", { pct })}
+      <Tip label={t("About Cancels")} text={t("Share of items cancelled or returned. Amber from 10%, red from 20%, counted once 5 or more items sold.")} />
     </span>
   );
 }

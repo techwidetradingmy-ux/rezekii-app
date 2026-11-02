@@ -1,5 +1,8 @@
+"use client";
+
 import "@/app/partner-card.css";
 import Image from "next/image";
+import { useT } from "@/lib/i18n/client";
 
 /** Not listed yet. When each app goes live, swap in the store's official badge, linked to the listing (their rules). */
 const STORES = [
@@ -29,8 +32,9 @@ const STORES = [
  * TikTok Shop Partner App (listed in the Seller Center App Store since 21 Oct 2026), and App Store and Google Play coming soon.
  */
 export function PartnerCard() {
+  const t = useT();
   return (
-    <p className="pc-row" aria-label="Official TikTok Shop Partner App. Coming soon to the App Store and Google Play.">
+    <p className="pc-row" aria-label={t("Official TikTok Shop Partner App. Coming soon to the App Store and Google Play.")}>
       <span className="pc-badge">
         <Image src="/tiktok-shop-partner-logo.png" alt="" width={69} height={20} />
       </span>
@@ -38,7 +42,7 @@ export function PartnerCard() {
       {STORES.map((s) => (
         <span key={s.name} className="pc-store">
           {s.logo}
-          <span><small>Coming soon on</small><b>{s.name}</b></span>
+          <span><small>{t("Coming soon on")}</small><b>{s.name}</b></span>
         </span>
       ))}
     </p>

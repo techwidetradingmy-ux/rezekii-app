@@ -1,6 +1,7 @@
 "use client";
 
 import type { Mission } from "@/components/missions-board";
+import { dateLocale, makeT, tx, type Lang, type T } from "@/lib/i18n/lang";
 
 /**
  * Rewards on real data for signed-in accounts (owner, 31 Oct 2026): missions, wallet, referral and saved profile, from
@@ -19,13 +20,14 @@ export type LiveReferral = { code: string; link: string; friends: { name: string
 
 const get = async <T,>(url: string): Promise<T> => {
   const r = await fetch(url, { cache: "no-store" });
-  if (!r.ok) throw new Error(((await r.json().catch(() => ({}))) as { error?: string }).error ?? "Couldn't load. Please try again.");
+  // English here; the screen that shows it puts it in her language with t(message).
+  if (!r.ok) throw new Error(((await r.json().catch(() => ({}))) as { error?: string }).error ?? tx("Couldn't load. Please try again."));
   return r.json();
 };
 const post = async <T,>(url: string, body: unknown): Promise<T> => {
   const r = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
   const j = (await r.json().catch(() => ({}))) as T & { error?: string };
-  if (!r.ok) throw new Error(j.error ?? "Didn't go through. Please try again.");
+  if (!r.ok) throw new Error(j.error ?? tx("Didn't go through. Please try again."));
   return j;
 };
 
@@ -56,13 +58,13 @@ export function mergeMissions(defs: Mission[], live: State[]): Mission[] {
   });
 }
 
-/** "12 Nov" style day for history rows; today and yesterday by name. */
-export function whenLabel(at: string): string {
+/** "12 Nov" style day for history rows; today and yesterday by name. In her language when the screen passes `t` and `lang`. */
+export function whenLabel(at: string, t: T = makeT(null), lang: Lang = "en"): string {
   const d = new Date(at);
   const myt = (x: Date) => x.toLocaleDateString("en-GB", { timeZone: "Asia/Kuala_Lumpur" });
   const now = new Date();
-  const time = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kuala_Lumpur" });
-  if (myt(d) === myt(now)) return `Today ${time}`;
-  if (myt(d) === myt(new Date(now.getTime() - 86400_000))) return "Yesterday";
-  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" });
+  const time = d.toLocaleTimeString(dateLocale(lang), { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kuala_Lumpur" });
+  if (myt(d) === myt(now)) return t("Today {time}", { time });
+  if (myt(d) === myt(new Date(now.getTime() - 86400_000))) return t("Yesterday");
+  return d.toLocaleDateString(dateLocale(lang), { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" });
 }

@@ -7,10 +7,15 @@ import { Icon } from "@/components/icons";
 import { Portal, Seg, ShareSheet } from "@/components/ui";
 import { CREATOR } from "@/lib/mock";
 import { STORY_SEEN, hoursLeft, noteStorySeen, storyDayKey, storyFor, storyNextAt, storyReleased, storySeen, type SampleDay, type StoryPage } from "@/lib/daily-story";
+import { useLang, useT } from "@/lib/i18n/client";
+import { dateLocale, tx, type Lang, type T } from "@/lib/i18n/lang";
 import "@/app/creator1.css";
 
 const SLIDE_MS = 5200;
-const TONE_TAG: Record<StoryPage["tone"], string> = { intro: "Daily Story", good: "Good news", heads: "Heads-up", steady: "Today", trend: "For you", total: "All-time", end: "Daily Story" };
+/** The tag on each page, in English; shown in her language. */
+const TONE_TAG: Record<StoryPage["tone"], string> = { intro: tx("Daily Story"), good: tx("Good news"), heads: tx("Heads-up"), steady: tx("Today"), trend: tx("For you"), total: tx("All-time"), end: tx("Daily Story") };
+/** The summary page's line tags, shown in her language. */
+const LINE_TAG: Record<NonNullable<StoryPage["lines"]>[number]["tag"], string> = { Good: tx("Good"), Watch: tx("Watch"), Tip: tx("Tip") };
 
 /** Rimau the tiger cub, in a pose, moving to match the moment. */
 export function Rimau({ pose, motion = "bounce", className = "" }: { pose: StoryPage["pose"]; motion?: StoryPage["motion"]; className?: string }) {
@@ -24,6 +29,7 @@ const mask = (s: string | undefined, hide: boolean) => (s && hide ? s.replace(/R
 /** One story page as a 9:16 card: Rimau up top, the news below, her handle and the Rezekii mark at the foot. */
 export function StoryCard({ page, hide = false, date }: { page: StoryPage; hide?: boolean; date: string }) {
   const you = useWho();
+  const t = useT();
   const h = hide && page.money;
   return (
     <div className={`dsc dsc-${page.tone}`} role="img" aria-label={`${page.kick}: ${mask(page.big, !!h)} ${mask(page.head, !!h)}`}>
@@ -35,7 +41,7 @@ export function StoryCard({ page, hide = false, date }: { page: StoryPage; hide?
             <img src="/master-logo-transparent.png" alt="" />
             REZEKII
           </span>
-          <span className="dsc-date">{TONE_TAG[page.tone]} · {date}</span>
+          <span className="dsc-date">{t(TONE_TAG[page.tone])} · {date}</span>
         </div>
         <div className="dsc-art">
           <Rimau key={page.id} pose={page.pose} motion={page.motion} />
@@ -53,7 +59,7 @@ export function StoryCard({ page, hide = false, date }: { page: StoryPage; hide?
           {page.sub && <span className="dsc-sub">{mask(page.sub, !!h)}</span>}
           {page.lines && (
             <ul className="dsc-list">
-              {page.lines.map((l) => <li key={l.tag}><b className={l.tag.toLowerCase()}>{l.tag}</b>{l.text}</li>)}
+              {page.lines.map((l) => <li key={l.tag}><b className={l.tag.toLowerCase()}>{t(LINE_TAG[l.tag] ?? l.tag)}</b>{l.text}</li>)}
             </ul>
           )}
         </div>
@@ -71,9 +77,9 @@ export function StoryCard({ page, hide = false, date }: { page: StoryPage; hide?
 }
 
 /** The page that says when the next story comes out (owner, 2 Nov 2026: one story at a time through the day). */
-const nextPage = (at: number): StoryPage => ({
-  id: "next", tone: "steady", pose: "think", motion: "float", kick: "Coming up", big: new Date(at).toLocaleTimeString("en-MY", { hour: "numeric", minute: "2-digit", hour12: true }),
-  head: "Your next story", sub: "A new one every 2 hours today, until your whole day is out", caption: "",
+const nextPage = (at: number, t: T, lang: Lang): StoryPage => ({
+  id: "next", tone: "steady", pose: "think", motion: "float", kick: t("Coming up"), big: new Date(at).toLocaleTimeString(dateLocale(lang), { hour: "numeric", minute: "2-digit", hour12: true }),
+  head: t("Your next story"), sub: t("A new one every 2 hours today, until your whole day is out"), caption: "",
 });
 
 /**
@@ -83,6 +89,8 @@ const nextPage = (at: number): StoryPage => ({
 export function DailyStory({ day = "good", onClose, pages }: { day?: SampleDay; onClose: () => void; pages?: StoryPage[] | null }) {
   // Signed in (owner, 31 Oct 2026): her real story of yesterday, made on the server (or already read by the header).
   const { live } = useDemo();
+  const t = useT();
+  const lang = useLang();
   const [real, setReal] = useState<StoryPage[] | null>(pages?.length ? pages : null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
@@ -92,15 +100,15 @@ export function DailyStory({ day = "good", onClose, pages }: { day?: SampleDay; 
       .then((d: { pages?: StoryPage[] } | null) => (d?.pages?.length ? setReal(d.pages) : setFailed(true)))
       .catch(() => setFailed(true));
   }, [live, pages]);
-  if (!live) return <StoryPlayer pages={storyFor(day)} onClose={onClose} />;
+  if (!live) return <StoryPlayer pages={storyFor(day, t, lang)} onClose={onClose} />;
   if (real) return <StoryPlayer pages={real} onClose={onClose} drip />;
   return (
     <Portal>
       <div className="ss-back" onClick={(e) => e.target === e.currentTarget && onClose()}>
-        <div className="ss-frame ds-frame" role="dialog" aria-modal="true" aria-label="Your Daily Story" style={{ display: "grid", placeItems: "center", gap: 12, padding: 24, textAlign: "center" }}>
+        <div className="ss-frame ds-frame" role="dialog" aria-modal="true" aria-label={t("Your Daily Story")} style={{ display: "grid", placeItems: "center", gap: 12, padding: 24, textAlign: "center" }}>
           <Rimau pose={failed ? "sad" : "think"} motion={failed ? "sway" : "float"} />
-          <b>{failed ? "Rimau couldn't get your story" : "Rimau is reading your day…"}</b>
-          {failed && <button type="button" className="np-btn v2-btn-sm" onClick={onClose}>Close</button>}
+          <b>{failed ? t("Rimau couldn't get your story") : t("Rimau is reading your day…")}</b>
+          {failed && <button type="button" className="np-btn v2-btn-sm" onClick={onClose}>{t("Close")}</button>}
         </div>
       </div>
     </Portal>
@@ -113,8 +121,10 @@ export function DailyStory({ day = "good", onClose, pages }: { day?: SampleDay; 
  */
 function StoryPlayer({ pages: all, onClose, drip = false }: { pages: StoryPage[]; onClose: () => void; drip?: boolean }) {
   const you = useWho();
+  const t = useT();
+  const lang = useLang();
   const [out] = useState(() => (drip ? storyReleased(all.length) : all.length));
-  const pages = out < all.length ? [...all.slice(0, out), nextPage(storyNextAt(out))] : all;
+  const pages = out < all.length ? [...all.slice(0, out), nextPage(storyNextAt(out), t, lang)] : all;
   const last = pages.length - 1;
   // From the first page she hasn't seen; from the start again once she has seen all that's out.
   const [i, setI] = useState(() => {
@@ -126,7 +136,8 @@ function StoryPlayer({ pages: all, onClose, drip = false }: { pages: StoryPage[]
   const [hide, setHide] = useState(false);
   const [left, setLeft] = useState(0);
   const page = pages[i];
-  const date = page.kick.startsWith("Your day") ? page.kick.slice(11) : "Yesterday";
+  // The first page's kick is "Your day · 29 Oct" in any language, so its date is what follows the " · ".
+  const date = page.tone === "intro" && page.kick.includes(" · ") ? page.kick.slice(page.kick.lastIndexOf(" · ") + 3) : t("Yesterday");
 
   useEffect(() => setLeft(hoursLeft()), []);
   useEffect(() => {
@@ -136,8 +147,8 @@ function StoryPlayer({ pages: all, onClose, drip = false }: { pages: StoryPage[]
   }, [drip, i, out]);
   useEffect(() => {
     if (held || share || i >= last) return;
-    const t = window.setTimeout(() => setI((x) => Math.min(x + 1, last)), page.tone === "intro" ? SLIDE_MS + 2500 : SLIDE_MS);
-    return () => window.clearTimeout(t);
+    const id = window.setTimeout(() => setI((x) => Math.min(x + 1, last)), page.tone === "intro" ? SLIDE_MS + 2500 : SLIDE_MS);
+    return () => window.clearTimeout(id);
   }, [i, last, held, share, page.tone]);
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
@@ -160,15 +171,15 @@ function StoryPlayer({ pages: all, onClose, drip = false }: { pages: StoryPage[]
     return (
       <ShareSheet
         key={String(hide)}
-        title="Share this page"
+        title={t("Share this page")}
         onClose={() => setShare(null)}
         big=""
         label={share.head}
         lines={[]}
         caption={mask(share.caption, hide && !!share.money)}
         card={<StoryCard page={share} hide={hide} date={date} />}
-        story={{ tone: share.tone, pose: share.pose, kick: share.kick, big: mask(share.big, hide && !!share.money) ?? "", head: mask(share.head, hide && !!share.money) ?? "", sub: share.sub ? mask(share.sub, hide && !!share.money) : undefined, lines: share.lines?.map((l) => `${l.tag}: ${mask(l.text, hide && !!share.money)}`), date }}
-        extra={share.money ? <Seg value={hide ? "Hide Amounts" : "Show Amounts"} options={["Show Amounts", "Hide Amounts"] as const} onChange={(v) => setHide(v === "Hide Amounts")} /> : undefined}
+        story={{ tone: share.tone, pose: share.pose, kick: share.kick, big: mask(share.big, hide && !!share.money) ?? "", head: mask(share.head, hide && !!share.money) ?? "", sub: share.sub ? mask(share.sub, hide && !!share.money) : undefined, lines: share.lines?.map((l) => t("{tag}: {text}", { tag: t(LINE_TAG[l.tag] ?? l.tag), text: mask(l.text, hide && !!share.money) ?? "" })), date }}
+        extra={share.money ? <Seg value={hide ? "Hide Amounts" : "Show Amounts"} options={[tx("Show Amounts"), tx("Hide Amounts")]} onChange={(v) => setHide(v === "Hide Amounts")} /> : undefined}
       />
     );
   }
@@ -180,7 +191,7 @@ function StoryPlayer({ pages: all, onClose, drip = false }: { pages: StoryPage[]
           className="ss-frame ds-frame"
           role="dialog"
           aria-modal="true"
-          aria-label="Your Daily Story"
+          aria-label={t("Your Daily Story")}
           onClick={tap}
           onPointerDown={(e) => { if (!(e.target as HTMLElement).closest("button, a")) setHeld(true); }}
           onPointerUp={() => setHeld(false)}
@@ -195,25 +206,25 @@ function StoryPlayer({ pages: all, onClose, drip = false }: { pages: StoryPage[]
           </div>
           <div className="ss-head">
             <span className="ss-ring ds-ring"><Rimau pose="wave" motion="pop" /></span>
-            <b>Rimau&apos;s Daily Story</b>
-            <small>{you.handle} · {left ? `ends in ${left}h` : "today"}</small>
-            <button type="button" className="ss-x" aria-label="Close" onClick={onClose}><Icon name="x" size={20} width={2.4} /></button>
+            <b>{t("Rimau's Daily Story")}</b>
+            <small>{you.handle} · {left ? t("ends in {n}h", { n: left }) : t("today")}</small>
+            <button type="button" className="ss-x" aria-label={t("Close")} onClick={onClose}><Icon name="x" size={20} width={2.4} /></button>
           </div>
 
           <div key={page.id} className="ss-cover"><StoryCard page={page} date={date} /></div>
 
           <div className="ss-foot ds-foot">
             {page.id === "next" ? (
-              <button type="button" className="ds-cta" onClick={onClose}>Done</button>
+              <button type="button" className="ds-cta" onClick={onClose}>{t("Done")}</button>
             ) : page.tone === "end" ? (
               <>
-                <button type="button" className="ss-share" onClick={() => openShare(page)}><Icon name="users" size={17} /> Invite a Friend</button>
-                <button type="button" className="ds-cta" onClick={onClose}>Done</button>
+                <button type="button" className="ss-share" onClick={() => openShare(page)}><Icon name="users" size={17} /> {t("Invite a Friend")}</button>
+                <button type="button" className="ds-cta" onClick={onClose}>{t("Done")}</button>
               </>
             ) : (
               <>
                 {page.cta && <Link href={page.cta.href} className="ds-cta" onClick={onClose}>{page.cta.label}</Link>}
-                <button type="button" className="ss-share" onClick={() => openShare(page)}><Icon name="share" size={17} /> Share</button>
+                <button type="button" className="ss-share" onClick={() => openShare(page)}><Icon name="share" size={17} /> {t("Share")}</button>
               </>
             )}
           </div>
