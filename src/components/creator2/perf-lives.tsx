@@ -8,7 +8,7 @@ import { productHref } from "@/lib/product-view";
 import { product, rm } from "@/lib/mock";
 import { LIVES } from "@/lib/mock-creator2";
 import { perfProduct, useLivePerf } from "@/lib/live-perf";
-import { CancelRate, SortBar, cancelFlag, useSortPref } from "@/components/sort-bar";
+import { CancelChip, CancelRate, SortBar, cancelFlag, useSortPref } from "@/components/sort-bar";
 import "@/app/creator2.css";
 
 const SORTS = ["GMV", "Commission", "Cancels"] as const;
@@ -45,31 +45,32 @@ export function LiveList() {
         <div className="cr2-list">
           {rows.length === 0 && <p className="v2-muted" style={{ margin: 0 }}>No sales from LIVEs in these days.</p>}
           {rows.map((l) => {
-            const flag = cancelFlag(l.cancel, "items" in l ? l.items : undefined);
+            const items = "items" in l ? l.items : undefined;
+            const flag = cancelFlag(l.cancel, items);
             return (
             <article key={l.id} className={`pl-row${openId === l.id ? " open" : ""}`}>
-              <button type="button" className="pl-head" aria-expanded={openId === l.id} onClick={() => setOpenId(openId === l.id ? null : l.id)}>
+              {/* The row opens its details; the Cancels ⓘ sits above it (owner, 3 Nov 2026). */}
+              <div className="pl-head pl-live">
+                <button type="button" className="pv-hit" aria-expanded={openId === l.id} aria-label={`LIVE ${l.date} ${l.time} details`} onClick={() => setOpenId(openId === l.id ? null : l.id)} />
                 <span className="lv-mark" aria-hidden="true">LIVE</span>
-                <span className="pl-main">
-                  <strong>{l.date} · {l.time}</strong>
-                  <span className="pl-tags">
-                    <span className="lv-thumbs">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      {l.products.slice(0, 3).map(([id]) => <img key={id} src={info(id).img} alt="" />)}
-                    </span>
-                    {sort !== "Cancels" && dir === "desc" && l.id === top && <span className="badge">{sort === "GMV" ? "Top GMV" : "Top Earner"}</span>}
-                    {flag && <span className={`badge ${flag === "high" ? "badge-red" : "badge-amber"}`}>{flag === "high" ? "High Cancels" : "Watch Cancels"}</span>}
-                  </span>
-                </span>
+                <strong>{l.date} · {l.time}</strong>
                 <b className={`v2-num${sort === "Cancels" && flag === "high" ? " cr2-red" : ""}`}>{sort === "GMV" ? rm(l.gmv, 0) : sort === "Commission" ? rm(l.commission, 0) : `${l.cancel}%`}</b>
                 <Icon name="arrow" size={16} />
-              </button>
+                <span className="pl-tags">
+                  <span className="lv-thumbs">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    {l.products.slice(0, 3).map(([id]) => <img key={id} src={info(id).img} alt="" />)}
+                  </span>
+                  {sort !== "Cancels" && dir === "desc" && l.id === top && <span className="badge">{sort === "GMV" ? "Top GMV" : "Top Earner"}</span>}
+                  <CancelChip pct={l.cancel} items={items} />
+                </span>
+              </div>
               {openId === l.id && (
                 <div className="pl-body">
                   <div className="cr2-mini">
                     <span><small>Orders</small><b>{l.orders}</b></span>
                     <span><small>Sales</small><b>{rm(l.gmv, 0)}</b></span>
-                    <span><small>Cancel rate</small><CancelRate pct={l.cancel} items={"items" in l ? l.items : undefined} bad={"cancelItems" in l ? l.cancelItems : undefined} /></span>
+                    <span><small>Cancel Rate</small><CancelRate pct={l.cancel} items={items} bad={"cancelItems" in l ? l.cancelItems : undefined} /></span>
                   </div>
                   <div className="lv-prods">
                     {[...l.products as Item[]].sort((a, b) => order(key(gmvOf(a), a[1], a[3]), key(gmvOf(b), b[1], b[3]))).map((t) => { const [id, c, , x, , items] = t; const f = cancelFlag(x, items); return (

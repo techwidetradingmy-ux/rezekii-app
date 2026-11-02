@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Seg } from "@/components/ui";
+import { Seg, Tip } from "@/components/ui";
 import { CANCEL_MIN_ITEMS, cancelLevel } from "@/lib/cancel";
 
 export type Dir = "desc" | "asc";
@@ -76,3 +76,18 @@ export function CancelRate({ pct, items, bad }: { pct: number; items?: number; b
 
 /** "high" or "watch" for a badge, only from 5 items sold; null otherwise. */
 export const cancelFlag = (pct: number, items?: number) => (items !== undefined && items < CANCEL_MIN_ITEMS ? null : cancelLevel(pct) === "ok" ? null : cancelLevel(pct));
+
+/**
+ * Cancels as one small chip (owner, 3 Nov 2026: "Watch Cancels" didn't say what it meant): "Cancels 12%", amber from 10% and
+ * red from 20%, only from 5 items sold, with a ⓘ. The same place on every row and every sort.
+ */
+export function CancelChip({ pct, items }: { pct: number; items?: number }) {
+  const flag = cancelFlag(pct, items);
+  if (!flag) return null;
+  return (
+    <span className={`cx-chip${flag === "high" ? " high" : ""}`}>
+      Cancels {pct}%
+      <Tip label="About Cancels" text="Share of items cancelled or returned. Amber from 10%, red from 20%, counted once 5 or more items sold." />
+    </span>
+  );
+}

@@ -40,6 +40,11 @@ export default function DataPerformance() {
     const v = HASH[window.location.hash];
     if (v) setBy(v);
   }, []);
+  // The tab goes in the address too, so Back from a product lands on the same tab (owner, 3 Nov 2026).
+  const pick = (v: View) => {
+    setBy(v);
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}${Object.keys(HASH).find((h) => HASH[h] === v) ?? ""}`);
+  };
   const today = to;
   const label = range.custom ? `${dayName(from)} – ${dayName(to)}` : PRESETS.find(([k]) => k === range.preset)![1];
   return (
@@ -62,7 +67,7 @@ export default function DataPerformance() {
           onPreset={(k) => setRange({ preset: k as RangeKey, custom: null })}
         />
       </Title>
-      <Seg value={by} options={["By Video", "By LIVE", "By Product"] as const} onChange={setBy} />
+      <Seg value={by} options={["By Video", "By LIVE", "By Product"] as const} onChange={pick} />
       {live && <Updated at={perf && typeof perf === "object" ? perf.updated : null} />}
       {by === "By Video" && <VideoList />}
       {by === "By LIVE" && <LiveList />}

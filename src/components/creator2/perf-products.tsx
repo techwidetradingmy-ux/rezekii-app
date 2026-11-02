@@ -10,7 +10,8 @@ import { productHref } from "@/lib/product-view";
 import { ANALYTICS, product, rm } from "@/lib/mock";
 import { LIVES, PREV_ORDERS, SHORT, VIDEOS, channelSplit, type VideoRow } from "@/lib/mock-creator2";
 import { perfProduct, shortName, useLivePerf } from "@/lib/live-perf";
-import { CancelRate, SortBar, cancelFlag, useSortPref } from "@/components/sort-bar";
+import { CancelChip, CancelRate, SortBar, cancelFlag, useSortPref } from "@/components/sort-bar";
+import { cancelText } from "@/lib/cancel";
 
 const SORTS = ["Commission", "Orders", "Cancels"] as const;
 type Sort = (typeof SORTS)[number];
@@ -120,32 +121,40 @@ export function ProductList() {
             const lowRated = !real && p.rating < 3;
             // Rezekii's standard (owner, 1 Nov 2026), from 5 items sold.
             const cflag = cancelFlag(b.cancel, b.items);
-            const highCancel = cflag === "high";
+            const isTop = b.productId === top.productId;
             const vids = (real ? real.videos : VIDEOS).filter((v) => v.productId === b.productId).sort((x, y) => y.orders - x.orders);
+            const orders = `${b.orders} order${b.orders === 1 ? "" : "s"}`;
             return (
               <article key={b.productId} id={`pd-${b.productId}`} className={`pl-row${openId === b.productId ? " open" : ""}`}>
-                {/* The photo and name open the product; the rest of the row shows its details here. */}
-                <div className="pl-head">
+                {/* The photo and name open the product; the rest of the row shows its details here. The name has its own line,
+                    the numbers a line below with the trend at its right end like a stock, then any tags (owner, 3 Nov 2026). */}
+                <div className="pl-head pl-prod">
                   <button type="button" className="pv-hit" aria-expanded={openId === b.productId} aria-label={`${p.name} details`} onClick={() => setOpenId(openId === b.productId ? null : b.productId)} />
                   {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
                   <img className="pv-open" src={p.img} alt="" onClick={() => router.push(productHref(p.id))} />
-                  <span className="pl-main">
-                    <strong><Link href={productHref(p.id)} className="pv-open">{p.name}</Link></strong>
-                    <span className="pl-tags">
-                      {b.productId === top.productId && <span className="badge">Top Earner</span>}
-                      {dropping && <span className="badge badge-amber">Dropping {change}%</span>}
-                      {!dropping && change > 0 && <span className="badge badge-gray">Up {change}%</span>}
-                      {lowRated ? <span className="badge badge-red">Low Rating</span> : cflag && <span className={`badge ${highCancel ? "badge-red" : "badge-amber"}`}>{highCancel ? "High Cancels" : "Watch Cancels"}</span>}
-                    </span>
-                  </span>
-                  <b className="v2-num">{sort === "Orders" ? `${b.orders} orders` : sort === "Cancels" ? `${b.cancel}%` : rm(b.value, 0)}</b>
+                  <strong><Link href={productHref(p.id)} className="pv-open">{p.name}</Link></strong>
                   <Icon name="arrow" size={16} />
+                  <span className="pl-nums">
+                    <b className="v2-num">{sort === "Orders" ? orders : sort === "Cancels" ? `${cancelText(b.cancel, b.items, b.cancelItems)} cancelled` : rm(b.value, 0)}</b>
+                    <small>· {sort === "Orders" ? rm(b.value, 0) : orders}</small>
+                    {change !== 0 && (
+                      <span className={`pl-chg ${change > 0 ? "up cr2-green" : "down cr2-red"}`} role="img" aria-label={`Orders ${change > 0 ? "up" : "down"} ${Math.abs(change)}%`} title="Orders against the same number of days before">
+                        <i aria-hidden="true">{change > 0 ? "▲" : "▼"}</i>{Math.abs(change)}%
+                      </span>
+                    )}
+                  </span>
+                  {(isTop || lowRated || cflag) && (
+                    <span className="pl-tags">
+                      {isTop && <span className="badge">Top Earner</span>}
+                      {lowRated ? <span className="badge badge-red pl-end">Low Rating</span> : <CancelChip pct={b.cancel} items={b.items} />}
+                    </span>
+                  )}
                 </div>
                 {openId === b.productId && <div className="pl-body">
                 <Split commission={b.commission} split={splitOf(b)} />
                 <div className="cr2-mini">
                   <span><small>Orders</small><b>{b.orders}</b></span>
-                  <span><small>Cancel rate</small><CancelRate pct={b.cancel} items={b.items} bad={b.cancelItems} /></span>
+                  <span><small>Cancel Rate</small><CancelRate pct={b.cancel} items={b.items} bad={b.cancelItems} /></span>
                   {!real && <span><small>Rating</small><b className={lowRated ? "cr2-red" : undefined}>{p.rating.toFixed(1)} / 5</b></span>}
                 </div>
 
