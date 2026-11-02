@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
-import { Count, Flow, Lock, RemoveWarn } from "@/components/ui";
+import { Count, Flow, Lock, RemoveWarn, Tip } from "@/components/ui";
 import { removeFromShowcase } from "@/lib/live";
 import { CREATOR, PRODUCTS } from "@/lib/mock";
 import { productHref } from "@/lib/product-view";
@@ -74,6 +74,11 @@ export function RatingScan() {
   const left = flagged.filter((p) => !removed.includes(p.id));
   const by = (l: Level) => left.filter((p) => levelOf(p.rating) === l);
   const healthy = real ? Math.max(0, real.checked - real.flagged.length) : CREATOR.showcaseSize - FLAGGED.length;
+  // Products TikTok has no rating for yet are in no level, so they're counted on their own and the numbers add up (owner, 2 Nov 2026).
+  const unrated = real ? Math.max(0, real.total - real.checked) : 0;
+  // Showcase Health (owner, 2 Nov 2026): Rezekii's estimate, the share of her rated products at 4★ or more. Not TikTok's score.
+  const rated = healthy + left.length;
+  const health = rated ? Math.round((healthy / rated) * 1000) / 10 : null;
   const checkedAt = real ? updatedWhen(real.at) : "09:12";
   const heavy = by("heavy");
 
@@ -159,6 +164,13 @@ export function RatingScan() {
             <span className="sh-kicker"><i />{scanning ? "Checking your showcase…" : real ? `Health check · Updated ${checkedAt}` : `Health check · today ${checkedAt}`}</span>
             <h2><b><Count key={`${run}-${real?.total ?? 0}`} value={real ? real.total : CREATOR.showcaseSize} ms={SCAN_MS - 200} /></b> products checked</h2>
             {real?.more && <small className="v2-small">The first {real.total} in your showcase</small>}
+            {!scanning && unrated > 0 && <small className="v2-small">Not Rated Yet <b>{unrated.toLocaleString("en-MY")}</b></small>}
+            {!scanning && health !== null && (
+              <span className="rc-health">
+                Showcase Health <b>{health}%</b> <small>Rezekii&apos;s Estimate</small>
+                <Tip label="About showcase health" text="Rezekii's estimate: the share of your rated showcase products at 4★ or more. Not TikTok's account health score." />
+              </span>
+            )}
           </div>
           <div className="rc-bar" role="img" aria-label={`${healthy} fine, ${by("slight").length} slightly low, ${by("low").length} low, ${heavy.length} heavily low`}>
             <i className="ok" style={{ flexGrow: healthy }} />

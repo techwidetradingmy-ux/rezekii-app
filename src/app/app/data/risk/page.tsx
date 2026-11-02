@@ -5,23 +5,31 @@ import { Updated } from "@/components/data-note";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
-import { Bars, Lock, Seg, Stat, Title } from "@/components/ui";
+import { Bars, Lock, Seg, Stat, Tip, Title } from "@/components/ui";
 import { RatingScan } from "@/components/creator1/rating-scan";
 import { ANALYTICS, product, rm } from "@/lib/mock";
-import { SHORT, VIDEOS, type VideoRow } from "@/lib/mock-creator2";
+import { LIVES, SHORT, VIDEOS, type VideoRow } from "@/lib/mock-creator2";
 import { VideoSheet } from "@/components/creator2/view-sheets";
 import { productHref } from "@/lib/product-view";
 import { perfProduct, useLivePerf, shortName } from "@/lib/live-perf";
 import { useDemo } from "@/components/demo";
 import { DirToggle, SortHead, cancelFlag, useSortPref } from "@/components/sort-bar";
-import { CANCEL_TIP } from "@/lib/cancel";
+import { CANCEL_MIN_ITEMS, CANCEL_TIP, cancelText } from "@/lib/cancel";
 import "@/app/creator2.css";
 
 const cancelled = (orders: number, rate: number) => Math.round((orders * rate) / 100);
 /** Rezekii's standard (owner, 1 Nov 2026): red from 20%, orange from 10%, judged from 5 items sold. */
-const tone = (rate: number, items?: number) => { const f = cancelFlag(rate, items); return f === "high" ? "red" : f === "watch" ? "amber" : undefined; };
+const tone = (rate: number, items?: number): "red" | "amber" | undefined => { const f = cancelFlag(rate, items); return f === "high" ? "red" : f === "watch" ? "amber" : undefined; };
 const COLS = ["Items", "Cancelled", "Rate"] as const;
 type Col = (typeof COLS)[number];
+type Rated = { items: number; cancelled: number; cancel: number };
+/** A rate only from 5 items sold (owner, 2 Nov 2026): below that the counts, "2 of 2", and no bar, so it doesn't read as the worst. */
+const judged = (r: Rated) => r.items >= CANCEL_MIN_ITEMS;
+const bar = (r: Rated) => ({ value: judged(r) ? r.cancel : 0, display: cancelText(r.cancel, r.items, r.cancelled), tone: tone(r.cancel, r.items) });
+function RateCell({ r }: { r: Rated }) {
+  const t = tone(r.cancel, r.items);
+  return <td className={t === "red" ? "cr2-red" : t === "amber" ? "cr2-orange-v" : undefined} style={{ fontWeight: 800 }}>{cancelText(r.cancel, r.items, r.cancelled)}</td>;
+}
 
 /**
  * Risk check (owner, 28 Oct 2026): the rating check and returns & risk in one place. Low-rated products in the showcase, then
@@ -29,7 +37,7 @@ type Col = (typeof COLS)[number];
  */
 export default function DataRisk() {
   const router = useRouter();
-  const [by, setBy] = useState<"By Video" | "By Product">("By Video");
+  const [by, setBy] = useState<"By Video" | "By LIVE" | "By Product">("By Video");
   const [openVideo, setOpenVideo] = useState<VideoRow | null>(null);
 
   // Signed in (owner, 31 Oct 2026): her real cancellations and returns from the last 30 days of orders.
@@ -44,13 +52,16 @@ export default function DataRisk() {
   const prods: PRow[] = real
     ? real.products.map((x) => ({ productId: x.productId, orders: x.orders, cancel: x.cancel, items: x.items ?? x.orders, cancelled: x.cancelItems ?? 0 }))
     : ANALYTICS.byProduct.map((x) => ({ productId: x.productId, orders: x.orders, cancel: x.cancel, items: x.orders, cancelled: cancelled(x.orders, x.cancel) }));
+  // By LIVE (owner, 2 Nov 2026): each LIVE from her orders tagged LIVE. Its time is its first order's, not when it started.
+  const lives = [...(real ? real.lives : LIVES)].map((l) => ({ id: l.id, date: l.date, time: l.time, cancel: l.cancel, ids: l.products.slice(0, 3).map(([id]) => id), items: ("items" in l ? l.items : undefined) ?? l.orders, cancelled: "cancelItems" in l ? l.cancelItems ?? 0 : cancelled(l.orders, l.cancel) }));
   const items = real ? real.totals.items ?? real.totals.orders : ANALYTICS.orders;
   const rate = real ? real.totals.cancelRate : ANALYTICS.cancelRate;
   const totalCancelled = real ? real.totals.cancelItems ?? real.totals.cancelled : cancelled(ANALYTICS.orders, ANALYTICS.cancelRate);
   // The table sorts by any column, highest or lowest first, remembered (owner, 1 Nov 2026).
   const [col, , dir, flipDir, setSort] = useSortPref<Col>("risk-table", COLS, "Cancelled");
-  const colVal = (r: { items: number; cancelled: number; cancel: number }) => (col === "Items" ? r.items : col === "Cancelled" ? r.cancelled : r.cancel);
-  const sorted = <T extends { items: number; cancelled: number; cancel: number }>(rows: T[]) => [...rows].sort((a, b) => (dir === "desc" ? colVal(b) - colVal(a) : colVal(a) - colVal(b)));
+  const colVal = (r: Rated) => (col === "Items" ? r.items : col === "Cancelled" ? r.cancelled : r.cancel);
+  // By Rate, rows under 5 items come last either way (owner, 2 Nov 2026).
+  const sorted = <T extends Rated>(rows: T[]) => [...rows].sort((a, b) => (col === "Rate" && judged(a) !== judged(b) ? (judged(a) ? -1 : 1) : dir === "desc" ? colVal(b) - colVal(a) : colVal(a) - colVal(b)));
   const refunds = real ? real.totals.returns : vids.reduce((s, v) => s + v.refunds, 0);
   const clawback = real ? real.totals.clawback : 51.5;
 
@@ -91,9 +102,9 @@ export default function DataRisk() {
           {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
           <img className="pv-open" src={worstP.img} alt="" onClick={() => router.push(productHref(worstP.id))} />
           <span>
-            <strong><Link href={productHref(worstP.id)} className="pv-open">{worstP.name}</Link></strong>
+            <strong><Link href={productHref(worstP.id)} className="pv-open" title={worstP.name}>{nameOf(worst.productId)}</Link></strong>
             <small>
-              {worst.cancelled} of {worst.items} items cancelled ({worst.cancel}%).{" "}
+              {worst.cancelled} of {worst.items} items cancelled{judged(worst) ? ` (${worst.cancel}%)` : ""}.{" "}
               {worstVid && worstVid.cancelled > 0 && <><b>{worstVid.cancelled}</b> from your {worstVid.date} video{real ? "" : <> &ldquo;{worstVid.title}&rdquo;</>}.</>}
             </small>
           </span>
@@ -103,21 +114,23 @@ export default function DataRisk() {
 
       <section className="v2-card">
         <div className="v2-card-h">
-          <h2 className="v2-h2">Cancel Rate <span title={CANCEL_TIP} className="v2-small">ⓘ</span></h2>
-          <span className="sb-bar"><Seg value={by} options={["By Video", "By Product"] as const} onChange={setBy} /><DirToggle dir={dir} onFlip={flipDir} /></span>
+          <h2 className="v2-h2">Cancel Rate <Tip label="About cancel rate" text={CANCEL_TIP} /></h2>
+          <span className="sb-bar"><Seg value={by} options={["By Video", "By LIVE", "By Product"] as const} onChange={setBy} /><DirToggle dir={dir} onFlip={flipDir} /></span>
         </div>
         <Lock what="cancel rates">
           {by === "By Video" ? (
-            <Bars key={`v${col}${dir}`} rows={sorted(vids).slice(0, 12).map((v) => ({ label: real ? `${v.date} · ${nameOf(v.productId)}` : v.title, value: v.cancel, display: `${v.cancel}%`, tone: tone(v.cancel, v.items), onPick: () => setOpenVideo(allVideos.find((x) => x.id === v.id) ?? null) }))} />
+            <Bars key={`v${col}${dir}`} rows={sorted(vids).slice(0, 12).map((v) => ({ label: real ? `${v.date} · ${nameOf(v.productId)}` : v.title, ...bar(v), onPick: () => setOpenVideo(allVideos.find((x) => x.id === v.id) ?? null) }))} />
+          ) : by === "By LIVE" ? (
+            <Bars key={`l${col}${dir}`} rows={sorted(lives).slice(0, 12).map((l) => ({ label: `${l.date} · First order ${l.time}`, ...bar(l) }))} />
           ) : (
-            <Bars key={`p${col}${dir}`} rows={sorted(prods).slice(0, 12).map((b) => ({ label: nameOf(b.productId), value: b.cancel, display: `${b.cancel}%`, tone: tone(b.cancel, b.items), href: productHref(b.productId) }))} />
+            <Bars key={`p${col}${dir}`} rows={sorted(prods).slice(0, 12).map((b) => ({ label: nameOf(b.productId), ...bar(b), href: productHref(b.productId) }))} />
           )}
         </Lock>
         <div className="v2-tablewrap">
           <table className="v2-table">
             <thead>
               <tr>
-                <th>{by === "By Video" ? "Video" : "Product"}</th>
+                <th>{by === "By Video" ? "Video" : by === "By LIVE" ? "LIVE" : "Product"}</th>
                 {COLS.map((c) => <th key={c}><SortHead label={c} k={c} value={col} dir={dir} onSort={setSort} /></th>)}
               </tr>
             </thead>
@@ -129,15 +142,30 @@ export default function DataRisk() {
                       <td style={{ minWidth: 180 }}><button type="button" className="rk-vopen" onClick={() => setOpenVideo(allVideos.find((x) => x.id === v.id) ?? null)}><Icon name="video" size={15} width={2.4} />{real ? nameOf(v.productId) : v.title}</button><br /><span className="v2-small">{v.date}</span></td>
                       <td className="v2-num">{v.items}</td>
                       <td className="v2-num">{v.cancelled}</td>
-                      <td className={tone(v.cancel, v.items) === "red" ? "cr2-red" : tone(v.cancel, v.items) === "amber" ? "cr2-orange-v" : undefined} style={{ fontWeight: 800 }}>{v.cancel}%</td>
+                      <RateCell r={v} />
+                    </tr>
+                  ))
+                : by === "By LIVE"
+                ? sorted(lives).map((l) => (
+                    <tr key={l.id}>
+                      {/* Like Performance › By LIVE: the LIVE mark, its day, and the products it sold. */}
+                      <td style={{ minWidth: 180 }}>
+                        <b><span className="lv-mark sm" aria-hidden="true">LIVE</span>{l.date}</b><br />
+                        <span className="v2-small">First order {l.time}</span>{" "}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <span className="lv-thumbs">{l.ids.map((id) => <img key={id} src={info(id).img} alt="" />)}</span>
+                      </td>
+                      <td className="v2-num">{l.items}</td>
+                      <td className="v2-num">{l.cancelled}</td>
+                      <RateCell r={l} />
                     </tr>
                   ))
                 : sorted(prods).map((b) => (
                     <tr key={b.productId}>
-                      <td style={{ minWidth: 180 }}><Link href={productHref(b.productId)} className="pv-open">{info(b.productId).name}</Link></td>
+                      <td style={{ minWidth: 180 }}><Link href={productHref(b.productId)} className="pv-open" title={info(b.productId).name}>{nameOf(b.productId)}</Link></td>
                       <td className="v2-num">{b.items}</td>
                       <td className="v2-num">{b.cancelled}</td>
-                      <td className={tone(b.cancel, b.items) === "red" ? "cr2-red" : tone(b.cancel, b.items) === "amber" ? "cr2-orange-v" : undefined} style={{ fontWeight: 800 }}>{b.cancel}%</td>
+                      <RateCell r={b} />
                     </tr>
                   ))}
             </tbody>
