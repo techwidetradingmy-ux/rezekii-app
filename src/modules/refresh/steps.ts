@@ -17,8 +17,7 @@ import { refreshVideos } from "../admin/videos.ts";
 import { refreshCommunity } from "../community/numbers.ts";
 import { approvedCreatorToken } from "../creator-accounts/access.ts";
 import { queuedPhotos } from "../photos/queue.ts";
-import { activeCreators, linkedCreatorsSeen, syncCreatorOrders } from "../sales/orders.ts";
-import { readTimes } from "../creator-accounts/fresh.ts";
+import { activeCreators, syncCreatorOrders } from "../sales/orders.ts";
 import { buildRankings, rankings as builtRankings } from "../rankings/store.ts";
 import { productSums } from "../admin/tap.ts";
 import { PHOTO_DAYS, freshUrl, saveCreatorPhoto, savedPhotos } from "../photos/store.ts";
@@ -213,18 +212,13 @@ async function sold(t: TaskRow, { deadline }: Ctx): Promise<StepResult> {
 
 /**
  * Each linked creator's own affiliate orders, creator by creator, the most recently active first, carrying on from `cursor` when
- * time runs out. Creators away for 14 days are read once a week (owner, 2 Nov 2026); their pages read them fresh when they're back.
+ * time runs out. Creators away for 14 days are left alone (owner, 2 Nov 2026); their orders are read when they sign back in.
  */
 async function orders(t: TaskRow, { deadline }: Ctx): Promise<StepResult> {
-  const list = await linkedCreatorsSeen();
-  const ids = list.map((c) => c.id);
+  const ids = await activeCreators();
   let count = 0;
   for (let i = t.cursor ? Number(t.cursor) : 0; i < ids.length; i++) {
     if (Date.now() > deadline - 8000) return { count, more: true, cursor: String(i) };
-    if (list[i].away) {
-      const read = (await readTimes(ids[i]).catch(() => null))?.orders;
-      if (read && Date.now() - Date.parse(read) < 7 * 86_400_000) continue;
-    }
     const token = await approvedCreatorToken(ids[i]);
     if (!token) continue;
     try {
@@ -479,8 +473,10 @@ export const AGENCY_DAYS = 14;
 async function agency(t: TaskRow, { sessions }: Ctx): Promise<StepResult> {
   const userId = (t.params as { userId?: string }).userId;
   if (!userId) {
-    const due = await tagsDue(AGENCY_DAYS, `${mytDay(Date.now()).slice(0, 7)}-01T00:00:00+08:00`);
-    return { count: due.length, followUps: due.map((c) => tagTask(c.user_id)) };
+    // Creators away for 14 days are left alone (owner, 2 Nov 2026), so their checks don't use TikTok's shared limit.
+    const [due, active] = await Promise.all([tagsDue(AGENCY_DAYS, `${mytDay(Date.now()).slice(0, 7)}-01T00:00:00+08:00`), activeCreators().then((a) => new Set(a))]);
+    const todo = due.filter((c) => active.has(c.user_id));
+    return { count: todo.length, followUps: todo.map((c) => tagTask(c.user_id)) };
   }
   const username = await linkedUsername(userId);
   if (!username) return { count: 0 };

@@ -186,8 +186,9 @@ export async function firstOrderDay(userId: string): Promise<string | null> {
 }
 
 /**
- * A creator who hasn't opened Rezekii for this many days is away: the nightly refresh skips her own lists and reads her orders
- * once a week. Her pages read everything fresh when she's back (owner, 2 Nov 2026).
+ * A creator who hasn't opened Rezekii for this many days is away: the nightly refresh leaves her account alone, so it uses none
+ * of TikTok's limit, and her TikTok Shop sign-in isn't renewed (it lasts about a year). Everything is read again when she signs
+ * back in (owner, 2 Nov 2026).
  */
 export const AWAY_DAYS = 14;
 
@@ -216,5 +217,5 @@ export async function linkedCreatorsSeen(): Promise<{ id: string; away: boolean 
 }
 
 export const linkedCreators = async (): Promise<string[]> => (await linkedCreatorsSeen()).map((c) => c.id);
-/** Linked creators who used Rezekii in the last 14 days, the most recent first: their own lists are made ahead each night. */
+/** Linked creators who used Rezekii in the last 14 days, the most recent first: the ones the nightly refresh reads. */
 export const activeCreators = async (): Promise<string[]> => (await linkedCreatorsSeen()).filter((c) => !c.away).map((c) => c.id);
