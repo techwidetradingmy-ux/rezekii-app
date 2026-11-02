@@ -9,14 +9,18 @@ import { CREATOR, SOCIALS } from "@/lib/mock";
 import { AddressSheet } from "@/components/account/address-fields";
 import { addressOk, useAddress } from "@/lib/address";
 import { loadProfile } from "@/lib/live-rewards";
+import { useLang, useT } from "@/lib/i18n/client";
+import { dateLocale, type Lang, type T } from "@/lib/i18n/lang";
 
 type App = "TikTok" | "Instagram" | "Facebook" | "Threads" | "rights";
 type Item = { key: string; app: App; label: string; unit: string };
 type Rate = { on: boolean; price: string; days?: number };
 type Pack = { id: number; name: string; qty: Record<string, number>; price: string };
 type Show = "À la carte" | "Packages" | "Both";
+/** What sellers see, in English (also what's saved); translated where it's shown. */
+const SHOWS: Show[] = ["À la carte", "Packages", "Both"];
 
-/** What she can sell, per app, plus usage rights for ads (owner, 28 Oct 2026). */
+/** What she can sell, per app, plus usage rights for ads (owner, 28 Oct 2026). In English; translated where they're shown. */
 const ITEMS: Item[] = [
   { key: "tt-video", app: "TikTok", label: "TikTok video", unit: "per video" },
   { key: "tt-live", app: "TikTok", label: "TikTok LIVE", unit: "per hour" },
@@ -34,9 +38,10 @@ const SAMPLE: Record<string, string> = { "tt-video": "350", "tt-live": "250", "i
 /** TikTok sellers usually buy a paid review with at least 180 days of ad rights (owner, 29 Oct 2026), so that's the default. */
 const RIGHTS_TIP = 180;
 const rm = (n: number) => `RM ${n.toLocaleString("en-MY")}`;
-/** The quote on a shared card holds for 7 days from today (owner, 29 Oct 2026). Preview date: 28 Oct 2026. */
-const QUOTE = { from: "28 Oct 2026", until: "4 Nov 2026", days: 7 };
-const untilDay = () => new Date(Date.now() + QUOTE.days * 86_400_000).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kuala_Lumpur" });
+/** The quote on a shared card holds for 7 days from today (owner, 29 Oct 2026). Preview date: 28 Oct 2026, so until 4 Nov 2026. */
+const QUOTE = { until: "2026-11-04T00:00:00+08:00", days: 7 };
+/** The quote's last day in the reader's language: 7 days from today, or 4 Nov 2026 in the preview. */
+const untilDay = (lang: Lang, live: boolean) => new Date(live ? Date.now() + QUOTE.days * 86_400_000 : Date.parse(QUOTE.until)).toLocaleDateString(dateLocale(lang), { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kuala_Lumpur" });
 type Account = { name: "TikTok" | "Instagram" | "Facebook" | "Threads"; handle: string };
 const ACCOUNTS = SOCIALS.filter((s) => s.linked) as Account[];
 const LEVEL: Record<string, string> = { bronze: "Bronze", silver: "Silver", gold: "Gold" };
@@ -44,10 +49,17 @@ const LEVEL: Record<string, string> = { bronze: "Bronze", silver: "Silver", gold
 type Who = { whatsapp: string; level: string; accounts: Account[]; link: string; linkLabel: string };
 const num = (s: string) => Math.round(Number(s) || 0);
 // In a package, usage rights are counted in days; everything else in pieces.
-const unitOf = (it: Item, q: number) => (it.key === "rights" ? `${q} days` : `${q} ${it.unit.replace("per ", "")}${q === 1 ? "" : "s"}`);
+function unitOf(t: T, it: Item, n: number) {
+  if (it.key === "rights") return t("{n} days", { n });
+  if (it.unit === "per hour") return n === 1 ? t("{n} hour", { n }) : t("{n} hours", { n });
+  if (it.unit === "per Reel") return n === 1 ? t("{n} Reel", { n }) : t("{n} Reels", { n });
+  if (it.unit === "per Story") return n === 1 ? t("{n} Story", { n }) : t("{n} Stories", { n });
+  if (it.unit === "per post") return n === 1 ? t("{n} post", { n }) : t("{n} posts", { n });
+  return n === 1 ? t("{n} video", { n }) : t("{n} videos", { n });
+}
 /**
  * Suggested packages (owner, 29 Oct 2026: always suggest packages, they're better value): each costs less than the same items
- * bought one by one. These are starting points she edits, not market rates.
+ * bought one by one. These are starting points she edits, not market rates. Names in English; filled in in her language.
  */
 const SUGGEST: { name: string; qty: Record<string, number>; off: number }[] = [
   { name: "Growth", qty: { "tt-video": 2, "tt-live": 1, rights: RIGHTS_TIP }, off: 0.2 },
@@ -59,6 +71,7 @@ const SUGGEST: { name: string; qty: Record<string, number>; off: number }[] = [
  * sits on top of the page, so the card it's in can't clip it; it closes on a tap outside, Escape or scroll.
  */
 function DaysPick({ value, onChange, none = false, disabled = false }: { value: number; onChange: (d: number) => void; none?: boolean; disabled?: boolean }) {
+  const t = useT();
   const btn = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   const [at, setAt] = useState<{ top?: number; bottom?: number; right: number } | null>(null);
@@ -86,14 +99,14 @@ function DaysPick({ value, onChange, none = false, disabled = false }: { value: 
   return (
     <>
       <button ref={btn} type="button" className="rc-dayspick" disabled={disabled} aria-haspopup="listbox" aria-expanded={!!at} onClick={() => (at ? setAt(null) : open())}>
-        <span>{value ? `${value} days` : "None"}</span><Icon name="updown" size={15} width={2.4} />
+        <span>{value ? t("{n} days", { n: value }) : t("None")}</span><Icon name="updown" size={15} width={2.4} />
       </button>
       {at && (
         <Portal>
-          <div ref={menu} className="rc-dpmenu" role="listbox" aria-label="Ad rights length" style={at}>
+          <div ref={menu} className="rc-dpmenu" role="listbox" aria-label={t("Ad rights length")} style={at}>
             {[...(none ? [0] : []), ...DAYS].map((d) => (
               <button key={d} type="button" role="option" aria-selected={value === d} className={value === d ? "on" : undefined} onClick={() => { onChange(d); setAt(null); }}>
-                <span>{d ? `${d} days` : "None"}</span>{d === RIGHTS_TIP && <i className="rc-rec">Best</i>}{value === d && <Icon name="check" size={14} />}
+                <span>{d ? t("{n} days", { n: d }) : t("None")}</span>{d === RIGHTS_TIP && <i className="rc-rec">{t("Best")}</i>}{value === d && <Icon name="check" size={14} />}
               </button>
             ))}
           </div>
@@ -112,6 +125,8 @@ function Icn({ app }: { app: App }) {
  * choice of what sellers see. Prices can change any time; sellers see the card when they invite her.
  */
 export function RateCard() {
+  const t = useT();
+  const lang = useLang();
   const you = useWho();
   const { toast, live: signedIn, me } = useDemo();
   const [rates, setRates] = useState<Record<string, Rate>>(() => Object.fromEntries(ITEMS.map((it) => [it.key, { on: ["tt-video", "tt-live", "ig-reel", "fb-reel", "rights"].includes(it.key), price: "", ...(it.key === "rights" ? { days: RIGHTS_TIP } : {}) }])));
@@ -163,11 +178,11 @@ export function RateCard() {
   const inPack = (p: Pack) => live.filter((it) => (p.qty[it.key] ?? 0) > 0);
 
   const problems = [
-    ...live.filter((it) => num(rates[it.key].price) < 1).map((it) => `${it.label}: enter a price, or switch it off.`),
+    ...live.filter((it) => num(rates[it.key].price) < 1).map((it) => t("{item}: enter a price, or switch it off.", { item: t(it.label) })),
     ...packs.flatMap((p, n) => [
-      ...(!p.name.trim() ? [`Package ${n + 1}: give it a name.`] : []),
-      ...(inPack(p).length < 2 ? [`Package ${n + 1}: add at least 2 things.`] : []),
-      ...(num(p.price) < 1 ? [`Package ${n + 1}: enter a price.`] : []),
+      ...(!p.name.trim() ? [t("Package {n}: give it a name.", { n: n + 1 })] : []),
+      ...(inPack(p).length < 2 ? [t("Package {n}: add at least 2 things.", { n: n + 1 })] : []),
+      ...(num(p.price) < 1 ? [t("Package {n}: enter a price.", { n: n + 1 })] : []),
     ]),
   ];
   const shown = tried ? problems : [];
@@ -176,7 +191,7 @@ export function RateCard() {
     if (packs.length >= MAX_PACKS) return;
     const id = Date.now();
     // Starts with one of everything she sells, plus 30 days of usage rights if she sells them.
-    setPacks((ps) => [...ps, { id, name: ps.length ? "" : "All-platform launch", qty: Object.fromEntries(live.map((it) => [it.key, it.key === "tt-live" ? 0 : it.key === "rights" ? RIGHTS_TIP : 1])), price: "" }]);
+    setPacks((ps) => [...ps, { id, name: ps.length ? "" : t("All-platform launch"), qty: Object.fromEntries(live.map((it) => [it.key, it.key === "tt-live" ? 0 : it.key === "rights" ? RIGHTS_TIP : 1])), price: "" }]);
   }
   /** Fills in sample prices and two packages that each cost less than buying the items one by one. */
   function suggest() {
@@ -184,31 +199,31 @@ export function RateCard() {
     setRates(next);
     setPacks(SUGGEST.map((g, i) => {
       const sum = Object.entries(g.qty).reduce((a, [k, q]) => a + worth(k, q, next), 0);
-      return { id: Date.now() + i, name: g.name, qty: g.qty, price: String(Math.round((sum * (1 - g.off)) / 10) * 10) };
+      return { id: Date.now() + i, name: t(g.name), qty: g.qty, price: String(Math.round((sum * (1 - g.off)) / 10) * 10) };
     }));
-    toast("Example prices and 2 packages filled in. Change anything you like.");
+    toast(t("Example prices and 2 packages filled in. Change anything you like."));
   }
   const ready = packs.filter((p) => p.name.trim() && num(p.price) > 0);
   const priced = live.filter((it) => num(rates[it.key].price) > 0);
   // The package with the biggest saving gets "Best value".
   const best = ready.reduce<Pack | null>((b, p) => (!b || (sumOf(p) - num(p.price)) / Math.max(1, sumOf(p)) > (sumOf(b) - num(b.price)) / Math.max(1, sumOf(b)) ? p : b), null);
   // LIVE is sold by the hour (owner, 29 Oct 2026), so packages say "2 hours of TikTok LIVE".
-  const packLine = (p: Pack) => inPack(p).map((it) => (it.key === "rights" ? `${p.qty.rights} days of ad rights` : it.key === "tt-live" ? `${p.qty[it.key]} hour${p.qty[it.key] === 1 ? "" : "s"} of TikTok LIVE` : `${p.qty[it.key]} × ${it.label}`)).join(" · ");
-  const rightsFor = (it: Item) => (it.key === "rights" ? `for ${rates.rights.days ?? 30} days` : it.unit);
+  const packLine = (p: Pack) => inPack(p).map((it) => (it.key === "rights" ? t("{n} days of ad rights", { n: p.qty.rights }) : it.key === "tt-live" ? (p.qty[it.key] === 1 ? t("{n} hour of TikTok LIVE", { n: 1 }) : t("{n} hours of TikTok LIVE", { n: p.qty[it.key] })) : `${p.qty[it.key]} × ${t(it.label)}`)).join(" · ");
+  const rightsFor = (it: Item) => (it.key === "rights" ? t("for {n} days", { n: rates.rights.days ?? 30 }) : t(it.unit));
   function save(checked = false) {
     setTried(true);
     if (problems.length) return;
     if (!checked && !addressOk(address)) return setNeedAddr("save");
     setTried(false);
-    if (!signedIn) return toast("Rate card saved");
+    if (!signedIn) return toast(t("Rate card saved"));
     setBusy(true);
     fetch("/api/v2/rate-card", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ rates, packs, show }) })
-      .then((r) => toast(r.ok ? "Rate card saved" : "Didn't save. Please try again."))
-      .catch(() => toast("Didn't save. Please try again."))
+      .then((r) => toast(r.ok ? t("Rate card saved") : t("Didn't save. Please try again.")))
+      .catch(() => toast(t("Didn't save. Please try again.")))
       .finally(() => setBusy(false));
   }
   const share = (checked = false) => {
-    if (!(ready.length || priced.length)) return toast("Add your prices first");
+    if (!(ready.length || priced.length)) return toast(t("Add your prices first"));
     if (!checked && !addressOk(address)) return setNeedAddr("share");
     setSharing(true);
   };
@@ -216,13 +231,13 @@ export function RateCard() {
   return (
     <div className="v2-stack rc-page" style={{ gap: 18 }}>
       <div className="acc-head">
-        <span className="v2-small">Your prices for paid videos. Sellers see them when inviting you.</span>
+        <span className="v2-small">{t("Your prices for paid videos. Sellers see them when inviting you.")}</span>
         {/* "Example Pricing", not suggested prices (owner, 3 Nov 2026). */}
-        <button type="button" className="btn-outline v2-btn-sm" onClick={suggest}>✦ Example Pricing</button>
+        <button type="button" className="btn-outline v2-btn-sm" onClick={suggest}>✦ {t("Example Pricing")}</button>
       </div>
 
       <section className="cr2-group">
-        <h2>À La Carte</h2>
+        <h2>{t("À La Carte")}</h2>
         <div className="cr2-cells">
           {ITEMS.map((it) => {
             const r = rates[it.key];
@@ -230,17 +245,17 @@ export function RateCard() {
             return (
               <div key={it.key} className={`cr2-cell rc-row${r.on ? "" : " off"}`}>
                 <Icn app={it.app} />
-                <span className="rc-lbl">{it.label}</span>
+                <span className="rc-lbl">{t(it.label)}</span>
                 <span className="rc-price">
                   <span className={`rc-input${bad ? " bad" : ""}`}>
                     <i>RM</i>
-                    <input inputMode="numeric" disabled={!r.on} value={r.price} placeholder="0" aria-label={`${it.label} price in RM`} onChange={(e) => setRate(it.key, { price: e.target.value.replace(/[^\d]/g, "").slice(0, 6) })} />
+                    <input inputMode="numeric" disabled={!r.on} value={r.price} placeholder="0" aria-label={t("{item} price in RM", { item: t(it.label) })} onChange={(e) => setRate(it.key, { price: e.target.value.replace(/[^\d]/g, "").slice(0, 6) })} />
                   </span>
                   {it.key === "rights" ? (
                     <DaysPick value={r.days ?? RIGHTS_TIP} disabled={!r.on} onChange={(d) => setRate("rights", { days: d })} />
-                  ) : <small>{it.unit}</small>}
+                  ) : <small>{t(it.unit)}</small>}
                 </span>
-                <button type="button" role="switch" aria-checked={r.on} aria-label={`Offer ${it.label}`} className={`np-switch ${r.on ? "on" : ""}`} onClick={() => setRate(it.key, { on: !r.on })}><span /></button>
+                <button type="button" role="switch" aria-checked={r.on} aria-label={t("Offer {item}", { item: t(it.label) })} className={`np-switch ${r.on ? "on" : ""}`} onClick={() => setRate(it.key, { on: !r.on })}><span /></button>
               </div>
             );
           })}
@@ -248,7 +263,7 @@ export function RateCard() {
       </section>
 
       <section className="cr2-group">
-        <h2>Packages <span className="rc-count">{packs.length} of {MAX_PACKS}</span> <Tip label="Why add ad rights" text={`TikTok sellers usually buy a video with at least ${RIGHTS_TIP} days of ad rights, so adding it gets you more deals. The seller may run ads on your video, and you still earn commission on every sale.`} /></h2>
+        <h2>{t("Packages")} <span className="rc-count">{t("{a} of {b}", { a: packs.length, b: MAX_PACKS })}</span> <Tip label={t("Why add ad rights")} text={t("TikTok sellers usually buy a video with at least {n} days of ad rights, so adding it gets you more deals. The seller may run ads on your video, and you still earn commission on every sale.", { n: RIGHTS_TIP })} /></h2>
         {packs.map((p, n) => {
           const sum = sumOf(p);
           const price = num(p.price);
@@ -257,8 +272,8 @@ export function RateCard() {
             <div key={p.id} className="cr2-cells rc-pack">
               <div className="cr2-cell stack">
                 <span className="rc-pack-h">
-                  <input className="np-input" value={p.name} placeholder={`Package ${n + 1} name`} aria-label={`Package ${n + 1} name`} maxLength={40} onChange={(e) => setPack(p.id, { name: e.target.value })} />
-                  <button type="button" className="sq-ghost v2-btn-sm" onClick={() => setPacks((ps) => ps.filter((x) => x.id !== p.id))}>Remove</button>
+                  <input className="np-input" value={p.name} placeholder={t("Package {n} name", { n: n + 1 })} aria-label={t("Package {n} name", { n: n + 1 })} maxLength={40} onChange={(e) => setPack(p.id, { name: e.target.value })} />
+                  <button type="button" className="sq-ghost v2-btn-sm" onClick={() => setPacks((ps) => ps.filter((x) => x.id !== p.id))}>{t("Remove")}</button>
                 </span>
               </div>
               {live.map((it) => {
@@ -266,57 +281,57 @@ export function RateCard() {
                 return (
                   <div key={it.key} className={`cr2-cell rc-row${q ? "" : " off"}`}>
                     <Icn app={it.app} />
-                    <span className="rc-lbl">{it.label}<small>{q ? unitOf(it, q) : "Not included"}</small></span>
+                    <span className="rc-lbl">{t(it.label)}<small>{q ? unitOf(t, it, q) : t("Not included")}</small></span>
                     {it.key === "rights" ? (
                       <DaysPick value={q} none onChange={(d) => setPack(p.id, { qty: { ...p.qty, rights: d } })} />
                     ) : (
-                      <span className="rc-step" role="group" aria-label={`${it.label} in this package`}>
-                        <button type="button" aria-label={`Fewer ${it.label}`} onClick={() => setPack(p.id, { qty: { ...p.qty, [it.key]: Math.max(0, q - 1) } })}>−</button>
+                      <span className="rc-step" role="group" aria-label={t("{item} in this package", { item: t(it.label) })}>
+                        <button type="button" aria-label={t("Fewer {item}", { item: t(it.label) })} onClick={() => setPack(p.id, { qty: { ...p.qty, [it.key]: Math.max(0, q - 1) } })}>−</button>
                         <b>{q}</b>
-                        <button type="button" aria-label={`More ${it.label}`} onClick={() => setPack(p.id, { qty: { ...p.qty, [it.key]: Math.min(10, q + 1) } })}>+</button>
+                        <button type="button" aria-label={t("More {item}", { item: t(it.label) })} onClick={() => setPack(p.id, { qty: { ...p.qty, [it.key]: Math.min(10, q + 1) } })}>+</button>
                       </span>
                     )}
                   </div>
                 );
               })}
               <div className="cr2-cell rc-total">
-                <span className="rc-lbl">Package price<small>{sum ? `À la carte: ${rm(sum)}` : "Add prices above"}</small></span>
+                <span className="rc-lbl">{t("Package price")}<small>{sum ? t("À la carte: {price}", { price: rm(sum) }) : t("Add prices above")}</small></span>
                 <span className="rc-price">
-                  <span className={`rc-input${tried && price < 1 ? " bad" : ""}`}><i>RM</i><input inputMode="numeric" value={p.price} placeholder="0" aria-label={`Package ${n + 1} price in RM`} onChange={(e) => setPack(p.id, { price: e.target.value.replace(/[^\d]/g, "").slice(0, 6) })} /></span>
+                  <span className={`rc-input${tried && price < 1 ? " bad" : ""}`}><i>RM</i><input inputMode="numeric" value={p.price} placeholder="0" aria-label={t("Package {n} price in RM", { n: n + 1 })} onChange={(e) => setPack(p.id, { price: e.target.value.replace(/[^\d]/g, "").slice(0, 6) })} /></span>
                 </span>
-                {price > 0 && sum > 0 && (save > 0 ? <span className="rc-save">Save {rm(save)}</span> : <span className="rc-save more">{save === 0 ? "Same as à la carte" : `${rm(-save)} more than à la carte`}</span>)}
+                {price > 0 && sum > 0 && (save > 0 ? <span className="rc-save">{t("Save {price}", { price: rm(save) })}</span> : <span className="rc-save more">{save === 0 ? t("Same as à la carte") : t("{price} more than à la carte", { price: rm(-save) })}</span>)}
               </div>
             </div>
           );
         })}
         {packs.length < MAX_PACKS && (
           <button type="button" className="rc-add" onClick={addPack} disabled={live.length < 2}>
-            <Icon name="plus" size={16} /> {live.length < 2 ? "Turn on 2+ items to make a package" : "Add a package"}
+            <Icon name="plus" size={16} /> {live.length < 2 ? t("Turn on 2+ items to make a package") : t("Add a package")}
           </button>
         )}
-        <p>Bundle apps and ad rights into one price.</p>
+        <p>{t("Bundle apps and ad rights into one price.")}</p>
       </section>
 
       <section className="cr2-group">
-        <h2>What Sellers See</h2>
+        <h2>{t("What Sellers See")}</h2>
         <div className="cr2-cells">
           <div className="cr2-cell stack">
-            <Seg value={show} options={["À la carte", "Packages", "Both"] as const} onChange={setShow} />
+            <Seg value={t(show)} options={SHOWS.map((x) => t(x))} onChange={(v) => setShow(SHOWS.find((x) => t(x) === v) ?? "Both")} />
           </div>
           <div className="cr2-cell stack rc-preview">
-            <span className="rc-prev-h"><Icon name="eye" size={14} /> Preview</span>
+            <span className="rc-prev-h"><Icon name="eye" size={14} /> {t("Preview")}</span>
             {show !== "À la carte" && ready.map((p) => (
               <span key={p.id} className="rc-prev-pack">
-                <b>{p.name}{p === best && sumOf(p) > num(p.price) && <i className="rc-best">Best value</i>}</b>
+                <b>{p.name}{p === best && sumOf(p) > num(p.price) && <i className="rc-best">{t("Best value")}</i>}</b>
                 <small>{packLine(p)}</small>
-                <span>{rm(num(p.price))}{sumOf(p) > num(p.price) && <em>Save {rm(sumOf(p) - num(p.price))}</em>}</span>
+                <span>{rm(num(p.price))}{sumOf(p) > num(p.price) && <em>{t("Save {price}", { price: rm(sumOf(p) - num(p.price)) })}</em>}</span>
               </span>
             ))}
             {show !== "Packages" && priced.map((it) => (
-              <span key={it.key} className="rc-prev-row"><Icn app={it.app} /><span>{it.label}</span><b>{rm(num(rates[it.key].price))}</b><small>{rightsFor(it)}</small></span>
+              <span key={it.key} className="rc-prev-row"><Icn app={it.app} /><span>{t(it.label)}</span><b>{rm(num(rates[it.key].price))}</b><small>{rightsFor(it)}</small></span>
             ))}
             {((show !== "Packages" && !live.some((it) => num(rates[it.key].price) > 0)) && (show !== "À la carte" ? !packs.some((p) => p.name.trim() && num(p.price) > 0) : true)) && (
-              <span className="v2-small">Add prices to preview.</span>
+              <span className="v2-small">{t("Add prices to preview.")}</span>
             )}
           </div>
         </div>
@@ -324,15 +339,15 @@ export function RateCard() {
 
       {shown.length > 0 && (
         <div className="rc-fix" role="alert">
-          <b>{shown.length === 1 ? "1 thing to fix" : `${shown.length} things to fix`}</b>
-          {shown.map((t) => <span key={t} className="rc-err">{t}</span>)}
+          <b>{shown.length === 1 ? t("{n} thing to fix", { n: 1 }) : t("{n} things to fix", { n: shown.length })}</b>
+          {shown.map((x) => <span key={x} className="rc-err">{x}</span>)}
         </div>
       )}
       <div className="rc-acts">
-        <button type="button" className="np-btn rc-save-btn" disabled={busy} onClick={() => save()}>{busy ? <span className="sl-spin" /> : "Save Rate Card"}</button>
-        <button type="button" className="btn-outline rc-save-btn" onClick={() => share()}><Icon name="share" size={17} /> Share Rate Card</button>
+        <button type="button" className="np-btn rc-save-btn" disabled={busy} onClick={() => save()}>{busy ? <span className="sl-spin" /> : t("Save Rate Card")}</button>
+        <button type="button" className="btn-outline rc-save-btn" onClick={() => share()}><Icon name="share" size={17} /> {t("Share Rate Card")}</button>
       </div>
-      {!addressOk(address) && <p className="v2-small" style={{ margin: 0 }}>You&apos;ll add a delivery address before saving. Sellers send products for paid reviews to it.</p>}
+      {!addressOk(address) && <p className="v2-small" style={{ margin: 0 }}>{t("You'll add a delivery address before saving. Sellers send products for paid reviews to it.")}</p>}
       {needAddr && (
         <AddressSheet
           onClose={() => setNeedAddr(null)}
@@ -341,26 +356,26 @@ export function RateCard() {
       )}
       {sharing && (
         <ShareSheet
-          title="Share your rate card"
+          title={t("Share your rate card")}
           onClose={() => setSharing(false)}
           big=""
-          label="Rate card"
+          label={t("Rate card")}
           lines={[]}
-          caption={signedIn ? `My rate card for paid videos.${who.whatsapp ? ` WhatsApp me: ${who.whatsapp}.` : ""} ${who.linkLabel}` : `My rate card for TikTok, Instagram and Facebook videos. Book me on Rezekii: ${who.linkLabel}`}
+          caption={signedIn ? (who.whatsapp ? t("My rate card for paid videos. WhatsApp me: {whatsapp}. {link}", { whatsapp: who.whatsapp, link: who.linkLabel }) : t("My rate card for paid videos. {link}", { link: who.linkLabel })) : t("My rate card for TikTok, Instagram and Facebook videos. Book me on Rezekii: {link}", { link: who.linkLabel })}
           card={<RateShare packs={show === "À la carte" ? [] : ready} best={best} items={show === "Packages" ? [] : priced} line={packLine} price={(it) => rm(num(rates[it.key].price))} unit={rightsFor} showOn={showOn} who={who} live={signedIn} />}
           rate={{
-            label: `${who.level} creator on Rezekii`,
+            label: t("{level} creator on Rezekii", { level: t(who.level) }),
             lines: [
               ...(show === "À la carte" ? [] : ready).slice(0, 3).map((p) => `${p.name}|RM ${Math.round(Number(p.price)).toLocaleString("en-MY")}`),
-              ...(show === "Packages" ? [] : priced).map((it) => `${it.label} ${rightsFor(it)}|${rm(num(rates[it.key].price))}`),
+              ...(show === "Packages" ? [] : priced).map((it) => `${t(it.label)} ${rightsFor(it)}|${rm(num(rates[it.key].price))}`),
             ].slice(0, 7),
             contacts: [...(showOn.whatsapp && who.whatsapp ? [`WhatsApp ${who.whatsapp}`] : []), ...(showOn.email && you.email ? [you.email] : [])],
-            valid: `Quote valid ${QUOTE.days} days · until ${signedIn ? untilDay() : QUOTE.until}`,
+            valid: t("Quote valid {n} days · until {date}", { n: QUOTE.days, date: untilDay(lang, signedIn) }),
           }}
           extra={
-            <div className="rcs-pick" role="group" aria-label="Show on the card">
-              <b>Show on the card</b>
-              {([["whatsapp", "WhatsApp", who.whatsapp || "Not in your profile"], ["email", "Email", you.email], ["accounts", "Social accounts", who.accounts.map((a) => a.name).join(", ") || "None connected"]] as const).map(([k, l, v]) => (
+            <div className="rcs-pick" role="group" aria-label={t("Show on the card")}>
+              <b>{t("Show on the card")}</b>
+              {([["whatsapp", "WhatsApp", who.whatsapp || t("Not in your profile")], ["email", t("Email"), you.email], ["accounts", t("Social accounts"), who.accounts.map((a) => a.name).join(", ") || t("None connected")]] as const).map(([k, l, v]) => (
                 <label key={k}><input type="checkbox" checked={showOn[k]} onChange={(e) => setShowOn((s) => ({ ...s, [k]: e.target.checked }))} /><span><b>{l}</b><small>{v}</small></span></label>
               ))}
             </div>
@@ -376,36 +391,38 @@ export function RateCard() {
  * come first; prices only, never sales.
  */
 function RateShare({ packs, best, items, line, price, unit, showOn, who, live }: { packs: Pack[]; best: Pack | null; items: Item[]; line: (p: Pack) => string; price: (it: Item) => string; unit: (it: Item) => string; showOn: { whatsapp: boolean; email: boolean; accounts: boolean }; who: Who; live: boolean }) {
+  const t = useT();
+  const lang = useLang();
   const you = useWho();
   const wa = showOn.whatsapp && !!who.whatsapp;
   const contacts = (wa ? 1 : 0) + (showOn.email ? 1 : 0);
   return (
-    <div className="rcs" role="img" aria-label={`Rate card for ${you.handle}`}>
+    <div className="rcs" role="img" aria-label={t("Rate card for {handle}", { handle: you.handle })}>
       <span className="rcs-band">
       <span className="rcs-head">
         <span className="rcs-brand">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/master-logo-transparent.png" alt="" />Rezekii
         </span>
-        <span className="rcs-tag">Rate card</span>
+        <span className="rcs-tag">{t("Rate card")}</span>
       </span>
       <span className="rcs-me">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={you.photo} alt="" />
-        <span><b>{you.handle}</b><small>{who.level} creator on Rezekii</small></span>
+        <span><b>{you.handle}</b><small>{t("{level} creator on Rezekii", { level: t(who.level) })}</small></span>
       </span>
       {showOn.accounts && who.accounts.length > 0 && <span className="rcs-socials">{who.accounts.map((a) => <PlatformIcon key={a.name} name={a.name} size={18} />)}</span>}
       </span>
       {packs.slice(0, 3).map((p) => (
         <span key={p.id} className={`rcs-pack${p === best ? " best" : ""}`}>
-          {p === best && <i>Best value</i>}
+          {p === best && <i>{t("Best value")}</i>}
           <span className="rcs-pack-h"><b>{p.name}</b><b>RM {Math.round(Number(p.price)).toLocaleString("en-MY")}</b></span>
           <small>{line(p)}</small>
         </span>
       ))}
       {items.length > 0 && (
         <span className="rcs-list">
-          {items.slice(0, (packs.length ? 4 : 7) - contacts).map((it) => <span key={it.key}><span>{it.label}<small> {unit(it)}</small></span><b>{price(it)}</b></span>)}
+          {items.slice(0, (packs.length ? 4 : 7) - contacts).map((it) => <span key={it.key}><span>{t(it.label)}<small> {unit(it)}</small></span><b>{price(it)}</b></span>)}
         </span>
       )}
       {contacts > 0 && (
@@ -414,9 +431,9 @@ function RateShare({ packs, best, items, line, price, unit, showOn, who, live }:
           {showOn.email && <span><Icon name="inbox" size={12} />{you.email}</span>}
         </span>
       )}
-      <span className="rcs-valid">Quote valid {QUOTE.days} days · until {live ? untilDay() : QUOTE.until}</span>
+      <span className="rcs-valid">{t("Quote valid {n} days · until {date}", { n: QUOTE.days, date: untilDay(lang, live) })}</span>
       <span className="rcs-foot">
-        <span><b>{live ? "Find me on TikTok" : "Book me on Rezekii"}</b><small>{who.linkLabel}</small></span>
+        <span><b>{live ? t("Find me on TikTok") : t("Book me on Rezekii")}</b><small>{who.linkLabel}</small></span>
         {live ? <Qr value={who.link} /> : <Qr />}
       </span>
     </div>
