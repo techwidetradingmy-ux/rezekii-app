@@ -22,6 +22,19 @@ export async function accessFor(userId: string): Promise<Access | null> {
   return { status: row.status, reason: row.reason, requestedAt: row.requested_at, decidedAt: row.decided_at, position };
 }
 
+/**
+ * rezekii.com stays open for TikTok's app reviewers while new creators go to Rezekii 2.0 (owner, 2 Nov 2026): accounts made
+ * from 2 Nov 2026 (Malaysia time) can't use the app until Techwide approves their TikTok Shop link, and are never approved
+ * automatically. Older accounts carry on as before.
+ */
+export const APPROVAL_FROM = "2026-11-01T16:00:00Z";
+
+/** True for an account made after rezekii.com closed to new creators. */
+export async function isNewAccount(userId: string): Promise<boolean> {
+  const [row] = (await (await supabaseRest(`app_users?id=eq.${userId}&select=created_at&limit=1`)).json()) as { created_at: string }[];
+  return !!row && Date.parse(row.created_at) >= Date.parse(APPROVAL_FROM);
+}
+
 /** "Approve new creators automatically" (admin Creators). Off unless an admin turns it on. */
 export async function autoApprove(): Promise<boolean> {
   const [row] = (await (await supabaseRest("app_settings?key=eq.creators_auto_approve&select=value&limit=1")).json()) as { value: boolean }[];
@@ -51,7 +64,8 @@ export async function joinWaitlist(user: { id: string; tiktok_username: string |
 
 /**
  * A signed-in creator came back from TikTok Shop. Saves the link and sets them waiting, or approved when they were approved
- * before, automatic approval is on, or the handle is on the pre-approved list. There is no limit on linked creators.
+ * before, automatic approval is on (accounts made before 2 Nov 2026 only), or the handle is on the pre-approved list. There
+ * is no limit on linked creators.
  */
 export async function linkCreator(user: { id: string; role?: string; tiktok_username: string | null }, profile: { openId: string; username: string; avatarUrl?: string }, tokens: TokenSet): Promise<LinkResult> {
   const [holder] = (await (await supabaseRest(`affiliate_connections?creator_user_open_id=eq.${encodeURIComponent(profile.openId)}&select=user_id&limit=1`)).json()) as { user_id: string | null }[];
@@ -62,7 +76,7 @@ export async function linkCreator(user: { id: string; role?: string; tiktok_user
   // An email or Google account takes the TikTok handle from TikTok Shop, so its TAP sales and samples show up.
   if (!user.tiktok_username) await supabaseRest(`app_users?id=eq.${user.id}&tiktok_username=is.null`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ tiktok_username: handle }) });
   // Accounts with admin access don't wait for approval.
-  const approved = current?.status === "approved" || user.role === "admin" || isAllowedDuringProof(handle) || (await autoApprove());
+  const approved = current?.status === "approved" || user.role === "admin" || isAllowedDuringProof(handle) || ((await autoApprove()) && !(await isNewAccount(user.id)));
   await supabaseRest("creator_access?on_conflict=user_id", json({
     user_id: user.id, status: approved ? "approved" : "waiting", username: handle, reason: null,
     requested_at: current?.status === "approved" ? current.requestedAt : now(),

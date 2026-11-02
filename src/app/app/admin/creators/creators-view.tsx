@@ -166,6 +166,7 @@ export function CreatorsView({ creators, places, auto, now }: { creators: Creato
               <button type="button" role="switch" aria-checked={auto} aria-labelledby="crauto" className={`nv-switch${auto ? " on" : ""}`} disabled={busy} onClick={() => setAuto(!auto)}><span /></button>
               <span id="crauto" style={{ fontSize: 13, fontWeight: 700 }}>Approve new creators automatically</span>
             </span>
+            <span style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.45 }}>Accounts made from 2 Nov 2026 always wait for your approval.</span>
           </span>
         </section>
         <section className="nv-up nv-card" aria-label="Summary" style={{ animationDelay: "60ms", flex: "2 1 480px", boxShadow: "var(--shadow)", borderRadius: 26, padding: 22, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 8 }}>
