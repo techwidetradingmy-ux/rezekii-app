@@ -16,6 +16,23 @@ const videoRow = (v: TikTokVideo, c: { open_id: string; username: string | null 
 const saveVideoRows = (rows: ReturnType<typeof videoRow>[]) =>
   supabaseRest("tiktok_videos?on_conflict=video_id", { method: "POST", headers: { prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify(rows) });
 
+/**
+ * A video's views when it is about 1, 7 and 30 days old (owner, 3 Nov 2026: for "after 30 days" estimates once a month of data
+ * exists), from the reads below, with no extra TikTok calls. Only an age just reached ([age, before]); the first reading in each
+ * window is kept, and `at` says exactly when it was taken.
+ */
+const AGES: [number, number][] = [[1, 2], [7, 9], [30, 33]];
+async function saveAges(vs: TikTokVideo[], openId: string, now: number): Promise<void> {
+  const rows = vs.flatMap((v) => {
+    const age = v.create_time ? (now / 1000 - v.create_time) / 86400 : -1;
+    if (v.view_count == null) return [];
+    return AGES.filter(([a, b]) => age >= a && age < b).map(([a]) => ({ video_id: v.id, age_days: a, open_id: openId, posted_at: new Date(v.create_time! * 1000).toISOString(), views: v.view_count, at: new Date(now).toISOString() }));
+  });
+  if (rows.length)
+    await supabaseRest("video_views_at?on_conflict=video_id,age_days", { method: "POST", headers: { prefer: "resolution=ignore-duplicates,return=minimal" }, body: JSON.stringify(rows) })
+      .catch((err) => console.error("[videos] ages", err instanceof Error ? err.message : err));
+}
+
 /** Video ids already asked of TikTok on demand, so a deleted or private video isn't asked for again. */
 const asked = new Set<string>();
 
@@ -63,6 +80,7 @@ async function readAccount(c: Conn, oldest: number): Promise<number | null> {
     if (recent.length) {
       const now = new Date().toISOString();
       await saveVideoRows(recent.map((v) => videoRow(v, c, now)));
+      await saveAges(recent, c.open_id, Date.parse(now));
       count += recent.length;
     }
     if (!r.data.has_more || !r.data.cursor || recent.length < r.data.videos.length) break;
