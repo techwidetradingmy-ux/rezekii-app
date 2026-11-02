@@ -479,7 +479,8 @@ textarea.np-input { resize: vertical; line-height: 1.5; }
 .nv-bottom { display: none; }
 @media (max-width: 760px) {
   .site-nav-app > a:not(.site-brand):not(.site-signin) { display: none; }
-  .nv-bottom { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: flex; padding: 8px 6px calc(10px + env(safe-area-inset-bottom, 0px)); background: rgba(255, 255, 255, 0.86); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%); border-top: 1px solid var(--border); }
+  /* Its own layer (owner, 3 Nov 2026: on iPhone the bar jumped while switching pages, as the page restored its scroll). */
+  .nv-bottom { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; transform: translateZ(0); will-change: transform; display: flex; padding: 8px 6px calc(10px + env(safe-area-inset-bottom, 0px)); background: rgba(255, 255, 255, 0.86); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%); border-top: 1px solid var(--border); }
   .nv-bottom a { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; text-decoration: none; color: var(--muted); font-size: 10px; font-weight: 700; }
   .nv-bottom a.on { color: var(--gink); }
   .nv-bottom a.on svg { animation: nvIconPop 0.5s cubic-bezier(0.3, 1.5, 0.4, 1) both; }
