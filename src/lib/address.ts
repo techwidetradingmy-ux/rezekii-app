@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useDemo } from "@/components/demo";
 import { statesOf } from "@/lib/my-cities";
+import { dateLocale, makeT, tx, type Lang, type T } from "@/lib/i18n/lang";
 
 /**
  * Her delivery address and sign-up details (owner, 29 Oct 2026). The address is optional at sign-up and only required for the
@@ -18,19 +19,22 @@ export const postcodeOk = (a: Pick<Address, "postcode" | "country">) => ((a.coun
 export function addressProblems(a: Address): Partial<Record<keyof Address, string>> {
   const my = (a.country || "MY") === "MY";
   const p: Partial<Record<keyof Address, string>> = {};
-  if (a.to.trim().length < 2) p.to = "recipient's name";
-  if (a.line.trim().length < 5) p.line = "address";
-  if (!postcodeOk(a)) p.postcode = my ? "5-digit postcode" : "postcode, or leave it empty";
+  if (a.to.trim().length < 2) p.to = tx("recipient's name");
+  if (a.line.trim().length < 5) p.line = tx("address");
+  if (!postcodeOk(a)) p.postcode = my ? tx("5-digit postcode") : tx("postcode, or leave it empty");
   const states = my ? statesOf(a.city) : [];
-  if (my ? !states.length || (states.length === 1 && a.state !== states[0]) : a.city.trim().length < 2) p.city = my ? "city from the list" : "city";
-  else if (my ? !states.includes(a.state) : !a.state.trim()) p.state = "state";
+  if (my ? !states.length || (states.length === 1 && a.state !== states[0]) : a.city.trim().length < 2) p.city = my ? tx("city from the list") : tx("city");
+  else if (my ? !states.includes(a.state) : !a.state.trim()) p.state = tx("state");
   return p;
 }
 export const addressOk = (a: Address) => Object.keys(addressProblems(a)).length === 0;
-/** "Still needed: recipient's name and city from the list." */
-export const stillNeeded = (a: Address) => {
-  const l = Object.values(addressProblems(a));
-  return l.length ? `Still needed: ${l.length > 1 ? `${l.slice(0, -1).join(", ")} and ${l.at(-1)}` : l[0]}.` : "";
+/**
+ * "Still needed: recipient's name and city from the list.", in the reader's language (`t`, `lang`): the missing fields are
+ * joined the way that language lists things ("a, b and c" · "a, b dan c" · "a、b和c").
+ */
+export const stillNeeded = (a: Address, t: T = makeT(null), lang: Lang = "en") => {
+  const l = Object.values(addressProblems(a)).map((x) => t(x));
+  return l.length ? t("Still needed: {fields}.", { fields: new Intl.ListFormat(dateLocale(lang), { type: "conjunction" }).format(l) }) : "";
 };
 
 const KEY = "rz2_address";
@@ -55,7 +59,7 @@ export async function saveAddress(a: Address, live = false): Promise<string | nu
   if (!live) kept();
   const r = await fetch("/api/v2/address", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(a) }).catch(() => null);
   if (!live) return null;
-  if (!r?.ok) return ((await r?.json().catch(() => null)) as { error?: string } | null)?.error ?? "Didn't save. Check your connection and try again.";
+  if (!r?.ok) return ((await r?.json().catch(() => null)) as { error?: string } | null)?.error ?? tx("Didn't save. Check your connection and try again.");
   kept();
   return null;
 }
@@ -99,10 +103,11 @@ export function ageOf(iso: string) {
   const now = new Date();
   return now.getFullYear() - d.getFullYear() - (now < new Date(now.getFullYear(), d.getMonth(), d.getDate()) ? 1 : 0);
 }
+/** What's wrong with the birthday, in English; shown through t() where it appears. */
 export const birthdayError = (iso: string) => {
-  if (!iso) return "Enter your birthday";
+  if (!iso) return tx("Enter your birthday");
   const age = ageOf(iso);
-  if (age === null || age > 100) return "Enter a real date";
-  if (age < 18) return "You need to be 18 or older for TikTok Shop affiliate";
+  if (age === null || age > 100) return tx("Enter a real date");
+  if (age < 18) return tx("You need to be 18 or older for TikTok Shop affiliate");
   return "";
 };

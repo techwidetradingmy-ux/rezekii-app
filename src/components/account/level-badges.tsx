@@ -10,6 +10,9 @@ import { Progress, ShareSheet, type MomentKind, Sheet, Loading } from "@/compone
 import { BADGES, CREATOR } from "@/lib/mock";
 import { BADGE_INFO, LEVELS } from "@/lib/mock-creator2";
 import { addDays, chestsFor, dayOf } from "@/modules/rewards/rules.ts";
+import { useLang, useT } from "@/lib/i18n/client";
+import { dateLocale, type Lang } from "@/lib/i18n/lang";
+import { rich } from "@/components/account/rich-text";
 import "@/app/rewards.css";
 
 /** Each badge's sticker: icon and colours. */
@@ -23,7 +26,8 @@ const STICKER: Record<string, { icon: IconName; from: string; to: string }> = {
   Gold: { icon: "trophy", from: "#ffe08a", to: "#c98510" },
 };
 const SPARK = ["#ffd34d", "#25f4ee", "#ff5ca8", "#22dc95", "#8b7dff", "#ffffff"];
-const WEEKDAYS = ["M", "T", "W", "T", "F", "S", "S"];
+/** Monday to Sunday as one letter in the reader's language (M T W… · I S R… · 一 二 三…); 1 Jan 2024 was a Monday. */
+const weekdays = (lang: Lang) => Array.from({ length: 7 }, (_, i) => new Date(Date.UTC(2024, 0, 1 + i)).toLocaleDateString(dateLocale(lang), { weekday: "narrow", timeZone: "UTC" }));
 
 /** A pointy-top hexagon path around (cx, cy). */
 const hex = (cx: number, cy: number, rad: number) =>
@@ -76,18 +80,21 @@ const shiftMonth = (month: string, n: number) => {
   const d = new Date(Date.UTC(y, m - 1 + n, 1));
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
 };
-const monthName = (month: string) => new Date(`${month}-01T00:00:00Z`).toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
+const monthName = (month: string, lang: Lang) => new Date(`${month}-01T00:00:00Z`).toLocaleDateString(dateLocale(lang), { month: "long", year: "numeric", timeZone: "UTC" });
 
 /**
  * The streak, inside Level, Streak & Badges (owner, 1 Nov 2026): current and best streak from her real check-in history, a month
  * calendar of counted days, what counts, the tier rewards and bonus chests, and how far the 7-Day Streak badge is.
  */
 function StreakSection({ streak, best, countedToday, days, tiers, since, badgeGot }: { streak: number; best: number; countedToday: boolean; days: Set<string>; tiers: Set<number>; since: string | null; badgeGot: boolean }) {
+  const t = useT();
+  const lang = useLang();
   const today = dayOf(Date.now());
   const [month, setMonth] = useState(monthOf(today));
   const first = since ? monthOf(since) : [...days].sort()[0] ? monthOf([...days].sort()[0]) : month;
   const tier = tierOf(streak);
-  const next = STREAK_TIERS.find((t) => t.days > streak) ?? STREAK_TIERS[STREAK_TIERS.length - 1];
+  const next = STREAK_TIERS.find((x) => x.days > streak) ?? STREAK_TIERS[STREAK_TIERS.length - 1];
+  const toGo = Math.max(0, next.days - streak);
   const prev = tier?.days ?? 0;
   const [y, m] = month.split("-").map(Number);
   const lead = (new Date(Date.UTC(y, m - 1, 1)).getUTCDay() + 6) % 7;
@@ -96,40 +103,40 @@ function StreakSection({ streak, best, countedToday, days, tiers, since, badgeGo
   const inMonth = cells.filter((d) => days.has(d)).length;
   const chests = chestsFor(3);
   return (
-    <section id="streak" className="v2-card lb-streak" aria-label="Your streak">
+    <section id="streak" className="v2-card lb-streak" aria-label={t("Your streak")}>
       <div className="v2-card-h">
-        <h2 className="v2-h2">Streak</h2>
-        <span className={`badge ${countedToday ? "" : "badge-amber"}`}>{countedToday ? "Today Counted" : "Not Counted Today"}</span>
+        <h2 className="v2-h2">{t("Streak")}</h2>
+        <span className={`badge ${countedToday ? "" : "badge-amber"}`}>{countedToday ? t("Today Counted") : t("Not Counted Today")}</span>
       </div>
       <div className="mx-streak" style={{ ["--c1" as string]: tier?.c1 ?? "#f8c39b", ["--c2" as string]: tier?.c2 ?? "#b8642f" }}>
         <div className="mx-streak-top">
           <span className="mx-big-emblem">{tier ? <StreakEmblem tier={tier} size={74} /> : <StreakEmblem tier={STREAK_TIERS[0]} size={74} locked />}<b>{streak}</b></span>
           <span className="mx-streak-txt">
-            <span className="mx-tiername">{tier ? `${tier.name} · ${tier.metal}` : "No Tier Yet"}</span>
-            <strong>{streak}-day streak</strong>
-            <small>Best: {best} day{best === 1 ? "" : "s"}</small>
+            <span className="mx-tiername">{tier ? `${t(tier.name)} · ${t(tier.metal)}` : t("No Tier Yet")}</span>
+            <strong>{t("{n}-day streak", { n: streak })}</strong>
+            <small>{best === 1 ? t("Best: {n} day", { n: best }) : t("Best: {n} days", { n: best })}</small>
           </span>
         </div>
         <div className="mx-next">
-          <span><b>{Math.max(0, next.days - streak)} days</b> to {next.name} <em>+{next.bonus} bonus credits</em></span>
+          <span>{rich(t("{days} to {tier} {bonus}", { tier: t(next.name) }), { days: <b>{toGo === 1 ? t("{n} day", { n: toGo }) : t("{n} days", { n: toGo })}</b>, bonus: <em>{t("+{n} bonus credits", { n: next.bonus })}</em> })}</span>
           <span className="mx-bar"><i style={{ width: `${Math.min(100, ((streak - prev) / Math.max(1, next.days - prev)) * 100)}%` }} /></span>
         </div>
       </div>
 
       <div className="lb-cal">
         <div className="lb-cal-h">
-          <button type="button" className="v2-iconbtn" aria-label="Previous month" disabled={month <= first} onClick={() => setMonth(shiftMonth(month, -1))}><Icon name="back" size={16} /></button>
-          <span><b>{monthName(month)}</b><small>{inMonth} day{inMonth === 1 ? "" : "s"} counted</small></span>
-          <button type="button" className="v2-iconbtn" aria-label="Next month" disabled={month >= monthOf(today)} onClick={() => setMonth(shiftMonth(month, 1))}><Icon name="arrow" size={16} /></button>
+          <button type="button" className="v2-iconbtn" aria-label={t("Previous month")} disabled={month <= first} onClick={() => setMonth(shiftMonth(month, -1))}><Icon name="back" size={16} /></button>
+          <span><b>{monthName(month, lang)}</b><small>{inMonth === 1 ? t("{n} day counted", { n: inMonth }) : t("{n} days counted", { n: inMonth })}</small></span>
+          <button type="button" className="v2-iconbtn" aria-label={t("Next month")} disabled={month >= monthOf(today)} onClick={() => setMonth(shiftMonth(month, 1))}><Icon name="arrow" size={16} /></button>
         </div>
-        <div className="lb-cal-grid" role="grid" aria-label={`Counted days in ${monthName(month)}`}>
-          {WEEKDAYS.map((d, i) => <span key={`h${i}`} className="lb-cal-wd" aria-hidden="true">{d}</span>)}
+        <div className="lb-cal-grid" role="grid" aria-label={t("Counted days in {month}", { month: monthName(month, lang) })}>
+          {weekdays(lang).map((d, i) => <span key={`h${i}`} className="lb-cal-wd" aria-hidden="true">{d}</span>)}
           {Array.from({ length: lead }, (_, i) => <span key={`b${i}`} aria-hidden="true" />)}
           {cells.map((d) => {
             const on = days.has(d);
             const cls = on ? "on" : d === today ? "today" : d > today || (since && d < since) ? "off" : "miss";
             return (
-              <span key={d} role="gridcell" className={`lb-cal-d ${cls}${d === today ? " is-today" : ""}`} aria-label={`${d}: ${on ? "counted" : d > today ? "still to come" : "not counted"}`}>
+              <span key={d} role="gridcell" className={`lb-cal-d ${cls}${d === today ? " is-today" : ""}`} aria-label={on ? t("{date}: counted", { date: d }) : d > today ? t("{date}: still to come", { date: d }) : t("{date}: not counted", { date: d })}>
                 {on ? <Icon name="flame" size={13} width={2.4} /> : Number(d.slice(8))}
               </span>
             );
@@ -139,31 +146,31 @@ function StreakSection({ streak, best, countedToday, days, tiers, since, badgeGo
 
       <div className="lb-st-grid">
         <div className="lb-st-box">
-          <b>What Counts</b>
+          <b>{t("What Counts")}</b>
           <ul>
-            <li><Icon name="check" size={14} width={3} />Check in on Missions, or finish any daily mission.</li>
-            <li><Icon name="clock" size={14} />Before midnight, Malaysia time.</li>
-            <li><Icon name="refresh" size={14} />A missed day starts the streak again.</li>
+            <li><Icon name="check" size={14} width={3} />{t("Check in on Missions, or finish any daily mission.")}</li>
+            <li><Icon name="clock" size={14} />{t("Before midnight, Malaysia time.")}</li>
+            <li><Icon name="refresh" size={14} />{t("A missed day starts the streak again.")}</li>
           </ul>
         </div>
         <div className="lb-st-box">
-          <b>Bonus Chests</b>
-          <p className="v2-small" style={{ margin: 0 }}>Finish a third, two thirds and all of a day&apos;s daily missions for +{chests[0].bonus}, +{chests[1].bonus} and +{chests[2].bonus} credits.</p>
-          <Link href="/app/rewards" className="btn-outline v2-btn-sm" style={{ alignSelf: "flex-start" }}>Go to Missions <Icon name="arrow" size={14} /></Link>
+          <b>{t("Bonus Chests")}</b>
+          <p className="v2-small" style={{ margin: 0 }}>{t("Finish a third, two thirds and all of a day's daily missions for +{a}, +{b} and +{c} credits.", { a: chests[0].bonus, b: chests[1].bonus, c: chests[2].bonus })}</p>
+          <Link href="/app/rewards" className="btn-outline v2-btn-sm" style={{ alignSelf: "flex-start" }}>{t("Go to Missions")} <Icon name="arrow" size={14} /></Link>
         </div>
       </div>
 
       <div className="lb-st-box">
-        <b>Streak Rewards</b>
-        <span className="v2-small">Bonus credits the first time you reach each one.</span>
-        <ol className="mx-tiers lb-tiers" aria-label="Streak tiers">
-          {STREAK_TIERS.map((t) => {
-            const got = tiers.has(t.days);
+        <b>{t("Streak Rewards")}</b>
+        <span className="v2-small">{t("Bonus credits the first time you reach each one.")}</span>
+        <ol className="mx-tiers lb-tiers" aria-label={t("Streak tiers")}>
+          {STREAK_TIERS.map((x) => {
+            const got = tiers.has(x.days);
             return (
-              <li key={t.days} className={got ? (tier?.days === t.days ? "now" : "got") : ""}>
-                <StreakEmblem tier={t} size={30} locked={!got} />
-                <b>{t.days}d</b>
-                <small>+{t.bonus}</small>
+              <li key={x.days} className={got ? (tier?.days === x.days ? "now" : "got") : ""}>
+                <StreakEmblem tier={x} size={30} locked={!got} />
+                <b>{t("{n}d", { n: x.days })}</b>
+                <small>+{x.bonus}</small>
               </li>
             );
           })}
@@ -173,8 +180,8 @@ function StreakSection({ streak, best, countedToday, days, tiers, since, badgeGo
       <div className="lb-st-box lb-st-badge">
         <BadgeEmblem name="7-Day Streak" got={badgeGot} size={52} />
         <span>
-          <b>7-Day Streak Badge</b>
-          <span className="v2-small">{badgeGot ? "Collected." : `Day ${Math.min(streak, 7)} of 7.`}</span>
+          <b>{t("7-Day Streak Badge")}</b>
+          <span className="v2-small">{badgeGot ? t("Collected.") : t("Day {n} of 7.", { n: Math.min(streak, 7) })}</span>
           {!badgeGot && <Progress value={Math.min(streak, 7)} max={7} />}
         </span>
       </div>
@@ -187,6 +194,8 @@ function StreakSection({ streak, best, countedToday, days, tiers, since, badgeGo
  * V1's emblems, her streak, and a sticker wall of badges. Everything can be shared as a card.
  */
 export function LevelBadges() {
+  const t = useT();
+  const lang = useLang();
   const you = useWho();
   const card = useRef<HTMLDivElement>(null);
   const [burst, setBurst] = useState(0);
@@ -206,7 +215,7 @@ export function LevelBadges() {
   const badges: { name: string; got: boolean; progress?: [number, number] }[] = real ? real.badges : BADGES;
   // Each level's real rule and benefits (set by Techwide in Admin) once signed in.
   const levels = real?.levels?.length ? real.levels : LEVELS;
-  const since = real?.since ? new Date(real.since).toLocaleDateString("en-GB", { month: "short", year: "numeric" }) : null;
+  const since = real?.since ? new Date(real.since).toLocaleDateString(dateLocale(lang), { month: "short", year: "numeric" }) : null;
   useEffect(() => { if (real) setPick(LEVELS.findIndex((l) => l.name === lvName)); }, [real]); // eslint-disable-line react-hooks/exhaustive-deps
   const got = badges.filter((b) => b.got).length;
   const levelAt = LEVELS.findIndex((l) => l.name === lvName);
@@ -243,7 +252,7 @@ export function LevelBadges() {
     el.style.setProperty("--ry", "0deg");
   };
 
-  if (live && !real) return failed ? <p className="v2-muted">Couldn&apos;t load your level, streak and badges. Please refresh.</p> : <Loading text="Loading your level, streak and badges…" />;
+  if (live && !real) return failed ? <p className="v2-muted">{t("Couldn't load your level, streak and badges. Please refresh.")}</p> : <Loading text={t("Loading your level, streak and badges…")} />;
   return (
     <div className="v2-stack" style={{ gap: 20 }}>
       <section className="lb-hero">
@@ -255,77 +264,77 @@ export function LevelBadges() {
             onPointerLeave={rest}
             onClick={() => setBurst((b) => b + 1)}
             role="img"
-            aria-label={`Creator card: ${you.handle}, ${lvName}, TikTok Shop Lv.${ttl}, ${got} badges`}
+            aria-label={t("Creator card: {handle}, {level}, TikTok Shop Lv.{tt}, {n} badges", { handle: you.handle, level: t(lvName), tt: ttl, n: got })}
           >
             <span className="lb-holo" aria-hidden="true" />
             <span className="lb-glare" aria-hidden="true" />
             <span className="lb-top">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/master-logo-transparent.png" alt="" />
-              <b>REZEKII CREATOR</b>
+              <b>{t("REZEKII CREATOR")}</b>
               {!real && <em>No. 0428</em>}
             </span>
             <Emblem level={mine} size={132} animate />
-            <span className="lb-tier">{lvName.toUpperCase()}</span>
+            <span className="lb-tier">{t(lvName).toUpperCase()}</span>
             <strong className="lb-name">{you.handle}</strong>
             <span className="lb-stats">
               <span><b>Lv.{ttl}</b>TikTok Shop</span>
-              <span><b>{streakN}</b>day streak</span>
-              <span><b>{got}</b>badges</span>
+              <span><b>{streakN}</b>{t("day streak")}</span>
+              <span><b>{got}</b>{t("badges")}</span>
             </span>
-            <span className="lb-foot">{real ? (since ? `Since ${since}` : "") : "Since Mar 2026 · rezekii.com/c/aisyah.glow"}</span>
+            <span className="lb-foot">{real ? (since ? t("Since {date}", { date: since }) : "") : `${t("Since {date}", { date: new Date("2026-03-01T00:00:00Z").toLocaleDateString(dateLocale(lang), { month: "short", year: "numeric", timeZone: "UTC" }) })} · rezekii.com/c/aisyah.glow`}</span>
             <span className="lb-burst" key={burst} aria-hidden="true">
               {burst > 0 && Array.from({ length: 18 }, (_, i) => (
                 <i key={i} style={{ "--a": `${i * 20}deg`, "--d": `${70 + (i % 4) * 22}px`, background: SPARK[i % SPARK.length] } as React.CSSProperties} />
               ))}
             </span>
           </div>
-          <span className="v2-small">Tap the card</span>
+          <span className="v2-small">{t("Tap the card")}</span>
         </div>
 
         <div className="lb-side">
-          <span className="lb-kicker">Your level</span>
-          <h2 className="lb-h">You&apos;re {lvName}</h2>
-          <p className="v2-muted" style={{ margin: 0 }}>Your level sets your commission rates.</p>
-          <div className="lb-path" role="group" aria-label="Levels">
+          <span className="lb-kicker">{t("Your level")}</span>
+          <h2 className="lb-h">{t("You're {level}", { level: t(lvName) })}</h2>
+          <p className="v2-muted" style={{ margin: 0 }}>{t("Your level sets your commission rates.")}</p>
+          <div className="lb-path" role="group" aria-label={t("Levels")}>
             {levels.map((l, i) => (
               <button key={l.name} type="button" className={`lb-stop ${i === pick ? "on" : ""} ${i <= levelAt ? "got" : ""}`} aria-pressed={i === pick} onClick={() => setPick(i)}>
                 <Emblem level={KEY[l.name]} size={i === levelAt ? 74 : 60} animate={i === levelAt} dim={i > levelAt} />
-                <b>{l.name}</b>
-                {i === levelAt && <span className="badge">You</span>}
+                <b>{t(l.name)}</b>
+                {i === levelAt && <span className="badge">{t("You")}</span>}
               </button>
             ))}
           </div>
           <div className="lb-perks" key={pick}>
-            <small>{levels[pick].how}</small>
+            <small>{t(levels[pick].how)}</small>
             <ul>
-              {levels[pick].gives.map((g) => <li key={g}><Icon name="check" size={15} width={2.8} />{g}</li>)}
+              {levels[pick].gives.map((g) => <li key={g}><Icon name="check" size={15} width={2.8} />{t(g)}</li>)}
             </ul>
           </div>
           {/* Silver either way (owner, 1 Nov 2026): two bars, reach either one. */}
           {mine !== "gold" && (() => {
             const s = real ? real.silver : SAMPLE_SILVER;
             if (!s) return null;
-            const monthName = new Date(`${s.month}-01T00:00:00Z`).toLocaleDateString("en-GB", { month: "long", timeZone: "UTC" });
+            const monthName = new Date(`${s.month}-01T00:00:00Z`).toLocaleDateString(dateLocale(lang), { month: "long", timeZone: "UTC" });
             return (
               <div className="lb-silver">
-                <b>{mine === "silver" ? `Keep Silver: Reach Either One in ${monthName}` : "Reach Silver: Either One This Month"}</b>
+                <b>{mine === "silver" ? t("Keep Silver: Reach Either One in {month}", { month: monthName }) : t("Reach Silver: Either One This Month")}</b>
                 <span className="lb-sbar">
-                  <span><small>Sales through Rezekii</small><em>RM {Math.round(s.sales).toLocaleString("en-MY")} of RM {s.salesGoal.toLocaleString("en-MY")}</em></span>
+                  <span><small>{t("Sales through Rezekii")}</small><em>{t("{a} of {b}", { a: `RM ${Math.round(s.sales).toLocaleString("en-MY")}`, b: `RM ${s.salesGoal.toLocaleString("en-MY")}` })}</em></span>
                   <Progress value={Math.min(s.sales, s.salesGoal)} max={s.salesGoal} />
                 </span>
-                <span className="lb-sor" aria-hidden="true">or</span>
+                <span className="lb-sor" aria-hidden="true">{t("or")}</span>
                 <span className="lb-sbar">
-                  <span><small>Videos for Rezekii samples</small><em>{s.sampleVideos} of {s.videosGoal}</em></span>
+                  <span><small>{t("Videos for Rezekii samples")}</small><em>{t("{a} of {b}", { a: s.sampleVideos, b: s.videosGoal })}</em></span>
                   <Progress value={Math.min(s.sampleVideos, s.videosGoal)} max={s.videosGoal} />
                 </span>
-                <small className="v2-small">{s.reached ? (mine === "silver" ? "Reached. You keep Silver next month." : "Reached. You're Silver now.") : mine === "silver" ? "Reach either one by the end of the month to keep Silver. Checked on the 1st." : "Reach either one and you go up straight away. One sample with 10 videos counts."}</small>
+                <small className="v2-small">{s.reached ? (mine === "silver" ? t("Reached. You keep Silver next month.") : t("Reached. You're Silver now.")) : mine === "silver" ? t("Reach either one by the end of the month to keep Silver. Checked on the 1st.") : t("Reach either one and you go up straight away. One sample with 10 videos counts.")}</small>
               </div>
             );
           })()}
           <div className="v2-row">
-            <button type="button" className="np-btn v2-btn-sm" onClick={() => setShare({ big: `${lvName} creator`, label: "My creator level on Rezekii", lines: [`TikTok Shop Lv.${ttl}`, `${got} badges earned`], level: mine, kicker: "Level up", moment: "level" })}>
-              <Icon name="share" size={16} /> Share My Card
+            <button type="button" className="np-btn v2-btn-sm" onClick={() => setShare({ big: t("{level} creator", { level: t(lvName) }), label: t("My creator level on Rezekii"), lines: [`TikTok Shop Lv.${ttl}`, got === 1 ? t("{n} badge earned", { n: got }) : t("{n} badges earned", { n: got })], level: mine, kicker: t("Level up"), moment: "level" })}>
+              <Icon name="share" size={16} /> {t("Share My Card")}
             </button>
           </div>
         </div>
@@ -336,40 +345,40 @@ export function LevelBadges() {
         best={real ? real.best : CREATOR.streak}
         countedToday={real ? real.countedToday : false}
         days={new Set(real ? real.days : sampleDays)}
-        tiers={new Set(real ? real.tiers : STREAK_TIERS.filter((t) => t.days <= CREATOR.streak).map((t) => t.days))}
+        tiers={new Set(real ? real.tiers : STREAK_TIERS.filter((x) => x.days <= CREATOR.streak).map((x) => x.days))}
         since={real ? (real.since ? dayOf(real.since) : null) : null}
         badgeGot={badges.find((b) => b.name === "7-Day Streak")?.got ?? false}
       />
 
       <section className="v2-card">
         <div className="v2-card-h">
-          <h2 className="v2-h2">Badges</h2>
-          <span className="badge">{got} of {badges.length} collected</span>
+          <h2 className="v2-h2">{t("Badges")}</h2>
+          <span className="badge">{t("{a} of {b} collected", { a: got, b: badges.length })}</span>
         </div>
         <div className="lb-badges">
           {badges.map((b) => (
             <button key={b.name} type="button" className={`lb-badge ${b.got ? "got" : ""}`} onClick={() => setBadge(b)}>
               <BadgeEmblem name={b.name} got={b.got} />
-              <b>{b.name}</b>
-              <small>{b.got ? "Collected" : b.progress ? `${b.progress[0]} / ${b.progress[1]} days` : "Locked"}</small>
+              <b>{t(b.name)}</b>
+              <small>{b.got ? t("Collected") : b.progress ? t("{a} / {b} days", { a: b.progress[0], b: b.progress[1] }) : t("Locked")}</small>
             </button>
           ))}
         </div>
       </section>
 
       {badge && (
-        <Sheet title={badge.name} onClose={() => setBadge(null)}>
+        <Sheet title={t(badge.name)} onClose={() => setBadge(null)}>
           <div className="lb-bigsticker">
             <BadgeEmblem name={badge.name} got={badge.got} size={132} />
           </div>
-          <p style={{ margin: 0, textAlign: "center", lineHeight: 1.5 }}>{BADGE_INFO[badge.name]}</p>
-          <span className={`badge ${badge.got ? "" : "badge-gray"}`} style={{ alignSelf: "center" }}>{badge.got ? "Collected" : "Not Yet"}</span>
+          <p style={{ margin: 0, textAlign: "center", lineHeight: 1.5 }}>{BADGE_INFO[badge.name] && t(BADGE_INFO[badge.name])}</p>
+          <span className={`badge ${badge.got ? "" : "badge-gray"}`} style={{ alignSelf: "center" }}>{badge.got ? t("Collected") : t("Not Yet")}</span>
           {badge.got ? (
-            <button type="button" className="np-btn" onClick={() => { setBadge(null); setShare({ big: badge.name, label: "New badge on Rezekii", lines: [`${lvName} creator`, `${got} badges so far`], kicker: "New badge", moment: "badge" }); }}>
-              <Icon name="share" size={18} /> Share This Badge
+            <button type="button" className="np-btn" onClick={() => { setBadge(null); setShare({ big: t(badge.name), label: t("New badge on Rezekii"), lines: [t("{level} creator", { level: t(lvName) }), got === 1 ? t("{n} badge so far", { n: got }) : t("{n} badges so far", { n: got })], kicker: t("New badge"), moment: "badge" }); }}>
+              <Icon name="share" size={18} /> {t("Share This Badge")}
             </button>
           ) : (
-            <button type="button" className="btn-outline" style={{ height: 46 }} onClick={() => setBadge(null)}>Got It</button>
+            <button type="button" className="btn-outline" style={{ height: 46 }} onClick={() => setBadge(null)}>{t("Got It")}</button>
           )}
         </Sheet>
       )}
