@@ -95,6 +95,7 @@ export default function Account() {
   const you = useWho();
   const { linked, setLinked, toast, consent, waVerified: verified, setWaVerified: setVerified, live, me, refreshMe } = useDemo();
   const [unlink, setUnlink] = useState(false);
+  const [changing, setChanging] = useState(false);
   const [tab, setTab] = useState<TabKey>("profile");
   const tabsRef = useRef<HTMLDivElement>(null);
   useSideScroll(tabsRef, tab);
@@ -511,7 +512,13 @@ export default function Account() {
               <span className="cr2-conn"><b>TikTok Shop</b>{me?.shop?.expired ? <small className="cr2-lost">@{me.shop.handle} · Link expired. Re-link to keep your data updating.</small> : <small>{me?.shop ? `@${me.shop.handle}${me.shop.access && me.shop.access !== "approved" ? " · waiting for approval" : ""}` : "Not linked"}</small>}</span>
               {/* A link that ended (owner, 2 Nov 2026) turns into a red Re-link, so she notices. */}
               {me?.shop?.expired ? <button type="button" className="np-btn v2-btn-sm cr2-relink" onClick={() => setLinked(true)}><Icon name="refresh" size={15} /> Re-link</button>
-                : me?.shop ? <button type="button" className="btn-outline v2-btn-sm" onClick={() => setUnlink(true)}>Unlink</button> : <button type="button" className="np-btn v2-btn-sm" onClick={() => setLinked(true)}>Link</button>}
+                : me?.shop ? (
+                  <span className="cr2-connbtns">
+                    {/* Change Account (owner, 2 Nov 2026): link a different TikTok Shop in its place, in one step. */}
+                    <button type="button" className="btn-outline v2-btn-sm" onClick={() => setChanging(true)}>Change Account</button>
+                    <button type="button" className="btn-outline v2-btn-sm" onClick={() => setUnlink(true)}>Unlink</button>
+                  </span>
+                ) : <button type="button" className="np-btn v2-btn-sm" onClick={() => setLinked(true)}>Link</button>}
             </div>
             {chans === null && <Loading text="Loading your accounts…" inline />}
             {chans !== null && (["tiktok", "facebook", "instagram", "threads"] as const).map((app) => {
@@ -824,6 +831,17 @@ export default function Account() {
         </Sheet>
       )}
 
+      {changing && me?.shop && (
+        <Sheet title="Change TikTok Shop Account" onClose={() => setChanging(false)}>
+          <p style={{ margin: 0 }}>Link a different TikTok Shop account in place of <b>@{me.shop.handle}</b>.</p>
+          <ul className="v2-small" style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 6 }}>
+            <li>On TikTok&apos;s page, make sure you&apos;re signed in as the account you want, then approve.</li>
+            <li>Rezekii then shows that account&apos;s sales, showcase and samples. @{me.shop.handle}&apos;s sales stay in TikTok Shop.</li>
+          </ul>
+          <button type="button" className="np-btn" onClick={() => { window.location.href = "/api/auth/tiktokshop/start"; }}>Continue to TikTok Shop</button>
+          <button type="button" className="btn-outline" onClick={() => setChanging(false)}>Keep @{me.shop.handle}</button>
+        </Sheet>
+      )}
       {unlink && (
         <Sheet title="Unlink TikTok Shop?" onClose={() => setUnlink(false)}>
           <ul className="cr2-danger" style={{ margin: 0, paddingLeft: 30 }}>

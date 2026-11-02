@@ -57,11 +57,17 @@ export async function joinWaitlist(user: { id: string; tiktok_username: string |
 export async function linkCreator(user: { id: string; role?: string; tiktok_username: string | null }, profile: { openId: string; username: string; avatarUrl?: string }, tokens: TokenSet): Promise<LinkResult> {
   const [holder] = (await (await supabaseRest(`affiliate_connections?creator_user_open_id=eq.${encodeURIComponent(profile.openId)}&select=user_id&limit=1`)).json()) as { user_id: string | null }[];
   if (holder?.user_id && holder.user_id !== user.id) return "taken";
-  const current = await accessFor(user.id);
+  const [current, before] = await Promise.all([
+    accessFor(user.id),
+    supabaseRest(`affiliate_connections?user_id=eq.${user.id}&select=creator_user_open_id,username`).then((r) => r.json() as Promise<{ creator_user_open_id: string; username: string | null }[]>),
+  ]);
   const handle = profile.username.toLowerCase();
   await saveAffiliateConnection({ ...profile, userId: user.id }, tokens);
+  // Change Account (owner, 2 Nov 2026): a different TikTok Shop account takes the old one's place.
+  const old = before.filter((b) => b.creator_user_open_id !== profile.openId);
+  if (old.length) await replaceAccount(user.id, old, handle);
   // An email or Google account takes the TikTok handle from TikTok Shop, so its TAP sales and samples show up.
-  if (!user.tiktok_username) await supabaseRest(`app_users?id=eq.${user.id}&tiktok_username=is.null`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ tiktok_username: handle }) });
+  else if (!user.tiktok_username) await supabaseRest(`app_users?id=eq.${user.id}&tiktok_username=is.null`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ tiktok_username: handle }) });
   // Her TikTok photo, not a Google one (owner, 31 Oct 2026): kept on the account and saved at once.
   if (profile.avatarUrl) {
     await supabaseRest(`app_users?id=eq.${user.id}`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ avatar_url: profile.avatarUrl }) });
@@ -76,6 +82,29 @@ export async function linkCreator(user: { id: string; role?: string; tiktok_user
     decided_by: approved && current?.status !== "approved" ? (user.role === "admin" ? "admin account" : isAllowedDuringProof(handle) ? "pre-approved handle" : "automatic approval") : null,
   }));
   return approved ? "connected" : "waiting";
+}
+
+/**
+ * A creator linked a different TikTok Shop account (Change Account, owner 2 Nov 2026): the old link goes, and so does what
+ * Rezekii saved from the old account (its orders, showcase scan and lists, samples check, Today's Ideas, AI Picks and story),
+ * so every page shows the new account. The old account's sales stay in TikTok Shop. Her TikTok handle becomes the new one's,
+ * so her TAP sales, samples and level follow it.
+ */
+async function replaceAccount(userId: string, old: { creator_user_open_id: string; username: string | null }[], handle: string): Promise<void> {
+  const del = (path: string) => supabaseRest(path, { method: "DELETE", headers: { prefer: "return=minimal" } }).catch(() => null);
+  const keys = ["read_at", "orders_full", "orders_history", "showcase_scan", "showcase_refused", "story"].map((k) => `"${k}:${userId}"`).join(",");
+  await Promise.all([
+    del(`affiliate_connections?user_id=eq.${userId}&creator_user_open_id=in.(${old.map((o) => `"${o.creator_user_open_id}"`).join(",")})`),
+    del(`creator_orders?user_id=eq.${userId}`),
+    del(`showcase_cache?user_id=eq.${userId}`),
+    del(`ideas_cache?user_id=eq.${userId}`),
+    del(`ai_picks_cache?user_id=eq.${userId}`),
+    del(`market_snapshots?dataset=eq.tap_samples&slot=eq.${encodeURIComponent(`user:${userId}`)}`),
+    del(`app_settings?key=in.(${encodeURIComponent(keys)})`),
+    supabaseRest(`app_users?id=eq.${userId}`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ tiktok_username: handle }) }),
+  ]);
+  const was = old.map((o) => (o.username ? `@${o.username}` : "another account")).join(", ");
+  await logActivity(`@${handle}`, "Creators", `changed their TikTok Shop account (was ${was})`).catch(() => undefined);
 }
 
 /** The next creator left on the beta waitlist is invited to link. Returns their handle, or null. */
