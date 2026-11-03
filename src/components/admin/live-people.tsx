@@ -188,12 +188,40 @@ export function LiveFeedback() {
   );
 }
 
-type AdminRow = { email: string; fixed: boolean; addedBy: string | null; addedAt: string | null; id?: string };
+type AdminRow = { email: string; fixed: boolean; addedBy: string | null; addedAt: string | null; id?: string; how?: "email" | "tiktok" };
+type AccountHit = { id: string; userId: string; name: string; email: string | null; handle: string | null; how: string; admin: boolean };
 /** Users › Admin Access on real data: who can open the admin side. Add someone by their Google email. */
 export function LiveAdminAccess() {
   const { toast } = useDemo();
   const [items, err, load] = useList<AdminRow>("admins");
   const [email, setEmail] = useState("");
+  // Pick an account (owner, 3 Nov 2026): search by name, email, TikTok username or user ID, then give it admin access.
+  const [q, setQ] = useState("");
+  const [hits, setHits] = useState<AccountHit[] | null>(null);
+  const [pick, setPick] = useState<AccountHit | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (q.trim().length < 2) { setHits(null); return; }
+    let on = true;
+    const timer = window.setTimeout(() => {
+      fetch(`/api/admin/admins?q=${encodeURIComponent(q.trim())}`, { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d: { accounts?: AccountHit[] } | null) => { if (on) setHits(d?.accounts ?? []); })
+        .catch(() => on && setHits([]));
+    }, 250);
+    return () => { on = false; window.clearTimeout(timer); };
+  }, [q]);
+  const give = async () => {
+    if (!pick || busy) return;
+    setBusy(true);
+    const r = await fetch("/api/admin/admins", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: pick.id }) }).catch(() => null);
+    const d = (await r?.json().catch(() => null)) as { error?: string } | null;
+    setBusy(false);
+    if (!r?.ok) return toast(d?.error ?? "Didn't save. Please try again.");
+    toast(`${pick.name} is now an admin`);
+    setPick(null); setQ(""); setHits(null);
+    void load();
+  };
   const add = async () => {
     const r = await fetch("/api/admin/admins", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email }) }).catch(() => null);
     const d = (await r?.json().catch(() => null)) as { error?: string } | null;
@@ -214,7 +242,32 @@ export function LiveAdminAccess() {
       <Title title="Admin Access" sub="Who can open the admin side. Changes are logged." />
       {!items ? <p className="v2-muted">{err ?? "Loading…"}</p> : (
         <>
-          <section className="v2-card">
+          <section className="v2-card v2-stack" style={{ gap: 12 }}>
+            <h2 className="v2-h2">Give Access to an Account</h2>
+            <input type="search" className="np-input" placeholder="Search name, email, TikTok username or user ID" value={q} onChange={(e) => { setQ(e.target.value); setPick(null); }} aria-label="Search accounts" />
+            {pick ? (
+              <div className="ad-row">
+                <Av name={pick.name} />
+                <span className="main"><b>{pick.name}</b><small>{[pick.email, pick.handle && `@${pick.handle}`, pick.userId, pick.how].filter(Boolean).join(" · ")}</small></span>
+                <button type="button" className="ad-btn-ghost" onClick={() => setPick(null)}>Change</button>
+                <button type="button" className="np-btn v2-btn-sm" disabled={busy} onClick={() => void give()}><Icon name="shield" size={15} /> {busy ? "Giving…" : "Give Admin Access"}</button>
+              </div>
+            ) : hits && (
+              <div className="ad-list">
+                {hits.map((a) => (
+                  <button key={a.id} type="button" className="ad-row ad-rowbtn click" disabled={a.admin} onClick={() => setPick(a)}>
+                    <Av name={a.name} />
+                    <span className="main"><b>{a.name}</b><small>{[a.email, a.handle && `@${a.handle}`, a.userId, a.how].filter(Boolean).join(" · ")}</small></span>
+                    {a.admin ? <span className="badge">Admin</span> : <Icon name="arrow" size={18} />}
+                  </button>
+                ))}
+                {!hits.length && <p className="v2-small" style={{ margin: 0 }}>No account found. They must sign up first, or add their Google email below.</p>}
+              </div>
+            )}
+          </section>
+          <section className="v2-card v2-stack" style={{ gap: 12 }}>
+            <h2 className="v2-h2">Add by Google Email</h2>
+            <p className="v2-small" style={{ margin: 0 }}>For staff who haven't signed up yet. They become admin when they sign in with Google.</p>
             <form className="v2-row" style={{ gap: 8 }} onSubmit={(e) => { e.preventDefault(); void add(); }}>
               <input type="email" className="np-input" style={{ flex: 1 }} placeholder="name@gmail.com" value={email} onChange={(e) => setEmail(e.target.value)} aria-label="Google email to add" />
               <button type="submit" className="np-btn v2-btn-sm" disabled={!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)}><Icon name="plus" size={15} /> Add Admin</button>
@@ -225,7 +278,7 @@ export function LiveAdminAccess() {
               {items.map((a) => (
                 <div key={a.id ?? a.email} className="ad-row">
                   <Av name={a.email} />
-                  <span className="main"><b>{a.email}</b><small>{a.fixed ? "Built in, can't be removed here" : a.id ? "Signs in with email and password" : `Added by ${a.addedBy ?? "someone"}${a.addedAt ? ` · ${day(a.addedAt)}` : ""}`}</small></span>
+                  <span className="main"><b>{a.email}</b><small>{a.fixed ? "Built in, can't be removed here" : a.id ? (a.how === "tiktok" ? "Signs in with TikTok" : "Signs in with email and password") : `Added by ${a.addedBy ?? "someone"}${a.addedAt ? ` · ${day(a.addedAt)}` : ""}`}</small></span>
                   {!a.fixed && <button type="button" className="ad-btn-ghost" onClick={() => void remove(a)}>Remove</button>}
                 </div>
               ))}

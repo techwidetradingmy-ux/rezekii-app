@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
-import { actorName, addAdmin, fixedAdmins, removeAdmin, removeEmailAdmin } from "@/modules/admin/admins.ts";
+import { actorName, addAdmin, findAccounts, fixedAdmins, grantAdmin, removeAdmin, removeEmailAdmin } from "@/modules/admin/admins.ts";
 import { cleanEmail } from "@/modules/accounts/password.ts";
 
 export const dynamic = "force-dynamic";
@@ -12,11 +12,24 @@ async function admin(req: NextRequest) {
   return user?.role === "admin" ? user : null;
 }
 
-/** Adds an admin: { email }. They sign in with Google under that address. */
+/** Accounts to pick from for admin access: ?q= a name, email, TikTok username or short user ID. */
+export async function GET(req: NextRequest) {
+  const user = await admin(req);
+  if (!user) return NextResponse.json({ error: "Admins only." }, { status: 403 });
+  return NextResponse.json({ accounts: await findAccounts(req.nextUrl.searchParams.get("q") ?? "") });
+}
+
+/** Adds an admin: { userId } for an account picked from the search, or { email } for staff who sign in with Google later. */
 export async function POST(req: NextRequest) {
   const user = await admin(req);
   if (!user) return NextResponse.json({ error: "Admins only." }, { status: 403 });
-  const email = cleanEmail(((await req.json().catch(() => ({}))) as { email?: string }).email);
+  const b = (await req.json().catch(() => ({}))) as { email?: string; userId?: string };
+  if (b.userId) {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(b.userId)) return NextResponse.json({ error: "Which account?" }, { status: 400 });
+    const r = await grantAdmin(b.userId, actorName(user.email));
+    return "error" in r ? NextResponse.json(r, { status: 409 }) : NextResponse.json({ ok: true });
+  }
+  const email = cleanEmail(b.email);
   if (!email) return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
   await addAdmin(email, actorName(user.email));
   return NextResponse.json({ ok: true });
