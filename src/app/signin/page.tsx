@@ -8,7 +8,8 @@ import SignIn from "./sign-in";
  */
 export default async function SignInPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const q = await searchParams;
-  if (!q.details && !q.error) {
+  // ?handed=1: signed in here in the browser for the Home Screen app, so it says to go back there (owner, 3 Nov 2026).
+  if (!q.details && !q.error && !q.handed) {
     const user = await currentUser();
     if (user && user.role !== "admin") redirect(typeof q.next === "string" && q.next.startsWith("/") && !q.next.startsWith("//") ? q.next : "/app");
   }

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, createSession, sessionCookieOptions, SIGNED_IN_COOKIE, signedInCookieOptions } from "@/modules/accounts/session.ts";
 import { attachReferral, readRefCookie, REF_COOKIE } from "@/modules/rewards/referrals.ts";
 import { needsDetails } from "@/modules/rewards/profiles.ts";
+import { HANDOFF_COOKIE, handoffCode, saveHandoff } from "@/modules/accounts/handoff.ts";
 
 export type Provider = "google" | "tiktok";
 
@@ -35,6 +36,12 @@ export function keepNext(req: NextRequest, res: NextResponse): void {
   if (next) res.cookies.set(NEXT_COOKIE, next, { ...OAUTH_COOKIE_OPTIONS });
 }
 
+/** Keeps the Home Screen app's sign-in code (?handoff=) while Google's or TikTok's page is open (see handoff.ts). */
+export function keepHandoff(req: NextRequest, res: NextResponse): void {
+  const code = handoffCode(req.nextUrl.searchParams.get("handoff"));
+  if (code) res.cookies.set(HANDOFF_COOKIE, code, { ...OAUTH_COOKIE_OPTIONS });
+}
+
 /** Starts a session for the account and sends them into the app. A new account joins whoever invited it. */
 export async function signedIn(req: NextRequest, userId: string, p: Provider, to = "/app"): Promise<NextResponse> {
   const { token, expires } = await createSession(userId);
@@ -42,7 +49,11 @@ export async function signedIn(req: NextRequest, userId: string, p: Provider, to
   if (next) to = next;
   // Details not filled in yet (Google and TikTok skip the sign-up form): the same form, once, before the app (owner, 31 Oct 2026).
   const details = to === "/app" && (await needsDetails(userId).catch(() => false));
-  const res = NextResponse.redirect(`${appBase(req)}${details ? "/signin?details=1" : to}`);
+  // Started from the Home Screen app: leave the sign-in for the app to claim, and say so here (owner, 3 Nov 2026).
+  const handoff = handoffCode(req.cookies.get(HANDOFF_COOKIE)?.value);
+  if (handoff) await saveHandoff(handoff, userId, details ? "/signin?details=1" : to);
+  const res = NextResponse.redirect(`${appBase(req)}${handoff ? "/signin?handed=1" : details ? "/signin?details=1" : to}`);
+  if (handoff) res.cookies.set(HANDOFF_COOKIE, "", { ...OAUTH_COOKIE_OPTIONS, maxAge: 0 });
   res.cookies.set(SESSION_COOKIE, token, sessionCookieOptions(expires));
   res.cookies.set(SIGNED_IN_COOKIE, "1", signedInCookieOptions(expires));
   res.cookies.set(oauthCookie(p), "", { ...OAUTH_COOKIE_OPTIONS, maxAge: 0 });

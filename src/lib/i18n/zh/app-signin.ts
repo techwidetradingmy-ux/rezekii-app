@@ -84,4 +84,13 @@ export const APP_SIGNIN: Record<string, string> = {
   "015 numbers can't get WhatsApp codes. Use your mobile number.": "015 号码收不到 WhatsApp 验证码，请使用你的手机号码。",
   "011 numbers have 11 digits, e.g. 011-2345 6789": "011 号码有 11 位数字，例如 011-2345 6789",
   "Mobile numbers have 10 digits, e.g. 012-345 6789": "手机号码有 10 位数字，例如 012-345 6789",
+
+  // Signing in from the Home Screen app (owner, 3 Nov 2026)
+  "You're Signed In": "你已登录",
+  "Approve in {provider}, then come back to this app. It signs you in by itself.": "在 {provider} 中确认后回到此应用，它会自动为你登录。",
+  "Continue Here Instead": "改为在这里继续",
+  "Finish Signing In in Your Browser": "请在浏览器中完成登录",
+  "Go back to the Rezekii app on your Home Screen. It signs you in by itself.": "请回到主屏幕上的 Rezekii 应用，它会自动为你登录。",
+  "Open Sign-In Again": "重新打开登录",
+  "Sign-in took too long. Please try again.": "登录时间太长，请重试。",
 };

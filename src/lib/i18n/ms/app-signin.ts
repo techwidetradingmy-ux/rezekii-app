@@ -86,4 +86,13 @@ export const APP_SIGNIN: Record<string, string> = {
   "015 numbers can't get WhatsApp codes. Use your mobile number.": "Nombor 015 tidak boleh terima kod WhatsApp. Guna nombor telefon bimbit anda.",
   "011 numbers have 11 digits, e.g. 011-2345 6789": "Nombor 011 ada 11 digit, cth. 011-2345 6789",
   "Mobile numbers have 10 digits, e.g. 012-345 6789": "Nombor telefon bimbit ada 10 digit, cth. 012-345 6789",
+
+  // Signing in from the Home Screen app (owner, 3 Nov 2026)
+  "You're Signed In": "Anda Sudah Log Masuk",
+  "Approve in {provider}, then come back to this app. It signs you in by itself.": "Luluskan di {provider}, kemudian kembali ke aplikasi ini. Ia akan log masuk anda dengan sendirinya.",
+  "Continue Here Instead": "Teruskan di Sini",
+  "Finish Signing In in Your Browser": "Selesaikan Log Masuk di Pelayar Anda",
+  "Go back to the Rezekii app on your Home Screen. It signs you in by itself.": "Kembali ke aplikasi Rezekii di Skrin Utama anda. Ia akan log masuk anda dengan sendirinya.",
+  "Open Sign-In Again": "Buka Log Masuk Semula",
+  "Sign-in took too long. Please try again.": "Log masuk mengambil masa terlalu lama. Sila cuba lagi.",
 };

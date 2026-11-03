@@ -26,7 +26,19 @@ import { dateLocale, tx } from "@/lib/i18n/lang";
 import "../creator1.css";
 import { keepInviteCode, saveProfile } from "@/lib/live-rewards";
 
-type Step = "start" | "oauth" | "profile" | "email" | "create" | "reset" | "welcome";
+type Step = "start" | "oauth" | "profile" | "email" | "create" | "reset" | "welcome" | "handed";
+
+/**
+ * The Home Screen app keeps its own sign-in, apart from the phone's browser (owner, 3 Nov 2026: it opened signed out each time,
+ * and Google asked for the password again). There, Google and TikTok open in the browser with a one-time code, and the app
+ * claims the sign-in when it's done (see modules/accounts/handoff.ts).
+ */
+const HANDOFF_KEY = "rz_handoff";
+const HANDOFF_MS = 10 * 60_000;
+const homeScreenApp = () => {
+  try { return window.matchMedia("(display-mode: standalone)").matches || (navigator as Navigator & { standalone?: boolean }).standalone === true; } catch { return false; }
+};
+const startPath = (p: "Google" | "TikTok") => (p === "Google" ? "/api/auth/google/start" : "/api/auth/tiktok/start");
 
 /**
  * Six icons around the card, three a side, on phones too (owner, 2 Nov 2026): video, cart, earnings, Marketplace, LIVE and
@@ -69,6 +81,8 @@ export default function SignIn() {
   const [saving, setSaving] = useState(false);
   // ?in=1 opens Sign in; everything else opens Sign up.
   const [provider, setProvider] = useState<keyof typeof PROVIDER>("Google");
+  // The Home Screen app's code while sign-in finishes in the browser.
+  const [handoff, setHandoff] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   // Country for later markets (owner, 30 Oct 2026). Malaysia picks from its states; others type theirs.
@@ -120,6 +134,16 @@ export default function SignIn() {
     const q = new URLSearchParams(window.location.search);
     const n = q.get("next");
     if (n && n.startsWith("/") && !n.startsWith("//")) setNext(n);
+    // Finished in the browser for the Home Screen app: say to go back there.
+    if (q.get("handed")) setStep("handed");
+    // The Home Screen app reopened while a sign-in was finishing in the browser: keep waiting for it.
+    else if (homeScreenApp()) {
+      try {
+        const saved = JSON.parse(localStorage.getItem(HANDOFF_KEY) ?? "null") as { code: string; at: number; provider: "Google" | "TikTok" } | null;
+        if (saved && Date.now() - saved.at < HANDOFF_MS) { setProvider(saved.provider); setStep("oauth"); setHandoff(saved.code); }
+        else localStorage.removeItem(HANDOFF_KEY);
+      } catch {}
+    }
     if (q.get("details")) {
       setStep("profile");
       setDetails(true);
@@ -216,6 +240,37 @@ export default function SignIn() {
   const signInCode = () => withBusy(async () => land((await emailCall({ mode: "signin", email, code })).details));
   const resetPassword = () => withBusy(async () => land((await emailCall({ mode: "reset", email, code, password: pw })).details));
 
+  // Waiting for the sign-in in the browser: asks every few seconds and whenever the app comes back to the front.
+  useEffect(() => {
+    if (!handoff) return;
+    let on = true;
+    const check = async () => {
+      const r = await fetch("/api/auth/handoff", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ code: handoff }) }).catch(() => null);
+      const d = r?.ok ? ((await r.json().catch(() => null)) as { to?: string } | null) : null;
+      if (on && d?.to) {
+        try { localStorage.removeItem(HANDOFF_KEY); } catch {}
+        window.location.href = d.to;
+      }
+    };
+    const timer = window.setInterval(() => void check(), 2500);
+    const seen = () => { if (document.visibilityState === "visible") void check(); };
+    document.addEventListener("visibilitychange", seen);
+    const stop = window.setTimeout(() => {
+      if (!on) return;
+      try { localStorage.removeItem(HANDOFF_KEY); } catch {}
+      setHandoff(null);
+      setStep("start");
+      toast(t("Sign-in took too long. Please try again."));
+    }, HANDOFF_MS);
+    void check();
+    return () => { on = false; window.clearInterval(timer); window.clearTimeout(stop); document.removeEventListener("visibilitychange", seen); };
+  }, [handoff]); // eslint-disable-line react-hooks/exhaustive-deps
+  const cancelHandoff = () => {
+    try { localStorage.removeItem(HANDOFF_KEY); } catch {}
+    setHandoff(null);
+    setStep("start");
+  };
+
   async function oauth(p: keyof typeof PROVIDER) {
     // A friend's code typed here is kept for the new account (owner, 31 Oct 2026); a wrong code stops so it can be fixed.
     if (typedRef && !refCode) {
@@ -228,9 +283,17 @@ export default function SignIn() {
     }
     setProvider(p);
     setStep("oauth");
+    // From the Home Screen app: sign in in the phone's browser and come back (owner, 3 Nov 2026).
+    if (homeScreenApp()) {
+      const code = `${crypto.randomUUID()}${crypto.randomUUID()}`.replace(/-/g, "").slice(0, 40);
+      try { localStorage.setItem(HANDOFF_KEY, JSON.stringify({ code, at: Date.now(), provider: p })); } catch {}
+      setHandoff(code);
+      window.open(`${startPath(p as "Google" | "TikTok")}?${new URLSearchParams({ ...(next ? { next } : {}), handoff: code })}`, "_blank");
+      return;
+    }
     // Real sign-in (owner, 30 Oct 2026): Google or TikTok, then back into the app with a session.
     const q = next ? `?next=${encodeURIComponent(next)}` : "";
-    window.location.href = `${p === "Google" ? "/api/auth/google/start" : "/api/auth/tiktok/start"}${q}`;
+    window.location.href = `${startPath(p as "Google" | "TikTok")}${q}`;
   }
 
   function typeBirthday(raw: string) {
@@ -516,6 +579,8 @@ export default function SignIn() {
   );
   const spin = <span className="cr1-spin sm" />;
   const sentTo = <p><Rich text={t("We sent a 6-digit code to {email}. It works for 10 minutes.")} parts={{ email: <b>{email.trim()}</b> }} /></p>;
+  // Opens the sign-in in the browser again for the Home Screen app's code.
+  const handoffUrl = handoff ? `${startPath(provider as "Google" | "TikTok")}?${new URLSearchParams({ ...(next ? { next } : {}), handoff })}` : "";
   let card: React.ReactNode;
   if (step === "start") {
     // One way in for everyone (owner, 31 Oct 2026): new people are asked for their details after, returning people go straight in.
@@ -533,6 +598,27 @@ export default function SignIn() {
         <p className="cr1-center cr1-switch">{t("New to Rezekii?")} <button type="button" className="v2-link" onClick={() => go("create")}>{t("Create Account")}</button></p>
         <p className="cr1-center cr1-fine"><Rich text={t("By Continuing You Agree to Rezekii's {terms} and {privacy}.")} parts={policies} /></p>
       </>
+    );
+  } else if (step === "oauth" && handoff) {
+    // Home Screen app: sign-in is open in the browser; this app signs in by itself once it's done (owner, 3 Nov 2026).
+    card = (
+      <div className="cr1-wait">
+        <span className="cr1-provider">{provider === "Google" ? <GoogleMark /> : <TikTokMark size={26} />}</span>
+        <span className="cr1-spin" aria-hidden="true" />
+        <b>{t("Finish Signing In in Your Browser")}</b>
+        <p>{t("Approve in {provider}, then come back to this app. It signs you in by itself.", { provider })}</p>
+        <a className="btn-outline" href={handoffUrl} target="_blank" rel="noreferrer">{t("Open Sign-In Again")}</a>
+        <button type="button" className="v2-link" onClick={cancelHandoff}>{t("Cancel")}</button>
+      </div>
+    );
+  } else if (step === "handed") {
+    card = (
+      <div className="cr1-wait">
+        <span className="cr1-provider"><Icon name="check" size={26} width={2.6} /></span>
+        <b>{t("You're Signed In")}</b>
+        <p>{t("Go back to the Rezekii app on your Home Screen. It signs you in by itself.")}</p>
+        <a className="v2-link" href="/app">{t("Continue Here Instead")}</a>
+      </div>
     );
   } else if (step === "oauth") {
     card = (

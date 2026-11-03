@@ -116,6 +116,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
     });
   }, [sectionHref, page]);
   const tabHref = (href: string) => (section?.href === href ? href : lastPage[href] ?? href);
+  const signOut = () => { fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/signin?in=1"; }); };
   const { me, live } = useDemo();
   // The bell shows her real unread count when signed in (owner, 31 Oct 2026); nothing when there are none.
   const sideNotes = useUnreadNotes(app === "seller" ? "seller" : "creator", live && app !== "admin");
@@ -315,6 +316,8 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
               <Icon name={app === "admin" ? "home" : "shield"} size={16} /> {app === "admin" ? "Creator Dashboard" : t("Admin Dashboard")}
             </Link>
           )}
+          {/* Admin has no account panel, so Sign Out sits in the top bar (owner, 3 Nov 2026). */}
+          {app === "admin" && live && <button type="button" className="v2-dashswitch" onClick={signOut}><Icon name="back" size={16} /> Sign Out</button>}
           <Link href={ACCOUNT[app]} className={`v2-acct${ring}`} aria-label={storyNew && hasStory ? t("Watch your Daily Story") : undefined} onClick={(e) => { if (hasStory && storyNew) { e.preventDefault(); setStory(true); return; } if (app === "creator" && window.matchMedia("(max-width: 760px)").matches) { e.preventDefault(); setAcctOpen(true); } }}>
             {who.photo ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -382,11 +385,16 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
       {more && (
         <Sheet title="Admin Menu" onClose={() => setMore(false)}>
           <div className="v2-divide">
+            {/* On phones the way back to the creator app and Sign Out live here (owner, 3 Nov 2026). */}
+            <Link href="/app" onClick={() => setMore(false)} className="v2-row" style={{ padding: "14px 2px", color: "var(--text)", textDecoration: "none", fontWeight: 700 }}>
+              <Icon name="home" /> Creator Dashboard
+            </Link>
             {menu.slice(4).map((s) => (
               <Link key={s.href} href={s.href} onClick={() => setMore(false)} className="v2-row" style={{ padding: "14px 2px", color: "var(--text)", textDecoration: "none", fontWeight: 700 }}>
                 <Icon name={s.icon} /> {s.label}
               </Link>
             ))}
+            {live && <button type="button" onClick={signOut} className="v2-row" style={{ padding: "14px 2px", color: "var(--text)", background: "none", border: 0, font: "inherit", fontWeight: 700, width: "100%", textAlign: "left", cursor: "pointer" }}><Icon name="back" /> Sign Out</button>}
           </div>
         </Sheet>
       )}
