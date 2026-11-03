@@ -38,8 +38,8 @@ export async function GET() {
     // Beta sign-up approval for the creator and the seller app (owner, 2 Nov 2026); null on a side she hasn't opened yet.
     betaRows(user.id).then(async (rows) => ({ creator: await betaState(rows.find((r) => r.side === "creator")), seller: await betaState(rows.find((r) => r.side === "seller")) })).catch(() => null),
     // How she can sign in (owner, 31 Oct 2026: Settings shows the real ways in). No secrets leave the server.
-    supabaseRest(`app_users?id=eq.${user.id}&select=google_sub,tiktok_open_id,tiktok_username,password_hash,login_email,email&limit=1`)
-      .then((r) => r.json() as Promise<{ google_sub: string | null; tiktok_open_id: string | null; tiktok_username: string | null; password_hash: string | null; login_email: string | null; email: string | null }[]>)
+    supabaseRest(`app_users?id=eq.${user.id}&select=google_sub,tiktok_open_id,tiktok_username,password_hash,login_email,email,guide_seen&limit=1`)
+      .then((r) => r.json() as Promise<{ google_sub: string | null; tiktok_open_id: string | null; tiktok_username: string | null; password_hash: string | null; login_email: string | null; email: string | null; guide_seen: Record<string, string> | null }[]>)
       .then((r) => r[0]).catch(() => undefined),
     // Signed in for 90 days from her latest visit (owner, 2 Nov 2026).
     renewSession(token).catch(() => null),
@@ -66,6 +66,8 @@ export async function GET() {
         // The Seller Center shop this account authorized, for the seller app (owner, 30 Oct 2026).
         sellerShop,
         beta,
+        // Welcome Tour seen per app (owner, 4 Nov 2026); null when it couldn't be read, so it doesn't pop up by mistake.
+        tour: ways ? { creator: !!ways.guide_seen?.tour_creator, seller: !!ways.guide_seen?.tour_seller } : null,
       },
     },
     NO_STORE,

@@ -158,6 +158,12 @@ export default function SellerAccount() {
         <div className="sl-set"><span><b>{live ? t("Sample Terms for TAP Products") : t("You agreed on {date}", { date: "12 Sep 2026" })}</b><small>{t(TERMS_VERSION)}. {live ? t("They apply to every product you send to TAP.") : t("We'll ask again if they change.")}</small></span><button type="button" className="v2-link" onClick={() => setTerms(true)}>{t("Read")}</button></div>
       </section>
 
+      {/* The beginner guide (owner, 4 Nov 2026). */}
+      <section className="v2-card">
+        <h2 className="v2-h2">{t("How to Use Rezekii")}</h2>
+        <div className="sl-set"><span><b>{t("Guide")}</b></span><Link href="/seller/app/guide" className="v2-link">{t("Open")}</Link></div>
+      </section>
+
       {live ? <LiveSellerHelp /> : (
       <section className="v2-card">
         <h2 className="v2-h2">{t("Help & Feedback")}</h2>

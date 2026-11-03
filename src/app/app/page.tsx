@@ -5,6 +5,7 @@ import { useWho } from "@/components/demo";
 import { ScanHub } from "@/components/creator1/scan-hub";
 import { CoverageCard } from "@/components/creator1/showcase-coverage";
 import { useT } from "@/lib/i18n/client";
+import { GettingStarted } from "@/components/guide";
 import "@/app/creator1.css";
 
 /** Creator home (owner, 28 Oct 2026): the showcase scanner only. Today's ideas is under Publish, AI picks under Analytics. */
@@ -22,6 +23,8 @@ export default function CreatorHome() {
           {hi === "morning" ? t("Good morning, {name}", { name }) : hi === "afternoon" ? t("Good afternoon, {name}", { name }) : t("Good evening, {name}", { name })}
         </h1>
       </div>
+      {/* First steps for a new creator (owner, 4 Nov 2026). */}
+      <GettingStarted side="creator" />
       <ScanHub />
       <CoverageCard />
     </div>

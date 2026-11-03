@@ -10,7 +10,9 @@ export type Role = "creator" | "seller";
 export type Me = { id: string; name: string | null; email: string | null; role: "admin" | "creator"; photo: string | null; handle: string | null; level: "bronze" | "silver" | "gold"; shop: { handle: string; access: string | null; expired?: boolean; noLive?: boolean } | null; sellerShop: string | null; ttLevel?: number | null;
   signIn?: { tiktok: string | null; google: string | null; email: string | null; password: boolean };
   /** Beta sign-up approval per app (owner, 2 Nov 2026); null on an app she hasn't opened yet. */
-  beta?: { creator: BetaState | null; seller: BetaState | null } | null };
+  beta?: { creator: BetaState | null; seller: BetaState | null } | null;
+  /** Whether she has seen the Welcome Tour on each app (owner, 4 Nov 2026); null when unknown. */
+  tour?: { creator: boolean; seller: boolean } | null };
 /** Who agreed to what and when, kept as evidence (the real one also stores IP, device and TikTok's grant id). */
 export type Consent = { role: Role; at: string; terms: string; privacy: string; unlinkedAt?: string };
 

@@ -14,6 +14,7 @@ import { useDemo } from "@/components/demo";
 import { LiveActivity, LiveHello, LiveNext, LiveSummary, useSellerHome } from "@/components/seller/live-home";
 import { useConnectResult } from "@/components/seller/live-connect";
 import { useT } from "@/lib/i18n/client";
+import { GettingStarted } from "@/components/guide";
 import { tx, type T } from "@/lib/i18n/lang";
 
 type StageKey = "new" | "fix" | "waiting" | "running";
@@ -63,6 +64,8 @@ export default function SellerHome() {
       )}
 
       <ConnBanner />
+      {/* First steps for a new seller (owner, 4 Nov 2026). */}
+      <GettingStarted side="seller" />
       {signedIn && <LiveNext items={real.items} />}
 
       {!signedIn && stage === "fix" && broken && !fixed && (

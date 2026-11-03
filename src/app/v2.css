@@ -1164,7 +1164,7 @@ html[data-wait="1"] .v2-main::after { content: "Loading your Rezekii…"; positi
 .ap-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-bottom: 10px; }
 .ap-body > * { flex-shrink: 0; }
 .ap-me { padding: 10px; gap: 10px; }
-.ap-list a { padding: 9px 12px; gap: 10px; font-size: 14.5px; }
+.ap-list a { padding: 8px 12px; gap: 10px; font-size: 14.5px; }
 .ap-ic { width: 28px; height: 28px; border-radius: 9px; }
 .ap-chips { flex-wrap: wrap; }
 .ap-chips a { display: inline-flex; align-items: center; justify-content: center; gap: 3px; height: 24px; min-width: 24px; padding: 0 7px; border-radius: 99px; font-size: 13px; font-weight: 900; text-decoration: none; }
@@ -1225,5 +1225,59 @@ html[data-wait="1"] .v2-main::after { content: "Loading your Rezekii…"; positi
 .as-wait, .as-full { margin: 0; padding: 14px; }
 .as-all { margin-top: 14px; width: 100%; height: 46px; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); color: #d92d20; font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; }
 /* Switch Account sits right above each Sign Out. */
-.ap-switch { display: flex; align-items: center; justify-content: center; gap: 8px; height: 46px; margin-bottom: 8px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); color: var(--text); font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; width: 100%; }
+.ap-outrow { display: flex; gap: 8px; flex-shrink: 0; }
+.ap-outrow > * { flex: 1 1 0; min-width: 0; height: 44px; padding: 0 8px; white-space: nowrap; font-size: 14.5px; }
+.ap-switch { display: flex; align-items: center; justify-content: center; gap: 8px; height: 46px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); color: var(--text); font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; width: 100%; }
 .ap-switch:active { background: var(--surface2); }
+
+/* Beginner guide (owner, 4 Nov 2026): Welcome Tour, Getting Started on Home, and the Guide page. Same on phones and computers. */
+.ap-ic.guide { background: #0ea5e9; }
+.wt-back { position: fixed; inset: 0; z-index: 90; background: rgba(9, 15, 12, 0.55); backdrop-filter: blur(3px); }
+.wt-card { position: fixed; z-index: 91; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(400px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; padding: 26px 22px 20px; border-radius: 24px; background: var(--surface); color: var(--text); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; animation: wt-in 0.25s var(--ease); }
+@keyframes wt-in { from { opacity: 0; transform: translate(-50%, -46%); } }
+.wt-skip { position: absolute; top: 12px; right: 14px; border: 0; background: none; color: var(--muted); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; padding: 6px; }
+.wt-kicker { margin: 0; color: var(--gink); font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.wt-icon { width: 76px; height: 76px; border-radius: 22px; display: grid; place-items: center; color: #fff; margin: 6px 0 2px; }
+.wt-icon.green { background: linear-gradient(160deg, #34d892, #00a35e); } .wt-icon.blue { background: linear-gradient(160deg, #5aa2ff, #2f80ed); }
+.wt-icon.purple { background: linear-gradient(160deg, #a59bf0, #7f77dd); } .wt-icon.orange { background: linear-gradient(160deg, #ffc15a, #f5a623); }
+.wt-icon.pink { background: linear-gradient(160deg, #ff6aa2, #e8005a); }
+.wt-card h2 { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.01em; }
+.wt-line { margin: 0; color: var(--body); font-size: 15.5px; line-height: 1.5; max-width: 32ch; text-wrap: balance; }
+.wt-dots { display: flex; gap: 6px; margin: 6px 0 4px; }
+.wt-dots button { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 99px; background: var(--line); cursor: pointer; transition: width 0.2s var(--ease), background 0.2s; }
+.wt-dots button.on { width: 22px; background: var(--green); }
+.wt-acts { display: flex; gap: 10px; width: 100%; }
+.wt-acts > * { flex: 1; height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.gs-card { display: flex; flex-direction: column; gap: 12px; }
+.gs-head { display: flex; align-items: center; gap: 12px; }
+.gs-head > span { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.gs-head b { font-size: 17px; font-weight: 800; }
+.gs-head small { color: var(--muted); font-size: 13px; }
+.gs-guide { font-size: 14px; font-weight: 700; }
+.gs-close { width: 32px; height: 32px; border: 0; border-radius: 50%; display: grid; place-items: center; background: var(--surface2); color: var(--muted); cursor: pointer; }
+.gs-bar { height: 6px; border-radius: 99px; background: var(--surface2); overflow: hidden; }
+.gs-bar i { display: block; height: 100%; border-radius: inherit; background: var(--green); transition: width 0.4s var(--ease); }
+.gs-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+@media (min-width: 761px) { .gs-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.gs-list a { display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--line); color: var(--text); text-decoration: none; font-size: 14.5px; font-weight: 700; }
+.gs-list a > svg { margin-left: auto; color: var(--muted); flex: none; }
+.gs-list li.next a { border-color: var(--green); background: var(--gsoft); }
+.gs-list li.done a { color: var(--muted); }
+.gs-list li.done .gs-title { text-decoration: line-through; }
+.gs-tick { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; }
+.gs-list li.done .gs-tick { border-color: var(--green); background: var(--green); color: #fff; }
+.gs-title { min-width: 0; }
+.gd-page { gap: 16px; }
+.gd-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.gd-top h1 { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
+.gd-top .btn-outline { display: inline-flex; align-items: center; gap: 6px; }
+.gd-list { display: grid; gap: 12px; }
+@media (min-width: 761px) { .gd-list { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; } }
+.gd-item { padding: 0; overflow: hidden; }
+.gd-head { width: 100%; display: flex; align-items: center; gap: 12px; padding: 16px; border: 0; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.gd-head b { flex: 1; font-size: 16px; }
+.gd-head > svg:last-child { color: var(--muted); }
+.gd-ic { flex: none; width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; background: var(--gsoft); color: var(--gink); }
+.gd-body { padding: 0 16px 16px; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.gd-body ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; color: var(--body); font-size: 15px; line-height: 1.45; }
+.gd-body .np-btn { display: inline-flex; align-items: center; gap: 6px; }

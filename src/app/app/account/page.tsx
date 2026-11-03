@@ -789,9 +789,10 @@ export default function Account() {
               <span className="lbl">{t("Email Support")}</span>
               <span className="chev">support@rezekii.com <Icon name="arrow" size={16} /></span>
             </a>
-            <Link href="/tour" className="cr2-cell cr2-cellbtn">
-              <span className="lbl">{t("How Rezekii works")}</span>
-              <span className="chev">{t("Tour")} <Icon name="arrow" size={16} /></span>
+            {/* The beginner guide (owner, 4 Nov 2026), instead of the preview's page list. */}
+            <Link href="/app/guide" className="cr2-cell cr2-cellbtn">
+              <span className="lbl">{t("How to Use Rezekii")}</span>
+              <span className="chev">{t("Guide")} <Icon name="arrow" size={16} /></span>
             </Link>
           </div>
         </section>

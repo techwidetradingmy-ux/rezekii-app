@@ -26,6 +26,7 @@ import { PullRefresh } from "@/components/pull-refresh";
 import { loadWallet } from "@/lib/live-rewards";
 import { LangSwitch, useT } from "@/lib/i18n/client";
 import { AccountSwitcher } from "./account-switcher";
+import { TourOnce } from "./guide";
 import { signOut as endSession } from "@/lib/sign-out";
 import { useFollowPush } from "./account/push-switch";
 
@@ -410,6 +411,8 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
         </Sheet>
       )}
       {switcher && <AccountSwitcher app={app} onClose={() => setSwitcher(false)} />}
+      {/* The Welcome Tour, once per account on each app (owner, 4 Nov 2026). */}
+      {app !== "admin" && <TourOnce side={app} />}
       {more && (
         <Sheet title="Admin Menu" onClose={() => setMore(false)}>
           <div className="v2-divide">
@@ -520,6 +523,12 @@ function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory?: () 
               </Link>
             )}
             {ACCOUNT_TABS.map(row)}
+            {/* The beginner guide (owner, 4 Nov 2026). */}
+            <Link href="/app/guide" className={path === "/app/guide" ? "on" : undefined} onClick={onClose}>
+              <span className="ap-ic guide"><Icon name="info" size={16} /></span>
+              <span>{t("How to Use Rezekii")}</span>
+              <Icon name="arrow" size={15} />
+            </Link>
           </nav>
           {/* Support and feedback side by side (owner, 1 Nov 2026); Contact Support opens WhatsApp. */}
           <div className="ap-help">
@@ -542,9 +551,12 @@ function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory?: () 
           </Sheet>
         )}
         {switcher && <AccountSwitcher app="creator" onClose={() => setSwitcher(false)} />}
-        {/* Sign out lives in the panel on phones, not in Settings (owner, 29 Oct 2026), with Switch Account above it (4 Nov 2026). */}
-        {live && <button type="button" className="ap-switch" onClick={() => setSwitcher(true)}><Icon name="users" size={17} /> {t("Switch Account")}</button>}
-        <Link href="/signin?in=1" className="ap-signout" onClick={(e) => { if (!live) return onClose(); e.preventDefault(); endSession(); }}><Icon name="back" size={17} /> {t("Sign Out")}</Link>
+        {/* Sign out lives in the panel on phones, not in Settings (owner, 29 Oct 2026), with Switch Account beside it (4 Nov 2026),
+            on one row so the panel still fits one screen. */}
+        <div className="ap-outrow">
+          {live && <button type="button" className="ap-switch" onClick={() => setSwitcher(true)}><Icon name="users" size={17} /> {t("Switch Account")}</button>}
+          <Link href="/signin?in=1" className="ap-signout" onClick={(e) => { if (!live) return onClose(); e.preventDefault(); endSession(); }}><Icon name="back" size={17} /> {t("Sign Out")}</Link>
+        </div>
       </aside>
     </Portal>
   );
