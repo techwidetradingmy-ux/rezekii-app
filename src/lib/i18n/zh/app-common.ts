@@ -574,4 +574,6 @@ export const APP_COMMON: Record<string, string> = {
   "Posting to TikTok is waiting for TikTok's approval. Coming soon.": "发布到 TikTok 正在等待 TikTok 审核通过，即将开放。",
   "Admin Dashboard": "管理后台",
   "Waiting for Meta's approval. Coming soon.": "正在等待 Meta 审核通过，即将开放。",
+  "Rezekii is in beta. We check every sign-up and let you in soon. We'll email you when you're in.": "Rezekii 正在内测。我们会审核每一份注册，很快就会让你加入。通过后我们会发邮件通知你。",
+  "All beta places are taken. You're on the waitlist, and we'll email you when a place opens.": "内测名额已满。你已在候补名单中，有名额时我们会发邮件通知你。",
 };

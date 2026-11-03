@@ -43,11 +43,8 @@ export function BetaWait({ side, state }: { side: "creator" | "seller"; state: B
         {s === "waiting" && (
           <>
             <h1>{name ? t("You're on the List, {name}", { name }) : t("You're on the List")}</h1>
-            <p>{t("Rezekii is in beta, with {n} places for creators. We check every sign-up and let you in soon. We'll email you when you're in.", { n: beta!.cap })}</p>
-            <div className="bw-stats">
-              <span><b>{beta!.place}</b><small>{t("Your Place in the Queue")}</small></span>
-              <span><b>{t("{taken} of {cap}", { taken: beta!.taken, cap: beta!.cap })}</b><small>{t("Places Taken")}</small></span>
-            </div>
+            {/* No queue numbers (owner, 3 Nov 2026: don't show how many people are waiting). */}
+            <p>{t("Rezekii is in beta. We check every sign-up and let you in soon. We'll email you when you're in.")}</p>
           </>
         )}
         {s === "waitlist" && (
@@ -56,11 +53,8 @@ export function BetaWait({ side, state }: { side: "creator" | "seller"; state: B
             <p>
               {side === "seller"
                 ? t("Seller accounts open after the creator beta. You're on the seller waitlist, and we'll email you when you're in.")
-                : t("All {n} beta places are taken. You're on the waitlist, and we'll email you when a place opens.", { n: beta!.cap })}
+                : t("All beta places are taken. You're on the waitlist, and we'll email you when a place opens.")}
             </p>
-            <div className="bw-stats">
-              <span><b>{beta!.place}</b><small>{t("Your Place on the Waitlist")}</small></span>
-            </div>
           </>
         )}
         {s === "declined" && (

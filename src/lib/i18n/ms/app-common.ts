@@ -749,4 +749,6 @@ export const APP_COMMON: Record<string, string> = {
   "Posting to TikTok is waiting for TikTok's approval. Coming soon.": "Penyiaran ke TikTok sedang menunggu kelulusan TikTok. Akan datang tidak lama lagi.",
   "Admin Dashboard": "Papan Pemuka Admin",
   "Waiting for Meta's approval. Coming soon.": "Menunggu kelulusan Meta. Akan datang tidak lama lagi.",
+  "Rezekii is in beta. We check every sign-up and let you in soon. We'll email you when you're in.": "Rezekii dalam fasa beta. Kami menyemak setiap pendaftaran dan akan membenarkan anda masuk tidak lama lagi. Kami akan e-mel anda apabila anda boleh masuk.",
+  "All beta places are taken. You're on the waitlist, and we'll email you when a place opens.": "Semua tempat beta sudah penuh. Anda dalam senarai menunggu, dan kami akan e-mel anda apabila ada tempat kosong.",
 };
