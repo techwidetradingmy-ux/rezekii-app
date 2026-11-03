@@ -4,6 +4,7 @@ import { freshTikTokToken, userTikTokOpenId } from "../posting/store.ts";
 import { grant, settle, type Row } from "./ledger.ts";
 import { addDays, chestsFor, dayOf, dayStart, missionDays, STARTER_DAYS, streakOf, TIERS } from "./rules.ts";
 import { makeT, tx, type T } from "../../lib/i18n/lang.ts";
+import { metaOpen, OPEN } from "../../lib/platforms.ts";
 
 /** English, as written; the rewards route passes the reader's language. */
 const EN: T = makeT(null);
@@ -30,13 +31,14 @@ export type Board = {
   milestones: MissionState[];
 };
 
-type Def = { id: string; reward: number; check: (s: Signals) => boolean | [number, number] };
+/** `needs`: the connection a mission can't be done without; it's left out while that app waits for approval (see `offered`). */
+type Def = { id: string; reward: number; check: (s: Signals) => boolean | [number, number]; needs?: "tiktok" | "social" | "post" };
 type Signals = Record<string, number | boolean>;
 
 const CREATOR_DAILY: Def[] = [
   { id: "d1", reward: 5, check: () => true },
-  { id: "d2", reward: 20, check: (s) => (s.videosToday as number) >= 1 },
-  { id: "d3", reward: 30, check: (s) => [Math.min(3, s.videosToday as number), 3] },
+  { id: "d2", reward: 20, check: (s) => (s.videosToday as number) >= 1, needs: "post" },
+  { id: "d3", reward: 30, check: (s) => [Math.min(3, s.videosToday as number), 3], needs: "post" },
   { id: "d4", reward: 10, check: (s) => !!s.scanToday },
   { id: "d5", reward: 15, check: (s) => !!s.sampleToday },
   { id: "d6", reward: 5, check: (s) => !!s.sharedToday },
@@ -44,14 +46,14 @@ const CREATOR_DAILY: Def[] = [
 const CREATOR_STARTER: Def[] = [
   { id: "s1", reward: 50, check: (s) => !!s.profile },
   { id: "s2", reward: 100, check: (s) => !!s.shop },
-  { id: "s3", reward: 50, check: (s) => !!s.tiktok },
-  { id: "s4", reward: 30, check: (s) => !!s.social },
+  { id: "s3", reward: 50, check: (s) => !!s.tiktok, needs: "tiktok" },
+  { id: "s4", reward: 30, check: (s) => !!s.social, needs: "social" },
   { id: "s6", reward: 50, check: (s) => !!s.scanned },
   { id: "s7", reward: 120, check: (s) => !!s.collab },
 ];
 const SELLER_DAILY: Def[] = [
   { id: "d1", reward: 5, check: () => true },
-  { id: "d2", reward: 20, check: (s) => (s.videosToday as number) >= 1 },
+  { id: "d2", reward: 20, check: (s) => (s.videosToday as number) >= 1, needs: "post" },
   { id: "d3", reward: 5, check: (s) => !!s.resultsToday },
   { id: "d4", reward: 20, check: (s) => !!s.passedToday },
   { id: "d5", reward: 5, check: (s) => !!s.sharedToday },
@@ -61,7 +63,7 @@ const SELLER_STARTER: Def[] = [
   { id: "sm2", reward: 50, check: (s) => !!s.profile },
   { id: "sm3", reward: 100, check: (s) => (s.submitted as number) > 0 },
   { id: "sm4", reward: 150, check: (s) => (s.live as number) > 0 },
-  { id: "sm5", reward: 30, check: (s) => !!s.social },
+  { id: "sm5", reward: 30, check: (s) => !!s.social, needs: "social" },
   { id: "sm6", reward: 50, check: (s) => !!s.invited },
 ];
 const SELLER_MILESTONES: Def[] = [
@@ -116,12 +118,13 @@ async function creatorSignals(user: { id: string }, today: string, events: Set<s
 }
 
 async function sellerSignals(user: { id: string }, today: string, events: Set<string>): Promise<Signals> {
-  const [shops, subs, social, prof, invited] = await Promise.all([
+  const [shops, subs, social, prof, invited, tt] = await Promise.all([
     json<{ shop_id: string }>(`seller_connections?connected_by=eq.${user.id}&select=shop_id`),
     json<{ product_id: string; status: string; history: { at: string; stage?: string }[] }>(`tap_submissions?submitted_by=eq.${user.id}&select=product_id,status,history&limit=500`),
     json<{ id: string }>(`social_accounts?user_id=eq.${user.id}&select=id&limit=1`),
     json<{ complete: boolean }>(`profiles?user_id=eq.${user.id}&side=eq.seller&complete=is.true&select=complete&limit=1`),
     json<{ friend_id: string }>(`referrals?inviter_id=eq.${user.id}&qualified_at=not.is.null&select=friend_id&limit=1`),
+    json<{ open_id: string }>(`tiktok_connections?user_id=eq.${user.id}&select=open_id&limit=1`),
   ]);
   const live = subs.filter((s) => s.status === "live");
   // Creators who made a video, a LIVE or a sale with the shop's TAP products.
@@ -131,9 +134,19 @@ async function sellerSignals(user: { id: string }, today: string, events: Set<st
     videosToday: await videosToday(user.id, today), resultsToday: events.has("results"), sharedToday: events.has("share"),
     // A product counts the day it passes our review.
     passedToday: subs.some((s) => s.history?.some((h) => h.stage === "approved" && inDay(h.at, today))),
-    shop: shops.length > 0, profile: prof.length > 0, submitted: subs.length, live: live.length, social: social.length > 0, invited: invited.length > 0, creators,
+    shop: shops.length > 0, profile: prof.length > 0, submitted: subs.length, live: live.length, social: social.length > 0, tiktok: tt.length > 0, invited: invited.length > 0, creators,
   };
 }
+
+/**
+ * Missions she can do (owner, 3 Nov 2026): while TikTok or Meta waits to approve Rezekii, the missions that need that connection
+ * are left out, unless she's already connected (then she can still do them).
+ */
+const offered = (d: Def, s: Signals) =>
+  d.needs === "tiktok" ? OPEN.tiktok || !!s.tiktok
+    : d.needs === "social" ? metaOpen() || !!s.social
+      : d.needs === "post" ? OPEN.tiktok || metaOpen() || !!s.tiktok || !!s.social
+        : true;
 
 const ref = (kind: "daily" | "once", id: string, day: string) => (kind === "daily" ? `d:${id}:${day}` : `o:${id}`);
 
@@ -151,7 +164,7 @@ async function build(user: { id: string; created_at: string }, side: Side, all?:
   const s = side === "creator" ? await creatorSignals(user, today, events) : await sellerSignals(user, today, events);
   const startedDaysAgo = (Date.now() - Date.parse(user.created_at)) / 86400_000;
   const starterLeft = Math.max(0, Math.ceil(STARTER_DAYS - startedDaysAgo));
-  const [dailyDefs, starterDefs, milestoneDefs] = side === "creator" ? [CREATOR_DAILY, CREATOR_STARTER, []] : [SELLER_DAILY, SELLER_STARTER, SELLER_MILESTONES];
+  const [dailyDefs, starterDefs, milestoneDefs] = (side === "creator" ? [CREATOR_DAILY, CREATOR_STARTER, []] : [SELLER_DAILY, SELLER_STARTER, SELLER_MILESTONES]).map((list) => list.filter((d) => offered(d, s)));
   const defs: Record<string, { def: Def; kind: "daily" | "once"; open: boolean }> = {};
   for (const d of dailyDefs) defs[d.id] = { def: d, kind: "daily", open: true };
   for (const d of starterDefs) defs[d.id] = { def: d, kind: "once", open: starterLeft > 0 };

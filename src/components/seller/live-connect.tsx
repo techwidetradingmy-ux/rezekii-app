@@ -7,6 +7,8 @@ import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { GoogleMark, TikTokMark } from "@/components/creator1/brand";
+import { NotYet } from "@/components/not-yet";
+import { OPEN } from "@/lib/platforms";
 import { TERMS_VERSION } from "@/lib/mock-seller";
 import { Tip } from "@/components/ui";
 import { Rich } from "@/components/seller/seller-ui";
@@ -52,7 +54,8 @@ export function LiveSellerConnect() {
               <h1>{t("Connect Your TikTok Shop")}</h1>
               <p>{t("Sign in first. It takes about 3 minutes in all.")}</p>
               <a className="btn-google sl-ob-btn" style={{ font: "inherit", fontWeight: 600 }} href="/api/auth/google/start?next=/seller/connect"><GoogleMark /> {t("Continue with Google")}</a>
-              <a className="btn-tiktok sl-ob-btn" style={{ border: 0, font: "inherit", fontWeight: 800 }} href="/api/auth/tiktok/start?next=/seller/connect"><TikTokMark size={20} /> {t("Continue with TikTok")}</a>
+              {OPEN.tiktok ? <a className="btn-tiktok sl-ob-btn" style={{ border: 0, font: "inherit", fontWeight: 800 }} href="/api/auth/tiktok/start?next=/seller/connect"><TikTokMark size={20} /> {t("Continue with TikTok")}</a>
+                : <div className="sl-ob-btn auth-off"><TikTokMark size={20} /> {t("Continue with TikTok")} <NotYet app="tiktok" /></div>}
               {ready && <Link href="/signin?next=/seller/connect" className="btn-outline sl-ob-btn" style={{ font: "inherit", fontWeight: 700 }}><Icon name="inbox" size={18} /> {t("Continue with Email")}</Link>}
             </>
           ) : (

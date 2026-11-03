@@ -10,6 +10,7 @@ import { useLang, useT } from "@/lib/i18n/client";
 import { dateLocale, tx, type Lang, type T } from "@/lib/i18n/lang";
 import { rich } from "./rich";
 import { PlatformIcon } from "@/components/creator2/bits";
+import { NotYet, useCanConnect } from "@/components/not-yet";
 import { POST_CREDITS, type MyPost, type PubBrand, type PubChannel, type PublishSetup } from "@/lib/mock-publish";
 import { postToEdit, saveEdit } from "./post-edits";
 import { creatorInfo, sendPost, upload, type CreatorInfo } from "@/lib/live-publish";
@@ -861,6 +862,7 @@ function Tabs<T extends string>({ value, set, items, label }: { value: T; set: (
 function ChannelsSheet({ channels, connectable, onConnect, onConnectApp, onReconnect, onCheck, onDisconnect, onClose }: { channels: PubChannel[]; connectable: PubChannel[]; onConnect: (c: PubChannel) => void; onConnectApp?: (p: Channel) => void; onReconnect: (c: PubChannel) => void; onCheck: (c: PubChannel) => void; onDisconnect: (c: PubChannel) => void; onClose: () => void }) {
   const { toast } = useDemo();
   const t = useT();
+  const can = useCanConnect();
   const [q, setQ] = useState("");
   const s = q.trim().toLowerCase();
   return (
@@ -888,7 +890,7 @@ function ChannelsSheet({ channels, connectable, onConnect, onConnectApp, onRecon
               <div className="pb-ch">
                 <PlatformIcon name={ICON[p]} size={34} />
                 <span><b>{!list.length ? t("Connect {app}", { app: NAMES[p] }) : p === "facebook" ? t("Add Pages") : p === "threads" ? t("Add profiles") : t("Add accounts")}</b><small>{p === "facebook" ? t("Pick Pages after sign-in") : p === "instagram" ? t("Business or Creator account") : p === "threads" ? t("Your Threads profile") : t("Your TikTok account")}</small></span>
-                <button type="button" className="np-btn v2-btn-sm" onClick={() => (onConnectApp ? onConnectApp(p) : add ? onConnect(add) : toast(t("Preview: {app} sign-in opens here", { app: NAMES[p] })))}>{t("Connect")}</button>
+                {can(p) ? <button type="button" className="np-btn v2-btn-sm" onClick={() => (onConnectApp ? onConnectApp(p) : add ? onConnect(add) : toast(t("Preview: {app} sign-in opens here", { app: NAMES[p] })))}>{t("Connect")}</button> : <NotYet app={p} />}
               </div>
             )}
           </div>

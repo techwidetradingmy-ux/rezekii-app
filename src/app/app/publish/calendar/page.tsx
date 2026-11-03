@@ -7,6 +7,7 @@ import { CREATOR_POSTS, CREATOR_SETUP } from "@/lib/mock-publish";
 import { useLivePosts, useLiveSetup } from "@/lib/live-publish";
 import "@/app/publish.css";
 import { useT } from "@/lib/i18n/client";
+import { NotYet, useCanConnect } from "@/components/not-yet";
 
 /**
  * Content calendar for creators: every post with each app's live status; edit or cancel in place. Signed in, her real posts.
@@ -14,6 +15,7 @@ import { useT } from "@/lib/i18n/client";
  */
 export default function PublishPosts() {
   const t = useT();
+  const can = useCanConnect();
   const setup = useLiveSetup(CREATOR_SETUP, "creator");
   const posts = useLivePosts(CREATOR_POSTS);
   if (setup === "wait" || posts === "wait") return <div className="v2-stack v2-in"><Loading text={t("Loading your posts…")} /></div>;
@@ -26,7 +28,7 @@ export default function PublishPosts() {
           <span className="badge badge-amber"><Icon name="lock" size={13} /> {t("Link TikTok First")}</span>
           <h2 className="v2-h2">{t("Sign In With Your TikTok Account")}</h2>
           <p className="v2-small">{t("Your calendar shows every video you post and its status, so it needs your TikTok account. Link it once and your posts show here.")}</p>
-          <a href="/api/auth/tiktok/start?next=/app/publish/calendar" className="np-btn v2-btn-sm"><Icon name="link" size={15} /> {t("Link TikTok Account")}</a>
+          {can("tiktok") ? <a href="/api/auth/tiktok/start?next=/app/publish/calendar" className="np-btn v2-btn-sm"><Icon name="link" size={15} /> {t("Link TikTok Account")}</a> : <NotYet app="tiktok" />}
         </section>
       </div>
     );

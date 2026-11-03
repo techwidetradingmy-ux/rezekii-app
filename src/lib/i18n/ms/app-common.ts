@@ -743,4 +743,9 @@ export const APP_COMMON: Record<string, string> = {
   "7 days": "7 Hari",
   "30 days": "30 Hari",
   "90 days": "90 Hari",
+
+  // Apps waiting for TikTok's or Meta's approval (owner, 3 Nov 2026)
+  "Not Available Yet": "Belum Tersedia",
+  "Waiting for TikTok's approval. Coming soon.": "Menunggu kelulusan TikTok. Akan datang tidak lama lagi.",
+  "Waiting for Meta's approval. Coming soon.": "Menunggu kelulusan Meta. Akan datang tidak lama lagi.",
 };

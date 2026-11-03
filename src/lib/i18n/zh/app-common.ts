@@ -568,4 +568,9 @@ export const APP_COMMON: Record<string, string> = {
   "Expired": "已过期",
   "Couldn't reach TikTok Shop.": "无法连接 TikTok Shop。",
   "Commission too low": "佣金太低",
+
+  // Apps waiting for TikTok's or Meta's approval (owner, 3 Nov 2026)
+  "Not Available Yet": "暂未开放",
+  "Waiting for TikTok's approval. Coming soon.": "正在等待 TikTok 审核通过，即将开放。",
+  "Waiting for Meta's approval. Coming soon.": "正在等待 Meta 审核通过，即将开放。",
 };

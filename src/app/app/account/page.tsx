@@ -27,6 +27,7 @@ import { GoogleMark, TikTokMark } from "@/components/creator1/brand";
 import { BrandLogo } from "@/components/brand-logos";
 import { MyWishes } from "@/components/creator1/my-wishes";
 import { ACCOUNT_TABS, tabFor, type AccountTab } from "@/lib/account-tabs";
+import { NotYet, useCanConnect } from "@/components/not-yet";
 import { applyTheme, readTheme, type Theme } from "@/lib/theme";
 import { useLang, useSetLang, useT } from "@/lib/i18n/client";
 import { LANGS, dateLocale } from "@/lib/i18n/lang";
@@ -230,6 +231,8 @@ export default function Account() {
       window.history.replaceState(null, "", `${window.location.pathname}${window.location.hash}`);
     }
   }, [live]); // eslint-disable-line react-hooks/exhaustive-deps
+  // TikTok and Meta wait for their platform's approval (owner, 3 Nov 2026); admins can still connect, and anyone can reconnect.
+  const can = useCanConnect();
   const connectApp = (app: Chan["app"]) => { window.location.href = app === "tiktok" ? "/api/auth/tiktok/start" : `/api/auth/meta/${app}/start?from=account`; };
   const disconnect = async (c: Chan) => {
     const r = await fetch(c.app === "tiktok" ? `/api/account/tiktok/${encodeURIComponent(c.key.replace(/^tiktok:/, ""))}` : `/api/social/accounts/${c.key}`, { method: "DELETE" }).catch(() => null);
@@ -557,7 +560,7 @@ export default function Account() {
                   <div className="cr2-cell row">
                     <PlatformIcon name={icon} size={34} />
                     <span className="cr2-conn"><b>{mine.length ? t("Add Another {account}", { account: label }) : label}</b><small>{mine.length ? t("Connect one more") : t("Not connected")}</small></span>
-                    <button type="button" className={mine.length ? "btn-outline v2-btn-sm" : "np-btn v2-btn-sm"} onClick={() => connectApp(app)}>{t("Connect")}</button>
+                    {can(app) ? <button type="button" className={mine.length ? "btn-outline v2-btn-sm" : "np-btn v2-btn-sm"} onClick={() => connectApp(app)}>{t("Connect")}</button> : <NotYet app={app} />}
                   </div>
                 </Fragment>
               );
@@ -583,6 +586,8 @@ export default function Account() {
                 </span>
                 {s.soon ? (
                   <span className="badge badge-amber">{t("Coming Soon")}</span>
+                ) : !s.on && s.key !== "TikTok Shop" && !can(s.key.toLowerCase() as "tiktok") ? (
+                  <NotYet app={s.key.toLowerCase() as "tiktok"} />
                 ) : s.on && s.key === "TikTok Shop" ? (
                   <button type="button" className="btn-outline v2-btn-sm" onClick={() => setUnlink(true)}>{t("Unlink")}</button>
                 ) : s.on ? (
@@ -629,7 +634,7 @@ export default function Account() {
                 <span className={`si-m ${ways.tiktok ? "on" : ""}`}>
                   <span className="si-ico tt" aria-hidden="true"><TikTokMark size={18} /></span>
                   <span><b>TikTok</b><small>{ways.tiktok ? t("Signed in as {name}", { name: ways.tiktok }) : t("Not linked")}</small></span>
-                  {ways.tiktok ? <span className="badge">{t("Linked")}</span> : <a className="btn-outline v2-btn-sm" href="/api/auth/tiktok/start">{t("Link")}</a>}
+                  {ways.tiktok ? <span className="badge">{t("Linked")}</span> : can("tiktok") ? <a className="btn-outline v2-btn-sm" href="/api/auth/tiktok/start">{t("Link")}</a> : <NotYet app="tiktok" />}
                 </span>
                 <span className={`si-m ${ways.google ? "on" : ""}`}>
                   <span className="si-ico gg" aria-hidden="true"><GoogleMark /></span>

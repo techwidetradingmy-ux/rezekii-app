@@ -12,6 +12,8 @@ import { Tip } from "@/components/ui";
 import { AddressFields } from "@/components/account/address-fields";
 import { PickList } from "@/components/pick-list";
 import { GoogleMark, TikTokMark } from "@/components/creator1/brand";
+import { NotYet } from "@/components/not-yet";
+import { OPEN } from "@/lib/platforms";
 import { Rich } from "@/components/landing/bits";
 import { MY_STATES, isEmail, tidyPhone } from "@/lib/mock-creator1";
 import { REFERRAL_REWARD } from "@/lib/mock";
@@ -524,7 +526,9 @@ export default function SignIn() {
           <p>{t("Sign in or create your account.")}</p>
         </div>
         <button type="button" className="btn-google cr1-authbtn" onClick={() => oauth("Google")}><GoogleMark /> {t("Continue with Google")}</button>
-        <button type="button" className="btn-tiktok cr1-authbtn" onClick={() => oauth("TikTok")}><TikTokMark /> {t("Continue with TikTok")}</button>
+        {/* Not Available Yet until TikTok approves Rezekii's app (owner, 3 Nov 2026). */}
+        {OPEN.tiktok ? <button type="button" className="btn-tiktok cr1-authbtn" onClick={() => oauth("TikTok")}><TikTokMark /> {t("Continue with TikTok")}</button>
+          : <div className="cr1-authbtn auth-off"><TikTokMark /> {t("Continue with TikTok")} <NotYet app="tiktok" /></div>}
         <button type="button" className="btn-email cr1-authbtn" onClick={() => go("email")}><Icon name="inbox" size={20} /> {t("Continue with Email")}</button>
         <p className="cr1-center cr1-switch">{t("New to Rezekii?")} <button type="button" className="v2-link" onClick={() => go("create")}>{t("Create Account")}</button></p>
         <p className="cr1-center cr1-fine"><Rich text={t("By Continuing You Agree to Rezekii's {terms} and {privacy}.")} parts={policies} /></p>
