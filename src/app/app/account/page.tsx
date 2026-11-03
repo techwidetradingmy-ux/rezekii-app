@@ -18,6 +18,8 @@ import { Referral } from "@/components/account/referral";
 import { RateCard } from "@/components/account/rate-card";
 import { Wallet } from "@/components/account/wallet";
 import { PushSwitch } from "@/components/account/push-switch";
+import { AccountSwitcher } from "@/components/account-switcher";
+import { signOut } from "@/lib/sign-out";
 import { AddressForm } from "@/components/account/address-fields";
 import { SAMPLE_INFO, birthdayError, readSignup, useAddress, type Address } from "@/lib/address";
 import { shortId } from "@/lib/short-id";
@@ -120,6 +122,7 @@ export default function Account() {
   const [emailSheet, setEmailSheet] = useState(false);
   const [newEmail, setNewEmail] = useState("");
   const [delSheet, setDelSheet] = useState(false);
+  const [switcher, setSwitcher] = useState(false);
   const [delText, setDelText] = useState("");
 
   useEffect(() => {
@@ -210,10 +213,10 @@ export default function Account() {
   const deleteReal = async () => {
     setBusyAcct(true);
     const r = await fetch("/api/account/delete", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ confirm: "DELETE" }) }).catch(() => null);
-    const d = (await r?.json().catch(() => ({}))) as { error?: string } | undefined;
+    const d = (await r?.json().catch(() => ({}))) as { error?: string; switched?: boolean } | undefined;
     setBusyAcct(false);
     if (!r?.ok) return toast(d?.error ? t(d.error) : t("Couldn't delete the account. Please try again."));
-    window.location.href = "/";
+    window.location.href = d?.switched ? "/app" : "/";
   };
 
   // Signed in (owner, 31 Oct 2026): her real channels for Connections, and a message when she comes back from connecting one.
@@ -360,9 +363,13 @@ export default function Account() {
             </button>
           ))}
           {/* Sign out at the end of the side menu, in red, on wide screens (owner, 31 Oct 2026). Phones have it in the account panel. */}
-          <Link href="/signin?in=1" className="acc-out" onClick={(e) => { if (!live) return; e.preventDefault(); fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/signin?in=1"; }); }}>
-            <Icon name="back" size={17} /> {t("Sign Out")}
-          </Link>
+          {/* Switch Account beside it (owner, 4 Nov 2026), on one row so the menu still fits a laptop screen. */}
+          <div className="acc-outrow">
+            {live && <button type="button" className="acc-out acc-switch" onClick={() => setSwitcher(true)}><Icon name="users" size={17} /> {t("Switch Account")}</button>}
+            <Link href="/signin?in=1" className="acc-out" onClick={(e) => { if (!live) return; e.preventDefault(); signOut(); }}>
+              <Icon name="back" size={17} /> {t("Sign Out")}
+            </Link>
+          </div>
         </div>
         </aside>
 
@@ -816,6 +823,7 @@ export default function Account() {
           <button type="button" className="btn-outline" style={{ height: 48 }} onClick={() => setConfirmSave(false)}>{t("Keep Editing")}</button>
         </Sheet>
       )}
+      {switcher && <AccountSwitcher app="creator" onClose={() => setSwitcher(false)} />}
       {feedback && (
         <Sheet title={t("Send Feedback")} onClose={() => setFeedback(false)}>
           <FeedbackForm onDone={() => setFeedback(false)} />

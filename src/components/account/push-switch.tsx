@@ -25,6 +25,31 @@ function keyBytes(b64: string): Uint8Array<ArrayBuffer> {
   return out;
 }
 
+/** Which account this device's Phone Notifications were last saved for. */
+const PUSH_OWNER = "rz_push_owner";
+const setOwner = (id: string | null | undefined) => { try { if (id) localStorage.setItem(PUSH_OWNER, id); else localStorage.removeItem(PUSH_OWNER); } catch {} };
+
+/**
+ * Phone Notifications follow the account in use on this device (owner, 4 Nov 2026): after switching accounts, a device
+ * that has them on moves them to the account now in use, once.
+ */
+export function useFollowPush(side: "creator" | "seller" | null, userId: string | undefined) {
+  useEffect(() => {
+    if (!side || !userId || typeof Notification === "undefined" || Notification.permission !== "granted" || !("serviceWorker" in navigator)) return;
+    let owner: string | null = null;
+    try { owner = localStorage.getItem(PUSH_OWNER); } catch {}
+    if (owner === userId) return;
+    navigator.serviceWorker.getRegistration("/")
+      .then((reg) => reg?.pushManager.getSubscription())
+      .then(async (sub) => {
+        if (!sub) return;
+        const r = await fetch("/api/v2/push", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ side, subscription: sub.toJSON() }) });
+        if (r.ok) setOwner(userId);
+      })
+      .catch(() => {});
+  }, [side, userId]);
+}
+
 async function detect(): Promise<State> {
   const nav = navigator as Navigator & { standalone?: boolean };
   const ios = /iPad|iPhone|iPod/.test(nav.userAgent) || (nav.platform === "MacIntel" && nav.maxTouchPoints > 1);
@@ -41,7 +66,7 @@ async function detect(): Promise<State> {
  * starts the service worker (public/sw.js) and saves the device; Sound is the in-app chime, kept on this device only.
  */
 export function PushSwitch({ side }: { side: "creator" | "seller" }) {
-  const { live, toast } = useDemo();
+  const { live, toast, me } = useDemo();
   const t = useT();
   const [state, setState] = useState<State | null>(null);
   const [busy, setBusy] = useState(false);
@@ -67,6 +92,7 @@ export function PushSwitch({ side }: { side: "creator" | "seller" }) {
         await sub.unsubscribe().catch(() => false);
         throw new Error("not saved");
       }
+      setOwner(me?.id);
       setState("on");
     } catch {
       toast(t("Couldn't turn on phone notifications. Please try again."));
@@ -87,6 +113,7 @@ export function PushSwitch({ side }: { side: "creator" | "seller" }) {
         await sub.unsubscribe();
       }
       await reg?.unregister();
+      setOwner(null);
       setState("off");
     } catch {
       toast(t("Couldn't turn off phone notifications. Please try again."));

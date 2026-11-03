@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { SESSION_COOKIE, SIGNED_IN_COOKIE, createSession, sessionCookieOptions, signedInCookieOptions } from "@/modules/accounts/session.ts";
 import { handoffCode, takeHandoff } from "@/modules/accounts/handoff.ts";
+import { signInDevice } from "../device.ts";
 
 export const dynamic = "force-dynamic";
 
@@ -15,9 +15,8 @@ export async function POST(req: NextRequest) {
   if (!code) return NextResponse.json({ error: "Which sign-in?" }, { status: 400 });
   const done = await takeHandoff(code);
   if (!done) return NextResponse.json({ waiting: true }, { headers: { "cache-control": "no-store" } });
-  const { token, expires } = await createSession(done.userId);
   const res = NextResponse.json({ to: done.next }, { headers: { "cache-control": "no-store" } });
-  res.cookies.set(SESSION_COOKIE, token, sessionCookieOptions(expires));
-  res.cookies.set(SIGNED_IN_COOKIE, "1", signedInCookieOptions(expires));
+  // The account the app was using stays signed in, to switch back to (owner, 4 Nov 2026: Add Account).
+  await signInDevice(req, res, done.userId);
   return res;
 }

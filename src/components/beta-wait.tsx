@@ -6,6 +6,8 @@ import { Icon } from "./icons";
 import { useDemo } from "./demo";
 import { SUPPORT } from "@/lib/support";
 import { useT } from "@/lib/i18n/client";
+import { AccountSwitcher } from "./account-switcher";
+import { signOut as endSession } from "@/lib/sign-out";
 import type { BetaState } from "@/modules/beta/access.ts";
 
 /**
@@ -30,7 +32,9 @@ export function BetaWait({ side, state }: { side: "creator" | "seller"; state: B
       .catch(() => setFailed(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [side, state]);
-  const signOut = () => fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/signin?in=1"; });
+  const signOut = () => endSession({ home: side === "seller" ? "/seller/app" : "/app" });
+  // Waiting on one account, she can still switch to another signed in on this device (owner, 4 Nov 2026).
+  const [switcher, setSwitcher] = useState(false);
   // Declined isn't for ever (owner, 3 Nov 2026): she can ask again and goes back on the list.
   const [asking, setAsking] = useState(false);
   const applyAgain = () => {
@@ -84,8 +88,10 @@ export function BetaWait({ side, state }: { side: "creator" | "seller"; state: B
         )}
         <div className="bw-acts">
           <a className="btn-outline" href={SUPPORT.waLink} target="_blank" rel="noreferrer"><Icon name="whatsapp" size={16} /> {t("Contact Support")}</a>
-          <button type="button" className="btn-outline" onClick={() => void signOut()}><Icon name="back" size={16} /> {t("Sign Out")}</button>
+          <button type="button" className="btn-outline" onClick={() => setSwitcher(true)}><Icon name="users" size={16} /> {t("Switch Account")}</button>
+          <button type="button" className="btn-outline" onClick={() => signOut()}><Icon name="back" size={16} /> {t("Sign Out")}</button>
         </div>
+        {switcher && <AccountSwitcher app={side} onClose={() => setSwitcher(false)} />}
         {me?.email && <small className="v2-muted">{t("Signed in as {email}", { email: me.email })}</small>}
       </div>
     </div>

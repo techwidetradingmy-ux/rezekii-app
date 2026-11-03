@@ -55,3 +55,33 @@ export async function renewSession(token: string | undefined): Promise<Date | nu
 export async function deleteSession(token: string | undefined): Promise<void> {
   if (token) await supabaseRest(`app_sessions?token_hash=eq.${hashToken(token)}`, { method: "DELETE" });
 }
+
+/**
+ * The other accounts signed in on this device (owner, 4 Nov 2026: switch accounts without signing in again): their session
+ * tokens, joined by dots, in an HTTP-only cookie the page can't read. Up to 5 accounts per device, the one in use included.
+ */
+export const ACCOUNTS_COOKIE = "rz_accounts";
+export const MAX_ACCOUNTS = 5;
+export const readSaved = (v: string | undefined): string[] => (v ?? "").split(".").filter((x) => /^[\w-]{20,128}$/.test(x)).slice(0, MAX_ACCOUNTS - 1);
+export const savedCookieOptions = () => ({ httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" as const, path: "/", maxAge: (SESSION_DAYS * DAY_MS) / 1000 });
+
+export type DeviceSession = { token: string; userId: string; expires: Date };
+
+/** The sessions among these tokens that are still signed in, in the same order, one per account (the first one wins). */
+export async function liveSessions(tokens: (string | undefined)[]): Promise<DeviceSession[]> {
+  const list = [...new Set(tokens.filter((t): t is string => !!t))];
+  if (!list.length) return [];
+  const now = encodeURIComponent(new Date().toISOString());
+  const res = await supabaseRest(`app_sessions?token_hash=in.(${list.map(hashToken).join(",")})&expires_at=gt.${now}&select=token_hash,user_id,expires_at`);
+  const rows = (await res.json()) as { token_hash: string; user_id: string; expires_at: string }[];
+  const byHash = new Map(rows.map((r) => [r.token_hash, r]));
+  const seen = new Set<string>();
+  const out: DeviceSession[] = [];
+  for (const token of list) {
+    const r = byHash.get(hashToken(token));
+    if (!r || seen.has(r.user_id)) continue;
+    seen.add(r.user_id);
+    out.push({ token, userId: r.user_id, expires: new Date(r.expires_at) });
+  }
+  return out;
+}

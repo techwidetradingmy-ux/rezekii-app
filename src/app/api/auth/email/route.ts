@@ -1,10 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { cleanEmail, passwordProblem } from "@/modules/accounts/password.ts";
-import { SESSION_COOKIE, SIGNED_IN_COOKIE, createSession, sessionCookieOptions, signedInCookieOptions } from "@/modules/accounts/session.ts";
 import { createEmailUser, emailAccount, emailSignIn, resetPassword, signInWithCode } from "@/modules/accounts/users.ts";
 import { sendCode, checkCode, type CodePurpose } from "@/modules/accounts/email-codes.ts";
 import { needsDetails } from "@/modules/rewards/profiles.ts";
 import { joinInviter } from "../oauth.ts";
+import { signInDevice } from "../device.ts";
 import { getLang, tFor } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
@@ -67,10 +67,9 @@ export async function POST(req: NextRequest) {
   }
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
 
-  const { token, expires } = await createSession(result.user.id);
   const res = NextResponse.json({ ok: true, details: await needsDetails(result.user.id).catch(() => false) });
-  res.cookies.set(SESSION_COOKIE, token, sessionCookieOptions(expires));
-  res.cookies.set(SIGNED_IN_COOKIE, "1", signedInCookieOptions(expires));
+  // The account that was in use stays signed in on this device, to switch back to (owner, 4 Nov 2026).
+  await signInDevice(req, res, result.user.id);
   await joinInviter(req, res, result.user.id);
   return res;
 }

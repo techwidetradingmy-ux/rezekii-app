@@ -13,6 +13,7 @@ import { TERMS_VERSION } from "@/lib/mock-seller";
 import { Tip } from "@/components/ui";
 import { Rich } from "@/components/seller/seller-ui";
 import { useT } from "@/lib/i18n/client";
+import { AccountSwitcher } from "@/components/account-switcher";
 
 /**
  * Seller onboarding for real (owner, 31 Oct 2026): sign in with TikTok or Google (back here after), agree to the sample terms,
@@ -24,6 +25,7 @@ export function LiveSellerConnect() {
   const [ready, setReady] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [switcher, setSwitcher] = useState(false);
   // useDemo learns who's signed in shortly after the page opens.
   useEffect(() => { const t = window.setTimeout(() => setReady(true), 1200); return () => window.clearTimeout(t); }, []);
   useEffect(() => { if (me?.sellerShop) window.location.href = "/seller/app"; }, [me?.sellerShop]);
@@ -64,8 +66,10 @@ export function LiveSellerConnect() {
               <h1>{t("Connect Your TikTok Shop")}</h1>
               <p style={{ margin: 0 }}>
                 <Rich text={t("Signed in as <b>{name}</b>", { name: me.name ?? me.email ?? "" })} /> ·{" "}
-                <button type="button" className="v2-link" onClick={() => { fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/seller/connect"; }); }}>{t("Switch Account")}</button>
+                {/* The accounts signed in on this device, or Add Account (owner, 4 Nov 2026); this page stays open after. */}
+                <button type="button" className="v2-link" onClick={() => setSwitcher(true)}>{t("Switch Account")}</button>
               </p>
+              {switcher && <AccountSwitcher app="seller" home="/seller/connect" onClose={() => setSwitcher(false)} />}
               <ul className="sl-ob-list">
                 <li><Icon name="check" size={16} width={2.6} /> {t("Your own campaign, opened for you")}</li>
                 <li><Icon name="check" size={16} width={2.6} /> {t("Your products shown to creators")}</li>

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { deleteAccount } from "@/modules/accounts/manage.ts";
-import { SESSION_COOKIE } from "@/modules/accounts/session.ts";
+import { nextAccount } from "@/app/api/auth/device.ts";
 import { getLang, tFor } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
@@ -22,8 +22,10 @@ export async function POST(req: NextRequest) {
     console.error("[account] delete failed", err instanceof Error ? err.message : err);
     return NextResponse.json({ error: t("Could not delete the account right now. Please try again.") }, { status: 500 });
   }
+  // Another account signed in on this device takes over (owner, 4 Nov 2026).
   const res = NextResponse.json({ ok: true });
-  res.cookies.set(SESSION_COOKIE, "", { path: "/", maxAge: 0 });
-  res.cookies.set("rz_in", "", { path: "/", maxAge: 0 });
-  return res;
+  if (!(await nextAccount(req, res))) return res;
+  const switched = NextResponse.json({ ok: true, switched: true });
+  for (const c of res.cookies.getAll()) switched.cookies.set(c);
+  return switched;
 }

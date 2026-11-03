@@ -25,6 +25,7 @@ import { LangSwitch, useLang, useT } from "@/lib/i18n/client";
 import { dateLocale, tx } from "@/lib/i18n/lang";
 import "../creator1.css";
 import { keepInviteCode, saveProfile } from "@/lib/live-rewards";
+import { signOut } from "@/lib/sign-out";
 
 type Step = "start" | "oauth" | "profile" | "email" | "create" | "reset" | "welcome" | "handed";
 
@@ -102,6 +103,8 @@ export default function SignIn() {
   const [codeSent, setCodeSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [next, setNext] = useState<string | null>(null);
+  // Add Account (owner, 4 Nov 2026): signing in to another account keeps the one in use, to switch back to.
+  const [add, setAdd] = useState(false);
   const [welcome, setWelcome] = useState("");
   const [kinds, setKinds] = useState<string[]>([]);
   const [otherKind, setOtherKind] = useState("");
@@ -134,6 +137,7 @@ export default function SignIn() {
     const q = new URLSearchParams(window.location.search);
     const n = q.get("next");
     if (n && n.startsWith("/") && !n.startsWith("//")) setNext(n);
+    if (q.get("add") === "1") setAdd(true);
     // Finished in the browser for the Home Screen app: say to go back there.
     if (q.get("handed")) setStep("handed");
     // The Home Screen app reopened while a sign-in was finishing in the browser: keep waiting for it.
@@ -212,6 +216,8 @@ export default function SignIn() {
     return d;
   }
   // Signed in: the sign-up details first when they're missing (not when she came to do something else, like connect a shop).
+  // Passed on to Google's and TikTok's sign-in: where to go after, and whether this adds an account.
+  const startParams: Record<string, string> = { ...(next ? { next } : {}), ...(add ? { add: "1" } : {}) };
   const land = (details?: boolean) => { window.location.href = details && !next ? "/signin?details=1" : next ?? "/app"; };
   async function withBusy(fn: () => Promise<void>) {
     setBusy(true);
@@ -288,12 +294,12 @@ export default function SignIn() {
       const code = `${crypto.randomUUID()}${crypto.randomUUID()}`.replace(/-/g, "").slice(0, 40);
       try { localStorage.setItem(HANDOFF_KEY, JSON.stringify({ code, at: Date.now(), provider: p })); } catch {}
       setHandoff(code);
-      window.open(`${startPath(p as "Google" | "TikTok")}?${new URLSearchParams({ ...(next ? { next } : {}), handoff: code })}`, "_blank");
+      window.open(`${startPath(p as "Google" | "TikTok")}?${new URLSearchParams({ ...startParams, handoff: code })}`, "_blank");
       return;
     }
     // Real sign-in (owner, 30 Oct 2026): Google or TikTok, then back into the app with a session.
-    const q = next ? `?next=${encodeURIComponent(next)}` : "";
-    window.location.href = `${startPath(p as "Google" | "TikTok")}${q}`;
+    const q = new URLSearchParams(startParams).toString();
+    window.location.href = `${startPath(p as "Google" | "TikTok")}${q ? `?${q}` : ""}`;
   }
 
   function typeBirthday(raw: string) {
@@ -467,7 +473,7 @@ export default function SignIn() {
     const unlink = () => {
       // Signed up with Google or TikTok but not finished: going back signs out.
       if (details) {
-        fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/signin"; });
+        signOut({ out: "/signin" });
         return;
       }
       setName("");
@@ -580,15 +586,15 @@ export default function SignIn() {
   const spin = <span className="cr1-spin sm" />;
   const sentTo = <p><Rich text={t("We sent a 6-digit code to {email}. It works for 10 minutes.")} parts={{ email: <b>{email.trim()}</b> }} /></p>;
   // Opens the sign-in in the browser again for the Home Screen app's code.
-  const handoffUrl = handoff ? `${startPath(provider as "Google" | "TikTok")}?${new URLSearchParams({ ...(next ? { next } : {}), handoff })}` : "";
+  const handoffUrl = handoff ? `${startPath(provider as "Google" | "TikTok")}?${new URLSearchParams({ ...startParams, handoff })}` : "";
   let card: React.ReactNode;
   if (step === "start") {
     // One way in for everyone (owner, 31 Oct 2026): new people are asked for their details after, returning people go straight in.
     card = (
       <>
         <div className="cr1-center">
-          <h1>{t("Welcome to Rezekii")}</h1>
-          <p>{t("Sign in or create your account.")}</p>
+          <h1>{add ? t("Add Account") : t("Welcome to Rezekii")}</h1>
+          <p>{add ? t("Sign in to another account. You can switch between them anytime.") : t("Sign in or create your account.")}</p>
         </div>
         <button type="button" className="btn-google cr1-authbtn" onClick={() => oauth("Google")}><GoogleMark /> {t("Continue with Google")}</button>
         {/* Not Available Yet until TikTok approves Rezekii's app (owner, 3 Nov 2026). */}
@@ -597,6 +603,7 @@ export default function SignIn() {
         <button type="button" className="btn-email cr1-authbtn" onClick={() => go("email")}><Icon name="inbox" size={20} /> {t("Continue with Email")}</button>
         <p className="cr1-center cr1-switch">{t("New to Rezekii?")} <button type="button" className="v2-link" onClick={() => go("create")}>{t("Create Account")}</button></p>
         <p className="cr1-center cr1-fine"><Rich text={t("By Continuing You Agree to Rezekii's {terms} and {privacy}.")} parts={policies} /></p>
+        {add && <p className="cr1-center"><a className="v2-link" href={next ?? "/app"}>{t("Cancel")}</a></p>}
       </>
     );
   } else if (step === "oauth" && handoff) {

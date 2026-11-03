@@ -4,7 +4,7 @@ import { exchangeTikTokCode, getTikTokUser, type TikTokTokens } from "@/integrat
 import { SESSION_COOKIE, userForSession } from "@/modules/accounts/session.ts";
 import { linkOrSignInTikTok, saveTikTokConnection } from "@/modules/accounts/users.ts";
 import { stateMatches } from "../../tiktokshop/state.ts";
-import { callbackUrl, oauthCookie, signedIn, toSignin } from "../../oauth.ts";
+import { adding, callbackUrl, oauthCookie, signedIn, toSignin } from "../../oauth.ts";
 
 export const dynamic = "force-dynamic";
 
@@ -28,8 +28,9 @@ export async function GET(req: NextRequest) {
     const info = await getTikTokUser(tokens.access_token);
     if (info.error) console.error("[tiktok] user info failed", info.error.code, info.error.message);
     const profile = { open_id: tokens.open_id, union_id: info.user?.union_id, username: info.user?.username, display_name: info.user?.display_name, avatar_url: info.user?.avatar_url };
-    // Already signed in (Connect TikTok on Account): connect it to that account and go back there.
-    const current = await userForSession(req.cookies.get(SESSION_COOKIE)?.value).catch(() => null);
+    // Already signed in (Connect TikTok on Account): connect it to that account and go back there. Add Account signs in to
+    // this TikTok's own account instead (owner, 4 Nov 2026).
+    const current = adding(req) ? null : await userForSession(req.cookies.get(SESSION_COOKIE)?.value).catch(() => null);
     const result = await linkOrSignInTikTok(current, profile);
     if ("taken" in result) return toSignin(req, "taken", "tiktok");
     const { user, linked } = result;

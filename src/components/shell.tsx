@@ -25,6 +25,9 @@ import { useNoteChime } from "@/lib/note-chime";
 import { PullRefresh } from "@/components/pull-refresh";
 import { loadWallet } from "@/lib/live-rewards";
 import { LangSwitch, useT } from "@/lib/i18n/client";
+import { AccountSwitcher } from "./account-switcher";
+import { signOut as endSession } from "@/lib/sign-out";
+import { useFollowPush } from "./account/push-switch";
 
 const LEVEL: Record<string, string> = { bronze: "Bronze", silver: "Silver", gold: "Gold" };
 
@@ -116,8 +119,12 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
     });
   }, [sectionHref, page]);
   const tabHref = (href: string) => (section?.href === href ? href : lastPage[href] ?? href);
-  const signOut = () => { fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/signin?in=1"; }); };
+  // Another account signed in on this device takes over after Sign Out (owner, 4 Nov 2026).
+  const signOut = () => endSession({ home: app === "seller" ? "/seller/app" : "/app" });
   const { me, live } = useDemo();
+  // Phone Notifications follow the account in use on this device (owner, 4 Nov 2026).
+  useFollowPush(live && app !== "admin" ? app : null, me?.id);
+  const [switcher, setSwitcher] = useState(false);
   // The bell shows her real unread count when signed in (owner, 31 Oct 2026); nothing when there are none.
   const sideNotes = useUnreadNotes(app === "seller" ? "seller" : "creator", live && app !== "admin");
   useNoteChime(sideNotes);
@@ -131,7 +138,9 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
   // Signed in with a Seller Center shop: the seller app shows that shop's name (owner, 30 Oct 2026).
   const shopName = app === "seller" ? me?.sellerShop : null;
   const shopInitials = (shopName ?? "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
-  const who = app === "creator" ? { ...WHO.creator, name: you.first, initials: you.initials, photo: you.photo, ...(live && me ? { sub: t("{level} creator", { level: t(LEVEL[me.level]) }) } : {}) } : shopName ? { ...WHO.seller, name: shopName, initials: shopInitials || "S" } : WHO[app];
+  // Admin shows who is really signed in (owner, 4 Nov 2026), never the sample "Aina (Ops)".
+  const adminWho = app === "admin" && me ? { ...WHO.admin, name: me.name || me.email || "Admin", initials: (me.name || me.email || "A").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase(), photo: me.photo ?? undefined } : null;
+  const who = app === "creator" ? { ...WHO.creator, name: you.first, initials: you.initials, photo: you.photo, ...(live && me ? { sub: t("{level} creator", { level: t(LEVEL[me.level]) }) } : {}) } : shopName ? { ...WHO.seller, name: shopName, initials: shopInitials || "S" } : adminWho ?? WHO[app];
   const [more, setMore] = useState(false);
   // Admin's profile button opens its own menu (owner, 3 Nov 2026: back to the creator dashboard, settings, sign out).
   const [adminMenu, setAdminMenu] = useState(false);
@@ -391,12 +400,16 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
             <Link href={ACCOUNT.admin} onClick={() => setAdminMenu(false)} className="v2-row" style={{ padding: "14px 2px", color: "var(--text)", textDecoration: "none", fontWeight: 700 }}>
               <Icon name="gear" /> Settings
             </Link>
+            <button type="button" onClick={() => { setAdminMenu(false); setSwitcher(true); }} className="v2-row" style={{ padding: "14px 2px", color: "var(--text)", background: "none", border: 0, font: "inherit", fontWeight: 700, width: "100%", textAlign: "left", cursor: "pointer" }}>
+              <Icon name="users" /> Switch Account
+            </button>
             <button type="button" onClick={signOut} className="v2-row" style={{ padding: "14px 2px", color: "var(--text)", background: "none", border: 0, font: "inherit", fontWeight: 700, width: "100%", textAlign: "left", cursor: "pointer" }}>
               <Icon name="back" /> Sign Out
             </button>
           </div>
         </Sheet>
       )}
+      {switcher && <AccountSwitcher app={app} onClose={() => setSwitcher(false)} />}
       {more && (
         <Sheet title="Admin Menu" onClose={() => setMore(false)}>
           <div className="v2-divide">
@@ -409,6 +422,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
                 <Icon name={s.icon} /> {s.label}
               </Link>
             ))}
+            {live && <button type="button" onClick={() => { setMore(false); setSwitcher(true); }} className="v2-row" style={{ padding: "14px 2px", color: "var(--text)", background: "none", border: 0, font: "inherit", fontWeight: 700, width: "100%", textAlign: "left", cursor: "pointer" }}><Icon name="users" /> Switch Account</button>}
             {live && <button type="button" onClick={signOut} className="v2-row" style={{ padding: "14px 2px", color: "var(--text)", background: "none", border: 0, font: "inherit", fontWeight: 700, width: "100%", textAlign: "left", cursor: "pointer" }}><Icon name="back" /> Sign Out</button>}
           </div>
         </Sheet>
@@ -446,6 +460,7 @@ function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory?: () 
     toast(next === "Auto" ? t("Theme: Auto (follows your phone)") : t("Theme: {theme}", { theme: t(next) }));
   };
   const [feedback, setFeedback] = useState(false);
+  const [switcher, setSwitcher] = useState(false);
   const samples = MY_SAMPLES.filter((x) => !["Done", "Not approved"].includes(x.status)).length;
   const [hash, setHash] = useState("");
   useLayoutEffect(() => {
@@ -526,8 +541,10 @@ function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory?: () 
             <FeedbackForm onDone={() => setFeedback(false)} />
           </Sheet>
         )}
-        {/* Sign out lives in the panel on phones, not in Settings (owner, 29 Oct 2026). */}
-        <Link href="/signin?in=1" className="ap-signout" onClick={(e) => { if (!live) return onClose(); e.preventDefault(); fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/signin?in=1"; }); }}><Icon name="back" size={17} /> {t("Sign Out")}</Link>
+        {switcher && <AccountSwitcher app="creator" onClose={() => setSwitcher(false)} />}
+        {/* Sign out lives in the panel on phones, not in Settings (owner, 29 Oct 2026), with Switch Account above it (4 Nov 2026). */}
+        {live && <button type="button" className="ap-switch" onClick={() => setSwitcher(true)}><Icon name="users" size={17} /> {t("Switch Account")}</button>}
+        <Link href="/signin?in=1" className="ap-signout" onClick={(e) => { if (!live) return onClose(); e.preventDefault(); endSession(); }}><Icon name="back" size={17} /> {t("Sign Out")}</Link>
       </aside>
     </Portal>
   );

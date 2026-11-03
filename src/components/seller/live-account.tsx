@@ -8,6 +8,8 @@ import { notesChanged } from "@/lib/live-notes";
 import { SUPPORT } from "@/lib/support";
 import { useLang, useT } from "@/lib/i18n/client";
 import { dateLocale, type Lang } from "@/lib/i18n/lang";
+import { AccountSwitcher } from "@/components/account-switcher";
+import { signOut } from "@/lib/sign-out";
 
 const day = (iso: string, lang: Lang) => new Date(iso).toLocaleDateString(dateLocale(lang), { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kuala_Lumpur" });
 
@@ -127,6 +129,7 @@ export function LiveSellerSecurity() {
   const t = useT();
   const { me } = useDemo();
   const ways = me?.signIn;
+  const [switcher, setSwitcher] = useState(false);
   return (
     <section className="v2-card">
       <h2 className="v2-h2">{t("Login & Security")}</h2>
@@ -134,9 +137,12 @@ export function LiveSellerSecurity() {
       {ways?.tiktok && <div className="sl-set"><span><b>TikTok</b><small>{ways.tiktok}</small></span></div>}
       {ways?.password && <div className="sl-set"><span><b>{t("Email and password")}</b><small>{ways.email ?? me?.email ?? ""}</small></span></div>}
       {!ways?.google && !ways?.tiktok && !ways?.password && <div className="sl-set"><span><b>{t("Email")}</b><small>{me?.email ?? ""}</small></span></div>}
-      <div className="v2-row">
-        <button type="button" className="v2-link" style={{ color: "#d92d20" }} onClick={() => { fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/seller"; }); }}>{t("Sign Out")}</button>
+      {/* Switch Account next to Sign Out (owner, 4 Nov 2026); another account signed in here takes over after Sign Out. */}
+      <div className="v2-row" style={{ gap: 18, flexWrap: "wrap" }}>
+        <button type="button" className="btn-outline" onClick={() => setSwitcher(true)}><Icon name="users" size={16} /> {t("Switch Account")}</button>
+        <button type="button" className="v2-link" style={{ color: "#d92d20" }} onClick={() => signOut({ home: "/seller/app", out: "/seller" })}>{t("Sign Out")}</button>
       </div>
+      {switcher && <AccountSwitcher app="seller" onClose={() => setSwitcher(false)} />}
     </section>
   );
 }

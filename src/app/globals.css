@@ -530,8 +530,9 @@ textarea.np-input { resize: vertical; line-height: 1.5; }
 .bw-stats b { font-size: 22px; color: var(--gink); }
 .bw-stats small { font-size: 12.5px; color: var(--muted); font-weight: 700; }
 .bw-group { width: 100%; }
-.bw-acts { display: flex; gap: 8px; width: 100%; }
-.bw-acts .btn-outline { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; }
+/* Three buttons since Switch Account (owner, 4 Nov 2026): they wrap instead of squeezing their words onto two lines. */
+.bw-acts { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; }
+.bw-acts .btn-outline { flex: 1 1 auto; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; }
 /* Not Available Yet (owner, 3 Nov 2026): an app waiting for TikTok's or Meta's approval, with the reason in a tip. */
 .not-yet { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; white-space: nowrap; }
 .auth-off { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; height: auto; min-height: 52px; padding: 8px 16px; border-radius: 14px; border: 1px dashed var(--border); background: var(--surface2); color: var(--muted); font-weight: 800; cursor: default; }
