@@ -27,9 +27,12 @@ export async function liveTimes(userId: string, ids: string[]): Promise<Record<s
   return Object.fromEntries(ids.flatMap((id) => (known(all[id]) ? [[id, all[id] as LiveTime]] : [])));
 }
 
-/** A LIVE's first and last minute with any activity, from TikTok's per-minute trends (whichever answers). */
+/**
+ * A LIVE's first and last minute with any activity, from TikTok's per-minute trends (whichever answers). TikTok's Internal error
+ * comes and goes from one call to the next (3 Nov 2026), so each is asked twice before moving on (owner, 3 Nov 2026).
+ */
 async function readTime(token: string, id: string): Promise<LiveTime | null> {
-  for (const part of ["interactive_trend_performances", "view_trend_performances"]) {
+  for (const part of ["interactive_trend_performances", "view_trend_performances", "interactive_trend_performances", "view_trend_performances"]) {
     const r = await callApi<Record<string, { data_points?: { timestamp?: number; value?: string }[] }[] | undefined>>({ method: "GET", path: `/analytics/202309/live_rooms/${id}/${part}`, accessToken: token }).catch(() => null);
     if (r?.code !== 0) continue;
     const points = Object.values(r.data ?? {}).flatMap((series) => (Array.isArray(series) ? series : [])).flatMap((s) => s.data_points ?? []);
