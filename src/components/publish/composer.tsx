@@ -10,7 +10,7 @@ import { useLang, useT } from "@/lib/i18n/client";
 import { dateLocale, tx, type Lang, type T } from "@/lib/i18n/lang";
 import { rich } from "./rich";
 import { PlatformIcon } from "@/components/creator2/bits";
-import { NotYet, useCanConnect } from "@/components/not-yet";
+import { NotYet, useCanPost } from "@/components/not-yet";
 import { POST_CREDITS, type MyPost, type PubBrand, type PubChannel, type PublishSetup } from "@/lib/mock-publish";
 import { postToEdit, saveEdit } from "./post-edits";
 import { creatorInfo, sendPost, upload, type CreatorInfo } from "@/lib/live-publish";
@@ -146,11 +146,14 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   const [info, setInfo] = useState<{ acct: string; info?: CreatorInfo; error?: string } | null>(null);
 
   const byKey = useMemo(() => new Map(channels.map((c) => [c.key, c])), [channels]);
-  const connected = useMemo(() => new Set(channels.filter((c) => c.status === "active").map((c) => c.key)), [channels]);
+  // Only channels she can post to now (owner, 3 Nov 2026: posting to TikTok waits for TikTok's approval; admins can still post).
+  const canPost = useCanPost();
+  const connected = useMemo(() => new Set(channels.filter((c) => c.status === "active" && canPost(c.app)).map((c) => c.key)), [channels, canPost]);
   // One TikTok account per post: picking another swaps it.
   const toggleChannel = (key: string) =>
     setPicked((s) => {
       const n = new Set(s);
+      if (!n.has(key) && !connected.has(key)) return s;
       if (n.has(key)) n.delete(key);
       else {
         if (isTikTok(byKey.get(key))) for (const k of n) if (isTikTok(byKey.get(k))) n.delete(k);
@@ -487,6 +490,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
                 <div id="pb-channel-list" className="pb-results" role="listbox" aria-label={t("Connected channels")} aria-multiselectable="true">
                   {APPS.map((p) => {
                     const list = results.filter((c) => c.app === p);
+                    if (list.length && !canPost(p)) return <div key={p} className="pb-group"><span className="pb-gh"><PlatformIcon name={ICON[p]} size={16} />{NAMES[p]} · {list.length} <NotYet app={p} /></span></div>;
                     return list.length ? (
                       <div key={p} className="pb-group">
                         <span className="pb-gh"><PlatformIcon name={ICON[p]} size={16} />{NAMES[p]} · {list.length}</span>
@@ -862,7 +866,7 @@ function Tabs<T extends string>({ value, set, items, label }: { value: T; set: (
 function ChannelsSheet({ channels, connectable, onConnect, onConnectApp, onReconnect, onCheck, onDisconnect, onClose }: { channels: PubChannel[]; connectable: PubChannel[]; onConnect: (c: PubChannel) => void; onConnectApp?: (p: Channel) => void; onReconnect: (c: PubChannel) => void; onCheck: (c: PubChannel) => void; onDisconnect: (c: PubChannel) => void; onClose: () => void }) {
   const { toast } = useDemo();
   const t = useT();
-  const can = useCanConnect();
+  const can = useCanPost();
   const [q, setQ] = useState("");
   const s = q.trim().toLowerCase();
   return (

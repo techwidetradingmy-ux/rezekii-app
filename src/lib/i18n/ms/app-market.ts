@@ -149,4 +149,5 @@ export const APP_MARKET: Record<string, string> = {
   "Fashion": "Fesyen",
   "Household": "Barangan Rumah",
   "Party": "Parti",
+  "Open on TikTok Shop": "Buka di TikTok Shop",
 };

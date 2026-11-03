@@ -11,7 +11,8 @@ import type { VideoRow } from "@/lib/mock-creator2";
 
 /**
  * One of her videos, opened on Rezekii (owner, 28 Oct 2026: never send her back to TikTok just to look). A real video plays here
- * in TikTok's own player, its cover showing while it loads, with Open in TikTok below in case it won't (owner, 2 Nov 2026).
+ * in TikTok's own player, its cover showing while it loads, with Open in TikTok below in case it won't (owner, 2 Nov 2026). It
+ * waits for her tap rather than autoplaying: an autoplay the phone blocks left a black box (owner, 3 Nov 2026).
  */
 export function VideoSheet({ video, onClose }: { video: VideoRow; onClose: () => void }) {
   const t = useT();
@@ -22,7 +23,7 @@ export function VideoSheet({ video, onClose }: { video: VideoRow; onClose: () =>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={video.cover ?? (PRODUCTS.some((p) => p.id === video.productId) ? product(video.productId).img : NO_PHOTO)} alt="" />
         {video.url ? (
-          <iframe src={`https://www.tiktok.com/player/v1/${video.id}?autoplay=1&rel=0`} title={video.title} allow="autoplay; fullscreen" allowFullScreen />
+          <iframe src={`https://www.tiktok.com/player/v1/${video.id}?rel=0`} title={video.title} allow="autoplay; fullscreen" allowFullScreen />
         ) : (
           <span className="pd-play" aria-hidden="true"><Icon name="video" size={26} /></span>
         )}

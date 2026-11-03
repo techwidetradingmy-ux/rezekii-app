@@ -468,6 +468,13 @@ function AccountPanel({ onClose, onStory }: { onClose: () => void; onStory?: () 
           {/* Language sits with the theme on phones (owner, 3 Nov 2026: English, Bahasa Melayu, 中文). */}
           <div className="ap-lang"><LangSwitch /></div>
           <nav className="ap-list" aria-label={t("Account sections")}>
+            {me?.role === "admin" && (
+              <Link href="/admin" className="ap-admin" onClick={onClose}>
+                <span className="ap-ic settings"><Icon name="shield" size={16} /></span>
+                <span>{t("Admin Dashboard")}</span>
+                <Icon name="arrow" size={15} />
+              </Link>
+            )}
             {ACCOUNT_TABS.map(row)}
           </nav>
           {/* Support and feedback side by side (owner, 1 Nov 2026); Contact Support opens WhatsApp. */}

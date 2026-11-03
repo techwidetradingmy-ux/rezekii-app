@@ -1,5 +1,6 @@
 "use client";
 
+import { tiktokShopProduct } from "@/lib/tiktok-links";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Fragment, useEffect, useState } from "react";
@@ -220,6 +221,8 @@ export default function ProductPage() {
       <div className="pp-info">
         <h1 className={`pp-name${fullName ? " full" : ""}`} onClick={() => setFullName((f) => !f)} title={p.name}>{p.name}</h1>
         <p className="pp-meta">{p.shop} · {rm(p.price)}</p>
+        {/* The product itself on TikTok Shop (owner, 3 Nov 2026). Real TikTok products only; sample ones have no page there. */}
+        {/^\d+$/.test(p.id) && <a className="pp-tts" href={tiktokShopProduct(p.id)} target="_blank" rel="noreferrer"><Icon name="store" size={15} /> {t("Open on TikTok Shop")} <Icon name="arrow" size={14} /></a>}
         {/* Has she sold it? (owner, 29 Oct 2026) From her TikTok Shop orders, and our campaign data for TAP products. */}
         {linked && (!live || mySold !== null) ? (
           <p className={`pp-sold${mySold ? " ok" : ""}`}>

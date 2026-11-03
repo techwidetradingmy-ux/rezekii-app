@@ -571,6 +571,7 @@ export const APP_COMMON: Record<string, string> = {
 
   // Apps waiting for TikTok's or Meta's approval (owner, 3 Nov 2026)
   "Not Available Yet": "暂未开放",
-  "Waiting for TikTok's approval. Coming soon.": "正在等待 TikTok 审核通过，即将开放。",
+  "Posting to TikTok is waiting for TikTok's approval. Coming soon.": "发布到 TikTok 正在等待 TikTok 审核通过，即将开放。",
+  "Admin Dashboard": "管理后台",
   "Waiting for Meta's approval. Coming soon.": "正在等待 Meta 审核通过，即将开放。",
 };

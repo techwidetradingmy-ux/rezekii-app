@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
+import { canPost } from "@/lib/platforms";
 import { queryCreatorInfo, type PrivacyLevel } from "@/integrations/tiktok/posting.ts";
 import { postingHours } from "@/modules/posting/times.ts";
 import { nextRecommendedSlot, postProblems, type PostChoice } from "@/modules/posting/rules.ts";
@@ -31,6 +32,8 @@ export async function POST(req: NextRequest) {
   const t = tFor(await getLang());
   const user = await currentUser();
   if (!user) return NextResponse.json({ error: t("Sign in first.") }, { status: 401 });
+  // Posting to TikTok waits for TikTok's approval (owner, 3 Nov 2026); admins can still post.
+  if (!canPost("tiktok", user.role === "admin")) return NextResponse.json({ error: t("Posting to TikTok is waiting for TikTok's approval. Coming soon.") }, { status: 403 });
   const b = (await req.json().catch(() => ({}))) as Body;
   const openId = await userTikTokOpenId(user.id, b.account);
   if (!openId) return NextResponse.json({ error: b.account ? t("That TikTok account isn't connected to your Rezekii account.") : t("Continue with TikTok to post.") }, { status: 409 });

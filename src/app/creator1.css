@@ -1257,8 +1257,11 @@ button.cr1-note-main { padding: 0; border: 0; background: none; color: var(--tex
 .td-views.master button { width: 34px; height: 30px; border: 0; border-radius: 9px; background: none; color: var(--muted); display: grid; place-items: center; cursor: pointer; }
 .td-views.master button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12); }
 /* Now right above the category tabs, on the right (owner, 3 Nov 2026). */
-.nb-box > .td-views.master { align-self: flex-end; }
-.nb-list.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+.nb-catrow { display: flex; align-items: center; gap: 10px; }
+.nb-catrow .nb-cats { flex: 1; min-width: 0; }
+.nb-catrow > .td-views.master { flex-shrink: 0; }
+/* Cards: a grid like the Marketplace's, two across on phones (owner, 3 Nov 2026: instead of a sideways swipe row). */
+.nb-list.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(46%, 180px), 1fr)); gap: 12px; }
 .nb-list.cards li, .nb-list.cards li:first-child { position: relative; display: block; padding: 10px; border: 2px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); min-width: 0; }
 .nb-list.cards .nb-view { display: flex; flex-direction: column; align-items: stretch; gap: 8px; width: 100%; }
 .nb-list.cards .nb-view img { width: 100%; height: auto; aspect-ratio: 4 / 3; border-radius: 12px; }
@@ -1284,12 +1287,13 @@ button.cr1-note-main { padding: 0; border: 0; background: none; color: var(--tex
   .td-grid.cards .st-trend { display: grid; }
   .td-grid.cards .st-spark { display: block; }
   .td-card .st-trend { display: none; }
-  .nb-list.cards { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -16px; padding: 2px 16px 4px; scroll-padding: 0 16px; }
-  .nb-list.cards li, .nb-list.cards li:first-child { flex: 0 0 84%; border-radius: 20px; scroll-snap-align: start; }
-  .nb-list.cards .nb-view img { aspect-ratio: auto; height: 200px; border-radius: 14px; }
-  .nb-list.cards .nb-main b { font-size: 16px; }
-  .nb-list.cards .nb-rank { top: 18px; left: 18px; }
-  .nb-list.cards .nb-add { top: 18px; right: 18px; }
+  .nb-list.cards { gap: 10px; }
+  .nb-list.cards li, .nb-list.cards li:first-child { padding: 8px; border-radius: 16px; }
+  .nb-list.cards .nb-view img { aspect-ratio: 1 / 1; border-radius: 12px; }
+  .nb-list.cards .nb-main b { font-size: 14px; }
+  .nb-list.cards .nb-rank { top: 13px; left: 13px; }
+  .nb-list.cards .nb-add { top: 13px; right: 13px; width: 34px; height: 34px; border-radius: 10px; }
+  .nb-list.cards .nb-sample { right: 52px; }
 }
 /* Scan recap covers, cartoon style (owner, 29 Oct 2026): Rezi the coin on a bright gradient, a mood per page. */
 .mg.ill { background: #14102e; }
@@ -1882,3 +1886,6 @@ li.sc-row { cursor: default; }
 .gc-x { grid-column: 2; display: flex; justify-content: space-between; }
 .gc-day { margin: 0; font-size: 13px; font-weight: 600; color: var(--muted); }
 .gc-day b { color: var(--text); font-weight: 800; }
+/* Open on TikTok Shop under the shop name and price (owner, 3 Nov 2026). */
+.pp-tts { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; font-size: 14px; font-weight: 800; color: var(--gink); text-decoration: none; }
+.pp-tts:hover { text-decoration: underline; }

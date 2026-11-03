@@ -1197,3 +1197,5 @@ html[data-wait="1"] .v2-main::after { content: "Loading your Rezekii…"; positi
 .ap-lang .lang-switch { display: flex; width: 100%; }
 .ap-lang .lang-switch button { flex: 1; min-width: 0; height: 34px; color: var(--muted); }
 .ap-lang .lang-switch button[aria-pressed="true"] { display: inline-block; color: var(--bg); }
+/* Admins on a phone keep a way to the admin dashboard and back (owner, 3 Nov 2026). */
+@media (max-width: 760px) { .v2-demo .site-wrap > a[href="/admin"], .v2-demo .site-wrap > a[href="/app"] { display: inline; } }

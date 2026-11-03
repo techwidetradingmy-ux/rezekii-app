@@ -320,7 +320,7 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
   const shown = busy ? [] : all.slice(0, shownN);
   const want = real?.want ?? (real?.gold ? 30 : 10);
   const lvl = me?.level ?? "bronze";
-  const { rail, at } = useRail<HTMLOListElement>(shape);
+  const { rail } = useRail<HTMLOListElement>(shape);
   return (
     <section className={inFrame ? "nb-box nb-in" : "v2-card nb-box"} aria-label={mine ? t("Best sellers in your showcase") : t("Best sellers in your niche")}>
       {/* The card's AI header sits above the tabs (owner, 29 Oct 2026: one AI label per card); each tab just says where it's from. */}
@@ -337,10 +337,13 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
       )}
       {live && failed && <p className="v2-muted" style={{ margin: 0 }}>{t("Couldn't load this list. Please try again later.")}</p>}
       {live && real && !loading && !real.locked && !real.rows.length && <p className="v2-muted" style={{ margin: 0 }}>{mine ? (channel === "video" ? t("None of your showcase products are in TikTok's top-selling videos this week.") : channel === "others" ? t("None of your showcase products are in TikTok's best-seller lists for this day.") : t("Your showcase is empty. Add products from the Marketplace.")) : t("TikTok hasn't published a best-seller list yet. Check again later.")}</p>}
-      {onView && <ViewSwitch view={shape} onChange={onView} />}
-      <div className="nb-cats" role="group" aria-label={t("Category")}>
-        {/* Category names come from TikTok (or the sample) and stay as they are; only "All" is Rezekii's. */}
-        {cats.map((c) => <button key={c} type="button" className={`v2-chip${c === cat ? " on" : ""}`} aria-pressed={c === cat} onClick={() => setCat(c)}>{c === "All" ? t("All") : c}</button>)}
+      {/* Grid or list switch at the end of the category row (owner, 3 Nov 2026: lined up, looks more organised). */}
+      <div className="nb-catrow">
+        <div className="nb-cats" role="group" aria-label={t("Category")}>
+          {/* Category names come from TikTok (or the sample) and stay as they are; only "All" is Rezekii's. */}
+          {cats.map((c) => <button key={c} type="button" className={`v2-chip${c === cat ? " on" : ""}`} aria-pressed={c === cat} onClick={() => setCat(c)}>{c === "All" ? t("All") : c}</button>)}
+        </div>
+        {onView && <ViewSwitch view={shape} onChange={onView} />}
       </div>
       {busy && <Loading text={t("Checking which best sellers you can add…")} />}
       <ol ref={rail} className={`nb-list ${shape}`} key={cat}>
@@ -375,7 +378,6 @@ export function NicheBest({ view: shape = "list", inFrame = false, source = "mar
           );
         })}
       </ol>
-      {shape === "cards" && <span className="td-dots" aria-hidden="true">{shown.map((b, n) => <i key={b.productId} className={n === at ? "on" : undefined} />)}</span>}
       {!busy && all.length > shown.length && (
         <button type="button" className="btn-outline v2-btn-sm nb-more" onClick={() => setShownN((n) => n + per)}>{t("Show More · {n} left", { n: all.length - shown.length })}</button>
       )}
