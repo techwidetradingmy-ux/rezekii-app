@@ -13,7 +13,7 @@ import type { BetaState } from "@/modules/beta/access.ts";
  * Shown instead of the whole app frame, so no menu, bell or account panel loads for someone who isn't in yet.
  */
 export function BetaWait({ side, state }: { side: "creator" | "seller"; state: BetaState | null }) {
-  const { me, refreshMe } = useDemo();
+  const { me, refreshMe, toast } = useDemo();
   const t = useT();
   const [beta, setBeta] = useState<BetaState | null>(state);
   const [failed, setFailed] = useState(false);
@@ -31,6 +31,17 @@ export function BetaWait({ side, state }: { side: "creator" | "seller"; state: B
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [side, state]);
   const signOut = () => fetch("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/signin?in=1"; });
+  // Declined isn't for ever (owner, 3 Nov 2026): she can ask again and goes back on the list.
+  const [asking, setAsking] = useState(false);
+  const applyAgain = () => {
+    if (asking) return;
+    setAsking(true);
+    post({ again: true })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("again"))))
+      .then((d: { beta: BetaState | null }) => { setBeta(d.beta); toast(t("You're back on the list. We'll look at your sign-up again.")); })
+      .catch(() => toast(t("Didn't send. Please try again.")))
+      .finally(() => setAsking(false));
+  };
   const name = me?.name?.split(" ")[0];
   const s = beta?.status;
   return (
@@ -62,6 +73,8 @@ export function BetaWait({ side, state }: { side: "creator" | "seller"; state: B
             <h1>{t("We Can't Let You In Yet")}</h1>
             {/* The reason is Techwide's own words, so it shows as written. */}
             <p>{beta!.reason ? beta!.reason.replace(/[.!?]?$/, ".") : t("Your sign-up wasn't approved this time.")} {t("Message us on WhatsApp if you have questions.")}</p>
+            <p>{t("Sorted it out? Apply again and we'll look at your sign-up again.")}</p>
+            <button type="button" className="np-btn bw-group" disabled={asking} onClick={applyAgain}><Icon name="refresh" size={18} /> {asking ? t("Sending…") : t("Apply Again")}</button>
           </>
         )}
         {(s === "waiting" || s === "waitlist") && beta!.group && (

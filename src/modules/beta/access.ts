@@ -63,6 +63,22 @@ export async function joinBeta(userId: string, side: BetaSide): Promise<BetaStat
   return betaState((await betaRows(userId)).find((r) => r.side === side));
 }
 
+/**
+ * A declined sign-up asks again (owner, 3 Nov 2026: a "no" isn't for ever). Back on the list with today's date, the decision
+ * and reason cleared, so Techwide reviews it again.
+ */
+export async function applyAgain(userId: string, side: BetaSide): Promise<BetaState | null> {
+  await supabaseRest(`beta_access?user_id=eq.${userId}&side=eq.${side}&status=eq.declined`, {
+    method: "PATCH",
+    headers: { prefer: "return=minimal" },
+    body: JSON.stringify({ status: "waiting", requested_at: new Date().toISOString(), decided_at: null, decided_by: null, reason: null }),
+  });
+  const [u] = (await (await supabaseRest(`app_users?id=eq.${userId}&select=email,login_email,tiktok_username&limit=1`)).json().catch(() => [])) as { email: string | null; login_email: string | null; tiktok_username: string | null }[];
+  const who = u?.email ?? u?.login_email ?? (u?.tiktok_username ? `@${u.tiktok_username}` : "a declined account");
+  await logActivity(who, "Creators", `applied again for the ${side} beta after being declined`);
+  return betaState((await betaRows(userId)).find((r) => r.side === side));
+}
+
 /** They tapped Join Our WhatsApp Group (shown to admins next to their name). */
 export async function tappedGroup(userId: string, side: BetaSide): Promise<void> {
   await supabaseRest(`beta_access?user_id=eq.${userId}&side=eq.${side}&group_at=is.null`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ group_at: new Date().toISOString() }) });

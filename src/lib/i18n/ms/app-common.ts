@@ -758,4 +758,8 @@ export const APP_COMMON: Record<string, string> = {
   "LIVE data (when each LIVE started and ended)": "Data LIVE (bila setiap LIVE bermula dan tamat)",
   "LIVE data not allowed": "Data LIVE tidak dibenarkan",
   "LIVE length and sales per hour need LIVE data. Link TikTok Shop again and keep LIVE data ticked.": "Tempoh LIVE dan jualan sejam memerlukan data LIVE. Sambung TikTok Shop semula dan pastikan data LIVE ditanda.",
+  "Sorted it out? Apply again and we'll look at your sign-up again.": "Sudah selesaikan? Mohon semula dan kami akan semak pendaftaran anda sekali lagi.",
+  "You're back on the list. We'll look at your sign-up again.": "Anda kembali dalam senarai. Kami akan semak pendaftaran anda sekali lagi.",
+  "Apply Again": "Mohon Semula",
+  "Sending…": "Menghantar…",
 };

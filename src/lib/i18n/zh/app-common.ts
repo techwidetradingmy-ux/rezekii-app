@@ -583,4 +583,8 @@ export const APP_COMMON: Record<string, string> = {
   "LIVE data (when each LIVE started and ended)": "直播数据（每场直播的开始和结束时间）",
   "LIVE data not allowed": "未允许直播数据",
   "LIVE length and sales per hour need LIVE data. Link TikTok Shop again and keep LIVE data ticked.": "直播时长和每小时销售额需要直播数据。请重新连接 TikTok Shop，并勾选直播数据。",
+  "Sorted it out? Apply again and we'll look at your sign-up again.": "问题已解决？重新申请，我们会再次审核你的注册。",
+  "You're back on the list. We'll look at your sign-up again.": "你已重新回到名单中，我们会再次审核你的注册。",
+  "Apply Again": "重新申请",
+  "Sending…": "正在发送…",
 };
