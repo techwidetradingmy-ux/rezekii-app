@@ -576,4 +576,11 @@ export const APP_COMMON: Record<string, string> = {
   "Waiting for Meta's approval. Coming soon.": "正在等待 Meta 审核通过，即将开放。",
   "Rezekii is in beta. We check every sign-up and let you in soon. We'll email you when you're in.": "Rezekii 正在内测。我们会审核每一份注册，很快就会让你加入。通过后我们会发邮件通知你。",
   "All beta places are taken. You're on the waitlist, and we'll email you when a place opens.": "内测名额已满。你已在候补名单中，有名额时我们会发邮件通知你。",
+
+  // LIVE data permission on TikTok Shop (owner, 3 Nov 2026)
+  "On TikTok Shop's page, keep every box ticked, including LIVE data.": "在 TikTok Shop 的页面上，请保持所有选项都勾选，包括直播数据。",
+  "Allow LIVE Data": "允许直播数据",
+  "LIVE data (when each LIVE started and ended)": "直播数据（每场直播的开始和结束时间）",
+  "LIVE data not allowed": "未允许直播数据",
+  "LIVE length and sales per hour need LIVE data. Link TikTok Shop again and keep LIVE data ticked.": "直播时长和每小时销售额需要直播数据。请重新连接 TikTok Shop，并勾选直播数据。",
 };

@@ -1,3 +1,4 @@
+import { LIVE_SCOPE } from "@/modules/creator-accounts/affiliate-connections.ts";
 import { after, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { currentUser } from "@/app/current-user";
@@ -53,7 +54,8 @@ export async function GET() {
         photo: myPhoto(user) ?? user.avatar_url,
         handle: user.tiktok_username,
         level,
-        shop: link ? { handle: link.username, access: access?.status ?? null, expired: link.refreshExpiresAt.getTime() < Date.now() } : null,
+        // noLive: she linked without ticking LIVE data on TikTok Shop's page (owner, 3 Nov 2026: ask her to allow it).
+        shop: link ? { handle: link.username, access: access?.status ?? null, expired: link.refreshExpiresAt.getTime() < Date.now(), noLive: !!link.scopes && !link.scopes.includes(LIVE_SCOPE) } : null,
         ttLevel: link ? tt[0]?.tt_level ?? null : null,
         signIn: {
           tiktok: ways?.tiktok_open_id ? (ways.tiktok_username ? `@${ways.tiktok_username}` : t("Linked")) : null,

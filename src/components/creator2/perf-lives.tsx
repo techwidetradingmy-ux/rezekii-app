@@ -11,6 +11,7 @@ import { perfProduct, useLivePerf } from "@/lib/live-perf";
 import { CancelChip, CancelRate, SortBar, cancelFlag, useSortPref } from "@/components/sort-bar";
 import { useOptions } from "@/components/creator2/bits";
 import { useT } from "@/lib/i18n/client";
+import { useDemo } from "@/components/demo";
 import type { T } from "@/lib/i18n/lang";
 import "@/app/creator2.css";
 
@@ -28,6 +29,7 @@ export function LiveList() {
   const sorts = useOptions(SORTS);
   const [openId, setOpenId] = useState<string | null>(null);
   const router = useRouter();
+  const { me, setLinked } = useDemo();
   // Highest or lowest first, remembered (owner, 1 Nov 2026).
   const [sort, setSort, dir, flip] = useSortPref<Sort>("perf-lives", SORTS, "GMV");
   const key = (g: number, c: number, x: number) => (sort === "GMV" ? g : sort === "Commission" ? c : x);
@@ -49,6 +51,13 @@ export function LiveList() {
         <b>{rows.length === 1 ? t("{n} LIVE", { n: 1 }) : t("{n} LIVEs", { n: rows.length })}</b><span>{t("{amount} commission", { amount: rm(total, 0) })}</span>
         <Tip text={t("Found from your orders tagged LIVE. LIVE length and sales per hour show once TikTok sends the LIVE's times (it can take a day).")} />
       </p>
+      {/* Linked without LIVE data (owner, 3 Nov 2026): LIVE length and sales per hour need it. */}
+      {me?.shop?.noLive && !me.shop.expired && (
+        <div className="v2-card pl-nolive">
+          <p className="v2-small" style={{ margin: 0 }}>{t("LIVE length and sales per hour need LIVE data. Link TikTok Shop again and keep LIVE data ticked.")}</p>
+          <button type="button" className="np-btn v2-btn-sm cr2-relink" onClick={() => setLinked(true)}><Icon name="refresh" size={15} /> {t("Allow LIVE Data")}</button>
+        </div>
+      )}
       <SortBar value={sorts.label(sort)} options={sorts.labels} onChange={(l) => setSort(sorts.pick(l))} dir={dir} onFlip={flip} />
       <Lock what={t("what each LIVE sold")}>
         <div className="cr2-list">

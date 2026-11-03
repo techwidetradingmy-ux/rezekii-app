@@ -530,11 +530,13 @@ export default function Account() {
           <div className="cr2-cells">
             <div className="cr2-cell row">
               <BrandLogo name="TikTok Shop" size={34} className="cr2-pi" />
-              <span className="cr2-conn"><b>TikTok Shop</b>{me?.shop?.expired ? <small className="cr2-lost">@{me.shop.handle} · {t("Link expired. Re-link to keep your data updating.")}</small> : <small>{me?.shop ? `@${me.shop.handle}${me.shop.access && me.shop.access !== "approved" ? ` · ${t("waiting for approval")}` : ""}` : t("Not linked")}</small>}</span>
+              <span className="cr2-conn"><b>TikTok Shop</b>{me?.shop?.expired ? <small className="cr2-lost">@{me.shop.handle} · {t("Link expired. Re-link to keep your data updating.")}</small> : <small>{me?.shop ? `@${me.shop.handle}${me.shop.access && me.shop.access !== "approved" ? ` · ${t("waiting for approval")}` : ""}` : t("Not linked")}{me?.shop?.noLive && <span className="cr2-lost"> · {t("LIVE data not allowed")}</span>}</small>}</span>
               {/* A link that ended (owner, 2 Nov 2026) turns into a red Re-link, so she notices. */}
               {me?.shop?.expired ? <button type="button" className="np-btn v2-btn-sm cr2-relink" onClick={() => setLinked(true)}><Icon name="refresh" size={15} /> {t("Re-link")}</button>
                 : me?.shop ? (
                   <span className="cr2-connbtns">
+                    {/* Linked without LIVE data (owner, 3 Nov 2026): link again with that box ticked. */}
+                    {me.shop.noLive && <button type="button" className="np-btn v2-btn-sm cr2-relink" onClick={() => setLinked(true)}><Icon name="refresh" size={15} /> {t("Allow LIVE Data")}</button>}
                     {/* Change Account (owner, 2 Nov 2026): link a different TikTok Shop in its place, in one step. */}
                     <button type="button" className="btn-outline v2-btn-sm" onClick={() => setChanging(true)}>{t("Change Account")}</button>
                     <button type="button" className="btn-outline v2-btn-sm" onClick={() => setUnlink(true)}>{t("Unlink")}</button>

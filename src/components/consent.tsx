@@ -12,7 +12,7 @@ export const VERSIONS = { terms: "1.0", privacy: "1.0", date: "28 Oct 2026" };
 
 /** What each side lets Rezekii read from TikTok Shop, in the words shown before linking (English here, shown in her language). */
 export const SCOPES: Record<Role, string[]> = {
-  creator: [tx("Showcase products and rates"), tx("Affiliate orders and commission"), tx("Payouts and settlements"), tx("Your creator level"), tx("Sample requests")],
+  creator: [tx("Showcase products and rates"), tx("Affiliate orders and commission"), tx("Payouts and settlements"), tx("Your creator level"), tx("Sample requests"), tx("LIVE data (when each LIVE started and ended)")],
   seller: [tx("Shop and product info"), tx("Orders and sales for TAP products"), tx("Campaigns you submit")],
 };
 const WHY: Record<Role, string> = {
@@ -49,6 +49,8 @@ export function ConsentSheet({ role, onAgree, onClose }: { role: Role; onAgree: 
         <b><Icon name="refresh" size={17} /> {t("Unlink any time")}</b>
         <p>{t("In My account, Connections. We stop at once and delete your data within 30 days, except records the law requires.")}</p>
       </div>
+      {/* TikTok Shop's page lets her untick permissions; LIVE data is the one people miss (owner, 3 Nov 2026). */}
+      {role === "creator" && <p className="v2-small cs-note"><Icon name="info" size={14} /> {t("On TikTok Shop's page, keep every box ticked, including LIVE data.")}</p>}
       <label className="cs-tick">
         <input type="checkbox" checked={tick} onChange={(e) => setTick(e.target.checked)} />
         <span>

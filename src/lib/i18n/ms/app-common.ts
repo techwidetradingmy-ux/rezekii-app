@@ -751,4 +751,11 @@ export const APP_COMMON: Record<string, string> = {
   "Waiting for Meta's approval. Coming soon.": "Menunggu kelulusan Meta. Akan datang tidak lama lagi.",
   "Rezekii is in beta. We check every sign-up and let you in soon. We'll email you when you're in.": "Rezekii dalam fasa beta. Kami menyemak setiap pendaftaran dan akan membenarkan anda masuk tidak lama lagi. Kami akan e-mel anda apabila anda boleh masuk.",
   "All beta places are taken. You're on the waitlist, and we'll email you when a place opens.": "Semua tempat beta sudah penuh. Anda dalam senarai menunggu, dan kami akan e-mel anda apabila ada tempat kosong.",
+
+  // LIVE data permission on TikTok Shop (owner, 3 Nov 2026)
+  "On TikTok Shop's page, keep every box ticked, including LIVE data.": "Di halaman TikTok Shop, pastikan semua kotak ditanda, termasuk data LIVE.",
+  "Allow LIVE Data": "Benarkan Data LIVE",
+  "LIVE data (when each LIVE started and ended)": "Data LIVE (bila setiap LIVE bermula dan tamat)",
+  "LIVE data not allowed": "Data LIVE tidak dibenarkan",
+  "LIVE length and sales per hour need LIVE data. Link TikTok Shop again and keep LIVE data ticked.": "Tempoh LIVE dan jualan sejam memerlukan data LIVE. Sambung TikTok Shop semula dan pastikan data LIVE ditanda.",
 };

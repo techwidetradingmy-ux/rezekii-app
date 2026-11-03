@@ -44,7 +44,12 @@ export type StoredConnection = {
   refreshToken: string;
   /** When the link ends: TikTok's refresh token expiry, or the moment TikTok refused to renew it (she removed access). */
   refreshExpiresAt: Date;
+  /** The permissions she ticked on TikTok Shop's page, or null when they weren't saved (older links). */
+  scopes: string[] | null;
 };
+
+/** TikTok Shop's LIVE data permission (LIVE length and sales per hour need it). */
+export const LIVE_SCOPE = "creator.data.live.read.public";
 
 /**
  * A stored connection, or null when there's none or its tokens aren't real encrypted tokens (owner, 1 Nov 2026: the seeded demo
@@ -59,6 +64,7 @@ const toStored = (row: Record<string, string> | undefined): StoredConnection | n
         accessExpiresAt: new Date(row.access_token_expires_at),
         refreshToken: decryptToken(row.refresh_token_enc),
         refreshExpiresAt: new Date(row.refresh_token_expires_at),
+        scopes: Array.isArray(row.granted_scopes) && row.granted_scopes.length ? (row.granted_scopes as unknown as string[]) : null,
       }
     : null;
 

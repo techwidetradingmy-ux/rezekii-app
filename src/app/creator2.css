@@ -1221,3 +1221,9 @@ button.rf-pill { border: 0; cursor: pointer; font: inherit; font-size: 12.5px; f
 .acc-msg-h small { font-size: 12px; color: var(--muted); }
 .acc-reply { display: grid; gap: 3px; padding: 9px 11px; border-radius: 12px; background: var(--gsoft); color: var(--gink); font-size: 13.5px; }
 .acc-reply b { font-size: 12.5px; font-weight: 800; }
+/* Allow LIVE Data on By LIVE (owner, 3 Nov 2026): the reason, then the button; wraps on phones. */
+.v2-card.pl-nolive { display: flex; flex-direction: row; align-items: center; gap: 10px 12px; flex-wrap: wrap; padding: 12px 14px; border-color: #ffb4b4; }
+.pl-nolive p { flex: 1 1 220px; min-width: 0; }
+/* The LIVE data reminder before linking TikTok Shop (owner, 3 Nov 2026). */
+.cs-note { display: flex; align-items: flex-start; gap: 6px; margin: 0; color: var(--muted); }
+.cs-note svg { flex-shrink: 0; margin-top: 2px; }
