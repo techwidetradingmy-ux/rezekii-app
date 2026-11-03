@@ -309,6 +309,12 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
             <Icon name="bell" size={20} />
             {live ? !!unreadNotes && <b>{unreadNotes > 99 ? "99+" : unreadNotes}</b> : <b>3</b>}
           </Link>
+          {/* Admins switch between the dashboards from the top bar on a computer (owner, 3 Nov 2026); phones use the account panel. */}
+          {me?.role === "admin" && (
+            <Link href={app === "admin" ? "/app" : "/admin"} className="v2-dashswitch">
+              <Icon name={app === "admin" ? "home" : "shield"} size={16} /> {app === "admin" ? "Creator Dashboard" : t("Admin Dashboard")}
+            </Link>
+          )}
           <Link href={ACCOUNT[app]} className={`v2-acct${ring}`} aria-label={storyNew && hasStory ? t("Watch your Daily Story") : undefined} onClick={(e) => { if (hasStory && storyNew) { e.preventDefault(); setStory(true); return; } if (app === "creator" && window.matchMedia("(max-width: 760px)").matches) { e.preventDefault(); setAcctOpen(true); } }}>
             {who.photo ? (
               // eslint-disable-next-line @next/next/no-img-element
