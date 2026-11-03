@@ -10,9 +10,8 @@ import { useT } from "@/lib/i18n/client";
 import type { VideoRow } from "@/lib/mock-creator2";
 
 /**
- * One of her videos, opened on Rezekii (owner, 28 Oct 2026: never send her back to TikTok just to look). A real video plays here
- * in TikTok's own player, its cover showing while it loads, with Open in TikTok below in case it won't (owner, 2 Nov 2026). It
- * waits for her tap rather than autoplaying: an autoplay the phone blocks left a black box (owner, 3 Nov 2026).
+ * One of her videos, opened on Rezekii: its cover and numbers, and Watch on TikTok to play it there (owner, 3 Nov 2026). TikTok's
+ * embedded players stopped sending the video itself (they get an empty video address), so it opens in TikTok instead.
  */
 export function VideoSheet({ video, onClose }: { video: VideoRow; onClose: () => void }) {
   const t = useT();
@@ -23,12 +22,12 @@ export function VideoSheet({ video, onClose }: { video: VideoRow; onClose: () =>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={video.cover ?? (PRODUCTS.some((p) => p.id === video.productId) ? product(video.productId).img : NO_PHOTO)} alt="" />
         {video.url ? (
-          <iframe src={`https://www.tiktok.com/player/v1/${video.id}?rel=0`} title={video.title} allow="autoplay; fullscreen" allowFullScreen />
+          <a className="pd-play" href={video.url} target="_blank" rel="noreferrer" aria-label={t("Watch on TikTok")}><Icon name="video" size={26} /></a>
         ) : (
           <span className="pd-play" aria-hidden="true"><Icon name="video" size={26} /></span>
         )}
       </div>
-      {video.url && <a className="btn-outline v2-btn-sm pd-open" href={video.url} target="_blank" rel="noreferrer">{t("Open in TikTok")}</a>}
+      {video.url && <a className="np-btn pd-open" href={video.url} target="_blank" rel="noreferrer"><Icon name="video" size={18} /> {t("Watch on TikTok")}</a>}
       <b style={{ fontSize: 16 }}>{video.title}</b>
       <div className="cr2-mini">
         <span><small>{t("Views")}</small><b>{video.views === null ? "—" : short(video.views)}</b></span>

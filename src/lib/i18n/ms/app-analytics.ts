@@ -398,4 +398,5 @@ export const APP_ANALYTICS: Record<string, string> = {
   "{n} products in your showcase didn't sell in 30 days, for example:": "{n} produk dalam Showcase anda tidak terjual dalam 30 hari, contohnya:",
   "**Earn**: the product's commission; on Rezekii campaign products, your Rezekii rate.": "**Dapat**: komisen produk; untuk produk kempen Rezekii, kadar Rezekii anda.",
   "**Earn**: Techwide's rate, or your own rate if it's higher.": "**Dapat**: kadar Techwide, atau kadar anda sendiri jika lebih tinggi.",
+  "Watch on TikTok": "Tonton di TikTok",
 };
