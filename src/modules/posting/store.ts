@@ -61,9 +61,14 @@ export async function updatePost(id: string, patch: Partial<PostRow>): Promise<v
   await supabaseRest(`posts?id=eq.${id}`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ ...patch, updated_at: new Date().toISOString() }) });
 }
 
-export async function listPosts(userId: string, limit = 100): Promise<PostRow[]> {
-  const res = await supabaseRest(`posts?user_id=eq.${userId}&status=neq.cancelled&order=scheduled_at.desc.nullsfirst,created_at.desc&limit=${limit}`);
-  return res.json();
+/** A user's TikTok posts: everything still to come or needing a look, plus the latest `past` that went out (see listSocialPosts). */
+export async function listPosts(userId: string, past = 200): Promise<PostRow[]> {
+  const base = `posts?user_id=eq.${userId}`;
+  const [open, done] = await Promise.all([
+    supabaseRest(`${base}&status=in.(draft,scheduled,publishing,processing,failed)&order=scheduled_at.desc.nullsfirst,created_at.desc&limit=1000`),
+    supabaseRest(`${base}&status=in.(posted,sent_to_inbox)&order=posted_at.desc.nullslast,created_at.desc&limit=${past}`),
+  ]);
+  return [...((await open.json()) as PostRow[]), ...((await done.json()) as PostRow[])];
 }
 
 export async function getUserPost(userId: string, id: string): Promise<PostRow | null> {

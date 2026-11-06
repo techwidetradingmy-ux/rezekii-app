@@ -51,8 +51,18 @@ export async function updateSocialPost(id: string, patch: Partial<SocialPostRow>
 }
 
 /** The signed-in account's channel posts for My posts (cancelled ones left out), newest scheduled first. */
-export async function listSocialPosts(userId: string, limit = 150): Promise<SocialPostRow[]> {
-  return (await supabaseRest(`social_posts?user_id=eq.${userId}&status=neq.cancelled&order=scheduled_at.desc.nullsfirst,created_at.desc&limit=${limit}`)).json();
+/**
+ * A user's channel posts for the lists: everything still to come or needing a look, plus the latest `past` ones that went out.
+ * One list ordered by schedule time used to stop at 150, so a full calendar of scheduled posts pushed every published one
+ * out of the history (owner, 6 Nov 2026: posts published through Rezekii didn't show).
+ */
+export async function listSocialPosts(userId: string, past = 200): Promise<SocialPostRow[]> {
+  const base = `social_posts?user_id=eq.${userId}`;
+  const [open, done] = await Promise.all([
+    supabaseRest(`${base}&status=in.(draft,scheduled,publishing,processing,failed)&order=scheduled_at.desc.nullsfirst,created_at.desc&limit=1000`),
+    supabaseRest(`${base}&status=in.(posted,removed)&order=posted_at.desc.nullslast,created_at.desc&limit=${past}`),
+  ]);
+  return [...((await open.json()) as SocialPostRow[]), ...((await done.json()) as SocialPostRow[])];
 }
 
 export async function getUserSocialPost(userId: string, id: string): Promise<SocialPostRow | null> {
