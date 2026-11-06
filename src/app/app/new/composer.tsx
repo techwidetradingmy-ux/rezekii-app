@@ -512,7 +512,7 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
                   {promo.on && promo.branded && <p className="np-muted">{t("Branded content visibility cannot be set to private.")}</p>}
                   <div className="np-checks">
                     {([["comments", tx("Allow Comment"), info?.comment_disabled], ["duet", tx("Allow Duet"), info?.duet_disabled], ["stitch", tx("Allow Stitch"), info?.stitch_disabled]] as const).map(([k, label, off]) => (
-                      <label key={k} className={off ? "np-check off" : "np-check"}><input type="checkbox" checked={allow[k] && !off} disabled={!!off} onChange={(e) => setAllow((a) => ({ ...a, [k]: e.target.checked }))} />{t(label)}{off ? t(" (turned off in your TikTok settings)") : ""}</label>
+                      <label key={k} className={off ? "np-check off" : "np-check"}><input type="checkbox" checked={allow[k] && !off} disabled={!!off} onChange={(e) => setAllow((a) => ({ ...a, [k]: e.target.checked }))} />{t(label)}</label>
                     ))}
                   </div>
                   <div className="np-switchrow"><span><b>{t("Disclose promotional content")}</b><small>{t("Turn on if this video promotes yourself, a brand, product or service.")}</small></span><button type="button" role="switch" aria-checked={promo.on} className={promo.on ? "np-switch on" : "np-switch"} onClick={() => setPromo((p) => (p.on ? { on: false, own: false, branded: false } : { ...p, on: true }))} aria-label={t("Disclose promotional content")}><span /></button></div>
