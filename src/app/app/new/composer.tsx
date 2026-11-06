@@ -7,7 +7,7 @@ import { useLang, useT } from "@/lib/i18n/client.tsx";
 import { dateLocale, tx, type Lang, type T } from "@/lib/i18n/lang.ts";
 import type { PublicAccount } from "@/modules/social/accounts.ts";
 import type { Brand } from "@/modules/social/brands.ts";
-import { consentLine, postProblems, type PostChoice } from "@/modules/posting/rules.ts";
+import { postProblems, type PostChoice } from "@/modules/posting/rules.ts";
 import { brandChannels, brandPicked, cleanPick, isTikTokKey, openIdOf, tiktokKey, toggleBrand, toggleChannel } from "@/modules/social/picker.ts";
 import { COLLABORATORS_MAX, TAGS_MAX, REPLY_CONTROLS, cleanTopic, parseCollaborators, settingsProblems, threadsTopic, type ReplyControl, type TrialMode } from "@/modules/social/settings.ts";
 import { KEYFRAME_GAP_MAX, readKeyframes, type KeyframeInfo } from "@/modules/posting/keyframes.ts";
@@ -198,6 +198,7 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
   // TikTok's guidelines: say which label the video gets, and keep Post off while the promotion switch is on with no box ticked.
   const promoLabel = promo.on && promo.branded ? t("Your video will be labeled \"Paid partnership\".") : promo.on && promo.own ? t("Your video will be labeled \"Promotional content\".") : "";
   const promoIncomplete = !!ttKey && mode === "direct" && when !== "draft" && promo.on && !promo.own && !promo.branded;
+  const brandedBlocked = priv === "SELF_ONLY" && !promo.branded;
   const problems = (() => {
     const out: string[] = [];
     if (!keys.length) out.push(t("Pick at least one channel."));
@@ -518,7 +519,10 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
                   {promo.on && (
                     <div className="np-checks">
                       <label className="np-check"><input type="checkbox" checked={promo.own} onChange={(e) => setPromo((p) => ({ ...p, own: e.target.checked }))} />{t("Your brand")}<small>{t("You are promoting yourself or your own business.")}</small></label>
-                      <label className="np-check"><input type="checkbox" checked={promo.branded} onChange={(e) => { setPromo((p) => ({ ...p, branded: e.target.checked })); if (e.target.checked && priv === "SELF_ONLY") setPrivacy(""); }} />{t("Branded content")}<small>{t("You are promoting another brand or a third party.")}</small></label>
+                      {/* TikTok's guidelines: branded content can't be private. With "Only me" picked, the box is greyed out and says why;
+                          the viewer choice is never cleared (owner, 6 Nov 2026: it jumped back to "Choose who can view"). */}
+                      <label className={brandedBlocked ? "np-check off" : "np-check"} title={brandedBlocked ? t("Branded content visibility cannot be set to private.") : undefined}><input type="checkbox" checked={promo.branded} disabled={brandedBlocked} onChange={(e) => setPromo((p) => ({ ...p, branded: e.target.checked }))} />{t("Branded content")}<small>{t("You are promoting another brand or a third party.")}</small></label>
+                      {brandedBlocked && <p className="np-muted">{t("Branded content visibility cannot be set to private.")}</p>}
                       {promoLabel ? <p className="np-note">{promoLabel}</p> : <p className="np-muted">{t("You need to indicate if your content promotes yourself, a third party, or both.")}</p>}
                     </div>
                   )}
@@ -585,7 +589,14 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
           </section>
 
           {errors.length > 0 && <ul className="np-errors" role="alert">{errors.map((e) => <li key={e}>{e}</li>)}</ul>}
-          {ttKey && mode === "direct" && when !== "draft" && <p className="np-consent">{consentLine(choice, t)}</p>}
+          {/* TikTok's declaration, with its two policy names as links to TikTok's pages, as in TikTok's guidelines. */}
+          {ttKey && mode === "direct" && when !== "draft" && (
+            <p className="np-consent">
+              {t("By posting, you agree to TikTok's")}{" "}
+              {promo.on && promo.branded && <><a href="https://www.tiktok.com/legal/page/global/bc-policy/en" target="_blank" rel="noreferrer">{t("Branded Content Policy")}</a>{" "}{t("and")}{" "}</>}
+              <a href="https://www.tiktok.com/legal/page/global/music-usage-confirmation/en" target="_blank" rel="noreferrer">{t("Music Usage Confirmation")}</a>
+            </p>
+          )}
           <span className="np-submit-wrap" title={promoIncomplete ? t("You need to indicate if your content promotes yourself, a third party, or both.") : undefined}>
             <button type="submit" className="np-btn np-submit" disabled={!!busy || (!!ttKey && !info && when !== "draft") || promoIncomplete}>
               {busy || `${edit ? t("Save changes") : when === "draft" ? t("Save draft") : when === "now" ? t("Post now") : t("Schedule")} · ${keys.length === 1 ? t("{n} channel", { n: 1 }) : t("{n} channels", { n: keys.length })}`}

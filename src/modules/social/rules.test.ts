@@ -5,10 +5,10 @@ import { DEFAULT_PLACEMENT, autoCaption, autoComment, channelProblems, channelWa
 const MAIN = "Umur 40 ke atas, lutut selalu rasa berat bila naik tangga? Ramai sangka itu biasa. Link produk ada di bawah.\n#krilloil #sendi #wellnessmalaysia #a #b #c #d";
 const LINK = "https://s.shopee.com.my/3g1kTMj9Ah";
 
-test("C3b: TikTok gets a short caption pointing to the yellow basket, no link, at most 5 hashtags", () => {
-  const t = autoCaption("tiktok", `${MAIN} ${LINK}`);
-  assert.equal(t, "Umur 40 ke atas, lutut selalu rasa berat bila naik tangga? Produk dekat beg kuning. #krilloil #sendi #wellnessmalaysia #a #b");
-  assert.doesNotMatch(t, /https?:/);
+test("C3b: TikTok gets the caption as typed, with no text of Rezekii's own, no link and at most 5 hashtags", () => {
+  const t = autoCaption("tiktok", MAIN);
+  assert.equal(t, "Umur 40 ke atas, lutut selalu rasa berat bila naik tangga? Ramai sangka itu biasa.\n#krilloil #sendi #wellnessmalaysia #a #b");
+  assert.doesNotMatch(autoCaption("tiktok", `${MAIN} ${LINK}`), /https?:|beg kuning/);
 });
 
 test("C3b: Instagram has no link, points to the bio, at most 5 hashtags", () => {
@@ -79,7 +79,7 @@ test("C3e: on Instagram, Threads and TikTok a link goes together with its call t
   assert.equal(autoCaption("instagram", TYPED), "Jaring teduh siap lubang cincin 🌿\n\n#jaringteduh #shadenet");
   assert.equal(autoCaption("threads", TYPED), "Jaring teduh siap lubang cincin 🌿");
   assert.equal(autoCaption("instagram", "Best buy. Dapatkan di sini 👉 https://s.shopee.com.my/x 🛒\n#a"), "Best buy.\n#a");
-  assert.equal(autoCaption("tiktok", TYPED), "Jaring teduh siap lubang cincin 🌿 Produk dekat beg kuning. #jaringteduh #shadenet");
+  assert.equal(autoCaption("tiktok", TYPED), "Jaring teduh siap lubang cincin 🌿\n\n#jaringteduh #shadenet");
 });
 
 test("C4b: your own first comment goes to each channel, with the link after it where that channel puts the link in the comment", () => {

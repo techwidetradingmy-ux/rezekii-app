@@ -56,17 +56,14 @@ const tidy = (s: string) => s.split("\n").map((l) => l.replace(/[ \t]{2,}/g, " "
  * Rezekii's version of the main caption for one channel (C3b): Facebook keeps links where they were typed; elsewhere a
  * link goes together with its whole call to action and emoji. A sentence about the link is rewritten for where the link
  * really is. Hashtags stay where they were typed (the Hashtags box adds its tags at the very bottom), cut to the channel's
- * cap; Threads gets none, since they can't be tapped there (it takes a topic instead). TikTok gets a short caption
- * pointing to the yellow basket.
+ * cap; Threads gets none, since they can't be tapped there (it takes a topic instead). TikTok gets the caption as typed,
+ * without the link and its sentence: TikTok's guidelines don't let apps add their own text (owner, 6 Nov 2026: it always
+ * added "Produk dekat beg kuning." and kept only the first sentence).
  */
 export function autoCaption(ch: Channel, main: string, place: Placement = DEFAULT_PLACEMENT[ch]): string {
   const keep = ch !== "tiktok" && place.caption;
   const text = keep ? main : main.replace(CTA_WITH_LINK, "");
   if (!tidy(text)) return "";
-  if (ch === "tiktok") {
-    const hook = (tidy(text.replace(TAG, "$1")).match(/^[^.!?\n]*[.!?]?/) ?? [""])[0].trim();
-    return [hook, "Produk dekat beg kuning.", hashtags(main).slice(0, HASHTAG_MAX.tiktok).join(" ")].filter(Boolean).join(" ");
-  }
   let n = 0;
   const capped = tidy(text.replace(TAG, (m, before: string) => (++n <= HASHTAG_MAX[ch] ? m : before)));
   const line = keep ? null : place.comment ? "Link produk ada dalam komen." : ch === "instagram" ? "Link dekat bio." : "";

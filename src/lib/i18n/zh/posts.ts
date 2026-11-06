@@ -164,6 +164,10 @@ export const POSTS: Record<string, string> = {
   "Branded content visibility cannot be set to private.": "品牌内容的可见范围不能设为私密。",
   "By posting, you agree to TikTok's Branded Content Policy and Music Usage Confirmation.": "发布即表示你同意 TikTok 的品牌内容政策和音乐使用确认。",
   "By posting, you agree to TikTok's Music Usage Confirmation.": "发布即表示你同意 TikTok 的音乐使用确认。",
+  "By posting, you agree to TikTok's": "发布即表示你同意 TikTok 的",
+  "Branded Content Policy": "品牌内容政策",
+  "Music Usage Confirmation": "音乐使用确认",
+  "and": "和",
 
   // New post with Facebook, Instagram and Threads: picking channels and brands
   "accounts": "账号",

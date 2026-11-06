@@ -385,6 +385,7 @@ textarea.np-input { resize: vertical; line-height: 1.5; }
 .np-radio.on { border-color: var(--green); background: var(--gsoft); color: var(--gink); }
 .np-radio input { accent-color: #00c073; }
 .np-consent { margin: 0; font-size: 13px; color: var(--body); text-align: center; }
+.np-consent a { color: var(--gink); font-weight: 700; text-decoration: underline; }
 .np-btn { display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 22px; border-radius: 14px; border: 0; background: var(--btn); color: #03140b; font: inherit; font-weight: 800; font-size: 16px; text-decoration: none; box-shadow: var(--btn-shadow); cursor: pointer; }
 .np-btn:hover { filter: brightness(1.05); }
 .np-btn[disabled] { opacity: 0.5; cursor: not-allowed; }
