@@ -22,3 +22,26 @@ test("the site is warmed every 15 minutes from 7 am to 1 am Malaysia time, not o
     globalThis.fetch = real;
   }
 });
+
+test("the Rankings data routes are warmed one at a time, so the database never gets five big reads at once", async () => {
+  let open = 0;
+  let most = 0;
+  const data: string[] = [];
+  const real = globalThis.fetch;
+  globalThis.fetch = (async (url: string) => {
+    if (!url.includes("/api/")) return new Response("");
+    data.push(url);
+    open++;
+    most = Math.max(most, open);
+    await new Promise((r) => setTimeout(r, 5));
+    open--;
+    return new Response("");
+  }) as typeof fetch;
+  try {
+    await warmSite("https://rezekii.com", "t", Date.parse("2026-10-15T01:15:00Z"));
+    assert.equal(data.length, 5);
+    assert.equal(most, 1);
+  } finally {
+    globalThis.fetch = real;
+  }
+});

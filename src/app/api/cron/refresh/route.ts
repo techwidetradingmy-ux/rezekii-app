@@ -18,7 +18,8 @@ export async function POST(req: NextRequest) {
   const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
   if (!(await isTimerToken(token))) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   // Every 15 minutes in the day, once this tick has answered: open the site's pages so a creator's first visit isn't slow. The
-  // warm-up takes up to 20 s after the answer, so that tick works for 30 s instead of 45 (and never starts the Rankings build).
+  // warm-up runs after the answer (usually a few seconds; up to 75 s when the database is slow, as its Rankings data routes go
+  // one at a time), so that tick works for 30 s instead of 45 (and never starts the Rankings build).
   const now = Date.now();
   after(() => warmSite(req.nextUrl.origin, token, now).catch(() => 0));
   return NextResponse.json(await runRefresh(storedSessions(), now + (warmDue(now) ? 30_000 : 45_000)));
