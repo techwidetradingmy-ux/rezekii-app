@@ -389,6 +389,7 @@ textarea.np-input { resize: vertical; line-height: 1.5; }
 .np-btn:hover { filter: brightness(1.05); }
 .np-btn[disabled] { opacity: 0.5; cursor: not-allowed; }
 .np-submit { width: 100%; height: 54px; }
+.np-submit-wrap { display: block; }
 .np-row { display: flex; flex-wrap: wrap; gap: 10px; }
 .np-done { align-items: flex-start; }
 .np-done-ico { width: 48px; height: 48px; border-radius: 50%; background: var(--btn); box-shadow: var(--btn-shadow); color: #03140b; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900; }

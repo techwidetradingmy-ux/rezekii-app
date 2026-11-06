@@ -195,6 +195,9 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
   const activeTab = tab !== "main" && apps.includes(tab) ? tab : "main";
 
   const choice: PostChoice = { mode, caption: captionOf("tiktok"), privacyLevel: priv || null, allowComments: allow.comments, allowDuet: allow.duet, allowStitch: allow.stitch, promo: promo.on, brandOrganic: promo.own, brandedContent: promo.branded, isAigc, durationSec };
+  // TikTok's guidelines: say which label the video gets, and keep Post off while the promotion switch is on with no box ticked.
+  const promoLabel = promo.on && promo.branded ? t("Your video will be labeled \"Paid partnership\".") : promo.on && promo.own ? t("Your video will be labeled \"Promotional content\".") : "";
+  const promoIncomplete = !!ttKey && mode === "direct" && when !== "draft" && promo.on && !promo.own && !promo.branded;
   const problems = (() => {
     const out: string[] = [];
     if (!keys.length) out.push(t("Pick at least one channel."));
@@ -315,6 +318,7 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
         <span className="np-done-ico" aria-hidden="true">✓</span>
         <h2>{edit ? t("Changes saved") : done.draft ? t("Saved as a draft") : when === "now" ? t("On its way") : t("Scheduled")}</h2>
         <p>{done.draft ? t("Saved in Rezekii for {summary}.", { summary: done.summary }) : done.at && when !== "now" ? t("{summary}: {time} (Malaysia time).", { summary: done.summary, time: myt(done.at, lang) }) : t("{summary}: posting now.", { summary: done.summary })} {t("You'll see each channel's status in All channels.")}</p>
+        {ttKey && !done.draft && <p className="np-muted">{mode === "direct" ? t("After it's posted, TikTok can take a few minutes to process the video before it shows on your profile.") : t("It will land in your TikTok inbox, where you can finish and post it in the TikTok app.")}</p>}
         <div className="np-row"><Link href="/app/posts" className="np-btn">{t("See it in All channels")}</Link>{!edit && <button type="button" className="btn-outline" onClick={() => window.location.reload()}>{t("New post")}</button>}</div>
       </section>
     );
@@ -483,6 +487,16 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
           {ttKey && (
             <section className="card np-sec">
               <h2>{t("TikTok settings")}</h2>
+              {/* TikTok's Content Sharing Guidelines: the post screen names the account the video goes to. */}
+              {info ? (
+                <div className="np-account" style={{ display: "flex" }}>
+                  {info.creator_avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={info.creator_avatar_url} alt="" width={48} height={48} />
+                  ) : <span className="np-avatar" aria-hidden="true">{(info.creator_nickname || "?").slice(0, 1)}</span>}
+                  <span><small>{t("Posting to")}</small><strong>{info.creator_nickname}{info.creator_username ? ` · @${info.creator_username}` : ""}</strong></span>
+                </div>
+              ) : !infoError && <p className="np-muted">{t("Checking your TikTok account…")}</p>}
               <div className="np-seg" role="radiogroup" aria-label={t("Where to send it")}>
                 <button type="button" role="radio" aria-checked={mode === "direct"} className={mode === "direct" ? "on" : ""} onClick={() => setMode("direct")}>{t("Post to TikTok")}</button>
                 <button type="button" role="radio" aria-checked={mode === "inbox"} className={mode === "inbox" ? "on" : ""} onClick={() => setMode("inbox")}>{t("Send to TikTok drafts")}</button>
@@ -492,8 +506,9 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
                   <label htmlFor="cx-privacy"><b>{t("Who can view this post")}</b></label>
                   <select id="cx-privacy" className="np-input" value={priv} onChange={(e) => setPrivacy(e.target.value as PrivacyLevel)} required>
                     <option value="" disabled>{t("Choose who can view")}</option>
-                    {(info?.privacy_level_options ?? []).map((p) => <option key={p} value={p} disabled={p === "SELF_ONLY" && promo.on && promo.branded}>{t(PRIVACY[p])}{p === "SELF_ONLY" && promo.on && promo.branded ? t(" (not allowed for branded content)") : ""}</option>)}
+                    {(info?.privacy_level_options ?? []).map((p) => <option key={p} value={p} disabled={p === "SELF_ONLY" && promo.on && promo.branded} title={p === "SELF_ONLY" && promo.on && promo.branded ? t("Branded content visibility cannot be set to private.") : undefined}>{t(PRIVACY[p])}{p === "SELF_ONLY" && promo.on && promo.branded ? t(" (not allowed for branded content)") : ""}</option>)}
                   </select>
+                  {promo.on && promo.branded && <p className="np-muted">{t("Branded content visibility cannot be set to private.")}</p>}
                   <div className="np-checks">
                     {([["comments", tx("Allow Comment"), info?.comment_disabled], ["duet", tx("Allow Duet"), info?.duet_disabled], ["stitch", tx("Allow Stitch"), info?.stitch_disabled]] as const).map(([k, label, off]) => (
                       <label key={k} className={off ? "np-check off" : "np-check"}><input type="checkbox" checked={allow[k] && !off} disabled={!!off} onChange={(e) => setAllow((a) => ({ ...a, [k]: e.target.checked }))} />{t(label)}{off ? t(" (turned off in your TikTok settings)") : ""}</label>
@@ -504,6 +519,7 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
                     <div className="np-checks">
                       <label className="np-check"><input type="checkbox" checked={promo.own} onChange={(e) => setPromo((p) => ({ ...p, own: e.target.checked }))} />{t("Your brand")}<small>{t("You are promoting yourself or your own business.")}</small></label>
                       <label className="np-check"><input type="checkbox" checked={promo.branded} onChange={(e) => { setPromo((p) => ({ ...p, branded: e.target.checked })); if (e.target.checked && priv === "SELF_ONLY") setPrivacy(""); }} />{t("Branded content")}<small>{t("You are promoting another brand or a third party.")}</small></label>
+                      {promoLabel ? <p className="np-note">{promoLabel}</p> : <p className="np-muted">{t("You need to indicate if your content promotes yourself, a third party, or both.")}</p>}
                     </div>
                   )}
                   <div className="np-switchrow"><span><b>{t("AI-generated content")}</b><small>{t("Turn on if the video was made or heavily edited with AI.")}</small></span><button type="button" role="switch" aria-checked={isAigc} className={isAigc ? "np-switch on" : "np-switch"} onClick={() => setIsAigc(!isAigc)} aria-label={t("AI-generated content")}><span /></button></div>
@@ -570,9 +586,11 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
 
           {errors.length > 0 && <ul className="np-errors" role="alert">{errors.map((e) => <li key={e}>{e}</li>)}</ul>}
           {ttKey && mode === "direct" && when !== "draft" && <p className="np-consent">{consentLine(choice, t)}</p>}
-          <button type="submit" className="np-btn np-submit" disabled={!!busy || (!!ttKey && !info && when !== "draft")}>
-            {busy || `${edit ? t("Save changes") : when === "draft" ? t("Save draft") : when === "now" ? t("Post now") : t("Schedule")} · ${keys.length === 1 ? t("{n} channel", { n: 1 }) : t("{n} channels", { n: keys.length })}`}
-          </button>
+          <span className="np-submit-wrap" title={promoIncomplete ? t("You need to indicate if your content promotes yourself, a third party, or both.") : undefined}>
+            <button type="submit" className="np-btn np-submit" disabled={!!busy || (!!ttKey && !info && when !== "draft") || promoIncomplete}>
+              {busy || `${edit ? t("Save changes") : when === "draft" ? t("Save draft") : when === "now" ? t("Post now") : t("Schedule")} · ${keys.length === 1 ? t("{n} channel", { n: 1 }) : t("{n} channels", { n: keys.length })}`}
+            </button>
+          </span>
         </div>
 
         <aside className="cx-side" aria-label={t("Preview")}>
