@@ -289,4 +289,11 @@ export const APP_SERVER: Record<string, string> = {
   // The share card
   "Scan to join me on Rezekii": "扫码和我一起加入 Rezekii",
   "Invite code": "邀请码",
+  "Meta didn't answer. Try again.": "Meta 没有回应，请再试一次。",
+  "Something's missing. Reload the page and try again.": "缺少一些信息。请刷新页面后再试。",
+  "Write a reply first.": "请先写下回复。",
+  "Keep the reply under 2,000 characters.": "回复请保持在 2,000 字以内。",
+  "This channel isn't connected to your account.": "此渠道没有连接到你的账号。",
+  "This channel needs connecting again (Publish → New Post).": "此渠道需要重新连接（发布 → 新建发布）。",
+  "Connect this channel again once so Meta allows answering comments (Publish → New Post).": "请重新连接此渠道一次，Meta 才会允许回复评论（发布 → 新建发布）。",
 };

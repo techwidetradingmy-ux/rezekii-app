@@ -439,4 +439,11 @@ export const APP_SERVER: Record<string, string> = {
   // The share card
   "Scan to join me on Rezekii": "Imbas untuk sertai saya di Rezekii",
   "Invite code": "Kod jemputan",
+  "Meta didn't answer. Try again.": "Meta tidak menjawab. Cuba lagi.",
+  "Something's missing. Reload the page and try again.": "Ada maklumat yang tiada. Muat semula halaman dan cuba lagi.",
+  "Write a reply first.": "Tulis balasan dahulu.",
+  "Keep the reply under 2,000 characters.": "Pastikan balasan kurang daripada 2,000 aksara.",
+  "This channel isn't connected to your account.": "Saluran ini tidak disambungkan ke akaun anda.",
+  "This channel needs connecting again (Publish → New Post).": "Saluran ini perlu disambungkan semula (Terbit → Hantaran Baharu).",
+  "Connect this channel again once so Meta allows answering comments (Publish → New Post).": "Sambungkan saluran ini semula sekali supaya Meta membenarkan komen dibalas (Terbit → Hantaran Baharu).",
 };

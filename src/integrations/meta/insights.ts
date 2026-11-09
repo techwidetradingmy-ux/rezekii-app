@@ -53,6 +53,15 @@ async function metricsOf(url: (metrics: string) => string, metrics: string[]): P
   }
 }
 
+/**
+ * Without the insights permission (every account but the Admins' until Meta approves it), the day keeps the followers, which
+ * the basic permissions give; an ended sign-in still fails.
+ */
+function followersOnly(err: unknown): Record<string, number> {
+  if (refused(err) && !(err instanceof MetaError && err.needsReconnect)) return {};
+  throw err;
+}
+
 /** The first field set Meta accepts (a richer one first, plainer ones when a field or permission is missing). */
 async function firstAccepted<T>(urls: string[]): Promise<T> {
   let last: unknown;
@@ -86,7 +95,7 @@ export async function facebookDay(pageId: string, token: string, from: string, t
   const m = await metricsOf(
     (metrics) => G(`${pageId}/insights?${qs({ metric: metrics, period: "day", since: unix(from), until: unix(to), access_token: token })}`),
     ["page_media_view", "page_total_media_view_unique", "page_post_engagements", "page_daily_follows_unique", "page_daily_unfollows_unique"],
-  );
+  ).catch(followersOnly);
   return { followers: page.followers_count ?? page.fan_count, ...pick(m, { views: "page_media_view", reach: "page_total_media_view_unique", engagement: "page_post_engagements", follows: "page_daily_follows_unique", unfollows: "page_daily_unfollows_unique" }) };
 }
 
@@ -120,7 +129,7 @@ export async function instagramDay(igId: string, token: string, from: string, to
   const m = await metricsOf(
     (metrics) => IG(`${igId}/insights?${qs({ metric: metrics, period: "day", metric_type: "total_value", since: unix(from), until: unix(to), access_token: token })}`),
     ["views", "reach", "total_interactions"],
-  );
+  ).catch(followersOnly);
   return { followers: user.followers_count, ...pick(m, { views: "views", reach: "reach", engagement: "total_interactions" }) };
 }
 

@@ -12,8 +12,9 @@ export const MENUS: Record<AppKind, Section[]> = {
       href: "/app/data", label: "Analytics", icon: "chart",
       pages: [["/app/data", "Overview"], ["/app/data/performance", "Performance"], ["/app/data/ai-picks", "AI Picks"], ["/app/data/risk", "Risk Check"], ["/app/data/payouts", "Payouts"]],
     },
-    // Today's Ideas first (owner, 28 Oct 2026): Publish opens on what to film, then New Post, then the calendar.
-    { href: "/app/publish/plan", label: "Publish", icon: "send", pages: [["/app/publish/plan", "Today's Ideas"], ["/app/publish", "New Post"], ["/app/publish/calendar", "Content Calendar"], ["/app/publish/ai-video", "AI Video"]] },
+    // Today's Ideas first (owner, 28 Oct 2026): Publish opens on what to film, then New Post, then the calendar. Comments and
+    // Channel Numbers once Meta approved the app (owner, 9 Nov 2026).
+    { href: "/app/publish/plan", label: "Publish", icon: "send", pages: [["/app/publish/plan", "Today's Ideas"], ["/app/publish", "New Post"], ["/app/publish/calendar", "Content Calendar"], ["/app/publish/comments", "Comments"], ["/app/publish/numbers", "Channel Numbers"], ["/app/publish/ai-video", "AI Video"]] },
     { href: "/app/rewards", label: "Missions", icon: "gift", pages: [] },
   ],
   seller: [
@@ -26,7 +27,7 @@ export const MENUS: Record<AppKind, Section[]> = {
       href: "/seller/app/results", label: "Results", icon: "chart",
       pages: [["/seller/app/results", "TAP Performance"], ["/seller/app/results/samples", "Where Samples Went"], ["/seller/app/results/competitors", "AI Competitors"]],
     },
-    { href: "/seller/app/publish", label: "Publish", icon: "send", pages: [["/seller/app/publish", "New Post"], ["/seller/app/publish/calendar", "Content Calendar"]] },
+    { href: "/seller/app/publish", label: "Publish", icon: "send", pages: [["/seller/app/publish", "New Post"], ["/seller/app/publish/calendar", "Content Calendar"], ["/seller/app/publish/comments", "Comments"], ["/seller/app/publish/numbers", "Channel Numbers"]] },
     { href: "/seller/app/rewards", label: "Rewards", icon: "gift", pages: [["/seller/app/rewards", "Missions"], ["/seller/app/rewards/referral", "Referral"], ["/seller/app/rewards/wallet", "Wallet"]] },
   ],
   admin: [

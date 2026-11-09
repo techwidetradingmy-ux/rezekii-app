@@ -1,0 +1,87 @@
+/* Comments and Channel Numbers (owner, 9 Nov 2026): shared by the creator and seller apps. */
+.cm { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.cm-top { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.cm-pick { display: flex; align-items: center; gap: 10px; flex: 1 1 260px; min-width: 0; max-width: 420px; }
+.cm-pick .np-input { min-width: 0; }
+.cm-top .np-seg { display: inline-flex; flex-wrap: wrap; }
+.cm-self { align-self: flex-start; }
+.cm-err { background: var(--rsoft); color: var(--red); }
+.cm-post { padding: 18px; gap: 10px; min-width: 0; }
+.cm-ph { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.cm-th { width: 48px; height: 64px; border-radius: 10px; overflow: hidden; background: #0d1117; }
+.cm-th img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cm-pt { display: grid; min-width: 0; gap: 2px; }
+.cm-pt b { font-size: 14.5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.cm-pt small { color: var(--muted); font-size: 12.5px; }
+.cm-open { height: 36px; padding: 0 14px; display: inline-flex; align-items: center; text-decoration: none; font-size: 13.5px; }
+.cm-list, .cm-r { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.cm-r { margin: 6px 0 0 18px; padding-left: 12px; border-left: 2px solid var(--line); }
+.cm-c { padding: 10px 2px; display: grid; gap: 4px; border-bottom: 1px solid var(--line); min-width: 0; }
+.cm-r .cm-c { border-bottom: 0; padding: 6px 0; }
+.cm-list > .cm-c:last-child { border-bottom: 0; }
+.cm-c.hid .cm-t { color: var(--muted); }
+.cm-c.mine > .cm-h b { color: var(--gink); }
+.cm-h { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+.cm-h b { font-size: 14px; overflow-wrap: anywhere; }
+.cm-h small { color: var(--muted); font-size: 12px; }
+.cm-t { margin: 0; font-size: 14.5px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.cm-a { display: flex; gap: 14px; }
+.cm-a button { border: 0; background: none; padding: 2px 0; font: inherit; font-size: 13px; font-weight: 800; color: var(--muted); cursor: pointer; }
+.cm-a button:hover { color: var(--gink); }
+.cm-a button[disabled] { opacity: 0.5; cursor: not-allowed; }
+.cm-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; }
+.cm-ask .btn-outline { height: 34px; padding: 0 12px; font-size: 13px; }
+.cm-red { color: var(--red); border-color: var(--rsoft); }
+.cm-reply { display: grid; gap: 8px; margin-top: 4px; }
+.cm-reply textarea { resize: vertical; }
+.cm-rb { display: flex; gap: 8px; }
+.cm-send { height: 40px; font-size: 14.5px; padding: 0 18px; }
+.cm-rb .btn-outline { height: 40px; }
+@media (max-width: 560px) {
+  .cm-ph { grid-template-columns: 40px minmax(0, 1fr); }
+  .cm-th { width: 40px; height: 54px; }
+  .cm-open { grid-column: 1 / -1; justify-self: start; }
+}
+.nm { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.nm-top { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.nm-top .np-seg { display: inline-flex; flex-wrap: wrap; }
+.nm-pick { flex: 1 1 220px; max-width: 360px; min-width: 0; }
+.nm-self { align-self: flex-start; }
+.nm-warn { background: var(--asoft); color: var(--amber); }
+.nm-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.nm-tile { display: grid; gap: 2px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); min-width: 0; }
+.nm-tile small { color: var(--muted); font-size: 12.5px; font-weight: 700; }
+.nm-tile b { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.nm-tile span { color: var(--muted); font-size: 12px; }
+.nm-card { padding: 18px; gap: 10px; min-width: 0; }
+.nm-card h2 { margin: 0; font-size: 17px; }
+.nm-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.nm-scroll { overflow-x: auto; }
+.nm-table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.nm-table th { text-align: left; font-size: 12px; font-weight: 800; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.nm-table td { padding: 9px 8px; border-bottom: 1px solid var(--line); }
+.nm-table tr:last-child td { border-bottom: 0; }
+.nm-ch { display: flex; align-items: center; gap: 8px; font-weight: 700; min-width: 0; }
+.nm-ch span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
+.nm-strong { font-weight: 800; }
+.nm-posts { list-style: none; margin: 0; padding: 0; display: grid; }
+.nm-posts li { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.nm-posts li:last-child { border-bottom: 0; }
+.nm-th { width: 40px; height: 54px; border-radius: 8px; overflow: hidden; background: #0d1117; }
+.nm-th img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.nm-pt { display: grid; gap: 2px; min-width: 0; }
+.nm-pt a, .nm-pt b { font-weight: 700; font-size: 14px; color: var(--text); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nm-pt a:hover { text-decoration: underline; }
+.nm-pt small { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: 12px; min-width: 0; overflow: hidden; white-space: nowrap; }
+.nm-nums { display: flex; gap: 14px; }
+.nm-nums span { display: grid; text-align: right; min-width: 44px; }
+.nm-nums b { font-size: 15px; font-variant-numeric: tabular-nums; }
+.nm-nums small { color: var(--muted); font-size: 11px; }
+@media (max-width: 560px) {
+  .nm-posts li { grid-template-columns: 40px minmax(0, 1fr); }
+  .nm-nums { grid-column: 2; justify-content: flex-start; }
+  .nm-nums span { text-align: left; }
+}
+.cm-link { font-size: 13.5px; font-weight: 700; text-decoration: none; align-self: flex-start; }
+.nm-src { margin-top: -6px; }
+.nm-tiles .v2-stat { min-width: 0; }
