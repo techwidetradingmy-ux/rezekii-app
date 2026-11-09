@@ -2,9 +2,10 @@ import { MetaError, GRAPH_VERSION, metaApp, metaFetch, qs } from "./graph.ts";
 
 /** Facebook Pages (Facebook Login for Business). Page tokens made from a long-lived user token don't expire. */
 const G = (path: string) => `https://graph.facebook.com/${GRAPH_VERSION}/${path}`;
-export const FACEBOOK_SCOPES = ["pages_show_list", "pages_read_engagement", "pages_manage_posts", "pages_manage_engagement", "business_management"];
+// pages_read_user_content: reading who commented (Comments, owner 9 Nov 2026), the same as the saved Facebook configuration.
+export const FACEBOOK_SCOPES = ["pages_show_list", "pages_read_engagement", "pages_read_user_content", "pages_manage_posts", "pages_manage_engagement", "business_management"];
 /** Community (Admins, owner 23 Oct 2026): Page numbers, comments and instant alerts, on top of posting. */
-export const FACEBOOK_COMMUNITY_SCOPES = [...FACEBOOK_SCOPES, "pages_read_user_content", "read_insights", "pages_manage_metadata"];
+export const FACEBOOK_COMMUNITY_SCOPES = [...FACEBOOK_SCOPES, "read_insights", "pages_manage_metadata"];
 
 /**
  * Facebook Login for Business uses a saved configuration for its permissions (META_FB_CONFIG_ID; Admins get Community's,
