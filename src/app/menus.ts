@@ -23,7 +23,8 @@ export const CREATOR_MENU: Section[] = [
     also: ["/app/golden-sellers"],
   },
   { href: "/app/sales", label: "Sales", short: "Sales", icon: "chart", pages: [] },
-  { href: "/app/posts", label: "Posts", short: "Posts", icon: "cal", pages: [["/app/posts", "My posts"], ["/app/new", "New post"]] },
+  // Comments and Numbers for everyone once Meta approved the app (owner, 9 Nov 2026).
+  { href: "/app/posts", label: "Posts", short: "Posts", icon: "cal", pages: [["/app/posts", "My posts"], ["/app/new", "New post"], ["/app/comments", "Comments"], ["/app/numbers", "Numbers"]] },
   { href: "/app/rankings", label: "Rankings", short: "Ranks", icon: "trophy", pages: [] },
 ];
 /** Behind the profile photo. */
@@ -39,7 +40,7 @@ export const ADMIN_MENU: Section[] = [
   { href: "/app/admin/tap", label: "TAP", short: "TAP", icon: "tag", pages: [["/app/admin/tap", "Campaigns"], ["/app/admin/samples", "Samples"]] },
   { href: "/app/admin/stats", label: "Stats", short: "Stats", icon: "chart", pages: [] },
   // Facebook, Instagram and Threads in one place (owner, 23 Oct 2026); Numbers first, the inboxes next.
-  { href: "/app/admin/community", label: "Community", short: "Community", icon: "chat", pages: [["/app/admin/community", "Numbers"]] },
+  { href: "/app/admin/community", label: "Community", short: "Community", icon: "chat", pages: [["/app/admin/community", "Numbers"], ["/app/comments", "Comments"]] },
   { href: "/app/rankings", label: "Rankings", short: "Ranks", icon: "trophy", pages: [] },
 ];
 export const ADMIN_ACCOUNT: Section = { href: "/app/admin/settings", label: "Settings", short: "Settings", icon: "gear", pages: [] };

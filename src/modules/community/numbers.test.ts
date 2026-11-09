@@ -37,7 +37,7 @@ test("the daily read keeps channels waiting to be reconnected and marks one whos
     const graph = url.match(/graph\.facebook\.com\/[^/]+\/(\d+)/);
     if (graph) return new Response(JSON.stringify({ error: metaError[graph[1]] }), { status: 400 });
     if (url.includes("app_users?role=eq.admin")) return new Response(JSON.stringify([{ id: "a1" }]));
-    if (url.includes("social_accounts?user_id=in.")) return new Response(JSON.stringify(channels));
+    if (url.includes("social_accounts?status=in.")) return new Response(JSON.stringify(channels));
     return new Response("");
   }) as typeof fetch;
   try {
@@ -45,10 +45,45 @@ test("the daily read keeps channels waiting to be reconnected and marks one whos
   } finally {
     globalThis.fetch = real;
   }
-  assert.match(calls.find((c) => c.url.includes("social_accounts?user_id=in."))!.url, /status=in\.\(active,reconnect\)/);
+  assert.match(calls.find((c) => c.url.includes("social_accounts?status=in."))!.url, /status=in\.\(active,reconnect\)/);
   // Only the channel that was still active and whose sign-in ended is marked; the note saved stays as before.
   const marked = calls.filter((c) => c.init.method === "PATCH" && JSON.parse(String(c.init.body)).status === "reconnect").map((c) => c.url);
   assert.deepEqual(marked, ["https://db.test/rest/v1/social_accounts?id=eq.ended"]);
   const notes = Object.fromEntries(calls.filter((c) => c.url.includes("social_stats?")).map((c) => JSON.parse(String(c.init.body))[0]).map((r) => [r.account_id, r.numbers.note]));
   assert.deepEqual(notes, { ended: "The sign-in has ended: connect this channel again.", waiting: "The sign-in has ended: connect this channel again.", old: "Connect this channel again to allow Community's numbers." });
+});
+
+test("everyone's Facebook Pages are read daily with the approved permissions: followers and post counts, no note; their Threads is skipped", async () => {
+  process.env.SUPABASE_URL = "https://db.test";
+  process.env.SUPABASE_SECRET_KEY = "secret";
+  process.env.TOKEN_ENCRYPTION_KEY = randomBytes(32).toString("base64");
+  const ch = (id: string, platform: SocialAccount["platform"], external_id: string): SocialAccount => ({
+    id, user_id: "c1", platform, external_id, name: id, username: null, avatar_url: null, account_type: null,
+    token_enc: encryptToken("token"), token_expires_at: platform === "facebook" ? null : "2099-01-01T00:00:00Z", status: "active", connected_at: "2026-11-01T00:00:00Z",
+  });
+  const channels = [ch("page", "facebook", "444"), ch("thr", "threads", "555")];
+  const refused = () => new Response(JSON.stringify({ error: { message: "(#10) Application does not have permission for this action", code: 10 } }), { status: 400 });
+  const calls: { url: string; init: RequestInit }[] = [];
+  const real = globalThis.fetch;
+  globalThis.fetch = (async (input: string | URL, init: RequestInit = {}) => {
+    const url = String(input);
+    calls.push({ url, init });
+    if (url.includes("graph.threads.net")) throw new Error("Threads should not be read for creators");
+    if (url.includes("/444/insights") || (url.includes("/444/published_posts") && url.includes("insights.metric"))) return refused();
+    if (url.includes("/444/published_posts")) return new Response(JSON.stringify({ data: [{ id: "444_1", created_time: "2026-11-08T03:00:00+0000", message: "Hi", reactions: { summary: { total_count: 50 } }, comments: { summary: { total_count: 7 } }, shares: { count: 3 } }] }));
+    if (url.includes("/444?")) return new Response(JSON.stringify({ followers_count: 1200, fan_count: 1100 }));
+    if (url.includes("app_users?role=eq.admin")) return new Response(JSON.stringify([{ id: "a1" }]));
+    if (url.includes("social_accounts?status=in.")) return new Response(JSON.stringify(channels));
+    return new Response("");
+  }) as typeof fetch;
+  try {
+    await refreshCommunity(0, Date.now() + 60_000, Date.parse("2026-11-09T04:00:00Z"));
+  } finally {
+    globalThis.fetch = real;
+  }
+  const day = calls.filter((c) => c.url.includes("social_stats?")).map((c) => JSON.parse(String(c.init.body))[0]);
+  assert.deepEqual(day.map((r) => [r.account_id, r.numbers]), [["page", { followers: 1200 }]]);
+  const post = calls.filter((c) => c.url.includes("social_post_stats?")).map((c) => JSON.parse(String(c.init.body))[0]);
+  assert.deepEqual(post.map((r) => [r.media_id, r.numbers]), [["444_1", { likes: 50, comments: 7, shares: 3 }]]);
+  assert.ok(!calls.some((c) => c.init.method === "PATCH"), "nobody is marked for reconnecting");
 });

@@ -37,10 +37,13 @@ export class MetaError extends Error {
   }
 }
 
-/** GET (or POST with a form body when `form` is given), returning Meta's JSON or throwing a MetaError with Meta's own words. */
-export async function metaFetch<T>(url: string, form?: Record<string, string>, timeoutMs = 60_000): Promise<T> {
+/**
+ * GET (or POST with a form body when `form` is given; DELETE when `method` says so), returning Meta's JSON or throwing a
+ * MetaError with Meta's own words.
+ */
+export async function metaFetch<T>(url: string, form?: Record<string, string>, timeoutMs = 60_000, method?: "DELETE"): Promise<T> {
   const res = await fetch(url, {
-    method: form ? "POST" : "GET",
+    method: method ?? (form ? "POST" : "GET"),
     headers: form ? { "content-type": "application/x-www-form-urlencoded" } : undefined,
     body: form ? new URLSearchParams(form) : undefined,
     cache: "no-store",

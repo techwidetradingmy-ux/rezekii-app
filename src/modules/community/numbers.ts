@@ -8,6 +8,8 @@ import type { Platform } from "../social/rules.ts";
  * Community → Numbers (owner, 23 Oct 2026): the Admins' Facebook Pages, Instagram accounts and Threads profiles, read once a
  * day: each channel's yesterday (Malaysia time) and its posts from the last 30 days. A channel connected before Community
  * lacks the permissions until it is connected again; that is saved as the day's note, and posting is never affected.
+ * Since Meta approved the app (owner, 9 Nov 2026) everyone's Facebook Pages and Instagram accounts are read too, with the
+ * permissions approved for every user: followers, and likes, comments and shares per post (Posts → Numbers).
  */
 const DAY = 86_400_000;
 const MYT = 8 * 3_600_000;
@@ -16,11 +18,31 @@ const POST_DAYS = 30;
 const post = (path: string, rows: unknown[]) =>
   supabaseRest(path, { method: "POST", headers: { prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify(rows) });
 
+const adminIds = async () => ((await (await supabaseRest("app_users?role=eq.admin&select=id")).json()) as { id: string }[]).map((a) => a.id);
+
 /** The Admins' channels, oldest first: active ones and those waiting to be reconnected, so a channel never silently drops off Numbers. */
 async function adminChannels(): Promise<SocialAccount[]> {
-  const admins = (await (await supabaseRest("app_users?role=eq.admin&select=id")).json()) as { id: string }[];
+  const admins = await adminIds();
   if (!admins.length) return [];
-  return (await supabaseRest(`social_accounts?user_id=in.(${admins.map((a) => a.id).join(",")})&status=in.(active,reconnect)&order=connected_at`)).json();
+  return (await supabaseRest(`social_accounts?user_id=in.(${admins.join(",")})&status=in.(active,reconnect)&order=connected_at`)).json();
+}
+
+/** A channel to read daily, and whether it gets the Admins' full numbers (their channels have the insights permissions). */
+type ToRead = { acc: SocialAccount; full: boolean };
+
+/**
+ * Every channel the daily reading covers: the Admins' (all three apps) and everyone else's Facebook Pages and Instagram
+ * accounts. Threads gives no numbers without its insights permission, so other people's Threads profiles are left out.
+ */
+async function channelsToRead(): Promise<ToRead[]> {
+  const admins = new Set(await adminIds());
+  const all = (await (await supabaseRest("social_accounts?status=in.(active,reconnect)&order=connected_at")).json()) as SocialAccount[];
+  return all.filter((a) => admins.has(a.user_id) || a.platform !== "threads").map((acc) => ({ acc, full: admins.has(acc.user_id) }));
+}
+
+/** One person's Facebook Pages and Instagram accounts (what their Numbers page shows). */
+async function ownChannels(userId: string): Promise<SocialAccount[]> {
+  return (await supabaseRest(`social_accounts?user_id=eq.${userId}&platform=in.(facebook,instagram)&status=in.(active,reconnect)&order=connected_at`)).json();
 }
 
 /** Yesterday in Malaysia, as its date and its start and end times. */
@@ -43,7 +65,7 @@ const DAY_READERS: Record<Platform, (id: string, token: string, from: string, to
 const POST_READERS: Record<Platform, (id: string, token: string, since: string) => Promise<PostStat[]>> = { facebook: facebookPosts, instagram: instagramPosts, threads: threadsPosts };
 
 /** One channel's yesterday and recent posts, saved. Meta saying the sign-in has ended also marks the channel "Reconnect". */
-async function refreshChannel(acc: SocialAccount, now: number): Promise<number> {
+async function refreshChannel(acc: SocialAccount, now: number, full = true): Promise<number> {
   const { day, from, to } = yesterday(now);
   let numbers: DayNumbers & { note?: string };
   let posts: PostStat[] = [];
@@ -55,7 +77,8 @@ async function refreshChannel(acc: SocialAccount, now: number): Promise<number> 
     if (d.status === "rejected") failed = d.reason;
     numbers = d.status === "fulfilled" ? d.value : { note: noteFor(d.reason) };
     // Facebook answers an empty list, not an error, when the Page wasn't connected with Community's permissions.
-    if (d.status === "fulfilled" && [numbers.views, numbers.reach, numbers.engagement, numbers.profile_views].every((v) => v === undefined))
+    // Only the Admins' channels are asked for these; for everyone else no views or reach is expected, not a problem.
+    if (full && d.status === "fulfilled" && [numbers.views, numbers.reach, numbers.engagement, numbers.profile_views].every((v) => v === undefined))
       numbers = { ...numbers, note: "Connect this channel again to allow Community's numbers." };
     if (p.status === "fulfilled") posts = p.value;
   } catch (err) {
@@ -73,25 +96,54 @@ async function refreshChannel(acc: SocialAccount, now: number): Promise<number> 
   return posts.length + 1;
 }
 
-/** Daily: every Admin channel, from `start`; returns where to carry on (`next`) when `stopAt` comes first. */
+/** Daily: every channel to read (see channelsToRead), from `start`; returns where to carry on (`next`) when `stopAt` comes first. */
 export async function refreshCommunity(start: number, stopAt: number, now = Date.now()): Promise<{ count: number; next: number | null }> {
-  const channels = await adminChannels();
+  const channels = await channelsToRead();
   let count = 0;
   for (let i = start; i < channels.length; i++) {
     if (Date.now() > stopAt) return { count, next: i };
-    count += await refreshChannel(channels[i], now);
+    count += await refreshChannel(channels[i].acc, now, channels[i].full);
   }
   await supabaseRest("rpc/prune_community", { method: "POST", body: JSON.stringify({ today: new Date(now + MYT).toISOString().slice(0, 10) }) });
   return { count, next: null };
+}
+
+/** How long "Refresh now" waits before the same person's channels can be read again. */
+export const MINE_EVERY_MS = 10 * 60_000;
+
+/**
+ * Refresh now on Posts → Numbers: reads the person's own Facebook Pages and Instagram accounts at once, four at a time, until
+ * `stopAt`. Returns "recent" when they were read in the last 10 minutes.
+ */
+export async function refreshMine(userId: string, stopAt: number, now = Date.now()): Promise<{ read: number; left: number } | "recent"> {
+  const channels = await ownChannels(userId);
+  if (!channels.length) return { read: 0, left: 0 };
+  const ids = channels.map((c) => c.id).join(",");
+  const [last] = (await (await supabaseRest(`social_stats?account_id=in.(${ids})&select=fetched_at&order=fetched_at.desc&limit=1`)).json()) as { fetched_at: string }[];
+  if (last && now - Date.parse(last.fetched_at) < MINE_EVERY_MS) return "recent";
+  const full = (await adminIds()).includes(userId);
+  let next = 0;
+  let read = 0;
+  const worker = async () => {
+    while (next < channels.length && Date.now() < stopAt) {
+      const acc = channels[next++];
+      await refreshChannel(acc, now, full).then(() => read++, (err) => console.error("[numbers] refresh failed", acc.id, err instanceof Error ? err.message : err));
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(4, channels.length) }, worker));
+  return { read, left: channels.length - read };
 }
 
 export type CommunityChannel = { id: string; platform: Platform; name: string; avatar: string | null; connectedAt: string };
 export type CommunityDay = { channel: string; day: string; numbers: DayNumbers & { note?: string }; at: string };
 export type CommunityPost = { channel: string; id: string; at: string | null; url: string | null; caption: string; thumb: string | null; numbers: PostNumbers };
 
-/** What Numbers shows: the Admins' channels, their days from the last `days` days and their posts from the last 30 days. */
-export async function communityNumbers(days: number, now = Date.now()): Promise<{ channels: CommunityChannel[]; days: CommunityDay[]; posts: CommunityPost[]; refreshedAt: string | null; now: number }> {
-  const accounts = await adminChannels();
+/**
+ * What Numbers shows: the Admins' channels (Community → Numbers), or one person's Facebook Pages and Instagram accounts when
+ * `userId` is given (Posts → Numbers); their days from the last `days` days and their posts from the last 30 days.
+ */
+export async function communityNumbers(days: number, now = Date.now(), userId?: string): Promise<{ channels: CommunityChannel[]; days: CommunityDay[]; posts: CommunityPost[]; refreshedAt: string | null; now: number }> {
+  const accounts = userId ? await ownChannels(userId) : await adminChannels();
   const channels = accounts.map((a) => ({ id: a.id, platform: a.platform, name: a.name ?? a.username ?? a.platform, avatar: a.avatar_url, connectedAt: a.connected_at }));
   if (!channels.length) return { channels, days: [], posts: [], refreshedAt: null, now };
   const ids = channels.map((c) => c.id).join(",");

@@ -1,0 +1,41 @@
+/* Posts → Numbers: filters, five totals, the channels table and the top posts list. */
+.nm { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.nm-top { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.nm-top .np-seg { display: inline-flex; flex-wrap: wrap; }
+.nm-pick { flex: 1 1 220px; max-width: 360px; min-width: 0; }
+.nm-self { align-self: flex-start; }
+.nm-warn { background: var(--asoft); color: var(--amber); }
+.nm-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.nm-tile { display: grid; gap: 2px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); min-width: 0; }
+.nm-tile small { color: var(--muted); font-size: 12.5px; font-weight: 700; }
+.nm-tile b { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.nm-tile span { color: var(--muted); font-size: 12px; }
+.nm-card { padding: 18px; gap: 10px; min-width: 0; }
+.nm-card h2 { margin: 0; font-size: 17px; }
+.nm-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.nm-scroll { overflow-x: auto; }
+.nm-table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.nm-table th { text-align: left; font-size: 12px; font-weight: 800; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.nm-table td { padding: 9px 8px; border-bottom: 1px solid var(--line); }
+.nm-table tr:last-child td { border-bottom: 0; }
+.nm-ch { display: flex; align-items: center; gap: 8px; font-weight: 700; min-width: 0; }
+.nm-ch span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
+.nm-strong { font-weight: 800; }
+.nm-posts { list-style: none; margin: 0; padding: 0; display: grid; }
+.nm-posts li { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.nm-posts li:last-child { border-bottom: 0; }
+.nm-th { width: 40px; height: 54px; border-radius: 8px; overflow: hidden; background: #0d1117; }
+.nm-th img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.nm-pt { display: grid; gap: 2px; min-width: 0; }
+.nm-pt a, .nm-pt b { font-weight: 700; font-size: 14px; color: var(--text); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nm-pt a:hover { text-decoration: underline; }
+.nm-pt small { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: 12px; min-width: 0; overflow: hidden; white-space: nowrap; }
+.nm-nums { display: flex; gap: 14px; }
+.nm-nums span { display: grid; text-align: right; min-width: 44px; }
+.nm-nums b { font-size: 15px; font-variant-numeric: tabular-nums; }
+.nm-nums small { color: var(--muted); font-size: 11px; }
+@media (max-width: 560px) {
+  .nm-posts li { grid-template-columns: 40px minmax(0, 1fr); }
+  .nm-nums { grid-column: 2; justify-content: flex-start; }
+  .nm-nums span { text-align: left; }
+}

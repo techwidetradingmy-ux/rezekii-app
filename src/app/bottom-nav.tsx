@@ -23,7 +23,7 @@ type Tab = [string, string, keyof typeof ICON];
 // Phones get five tabs: admins' Stats, Rankings and Settings sit under More.
 const CREATOR: Tab[] = CREATOR_MENU.map((s) => [s.href, s.short, s.icon]);
 const ADMIN: Tab[] = [...ADMIN_MENU.slice(0, 4).map((s): Tab => [s.href, s.short, s.icon]), ["/app/admin/settings", "More", "gear"]];
-const MORE = ["/app/admin/stats", "/app/admin/community", "/app/rankings", "/app/admin/settings"];
+const MORE = ["/app/admin/stats", "/app/admin/community", "/app/comments", "/app/rankings", "/app/admin/settings"];
 
 /** The phone menu from the mockup: five tabs fixed to the bottom of the screen (phones only). */
 export function BottomNav({ admin }: { admin: boolean }) {

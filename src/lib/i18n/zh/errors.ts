@@ -35,4 +35,11 @@ export const ERRORS: Record<string, string> = {
   "Another Rezekii account already uses this email.": "已有其他 Rezekii 账户使用此邮箱。",
   "TikTok Shop didn't add it.": "TikTok Shop 没有添加该商品。",
   "TikTok Shop didn't add it. Open the link to add it in TikTok Shop.": "TikTok Shop 没有添加该商品。请打开链接，在 TikTok Shop 中添加。",
+  "Something's missing. Reload the page and try again.": "缺少一些信息。请刷新页面后再试。",
+  "Write a reply first.": "请先写下回复。",
+  "Keep the reply under 2,000 characters.": "回复请保持在 2,000 字以内。",
+  "This channel isn't connected to your account.": "此渠道没有连接到你的账号。",
+  "This channel needs connecting again (Posts → New post → Channels).": "此渠道需要重新连接（发布 → 新发布 → 渠道）。",
+  "Connect this channel again once so Meta allows answering comments (Posts → New post → Channels).": "请重新连接此渠道一次，Meta 才会允许回复评论（发布 → 新发布 → 渠道）。",
+  "Meta didn't answer. Try again.": "Meta 没有回应，请再试一次。",
 };
