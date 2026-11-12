@@ -9,7 +9,8 @@ import type { ChannelComments } from "@/modules/social/comments.ts";
 import { BrandIcon } from "../brand-icons";
 import "./comments.css";
 
-type Ch = { id: string; platform: "facebook" | "instagram"; name: string; username: string | null; status: "active" | "reconnect" };
+type Ch = { id: string; platform: "facebook" | "instagram" | "threads"; name: string; username: string | null; status: "active" | "reconnect" };
+const APP = { facebook: "Facebook", instagram: "Instagram", threads: "Threads" } as const;
 type Filter = "all" | "open";
 const DONE: Record<CommentAction, string> = { reply: tx("Reply sent."), hide: tx("Comment hidden."), unhide: tx("Comment shown again."), delete: tx("Comment deleted.") };
 
@@ -111,7 +112,7 @@ export function CommentsView({ channels, hasThreads }: { channels: Ch[]; hasThre
   }
 
   const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString(dateLocale(lang), { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kuala_Lumpur" }) : "");
-  const who = (c: Comment) => (c.mine ? `${ch?.name ?? ""} · ${t("You")}` : c.author ?? (ch?.platform === "instagram" ? t("Instagram user") : t("Facebook user")));
+  const who = (c: Comment) => (c.mine ? `${ch?.name ?? ""} · ${t("You")}` : c.author ?? (ch?.platform === "instagram" ? t("Instagram user") : ch?.platform === "threads" ? t("Threads user") : t("Facebook user")));
 
   function row(c: Comment, top: boolean) {
     return (
@@ -167,7 +168,7 @@ export function CommentsView({ channels, hasThreads }: { channels: Ch[]; hasThre
         <label className="cm-pick">
           {ch && <BrandIcon ch={ch.platform} size={24} />}
           <select className="np-input" aria-label={t("Channel")} value={channel} onChange={(e) => { load(e.target.value); setReplying(""); setDeleting(""); }}>
-            {channels.map((c) => <option key={c.id} value={c.id}>{c.name} · {c.platform === "facebook" ? "Facebook" : "Instagram"}</option>)}
+            {channels.map((c) => <option key={c.id} value={c.id}>{c.name} · {APP[c.platform]}</option>)}
           </select>
         </label>
         <div className="np-seg" role="tablist" aria-label={t("Show")}>

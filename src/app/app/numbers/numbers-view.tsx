@@ -10,18 +10,22 @@ import type { CommunityChannel, CommunityDay, CommunityPost } from "@/modules/co
 import { BrandIcon } from "../brand-icons";
 import "./numbers.css";
 
-type App = "all" | "facebook" | "instagram";
-type Sort = "likes" | "comments" | "shares";
+type App = "all" | "facebook" | "instagram" | "threads";
+type Sort = "views" | "likes" | "comments" | "shares";
+const APP = { facebook: "Facebook", instagram: "Instagram", threads: "Threads" } as const;
 const RANGES = [7, 28];
 const DAY = 86_400_000;
 const MYT = 8 * 3_600_000;
 const dayKey = (t: number) => new Date(t + MYT).toISOString().slice(0, 10);
 const sum = (xs: (number | undefined)[]) => xs.reduce<number>((s, x) => s + (x ?? 0), 0);
 const plus = (v: number) => `${v >= 0 ? "+" : ""}${v.toLocaleString("en-US")}`;
+/** A total when Meta gave any of the values, "–" when it gave none (Threads has no daily views or reach). */
+const given = (xs: (number | undefined)[]) => (xs.some((x) => x !== undefined) ? shortCount(sum(xs)) : "–");
 
 /**
  * Posts → Numbers: what Meta gives every app for the person's own Facebook Pages and Instagram accounts, from the daily
- * reading: followers and their change, and likes, comments and shares on the posts of the last 7 or 28 days.
+ * reading: followers and their change, and likes, comments and shares on the posts of the last 7 or 28 days. Accounts asked for
+ * the insights permissions (see metaLevel) also get views and reach, and their Threads profiles (Meta's second review).
  */
 export function NumbersView({ channels, days, posts, refreshedAt, now, hasThreads }: { channels: CommunityChannel[]; days: CommunityDay[]; posts: CommunityPost[]; refreshedAt: string | null; now: number; hasThreads: boolean }) {
   const t = useT();
@@ -45,6 +49,9 @@ export function NumbersView({ channels, days, posts, refreshedAt, now, hasThread
     );
 
   const apps = [...new Set(channels.map((c) => c.platform))];
+  // Views and reach come only with the insights permissions: shown once Meta has given any.
+  const full = days.some((d) => d.numbers.views !== undefined || d.numbers.reach !== undefined) || posts.some((p) => p.numbers.views !== undefined);
+  const threadsMissing = hasThreads && !apps.includes("threads");
   const shown = channels.filter((c) => (app === "all" || c.platform === app) && (channel === "all" || c.id === channel));
   const ids = new Set(shown.map((c) => c.id));
   const from = dayKey(now - span * DAY);
@@ -56,8 +63,10 @@ export function NumbersView({ channels, days, posts, refreshedAt, now, hasThread
   const postsOf = (id: string) => inRange.filter((p) => p.channel === id);
   const followers = sum(shown.map((c) => latest(daysOf(c.id))));
   const before = sum(shown.map((c) => first(daysOf(c.id))));
+  const inDays = shown.flatMap((c) => daysOf(c.id));
   const tiles: [string, string, string][] = [
     [t("Followers"), shortCount(followers), before ? t("{change} in {n} days", { change: plus(followers - before), n: span }) : t("on these channels")],
+    ...(full ? ([[t("Views"), shortCount(sum(inDays.map((d) => d.numbers.views))), t("last {n} days", { n: span })], [t("Reach"), shortCount(sum(inDays.map((d) => d.numbers.reach))), t("people reached each day, added up")]] as [string, string, string][]) : []),
     [t("Posts"), shortCount(inRange.length), t("last {n} days", { n: span })],
     [t("Likes"), shortCount(sum(inRange.map((p) => p.numbers.likes))), t("Facebook reactions and Instagram likes")],
     [t("Comments"), shortCount(sum(inRange.map((p) => p.numbers.comments))), t("on those posts")],
@@ -90,13 +99,13 @@ export function NumbersView({ channels, days, posts, refreshedAt, now, hasThread
       <div className="nm-top">
         {apps.length > 1 && (
           <div className="np-seg" role="tablist" aria-label={t("App")}>
-            {(["all", ...apps] as App[]).map((a) => <button key={a} type="button" role="tab" aria-selected={app === a} className={app === a ? "on" : ""} onClick={() => { setApp(a); setChannel("all"); }}>{a === "all" ? t("All") : a === "facebook" ? "Facebook" : "Instagram"}</button>)}
+            {(["all", ...apps] as App[]).map((a) => <button key={a} type="button" role="tab" aria-selected={app === a} className={app === a ? "on" : ""} onClick={() => { setApp(a); setChannel("all"); }}>{a === "all" ? t("All") : APP[a]}</button>)}
           </div>
         )}
         {channels.length > 1 && (
           <select className="np-input nm-pick" aria-label={t("Channel")} value={channel} onChange={(e) => setChannel(e.target.value)}>
             <option value="all">{t("All channels ({n})", { n: channels.filter((c) => app === "all" || c.platform === app).length })}</option>
-            {channels.filter((c) => app === "all" || c.platform === app).map((c) => <option key={c.id} value={c.id}>{c.name} · {c.platform === "facebook" ? "Facebook" : "Instagram"}</option>)}
+            {channels.filter((c) => app === "all" || c.platform === app).map((c) => <option key={c.id} value={c.id}>{c.name} · {APP[c.platform]}</option>)}
           </select>
         )}
         <div className="np-seg" role="tablist" aria-label={t("Date range")}>
@@ -105,8 +114,8 @@ export function NumbersView({ channels, days, posts, refreshedAt, now, hasThread
         <button type="button" className="btn-outline" disabled={busy} onClick={refreshNow}>{busy ? t("Reading…") : t("Refresh now")}</button>
       </div>
       <p className="np-muted">
-        {refreshedAt ? t("Read daily from Facebook and Instagram · last read {time}", { time: when(refreshedAt) }) : t("Read daily from Facebook and Instagram")}
-        {" · "}{t("Views and reach aren't available yet.")}{hasThreads ? ` ${t("Threads numbers aren't available yet.")}` : ""}
+        {refreshedAt ? t("Read daily from Meta · last read {time}", { time: when(refreshedAt) }) : t("Read daily from Meta")}
+        {full ? "" : ` · ${t("Views and reach aren't available yet.")}`}{threadsMissing ? ` ${t("Threads numbers aren't available yet.")}` : ""}
       </p>
       {msg && <p className="np-note" role="status">{msg}</p>}
       {notes.length > 0 && (
@@ -123,7 +132,7 @@ export function NumbersView({ channels, days, posts, refreshedAt, now, hasThread
         <h2 id="nmch">{t("Channels")}</h2>
         <div className="nm-scroll">
           <table className="nm-table">
-            <thead><tr><th>{t("Channel")}</th><th>{t("Followers")}</th><th>{t("Change")}</th><th>{t("Posts")}</th><th>{t("Likes")}</th><th>{t("Comments")}</th></tr></thead>
+            <thead><tr><th>{t("Channel")}</th><th>{t("Followers")}</th><th>{t("Change")}</th>{full && <><th>{t("Views")}</th><th>{t("Reach")}</th></>}<th>{t("Posts")}</th><th>{t("Likes")}</th><th>{t("Comments")}</th></tr></thead>
             <tbody>
               {shown.map((c) => {
                 const list = daysOf(c.id);
@@ -135,6 +144,7 @@ export function NumbersView({ channels, days, posts, refreshedAt, now, hasThread
                     <td><span className="nm-ch"><BrandIcon ch={c.platform} size={20} /><span>{c.name}</span></span></td>
                     <td className="nm-strong">{a === undefined ? "–" : shortCount(a)}</td>
                     <td>{a !== undefined && b !== undefined ? plus(a - b) : "–"}</td>
+                    {full && <><td>{given(list.map((d) => d.numbers.views))}</td><td>{given(list.map((d) => d.numbers.reach))}</td></>}
                     <td>{ps.length}</td>
                     <td>{shortCount(sum(ps.map((p) => p.numbers.likes)))}</td>
                     <td>{shortCount(sum(ps.map((p) => p.numbers.comments)))}</td>
@@ -150,7 +160,7 @@ export function NumbersView({ channels, days, posts, refreshedAt, now, hasThread
         <div className="nm-head">
           <h2 id="nmtop">{t("Top posts")}</h2>
           <div className="np-seg" role="tablist" aria-label={t("Sort by")}>
-            {([["likes", t("Likes")], ["comments", t("Comments")], ["shares", t("Shares")]] as [Sort, string][]).map(([s, l]) => <button key={s} type="button" role="tab" aria-selected={sort === s} className={sort === s ? "on" : ""} onClick={() => setSort(s)}>{l}</button>)}
+            {([...(full ? [["views", t("Views")]] : []), ["likes", t("Likes")], ["comments", t("Comments")], ["shares", t("Shares")]] as [Sort, string][]).map(([s, l]) => <button key={s} type="button" role="tab" aria-selected={sort === s} className={sort === s ? "on" : ""} onClick={() => setSort(s)}>{l}</button>)}
           </div>
         </div>
         {top.length ? (
@@ -171,6 +181,7 @@ export function NumbersView({ channels, days, posts, refreshedAt, now, hasThread
                     <small>{c && <BrandIcon ch={c.platform} size={14} />} {c?.name}{p.at ? ` · ${when(p.at)}` : ""}</small>
                   </span>
                   <span className="nm-nums">
+                    {full && <span><b>{p.numbers.views === undefined ? "–" : shortCount(p.numbers.views)}</b><small>{t("Views")}</small></span>}
                     <span><b>{p.numbers.likes === undefined ? "–" : shortCount(p.numbers.likes)}</b><small>{t("Likes")}</small></span>
                     <span><b>{p.numbers.comments === undefined ? "–" : shortCount(p.numbers.comments)}</b><small>{t("Comments")}</small></span>
                     <span><b>{p.numbers.shares === undefined ? "–" : shortCount(p.numbers.shares)}</b><small>{t("Shares")}</small></span>

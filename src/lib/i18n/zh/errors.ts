@@ -42,4 +42,5 @@ export const ERRORS: Record<string, string> = {
   "This channel needs connecting again (Posts → New post → Channels).": "此渠道需要重新连接（发布 → 新发布 → 渠道）。",
   "Connect this channel again once so Meta allows answering comments (Posts → New post → Channels).": "请重新连接此渠道一次，Meta 才会允许回复评论（发布 → 新发布 → 渠道）。",
   "Meta didn't answer. Try again.": "Meta 没有回应，请再试一次。",
+  "Threads doesn't let apps delete replies. Hide it instead.": "Threads 不允许应用删除回复，可以改为隐藏。",
 };

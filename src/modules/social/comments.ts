@@ -4,6 +4,8 @@ import {
   instagramCommentAction,
   instagramComments,
   noPermission,
+  threadsCommentAction,
+  threadsComments,
   type CommentAction,
   type CommentedPost,
 } from "../../integrations/meta/comments.ts";
@@ -13,16 +15,16 @@ import { freshToken, getAccount, markReconnect, type SocialAccount } from "./acc
 
 /**
  * Comments (owner, 9 Nov 2026): every account reads and answers the comments on its own Facebook Pages and Instagram
- * accounts. Each look is read live from Meta (nothing is stored), one channel at a time.
+ * accounts, and Threads replies once it has threads_read_replies (see metaLevel). Each look is read live from Meta (nothing
+ * is stored), one channel at a time.
  */
 export type ChannelComments = { posts: CommentedPost[]; problem?: "reconnect" | "permission" };
 export const ACTIONS: CommentAction[] = ["reply", "hide", "unhide", "delete"];
 export const REPLY_MAX = 2000;
 
-/** A channel of the signed-in account that has comments here (Facebook or Instagram), or null. */
+/** A channel of the signed-in account, or null. */
 async function ownChannel(userId: string, accountId: string): Promise<SocialAccount | null> {
-  const acc = await getAccount(accountId, userId);
-  return acc && (acc.platform === "facebook" || acc.platform === "instagram") ? acc : null;
+  return getAccount(accountId, userId);
 }
 
 /** Meta says the sign-in has ended: the channel shows Reconnect, as a failed post does. */
@@ -37,7 +39,8 @@ export async function channelComments(userId: string, accountId: string): Promis
   if (!acc) return null;
   try {
     const token = await freshToken(acc);
-    const posts = acc.platform === "facebook" ? await facebookComments(acc.external_id, token) : await instagramComments(acc.external_id, token, acc.username);
+    const posts =
+      acc.platform === "facebook" ? await facebookComments(acc.external_id, token) : acc.platform === "instagram" ? await instagramComments(acc.external_id, token, acc.username) : await threadsComments(acc.external_id, token);
     return { posts };
   } catch (err) {
     if (await ended(acc, err)) return { posts: [], problem: "reconnect" };
@@ -54,9 +57,15 @@ export async function commentAction(userId: string, accountId: string, commentId
   if (text.length > REPLY_MAX) return { ok: false, error: tx("Keep the reply under 2,000 characters.") };
   const acc = await ownChannel(userId, accountId);
   if (!acc) return { ok: false, error: tx("This channel isn't connected to your account.") };
+  if (acc.platform === "threads" && action === "delete") return { ok: false, error: tx("Threads doesn't let apps delete replies. Hide it instead.") };
   try {
     const token = await freshToken(acc);
-    const id = acc.platform === "facebook" ? await facebookCommentAction(commentId, token, action, text) : await instagramCommentAction(commentId, token, action, text);
+    const id =
+      acc.platform === "facebook"
+        ? await facebookCommentAction(commentId, token, action, text)
+        : acc.platform === "instagram"
+          ? await instagramCommentAction(commentId, token, action, text)
+          : await threadsCommentAction(acc.external_id, commentId, token, action, text);
     return { ok: true, id };
   } catch (err) {
     if (await ended(acc, err)) return { ok: false, error: tx("This channel needs connecting again (Posts → New post → Channels).") };

@@ -512,8 +512,6 @@ export const POSTS: Record<string, string> = {
   "Date range": "日期范围",
   "Reading…": "正在读取…",
   "Refresh now": "立即刷新",
-  "Read daily from Facebook and Instagram · last read {time}": "每天从 Facebook 和 Instagram 读取 · 最近读取 {time}",
-  "Read daily from Facebook and Instagram": "每天从 Facebook 和 Instagram 读取",
   "Views and reach aren't available yet.": "暂时还不能查看浏览量和覆盖人数。",
   "Totals": "合计",
   "Change": "变化",
@@ -521,4 +519,9 @@ export const POSTS: Record<string, string> = {
   "Sort by": "排序方式",
   "No posts in the last {n} days.": "最近 {n} 天没有发布。",
   "Your numbers appear after the first daily reading, or press Refresh now.": "首次每日读取后就会显示数据，也可以点“立即刷新”。",
+  "Threads user": "Threads 用户",
+  "Reach": "覆盖人数",
+  "people reached each day, added up": "每天覆盖的人数，相加",
+  "Read daily from Meta · last read {time}": "每天从 Meta 读取 · 最近读取 {time}",
+  "Read daily from Meta": "每天从 Meta 读取",
 };

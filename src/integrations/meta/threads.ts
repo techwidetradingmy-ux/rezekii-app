@@ -10,8 +10,11 @@ export const THREADS_COMMUNITY_SCOPES = [
   "threads_delete", "threads_location_tagging",
 ];
 
-export function threadsAuthUrl(state: string, redirectUri: string, community = false): string {
-  const scope = (community ? THREADS_COMMUNITY_SCOPES : THREADS_SCOPES).join(",");
+/** Meta's second review (owner, 12 Nov 2026): Threads numbers and reading replies on top of what everyone has. */
+export const THREADS_INSIGHTS_SCOPES = [...THREADS_SCOPES, "threads_manage_insights", "threads_read_replies"];
+
+export function threadsAuthUrl(state: string, redirectUri: string, level: "basic" | "insights" | "community" = "basic"): string {
+  const scope = { basic: THREADS_SCOPES, insights: THREADS_INSIGHTS_SCOPES, community: THREADS_COMMUNITY_SCOPES }[level].join(",");
   const q = new URLSearchParams({ client_id: metaApp("threads").id, redirect_uri: redirectUri, scope, response_type: "code", state });
   return `https://threads.net/oauth/authorize?${q}`;
 }

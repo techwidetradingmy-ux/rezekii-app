@@ -36,12 +36,15 @@ test("a reply needs words, a known action and a comment id, before anything is a
   assert.deepEqual(urls, []);
 });
 
-test("only the person's own Facebook or Instagram channel can be read or answered", async () => {
+test("only the person's own channel can be read or answered; Threads needs threads_read_replies and can't delete", async () => {
   const { result: notMine } = await run([], () => new Response("{}"), () => commentAction("u2", "acc1", "c1", "hide"));
   assert.deepEqual(notMine, { ok: false, error: "This channel isn't connected to your account." });
-  const { result: threads, urls } = await run([page("threads")], () => new Response("{}"), () => channelComments("u1", "acc1"));
-  assert.equal(threads, null);
-  assert.ok(urls.every((u) => u.startsWith("https://db.test")), "Meta is never asked for a Threads channel");
+  const refused = () => new Response(JSON.stringify({ error: { message: "(#10) Application does not have permission for this action", code: 10 } }), { status: 400 });
+  const { result: threads, urls } = await run([page("threads")], refused, () => channelComments("u1", "acc1"));
+  assert.deepEqual(threads, { posts: [], problem: "permission" });
+  assert.ok(urls.some((u) => u.startsWith("https://graph.threads.net/")), "a Threads channel is read from Threads");
+  const { result: del } = await run([page("threads")], () => new Response("{}"), () => commentAction("u1", "acc1", "c1", "delete"));
+  assert.deepEqual(del, { ok: false, error: "Threads doesn't let apps delete replies. Hide it instead." });
   const { urls: lookup } = await run([page()], () => new Response(JSON.stringify({ data: [] })), () => channelComments("u1", "acc1"));
   assert.match(lookup[0], /social_accounts\?id=eq\.acc1&user_id=eq\.u1/);
 });

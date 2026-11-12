@@ -6,16 +6,18 @@ const G = (path: string) => `https://graph.facebook.com/${GRAPH_VERSION}/${path}
 export const FACEBOOK_SCOPES = ["pages_show_list", "pages_read_engagement", "pages_read_user_content", "pages_manage_posts", "pages_manage_engagement", "business_management"];
 /** Community (Admins, owner 23 Oct 2026): Page numbers, comments and instant alerts, on top of posting. */
 export const FACEBOOK_COMMUNITY_SCOPES = [...FACEBOOK_SCOPES, "read_insights", "pages_manage_metadata"];
+/** Meta's second review (owner, 12 Nov 2026): Page views and reach on top of what everyone has. */
+export const FACEBOOK_INSIGHTS_SCOPES = [...FACEBOOK_SCOPES, "read_insights"];
 
 /**
  * Facebook Login for Business uses a saved configuration for its permissions (META_FB_CONFIG_ID; Admins get Community's,
- * META_FB_COMMUNITY_CONFIG_ID); plain scopes otherwise.
+ * META_FB_COMMUNITY_CONFIG_ID; the insights level META_FB_INSIGHTS_CONFIG_ID when set); plain scopes otherwise.
  */
-export function facebookAuthUrl(state: string, redirectUri: string, community = false): string {
+export function facebookAuthUrl(state: string, redirectUri: string, level: "basic" | "insights" | "community" = "basic"): string {
   const q = new URLSearchParams({ client_id: metaApp("facebook").id, redirect_uri: redirectUri, state, response_type: "code" });
-  const config = community ? process.env.META_FB_COMMUNITY_CONFIG_ID : process.env.META_FB_CONFIG_ID;
+  const config = { basic: process.env.META_FB_CONFIG_ID, insights: process.env.META_FB_INSIGHTS_CONFIG_ID, community: process.env.META_FB_COMMUNITY_CONFIG_ID }[level];
   if (config) q.set("config_id", config);
-  else q.set("scope", (community ? FACEBOOK_COMMUNITY_SCOPES : FACEBOOK_SCOPES).join(","));
+  else q.set("scope", { basic: FACEBOOK_SCOPES, insights: FACEBOOK_INSIGHTS_SCOPES, community: FACEBOOK_COMMUNITY_SCOPES }[level].join(","));
   return `https://www.facebook.com/${GRAPH_VERSION}/dialog/oauth?${q}`;
 }
 
