@@ -195,6 +195,11 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   const [when, setWhen] = useState<When>("recommended");
   const [pickAt, setPickAt] = useState("");
   const [fbDraft, setFbDraft] = useState(false);
+  // A picture under the first comment on Facebook and Threads (owner, 21 Nov 2026, as on rezekii.com); an edit keeps the old one.
+  const [commentImage, setCommentImage] = useState<File | null>(null);
+  const [keptImage, setKeptImage] = useState<{ path: string; url: string | null } | null>(null);
+  const commentImageUrl = useMemo(() => (commentImage ? URL.createObjectURL(commentImage) : (keptImage?.url ?? null)), [commentImage, keptImage]);
+  useEffect(() => () => { if (commentImageUrl?.startsWith("blob:")) URL.revokeObjectURL(commentImageUrl); }, [commentImageUrl]);
   const [igFeed, setIgFeed] = useState(true);
   const [igTrial, setIgTrial] = useState<TrialMode>("off");
   const [collabText, setCollabText] = useState("");
@@ -314,6 +319,8 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     if (!keys.length) out.push([t("Pick at least one channel."), "channels"]);
     if (!hasVideo) out.push([t("Add a video or photos: upload them or paste a video link."), "video"]);
     if (isPhotos) for (const p of apps) photoProblems(p, photos.length, t).forEach((x) => out.push([x, "video"]));
+    if (commentImage && !["image/jpeg", "image/png"].includes(commentImage.type)) out.push([t("The comment image must be a JPG or PNG."), "comment"]);
+    else if (commentImage && commentImage.size > 8 * 1024 * 1024) out.push([t("The comment image is over 8 MB."), "comment"]);
     if (keys.length && !apps.some((p) => captionOf(p).trim())) out.push([t("Write a caption."), "caption"]);
     // Which section a problem belongs to is read from its English; she sees it in her language.
     if (ttKey && when !== "draft") {
@@ -543,6 +550,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   /** New Post as the post was scheduled: what was typed (its recipe), TikTok's choices, the kept video or photos and the time. */
   function fillFromEdit(e: EditPost) {
     if (e.recipe) fillRecipe(e.recipe);
+    setKeptImage(e.commentImage);
     if (e.tiktok) {
       setMode(e.tiktok.mode);
       setPrivacy((e.tiktok.privacy ?? "") as Privacy | "");
@@ -576,11 +584,13 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
       const instagramPhotoPaths: string[] = [];
       if (isPhotos && apps.includes("instagram") && photos.some((ph) => ph.ig))
         for (const [i, ph] of photos.entries()) instagramPhotoPaths.push(ph.ig ? await upload(ph.ig.file, (pct) => setBusy(t("Uploading photo {n} for Instagram… {pct}%", { n: i + 1, pct })), t, "photo") : photoPaths[i]);
+      const imageApps = metaPicked.some((c) => (c.app === "facebook" && !fbDraft) || c.app === "threads");
+      const commentImagePath = !imageApps ? undefined : commentImage ? await upload(commentImage, (pct) => setBusy(t("Uploading the comment image… {pct}%", { pct })), t, "comment-image") : keptImage?.path;
       setBusy(when === "draft" ? t("Saving…") : t("Scheduling…"));
       const at = when === "pick" ? new Date(pickAt).toISOString() : when;
       const settingsFor = (p: Channel): Record<string, unknown> => (p === "facebook" ? { draft: fbDraft } : p === "instagram" ? { feed: igFeed, collaborators, tags: tagged, trial: igTrial } : { replies, topic });
       const r = await sendPost({
-        side, when: at, durationSec: isPhotos ? null : durationSec, staged: !!edit, commentImagePath: edit?.commentImage?.path,
+        side, when: at, durationSec: isPhotos ? null : durationSec, staged: !!edit, commentImagePath,
         video: isPhotos ? { photoPaths, ...(instagramPhotoPaths.length ? { instagramPhotoPaths } : {}) } : { source, storagePath, linkUrl: source === "link" ? linkUrl : undefined },
         tiktok: ttKey ? { account: openIdOf(ttKey), choice: { mode, caption: captionOf("tiktok"), privacyLevel: privacy || null, allowComments: allow.comments && !lockAllow.comments, allowDuet: allow.duet && !lockAllow.duet && !isPhotos, allowStitch: allow.stitch && !lockAllow.stitch && !isPhotos, promo: promo.on, brandOrganic: promo.own, brandedContent: promo.branded, isAigc, durationSec: isPhotos ? null : durationSec } } : undefined,
         others: metaPicked.map((c) => ({ accountId: c.key, caption: captionOf(c.app), firstComment: c.app === "facebook" && fbDraft ? "" : commentOf(c.app), settings: settingsFor(c.app) })),
@@ -854,6 +864,21 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
               <label className="pb-field"><span className="pb-row"><b>{t("Product link")}</b><Opt /></span><input className="np-input" type="url" inputMode="url" value={link} onChange={(e) => setLink(e.target.value.trim())} placeholder={t("https://… (TikTok Shop or Shopee)")} aria-label={t("Product link")} /></label>
             </div>
             <label className="pb-field"><span className="pb-row"><b>{t("More text")}</b><Opt /></span><textarea className="np-input" rows={2} value={ownComment} onChange={(e) => setOwnComment(e.target.value)} placeholder={t("e.g. Ada soalan? Tanya di komen 👇")} aria-label={t("More text in the first comment")} /></label>
+            {(apps.includes("threads") || (apps.includes("facebook") && !fbDraft)) && (
+              <div className="pb-field"><span className="pb-row"><b>{t("Image in First Comment")}</b><Opt /></span>
+                {commentImageUrl ? (
+                  <span className="pb-cimg">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={commentImageUrl} alt="" />
+                    <span>{commentImage ? `${commentImage.name} · ${(commentImage.size / 1048576).toFixed(1)} MB` : t("The post's image")}</span>
+                    <button type="button" className="pb-link" onClick={() => { setCommentImage(null); setKeptImage(null); }}>{t("Remove")}</button>
+                  </span>
+                ) : (
+                  <label className="np-drop"><input type="file" accept="image/jpeg,image/png" onChange={(e) => setCommentImage(e.target.files?.[0] ?? null)} /><span>{t("One JPG or PNG, up to 8 MB")}</span></label>
+                )}
+                <small className="np-muted">{t("Goes under the first comment on Facebook and Threads. Instagram comments can only be text.")}</small>
+              </div>
+            )}
             {apps.length > 0 && <ul className="pb-how">{apps.map((p) => <li key={p}><PlatformIcon name={ICON[p]} size={18} /><span><b>{appLabel(p)}</b><small>{linkWhere(p)}</small></span></li>)}</ul>}
             {secErr("comment")}
           </section>
@@ -975,7 +1000,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
           )}
           <div className="pb-phone-wrap">
             {mounted && pApp && pKey ? (
-              <PhonePreview channel={pApp} caption={captionOf(pApp)} comment={pApp === "facebook" && fbDraft ? "" : commentOf(pApp)} video={videoUrl} cover={cover} photos={isPhotos ? photos.map((ph) => (pApp === "instagram" && ph.ig ? ph.ig.url : ph.url)) : undefined} who={who(pKey)} fbView={fbView} theme={theme} topic={topic} collaborators={collaborators} />
+              <PhonePreview channel={pApp} caption={captionOf(pApp)} comment={pApp === "facebook" && fbDraft ? "" : commentOf(pApp)} commentImage={(pApp === "facebook" && !fbDraft) || pApp === "threads" ? commentImageUrl : null} video={videoUrl} cover={cover} photos={isPhotos ? photos.map((ph) => (pApp === "instagram" && ph.ig ? ph.ig.url : ph.url)) : undefined} who={who(pKey)} fbView={fbView} theme={theme} topic={topic} collaborators={collaborators} />
             ) : (
               <div className="pb-pv-phone"><div className="pb-pv-scr" /></div>
             )}

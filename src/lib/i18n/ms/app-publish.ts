@@ -516,4 +516,11 @@ export const APP_PUBLISH: Record<string, string> = {
   "Reuse": "Guna Semula",
   "Filled in from your post of {date}. Pick a video or photos, then post.": "Diisi daripada hantaran anda pada {date}. Pilih video atau foto, kemudian siarkan.",
   "Filled in from your post. Pick a video or photos, then post.": "Diisi daripada hantaran anda. Pilih video atau foto, kemudian siarkan.",
+  "Image in First Comment": "Gambar dalam Komen Pertama",
+  "One JPG or PNG, up to 8 MB": "Satu JPG atau PNG, sehingga 8 MB",
+  "Uploading the comment image… {pct}%": "Memuat naik gambar komen… {pct}%",
+  "The comment image must be a JPG or PNG.": "Gambar komen mesti JPG atau PNG.",
+  "The comment image is over 8 MB.": "Gambar komen melebihi 8 MB.",
+  "The post's image": "Gambar asal hantaran",
+  "Goes under the first comment on Facebook and Threads. Instagram comments can only be text.": "Diletakkan di bawah komen pertama di Facebook dan Threads. Komen Instagram hanya boleh teks.",
 };

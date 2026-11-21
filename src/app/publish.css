@@ -573,3 +573,7 @@
 .pb-photo-act button { width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.92); color: #111111; font-size: 17px; line-height: 1; cursor: pointer; }
 .pb-photo-act button:disabled { opacity: 0.35; cursor: default; }
 .pb-photo-act button:focus-visible { outline: 2px solid #ffffff; outline-offset: 1px; }
+/* The picture under the first comment (owner, 21 Nov 2026). */
+.pb-cimg { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 8px; border: 1.5px solid var(--border); border-radius: 12px; }
+.pb-cimg img { width: 56px; height: 56px; flex-shrink: 0; border-radius: 8px; object-fit: cover; }
+.pb-cimg span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; font-weight: 700; }

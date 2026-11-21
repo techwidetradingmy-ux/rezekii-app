@@ -393,4 +393,7 @@ export const APP_PUBLISH: Record<string, string> = {
   "All Brands": "全部品牌",
   "Filled in from your post of {date}. Pick a video or photos, then post.": "已按你 {date} 的发布填好。请选择视频或照片，然后发布。",
   "Filled in from your post. Pick a video or photos, then post.": "已按你之前的发布填好。请选择视频或照片，然后发布。",
+  "Image in First Comment": "首条评论中的图片",
+  "One JPG or PNG, up to 8 MB": "一张 JPG 或 PNG，最大 8 MB",
+  "Uploading the comment image… {pct}%": "正在上传评论图片… {pct}%",
 };

@@ -35,7 +35,7 @@ const json = async <T,>(r: Response, fallback: string): Promise<T> => {
 const post = (url: string, body: unknown) => fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
 
 /** Uploads the video (or one photo of a photo post) straight to storage, reporting progress; returns its stored path. */
-export async function upload(file: File, onPct: (pct: number) => void, t: T = EN, kind?: "photo"): Promise<string> {
+export async function upload(file: File, onPct: (pct: number) => void, t: T = EN, kind?: "photo" | "comment-image"): Promise<string> {
   const u = await json<{ path?: string; uploadUrl?: string }>(await post("/api/posts/upload", { type: file.type, size: file.size, kind }), t("Upload couldn't start."));
   if (!u.uploadUrl || !u.path) throw new Error(t("Upload couldn't start."));
   const ok = await new Promise<boolean>((resolve) => {
