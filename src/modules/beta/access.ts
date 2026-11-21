@@ -7,6 +7,8 @@ import { logActivity } from "../admin/admins.ts";
  * Every new account waits on a "You're on the list" screen until Techwide lets it in, separately for the creator and the seller
  * app. Creators: 50 places (app_settings beta_cap); once they're taken, new creators are on the waitlist. Sellers can sign up
  * but always wait on the waitlist. Accounts made before the beta were let in by the migration and don't take a place.
+ * Open to everyone since 22 Nov 2026 (owner: "let everyone in" when rezekii.com moved to Rezekii 2.0): a new account is let
+ * in as soon as it opens the creator or seller app, with no cap. A sign-up an admin declined stays declined until reviewed.
  */
 export type BetaSide = "creator" | "seller";
 export type BetaStatus = "approved" | "waiting" | "waitlist" | "declined";
@@ -14,6 +16,8 @@ export type BetaState = { status: BetaStatus; place: number | null; taken: numbe
 type Row = { user_id: string; side: BetaSide; status: "waiting" | "approved" | "declined"; requested_at: string; decided_at: string | null; decided_by: string | null; reason: string | null; group_at: string | null };
 
 export const BEFORE_BETA = "before beta";
+/** Who let in an account that signed up after the beta ended: nobody had to. */
+export const OPEN_SIGNUP = "open sign-up";
 const DEFAULT_CAP = 50;
 
 const count = async (path: string) => {
@@ -57,9 +61,11 @@ export async function betaState(row: Row | undefined): Promise<BetaState | null>
   return { status: full ? "waitlist" : "waiting", place: ahead + 1, taken, cap, reason: null, group };
 }
 
-/** A new account opens the creator or seller app for the first time: it joins the queue (an earlier place is kept). */
+/** A new account opens the creator or seller app for the first time: it's let in straight away (one still waiting is let in too). */
 export async function joinBeta(userId: string, side: BetaSide): Promise<BetaState | null> {
-  await supabaseRest("beta_access?on_conflict=user_id,side", { method: "POST", headers: { prefer: "resolution=ignore-duplicates,return=minimal" }, body: JSON.stringify({ user_id: userId, side, status: "waiting" }) });
+  const now = new Date().toISOString();
+  await supabaseRest("beta_access?on_conflict=user_id,side", { method: "POST", headers: { prefer: "resolution=ignore-duplicates,return=minimal" }, body: JSON.stringify({ user_id: userId, side, status: "approved", decided_at: now, decided_by: OPEN_SIGNUP }) });
+  await supabaseRest(`beta_access?user_id=eq.${userId}&side=eq.${side}&status=eq.waiting`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ status: "approved", decided_at: now, decided_by: OPEN_SIGNUP }) });
   return betaState((await betaRows(userId)).find((r) => r.side === side));
 }
 
