@@ -21,6 +21,8 @@ import {
   parseUsernames, threadsTopic, tiktokProblems, withHashtags,
   type Channel, type Platform, type Privacy, type ReplyControl, type TrialMode,
 } from "./rules";
+import { PHOTO_MAX, instagramCrop, instagramMisfits, photoProblems } from "@/modules/social/rules.ts";
+import { PHOTOS_MAX } from "@/modules/posting/photos.ts";
 import "@/app/creator2.css";
 import "@/app/publish.css";
 
@@ -28,6 +30,52 @@ type When = "now" | "recommended" | "pick" | "draft";
 /** The form's sections, so a problem can jump to the one that needs fixing. */
 type Sec = "channels" | "video" | "caption" | "comment" | "tiktok" | "settings" | "when";
 type Problem = [string, Sec];
+
+/**
+ * One photo of a photo post (owner, 21 Nov 2026, as on rezekii.com), made a JPG here, with its size. `ig` is Instagram's own copy,
+ * cut to fit, when the photo is taller than 4:5 or wider than 1.91:1 (instagramCrop).
+ */
+type Photo = { key: string; file: File; url: string; w: number; h: number; ig?: { file: File; url: string } };
+
+/** Draws part of an image (all of it by default) as a JPG of `w` × `h`, on white where it was see-through. */
+async function drawJpeg(src: ImageBitmap, w: number, h: number, name: string, box = { x: 0, y: 0, w: src.width, h: src.height }): Promise<File> {
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("no canvas");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, w, h);
+  ctx.drawImage(src, box.x, box.y, box.w, box.h, 0, 0, w, h);
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.9));
+  if (!blob) throw new Error("no jpeg");
+  return new File([blob], name, { type: "image/jpeg" });
+}
+
+/** Instagram's copy of a photo, cut to fit, or nothing when it already fits. */
+async function instagramCopy(src: ImageBitmap, w: number, h: number, name: string): Promise<Photo["ig"]> {
+  const box = instagramCrop(w, h);
+  if (!box) return undefined;
+  const s = src.width / w;
+  const file = await drawJpeg(src, box.w, box.h, name.replace(/\.jpg$/, "-instagram.jpg"), { x: box.x * s, y: box.y * s, w: box.w * s, h: box.h * s });
+  return { file, url: URL.createObjectURL(file) };
+}
+
+/**
+ * Turns a picked image into the JPG every app takes: at most 1080 × 1920 (TikTok's 1080p), with Instagram's own cut copy when
+ * it needs one. Fails for images the browser can't read (for example HEIC).
+ */
+async function toJpeg(file: File): Promise<{ file: File; w: number; h: number; ig: Photo["ig"] }> {
+  const bmp = await createImageBitmap(file);
+  try {
+    const scale = Math.min(1, 1080 / bmp.width, 1920 / bmp.height);
+    const w = Math.max(1, Math.round(bmp.width * scale)), h = Math.max(1, Math.round(bmp.height * scale));
+    const name = file.name.replace(/\.[^.]+$/, "") + ".jpg";
+    return { file: await drawJpeg(bmp, w, h, name), w, h, ig: await instagramCopy(bmp, w, h, name) };
+  } finally {
+    bmp.close();
+  }
+}
 /** A red star for a required field, and a grey tag for an optional one. */
 function Req() {
   const t = useT();
@@ -112,6 +160,10 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   const [sample, setSample] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
   const [durationSec, setDurationSec] = useState<number | null>(null);
+  // A photo post: photos instead of a video, in order; the first is the cover.
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [mediaError, setMediaError] = useState("");
+  const isPhotos = photos.length > 0;
   const [mode, setMode] = useState<"direct" | "inbox">("direct");
   const [privacy, setPrivacy] = useState<Privacy | "">("");
   const [allow, setAllow] = useState({ comments: false, duet: false, stitch: false });
@@ -138,7 +190,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   const [tried, setTried] = useState(false);
   const [flash, setFlash] = useState<Sec | "">("");
   const [check, setCheck] = useState<"" | "busy" | "ok">("");
-  const [done, setDone] = useState<{ summary: string; when: When; at: string; cost: number; tiktok: "direct" | "inbox" | null } | null>(null);
+  const [done, setDone] = useState<{ summary: string; when: When; at: string; cost: number; tiktok: "direct" | "inbox" | null; photos?: boolean } | null>(null);
   // Signed in (owner, 31 Oct 2026): real channels, real sending from this wallet.
   const liveSide = setup.live;
   const [credits, setCredits] = useState(setup.credits);
@@ -226,7 +278,9 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   useEffect(() => () => { if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl); }, [videoUrl]);
   const vid = editing ? { cover: editing.cover, file: t("Your video"), seconds: editing.seconds } : setup.sample;
   const cover = source === "upload" && sample && !file ? vid.cover : null;
-  const hasVideo = source === "upload" ? !!file || sample : /^https:\/\/\S+$/.test(linkUrl);
+  const hasVideo = isPhotos || (source === "upload" ? !!file || sample : /^https:\/\/\S+$/.test(linkUrl));
+  // Instagram takes photos from 4:5 to 1.91:1 only: one that doesn't fit goes to Instagram cut to fit (owner, 21 Nov 2026).
+  const igMisfits = isPhotos ? instagramMisfits(photos) : [];
 
   // Cross-channel posting costs credits per channel (owner, 28 Oct 2026). Drafts are free; failed or cancelled channels get theirs back.
   // Editing a scheduled post only charges for channels added now.
@@ -235,7 +289,8 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   const problems = ((): Problem[] => {
     const out: Problem[] = [];
     if (!keys.length) out.push([t("Pick at least one channel."), "channels"]);
-    if (!hasVideo) out.push([t("Add a video: upload or paste a link."), "video"]);
+    if (!hasVideo) out.push([t("Add a video or photos: upload them or paste a video link."), "video"]);
+    if (isPhotos) for (const p of apps) photoProblems(p, photos.length, t).forEach((x) => out.push([x, "video"]));
     if (keys.length && !apps.some((p) => captionOf(p).trim())) out.push([t("Write a caption."), "caption"]);
     // Which section a problem belongs to is read from its English; she sees it in her language.
     if (ttKey && when !== "draft") {
@@ -245,8 +300,9 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     }
     for (const p of apps)
       if (p !== "tiktok") {
-        const shownAs = channelProblems(p, captionOf(p), commentOf(p), durationSec, t);
-        channelProblems(p, captionOf(p), commentOf(p), durationSec).forEach((en, i) => out.push([shownAs[i], en.includes("first comment") ? "comment" : /videos up to|at least 3 seconds/.test(en) ? "video" : "caption"]));
+        const dur = isPhotos ? null : durationSec;
+        const shownAs = channelProblems(p, captionOf(p), commentOf(p), dur, t);
+        channelProblems(p, captionOf(p), commentOf(p), dur).forEach((en, i) => out.push([shownAs[i], en.includes("first comment") ? "comment" : /videos up to|at least 3 seconds/.test(en) ? "video" : "caption"]));
       }
     if (apps.includes("instagram")) {
       const c = parseUsernames(collabText), g = parseUsernames(tagText);
@@ -258,7 +314,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
       if (ttInfo?.error) out.push([t("TikTok: {problem}", { problem: t(ttInfo.error) }), "tiktok"]);
       else if (!ttInfo?.info) out.push([t("Checking your TikTok account. Try again in a moment."), "tiktok"]);
       else if (privacy && !ttInfo.info.privacy_level_options.includes(privacy)) out.push([t("Pick who can view from TikTok's list for this account."), "tiktok"]);
-      else if (durationSec && ttInfo.info.max_video_post_duration_sec && durationSec > ttInfo.info.max_video_post_duration_sec) out.push([t("TikTok: this account can post videos up to {n} seconds.", { n: ttInfo.info.max_video_post_duration_sec }), "video"]);
+      else if (!isPhotos && durationSec && ttInfo.info.max_video_post_duration_sec && durationSec > ttInfo.info.max_video_post_duration_sec) out.push([t("TikTok: this account can post videos up to {n} seconds.", { n: ttInfo.info.max_video_post_duration_sec }), "video"]);
     }
     if (when === "pick" && !pickAt) out.push([t("Pick a date and time."), "when"]);
     if (cost > credits) out.push([t("Not enough credits: needs {cost}, you have {credits}. Earn more or save as draft.", { cost, credits: credits.toLocaleString("en-MY") }), "when"]);
@@ -322,6 +378,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     setSource("upload");
     setSample(true);
     setFile(null);
+    setPhotos([]);
     setDurationSec(setup.sample.seconds);
     setMain(setup.sample.main);
     setTagsText(setup.sample.tags);
@@ -333,6 +390,57 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     setPicked(new Set(setup.last.filter((k) => connected.has(k))));
     say(t("Sample post filled in."));
   }
+  /**
+   * Picked files: one video, or photos (added after any already picked, up to TikTok's 35). Photos become JPGs here. A post is
+   * a video or photos, never both, so photos replace a video and a video replaces photos.
+   */
+  async function pickFiles(list: FileList | null) {
+    const files = [...(list ?? [])];
+    if (!files.length) return;
+    setMediaError("");
+    const videos = files.filter((f) => f.type.startsWith("video/")), images = files.filter((f) => f.type.startsWith("image/"));
+    if (videos.length > 1 || (videos.length && images.length)) return setMediaError(t("Pick one video, or photos. A post can't have both."));
+    if (videos.length) {
+      setFile(videos[0]);
+      setDurationSec(null);
+      setSample(false);
+      setPhotos([]);
+      return;
+    }
+    if (!images.length) return setMediaError(t("Pick a video (MP4, MOV or WebM) or photos (JPG, PNG or WebP)."));
+    const room = PHOTOS_MAX - photos.length;
+    if (room <= 0) return setMediaError(t("A post can have up to {max} photos.", { max: PHOTOS_MAX }));
+    setBusy(t("Preparing photos…"));
+    const added: Photo[] = [], failed: string[] = [];
+    for (const f of images.slice(0, room)) {
+      try {
+        const j = await toJpeg(f);
+        added.push({ key: `${f.name}-${f.size}-${Math.random().toString(36).slice(2)}`, file: j.file, url: URL.createObjectURL(j.file), w: j.w, h: j.h, ig: j.ig });
+      } catch {
+        failed.push(f.name);
+      }
+    }
+    setBusy("");
+    setFile(null);
+    setSample(false);
+    setDurationSec(null);
+    setSource("upload");
+    // Facebook drafts, Instagram's Reels-only switch and trial reels are for videos.
+    setFbDraft(false);
+    setIgFeed(true);
+    setIgTrial("off");
+    setPhotos((list) => [...list, ...added]);
+    if (failed.length) setMediaError(t("Couldn't read {names}. Use JPG, PNG or WebP photos.", { names: failed.join(", ") }));
+    else if (images.length > room) setMediaError(t("A post can have up to {max} photos, so only the first {n} were added.", { max: PHOTOS_MAX, n: room }));
+  }
+  const movePhoto = (i: number, by: number) => setPhotos((list) => { const n = [...list]; const [x] = n.splice(i, 1); n.splice(i + by, 0, x); return n; });
+  const removePhoto = (i: number) => setPhotos((list) => {
+    const gone = list[i];
+    if (gone) URL.revokeObjectURL(gone.url);
+    if (gone?.ig) URL.revokeObjectURL(gone.ig.url);
+    return list.filter((_, k) => k !== i);
+  });
+
   /** Scroll to a section, light it up for a moment and put the cursor in its first field. */
   function jump(s: Sec) {
     const el = document.getElementById(`pb-s-${s}`);
@@ -360,6 +468,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
       if (!p) return;
       setEditing(p);
       setSource("upload");
+      setPhotos([]);
       setSample(p.seconds > 0);
       setDurationSec(p.seconds || null);
       setMain(p.caption);
@@ -374,18 +483,24 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     setSendError("");
     try {
       let storagePath: string | undefined;
-      if (source === "upload" && file) storagePath = await upload(file, (pct) => setBusy(t("Uploading video… {pct}%", { pct })), t);
+      if (source === "upload" && file && !isPhotos) storagePath = await upload(file, (pct) => setBusy(t("Uploading video… {pct}%", { pct })), t);
+      // A photo post: each photo is uploaded in order; Instagram gets the cut copies of photos that don't fit it.
+      const photoPaths: string[] = [];
+      for (const [i, ph] of photos.entries()) photoPaths.push(await upload(ph.file, (pct) => setBusy(t("Uploading photo {n} of {total}… {pct}%", { n: i + 1, total: photos.length, pct })), t, "photo"));
+      const instagramPhotoPaths: string[] = [];
+      if (isPhotos && apps.includes("instagram") && photos.some((ph) => ph.ig))
+        for (const [i, ph] of photos.entries()) instagramPhotoPaths.push(ph.ig ? await upload(ph.ig.file, (pct) => setBusy(t("Uploading photo {n} for Instagram… {pct}%", { n: i + 1, pct })), t, "photo") : photoPaths[i]);
       setBusy(when === "draft" ? t("Saving…") : t("Scheduling…"));
       const at = when === "pick" ? new Date(pickAt).toISOString() : when;
       const settingsFor = (p: Channel): Record<string, unknown> => (p === "facebook" ? { draft: fbDraft } : p === "instagram" ? { feed: igFeed, collaborators, tags: tagged, trial: igTrial } : { replies, topic });
       const r = await sendPost({
-        side, when: at, durationSec,
-        video: { source, storagePath, linkUrl: source === "link" ? linkUrl : undefined },
-        tiktok: ttKey ? { account: openIdOf(ttKey), choice: { mode, caption: captionOf("tiktok"), privacyLevel: privacy || null, allowComments: allow.comments && !lockAllow.comments, allowDuet: allow.duet && !lockAllow.duet, allowStitch: allow.stitch && !lockAllow.stitch, promo: promo.on, brandOrganic: promo.own, brandedContent: promo.branded, isAigc, durationSec } } : undefined,
+        side, when: at, durationSec: isPhotos ? null : durationSec,
+        video: isPhotos ? { photoPaths, ...(instagramPhotoPaths.length ? { instagramPhotoPaths } : {}) } : { source, storagePath, linkUrl: source === "link" ? linkUrl : undefined },
+        tiktok: ttKey ? { account: openIdOf(ttKey), choice: { mode, caption: captionOf("tiktok"), privacyLevel: privacy || null, allowComments: allow.comments && !lockAllow.comments, allowDuet: allow.duet && !lockAllow.duet && !isPhotos, allowStitch: allow.stitch && !lockAllow.stitch && !isPhotos, promo: promo.on, brandOrganic: promo.own, brandedContent: promo.branded, isAigc, durationSec: isPhotos ? null : durationSec } } : undefined,
         others: metaPicked.map((c) => ({ accountId: c.key, caption: captionOf(c.app), firstComment: c.app === "facebook" && fbDraft ? "" : commentOf(c.app), settings: settingsFor(c.app) })),
       }, t);
       setCredits((n) => n - cost);
-      setDone({ summary: summary(), when, at: r.at ? pretty(mytLocal(r.at), lang) : t(RECOMMENDED), cost, tiktok: ttKey ? mode : null });
+      setDone({ summary: summary(), when, at: r.at ? pretty(mytLocal(r.at), lang) : t(RECOMMENDED), cost, tiktok: ttKey ? mode : null, photos: isPhotos });
     } catch (e) {
       setSendError(e instanceof Error ? t(e.message) : t("Didn't go through. Please try again."));
     } finally {
@@ -409,7 +524,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     setBusy(when === "draft" ? t("Saving…") : t("Scheduling…"));
     window.setTimeout(() => {
       setBusy("");
-      setDone({ summary: summary(), when, at: when === "pick" ? pretty(pickAt, lang) : t(RECOMMENDED), cost, tiktok: ttKey ? mode : null });
+      setDone({ summary: summary(), when, at: when === "pick" ? pretty(pickAt, lang) : t(RECOMMENDED), cost, tiktok: ttKey ? mode : null, photos: isPhotos });
     }, 700);
   }
 
@@ -421,7 +536,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
         <p>
           {done.when === "draft" ? t("Saved in Rezekii for {summary}. Track or edit it in Content Calendar.", { summary: done.summary }) : done.when === "now" ? t("{summary}: posting now. Track or edit it in Content Calendar.", { summary: done.summary }) : t("{summary}: {time} (Malaysia time). Track or edit it in Content Calendar.", { summary: done.summary, time: done.at })}
         </p>
-        {done.tiktok && done.when !== "draft" && <p className="np-muted">{done.tiktok === "direct" ? t("After it's posted, TikTok can take a few minutes to process the video before it shows on your profile.") : t("It will land in your TikTok inbox, where you can finish and post it in the TikTok app.")}</p>}
+        {done.tiktok && done.when !== "draft" && <p className="np-muted">{done.tiktok === "direct" ? (done.photos ? t("After it's posted, TikTok can take a few minutes before it shows on your profile.") : t("After it's posted, TikTok can take a few minutes to process the video before it shows on your profile.")) : t("It will land in your TikTok inbox, where you can finish and post it in the TikTok app.")}</p>}
         {done.cost > 0 && <p className="pb-sent-cost">{t("{n} credits used", { n: done.cost })} <Tip text={t("Refunded if a channel fails or is cancelled.")} /></p>}
         <div className="np-row">
           <Link href={setup.calendar} className="np-btn">{t("Open Content Calendar")}</Link>
@@ -524,31 +639,56 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
           </section>
 
           <section id="pb-s-video" className={secClass("video")}>
-            <h2>{t("Video")} <Req /></h2>
-            <div className="np-seg" role="radiogroup" aria-label={t("Video source")}>
-              <button type="button" role="radio" aria-checked={source === "upload"} className={source === "upload" ? "on" : ""} onClick={() => setSource("upload")}>{t("Upload")}</button>
-              <button type="button" role="radio" aria-checked={source === "link"} className={source === "link" ? "on" : ""} onClick={() => setSource("link")}>{t("Paste a Link")}</button>
-            </div>
-            {source === "upload" ? (
-              sample && !file ? (
+            <h2>{t("Video or Photos")} <Req /></h2>
+            {!isPhotos && (
+              <div className="np-seg" role="radiogroup" aria-label={t("Video source")}>
+                <button type="button" role="radio" aria-checked={source === "upload"} className={source === "upload" ? "on" : ""} onClick={() => setSource("upload")}>{t("Upload")}</button>
+                <button type="button" role="radio" aria-checked={source === "link"} className={source === "link" ? "on" : ""} onClick={() => setSource("link")}>{t("Paste a Link")}</button>
+              </div>
+            )}
+            {isPhotos && (
+              <ol className="pb-photos" aria-label={t("Photos, in order")}>
+                {photos.map((ph, i) => (
+                  <li key={ph.key}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={ph.url} alt={t("Photo {n}", { n: i + 1 })} />
+                    <span className="pb-photo-n">{i === 0 ? t("Cover") : i + 1}</span>
+                    <span className="pb-photo-act">
+                      <button type="button" disabled={i === 0} onClick={() => movePhoto(i, -1)} aria-label={t("Move photo {n} earlier", { n: i + 1 })}>‹</button>
+                      <button type="button" onClick={() => removePhoto(i)} aria-label={t("Remove photo {n}", { n: i + 1 })}>×</button>
+                      <button type="button" disabled={i === photos.length - 1} onClick={() => movePhoto(i, 1)} aria-label={t("Move photo {n} later", { n: i + 1 })}>›</button>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            )}
+            {source === "upload" || isPhotos ? (
+              sample && !file && !isPhotos ? (
                 <div className="pb-file">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={vid.cover} alt="" />
                   <span><b>{vid.file}</b><small>{editing ? t("9:16 · {n} seconds", { n: vid.seconds }) : t("9:16 · {n} seconds · sample", { n: vid.seconds })}</small><button type="button" className="pb-link" style={{ justifySelf: "start" }} onClick={() => { setSample(false); setDurationSec(null); }}>{t("Replace Video")}</button></span>
                 </div>
               ) : (
-                <label className="np-drop"><input type="file" accept="video/mp4,video/quicktime,video/webm" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setDurationSec(null); setSample(false); }} /><span>{file ? `${file.name} · ${(file.size / 1048576).toFixed(1)} MB` : t("Choose an MP4, MOV or WebM video (up to 50 MB)")}</span></label>
+                <label className="np-drop">
+                  <input type="file" multiple accept="video/mp4,video/quicktime,video/webm,image/jpeg,image/png,image/webp" onChange={(e) => { void pickFiles(e.target.files); e.target.value = ""; }} />
+                  <span>{isPhotos ? t("Add more photos ({n} of {max})", { n: photos.length, max: PHOTOS_MAX }) : file ? `${file.name} · ${(file.size / 1048576).toFixed(1)} MB` : t("Choose one video (MP4, MOV or WebM, up to 50 MB) or photos (JPG, PNG or WebP)")}</span>
+                </label>
               )
             ) : (
               <input className="np-input" type="url" inputMode="url" placeholder={t("https://… (Drive, Dropbox or file link)")} value={linkUrl} onChange={(e) => setLinkUrl(e.target.value.trim())} aria-label={t("Video link")} />
             )}
-            {videoUrl && <video src={videoUrl} muted playsInline preload="metadata" hidden onLoadedMetadata={(e) => setDurationSec(Math.round(e.currentTarget.duration))} />}
-            {durationSec !== null && (
+            {mediaError && <p className="np-error" role="alert">{mediaError}</p>}
+            {!isPhotos && videoUrl && <video src={videoUrl} muted playsInline preload="metadata" hidden onLoadedMetadata={(e) => setDurationSec(Math.round(e.currentTarget.duration))} />}
+            {!isPhotos && durationSec !== null && (
               <p className="np-muted">
                 {lengthLine}
               </p>
             )}
-            {setup.precheck && ttKey && hasVideo && (
+            <p className="np-muted">{t("Photos per post:")} {(apps.length ? apps : APPS).map((p) => `${NAMES[p]} ${PHOTO_MAX[p]}`).join(" · ")}</p>
+            <p className="np-muted">{t("Best photo size: 1080 × 1350 (4:5) fits every app. TikTok also takes 1080 × 1920 (9:16) full screen.")}</p>
+            {igMisfits.length > 0 && apps.includes("instagram") && <p className="np-note" role="status">{t("For Instagram, photo {list} is cut to fit: Instagram takes photos from 4:5 (portrait) to 1.91:1 (landscape), so the middle part is used. The other apps get the whole photo.", { list: igMisfits.join(", ") })}</p>}
+            {setup.precheck && ttKey && hasVideo && !isPhotos && (
               <div className={`pb-check ${check}`}>
                 <span className="pb-check-ico" aria-hidden="true">{check === "ok" ? "✓" : <Icon name="shield" size={18} />}</span>
                 {check === "ok" ? (
@@ -643,7 +783,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
                   </select>
                   {promo.on && promo.branded && <p className="np-muted" style={{ margin: 0 }}>{t("Branded content visibility cannot be set to private.")}</p>}
                   <div className="np-checks">
-                    {([["comments", t("Allow Comment")], ["duet", t("Allow Duet")], ["stitch", t("Allow Stitch")]] as const).map(([k, label]) => (
+                    {([["comments", t("Allow Comment")], ...(isPhotos ? [] : [["duet", t("Allow Duet")], ["stitch", t("Allow Stitch")]])] as ["comments" | "duet" | "stitch", string][]).map(([k, label]) => (
                       <label key={k} className={lockAllow[k] ? "np-check off" : "np-check"}><input type="checkbox" checked={allow[k] && !lockAllow[k]} disabled={lockAllow[k]} onChange={(e) => setAllow((a) => ({ ...a, [k]: e.target.checked }))} />{label}</label>
                     ))}
                   </div>
@@ -675,10 +815,10 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
               {apps.includes("facebook") && (
                 <div className="pb-set">
                   <span className="pb-gh"><PlatformIcon name="Facebook" size={16} />Facebook</span>
-                  <div className="np-seg" role="radiogroup" aria-label="Facebook">
+                  {!isPhotos && <div className="np-seg" role="radiogroup" aria-label="Facebook">
                     <button type="button" role="radio" aria-checked={!fbDraft} className={!fbDraft ? "on" : ""} onClick={() => setFbDraft(false)}>{t("Publish")}</button>
                     <button type="button" role="radio" aria-checked={fbDraft} className={fbDraft ? "on" : ""} onClick={() => setFbDraft(true)}>{t("Save as Draft")}</button>
-                  </div>
+                  </div>}
                   <p className="np-muted">{t("@names don't link on Facebook.")}</p>
                   {fbDraft && <p className="np-muted">{t("Hidden until you publish it in Facebook. No first comment. Reels (3–90 s) only.")}</p>}
                 </div>
@@ -686,20 +826,22 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
               {apps.includes("instagram") && (
                 <div className="pb-set">
                   <span className="pb-gh"><PlatformIcon name="Instagram" size={16} />Instagram</span>
-                  <div className="np-switchrow">
+                  {!isPhotos && <div className="np-switchrow">
                     <span><b>{t("Also show in the main feed")}</b><small>{t("Off: Reels tab only.")}</small></span>
                     <button type="button" role="switch" aria-checked={igFeed} className={igFeed ? "np-switch on" : "np-switch"} onClick={() => setIgFeed(!igFeed)} aria-label={t("Also show in the main feed")}><span /></button>
-                  </div>
+                  </div>}
                   <details className="pb-guide pb-adv">
                     <summary>{igAdvanced ? t("Advanced: collaborators, tags, trial reel · {n} in use", { n: igAdvanced }) : t("Advanced: collaborators, tags, trial reel")}</summary>
                     <div className="pb-adv-in">
                       <label className="pb-field"><b>{t("Collaborators")}</b><input className="np-input" type="text" value={collabText} onChange={(e) => setCollabText(e.target.value)} placeholder={t("Up to 3 Instagram usernames, e.g. @brand")} aria-label={t("Instagram collaborators")} /><small className="np-muted">{t("Shows on their profile once they accept.")}</small></label>
                       <label className="pb-field"><b>{t("Tag people")}</b><input className="np-input" type="text" value={tagText} onChange={(e) => setTagText(e.target.value)} placeholder={t("Instagram usernames, e.g. @shopee_my")} aria-label={t("Instagram tagged people")} /><small className="np-muted">{t("Up to {max}. Instagram only.", { max: TAGS_MAX })}</small></label>
+                      {!isPhotos && <>
                       <b className="pb-sub">{t("Trial reel")}</b>
                       <div className="np-seg" role="radiogroup" aria-label={t("Trial reel")}>
                         {([["off", t("Off")], ["manual", t("I'll share with followers")], ["auto", t("Instagram decides")]] as [TrialMode, string][]).map(([v, l]) => <button key={v} type="button" role="radio" aria-checked={igTrial === v} className={igTrial === v ? "on" : ""} onClick={() => setIgTrial(v)}>{l}</button>)}
                       </div>
                       {igTrial !== "off" && <p className="np-muted">{igTrial === "manual" ? t("Shown to non-followers first. You share it with followers later.") : t("Shown to non-followers first. Instagram shares it if it does well.")}</p>}
+                      </>}
                     </div>
                   </details>
                 </div>
@@ -732,7 +874,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
           )}
           <div className="pb-phone-wrap">
             {mounted && pApp && pKey ? (
-              <PhonePreview channel={pApp} caption={captionOf(pApp)} comment={pApp === "facebook" && fbDraft ? "" : commentOf(pApp)} video={videoUrl} cover={cover} who={who(pKey)} fbView={fbView} theme={theme} topic={topic} collaborators={collaborators} />
+              <PhonePreview channel={pApp} caption={captionOf(pApp)} comment={pApp === "facebook" && fbDraft ? "" : commentOf(pApp)} video={videoUrl} cover={cover} photos={isPhotos ? photos.map((ph) => (pApp === "instagram" && ph.ig ? ph.ig.url : ph.url)) : undefined} who={who(pKey)} fbView={fbView} theme={theme} topic={topic} collaborators={collaborators} />
             ) : (
               <div className="pb-pv-phone"><div className="pb-pv-scr" /></div>
             )}

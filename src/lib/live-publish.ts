@@ -33,9 +33,9 @@ const json = async <T,>(r: Response, fallback: string): Promise<T> => {
 };
 const post = (url: string, body: unknown) => fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
 
-/** Uploads the video straight to storage, reporting progress; returns its stored path. */
-export async function upload(file: File, onPct: (pct: number) => void, t: T = EN): Promise<string> {
-  const u = await json<{ path?: string; uploadUrl?: string }>(await post("/api/posts/upload", { type: file.type, size: file.size }), t("Upload couldn't start."));
+/** Uploads the video (or one photo of a photo post) straight to storage, reporting progress; returns its stored path. */
+export async function upload(file: File, onPct: (pct: number) => void, t: T = EN, kind?: "photo"): Promise<string> {
+  const u = await json<{ path?: string; uploadUrl?: string }>(await post("/api/posts/upload", { type: file.type, size: file.size, kind }), t("Upload couldn't start."));
   if (!u.uploadUrl || !u.path) throw new Error(t("Upload couldn't start."));
   const ok = await new Promise<boolean>((resolve) => {
     const x = new XMLHttpRequest();
@@ -64,13 +64,15 @@ export type OtherChannel = { accountId: string; caption: string; firstComment: s
  * credits from the wallet. Returns when it goes out (null for a draft).
  */
 export async function sendPost(p: {
-  side: Side; when: string; video: { source: "upload" | "link"; storagePath?: string; linkUrl?: string }; durationSec: number | null;
+  side: Side; when: string; durationSec: number | null;
+  // A video (an upload or a link), or a photo post's photos in order with Instagram's cut-to-fit copies when some don't fit it.
+  video: { source: "upload" | "link"; storagePath?: string; linkUrl?: string } | { photoPaths: string[]; instagramPhotoPaths?: string[] };
   tiktok?: { account: string; choice: TikTokChoice }; others: OtherChannel[];
 }, t: T = EN): Promise<{ at: string | null }> {
   let tiktokPost: { id: string; scheduled_at: string | null } | null = null;
   if (p.tiktok) {
     const d = await json<{ post?: { id: string; scheduled_at: string | null } }>(
-      await post("/api/posts", { ...p.tiktok.choice, ...p.video, when: p.when, consent: true, account: p.tiktok.account, side: p.side }),
+      await post("/api/posts", { ...p.tiktok.choice, ...("photoPaths" in p.video ? { photoPaths: p.video.photoPaths } : p.video), when: p.when, consent: true, account: p.tiktok.account, side: p.side }),
       t("TikTok post couldn't be saved."),
     );
     tiktokPost = d.post ?? null;
