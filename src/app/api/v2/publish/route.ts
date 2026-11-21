@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { userTikTokAccounts } from "@/modules/posting/store.ts";
 import { balanceOf } from "@/modules/rewards/ledger.ts";
-import { postSide, settlePostRefunds } from "@/modules/rewards/post-credits.ts";
+import { postSide, postsFree, settlePostRefunds } from "@/modules/rewards/post-credits.ts";
 import { listAccounts } from "@/modules/social/accounts.ts";
 import { boardPosts } from "@/modules/social/board.ts";
 import { lastPostChannels, listBrands } from "@/modules/social/brands.ts";
@@ -30,12 +30,13 @@ export async function GET(req: NextRequest) {
   await settlePostRefunds(user.id).catch((e) => console.error("[post credits] refunds", e instanceof Error ? e.message : e));
   if (q.get("part") === "posts") return NextResponse.json(await boardPosts(user.id, lang), NO_STORE);
 
-  const [tiktok, social, brands, last, credits] = await Promise.all([
+  const [tiktok, social, brands, last, credits, free] = await Promise.all([
     userTikTokAccounts(user.id),
     listAccounts(user.id),
     listBrands(user.id),
     lastPostChannels(user.id),
     balanceOf(user.id, postSide(q.get("side"))),
+    postsFree(user.id),
   ]);
   const channels = [
     ...tiktok.map((acc) => {
@@ -48,5 +49,5 @@ export async function GET(req: NextRequest) {
       return { key: a.id, app: a.platform, name, sub, initials: initials(name), color: COLOR[a.platform], status: a.status === "reconnect" ? ("reconnect" as const) : ("active" as const) };
     }),
   ];
-  return NextResponse.json({ channels, brands, last, credits }, NO_STORE);
+  return NextResponse.json({ channels, brands, last, credits, free }, NO_STORE);
 }

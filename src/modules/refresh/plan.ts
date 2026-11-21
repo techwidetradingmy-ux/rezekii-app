@@ -118,6 +118,8 @@ export function planDay(now: number, haveDays: Set<string>, newestBuilt = false,
     { key: "tap_samples", kind: "tap_samples", params: {}, priority: 3 },
     // creator levels, once every campaign's creators are read (tap_creators)
     { key: "levels", kind: "levels", params: {}, priority: 5 },
+    // the daily Facebook, Instagram and Threads numbers for Channel Numbers (back on, owner 21 Nov 2026)
+    { key: "community", kind: "community", params: {}, priority: 6 },
     // video numbers for every connected TikTok account in use (admin Video stats)
     { key: "videos", kind: "videos", params: {}, priority: 6 },
     // every linked creator's own affiliate orders (Sales page, admin Stats, Rankings by real GMV)

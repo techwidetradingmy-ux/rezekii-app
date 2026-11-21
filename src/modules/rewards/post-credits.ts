@@ -17,9 +17,21 @@ const NAMES: Record<string, string> = { tiktok: "TikTok", facebook: "Facebook", 
 const sideOf = (v: unknown): Side => (v === "seller" ? "seller" : "creator");
 export { sideOf as postSide };
 
+/**
+ * Posting is free for Admins and the accounts Meta reviews with (app setting meta_review_users, e.g. testtest): owner, 21 Nov
+ * 2026. Everyone else pays per channel.
+ */
+export async function postsFree(userId: string): Promise<boolean> {
+  const [[user], [review]] = await Promise.all([
+    supabaseRest(`app_users?id=eq.${userId}&select=role`).then((r) => r.json() as Promise<{ role: string }[]>).catch(() => []),
+    supabaseRest("app_settings?key=eq.meta_review_users&select=value").then((r) => r.json() as Promise<{ value: unknown }[]>).catch(() => []),
+  ]);
+  return user?.role === "admin" || (Array.isArray(review?.value) && review.value.includes(userId));
+}
+
 /** Can this wallet pay for this many channels? */
 export async function canPay(userId: string, side: Side, channels: number): Promise<boolean> {
-  return channels === 0 || (await balanceOf(userId, side)) >= channels * POST_CREDITS;
+  return channels === 0 || (await postsFree(userId)) || (await balanceOf(userId, side)) >= channels * POST_CREDITS;
 }
 
 type Charge = { id: string; n: number; side: Side; refunded: boolean };
@@ -49,6 +61,7 @@ async function charges(userId: string, ids?: string[]): Promise<Map<string, Char
  * caller cancels the posts.
  */
 export async function chargePosts(userId: string, side: Side, posts: Charged[], t: T = EN): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!posts.length || (await postsFree(userId))) return { ok: true };
   const had = await charges(userId, posts.map((p) => p.id));
   const done: Charged[] = [];
   for (const p of posts) {

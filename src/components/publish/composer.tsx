@@ -308,7 +308,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   // Cross-channel posting costs credits per channel (owner, 28 Oct 2026). Drafts are free; failed or cancelled channels get theirs back.
   // Editing a scheduled post only charges for channels added now.
   const paid = edit ? (edit.at ? (edit.recipe?.channels ?? []) : []) : editing?.date ? editing.targets.map((x) => x.key) : [];
-  const cost = when === "draft" ? 0 : keys.filter((k) => !paid.includes(k)).length * POST_CREDITS;
+  const cost = when === "draft" || setup.free ? 0 : keys.filter((k) => !paid.includes(k)).length * POST_CREDITS;
   const problems = ((): Problem[] => {
     const out: Problem[] = [];
     if (!keys.length) out.push([t("Pick at least one channel."), "channels"]);
@@ -1021,18 +1021,18 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
           <button type="submit" className="np-btn np-submit" disabled={!!busy || promoIncomplete}>
             {/* Each part of the button in her language, joined by dots as in English. */}
             {busy || editing || edit
-              ? busy || [t("Save changes"), when === "draft" ? "" : t("{n} credits", { n: cost })].filter(Boolean).join(" · ")
+              ? busy || [t("Save changes"), when === "draft" || setup.free ? "" : t("{n} credits", { n: cost })].filter(Boolean).join(" · ")
               : !keys.length
-                ? when === "draft" ? t("Pick a Channel") : t("Pick a Channel · {n} credits each", { n: POST_CREDITS })
-                : [when === "draft" ? t("Save draft") : when === "now" ? t("Post now") : t("Schedule"), keys.length === 1 ? t("{n} channel", { n: 1 }) : t("{n} channels", { n: keys.length }), when === "draft" ? "" : t("{n} credits", { n: cost })].filter(Boolean).join(" · ")}
+                ? when === "draft" || setup.free ? t("Pick a Channel") : t("Pick a Channel · {n} credits each", { n: POST_CREDITS })
+                : [when === "draft" ? t("Save draft") : when === "now" ? t("Post now") : t("Schedule"), keys.length === 1 ? t("{n} channel", { n: 1 }) : t("{n} channels", { n: keys.length }), when === "draft" || setup.free ? "" : t("{n} credits", { n: cost })].filter(Boolean).join(" · ")}
           </button>
           </span>
-          <p className="pb-cost">
+          {!setup.free && <p className="pb-cost">
             <Icon name="wallet" size={14} />
             <span>{rich(t("{n} credits"), { n: <b>{credits.toLocaleString("en-MY")}</b> })}</span>
             <Tip text={t("{n} credits per channel. Drafts are free. Refunded if a channel fails or is cancelled.", { n: POST_CREDITS })} />
             <Link href={setup.earn}>{t("Earn More")}</Link>
-          </p>
+          </p>}
         </aside>
       </form>
 

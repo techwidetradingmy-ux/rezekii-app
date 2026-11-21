@@ -17,14 +17,14 @@ import type { Recipe } from "@/modules/social/recipe.ts";
 const EN: T = makeT(null);
 
 export type Side = "creator" | "seller";
-export type LiveSetup = { channels: PubChannel[]; brands: PubBrand[]; last: string[]; credits: number };
+export type LiveSetup = { channels: PubChannel[]; brands: PubBrand[]; last: string[]; credits: number; free?: boolean };
 
 /** The page's own setup with her real channels, brands and credits. No sample post, no pretend video check. */
 export async function loadSetup(base: PublishSetup, side: Side): Promise<PublishSetup> {
   const r = await fetch(`/api/v2/publish?part=setup&side=${side}`, { cache: "no-store" });
   if (!r.ok) throw new Error("Couldn't load your channels. Please refresh.");
   const d = (await r.json()) as LiveSetup;
-  return { ...base, channels: d.channels, brands: d.brands, last: d.last, credits: d.credits, connectable: [], precheck: false, live: side };
+  return { ...base, channels: d.channels, brands: d.brands, last: d.last, credits: d.credits, free: !!d.free, connectable: [], precheck: false, live: side };
 }
 
 const json = async <T,>(r: Response, fallback: string): Promise<T> => {

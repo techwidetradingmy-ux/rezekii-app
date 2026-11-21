@@ -26,6 +26,8 @@ export type PublishSetup = {
   precheck?: boolean;
   /** Wallet balance, and where to earn more credits. */
   credits: number;
+  /** Posting costs nothing for this account (Admins and the accounts Meta reviews with). */
+  free?: boolean;
   earn: string;
   /** Signed in (owner, 31 Oct 2026): her real channels, posts go out for real, from this wallet. */
   live?: "creator" | "seller";
