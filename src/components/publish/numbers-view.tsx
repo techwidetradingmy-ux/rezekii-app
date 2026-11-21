@@ -23,9 +23,9 @@ const given = (xs: (number | undefined)[]) => (xs.some((x) => x !== undefined) ?
 const plus = (v: number) => `${v >= 0 ? "+" : ""}${v.toLocaleString("en-MY")}`;
 const logo = (p: CommunityChannel["platform"]) => (p === "facebook" ? "Facebook" : p === "instagram" ? "Instagram" : "Threads");
 
-async function read(): Promise<Data | null> {
+async function read(admin: boolean): Promise<Data | null> {
   try {
-    const r = await fetch("/api/community", { cache: "no-store" });
+    const r = await fetch(admin ? "/api/admin/community" : "/api/community", { cache: "no-store" });
     return r.ok ? ((await r.json()) as Data) : null;
   } catch {
     return null;
@@ -37,7 +37,7 @@ async function read(): Promise<Data | null> {
  * daily reading: followers and their change, and likes, comments and shares on the posts of the last 7 or 28 days. Accounts asked
  * for the insights permissions (see metaLevel) also get views and reach, and their Threads profiles (Meta's second review).
  */
-export function NumbersView({ newPost }: { newPost: string }) {
+export function NumbersView({ newPost, admin = false }: { newPost: string; admin?: boolean }) {
   const t = useT();
   const lang = useLang();
   const [data, setData] = useState<Data | null | "error">(null);
@@ -51,18 +51,19 @@ export function NumbersView({ newPost }: { newPost: string }) {
 
   useEffect(() => {
     let live = true;
-    read().then((d) => {
+    read(admin).then((d) => {
       if (live) setData(d ?? "error");
     });
     return () => {
       live = false;
     };
-  }, [round]);
+  }, [round, admin]);
 
   // Views and reach come only with the insights permissions: shown once Meta has given any.
   const full = typeof data === "object" && !!data && (data.days.some((d) => d.numbers.views !== undefined || d.numbers.reach !== undefined) || data.posts.some((p) => p.numbers.views !== undefined));
   const tip = full ? t("Followers, views, reach, likes and comments for your channels, read daily.") : `${t("Followers, likes, comments and shares for your Facebook Pages and Instagram accounts, read daily.")} ${t("Views and reach aren't available yet.")}`;
-  const head = (d?: Data) => <Title title={t("Channel Numbers")} sub={d?.hasThreads && !d.channels.some((c) => c.platform === "threads") ? `${tip} ${t("Threads numbers aren't available yet.")}` : tip} />;
+  // Admin (owner, 21 Nov 2026, as on rezekii.com): every Admin's channels, in English.
+  const head = (d?: Data) => admin ? <Title title="Community Numbers" sub="Every Admin's Facebook Pages, Instagram accounts and Threads profiles, read daily." /> : <Title title={t("Channel Numbers")} sub={d?.hasThreads && !d.channels.some((c) => c.platform === "threads") ? `${tip} ${t("Threads numbers aren't available yet.")}` : tip} />;
   if (data === null) return <div className="v2-stack v2-in" style={{ gap: 16 }}>{head()}<Loading text={t("Loading your numbers…")} /></div>;
   if (data === "error") return <div className="v2-stack v2-in" style={{ gap: 16 }}>{head()}<p className="v2-muted">{t("Couldn't load your numbers. Please refresh.")}</p></div>;
   const { channels, days, posts, refreshedAt, now } = data;
@@ -70,7 +71,8 @@ export function NumbersView({ newPost }: { newPost: string }) {
     return (
       <div className="v2-stack v2-in" style={{ gap: 16 }}>
         {head(data)}
-        <Empty title={t("No Facebook or Instagram Yet")} line={t("Connect a Facebook Page or Instagram account to see its followers, likes and comments here.")} href={newPost} cta={t("Connect a Channel")} />
+        {admin ? <Empty title="No Admin Channels Yet" line="Admins' connected Facebook Pages, Instagram accounts and Threads profiles show here after the daily reading." />
+          : <Empty title={t("No Facebook or Instagram Yet")} line={t("Connect a Facebook Page or Instagram account to see its followers, likes and comments here.")} href={newPost} cta={t("Connect a Channel")} />}
       </div>
     );
 
@@ -98,6 +100,13 @@ export function NumbersView({ newPost }: { newPost: string }) {
     setBusy(true);
     setMsg("");
     try {
+      if (admin) {
+        // Queues a reading of every Admin channel for the refresh timer.
+        const r = await fetch("/api/admin/community/refresh", { method: "POST" });
+        const b = (await r.json().catch(() => ({}))) as { queued?: boolean; error?: string };
+        setMsg(!r.ok ? b.error ?? "That didn't work. Try again." : b.queued ? "Reading every Admin channel now. Numbers update in a few minutes." : "A reading is already on its way.");
+        return;
+      }
       const r = await fetch("/api/community", { method: "POST" });
       const b = (await r.json().catch(() => ({}))) as { recent?: boolean; read?: number; left?: number; error?: string };
       if (!r.ok) setMsg(b.error ?? t("That didn't work. Try again."));

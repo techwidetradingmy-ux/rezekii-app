@@ -37,6 +37,7 @@ export const MENUS: Record<AppKind, Section[]> = {
       href: "/admin/business", label: "Business", icon: "briefcase",
       pages: [["/admin/business", "My Merchants & Creators"], ["/admin/business/performance", "Live Performance"], ["/admin/business/open", "Open Campaigns"], ["/admin/business/custom", "Custom Service"]],
     },
+    { href: "/admin/posting", label: "Posting", icon: "send", pages: [["/admin/posting", "Calendar"], ["/admin/posting/drafts", "Drafts"], ["/admin/posting/accounts", "TikTok Accounts"], ["/admin/posting/stats", "Video Stats"], ["/admin/posting/numbers", "Community Numbers"]] },
     { href: "/admin/users", label: "Users", icon: "users", pages: [["/admin/users", "Review"], ["/admin/users/sellers", "Sellers"], ["/admin/users/creators", "Creators"], ["/admin/users/access", "Admin Access"]] },
     { href: "/admin/growth", label: "Growth", icon: "gift", pages: [["/admin/growth", "Missions"], ["/admin/growth/progress", "Progress per Person"], ["/admin/growth/referrals", "Referrals"], ["/admin/growth/waitlist", "AI Video Waitlist"]] },
     { href: "/admin/accounts", label: "Accounts", icon: "wallet", pages: [["/admin/accounts", "Ledger"], ["/admin/accounts/reconcile", "Reconciliation"]] },
