@@ -218,6 +218,9 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
   const daysIn = new Date(Date.UTC(y, m, 0)).getUTCDate();
   const moveMonth = (k: number) => { const d = new Date(Date.UTC(y, m - 1 + k, 1)); setMonth(d.toISOString().slice(0, 7)); };
 
+  // Reuse (owner, 21 Nov 2026, as on rezekii.com): New Post filled in like this post; she adds a new video or photos.
+  const reuse = (p: MyPost) => router.push(`${newPost}?reuse=${encodeURIComponent(p.id)}`);
+
   const row = (p: MyPost) => {
     const g = groupOf(p);
     // Real posts can be cancelled here while scheduled; editing them comes later.
@@ -274,11 +277,17 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
             <span className="sq-acts">
               {/* A real post opens New Post filled in from the server (as on rezekii.com); the preview's sample through this tab. */}
               <button type="button" className="btn-outline v2-btn-sm" onClick={() => { if (!live) openPost(p); router.push(`${newPost}?edit=${encodeURIComponent(p.id)}`); }}><Icon name="edit" size={15} /> {t("Edit")}</button>
+              {live && <button type="button" className="sq-ghost v2-btn-sm" onClick={() => reuse(p)}>{t("Reuse")}</button>}
               <button type="button" className="sq-ghost v2-btn-sm" onClick={() => setCancelling(p.id)}>{g === "draft" ? t("Delete") : t("Cancel")}</button>
             </span>
           ))}
           {g === "done" && !live && <span className="sq-acts"><button type="button" className="sq-ghost v2-btn-sm" onClick={() => toast(t("Preview: opens the post in the app"))}>{t("View Post")} <Icon name="arrow" size={14} /></button></span>}
-          {g === "done" && live && link && <span className="sq-acts"><a className="sq-ghost v2-btn-sm" href={link} target="_blank" rel="noopener noreferrer">{t("View Post")} <Icon name="arrow" size={14} /></a></span>}
+          {live && !editable && (
+            <span className="sq-acts">
+              <button type="button" className="sq-ghost v2-btn-sm" onClick={() => reuse(p)}>{t("Reuse")}</button>
+              {g === "done" && link && <a className="sq-ghost v2-btn-sm" href={link} target="_blank" rel="noopener noreferrer">{t("View Post")} <Icon name="arrow" size={14} /></a>}
+            </span>
+          )}
         </span>
       </li>
     );

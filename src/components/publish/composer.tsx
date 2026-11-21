@@ -495,6 +495,17 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
         .catch(() => null)
         .then((e) => (e ? fillFromEdit(e) : setLiveEdit("gone")));
     }
+    // Reuse: a new post filled in like an old one; she picks a new video or photos (as on rezekii.com).
+    else if (q.get("reuse") && liveSide) {
+      fetch(`/api/social/recipes?key=${encodeURIComponent(q.get("reuse")!)}`, { cache: "no-store" })
+        .then((r) => (r.ok ? (r.json() as Promise<{ recipe: Recipe; at: string | null }>) : null))
+        .catch(() => null)
+        .then((d) => {
+          if (!d) return say(t("That post wasn't found."));
+          fillRecipe(d.recipe);
+          say(d.at ? t("Filled in from your post of {date}. Pick a video or photos, then post.", { date: new Date(d.at).toLocaleDateString(dateLocale(lang), { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" }) }) : t("Filled in from your post. Pick a video or photos, then post."));
+        });
+    }
     else if (q.get("edit")) {
       const p = postToEdit(q.get("edit")!);
       if (!p) return;
@@ -510,26 +521,28 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     }
   }, []);
 
+  /** What was typed for a post (its recipe): channels still connected, texts and each app's settings. */
+  function fillRecipe(r: Recipe) {
+    setPicked(new Set(r.channels.filter((k) => connected.has(k))));
+    setMain(r.main);
+    setTagsText(r.tags);
+    setOwnComment(r.comment);
+    setLink(r.link);
+    setCta(r.cta);
+    setCapOver(r.captions);
+    setComOver(r.comments);
+    setTopicOver(r.topic);
+    setFbDraft(r.fbDraft);
+    setIgFeed(r.igFeed);
+    setIgTrial(r.igTrial);
+    setCollabText(r.collaborators);
+    setTagText(r.tagged);
+    setReplies(r.replies);
+  }
+
   /** New Post as the post was scheduled: what was typed (its recipe), TikTok's choices, the kept video or photos and the time. */
   function fillFromEdit(e: EditPost) {
-    const r = e.recipe;
-    if (r) {
-      setPicked(new Set(r.channels.filter((k) => connected.has(k))));
-      setMain(r.main);
-      setTagsText(r.tags);
-      setOwnComment(r.comment);
-      setLink(r.link);
-      setCta(r.cta);
-      setCapOver(r.captions);
-      setComOver(r.comments);
-      setTopicOver(r.topic);
-      setFbDraft(r.fbDraft);
-      setIgFeed(r.igFeed);
-      setIgTrial(r.igTrial);
-      setCollabText(r.collaborators);
-      setTagText(r.tagged);
-      setReplies(r.replies);
-    }
+    if (e.recipe) fillRecipe(e.recipe);
     if (e.tiktok) {
       setMode(e.tiktok.mode);
       setPrivacy((e.tiktok.privacy ?? "") as Privacy | "");

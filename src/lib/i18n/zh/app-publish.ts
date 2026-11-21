@@ -391,4 +391,6 @@ export const APP_PUBLISH: Record<string, string> = {
   "Posting the first comment again.": "正在重新发布第一条评论。",
   "Couldn't retry the comment. Please try again.": "无法重试评论，请重试。",
   "All Brands": "全部品牌",
+  "Filled in from your post of {date}. Pick a video or photos, then post.": "已按你 {date} 的发布填好。请选择视频或照片，然后发布。",
+  "Filled in from your post. Pick a video or photos, then post.": "已按你之前的发布填好。请选择视频或照片，然后发布。",
 };

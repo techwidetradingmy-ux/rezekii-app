@@ -513,4 +513,7 @@ export const APP_PUBLISH: Record<string, string> = {
   "Couldn't retry the comment. Please try again.": "Komen tidak dapat dicuba semula. Sila cuba lagi.",
   "Brand": "Jenama",
   "All Brands": "Semua Jenama",
+  "Reuse": "Guna Semula",
+  "Filled in from your post of {date}. Pick a video or photos, then post.": "Diisi daripada hantaran anda pada {date}. Pilih video atau foto, kemudian siarkan.",
+  "Filled in from your post. Pick a video or photos, then post.": "Diisi daripada hantaran anda. Pilih video atau foto, kemudian siarkan.",
 };
