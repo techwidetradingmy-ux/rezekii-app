@@ -1,7 +1,7 @@
 import { MetaError } from "../../integrations/meta/graph.ts";
-import { commentOnFacebook, facebookPermalink, facebookPostExists, facebookVideo, finishFacebookReel, postFacebookVideo, startFacebookReel, uploadFacebookReel } from "../../integrations/meta/facebook.ts";
-import { commentOnInstagram, createInstagramReel, instagramContainer, instagramPermalink, instagramPostExists, publishInstagram } from "../../integrations/meta/instagram.ts";
-import { createThreadsReply, createThreadsVideo, publishThreads, threadsContainer, threadsPermalink, threadsPostExists } from "../../integrations/meta/threads.ts";
+import { commentOnFacebook, facebookPermalink, facebookPostExists, facebookPostLink, facebookVideo, finishFacebookReel, postFacebookPhotos, postFacebookVideo, startFacebookReel, uploadFacebookReel } from "../../integrations/meta/facebook.ts";
+import { commentOnInstagram, createInstagramPhotos, createInstagramReel, instagramContainer, instagramPermalink, instagramPostExists, publishInstagram } from "../../integrations/meta/instagram.ts";
+import { createThreadsPhotos, createThreadsReply, createThreadsVideo, publishThreads, threadsContainer, threadsPermalink, threadsPostExists } from "../../integrations/meta/threads.ts";
 import { directLink } from "../posting/media.ts";
 import { nextRetry } from "../posting/rules.ts";
 import { freshToken, getAccount, markReconnect, type SocialAccount } from "./accounts.ts";
@@ -42,9 +42,13 @@ async function accountFor(p: SocialPostRow): Promise<SocialAccount | null> {
   return p.account_id ? getAccount(p.account_id) : null;
 }
 
+/** What the post carries, for messages: "the photos" or "the video". */
+const what = (p: SocialPostRow) => (p.photo_paths?.length ? "the photos" : "the video");
+
 /**
- * One try at a claimed channel post: hands the video to the channel (which fetches it from a signed link) and leaves the
- * post "processing" until the channel has it ready. A post that already has a container resumes instead of posting again.
+ * One try at a claimed channel post: hands the video or photos to the channel (which fetches them from signed links) and
+ * leaves the post "processing" until the channel has it ready; a Facebook photo post is published at once. A post that
+ * already has a container resumes instead of posting again.
  */
 export async function publishSocialPost(p: SocialPostRow): Promise<string> {
   const acc = await accountFor(p);
@@ -56,6 +60,8 @@ export async function publishSocialPost(p: SocialPostRow): Promise<string> {
   }
   try {
     const token = await freshToken(acc);
+    const photos = p.photo_paths?.length ? await Promise.all(p.photo_paths.map((path) => signedMediaUrl(path))) : null;
+    if (photos) return await publishPhotos(p, acc, token, photos);
     const video = p.storage_path ? await signedMediaUrl(p.storage_path) : directLink(p.link_url ?? "");
     let container: string;
     if (p.platform === "facebook") {
@@ -89,6 +95,30 @@ export async function publishSocialPost(p: SocialPostRow): Promise<string> {
   }
 }
 
+/** A photo post: Facebook publishes it at once; Instagram and Threads get a container that is published once ready. */
+async function publishPhotos(p: SocialPostRow, acc: SocialAccount, token: string, photos: string[]): Promise<string> {
+  let container: string;
+  if (p.platform === "facebook") {
+    const postId = await postFacebookPhotos(acc.external_id, token, photos, p.caption);
+    return markPosted(p, postId, await facebookPostLink(postId, token).catch(() => null));
+  }
+  if (p.platform === "instagram") {
+    let s = cleanSettings("instagram", p.settings) as InstagramSettings;
+    try {
+      container = await createInstagramPhotos(acc.external_id, token, photos, p.caption, s);
+    } catch (err) {
+      // A tagged or collaborator account Instagram can't reach: post without it, and say so (S6), as for Reels.
+      const gone = err instanceof MetaError ? unreachableUsers(err.message) : [];
+      if (!gone.length) throw err;
+      s = { ...s, tags: s.tags.filter((u) => !gone.includes(u)), collaborators: s.collaborators.filter((u) => !gone.includes(u)) };
+      await updateSocialPost(p.id, { settings: { ...p.settings, tags: s.tags, collaborators: s.collaborators, dropped: gone } });
+      container = await createInstagramPhotos(acc.external_id, token, photos, p.caption, s);
+    }
+  } else container = await createThreadsPhotos(acc.external_id, token, photos, p.caption, cleanSettings("threads", p.settings) as ThreadsSettings);
+  await updateSocialPost(p.id, { status: "processing", container_id: container, last_error: null });
+  return "sent";
+}
+
 async function markPosted(p: SocialPostRow, externalId: string, permalink: string | null): Promise<string> {
   await updateSocialPost(p.id, { status: "posted", external_post_id: externalId, permalink, posted_at: new Date().toISOString(), next_attempt_at: null, last_error: null, comment_status: hasComment(p) ? "pending" : "none" });
   if (!hasComment(p)) await cleanUpGroup(p.group_id);
@@ -113,7 +143,7 @@ export async function checkSocialProcessing(p: SocialPostRow): Promise<string> {
         return markPosted(p, id, await instagramPermalink(id, token).catch(() => null));
       }
       if (c.status_code === "PUBLISHED") return markPosted(p, p.external_post_id ?? p.container_id, p.permalink);
-      if (c.status_code === "ERROR" || c.status_code === "EXPIRED") return recordFailure(p, c.status ? `Instagram couldn't process the video (${c.status}).` : tx("Instagram couldn't process the video."), { clearContainer: true });
+      if (c.status_code === "ERROR" || c.status_code === "EXPIRED") return recordFailure(p, c.status ? `Instagram couldn't process ${what(p)} (${c.status}).` : p.photo_paths?.length ? tx("Instagram couldn't process the photos.") : tx("Instagram couldn't process the video."), { clearContainer: true });
     } else {
       const c = await threadsContainer(p.container_id, token);
       if (c.status === "FINISHED") {
@@ -121,9 +151,9 @@ export async function checkSocialProcessing(p: SocialPostRow): Promise<string> {
         return markPosted(p, id, await threadsPermalink(id, token).catch(() => null));
       }
       if (c.status === "PUBLISHED") return markPosted(p, p.external_post_id ?? p.container_id, p.permalink);
-      if (c.status === "ERROR" || c.status === "EXPIRED") return recordFailure(p, c.error_message ? `Threads: ${c.error_message}` : tx("Threads couldn't process the video."), { clearContainer: true });
+      if (c.status === "ERROR" || c.status === "EXPIRED") return recordFailure(p, c.error_message ? `Threads: ${c.error_message}` : p.photo_paths?.length ? tx("Threads couldn't process the photos.") : tx("Threads couldn't process the video."), { clearContainer: true });
     }
-    if (Date.now() - new Date(p.scheduled_at ?? p.created_at).getTime() > STUCK_MS) return recordFailure(p, tx("The channel didn't finish processing the video within 30 minutes."), { final: true });
+    if (Date.now() - new Date(p.scheduled_at ?? p.created_at).getTime() > STUCK_MS) return recordFailure(p, p.photo_paths?.length ? tx("The channel didn't finish processing the photos within 30 minutes.") : tx("The channel didn't finish processing the video within 30 minutes."), { final: true });
     return "processing";
   } catch (err) {
     return handleError(p, acc, err);

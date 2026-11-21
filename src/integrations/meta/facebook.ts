@@ -66,6 +66,23 @@ export async function postFacebookVideo(pageId: string, token: string, fileUrl: 
   return (await metaFetch<{ id: string }>(G(`${pageId}/videos`), { file_url: fileUrl, description, access_token: token }, 120_000)).id;
 }
 
+/**
+ * A photo post on the Page, published at once: one photo with its caption, or several uploaded unpublished and then posted
+ * together with the caption. Facebook fetches each photo from our signed link. Returns the Page post's id.
+ */
+export async function postFacebookPhotos(pageId: string, token: string, photoUrls: string[], caption: string): Promise<string> {
+  if (photoUrls.length === 1) {
+    const r = await metaFetch<{ id: string; post_id?: string }>(G(`${pageId}/photos`), { url: photoUrls[0], caption, access_token: token }, 120_000);
+    return r.post_id ?? r.id;
+  }
+  const ids: string[] = [];
+  for (const url of photoUrls) ids.push((await metaFetch<{ id: string }>(G(`${pageId}/photos`), { url, published: "false", access_token: token }, 120_000)).id);
+  const form: Record<string, string> = { message: caption, access_token: token };
+  ids.forEach((id, i) => (form[`attached_media[${i}]`] = JSON.stringify({ media_fbid: id })));
+  return (await metaFetch<{ id: string }>(G(`${pageId}/feed`), form)).id;
+}
+export const facebookPostLink = async (postId: string, token: string) => facebookPermalink((await metaFetch<{ permalink_url?: string }>(G(`${postId}?${qs({ fields: "permalink_url", access_token: token })}`))).permalink_url);
+
 export type FacebookVideo = { status?: { video_status?: string; processing_phase?: { status?: string }; publishing_phase?: { status?: string; errors?: { message?: string }[] } }; permalink_url?: string; post_id?: string };
 export const facebookVideo = (videoId: string, token: string) => metaFetch<FacebookVideo>(G(`${videoId}?${qs({ fields: "status,permalink_url,post_id", access_token: token })}`));
 

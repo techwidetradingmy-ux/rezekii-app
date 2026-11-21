@@ -1,5 +1,6 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { BUCKET, storage } from "../posting/media.ts";
+import { filesOf } from "../posting/photos.ts";
 import type { Platform } from "./rules.ts";
 
 /** "removed": it was posted, then deleted in the app (found by the timer, P11). */
@@ -14,6 +15,8 @@ export type SocialPostRow = {
   platform: Platform;
   source: "upload" | "link";
   storage_path: string | null;
+  /** A photo post's photos in order (storage_path is the first); null for a video post (posting/photos.ts). */
+  photo_paths: string[] | null;
   link_url: string | null;
   duration_sec: number | null;
   caption: string;
@@ -130,14 +133,14 @@ export async function videoStillStored(path: string): Promise<boolean> {
 }
 
 /**
- * Once every channel post in the group has finished (and its first comment too), the shared video copy and the comment image
- * are deleted. While a
+ * Once every channel post in the group has finished (and its first comment too), the shared video or photo copies and the
+ * comment image are deleted. While a
  * channel has failed it's kept, so Try again works; cancelling or a successful retry lets it go.
  */
 export async function cleanUpGroup(groupId: string): Promise<void> {
-  const rows = (await (await supabaseRest(`social_posts?group_id=eq.${groupId}&select=status,comment_status,storage_path,comment_image_path`)).json()) as Pick<SocialPostRow, "status" | "comment_status" | "storage_path" | "comment_image_path">[];
+  const rows = (await (await supabaseRest(`social_posts?group_id=eq.${groupId}&select=status,comment_status,storage_path,photo_paths,comment_image_path`)).json()) as Pick<SocialPostRow, "status" | "comment_status" | "storage_path" | "photo_paths" | "comment_image_path">[];
   if (!rows.length || rows.some((r) => !FINAL.has(r.status) || r.status === "failed" || r.comment_status === "pending")) return;
-  const paths = [rows.find((r) => r.storage_path)?.storage_path, rows.find((r) => r.comment_image_path)?.comment_image_path].filter((p): p is string => !!p);
+  const paths = [...new Set(rows.flatMap((r) => [...filesOf(r), r.comment_image_path]).filter((p): p is string => !!p))];
   const { base, headers } = storage();
   for (const path of paths) await fetch(`${base}/object/${BUCKET}/${path}`, { method: "DELETE", headers, cache: "no-store", signal: AbortSignal.timeout(20_000) }).catch(() => {});
 }

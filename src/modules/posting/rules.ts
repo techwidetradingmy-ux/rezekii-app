@@ -1,4 +1,4 @@
-import type { CreatorInfo, PostInfo, PrivacyLevel, PublishStatus } from "../../integrations/tiktok/posting.ts";
+import type { CreatorInfo, PhotoInfo, PostInfo, PrivacyLevel, PublishStatus } from "../../integrations/tiktok/posting.ts";
 import { makeT, type T } from "../../lib/i18n/lang.ts";
 
 /** English, as written (the server's checks); New post passes its own translator. */
@@ -51,6 +51,23 @@ export function toPostInfo(p: PostChoice, info: CreatorInfo): PostInfo {
     brand_organic_toggle: p.promo && p.brandOrganic,
     brand_content_toggle: p.promo && p.brandedContent,
     is_aigc: p.isAigc,
+  };
+}
+
+/**
+ * TikTok's post_info for a photo post: the caption goes in as the description (photo titles are up to 90 characters, so
+ * none is set). Photo posts have no Duet or Stitch; TikTok adds music by default.
+ */
+export function toPhotoInfo(p: PostChoice, info: CreatorInfo): PhotoInfo {
+  if (!p.privacyLevel) throw new Error("privacy level missing");
+  return {
+    title: "",
+    description: p.caption,
+    privacy_level: p.privacyLevel,
+    disable_comment: info.comment_disabled || !p.allowComments,
+    auto_add_music: true,
+    brand_organic_toggle: p.promo && p.brandOrganic,
+    brand_content_toggle: p.promo && p.brandedContent,
   };
 }
 

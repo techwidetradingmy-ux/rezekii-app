@@ -1,6 +1,7 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { queryCreatorInfo } from "../../integrations/tiktok/posting.ts";
 import { deleteUpload } from "../posting/media.ts";
+import { filesOf } from "../posting/photos.ts";
 import { freshTikTokToken, type PostRow } from "../posting/store.ts";
 import { logActivity } from "./admins.ts";
 
@@ -154,7 +155,7 @@ export async function deleteDraft(id: string, actor: string): Promise<AdminPostR
   if (!p) return notTeam;
   if (p.status !== "draft") return { ok: false, error: "Only drafts can be deleted.", status: 409 };
   await patch(id, { status: "cancelled" });
-  if (p.storage_path) await deleteUpload(p.storage_path).catch((err) => console.error("[drafts] upload delete failed", err instanceof Error ? err.message : err));
+  for (const path of filesOf(p)) await deleteUpload(path).catch((err) => console.error("[drafts] upload delete failed", err instanceof Error ? err.message : err));
   await logActivity(actor, "Posts", `deleted a draft on ${p.handle}`);
   return { ok: true };
 }

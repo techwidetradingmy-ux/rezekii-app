@@ -30,7 +30,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
   if (action === "retry") {
     if (post.status !== "failed") return NextResponse.json({ error: t("Only a failed post can be tried again.") }, { status: 409 });
-    if (post.storage_path && !(await videoStillStored(post.storage_path))) return NextResponse.json({ error: t("The video for this post isn't stored any more. Make a new post with it.") }, { status: 409 });
+    if (post.storage_path && !(await videoStillStored(post.storage_path))) return NextResponse.json({ error: post.photo_paths?.length ? t("The photos for this post aren't stored any more. Make a new post with them.") : t("The video for this post isn't stored any more. Make a new post with it.") }, { status: 409 });
     // Its credits came back when it failed; trying again costs them again.
     if (!(await chargeRetry(user.id, { id: post.id, app: post.platform }, "creator"))) return NextResponse.json({ error: t("Not enough credits to try again.") }, { status: 402 });
     await updateSocialPost(id, { status: "scheduled", next_attempt_at: new Date().toISOString(), attempts: 0, last_error: null, container_id: null });

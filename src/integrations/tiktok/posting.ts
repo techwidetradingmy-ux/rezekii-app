@@ -1,5 +1,5 @@
 /**
- * TikTok Content Posting API (video). Uses the creator's Login Kit token (scopes video.publish / video.upload).
+ * TikTok Content Posting API (videos and photos). Uses the creator's Login Kit token (scopes video.publish / video.upload).
  * Direct post goes to the profile; inbox sends it to the creator's TikTok drafts to finish in the app.
  */
 const API = "https://open.tiktokapis.com/v2/post/publish";
@@ -84,6 +84,31 @@ export function initVideoPost(token: string, mode: "direct" | "inbox", plan: Chu
   return mode === "direct"
     ? call<{ publish_id: string; upload_url: string }>(token, "/video/init/", { post_info: postInfo, source_info })
     : call<{ publish_id: string; upload_url: string }>(token, "/inbox/video/init/", { source_info });
+}
+
+/** TikTok's photo post_info: a title of up to 90 characters and the caption as the description (up to 4,000). */
+export type PhotoInfo = {
+  title: string;
+  description: string;
+  privacy_level?: PrivacyLevel;
+  disable_comment?: boolean;
+  auto_add_music?: boolean;
+  brand_organic_toggle?: boolean;
+  brand_content_toggle?: boolean;
+};
+
+/**
+ * Starts a photo post (one photo or a carousel of up to 35): TikTok pulls each photo from its URL, which must be on a
+ * domain verified for the app. Direct post publishes it; inbox sends it to the creator's TikTok drafts.
+ */
+export function initPhotoPost(token: string, mode: "direct" | "inbox", photoUrls: string[], info: PhotoInfo, isAigc = false) {
+  return call<{ publish_id: string }>(token, "/content/init/", {
+    media_type: "PHOTO",
+    post_mode: mode === "direct" ? "DIRECT_POST" : "MEDIA_UPLOAD",
+    post_info: mode === "direct" ? info : { title: info.title, description: info.description },
+    source_info: { source: "PULL_FROM_URL", photo_cover_index: 0, photo_images: photoUrls },
+    ...(isAigc ? { is_aigc: true } : {}),
+  });
 }
 
 /** Sends one chunk to TikTok's upload URL. */

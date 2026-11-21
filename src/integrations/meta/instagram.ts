@@ -42,6 +42,18 @@ export async function createInstagramReel(igId: string, token: string, videoUrl:
   if (o.trial && o.trial !== "off") form.trial_params = JSON.stringify({ graduation_strategy: o.trial === "manual" ? "MANUAL" : "SS_PERFORMANCE" });
   return (await metaFetch<{ id: string }>(IG(`${igId}/media`), form)).id;
 }
+/**
+ * A photo post container: one photo, or a carousel of up to 20 (each photo its own item container first). Instagram takes
+ * JPG photos from 4:5 to 1.91:1. Tagged people are placed in the middle of the first photo (photos need a position).
+ */
+export async function createInstagramPhotos(igId: string, token: string, photoUrls: string[], caption: string, o: { collaborators?: string[]; tags?: string[] } = {}): Promise<string> {
+  const tags = o.tags?.length ? JSON.stringify(o.tags.map((username) => ({ username, x: 0.5, y: 0.5 }))) : null;
+  const collab: Record<string, string> = o.collaborators?.length ? { collaborators: JSON.stringify(o.collaborators) } : {};
+  if (photoUrls.length === 1) return (await metaFetch<{ id: string }>(IG(`${igId}/media`), { image_url: photoUrls[0], caption, ...collab, ...(tags ? { user_tags: tags } : {}), access_token: token })).id;
+  const children: string[] = [];
+  for (const [i, url] of photoUrls.entries()) children.push((await metaFetch<{ id: string }>(IG(`${igId}/media`), { image_url: url, is_carousel_item: "true", ...(i === 0 && tags ? { user_tags: tags } : {}), access_token: token })).id);
+  return (await metaFetch<{ id: string }>(IG(`${igId}/media`), { media_type: "CAROUSEL", children: children.join(","), caption, ...collab, access_token: token })).id;
+}
 export type ContainerStatus = "IN_PROGRESS" | "FINISHED" | "ERROR" | "EXPIRED" | "PUBLISHED";
 export const instagramContainer = (id: string, token: string) => metaFetch<{ status_code?: ContainerStatus; status?: string }>(IG(`${id}?${qs({ fields: "status_code,status", access_token: token })}`));
 export async function publishInstagram(igId: string, token: string, containerId: string): Promise<string> {

@@ -106,6 +106,8 @@ a { color: var(--gink); }
 .pd { grid-column: 1 / -1; display: grid; gap: 12px; padding: 14px; border-radius: 14px; background: var(--surface2); min-width: 0; }
 .pd-top { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
 .pd-video { width: 150px; max-width: 100%; aspect-ratio: 9 / 16; border-radius: 12px; background: #000000; object-fit: contain; }
+.pd-photos { display: flex; gap: 6px; overflow-x: auto; max-width: 100%; min-width: 0; }
+.pd-photos img { flex: none; width: 110px; aspect-ratio: 4 / 5; border-radius: 10px; object-fit: cover; background: #000000; }
 .pd-list { margin: 0; display: grid; gap: 6px; flex: 1 1 240px; min-width: 0; }
 .pd-ln { display: grid; grid-template-columns: minmax(110px, 32%) minmax(0, 1fr); gap: 10px; font-size: 14px; line-height: 1.45; }
 .pd-ln dt { color: var(--muted); }

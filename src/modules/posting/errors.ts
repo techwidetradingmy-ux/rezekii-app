@@ -13,6 +13,7 @@ export function errorLine(t: T, text: string): string {
     return m[1] === "This channel" ? t("This channel needs reconnecting in Rezekii (Posts → Channels).") : t("{channel} needs reconnecting in Rezekii (Posts → Channels).", { channel: m[1] });
   if ((m = /^A call took too long and was stopped \((.*)\)\.$/.exec(text))) return t("A call took too long and was stopped ({error}).", { error: m[1] });
   if ((m = /^Instagram couldn't process the video \((.+)\)\.$/.exec(text))) return t("Instagram couldn't process the video ({status}).", { status: m[1] });
+  if ((m = /^Instagram couldn't process the photos \((.+)\)\.$/.exec(text))) return t("Instagram couldn't process the photos ({status}).", { status: m[1] });
   if ((m = /^TikTok says this account can't post right now \((.*)\)\.$/.exec(text))) return t("TikTok says this account can't post right now ({error}).", { error: m[1] });
   if ((m = /^TikTok refused the post: (.*) \(([^()]*)\)\.$/.exec(text))) return t("TikTok refused the post: {error} ({code}).", { error: m[1], code: m[2] });
   if ((m = /^TikTok couldn't publish it: (.*)\.$/.exec(text))) return t("TikTok couldn't publish it: {reason}.", { reason: m[1] === "no reason given" ? t("no reason given") : m[1] });

@@ -447,4 +447,16 @@ export const APP_SERVER: Record<string, string> = {
   "This channel needs connecting again (Publish → New Post).": "Saluran ini perlu disambungkan semula (Terbit → Hantaran Baharu).",
   "Connect this channel again once so Meta allows answering comments (Publish → New Post).": "Sambungkan saluran ini semula sekali supaya Meta membenarkan komen dibalas (Terbit → Hantaran Baharu).",
   "Threads doesn't let apps delete replies. Hide it instead.": "Threads tidak membenarkan aplikasi memadam balasan. Sembunyikannya sahaja.",
+  // Photo posts (ported from rezekii.com).
+  "Instagram couldn't process the photos ({status}).": "Instagram tidak dapat memproses foto ({status}).",
+  "Instagram couldn't process the photos.": "Instagram tidak dapat memproses foto.",
+  "The channel didn't finish processing the photos within 30 minutes.": "Saluran itu tidak selesai memproses foto dalam 30 minit.",
+  "The photos for this post aren't stored any more. Make a new post with them.": "Foto untuk hantaran ini tidak disimpan lagi. Buat hantaran baharu dengannya.",
+  "The photos weren't uploaded. Add them again.": "Foto tidak dimuat naik. Tambah semula.",
+  "Threads couldn't process the photos.": "Threads tidak dapat memproses foto.",
+  "TikTok couldn't fetch the photos from Rezekii. Try again later.": "TikTok tidak dapat mengambil foto dari Rezekii. Cuba lagi nanti.",
+  "Add a video or photos: upload them or paste a video link.": "Tambah video atau foto: muat naik atau tampal pautan video.",
+  "Each photo can be up to 8 MB.": "Setiap foto boleh sehingga 8 MB.",
+  "Photos are sent as JPG. Add the photo again.": "Foto dihantar sebagai JPG. Tambah foto semula.",
+  "{app} takes up to {max} photos in one post. This post has {n}.": "{app} menerima sehingga {max} foto dalam satu hantaran. Hantaran ini ada {n}.",
 };

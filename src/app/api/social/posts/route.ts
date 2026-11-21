@@ -6,7 +6,8 @@ import { nextRecommendedSlot } from "@/modules/posting/rules.ts";
 import { postingHours } from "@/modules/posting/times.ts";
 import { getAccount } from "@/modules/social/accounts.ts";
 import { canUseSocial } from "@/modules/social/access.ts";
-import { NAMES, channelProblems, facebookAsReel } from "@/modules/social/rules.ts";
+import { NAMES, channelProblems, facebookAsReel, photoProblems } from "@/modules/social/rules.ts";
+import { cleanPhotoPaths } from "@/modules/posting/photos.ts";
 import { cleanSettings, settingsProblems } from "@/modules/social/settings.ts";
 import { fileInUse } from "@/modules/posting/edit.ts";
 import { copyUpload, insertSocialPosts, listSocialPosts, postsInDay, updateSocialPost, type NewSocialPost } from "@/modules/social/store.ts";
@@ -29,7 +30,7 @@ export async function GET() {
 }
 
 type ChannelIn = { accountId?: string; caption?: string; firstComment?: string; settings?: unknown };
-type Body = { source?: "upload" | "link"; storagePath?: string; linkUrl?: string; durationSec?: number; when?: string; tiktokPostId?: string; commentImagePath?: string; channels?: ChannelIn[]; staged?: boolean; side?: string };
+type Body = { source?: "upload" | "link"; storagePath?: string; photoPaths?: unknown; instagramPhotoPaths?: unknown; linkUrl?: string; durationSec?: number; when?: string; tiktokPostId?: string; commentImagePath?: string; channels?: ChannelIn[]; staged?: boolean; side?: string };
 const bad = (error: string | string[], status = 400) => NextResponse.json({ error }, { status });
 
 /**
@@ -43,20 +44,26 @@ export async function POST(req: NextRequest) {
   if (!user) return bad(t("Sign in first."), 401);
   if (!canUseSocial(user)) return bad(t("Not available yet."), 403);
   const b = (await req.json().catch(() => ({}))) as Body;
-  if (b.source === "upload" ? !b.storagePath?.startsWith(`${user.id}/`) : b.source === "link" ? !/^https:\/\/\S+$/.test(b.linkUrl ?? "") : true)
-    return bad(t("Add a video: upload one or paste an https link."));
+  // A photo post sends its photos in order; a video post one upload or a link.
+  const photos = b.photoPaths === undefined ? null : cleanPhotoPaths(user.id, b.photoPaths);
+  if (b.photoPaths !== undefined && !photos) return bad(t("The photos weren't uploaded. Add them again."));
+  // Instagram's own copies, cut to fit, in the same order (New post sends them when a photo is too tall or wide for Instagram).
+  const igPhotos = b.instagramPhotoPaths === undefined || !photos ? null : cleanPhotoPaths(user.id, b.instagramPhotoPaths);
+  if (b.instagramPhotoPaths !== undefined && photos && igPhotos?.length !== photos.length) return bad(t("The photos weren't uploaded. Add them again."));
+  if (!photos && (b.source === "upload" ? !b.storagePath?.startsWith(`${user.id}/`) : b.source === "link" ? !/^https:\/\/\S+$/.test(b.linkUrl ?? "") : true))
+    return bad(t("Add a video or photos: upload them or paste a video link."));
   let commentImage = b.commentImagePath ?? null;
   if (commentImage && !new RegExp(`^${user.id}/comment/[0-9a-f-]{36}\\.(jpg|png)$`).test(commentImage)) return bad(t("The comment image upload wasn't found. Add it again."));
   const channels = (b.channels ?? []).filter((c) => c.accountId);
   if (!channels.length) return bad(t("Pick at least one Facebook, Instagram or Threads channel."));
-  const durationSec = typeof b.durationSec === "number" ? b.durationSec : null;
+  const durationSec = !photos && typeof b.durationSec === "number" ? b.durationSec : null;
 
   const accounts = await Promise.all(channels.map((c) => getAccount(String(c.accountId), user.id)));
   const problems: string[] = [];
   accounts.forEach((a, i) => {
     if (!a) problems.push(t("One of the channels isn't connected any more. Reload and pick again."));
     else if (a.status === "reconnect") problems.push(t("{channel} needs reconnecting first (Posts → Channels).", { channel: a.name ?? NAMES[a.platform] }));
-    else problems.push(...channelProblems(a.platform, String(channels[i].caption ?? ""), String(channels[i].firstComment ?? ""), durationSec, t), ...settingsProblems(a.platform, cleanSettings(a.platform, channels[i].settings), durationSec, undefined, undefined, t));
+    else problems.push(...channelProblems(a.platform, String(channels[i].caption ?? ""), String(channels[i].firstComment ?? ""), durationSec, t), ...settingsProblems(a.platform, cleanSettings(a.platform, channels[i].settings), durationSec, undefined, undefined, t), ...(photos ? photoProblems(a.platform, photos.length, t) : []));
   });
   if (problems.length) return bad(problems);
 
@@ -89,8 +96,23 @@ export async function POST(req: NextRequest) {
 
   // With TikTok in the post, the channels get their own copy of the upload (TikTok deletes its file once it has posted). An
   // edit copies the video and comment image it kept too: the old post's files go once it is replaced.
-  let storagePath: string | null = b.source === "upload" ? (b.storagePath as string) : null;
-  if (storagePath && (tiktok || (b.staged && (await fileInUse(storagePath))))) {
+  let storagePath: string | null = photos ? photos[0] : b.source === "upload" ? (b.storagePath as string) : null;
+  let photoPaths = photos, igPhotoPaths = igPhotos;
+  if (photoPaths) {
+    // Each photo the same way: the channels' own copy when TikTok is in the post or an edit kept one still in use.
+    const own = new Map<string, string>();
+    for (const path of new Set([...photoPaths, ...(igPhotoPaths ?? [])])) {
+      if (!tiktok && !(b.staged && (await fileInUse(path)))) own.set(path, path);
+      else {
+        const copy = `${user.id}/social/photos/${randomUUID()}.jpg`;
+        await copyUpload(path, copy);
+        own.set(path, copy);
+      }
+    }
+    photoPaths = photoPaths.map((path) => own.get(path) as string);
+    igPhotoPaths = igPhotoPaths?.map((path) => own.get(path) as string) ?? null;
+    storagePath = photoPaths[0];
+  } else if (storagePath && (tiktok || (b.staged && (await fileInUse(storagePath))))) {
     const copy = `${user.id}/social/${randomUUID()}.${storagePath.split(".").pop()}`;
     await copyUpload(storagePath, copy);
     storagePath = copy;
@@ -103,8 +125,9 @@ export async function POST(req: NextRequest) {
   const groupId = randomUUID();
   const rows: NewSocialPost[] = channels.map((c, i) => {
     const a = accounts[i]!;
-    const settings = cleanSettings(a.platform, c.settings);
-    // A Facebook draft isn't public, so it gets no first comment (S1).
+    // Facebook drafts are for Reels only, never photos (S1).
+    const settings = photoPaths && a.platform === "facebook" ? { draft: false } : cleanSettings(a.platform, c.settings);
+    // A Facebook draft isn't public, so it gets no first comment.
     const draft = a.platform === "facebook" && (settings as { draft?: boolean }).draft === true;
     return {
       group_id: groupId,
@@ -113,9 +136,10 @@ export async function POST(req: NextRequest) {
       account_id: a.id,
       account_name: a.name ?? a.username,
       platform: a.platform,
-      source: b.source as "upload" | "link",
-      storage_path: storagePath,
-      link_url: b.source === "link" ? (b.linkUrl as string) : null,
+      source: photoPaths ? "upload" : (b.source as "upload" | "link"),
+      storage_path: a.platform === "instagram" && igPhotoPaths ? igPhotoPaths[0] : storagePath,
+      photo_paths: a.platform === "instagram" && igPhotoPaths ? igPhotoPaths : photoPaths,
+      link_url: !photoPaths && b.source === "link" ? (b.linkUrl as string) : null,
       duration_sec: durationSec,
       caption: String(c.caption ?? ""),
       first_comment: draft ? "" : String(c.firstComment ?? ""),

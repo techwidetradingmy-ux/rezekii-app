@@ -297,4 +297,16 @@ export const APP_SERVER: Record<string, string> = {
   "This channel needs connecting again (Publish → New Post).": "此渠道需要重新连接（发布 → 新建发布）。",
   "Connect this channel again once so Meta allows answering comments (Publish → New Post).": "请重新连接此渠道一次，Meta 才会允许回复评论（发布 → 新建发布）。",
   "Threads doesn't let apps delete replies. Hide it instead.": "Threads 不允许应用删除回复，可以改为隐藏。",
+  // Photo posts (ported from rezekii.com).
+  "Instagram couldn't process the photos ({status}).": "Instagram 无法处理这些照片（{status}）。",
+  "Instagram couldn't process the photos.": "Instagram 无法处理这些照片。",
+  "The channel didn't finish processing the photos within 30 minutes.": "该渠道未在 30 分钟内处理完照片。",
+  "The photos for this post aren't stored any more. Make a new post with them.": "此发布的照片已不再保存，请用它们新建一条发布。",
+  "The photos weren't uploaded. Add them again.": "照片没有上传成功，请重新添加。",
+  "Threads couldn't process the photos.": "Threads 无法处理这些照片。",
+  "TikTok couldn't fetch the photos from Rezekii. Try again later.": "TikTok 无法从 Rezekii 获取照片，请稍后再试。",
+  "Add a video or photos: upload them or paste a video link.": "请添加视频或照片：上传，或粘贴视频链接。",
+  "Each photo can be up to 8 MB.": "每张照片最大 8 MB。",
+  "Photos are sent as JPG. Add the photo again.": "照片会以 JPG 发送，请重新添加照片。",
+  "{app} takes up to {max} photos in one post. This post has {n}.": "{app} 一条发布最多 {max} 张照片，这条有 {n} 张。",
 };
