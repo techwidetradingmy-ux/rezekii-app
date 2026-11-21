@@ -103,15 +103,7 @@ export function LiveSettings() {
           <AnnouncementsCard />
           <SellerCampaignCard value={d.campaign} />
 
-          <section className="v2-card" style={{ padding: "8px 12px" }}>
-            <div className="v2-card-h" style={{ padding: "0 8px" }}><h2 className="v2-h2">Level Benefits</h2><span className="v2-small">What creators see on Level, Streak &amp; Badges</span></div>
-            <div className="v2-tablewrap">
-              <table className="v2-table ad-table">
-                <thead><tr><th>Benefit</th><th>Bronze</th><th>Silver</th><th>Gold</th></tr></thead>
-                <tbody>{d.benefits.map((b) => <tr key={b.label}><td><b>{b.label}</b></td>{b.v.map((v, i) => <td key={i}>{v}</td>)}</tr>)}</tbody>
-              </table>
-            </div>
-          </section>
+          <BenefitsCard value={d.benefits} />
 
           <section className="v2-card" style={{ padding: "6px 20px" }}>
             <div className="v2-card-h"><h2 className="v2-h2">Rules in Use</h2><span className="v2-small">Set in code; ask the developer to change</span></div>
@@ -163,6 +155,46 @@ function SellerCampaignCard({ value }: { value: { name: string; commission: numb
         <textarea className="np-input" rows={7} maxLength={900} value={text} onChange={(e) => setText(e.target.value)} aria-label="Campaign description" />
       </label>
       <button type="button" className="np-btn v2-btn-sm" style={{ alignSelf: "flex-start" }} disabled={busy} onClick={() => void save()}>{busy ? "Saving…" : "Save"}</button>
+    </section>
+  );
+}
+
+type Benefit = Settings["benefits"][number];
+const LEVELS = ["Bronze", "Silver", "Gold"] as const;
+/** Level Benefits, edited here (owner, 21 Nov 2026, as on rezekii.com): what creators see on Level, Streak & Badges. Up to 15. */
+function BenefitsCard({ value }: { value: Benefit[] }) {
+  const { toast } = useDemo();
+  const [list, setList] = useState(value);
+  const [busy, setBusy] = useState(false);
+  const set = (i: number, patch: Partial<Benefit>) => setList((l) => l.map((b, j) => (j === i ? { ...b, ...patch } : b)));
+  const save = async () => {
+    setBusy(true);
+    const r = await fetch("/api/admin/benefits", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ list }) }).catch(() => null);
+    const x = (await r?.json().catch(() => null)) as { error?: string } | null;
+    setBusy(false);
+    toast(r?.ok ? "Saved. Creators see the new benefits." : x?.error ?? "Didn't save. Please try again.");
+  };
+  return (
+    <section className="v2-card" style={{ padding: "8px 12px" }}>
+      <div className="v2-card-h" style={{ padding: "0 8px" }}><h2 className="v2-h2">Level Benefits</h2><span className="v2-small">What creators see on Level, Streak &amp; Badges</span></div>
+      <div className="v2-tablewrap">
+        <table className="v2-table ad-table">
+          <thead><tr><th>Benefit</th>{LEVELS.map((l) => <th key={l}>{l}</th>)}<th /></tr></thead>
+          <tbody>
+            {list.map((b, i) => (
+              <tr key={i}>
+                <td><input className="np-input" style={{ minWidth: 180 }} value={b.label} maxLength={80} onChange={(e) => set(i, { label: e.target.value })} aria-label="Benefit" /></td>
+                {b.v.map((v, k) => <td key={k}><input className="np-input" style={{ minWidth: 140 }} value={v} maxLength={60} onChange={(e) => set(i, { v: b.v.map((x, m) => (m === k ? e.target.value : x)) as Benefit["v"] })} aria-label={`${b.label || "Benefit"}: ${LEVELS[k]}`} /></td>)}
+                <td><button type="button" className="ad-btn-ghost danger" disabled={list.length <= 1} onClick={() => setList((l) => l.filter((_, j) => j !== i))}>Remove</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: "10px 8px" }}>
+        <button type="button" className="ad-btn-ghost" disabled={list.length >= 15} onClick={() => setList((l) => [...l, { label: "", v: ["", "", ""] }])}>Add Benefit</button>
+        <button type="button" className="np-btn v2-btn-sm" disabled={busy} onClick={() => void save()}>{busy ? "Saving…" : "Save"}</button>
+      </div>
     </section>
   );
 }

@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
-import { Title, Loading } from "@/components/ui";
-import { Av, Chips, Pill, Search } from "@/components/admin/bits";
+import { Sheet, Title, Loading } from "@/components/ui";
+import { useDemo } from "@/components/demo";
+import { Av, Chips, Pill, Search, Switch } from "@/components/admin/bits";
 import { NO_PHOTO, shortName } from "@/lib/live-perf";
 import { adminProductHref } from "@/lib/product-pages";
 import { shortId, shortIdMatches } from "@/lib/short-id";
@@ -27,6 +28,7 @@ const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString("en-GB"
 type Creator = {
   id: string; handle: string; name: string; avatar: string | null; signIn: string; joined: string; tiktok: boolean; shop: boolean; level: string; links: number; samples: number;
   access: string; tiktokAccount: string | null; shopAccount: string | null; social: { platform: string; name: string; active: boolean }[]; lastSignIn: string | null; admin: boolean;
+  goldInvited: boolean; password: boolean;
 };
 type CFilter = "Everyone" | "TikTok Shop linked" | "Not linked" | "Admins";
 /** Users › Creators on real data: every account, how they sign in and what they've connected. */
@@ -34,7 +36,12 @@ export function LiveCreators() {
   const [list, err] = useData<Creator[]>("/api/v2/admin/data?part=creators");
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<CFilter>("Everyone");
-  const pick = (f: CFilter) => (list ?? []).filter((c) => f === "Everyone" || (f === "Admins" ? c.admin : f === "TikTok Shop linked" ? c.shop : !c.shop && !c.admin));
+  // Manage (owner, 21 Nov 2026, as on rezekii.com): Gold invitation, a new password, or removing the account.
+  const [open, setOpen] = useState<string | null>(null);
+  const [edits, setEdits] = useState<Record<string, Partial<Creator>>>({});
+  const [gone, setGone] = useState<string[]>([]);
+  const all = (list ?? []).filter((c) => !gone.includes(c.id)).map((c) => ({ ...c, ...edits[c.id] }));
+  const pick = (f: CFilter) => all.filter((c) => f === "Everyone" || (f === "Admins" ? c.admin : f === "TikTok Shop linked" ? c.shop : !c.shop && !c.admin));
   // Her short user ID or the full one finds her too (owner, 3 Nov 2026: creators quote it to support).
   const shown = pick(filter).filter((c) => !q || `${c.handle} ${c.name} ${c.signIn} ${c.id}`.toLowerCase().includes(q.trim().toLowerCase()) || shortIdMatches(c.id, q));
   return (
@@ -47,7 +54,7 @@ export function LiveCreators() {
           <section className="v2-card" style={{ padding: "8px 12px" }}>
             <div className="v2-tablewrap">
               <table className="v2-table ad-table">
-                <thead><tr><th>Account</th><th>Signs in with</th><th>Connected</th><th>Level</th><th>Links</th><th>Samples</th><th>Joined</th><th>Last Seen</th></tr></thead>
+                <thead><tr><th>Account</th><th>Signs in with</th><th>Connected</th><th>Level</th><th>Links</th><th>Samples</th><th>Joined</th><th>Last Seen</th><th /></tr></thead>
                 <tbody>
                   {shown.map((c) => (
                     <tr key={c.id}>
@@ -59,6 +66,7 @@ export function LiveCreators() {
                       <td>{c.samples}</td>
                       <td className="ad-nowrap">{day(c.joined)}</td>
                       <td className="ad-nowrap">{day(c.lastSignIn)}</td>
+                      <td><button type="button" className="ad-btn-ghost" onClick={() => setOpen(c.id)}>Manage</button></td>
                     </tr>
                   ))}
                 </tbody>
@@ -68,7 +76,79 @@ export function LiveCreators() {
           </section>
         </>
       )}
+      {open && all.find((c) => c.id === open) && (
+        <ManageCreator
+          c={all.find((c) => c.id === open)!}
+          onClose={() => setOpen(null)}
+          onChange={(patch) => setEdits((e) => ({ ...e, [open]: { ...e[open], ...patch } }))}
+          onGone={() => { setGone((g) => [...g, open]); setOpen(null); }}
+        />
+      )}
     </div>
+  );
+}
+
+/** One account's admin actions (as on rezekii.com): Gold invitation, a new password for email sign-in, and removing the account. */
+function ManageCreator({ c, onClose, onChange, onGone }: { c: Creator; onClose: () => void; onChange: (patch: Partial<Creator>) => void; onGone: () => void }) {
+  const { toast } = useDemo();
+  const [pw, setPw] = useState("");
+  const [typed, setTyped] = useState("");
+  const [busy, setBusy] = useState(false);
+  const call = async (method: "POST" | "DELETE", body: unknown): Promise<string> => {
+    setBusy(true);
+    const r = await fetch(`/api/admin/creators/${c.id}`, { method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).catch(() => null);
+    const j = (await r?.json().catch(() => ({}))) as { error?: string } | undefined;
+    setBusy(false);
+    return r?.ok ? "" : j?.error || "That didn't work. Please try again.";
+  };
+  const gold = async (on: boolean) => {
+    const err = await call("POST", { gold: on });
+    if (err) return toast(err);
+    onChange(on ? { goldInvited: true, level: "gold" } : { goldInvited: false });
+    toast(on ? `${c.name} is now Gold` : `Gold invitation withdrawn: ${c.name} moves at the next daily update`);
+  };
+  const setPassword = async () => {
+    const err = await call("POST", { password: pw });
+    if (err) return toast(err);
+    setPw("");
+    toast("New password set. They're signed out on every device.");
+  };
+  const remove = async () => {
+    const err = await call("DELETE", { confirm: typed });
+    if (err) return toast(err);
+    toast(`${c.name}'s account removed`);
+    onGone();
+  };
+  return (
+    <Sheet title={c.name} onClose={onClose}>
+      <div className="ad-postsheet">
+        <small className="v2-muted">{c.handle || "No TikTok"} · {c.signIn} · {shortId(c.id)}</small>
+        <div className="ad-move">
+          <span className="ad-row" style={{ padding: 0 }}>
+            <span className="main"><b>Gold Invitation</b><small>Invited creators are Gold straight away. Withdrawn, they move at the next daily update.</small></span>
+            <Switch on={c.goldInvited} onChange={(v) => void gold(v)} label="Gold invitation" />
+          </span>
+        </div>
+        {c.password && (
+          <div className="ad-move">
+            <b>Set a New Password</b>
+            <small className="v2-muted">For their email sign-in. They&apos;re signed out on every device and sign in with the new one.</small>
+            <div className="ad-move-row">
+              <input className="np-input" type="password" autoComplete="new-password" aria-label="New password" value={pw} onChange={(e) => setPw(e.target.value)} />
+              <button type="button" className="np-btn v2-btn-sm" disabled={busy || !pw} onClick={() => void setPassword()}>Save</button>
+            </div>
+          </div>
+        )}
+        <div className="ad-move">
+          <b>Delete Account</b>
+          <small className="v2-muted">Removes their Rezekii account. This can&apos;t be undone. Type DELETE to confirm.</small>
+          <div className="ad-move-row">
+            <input className="np-input" type="text" aria-label="Type DELETE to confirm" value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="DELETE" />
+            <button type="button" className="ad-btn-ghost danger" disabled={busy || typed !== "DELETE"} onClick={() => void remove()}>Delete Account</button>
+          </div>
+        </div>
+      </div>
+    </Sheet>
   );
 }
 
