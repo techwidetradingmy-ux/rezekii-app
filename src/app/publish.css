@@ -316,7 +316,7 @@
 .pb-secerr li { display: flex; gap: 6px; align-items: flex-start; font-size: 13px; font-weight: 700; color: #c2362a; }
 .pb-secerr li::before { content: "!"; flex-shrink: 0; width: 16px; height: 16px; margin-top: 1px; border-radius: 50%; display: grid; place-items: center; background: #e14b3b; color: #ffffff; font-size: 11px; font-weight: 900; }
 .pb-side-h { justify-self: start; font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-.pb-side > .pb-when, .pb-side > .pb-fix, .pb-side > .np-submit, .pb-side > .np-consent, .pb-side > .pb-cmt, .pb-side > .pb-notes { width: 100%; max-width: 312px; }
+.pb-side > .pb-when, .pb-side > .pb-fix, .pb-side > .np-submit, .pb-side > .np-submit-wrap, .pb-side > .np-consent, .pb-side > .pb-cmt, .pb-side > .pb-notes { width: 100%; max-width: 312px; }
 .pb-side > .pb-when { margin-top: 6px; }
 .pb-side .np-when { grid-template-columns: 1fr; gap: 6px; }
 .pb-side .np-radio { padding: 10px 12px; font-size: 14px; }

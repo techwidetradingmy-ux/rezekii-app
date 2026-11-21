@@ -389,6 +389,8 @@ textarea.np-input { resize: vertical; line-height: 1.5; }
 .np-radio.on { border-color: var(--green); background: var(--gsoft); color: var(--gink); }
 .np-radio input { accent-color: #00c073; }
 .np-consent { margin: 0; font-size: 13px; color: var(--body); text-align: center; }
+.np-consent a { color: var(--gink); font-weight: 700; text-decoration: underline; }
+.np-submit-wrap { display: block; }
 .np-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 52px; padding: 0 22px; border-radius: 12px; border: 0; background: var(--btn); color: #ffffff; font: inherit; font-weight: 700; font-size: 15px; text-decoration: none; box-shadow: var(--btn-shadow); cursor: pointer; transition: background-color 0.12s, transform 0.12s; }
 .np-btn:hover { background: #009a5c; }
 .np-btn:active:not([disabled]) { transform: scale(0.98); }

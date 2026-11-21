@@ -51,7 +51,7 @@ export async function upload(file: File, onPct: (pct: number) => void, t: T = EN
 }
 
 /** TikTok's rules for this account, asked fresh each time New post opens for it (TikTok requires it). */
-export type CreatorInfo = { creator_nickname?: string; privacy_level_options: string[]; comment_disabled?: boolean; duet_disabled?: boolean; stitch_disabled?: boolean; max_video_post_duration_sec?: number };
+export type CreatorInfo = { creator_nickname?: string; creator_username?: string; creator_avatar_url?: string; privacy_level_options: string[]; comment_disabled?: boolean; duet_disabled?: boolean; stitch_disabled?: boolean; max_video_post_duration_sec?: number };
 export async function creatorInfo(openId: string, t: T = EN): Promise<CreatorInfo> {
   return json<CreatorInfo>(await fetch(`/api/posts/creator-info?account=${encodeURIComponent(openId)}`, { cache: "no-store" }), t("Couldn't reach TikTok. Check your connection and try again."));
 }

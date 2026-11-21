@@ -17,7 +17,7 @@ import { creatorInfo, sendPost, upload, type CreatorInfo } from "@/lib/live-publ
 import { PhonePreview, type Who } from "./phone-previews";
 import {
   APPS, CAPTION_MAX, COLLABORATORS_MAX, COMMENT_MAX, ICON, NAMES, PRIVACY, REPLY_CONTROLS, TAGS_MAX,
-  autoCaption, autoComment, channelProblems, channelWarnings, cleanTopic, consentLine, hasLinkOrCta, lengthFor, links, parseHashtags,
+  autoCaption, autoComment, channelProblems, channelWarnings, cleanTopic, hasLinkOrCta, lengthFor, links, parseHashtags,
   parseUsernames, threadsTopic, tiktokProblems, withHashtags,
   type Channel, type Platform, type Privacy, type ReplyControl, type TrialMode,
 } from "./rules";
@@ -138,7 +138,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   const [tried, setTried] = useState(false);
   const [flash, setFlash] = useState<Sec | "">("");
   const [check, setCheck] = useState<"" | "busy" | "ok">("");
-  const [done, setDone] = useState<{ summary: string; when: When; at: string; cost: number } | null>(null);
+  const [done, setDone] = useState<{ summary: string; when: When; at: string; cost: number; tiktok: "direct" | "inbox" | null } | null>(null);
   // Signed in (owner, 31 Oct 2026): real channels, real sending from this wallet.
   const liveSide = setup.live;
   const [credits, setCredits] = useState(setup.credits);
@@ -190,6 +190,12 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   const ttInfo = liveSide && ttKey && info?.acct === openIdOf(ttKey) ? info : null;
   const privacyOptions = ttInfo?.info ? PRIVACY.filter(([p]) => ttInfo.info!.privacy_level_options.includes(p)) : PRIVACY;
   const lockAllow = { comments: !!ttInfo?.info?.comment_disabled, duet: !!ttInfo?.info?.duet_disabled, stitch: !!ttInfo?.info?.stitch_disabled };
+  // TikTok's Content Sharing Guidelines (its Direct Post audit, as on rezekii.com since 6 Nov 2026): say which label the video
+  // gets, keep Post off while the promotion switch is on with no box ticked, and grey out Branded content while "Only me" is
+  // picked. The viewer choice is never cleared (owner, 6 Nov 2026: it jumped back to "Choose who can view").
+  const promoLabel = promo.on && promo.branded ? t("Your video will be labeled \"Paid partnership\".") : promo.on && promo.own ? t("Your video will be labeled \"Promotional content\".") : "";
+  const promoIncomplete = !!ttKey && mode === "direct" && when !== "draft" && promo.on && !promo.own && !promo.branded;
+  const brandedBlocked = privacy === "SELF_ONLY" && !promo.branded;
   const keys = [...(ttKey ? [ttKey] : []), ...metaPicked.map((c) => c.key)];
   const chOf = (key: string): Channel => byKey.get(key)?.app ?? "facebook";
   const apps = APPS.filter((p) => keys.some((k) => chOf(k) === p));
@@ -379,7 +385,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
         others: metaPicked.map((c) => ({ accountId: c.key, caption: captionOf(c.app), firstComment: c.app === "facebook" && fbDraft ? "" : commentOf(c.app), settings: settingsFor(c.app) })),
       }, t);
       setCredits((n) => n - cost);
-      setDone({ summary: summary(), when, at: r.at ? pretty(mytLocal(r.at), lang) : t(RECOMMENDED), cost });
+      setDone({ summary: summary(), when, at: r.at ? pretty(mytLocal(r.at), lang) : t(RECOMMENDED), cost, tiktok: ttKey ? mode : null });
     } catch (e) {
       setSendError(e instanceof Error ? t(e.message) : t("Didn't go through. Please try again."));
     } finally {
@@ -403,7 +409,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     setBusy(when === "draft" ? t("Saving…") : t("Scheduling…"));
     window.setTimeout(() => {
       setBusy("");
-      setDone({ summary: summary(), when, at: when === "pick" ? pretty(pickAt, lang) : t(RECOMMENDED), cost });
+      setDone({ summary: summary(), when, at: when === "pick" ? pretty(pickAt, lang) : t(RECOMMENDED), cost, tiktok: ttKey ? mode : null });
     }, 700);
   }
 
@@ -415,6 +421,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
         <p>
           {done.when === "draft" ? t("Saved in Rezekii for {summary}. Track or edit it in Content Calendar.", { summary: done.summary }) : done.when === "now" ? t("{summary}: posting now. Track or edit it in Content Calendar.", { summary: done.summary }) : t("{summary}: {time} (Malaysia time). Track or edit it in Content Calendar.", { summary: done.summary, time: done.at })}
         </p>
+        {done.tiktok && done.when !== "draft" && <p className="np-muted">{done.tiktok === "direct" ? t("After it's posted, TikTok can take a few minutes to process the video before it shows on your profile.") : t("It will land in your TikTok inbox, where you can finish and post it in the TikTok app.")}</p>}
         {done.cost > 0 && <p className="pb-sent-cost">{t("{n} credits used", { n: done.cost })} <Tip text={t("Refunded if a channel fails or is cancelled.")} /></p>}
         <div className="np-row">
           <Link href={setup.calendar} className="np-btn">{t("Open Content Calendar")}</Link>
@@ -619,15 +626,25 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
               </div>
               {mode === "direct" && (
                 <>
-                  {ttInfo?.info?.creator_nickname && <p className="np-muted" style={{ margin: 0 }}>{rich(t("Posting as {name}"), { name: <b>{ttInfo.info.creator_nickname}</b> })}</p>}
+                  {/* TikTok's guidelines: the post screen names the account the video goes to, with its photo. */}
+                  {ttInfo?.info ? (
+                    <div className="np-account" style={{ display: "flex" }}>
+                      {ttInfo.info.creator_avatar_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={ttInfo.info.creator_avatar_url} alt="" width={48} height={48} />
+                      ) : <span className="np-avatar" aria-hidden="true">{(ttInfo.info.creator_nickname || "?").slice(0, 1)}</span>}
+                      <span><small>{t("Posting to")}</small><strong>{ttInfo.info.creator_nickname}{ttInfo.info.creator_username ? ` · @${ttInfo.info.creator_username}` : ""}</strong></span>
+                    </div>
+                  ) : liveSide && !ttInfo?.error && <p className="np-muted" style={{ margin: 0 }}>{t("Checking your TikTok account…")}</p>}
                   <label htmlFor="pb-privacy"><b>{t("Who can view this post")} <Req /></b></label>
                   <select id="pb-privacy" className="np-input" value={privacy} onChange={(e) => setPrivacy(e.target.value as Privacy)} required>
                     <option value="" disabled>{t("Choose who can view")}</option>
-                    {privacyOptions.map(([p, l]) => <option key={p} value={p} disabled={p === "SELF_ONLY" && promo.on && promo.branded}>{t(l)}{p === "SELF_ONLY" && promo.on && promo.branded ? t(" (not allowed for branded content)") : ""}</option>)}
+                    {privacyOptions.map(([p, l]) => <option key={p} value={p} disabled={p === "SELF_ONLY" && promo.on && promo.branded} title={p === "SELF_ONLY" && promo.on && promo.branded ? t("Branded content visibility cannot be set to private.") : undefined}>{t(l)}{p === "SELF_ONLY" && promo.on && promo.branded ? t(" (not allowed for branded content)") : ""}</option>)}
                   </select>
+                  {promo.on && promo.branded && <p className="np-muted" style={{ margin: 0 }}>{t("Branded content visibility cannot be set to private.")}</p>}
                   <div className="np-checks">
                     {([["comments", t("Allow Comment")], ["duet", t("Allow Duet")], ["stitch", t("Allow Stitch")]] as const).map(([k, label]) => (
-                      <label key={k} className="np-check"><input type="checkbox" checked={allow[k] && !lockAllow[k]} disabled={lockAllow[k]} onChange={(e) => setAllow((a) => ({ ...a, [k]: e.target.checked }))} />{label}{lockAllow[k] && <small>{t("Turned off for this account in TikTok.")}</small>}</label>
+                      <label key={k} className={lockAllow[k] ? "np-check off" : "np-check"}><input type="checkbox" checked={allow[k] && !lockAllow[k]} disabled={lockAllow[k]} onChange={(e) => setAllow((a) => ({ ...a, [k]: e.target.checked }))} />{label}</label>
                     ))}
                   </div>
                   <div className="np-switchrow">
@@ -637,7 +654,9 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
                   {promo.on && (
                     <div className="np-checks">
                       <label className="np-check"><input type="checkbox" checked={promo.own} onChange={(e) => setPromo((p) => ({ ...p, own: e.target.checked }))} />{t("Your brand")}<small>{t("You are promoting yourself or your own business.")}</small></label>
-                      <label className="np-check"><input type="checkbox" checked={promo.branded} onChange={(e) => { setPromo((p) => ({ ...p, branded: e.target.checked })); if (e.target.checked && privacy === "SELF_ONLY") setPrivacy(""); }} />{t("Branded content")}<small>{t("You are promoting another brand or a third party.")}</small></label>
+                      <label className={brandedBlocked ? "np-check off" : "np-check"} title={brandedBlocked ? t("Branded content visibility cannot be set to private.") : undefined}><input type="checkbox" checked={promo.branded} disabled={brandedBlocked} onChange={(e) => setPromo((p) => ({ ...p, branded: e.target.checked }))} />{t("Branded content")}<small>{t("You are promoting another brand or a third party.")}</small></label>
+                      {brandedBlocked && <p className="np-muted" style={{ margin: 0 }}>{t("Branded content visibility cannot be set to private.")}</p>}
+                      {promoLabel ? <p className="np-note">{promoLabel}</p> : <p className="np-muted" style={{ margin: 0 }}>{t("You need to indicate if your content promotes yourself, a third party, or both.")}</p>}
                     </div>
                   )}
                   <div className="np-switchrow">
@@ -760,8 +779,16 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
             </div>
           )}
           {sendError && <div className="pb-fix" role="alert"><b>{t("Not sent")}</b><span style={{ padding: "4px 0" }}>{sendError}</span></div>}
-          {ttKey && mode === "direct" && when !== "draft" && <p className="np-consent">{consentLine(promo.on, promo.branded, t)}</p>}
-          <button type="submit" className="np-btn np-submit" disabled={!!busy}>
+          {/* TikTok's declaration, with its two policy names as links to TikTok's pages, as in TikTok's guidelines. */}
+          {ttKey && mode === "direct" && when !== "draft" && (
+            <p className="np-consent">
+              {t("By posting, you agree to TikTok's")}{" "}
+              {promo.on && promo.branded && <><a href="https://www.tiktok.com/legal/page/global/bc-policy/en" target="_blank" rel="noreferrer">{t("Branded Content Policy")}</a>{" "}{t("and")}{" "}</>}
+              <a href="https://www.tiktok.com/legal/page/global/music-usage-confirmation/en" target="_blank" rel="noreferrer">{t("Music Usage Confirmation")}</a>
+            </p>
+          )}
+          <span className="np-submit-wrap" title={promoIncomplete ? t("You need to indicate if your content promotes yourself, a third party, or both.") : undefined}>
+          <button type="submit" className="np-btn np-submit" disabled={!!busy || promoIncomplete}>
             {/* Each part of the button in her language, joined by dots as in English. */}
             {busy || editing
               ? busy || [t("Save changes"), when === "draft" ? "" : t("{n} credits", { n: cost })].filter(Boolean).join(" · ")
@@ -769,6 +796,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
                 ? when === "draft" ? t("Pick a Channel") : t("Pick a Channel · {n} credits each", { n: POST_CREDITS })
                 : [when === "draft" ? t("Save draft") : when === "now" ? t("Post now") : t("Schedule"), keys.length === 1 ? t("{n} channel", { n: 1 }) : t("{n} channels", { n: keys.length }), when === "draft" ? "" : t("{n} credits", { n: cost })].filter(Boolean).join(" · ")}
           </button>
+          </span>
           <p className="pb-cost">
             <Icon name="wallet" size={14} />
             <span>{rich(t("{n} credits"), { n: <b>{credits.toLocaleString("en-MY")}</b> })}</span>

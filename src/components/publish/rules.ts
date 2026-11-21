@@ -62,16 +62,12 @@ const tidy = (s: string) => s.split("\n").map((l) => l.replace(/[ \t]{2,}/g, " "
 
 /**
  * The caption Rezekii suggests for one app, written from the main caption: a link goes out together with its call to action
- * (both belong in the first comment), hashtags are cut to the app's cap and Threads gets none. TikTok gets the hook and its
- * hashtags.
+ * (both belong in the first comment), hashtags are cut to the app's cap and Threads gets none. TikTok gets the caption as
+ * typed too: TikTok's guidelines don't let apps change it (owner, 6 Nov 2026, as on rezekii.com: it kept only the first sentence).
  */
 export function autoCaption(ch: Channel, main: string): string {
   const text = main.replace(CTA_WITH_LINK, "");
   if (!tidy(text)) return "";
-  if (ch === "tiktok") {
-    const hook = (tidy(text.replace(TAG, "$1")).match(/^[^.!?\n]*[.!?]?/) ?? [""])[0].trim();
-    return [hook, hashtags(main).slice(0, HASHTAG_MAX.tiktok).join(" ")].filter(Boolean).join(" ");
-  }
   let n = 0;
   return tidy(text.replace(TAG, (m, before: string) => (++n <= HASHTAG_MAX[ch] ? m : before)));
 }

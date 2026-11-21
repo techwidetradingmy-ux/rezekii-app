@@ -70,7 +70,6 @@ export const APP_PUBLISH: Record<string, string> = {
   // New Post: TikTok's settings
   "TikTok Settings": "TikTok 设置",
   "Send to TikTok Drafts": "发送到 TikTok 草稿",
-  "Posting as {name}": "发布身份：{name}",
   "Turned off for this account in TikTok.": "此账户已在 TikTok 中关闭。",
 
   // New Post: Facebook, Instagram and Threads settings
@@ -345,4 +344,9 @@ export const APP_PUBLISH: Record<string, string> = {
   "Your numbers appear after the first daily reading, or press Refresh Now.": "首次每日读取后就会显示数据，也可以点“立即刷新”。",
   "7 Days": "7 天",
   "28 Days": "28 天",
+  // TikTok's declaration, with its two policy names as links.
+  "By posting, you agree to TikTok's": "发布即表示你同意 TikTok 的",
+  "Branded Content Policy": "品牌内容政策",
+  "and": "和",
+  "Music Usage Confirmation": "音乐使用确认",
 };

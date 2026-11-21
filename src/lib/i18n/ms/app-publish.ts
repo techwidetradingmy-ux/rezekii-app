@@ -101,7 +101,6 @@ export const APP_PUBLISH: Record<string, string> = {
   "Where to send it": "Ke mana untuk dihantar",
   "Post to TikTok": "Hantar ke TikTok",
   "Send to TikTok Drafts": "Hantar ke Draf TikTok",
-  "Posting as {name}": "Menghantar sebagai {name}",
   "Who can view this post": "Siapa boleh menonton hantaran ini",
   "Choose who can view": "Pilih siapa boleh menonton",
   "Friends (followers you follow back)": "Rakan (pengikut yang anda ikut balik)",
@@ -459,4 +458,15 @@ export const APP_PUBLISH: Record<string, string> = {
   "Your numbers appear after the first daily reading, or press Refresh Now.": "Angka anda akan muncul selepas bacaan harian pertama, atau tekan Muat Semula Sekarang.",
   "7 Days": "7 Hari",
   "28 Days": "28 Hari",
+  // TikTok's post-screen items (its Direct Post audit, as on rezekii.com).
+  "Your video will be labeled \"Paid partnership\".": "Video anda akan dilabel \"Perkongsian berbayar\".",
+  "Your video will be labeled \"Promotional content\".": "Video anda akan dilabel \"Kandungan promosi\".",
+  "After it's posted, TikTok can take a few minutes to process the video before it shows on your profile.": "Selepas disiarkan, TikTok mungkin mengambil beberapa minit untuk memproses video sebelum ia muncul di profil anda.",
+  "It will land in your TikTok inbox, where you can finish and post it in the TikTok app.": "Ia akan masuk ke peti masuk TikTok anda, di mana anda boleh siapkan dan siarkan dalam aplikasi TikTok.",
+  "Posting to": "Menyiarkan ke",
+  "Checking your TikTok account…": "Menyemak akaun TikTok anda…",
+  "By posting, you agree to TikTok's": "Dengan menyiarkan, anda bersetuju dengan",
+  "Branded Content Policy": "Dasar Kandungan Berjenama TikTok",
+  "and": "dan",
+  "Music Usage Confirmation": "Pengesahan Penggunaan Muzik TikTok",
 };
