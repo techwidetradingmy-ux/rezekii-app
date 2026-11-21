@@ -110,7 +110,7 @@ function Rich({ text, links, tags, at, handles = true }: { text: string; links?:
 }
 
 export type Who = { name: string; username: string; avatar: string | null };
-export type PreviewProps = { channel: Channel; caption: string; comment: string; commentImage?: string | null; video: string | null; who: Who; fbView: "reels" | "feed"; theme: "light" | "dark"; topic?: string; collaborators?: string[] };
+export type PreviewProps = { channel: Channel; caption: string; comment: string; commentImage?: string | null; video: string | null; photos?: string[]; who: Who; fbView: "reels" | "feed"; theme: "light" | "dark"; topic?: string; collaborators?: string[] };
 
 /** Starts muted (browsers only autoplay muted video); the speaker button turns the sound on and off. */
 function Video({ src, s = 16 }: { src: string | null; s?: number }) {
@@ -124,6 +124,26 @@ function Video({ src, s = 16 }: { src: string | null; s?: number }) {
     </>
   );
 }
+/** A photo post: one photo at a time, with dots, and arrows to swipe through a carousel as in the app. */
+function Photos({ photos }: { photos: string[] }) {
+  const t = useT();
+  const [i, setI] = useState(0);
+  const at = Math.min(i, photos.length - 1);
+  return (
+    <span className="pv-pics">
+      <Pic src={photos[at]} />
+      {photos.length > 1 && (
+        <>
+          {at > 0 && <button type="button" className="pv-pic-nav prev" onClick={() => setI(at - 1)} aria-label={t("Previous photo")}>‹</button>}
+          {at < photos.length - 1 && <button type="button" className="pv-pic-nav next" onClick={() => setI(at + 1)} aria-label={t("Next photo")}>›</button>}
+          <span className="pv-pic-dots" aria-label={t("Photo {n} of {total}", { n: at + 1, total: photos.length })}>{photos.map((_, k) => <i key={k} className={k === at ? "on" : ""} />)}</span>
+        </>
+      )}
+    </span>
+  );
+}
+/** The post's video, or its photos for a photo post. */
+const Media = ({ video, photos, s }: { video: string | null; photos?: string[]; s?: number }) => (photos?.length ? <Photos photos={photos} /> : <Video src={video} s={s} />);
 const Pic = ({ src, className, style }: { src: string | null; className?: string; style?: CSSProperties }) => (
   // eslint-disable-next-line @next/next/no-img-element
   <img className={className} src={src ?? undefined} alt="" style={style} />
@@ -161,13 +181,13 @@ function CommentSheet({ app, comment, image, who, onClose }: { app: "instagram" 
   );
 }
 
-function TikTok({ caption, video, who }: PreviewProps) {
+function TikTok({ caption, video, photos, who }: PreviewProps) {
   const [open, setOpen] = useState(false);
   const c = clamp(caption, `400 ${14.5 * PT}px ${tiktokSans.style.fontFamily}`, 280 - 98 * PT, 2, " more");
   return (
     <div className={`pv-scr pv-tt ${tiktokSans.variable}`}>
       <StatusBar color="#fff" />
-      <div className="pv-vid" style={{ bottom: "calc(83 * var(--p))" }}><Video src={video} /></div>
+      <div className="pv-vid" style={{ bottom: "calc(83 * var(--p))" }}><Media video={video} photos={photos} /></div>
       <div className="pv-tt-top pv-sh"><span className="pv-tt-live"><Ic n="live" s={27} /></span><div className="pv-tt-tabs"><span>Following</span><b>For You</b></div><span className="pv-tt-srch"><Ic n="search" s={25} /></span></div>
       <div className="pv-rail pv-sh" style={{ "--rr": 25 } as CSSProperties}>
         <span className="it" style={{ top: "45%" }}><span className="pv-tt-av"><Pic src={who.avatar} /><i>+</i></span></span>
@@ -190,14 +210,14 @@ function TikTok({ caption, video, who }: PreviewProps) {
   );
 }
 
-function Instagram({ caption, comment, video, who, collaborators }: PreviewProps) {
+function Instagram({ caption, comment, video, photos, who, collaborators }: PreviewProps) {
   const [open, setOpen] = useState(false);
   const [sheet, setSheet] = useState(false);
   const c = clamp(caption, `400 ${14 * PT}px ${SYS}`, 280 - 78 * PT, 1, "… more");
   return (
     <div className="pv-scr">
       <StatusBar color="#fff" />
-      <div className="pv-vid" style={{ bottom: "calc(74 * var(--p))" }}><Video src={video} /></div>
+      <div className="pv-vid" style={{ bottom: "calc(74 * var(--p))" }}><Media video={video} photos={photos} /></div>
       <div className="pv-ig-top pv-sh"><span className="plus"><Ic n="plus" s={26} /></span><b>Reels</b><span>Friends</span></div>
       <div className="pv-rail pv-sh" style={{ "--rr": 22 } as CSSProperties}>
         <span className="it" style={{ top: "52.4%" }}><Ic n="heartO" s={28} /><span>0</span></span>
@@ -220,7 +240,7 @@ function Instagram({ caption, comment, video, who, collaborators }: PreviewProps
   );
 }
 
-function Facebook({ caption, comment, commentImage, video, who, fbView, theme }: PreviewProps) {
+function Facebook({ caption, comment, commentImage, video, photos, who, fbView, theme }: PreviewProps) {
   const [open, setOpen] = useState(false);
   const [sheet, setSheet] = useState(false);
   if (fbView === "reels") {
@@ -228,7 +248,7 @@ function Facebook({ caption, comment, commentImage, video, who, fbView, theme }:
     return (
       <div className="pv-scr">
         <StatusBar color="#fff" />
-        <div className="pv-vid" style={{ bottom: "calc(76 * var(--p))" }}><Video src={video} /></div>
+        <div className="pv-vid" style={{ bottom: "calc(76 * var(--p))" }}><Media video={video} photos={photos} /></div>
         <div className="pv-fbr-top pv-sh"><Ic n="menu" /><span>Reels</span><Ic n="plus" /><Ic n="search" s={23} /></div>
         <div className="pv-rail pv-sh" style={{ "--rr": 21 } as CSSProperties}>
           <span className="it" style={{ top: "64.6%" }}><Ic n="thumb" s={28} /><span>0</span></span>
@@ -256,7 +276,7 @@ function Facebook({ caption, comment, commentImage, video, who, fbView, theme }:
       <div className="pv-fb-card">
         <div className="pv-fb-ph"><Av who={who} size={40} /><span className="n"><b>{who.name}</b><small>Just now · <Ic n="globe" s={12} /></small></span><span className="x"><Ic n="dots" s={20} /><Ic n="x" s={20} /></span></div>
         <div className="pv-fb-tx">{open ? <Rich text={caption} links tags="link" at="link" handles={false} /> : <><Rich text={c.text} links tags="link" at="link" handles={false} />{c.cut && <More label={<span className="sm">… See more</span>} onClick={() => setOpen(true)} />}</>}</div>
-        <div className="pv-fb-vid"><Video src={video} /></div>
+        <div className="pv-fb-vid"><Media video={video} photos={photos} /></div>
         <div className="pv-fb-act"><span><Ic n="thumb" s={19} /></span><span><Ic n="cmtO" s={18} /></span><span><Ic n="shareO" s={18} /></span></div>
         {(comment || commentImage) && <div className="pv-fb-cm"><Av who={who} size={32} /><div><span className="bub"><b>{who.name}</b>{comment && <span><Rich text={comment} links at="link" /></span>}</span>{commentImage && <Pic className="pv-cm-img" src={commentImage} />}<small>Just now · Like · Reply</small></div></div>}
       </div>
@@ -266,7 +286,7 @@ function Facebook({ caption, comment, commentImage, video, who, fbView, theme }:
   );
 }
 
-function Threads({ caption, comment, commentImage, video, who, theme, topic: topicIn }: PreviewProps) {
+function Threads({ caption, comment, commentImage, video, photos, who, theme, topic: topicIn }: PreviewProps) {
   const reply = !!comment || !!commentImage;
   const dark = theme === "dark";
   const topic = topicIn ?? hashtags(caption)[0]?.slice(1);
@@ -288,7 +308,7 @@ function Threads({ caption, comment, commentImage, video, who, theme, topic: top
         <div>
           <div className="pv-th-h"><b>{who.username}</b>{topic && <span className="topic">› {topic}</span>}<small>1m</small><span className="dots"><Ic n="dots" s={18} /></span></div>
           <div className="pv-th-tx"><Rich text={head} links at="link" />{tail && <span className="cut">{tail}</span>}</div>
-          <div className="pv-th-media"><Video src={video} s={14} /></div>
+          <div className="pv-th-media"><Media video={video} photos={photos} s={14} /></div>
           <div className="pv-th-act"><span><Ic n="heartO" s={20} /></span><span><Ic n="cmtO" s={19} /></span><span><Ic n="repost" s={19} /></span><span><Ic n="plane" s={19} /></span></div>
         </div>
         {reply && (

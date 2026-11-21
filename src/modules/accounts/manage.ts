@@ -4,6 +4,7 @@ import { translate } from "../../lib/i18n/translate.ts";
 import { revokeTikTokToken } from "../../integrations/tiktok/login.ts";
 import { decryptToken } from "../creator-accounts/token-crypto.ts";
 import { deleteUpload } from "../posting/media.ts";
+import { filesOf } from "../posting/photos.ts";
 import { accessFor, inviteNext, type AccessStatus } from "../creator-accounts/access.ts";
 import { myTapRows } from "../tap/mytap.ts";
 import type { AppUser } from "./users.ts";
@@ -115,8 +116,8 @@ export async function disconnectTikTokAccount(userId: string, openId: string): P
  */
 export async function deleteAccount(user: AppUser): Promise<void> {
   await revokeAll(user.id);
-  const uploads = (await (await supabaseRest(`posts?user_id=eq.${user.id}&storage_path=not.is.null&select=storage_path`)).json()) as { storage_path: string }[];
-  for (const u of uploads) await deleteUpload(u.storage_path).catch((err) => console.error("[account] upload delete failed", err instanceof Error ? err.message : err));
+  const uploads = (await (await supabaseRest(`posts?user_id=eq.${user.id}&storage_path=not.is.null&select=storage_path,photo_paths`)).json()) as { storage_path: string; photo_paths: string[] | null }[];
+  for (const path of uploads.flatMap(filesOf)) await deleteUpload(path).catch((err) => console.error("[account] upload delete failed", err instanceof Error ? err.message : err));
   await supabaseRest(`affiliate_connections?user_id=eq.${user.id}`, { method: "DELETE", headers: { prefer: "return=minimal" } });
   if (user.tiktok_username) await supabaseRest(`affiliate_connections?username=eq.${encodeURIComponent(user.tiktok_username)}`, { method: "DELETE", headers: { prefer: "return=minimal" } });
   await supabaseRest(`app_users?id=eq.${user.id}`, { method: "DELETE", headers: { prefer: "return=minimal" } });

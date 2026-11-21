@@ -41,6 +41,16 @@ export async function createThreadsVideo(userId: string, token: string, videoUrl
   if (o.topic) form.topic_tag = o.topic;
   return (await metaFetch<{ id: string }>(TH(`${userId}/threads`), form)).id;
 }
+/** A photo post container: one photo (IMAGE), or a carousel of 2 to 20 (each photo its own item container first). */
+export async function createThreadsPhotos(userId: string, token: string, photoUrls: string[], text: string, o: { replies?: string; topic?: string } = {}): Promise<string> {
+  const extra: Record<string, string> = {};
+  if (o.replies && o.replies !== "everyone") extra.reply_control = o.replies;
+  if (o.topic) extra.topic_tag = o.topic;
+  if (photoUrls.length === 1) return (await metaFetch<{ id: string }>(TH(`${userId}/threads`), { media_type: "IMAGE", image_url: photoUrls[0], text, ...extra, access_token: token })).id;
+  const children: string[] = [];
+  for (const url of photoUrls) children.push((await metaFetch<{ id: string }>(TH(`${userId}/threads`), { media_type: "IMAGE", image_url: url, is_carousel_item: "true", access_token: token })).id);
+  return (await metaFetch<{ id: string }>(TH(`${userId}/threads`), { media_type: "CAROUSEL", children: children.join(","), text, ...extra, access_token: token })).id;
+}
 /** The first comment: the account's own reply under its post, with an image when there is one. */
 export async function createThreadsReply(userId: string, token: string, text: string, replyToId: string, imageUrl?: string | null): Promise<string> {
   const form: Record<string, string> = imageUrl ? { media_type: "IMAGE", image_url: imageUrl } : { media_type: "TEXT" };

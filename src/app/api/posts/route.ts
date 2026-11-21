@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { cleanPhotoPaths } from "@/modules/posting/photos.ts";
 import { currentUser } from "@/app/current-user";
 import { queryCreatorInfo, type PrivacyLevel } from "@/integrations/tiktok/posting.ts";
 import { postingHours } from "@/modules/posting/times.ts";
@@ -14,7 +15,7 @@ export async function GET() {
   return NextResponse.json({ posts: await listPosts(user.id) });
 }
 
-type Body = Partial<PostChoice> & { source?: "upload" | "link"; storagePath?: string; linkUrl?: string; when?: string; consent?: boolean; account?: string; staged?: boolean };
+type Body = Partial<PostChoice> & { source?: "upload" | "link"; storagePath?: string; photoPaths?: unknown; linkUrl?: string; when?: string; consent?: boolean; account?: string; staged?: boolean };
 const bad = (error: string | string[]) => NextResponse.json({ error }, { status: 400 });
 
 /**
@@ -29,8 +30,11 @@ export async function POST(req: NextRequest) {
   const openId = await userTikTokOpenId(user.id, b.account);
   if (!openId) return NextResponse.json({ error: b.account ? "That TikTok account isn't connected to your Rezekii account." : "Continue with TikTok to post." }, { status: 409 });
 
-  if (b.source === "upload" ? !b.storagePath?.startsWith(`${user.id}/`) : b.source === "link" ? !/^https:\/\/\S+$/.test(b.linkUrl ?? "") : true)
-    return bad("Add a video: upload one or paste an https link.");
+  // A photo post sends its photos in order (1 to 35); a video post one upload or a link.
+  const photos = b.photoPaths === undefined ? null : cleanPhotoPaths(user.id, b.photoPaths);
+  if (b.photoPaths !== undefined && !photos) return bad("The photos weren't uploaded. Add them again.");
+  if (!photos && (b.source === "upload" ? !b.storagePath?.startsWith(`${user.id}/`) : b.source === "link" ? !/^https:\/\/\S+$/.test(b.linkUrl ?? "") : true))
+    return bad("Add a video or photos: upload them or paste a video link.");
   const choice: PostChoice = {
     mode: b.mode === "inbox" ? "inbox" : "direct",
     caption: String(b.caption ?? ""),
@@ -42,7 +46,7 @@ export async function POST(req: NextRequest) {
     brandOrganic: !!b.brandOrganic,
     brandedContent: !!b.brandedContent,
     isAigc: !!b.isAigc,
-    durationSec: typeof b.durationSec === "number" ? b.durationSec : null,
+    durationSec: photos || typeof b.durationSec !== "number" ? null : b.durationSec,
   };
   const when = b.when ?? "draft";
   let scheduledAt: Date | null = null;
@@ -74,9 +78,10 @@ export async function POST(req: NextRequest) {
     user_id: user.id,
     tiktok_open_id: openId,
     mode: choice.mode,
-    source: b.source as "upload" | "link",
-    storage_path: b.source === "upload" ? b.storagePath : null,
-    link_url: b.source === "link" ? b.linkUrl : null,
+    source: photos ? "upload" : (b.source as "upload" | "link"),
+    storage_path: photos ? photos[0] : b.source === "upload" ? b.storagePath : null,
+    photo_paths: photos,
+    link_url: !photos && b.source === "link" ? b.linkUrl : null,
     duration_sec: choice.durationSec ?? null,
     caption: choice.caption,
     privacy_level: choice.privacyLevel ?? null,

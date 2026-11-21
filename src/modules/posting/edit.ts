@@ -3,6 +3,7 @@ import { loadRecipe } from "../social/recipes.ts";
 import type { Recipe } from "../social/recipe.ts";
 import { cleanUpGroup, signedMediaUrl, type SocialPostRow } from "../social/store.ts";
 import { deleteUpload } from "./media.ts";
+import { filesOf } from "./photos.ts";
 import { getUserPost, type PostRow } from "./store.ts";
 
 /**
@@ -34,8 +35,9 @@ export type PostDetails = {
   key: string;
   at: string | null;
   editable: boolean;
-  /** `url` plays the video (a stored upload is gone once TikTok has posted it). */
+  /** `url` plays the video (a stored upload is gone once TikTok has posted it); a photo post has `photos` instead. */
   video: { source: "upload" | "link"; url: string | null; durationSec: number | null };
+  photos: (string | null)[] | null;
   tiktok: null | {
     id: string; account: string | null; status: PostRow["status"]; mode: PostRow["mode"]; caption: string; privacy: string | null;
     allowComments: boolean; allowDuet: boolean; allowStitch: boolean; brandOrganic: boolean; brandedContent: boolean; isAigc: boolean;
@@ -49,6 +51,8 @@ export async function postDetails(userId: string, key: string): Promise<PostDeta
   if (!p) return null;
   const first = p.channels[0];
   const source = p.tiktok?.source ?? first?.source ?? "upload";
+  const photoPaths = p.tiktok?.photo_paths ?? first?.photo_paths ?? null;
+  const photos = photoPaths ? await Promise.all(photoPaths.map((path) => signed(path))) : null;
   const [url, account, ...images] = await Promise.all([
     source === "link" ? Promise.resolve(p.tiktok?.link_url ?? first?.link_url ?? null) : signed(p.tiktok?.storage_path ?? first?.storage_path),
     p.tiktok ? supabaseRest(`tiktok_connections?open_id=eq.${encodeURIComponent(p.tiktok.tiktok_open_id)}&select=username&limit=1`).then(async (r) => ((await r.json()) as { username: string | null }[])[0]?.username ?? null) : Promise.resolve(null),
@@ -60,6 +64,7 @@ export async function postDetails(userId: string, key: string): Promise<PostDeta
     at: t?.status === "posted" ? t.posted_at : (t?.scheduled_at ?? first?.scheduled_at ?? first?.posted_at ?? null),
     editable: editable(p),
     video: { source, url, durationSec: t?.duration_sec ?? first?.duration_sec ?? null },
+    photos,
     tiktok: t && {
       id: t.id, account: account ? `@${account}` : null, status: t.status, mode: t.mode, caption: t.caption, privacy: t.privacy_level,
       allowComments: t.allow_comments, allowDuet: t.allow_duet, allowStitch: t.allow_stitch, brandOrganic: t.brand_organic, brandedContent: t.branded_content, isAigc: t.is_aigc,
@@ -73,6 +78,8 @@ export type EditPost = {
   /** The scheduled time, or null for a draft. */
   at: string | null;
   video: { source: "upload" | "link"; storagePath: string | null; linkUrl: string | null; url: string | null; durationSec: number | null };
+  /** A photo post's photos in order, each with a link to show it; null for a video post. */
+  photos: { path: string; url: string | null }[] | null;
   commentImage: { path: string; url: string | null } | null;
   tiktok: null | { account: string; mode: PostRow["mode"]; caption: string; privacy: string | null; allowComments: boolean; allowDuet: boolean; allowStitch: boolean; brandOrganic: boolean; brandedContent: boolean; isAigc: boolean };
   recipe: Recipe | null;
@@ -86,11 +93,13 @@ export async function loadEdit(userId: string, key: string): Promise<EditPost | 
   const source = t?.source ?? first?.source ?? "upload";
   const storagePath = source === "upload" ? (t?.storage_path ?? first?.storage_path ?? null) : null;
   const imagePath = p.channels.find((c) => c.comment_image_path)?.comment_image_path ?? null;
-  const [url, imageUrl, saved] = await Promise.all([signed(storagePath), signed(imagePath), loadRecipe(userId, key).catch(() => null)]);
+  const photoPaths = t?.photo_paths ?? first?.photo_paths ?? null;
+  const [url, imageUrl, saved, photoUrls] = await Promise.all([signed(storagePath), signed(imagePath), loadRecipe(userId, key).catch(() => null), Promise.all((photoPaths ?? []).map((path) => signed(path)))]);
   return {
     key,
     at: t ? (t.status === "scheduled" ? t.scheduled_at : null) : first.status === "scheduled" ? first.scheduled_at : null,
     video: { source, storagePath, linkUrl: source === "link" ? (t?.link_url ?? first?.link_url ?? null) : null, url, durationSec: t?.duration_sec ?? first?.duration_sec ?? null },
+    photos: photoPaths ? photoPaths.map((path, i) => ({ path, url: photoUrls[i] })) : null,
     commentImage: imagePath ? { path: imagePath, url: imageUrl } : null,
     tiktok: t && { account: t.tiktok_open_id, mode: t.mode, caption: t.caption, privacy: t.privacy_level, allowComments: t.allow_comments, allowDuet: t.allow_duet, allowStitch: t.allow_stitch, brandOrganic: t.brand_organic, brandedContent: t.branded_content, isAigc: t.is_aigc },
     recipe: saved?.recipe ?? null,
@@ -99,10 +108,11 @@ export async function loadEdit(userId: string, key: string): Promise<EditPost | 
 
 /** Whether a stored file is used by a post that isn't cancelled (so an edit copies it rather than sharing it). */
 export async function fileInUse(path: string): Promise<boolean> {
-  const either = encodeURIComponent(`(storage_path.eq."${path}",comment_image_path.eq."${path}")`);
+  const either = encodeURIComponent(`(storage_path.eq."${path}",comment_image_path.eq."${path}",photo_paths.cs.{"${path}"})`);
+  const own = encodeURIComponent(`(storage_path.eq."${path}",photo_paths.cs.{"${path}"})`);
   const [a, b] = await Promise.all([
     supabaseRest(`social_posts?or=${either}&status=neq.cancelled&select=id&limit=1`).then((r) => r.json() as Promise<unknown[]>),
-    supabaseRest(`posts?storage_path=eq.${encodeURIComponent(path)}&status=neq.cancelled&select=id&limit=1`).then((r) => r.json() as Promise<unknown[]>),
+    supabaseRest(`posts?or=${own}&status=neq.cancelled&select=id&limit=1`).then((r) => r.json() as Promise<unknown[]>),
   ]);
   return a.length + b.length > 0;
 }
@@ -149,9 +159,8 @@ export async function swapPost(userId: string, oldKey: string, newKey: string): 
   if (next.tiktok) await patch(`posts?id=eq.${next.tiktok.id}&status=eq.draft&scheduled_at=not.is.null`, { status: "scheduled" });
   if (next.group) await patch(`social_posts?group_id=eq.${next.group}&status=eq.draft&scheduled_at=not.is.null`, { status: "scheduled" });
 
-  // The old post's stored files go when nothing uses them any more (a kept video is shared or was copied).
+  // The old post's stored files go when nothing uses them any more (a kept video or photo is shared or was copied).
   if (old.group) await cleanUpGroup(old.group);
-  const oldVideo = old.tiktok?.storage_path;
-  if (oldVideo && !(await fileInUse(oldVideo))) await deleteUpload(oldVideo).catch(() => {});
+  for (const path of old.tiktok ? filesOf(old.tiktok) : []) if (!(await fileInUse(path))) await deleteUpload(path).catch(() => {});
   return { ok: true };
 }

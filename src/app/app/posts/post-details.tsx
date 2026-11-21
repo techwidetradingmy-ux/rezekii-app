@@ -53,9 +53,17 @@ export function PostDetails({ postKey }: { postKey: string }) {
   return (
     <div className="pd">
       <div className="pd-top">
-        {d.video.url ? <video className="pd-video" src={d.video.url} controls playsInline preload="metadata" aria-label={t("The post's video")} /> : <p className="np-muted">{t("The video isn't kept after it goes out.")}</p>}
+        {d.photos ? (
+          d.photos.some(Boolean) ? (
+            <div className="pd-photos" aria-label={t("The post's photos")}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {d.photos.map((url, i) => (url ? <img key={i} src={url} alt={t("Photo {n}", { n: i + 1 })} /> : null))}
+            </div>
+          ) : <p className="np-muted">{t("The photos aren't kept after they go out.")}</p>
+        ) : d.video.url ? <video className="pd-video" src={d.video.url} controls playsInline preload="metadata" aria-label={t("The post's video")} /> : <p className="np-muted">{t("The video isn't kept after it goes out.")}</p>}
         <dl className="pd-list">
           {line(t("When"), when)}
+          {d.photos ? line(t("Photos"), String(d.photos.length)) : null}
           {d.video.durationSec ? line(t("Length"), `${Math.floor(d.video.durationSec / 60)}:${String(d.video.durationSec % 60).padStart(2, "0")}`) : null}
         </dl>
       </div>

@@ -13,6 +13,8 @@ export type PostRow = {
   mode: "direct" | "inbox";
   source: "upload" | "link";
   storage_path: string | null;
+  /** A photo post's photos in order (storage_path is the first); null for a video post (photos.ts). */
+  photo_paths: string[] | null;
   link_url: string | null;
   video_size: number | null;
   duration_sec: number | null;

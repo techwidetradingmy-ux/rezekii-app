@@ -27,7 +27,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
   if (action === "retry") {
     if (post.status !== "failed") return NextResponse.json({ error: "Only a failed post can be tried again." }, { status: 409 });
-    if (post.storage_path && !(await videoStillStored(post.storage_path))) return NextResponse.json({ error: "The video for this post isn't stored any more. Make a new post with it." }, { status: 409 });
+    if (post.storage_path && !(await videoStillStored(post.storage_path))) return NextResponse.json({ error: post.photo_paths?.length ? "The photos for this post aren't stored any more. Make a new post with them." : "The video for this post isn't stored any more. Make a new post with it." }, { status: 409 });
     await updateSocialPost(id, { status: "scheduled", next_attempt_at: new Date().toISOString(), attempts: 0, last_error: null, container_id: null });
     return NextResponse.json({ ok: true });
   }

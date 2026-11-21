@@ -14,7 +14,8 @@ import { KEYFRAME_GAP_MAX, readKeyframes, type KeyframeInfo } from "@/modules/po
 import type { EditPost } from "@/modules/posting/edit.ts";
 import type { Recipe } from "@/modules/social/recipe.ts";
 import { localInput } from "./new-post-form";
-import { CAPTION_MAX, COMMENT_MAX, DEFAULT_PLACEMENT, NAMES, parseHashtags, withHashtags, autoCaption, autoComment, channelProblems, channelWarnings, lengthFor, links, postedCaption, type Channel, type Placement, type Platform } from "@/modules/social/rules.ts";
+import { CAPTION_MAX, COMMENT_MAX, DEFAULT_PLACEMENT, NAMES, PHOTO_MAX, parseHashtags, withHashtags, autoCaption, autoComment, channelProblems, channelWarnings, instagramMisfits, lengthFor, links, photoProblems, postedCaption, type Channel, type Placement, type Platform } from "@/modules/social/rules.ts";
+import { PHOTOS_MAX } from "@/modules/posting/photos.ts";
 import { BrandIcon } from "../brand-icons";
 import { PhonePreview, type Who } from "./phone-previews";
 import "./composer.css";
@@ -38,6 +39,31 @@ const CONNECT_MSG: Record<string, (app: string, t: T) => string> = {
   failed: (app, t) => t("{app} didn't connect. Try again.", { app }),
 };
 const SEARCH_ICON = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>;
+
+/** One photo of a photo post: a new one (made a JPG here) or one an edit kept (`path`), with its size for Instagram's check. */
+type Photo = { key: string; file?: File; path?: string; url: string; w: number; h: number };
+
+/**
+ * Turns a picked image into the JPG every app takes: at most 1080 × 1920 (TikTok's 1080p), on white where it was see-through.
+ * Fails for images the browser can't read (for example HEIC).
+ */
+async function toJpeg(file: File): Promise<{ file: File; w: number; h: number }> {
+  const bmp = await createImageBitmap(file);
+  const scale = Math.min(1, 1080 / bmp.width, 1920 / bmp.height);
+  const w = Math.max(1, Math.round(bmp.width * scale)), h = Math.max(1, Math.round(bmp.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("no canvas");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, w, h);
+  ctx.drawImage(bmp, 0, 0, w, h);
+  bmp.close();
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.9));
+  if (!blob) throw new Error("no jpeg");
+  return { file: new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" }), w, h };
+}
 
 /** One channel as New post shows it: a TikTok account or a connected Page/account/profile. */
 type Ch = { key: string; app: Channel; name: string; sub: string; avatar: string | null; status: "active" | "reconnect"; account?: PublicAccount };
@@ -90,10 +116,26 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
   const [place, setPlace] = useState<Partial<Record<Channel, Placement>>>(r0?.place ?? {});
   const [tab, setTab] = useState<"main" | Channel>("main");
   const e0 = edit?.tiktok;
-  const [source, setSource] = useState<"upload" | "link">(edit?.video.source ?? "upload");
+  const [source, setSource] = useState<"upload" | "link">(edit?.photos ? "upload" : (edit?.video.source ?? "upload"));
   const [file, setFile] = useState<File | null>(null);
-  // An edit keeps the post's video and comment image until others are picked or the image is removed.
-  const [kept, setKept] = useState(edit?.video ?? null);
+  // An edit keeps the post's video (or photos) and comment image until others are picked or the image is removed.
+  const [kept, setKept] = useState(edit?.photos ? null : (edit?.video ?? null));
+  // A photo post (owner, 21 Nov 2026): photos instead of a video, in order; the first is the cover.
+  const [photos, setPhotos] = useState<Photo[]>(() => (edit?.photos ?? []).map((p) => ({ key: p.path, path: p.path, url: p.url ?? "", w: 0, h: 0 })));
+  const [mediaError, setMediaError] = useState("");
+  const isPhotos = photos.length > 0;
+  // Kept photos come without their size: read it once they load (Instagram's shape check needs it).
+  useEffect(() => {
+    const unsized = photos.filter((p) => !p.w && p.url);
+    if (!unsized.length) return;
+    let live = true;
+    for (const p of unsized) {
+      const img = new Image();
+      img.onload = () => live && setPhotos((list) => list.map((x) => (x.key === p.key ? { ...x, w: img.naturalWidth, h: img.naturalHeight } : x)));
+      img.src = p.url;
+    }
+    return () => { live = false; };
+  }, [photos]);
   const [keptImage, setKeptImage] = useState(edit?.commentImage ?? null);
   const [commentImage, setCommentImage] = useState<File | null>(null);
   // How far apart the uploaded video's full frames are (C7c): one in the whole clip breaks on Facebook and Threads.
@@ -132,7 +174,7 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
   const [busy, setBusy] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
   const [done, setDone] = useState<{ summary: string; at: string | null; draft: boolean } | null>(null);
-  const [toast, setToast] = useState(() => (edit ? t("Editing your scheduled post. Saving replaces it, as long as it hasn't started sending.") : connect && CONNECT_MSG[connect.result] ? CONNECT_MSG[connect.result](NAMES[connect.channel as Platform] ?? t("The channel"), t) : reuse ? (reuse.at ? t("Filled in from your post of {date}. Pick a video, then post.", { date: new Date(reuse.at).toLocaleDateString(dateLocale(lang), { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" }) }) : t("Filled in from your post. Pick a video, then post.")) : ""));
+  const [toast, setToast] = useState(() => (edit ? t("Editing your scheduled post. Saving replaces it, as long as it hasn't started sending.") : connect && CONNECT_MSG[connect.result] ? CONNECT_MSG[connect.result](NAMES[connect.channel as Platform] ?? t("The channel"), t) : reuse ? (reuse.at ? t("Filled in from your post of {date}. Pick a video or photos, then post.", { date: new Date(reuse.at).toLocaleDateString(dateLocale(lang), { day: "numeric", month: "short", timeZone: "Asia/Kuala_Lumpur" }) }) : t("Filled in from your post. Pick a video or photos, then post.")) : ""));
 
   // Every channel, TikTok accounts first; only active ones can be picked.
   const channels: Ch[] = useMemo(() => [
@@ -167,7 +209,11 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
   useEffect(() => () => { if (commentImageUrl?.startsWith("blob:")) URL.revokeObjectURL(commentImageUrl); }, [commentImageUrl]);
 
   // Posting keys: "tiktok" for the picked TikTok account, then the picked Meta channels.
-  const metaPicked = social.filter((a) => picked.has(a.id) && a.status === "active");
+  // Instagram takes photos from 4:5 to 1.91:1 only: a photo post with one that doesn't fit leaves Instagram out (owner, 21 Nov 2026).
+  // Photos whose size isn't known yet (a kept photo still loading) aren't counted.
+  const igMisfits = isPhotos ? instagramMisfits(photos) : [];
+  const igLeftOut = igMisfits.length > 0 && social.some((a) => picked.has(a.id) && a.status === "active" && a.platform === "instagram");
+  const metaPicked = social.filter((a) => picked.has(a.id) && a.status === "active" && !(igMisfits.length && a.platform === "instagram"));
   const keys = [...(ttKey ? [TT] : []), ...metaPicked.map((a) => a.id)];
   const chOf = (key: string): Channel => (key === TT ? "tiktok" : (social.find((a) => a.id === key)?.platform ?? "facebook"));
   const apps = APPS.filter((p) => keys.some((k) => chOf(k) === p));
@@ -188,13 +234,13 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
   const topic = cleanTopic(topicOver ?? threadsTopic(mainFull));
   const collaborators = parseCollaborators(collabText).list.slice(0, COLLABORATORS_MAX);
   const tagged = parseCollaborators(tagText).list.slice(0, TAGS_MAX);
-  const igAdvanced = (collabText.trim() ? 1 : 0) + (tagText.trim() ? 1 : 0) + (igTrial !== "off" ? 1 : 0);
-  const settingsFor = (p: Platform) => (p === "facebook" ? { draft: fbDraft } : p === "instagram" ? { feed: igFeed, collaborators, tags: tagged, trial: igTrial } : { replies, topic });
+  const igAdvanced = (collabText.trim() ? 1 : 0) + (tagText.trim() ? 1 : 0) + (igTrial !== "off" && !isPhotos ? 1 : 0);
+  const settingsFor = (p: Platform) => (p === "facebook" ? { draft: fbDraft && !isPhotos } : p === "instagram" ? { feed: igFeed || isPhotos, collaborators, tags: tagged, trial: isPhotos ? ("off" as const) : igTrial } : { replies, topic });
   const pApp = apps.includes(previewApp) ? previewApp : apps[0];
   const pKey = pApp ? (inApp(pApp).includes(previewAcct) ? previewAcct : inApp(pApp)[0]) : undefined;
   const activeTab = tab !== "main" && apps.includes(tab) ? tab : "main";
 
-  const choice: PostChoice = { mode, caption: captionOf("tiktok"), privacyLevel: priv || null, allowComments: allow.comments, allowDuet: allow.duet, allowStitch: allow.stitch, promo: promo.on, brandOrganic: promo.own, brandedContent: promo.branded, isAigc, durationSec };
+  const choice: PostChoice = { mode, caption: captionOf("tiktok"), privacyLevel: priv || null, allowComments: allow.comments, allowDuet: allow.duet && !isPhotos, allowStitch: allow.stitch && !isPhotos, promo: promo.on, brandOrganic: promo.own, brandedContent: promo.branded, isAigc, durationSec: isPhotos ? null : durationSec };
   // TikTok's guidelines: say which label the video gets, and keep Post off while the promotion switch is on with no box ticked.
   const promoLabel = promo.on && promo.branded ? t("Your video will be labeled \"Paid partnership\".") : promo.on && promo.own ? t("Your video will be labeled \"Promotional content\".") : "";
   const promoIncomplete = !!ttKey && mode === "direct" && when !== "draft" && promo.on && !promo.own && !promo.branded;
@@ -202,9 +248,11 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
   const problems = (() => {
     const out: string[] = [];
     if (!keys.length) out.push(t("Pick at least one channel."));
-    if (source === "upload" ? !file && !kept?.storagePath : !/^https:\/\/\S+$/.test(linkUrl)) out.push(t("Add a video: upload one or paste an https link."));
+    if (!isPhotos && (source === "upload" ? !file && !kept?.storagePath : !/^https:\/\/\S+$/.test(linkUrl))) out.push(t("Add a video or photos: upload them or paste a video link."));
     if (ttKey && info && when !== "draft") out.push(...postProblems(choice, info, t));
-    for (const p of apps) if (p !== "tiktok") out.push(...channelProblems(p, captionOf(p), commentOf(p), durationSec, t), ...settingsProblems(p, settingsFor(p), durationSec, p === "instagram" ? collabText : undefined, p === "instagram" ? tagText : undefined, t));
+    const dur = isPhotos ? null : durationSec;
+    for (const p of apps) if (p !== "tiktok") out.push(...channelProblems(p, captionOf(p), commentOf(p), dur, t), ...settingsProblems(p, settingsFor(p), dur, p === "instagram" ? collabText : undefined, p === "instagram" ? tagText : undefined, t));
+    if (isPhotos) for (const p of apps) out.push(...photoProblems(p, photos.length, t));
     if (commentImage && !["image/jpeg", "image/png"].includes(commentImage.type)) out.push(t("The comment image must be a JPG or PNG."));
     else if (commentImage && commentImage.size > 8 * 1024 * 1024) out.push(t("The comment image is over 8 MB."));
     if (when === "pick" && !pickAt) out.push(t("Pick a date and time."));
@@ -241,7 +289,49 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
   }
 
   // Straight to storage. XHR, so the button can show how far the upload is (the slow part on a slow connection).
-  async function upload(f: File, what: string, kind?: "comment-image"): Promise<string> {
+  /**
+   * Picked files: one video, or photos (added after any already picked, up to TikTok's 35). Photos become JPGs here. A post is
+   * a video or photos, never both, so photos replace a video and a video replaces photos.
+   */
+  async function pickFiles(list: FileList | null) {
+    const files = [...(list ?? [])];
+    if (!files.length) return;
+    setMediaError("");
+    const videos = files.filter((f) => f.type.startsWith("video/")), images = files.filter((f) => f.type.startsWith("image/"));
+    if (videos.length > 1 || (videos.length && images.length)) return setMediaError(t("Pick one video, or photos. A post can't have both."));
+    if (videos.length) {
+      setFile(videos[0]);
+      setDurationSec(null);
+      setKept(null);
+      setPhotos([]);
+      return;
+    }
+    if (!images.length) return setMediaError(t("Pick a video (MP4, MOV or WebM) or photos (JPG, PNG or WebP)."));
+    const room = PHOTOS_MAX - photos.length;
+    if (room <= 0) return setMediaError(t("A post can have up to {max} photos.", { max: PHOTOS_MAX }));
+    setBusy(t("Preparing photos…"));
+    const added: Photo[] = [], failed: string[] = [];
+    for (const f of images.slice(0, room)) {
+      try {
+        const j = await toJpeg(f);
+        added.push({ key: `${f.name}-${f.size}-${Math.random().toString(36).slice(2)}`, file: j.file, url: URL.createObjectURL(j.file), w: j.w, h: j.h });
+      } catch {
+        failed.push(f.name);
+      }
+    }
+    setBusy("");
+    setFile(null);
+    setKept(null);
+    setDurationSec(null);
+    setSource("upload");
+    setPhotos((list) => [...list, ...added]);
+    if (failed.length) setMediaError(t("Couldn't read {names}. Use JPG, PNG or WebP photos.", { names: failed.join(", ") }));
+    else if (images.length > room) setMediaError(t("A post can have up to {max} photos, so only the first {n} were added.", { max: PHOTOS_MAX, n: room }));
+  }
+  const movePhoto = (i: number, by: number) => setPhotos((list) => { const n = [...list]; const [x] = n.splice(i, 1); n.splice(i + by, 0, x); return n; });
+  const removePhoto = (i: number) => setPhotos((list) => { const gone = list[i]; if (gone?.file) URL.revokeObjectURL(gone.url); return list.filter((_, k) => k !== i); });
+
+  async function upload(f: File, what: string, kind?: "comment-image" | "photo"): Promise<string> {
     setBusy(t("Uploading {what}… {pct}%", { what, pct: 0 }));
     const r = await fetch("/api/posts/upload", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ type: f.type, size: f.size, kind }) });
     const u = (await r.json()) as { path?: string; uploadUrl?: string; error?: string };
@@ -264,13 +354,16 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
     if (problems.length) return setErrors(problems);
     try {
       let storagePath: string | undefined = source === "upload" && !file ? (kept?.storagePath ?? undefined) : undefined;
-      if (source === "upload" && file) storagePath = await upload(file, t("your video"));
+      if (source === "upload" && file && !isPhotos) storagePath = await upload(file, t("your video"));
+      // A photo post: each new photo is uploaded in order; photos an edit kept are sent as they are.
+      const photoPaths: string[] = [];
+      for (const [i, ph] of photos.entries()) photoPaths.push(ph.path ?? (await upload(ph.file as File, t("photo {n} of {total}", { n: i + 1, total: photos.length }), "photo")));
       // The comment image goes to Facebook (not as a draft) and Threads; Instagram comments are text only (C4d).
-      const imageApps = metaPicked.some((a) => (a.platform === "facebook" && !fbDraft) || a.platform === "threads");
+      const imageApps = metaPicked.some((a) => (a.platform === "facebook" && (!fbDraft || isPhotos)) || a.platform === "threads");
       const commentImagePath = !imageApps ? undefined : commentImage ? await upload(commentImage, t("the comment image"), "comment-image") : (keptImage?.path ?? undefined);
       setBusy(when === "draft" ? t("Saving…") : t("Scheduling…"));
       const at = when === "pick" ? new Date(pickAt).toISOString() : when;
-      const video = { source, storagePath, linkUrl: source === "link" ? linkUrl : undefined };
+      const video = isPhotos ? { photoPaths } : { source, storagePath, linkUrl: source === "link" ? linkUrl : undefined };
       let tiktokPost: { id: string; scheduled_at: string | null; status: string } | null = null;
       if (ttKey) {
         const r = await fetch("/api/posts", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...choice, ...video, when: at, consent: true, account: ttAccount, staged: !!edit }) });
@@ -284,7 +377,7 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
         const r = await fetch("/api/social/posts", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ ...video, durationSec, when: at, tiktokPostId: tiktokPost?.id, commentImagePath, staged: !!edit, channels: metaPicked.map((a) => ({ accountId: a.id, caption: captionOf(a.platform), firstComment: a.platform === "facebook" && fbDraft ? "" : commentOf(a.platform), settings: settingsFor(a.platform) })) }),
+          body: JSON.stringify({ ...video, durationSec: isPhotos ? undefined : durationSec, when: at, tiktokPostId: tiktokPost?.id, commentImagePath, staged: !!edit, channels: metaPicked.map((a) => ({ accountId: a.id, caption: captionOf(a.platform), firstComment: a.platform === "facebook" && fbDraft && !isPhotos ? "" : commentOf(a.platform), settings: settingsFor(a.platform) })) }),
         });
         const d = (await r.json()) as { posts?: { scheduled_at: string | null; group_id: string }[]; error?: string | string[] };
         if (!r.ok || !d.posts) {
@@ -319,7 +412,7 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
         <span className="np-done-ico" aria-hidden="true">✓</span>
         <h2>{edit ? t("Changes saved") : done.draft ? t("Saved as a draft") : when === "now" ? t("On its way") : t("Scheduled")}</h2>
         <p>{done.draft ? t("Saved in Rezekii for {summary}.", { summary: done.summary }) : done.at && when !== "now" ? t("{summary}: {time} (Malaysia time).", { summary: done.summary, time: myt(done.at, lang) }) : t("{summary}: posting now.", { summary: done.summary })} {t("You'll see each channel's status in All channels.")}</p>
-        {ttKey && !done.draft && <p className="np-muted">{mode === "direct" ? t("After it's posted, TikTok can take a few minutes to process the video before it shows on your profile.") : t("It will land in your TikTok inbox, where you can finish and post it in the TikTok app.")}</p>}
+        {ttKey && !done.draft && <p className="np-muted">{mode === "direct" ? (isPhotos ? t("After it's posted, TikTok can take a few minutes before it shows on your profile.") : t("After it's posted, TikTok can take a few minutes to process the video before it shows on your profile.")) : t("It will land in your TikTok inbox, where you can finish and post it in the TikTok app.")}</p>}
         <div className="np-row"><Link href="/app/posts" className="np-btn">{t("See it in All channels")}</Link>{!edit && <button type="button" className="btn-outline" onClick={() => window.location.reload()}>{t("New post")}</button>}</div>
       </section>
     );
@@ -396,19 +489,43 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
           </section>
 
           <section className="card">
-            <h2>{t("Video")}</h2>
-            <div className="np-seg" role="radiogroup" aria-label={t("Video source")}>
-              <button type="button" role="radio" aria-checked={source === "upload"} className={source === "upload" ? "on" : ""} onClick={() => setSource("upload")}>{t("Upload")}</button>
-              <button type="button" role="radio" aria-checked={source === "link"} className={source === "link" ? "on" : ""} onClick={() => setSource("link")}>{t("Paste a link")}</button>
-            </div>
-            {source === "upload" ? (
-              <label className="np-drop"><input type="file" accept="video/mp4,video/quicktime,video/webm" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setDurationSec(null); setKept(null); }} /><span>{file ? `${file.name} · ${(file.size / 1048576).toFixed(1)} MB` : kept?.storagePath ? t("The post's video is kept. Choose another to replace it.") : t("Choose an MP4, MOV or WebM video (up to 50 MB)")}</span></label>
+            <h2>{t("Video or Photos")}</h2>
+            {!isPhotos && (
+              <div className="np-seg" role="radiogroup" aria-label={t("Video source")}>
+                <button type="button" role="radio" aria-checked={source === "upload"} className={source === "upload" ? "on" : ""} onClick={() => setSource("upload")}>{t("Upload")}</button>
+                <button type="button" role="radio" aria-checked={source === "link"} className={source === "link" ? "on" : ""} onClick={() => setSource("link")}>{t("Paste a video link")}</button>
+              </div>
+            )}
+            {isPhotos && (
+              <ol className="cx-photos" aria-label={t("Photos, in order")}>
+                {photos.map((ph, i) => (
+                  <li key={ph.key}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={ph.url} alt={t("Photo {n}", { n: i + 1 })} />
+                    <span className="cx-photo-n">{i === 0 ? t("Cover") : i + 1}</span>
+                    <span className="cx-photo-act">
+                      <button type="button" disabled={i === 0} onClick={() => movePhoto(i, -1)} aria-label={t("Move photo {n} earlier", { n: i + 1 })}>‹</button>
+                      <button type="button" onClick={() => removePhoto(i)} aria-label={t("Remove photo {n}", { n: i + 1 })}>×</button>
+                      <button type="button" disabled={i === photos.length - 1} onClick={() => movePhoto(i, 1)} aria-label={t("Move photo {n} later", { n: i + 1 })}>›</button>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            )}
+            {source === "upload" || isPhotos ? (
+              <label className="np-drop">
+                <input type="file" multiple accept="video/mp4,video/quicktime,video/webm,image/jpeg,image/png,image/webp" onChange={(e) => { void pickFiles(e.target.files); e.target.value = ""; }} />
+                <span>{isPhotos ? t("Add more photos ({n} of {max})", { n: photos.length, max: PHOTOS_MAX }) : file ? `${file.name} · ${(file.size / 1048576).toFixed(1)} MB` : kept?.storagePath ? t("The post's video is kept. Choose another to replace it.") : t("Choose one video (MP4, MOV or WebM, up to 50 MB) or photos (JPG, PNG or WebP)")}</span>
+              </label>
             ) : (
               <input className="np-input" type="url" inputMode="url" placeholder={t("https://… (Google Drive, Dropbox or a direct file link)")} value={linkUrl} onChange={(e) => setLinkUrl(e.target.value.trim())} aria-label={t("Video link")} />
             )}
-            {videoUrl && <video src={videoUrl} muted playsInline preload="metadata" hidden onLoadedMetadata={(e) => setDurationSec(Math.round(e.currentTarget.duration))} />}
-            {frames && frames.maxGapSec > KEYFRAME_GAP_MAX && <p className="cx-warn" role="status">{t("Facebook and Threads may show this video broken, mixed with other footage: it has {what}. This is common with videos straight from AI generators like Google Flow. Export it again (for example through CapCut) and upload that file.", { what: frames.keyframes === 1 ? t("only one full frame in the whole clip") : t("a {n}-second stretch without a full frame", { n: Math.round(frames.maxGapSec) }) })}</p>}
-            {durationSec !== null && <p className="np-muted">{t("Length {length}", { length: `${Math.floor(durationSec / 60)}:${String(durationSec % 60).padStart(2, "0")}` })}{apps.includes("facebook") ? t(" · Facebook: {how}", { how: durationSec >= 3 && durationSec <= 90 ? t("goes out as a Reel") : t("goes out as a Page video (Reels are 3–90 s)") }) : ""}</p>}
+            {mediaError && <p className="np-error" role="alert">{mediaError}</p>}
+            {!isPhotos && videoUrl && <video src={videoUrl} muted playsInline preload="metadata" hidden onLoadedMetadata={(e) => setDurationSec(Math.round(e.currentTarget.duration))} />}
+            {!isPhotos && frames && frames.maxGapSec > KEYFRAME_GAP_MAX && <p className="cx-warn" role="status">{t("Facebook and Threads may show this video broken, mixed with other footage: it has {what}. This is common with videos straight from AI generators like Google Flow. Export it again (for example through CapCut) and upload that file.", { what: frames.keyframes === 1 ? t("only one full frame in the whole clip") : t("a {n}-second stretch without a full frame", { n: Math.round(frames.maxGapSec) }) })}</p>}
+            {!isPhotos && durationSec !== null && <p className="np-muted">{t("Length {length}", { length: `${Math.floor(durationSec / 60)}:${String(durationSec % 60).padStart(2, "0")}` })}{apps.includes("facebook") ? t(" · Facebook: {how}", { how: durationSec >= 3 && durationSec <= 90 ? t("goes out as a Reel") : t("goes out as a Page video (Reels are 3–90 s)") }) : ""}</p>}
+            <p className="np-muted">{t("Photos per post:")} {(apps.length ? apps : APPS).map((p) => `${NAMES[p]} ${PHOTO_MAX[p]}`).join(" · ")}</p>
+            {igLeftOut && <p className="cx-warn" role="status">{t("Instagram is left out of this post: it takes photos from 4:5 (portrait) to 1.91:1 (landscape), and photo {list} doesn't fit. Crop it to post to Instagram too.", { list: igMisfits.join(", ") })}</p>}
           </section>
 
           <section className="card">
@@ -511,7 +628,8 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
                   </select>
                   {promo.on && promo.branded && <p className="np-muted">{t("Branded content visibility cannot be set to private.")}</p>}
                   <div className="np-checks">
-                    {([["comments", tx("Allow Comment"), info?.comment_disabled], ["duet", tx("Allow Duet"), info?.duet_disabled], ["stitch", tx("Allow Stitch"), info?.stitch_disabled]] as const).map(([k, label, off]) => (
+                    {/* Photo posts have no Duet or Stitch on TikTok, so only Allow Comment shows (TikTok's guidelines). */}
+                    {([["comments", tx("Allow Comment"), info?.comment_disabled], ["duet", tx("Allow Duet"), info?.duet_disabled], ["stitch", tx("Allow Stitch"), info?.stitch_disabled]] as const).filter(([k]) => !isPhotos || k === "comments").map(([k, label, off]) => (
                       <label key={k} className={off ? "np-check off" : "np-check"}><input type="checkbox" checked={allow[k] && !off} disabled={!!off} onChange={(e) => setAllow((a) => ({ ...a, [k]: e.target.checked }))} />{t(label)}</label>
                     ))}
                   </div>
@@ -526,7 +644,7 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
                       {promoLabel ? <p className="np-note">{promoLabel}</p> : <p className="np-muted">{t("You need to indicate if your content promotes yourself, a third party, or both.")}</p>}
                     </div>
                   )}
-                  <div className="np-switchrow"><span><b>{t("AI-generated content")}</b><small>{t("Turn on if the video was made or heavily edited with AI.")}</small></span><button type="button" role="switch" aria-checked={isAigc} className={isAigc ? "np-switch on" : "np-switch"} onClick={() => setIsAigc(!isAigc)} aria-label={t("AI-generated content")}><span /></button></div>
+                  <div className="np-switchrow"><span><b>{t("AI-generated content")}</b><small>{isPhotos ? t("Turn on if the photos were made or heavily edited with AI.") : t("Turn on if the video was made or heavily edited with AI.")}</small></span><button type="button" role="switch" aria-checked={isAigc} className={isAigc ? "np-switch on" : "np-switch"} onClick={() => setIsAigc(!isAigc)} aria-label={t("AI-generated content")}><span /></button></div>
                 </>
               )}
             </section>
@@ -538,29 +656,31 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
               {apps.includes("facebook") && (
                 <div className="cx-set">
                   <span className="cx-gh"><BrandIcon ch="facebook" size={16} />Facebook</span>
-                  <div className="np-seg" role="radiogroup" aria-label="Facebook">
-                    <button type="button" role="radio" aria-checked={!fbDraft} className={!fbDraft ? "on" : ""} onClick={() => setFbDraft(false)}>{t("Publish")}</button>
-                    <button type="button" role="radio" aria-checked={fbDraft} className={fbDraft ? "on" : ""} onClick={() => setFbDraft(true)}>{t("Save as draft in Facebook")}</button>
-                  </div>
+                  {!isPhotos && (
+                    <div className="np-seg" role="radiogroup" aria-label="Facebook">
+                      <button type="button" role="radio" aria-checked={!fbDraft} className={!fbDraft ? "on" : ""} onClick={() => setFbDraft(false)}>{t("Publish")}</button>
+                      <button type="button" role="radio" aria-checked={fbDraft} className={fbDraft ? "on" : ""} onClick={() => setFbDraft(true)}>{t("Save as draft in Facebook")}</button>
+                    </div>
+                  )}
                   <p className="np-muted">{t("On Facebook, @names stay plain text: Facebook doesn't turn them into mentions for posts made by apps. Instagram and Threads link @usernames.")}</p>
-                  {fbDraft && <p className="np-muted">{t("The Reel is saved in the Page's drafts. Nobody sees it until you publish it from Facebook or Meta Business Suite. Drafts get no first comment, and work for Reels (3–90 seconds) only.")}</p>}
+                  {fbDraft && !isPhotos && <p className="np-muted">{t("The Reel is saved in the Page's drafts. Nobody sees it until you publish it from Facebook or Meta Business Suite. Drafts get no first comment, and work for Reels (3–90 seconds) only.")}</p>}
                 </div>
               )}
               {apps.includes("instagram") && (
                 <div className="cx-set">
                   <span className="cx-gh"><BrandIcon ch="instagram" size={16} />Instagram</span>
-                  <div className="np-switchrow"><span><b>{t("Also show in the main feed")}</b><small>{t("Off: the Reel shows in the Reels tab only.")}</small></span><button type="button" role="switch" aria-checked={igFeed} className={igFeed ? "np-switch on" : "np-switch"} onClick={() => setIgFeed(!igFeed)} aria-label={t("Also show in the main feed")}><span /></button></div>
+                  {!isPhotos && <div className="np-switchrow"><span><b>{t("Also show in the main feed")}</b><small>{t("Off: the Reel shows in the Reels tab only.")}</small></span><button type="button" role="switch" aria-checked={igFeed} className={igFeed ? "np-switch on" : "np-switch"} onClick={() => setIgFeed(!igFeed)} aria-label={t("Also show in the main feed")}><span /></button></div>}
                   {/* Rarely needed, so folded away (S2, S3, S6); the summary says how many are in use. */}
                   <details className="cx-guide cx-adv">
-                    <summary>{t("Advanced: collaborators, tag people, trial reel")}{igAdvanced ? t(" · {n} in use", { n: igAdvanced }) : ""}</summary>
+                    <summary>{isPhotos ? t("Advanced: collaborators, tag people") : t("Advanced: collaborators, tag people, trial reel")}{igAdvanced ? t(" · {n} in use", { n: igAdvanced }) : ""}</summary>
                     <div className="cx-adv-in">
                       <label className="cx-field"><b>{t("Collaborators")}</b><input className="np-input" type="text" value={collabText} onChange={(e) => setCollabText(e.target.value)} placeholder={t("Up to 3 Instagram usernames, e.g. @brand")} aria-label={t("Instagram collaborators")} /><small className="np-muted">{t("They get an invite in Instagram; once they accept, the Reel shows on their profile too.")}</small></label>
                       <label className="cx-field"><b>{t("Tag people")}</b><input className="np-input" type="text" value={tagText} onChange={(e) => setTagText(e.target.value)} placeholder={t("Instagram usernames, e.g. @shopee_my")} aria-label={t("Instagram tagged people")} /><small className="np-muted">{t("Up to {max}. They get a notification and the Reel shows in their Tagged tab. Facebook and Threads don't let apps tag people in videos.", { max: TAGS_MAX })}</small></label>
-                      <b className="cx-sub">{t("Trial reel")}</b>
-                      <div className="np-seg" role="radiogroup" aria-label={t("Trial reel")}>
+                      {!isPhotos && <b className="cx-sub">{t("Trial reel")}</b>}
+                      {!isPhotos && <div className="np-seg" role="radiogroup" aria-label={t("Trial reel")}>
                         {([["off", t("Off")], ["manual", t("I'll share with followers")], ["auto", t("Instagram decides")]] as [TrialMode, string][]).map(([v, l]) => <button key={v} type="button" role="radio" aria-checked={igTrial === v} className={igTrial === v ? "on" : ""} onClick={() => setIgTrial(v)}>{l}</button>)}
-                      </div>
-                      {igTrial !== "off" && <p className="np-muted">{t("A trial reel is shown to people who don't follow you first.")} {igTrial === "manual" ? t("You share it with your followers yourself in Instagram.") : t("Instagram shares it with your followers if it does well.")}</p>}
+                      </div>}
+                      {igTrial !== "off" && !isPhotos && <p className="np-muted">{t("A trial reel is shown to people who don't follow you first.")} {igTrial === "manual" ? t("You share it with your followers yourself in Instagram.") : t("Instagram shares it with your followers if it does well.")}</p>}
                     </div>
                   </details>
                 </div>
@@ -615,7 +735,7 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
               <select className="np-input" value={pKey} onChange={(e) => setPreviewAcct(e.target.value)}>{inApp(pApp).map((k) => <option key={k} value={k}>{byKey.get(k)?.name}</option>)}</select>
             </label>
           )}
-          {mounted && pApp && pKey ? <PhonePreview channel={pApp} caption={captionOf(pApp)} commentImage={(pApp === "facebook" && !fbDraft) || pApp === "threads" ? commentImageUrl : null} comment={pApp === "facebook" && fbDraft ? "" : commentOf(pApp)} video={videoUrl} who={who(pKey)} fbView={fbView} theme={theme} topic={topic} collaborators={collaborators} /> : <div className="pv-phone"><div className="pv-scr" /></div>}
+          {mounted && pApp && pKey ? <PhonePreview channel={pApp} caption={captionOf(pApp)} commentImage={(pApp === "facebook" && (!fbDraft || isPhotos)) || pApp === "threads" ? commentImageUrl : null} comment={pApp === "facebook" && fbDraft && !isPhotos ? "" : commentOf(pApp)} video={isPhotos ? null : videoUrl} photos={isPhotos ? photos.map((ph) => ph.url) : undefined} who={who(pKey)} fbView={fbView} theme={theme} topic={topic} collaborators={collaborators} /> : <div className="pv-phone"><div className="pv-scr" /></div>}
           {pApp === "facebook" && <Seg value={fbView} set={setFbView} items={[["reels", "Reels"], ["feed", t("Feed")]]} label={t("Facebook view")} />}
           {(pApp === "threads" || (pApp === "facebook" && fbView === "feed")) && <Seg value={theme} set={setTheme} items={[["light", t("Light")], ["dark", t("Dark")]]} label={t("App theme")} />}
           <p className="cx-note">{pApp ? t(PREVIEW_NOTE[pApp]) : t("Pick a channel to see its preview.")}</p>

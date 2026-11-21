@@ -1,6 +1,8 @@
-import { chunkRange, fetchPublishStatus, initVideoPost, planChunks, queryCreatorInfo, uploadChunk } from "../../integrations/tiktok/posting.ts";
+import { chunkRange, fetchPublishStatus, initPhotoPost, initVideoPost, planChunks, queryCreatorInfo, uploadChunk } from "../../integrations/tiktok/posting.ts";
 import { deleteUpload, openMedia } from "./media.ts";
-import { nextRetry, postProblems, statusFromTikTok, toPostInfo } from "./rules.ts";
+import { photoLink } from "./photo-links.ts";
+import { filesOf } from "./photos.ts";
+import { nextRetry, postProblems, statusFromTikTok, toPhotoInfo, toPostInfo } from "./rules.ts";
 import { choiceFromRow, freshTikTokToken, markTikTokReconnect, RECONNECT_TIKTOK, TIKTOK_LOST, updatePost, type PostRow } from "./store.ts";
 
 /** A try failed: schedule the next try, or mark the post Failed after the last one (`final`: no more tries). Keeps TikTok's reason. */
@@ -24,6 +26,16 @@ export async function publishPost(post: PostRow): Promise<string> {
     if (info.error || !info.data) return await recordFailure(post, `TikTok says this account can't post right now (${info.error?.message ?? "no creator info"}).`);
     const problems = postProblems(choiceFromRow(post), info.data);
     if (problems.length) return await recordFailure(post, problems.join(" "));
+
+    // A photo post: TikTok pulls the photos from rezekii.com links, so there's nothing to upload here.
+    if (post.photo_paths?.length) {
+      step(`${post.photo_paths.length} photo(s); asking TikTok to fetch them`);
+      const init = await initPhotoPost(token, post.mode, post.photo_paths.map((p) => photoLink(p)), toPhotoInfo(choiceFromRow(post), info.data), post.is_aigc);
+      if (init.error && TIKTOK_LOST.has(init.error.code)) return await lost(post);
+      if (init.error || !init.data) return await recordFailure(post, (init.error && TIKTOK_REASONS[init.error.code]) ?? `TikTok refused the post: ${init.error?.message ?? "no post id"} (${init.error?.code ?? "?"}).`);
+      await updatePost(post.id, { status: "processing", publish_id: init.data.publish_id, last_error: null });
+      return "sent";
+    }
 
     const media = await openMedia({ storagePath: post.storage_path, linkUrl: post.link_url });
     const plan = planChunks(media.size);
@@ -59,6 +71,7 @@ const TIKTOK_REASONS: Record<string, string> = {
   unaudited_client_can_only_post_to_private_accounts: "TikTok only lets Rezekii post to private TikTok accounts until it approves Rezekii. Set your TikTok account to private to post now, or wait for TikTok's approval.",
   spam_risk_too_many_posts: "TikTok says this account has posted too much today. Try again tomorrow.",
   spam_risk_user_banned_from_posting: "TikTok has stopped this account from posting for now.",
+  url_ownership_unverified: "TikTok couldn't fetch the photos from Rezekii. Try again later.",
 };
 
 const STUCK_MS = 30 * 60e3;
@@ -78,7 +91,7 @@ export async function checkProcessing(post: PostRow): Promise<string> {
   if (done === "failed") return recordFailure(post, `TikTok couldn't publish it: ${r.data.fail_reason ?? "no reason given"}.`);
   if (done) {
     await updatePost(post.id, { status: done, posted_at: new Date().toISOString(), tiktok_post_id: r.data.publicaly_available_post_id?.[0]?.toString() ?? null, next_attempt_at: null });
-    if (post.storage_path) await deleteUpload(post.storage_path);
+    for (const path of filesOf(post)) await deleteUpload(path);
     return done;
   }
   if (Date.now() - new Date(post.updated_at).getTime() > STUCK_MS) return recordFailure(post, "TikTok didn't confirm the post within 30 minutes.");

@@ -21,6 +21,21 @@ export const THREADS_LINK_MAX = 5;
 export const REEL_SECONDS = { min: 3, max: 90 };
 /** Videos Threads accepts (5 minutes). */
 export const THREADS_MAX_SECONDS = 300;
+/**
+ * Photos in one post, each app's own limit (owner, 21 Nov 2026): TikTok 35, Instagram and Threads 20 per carousel. Facebook
+ * doesn't publish one for apps; 10 is Rezekii's.
+ */
+export const PHOTO_MAX: Record<Channel, number> = { tiktok: 35, facebook: 10, instagram: 20, threads: 20 };
+/** Instagram takes feed photos from 4:5 (portrait) to 1.91:1 (landscape), width ÷ height. */
+export const INSTAGRAM_RATIO = { min: 0.8, max: 1.91 };
+/** Photos Instagram can't take (1-based), by their width and height. */
+export const instagramMisfits = (photos: { w: number; h: number }[]) =>
+  photos.flatMap((p, i) => (p.w / p.h < INSTAGRAM_RATIO.min - 0.005 || p.w / p.h > INSTAGRAM_RATIO.max + 0.005 ? [i + 1] : []));
+
+/** Too many photos for this app (empty = OK). */
+export function photoProblems(ch: Channel, count: number, t: T = EN): string[] {
+  return count > PHOTO_MAX[ch] ? [t("{app} takes up to {max} photos in one post. This post has {n}.", { app: NAMES[ch], max: PHOTO_MAX[ch], n: count })] : [];
+}
 
 export type Placement = { caption: boolean; comment: boolean };
 /** Where the product link goes by default, from how each channel is used (owner, 19 Oct 2026). */
