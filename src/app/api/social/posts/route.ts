@@ -25,7 +25,7 @@ export async function GET() {
 }
 
 type ChannelIn = { accountId?: string; caption?: string; firstComment?: string; settings?: unknown };
-type Body = { source?: "upload" | "link"; storagePath?: string; photoPaths?: unknown; linkUrl?: string; durationSec?: number; when?: string; tiktokPostId?: string; commentImagePath?: string; channels?: ChannelIn[]; staged?: boolean };
+type Body = { source?: "upload" | "link"; storagePath?: string; photoPaths?: unknown; instagramPhotoPaths?: unknown; linkUrl?: string; durationSec?: number; when?: string; tiktokPostId?: string; commentImagePath?: string; channels?: ChannelIn[]; staged?: boolean };
 const bad = (error: string | string[], status = 400) => NextResponse.json({ error }, { status });
 
 /**
@@ -41,6 +41,9 @@ export async function POST(req: NextRequest) {
   // A photo post sends its photos in order; a video post one upload or a link.
   const photos = b.photoPaths === undefined ? null : cleanPhotoPaths(user.id, b.photoPaths);
   if (b.photoPaths !== undefined && !photos) return bad("The photos weren't uploaded. Add them again.");
+  // Instagram's own copies, cut to fit, in the same order (New post sends them when a photo is too tall or wide for Instagram).
+  const igPhotos = b.instagramPhotoPaths === undefined || !photos ? null : cleanPhotoPaths(user.id, b.instagramPhotoPaths);
+  if (b.instagramPhotoPaths !== undefined && photos && igPhotos?.length !== photos.length) return bad("The photos weren't uploaded. Add them again.");
   if (!photos && (b.source === "upload" ? !b.storagePath?.startsWith(`${user.id}/`) : b.source === "link" ? !/^https:\/\/\S+$/.test(b.linkUrl ?? "") : true))
     return bad("Add a video or photos: upload them or paste a video link.");
   let commentImage = b.commentImagePath ?? null;
@@ -83,15 +86,20 @@ export async function POST(req: NextRequest) {
   // With TikTok in the post, the channels get their own copy of the upload (TikTok deletes its file once it has posted). An
   // edit copies the video and comment image it kept too: the old post's files go once it is replaced.
   let storagePath: string | null = photos ? photos[0] : b.source === "upload" ? (b.storagePath as string) : null;
-  let photoPaths = photos;
+  let photoPaths = photos, igPhotoPaths = igPhotos;
   if (photoPaths) {
     // Each photo the same way: the channels' own copy when TikTok is in the post or an edit kept one still in use.
-    photoPaths = await Promise.all(photoPaths.map(async (path) => {
-      if (!tiktok && !(b.staged && (await fileInUse(path)))) return path;
-      const copy = `${user.id}/social/photos/${randomUUID()}.jpg`;
-      await copyUpload(path, copy);
-      return copy;
-    }));
+    const own = new Map<string, string>();
+    for (const path of new Set([...photoPaths, ...(igPhotoPaths ?? [])])) {
+      if (!tiktok && !(b.staged && (await fileInUse(path)))) own.set(path, path);
+      else {
+        const copy = `${user.id}/social/photos/${randomUUID()}.jpg`;
+        await copyUpload(path, copy);
+        own.set(path, copy);
+      }
+    }
+    photoPaths = photoPaths.map((path) => own.get(path) as string);
+    igPhotoPaths = igPhotoPaths?.map((path) => own.get(path) as string) ?? null;
     storagePath = photoPaths[0];
   } else if (storagePath && (tiktok || (b.staged && (await fileInUse(storagePath))))) {
     const copy = `${user.id}/social/${randomUUID()}.${storagePath.split(".").pop()}`;
@@ -118,8 +126,8 @@ export async function POST(req: NextRequest) {
       account_name: a.name ?? a.username,
       platform: a.platform,
       source: photoPaths ? "upload" : (b.source as "upload" | "link"),
-      storage_path: storagePath,
-      photo_paths: photoPaths,
+      storage_path: a.platform === "instagram" && igPhotoPaths ? igPhotoPaths[0] : storagePath,
+      photo_paths: a.platform === "instagram" && igPhotoPaths ? igPhotoPaths : photoPaths,
       link_url: !photoPaths && b.source === "link" ? (b.linkUrl as string) : null,
       duration_sec: durationSec,
       caption: String(c.caption ?? ""),

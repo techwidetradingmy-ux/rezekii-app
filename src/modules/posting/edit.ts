@@ -51,7 +51,8 @@ export async function postDetails(userId: string, key: string): Promise<PostDeta
   if (!p) return null;
   const first = p.channels[0];
   const source = p.tiktok?.source ?? first?.source ?? "upload";
-  const photoPaths = p.tiktok?.photo_paths ?? first?.photo_paths ?? null;
+  // Instagram's photos may be cut to fit, so the whole photos come from TikTok or another app when there is one.
+  const photoPaths = p.tiktok?.photo_paths ?? (p.channels.find((c) => c.platform !== "instagram") ?? first)?.photo_paths ?? null;
   const photos = photoPaths ? await Promise.all(photoPaths.map((path) => signed(path))) : null;
   const [url, account, ...images] = await Promise.all([
     source === "link" ? Promise.resolve(p.tiktok?.link_url ?? first?.link_url ?? null) : signed(p.tiktok?.storage_path ?? first?.storage_path),
@@ -93,7 +94,8 @@ export async function loadEdit(userId: string, key: string): Promise<EditPost | 
   const source = t?.source ?? first?.source ?? "upload";
   const storagePath = source === "upload" ? (t?.storage_path ?? first?.storage_path ?? null) : null;
   const imagePath = p.channels.find((c) => c.comment_image_path)?.comment_image_path ?? null;
-  const photoPaths = t?.photo_paths ?? first?.photo_paths ?? null;
+  // Instagram's photos may be cut to fit, so the whole photos come from TikTok or another app when there is one.
+  const photoPaths = t?.photo_paths ?? (p.channels.find((c) => c.platform !== "instagram") ?? first)?.photo_paths ?? null;
   const [url, imageUrl, saved, photoUrls] = await Promise.all([signed(storagePath), signed(imagePath), loadRecipe(userId, key).catch(() => null), Promise.all((photoPaths ?? []).map((path) => signed(path)))]);
   return {
     key,

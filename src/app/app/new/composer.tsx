@@ -14,7 +14,7 @@ import { KEYFRAME_GAP_MAX, readKeyframes, type KeyframeInfo } from "@/modules/po
 import type { EditPost } from "@/modules/posting/edit.ts";
 import type { Recipe } from "@/modules/social/recipe.ts";
 import { localInput } from "./new-post-form";
-import { CAPTION_MAX, COMMENT_MAX, DEFAULT_PLACEMENT, NAMES, PHOTO_MAX, parseHashtags, withHashtags, autoCaption, autoComment, channelProblems, channelWarnings, instagramMisfits, lengthFor, links, photoProblems, postedCaption, type Channel, type Placement, type Platform } from "@/modules/social/rules.ts";
+import { CAPTION_MAX, COMMENT_MAX, DEFAULT_PLACEMENT, NAMES, PHOTO_MAX, parseHashtags, withHashtags, autoCaption, autoComment, channelProblems, channelWarnings, instagramCrop, instagramMisfits, lengthFor, links, photoProblems, postedCaption, type Channel, type Placement, type Platform } from "@/modules/social/rules.ts";
 import { PHOTOS_MAX } from "@/modules/posting/photos.ts";
 import { BrandIcon } from "../brand-icons";
 import { PhonePreview, type Who } from "./phone-previews";
@@ -40,17 +40,14 @@ const CONNECT_MSG: Record<string, (app: string, t: T) => string> = {
 };
 const SEARCH_ICON = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>;
 
-/** One photo of a photo post: a new one (made a JPG here) or one an edit kept (`path`), with its size for Instagram's check. */
-type Photo = { key: string; file?: File; path?: string; url: string; w: number; h: number };
-
 /**
- * Turns a picked image into the JPG every app takes: at most 1080 × 1920 (TikTok's 1080p), on white where it was see-through.
- * Fails for images the browser can't read (for example HEIC).
+ * One photo of a photo post: a new one (made a JPG here) or one an edit kept (`path`), with its size. `ig` is Instagram's own
+ * copy, cut to fit, when the photo is taller than 4:5 or wider than 1.91:1 (instagramCrop).
  */
-async function toJpeg(file: File): Promise<{ file: File; w: number; h: number }> {
-  const bmp = await createImageBitmap(file);
-  const scale = Math.min(1, 1080 / bmp.width, 1920 / bmp.height);
-  const w = Math.max(1, Math.round(bmp.width * scale)), h = Math.max(1, Math.round(bmp.height * scale));
+type Photo = { key: string; file?: File; path?: string; url: string; w: number; h: number; ig?: { file: File; url: string } };
+
+/** Draws part of an image (all of it by default) as a JPG of `w` × `h`, on white where it was see-through. */
+async function drawJpeg(src: ImageBitmap, w: number, h: number, name: string, box = { x: 0, y: 0, w: src.width, h: src.height }): Promise<File> {
   const canvas = document.createElement("canvas");
   canvas.width = w;
   canvas.height = h;
@@ -58,11 +55,35 @@ async function toJpeg(file: File): Promise<{ file: File; w: number; h: number }>
   if (!ctx) throw new Error("no canvas");
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, w, h);
-  ctx.drawImage(bmp, 0, 0, w, h);
-  bmp.close();
+  ctx.drawImage(src, box.x, box.y, box.w, box.h, 0, 0, w, h);
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.9));
   if (!blob) throw new Error("no jpeg");
-  return { file: new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" }), w, h };
+  return new File([blob], name, { type: "image/jpeg" });
+}
+
+/** Instagram's copy of a photo, cut to fit, or nothing when it already fits. */
+async function instagramCopy(src: ImageBitmap, w: number, h: number, name: string): Promise<Photo["ig"]> {
+  const box = instagramCrop(w, h);
+  if (!box) return undefined;
+  const s = src.width / w;
+  const file = await drawJpeg(src, box.w, box.h, name.replace(/\.jpg$/, "-instagram.jpg"), { x: box.x * s, y: box.y * s, w: box.w * s, h: box.h * s });
+  return { file, url: URL.createObjectURL(file) };
+}
+
+/**
+ * Turns a picked image into the JPG every app takes: at most 1080 × 1920 (TikTok's 1080p), with Instagram's own cut copy when
+ * it needs one. Fails for images the browser can't read (for example HEIC).
+ */
+async function toJpeg(file: File): Promise<{ file: File; w: number; h: number; ig: Photo["ig"] }> {
+  const bmp = await createImageBitmap(file);
+  try {
+    const scale = Math.min(1, 1080 / bmp.width, 1920 / bmp.height);
+    const w = Math.max(1, Math.round(bmp.width * scale)), h = Math.max(1, Math.round(bmp.height * scale));
+    const name = file.name.replace(/\.[^.]+$/, "") + ".jpg";
+    return { file: await drawJpeg(bmp, w, h, name), w, h, ig: await instagramCopy(bmp, w, h, name) };
+  } finally {
+    bmp.close();
+  }
 }
 
 /** One channel as New post shows it: a TikTok account or a connected Page/account/profile. */
@@ -124,15 +145,17 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
   const [photos, setPhotos] = useState<Photo[]>(() => (edit?.photos ?? []).map((p) => ({ key: p.path, path: p.path, url: p.url ?? "", w: 0, h: 0 })));
   const [mediaError, setMediaError] = useState("");
   const isPhotos = photos.length > 0;
-  // Kept photos come without their size: read it once they load (Instagram's shape check needs it).
+  // Kept photos come without their size: read it once they load, and make Instagram's cut copy when one is needed.
   useEffect(() => {
     const unsized = photos.filter((p) => !p.w && p.url);
     if (!unsized.length) return;
     let live = true;
     for (const p of unsized) {
-      const img = new Image();
-      img.onload = () => live && setPhotos((list) => list.map((x) => (x.key === p.key ? { ...x, w: img.naturalWidth, h: img.naturalHeight } : x)));
-      img.src = p.url;
+      fetch(p.url).then((r) => r.blob()).then(createImageBitmap).then(async (bmp) => {
+        const ig = await instagramCopy(bmp, bmp.width, bmp.height, `photo-${p.key.split("/").pop() ?? "kept.jpg"}`).catch(() => undefined);
+        if (live) setPhotos((list) => list.map((x) => (x.key === p.key ? { ...x, w: bmp.width, h: bmp.height, ig } : x)));
+        bmp.close();
+      }).catch(() => {});
     }
     return () => { live = false; };
   }, [photos]);
@@ -209,11 +232,11 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
   useEffect(() => () => { if (commentImageUrl?.startsWith("blob:")) URL.revokeObjectURL(commentImageUrl); }, [commentImageUrl]);
 
   // Posting keys: "tiktok" for the picked TikTok account, then the picked Meta channels.
-  // Instagram takes photos from 4:5 to 1.91:1 only: a photo post with one that doesn't fit leaves Instagram out (owner, 21 Nov 2026).
+  const metaPicked = social.filter((a) => picked.has(a.id) && a.status === "active");
+  // Instagram takes photos from 4:5 to 1.91:1 only: one that doesn't fit goes to Instagram cut to fit (owner, 21 Nov 2026).
   // Photos whose size isn't known yet (a kept photo still loading) aren't counted.
   const igMisfits = isPhotos ? instagramMisfits(photos) : [];
-  const igLeftOut = igMisfits.length > 0 && social.some((a) => picked.has(a.id) && a.status === "active" && a.platform === "instagram");
-  const metaPicked = social.filter((a) => picked.has(a.id) && a.status === "active" && !(igMisfits.length && a.platform === "instagram"));
+  const igCropNote = igMisfits.length > 0 && metaPicked.some((a) => a.platform === "instagram");
   const keys = [...(ttKey ? [TT] : []), ...metaPicked.map((a) => a.id)];
   const chOf = (key: string): Channel => (key === TT ? "tiktok" : (social.find((a) => a.id === key)?.platform ?? "facebook"));
   const apps = APPS.filter((p) => keys.some((k) => chOf(k) === p));
@@ -314,7 +337,7 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
     for (const f of images.slice(0, room)) {
       try {
         const j = await toJpeg(f);
-        added.push({ key: `${f.name}-${f.size}-${Math.random().toString(36).slice(2)}`, file: j.file, url: URL.createObjectURL(j.file), w: j.w, h: j.h });
+        added.push({ key: `${f.name}-${f.size}-${Math.random().toString(36).slice(2)}`, file: j.file, url: URL.createObjectURL(j.file), w: j.w, h: j.h, ig: j.ig });
       } catch {
         failed.push(f.name);
       }
@@ -329,7 +352,12 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
     else if (images.length > room) setMediaError(t("A post can have up to {max} photos, so only the first {n} were added.", { max: PHOTOS_MAX, n: room }));
   }
   const movePhoto = (i: number, by: number) => setPhotos((list) => { const n = [...list]; const [x] = n.splice(i, 1); n.splice(i + by, 0, x); return n; });
-  const removePhoto = (i: number) => setPhotos((list) => { const gone = list[i]; if (gone?.file) URL.revokeObjectURL(gone.url); return list.filter((_, k) => k !== i); });
+  const removePhoto = (i: number) => setPhotos((list) => {
+    const gone = list[i];
+    if (gone?.file) URL.revokeObjectURL(gone.url);
+    if (gone?.ig) URL.revokeObjectURL(gone.ig.url);
+    return list.filter((_, k) => k !== i);
+  });
 
   async function upload(f: File, what: string, kind?: "comment-image" | "photo"): Promise<string> {
     setBusy(t("Uploading {what}… {pct}%", { what, pct: 0 }));
@@ -358,12 +386,17 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
       // A photo post: each new photo is uploaded in order; photos an edit kept are sent as they are.
       const photoPaths: string[] = [];
       for (const [i, ph] of photos.entries()) photoPaths.push(ph.path ?? (await upload(ph.file as File, t("photo {n} of {total}", { n: i + 1, total: photos.length }), "photo")));
+      // Instagram gets the cut copies of photos that don't fit it, and the others as they are.
+      const instagramPhotoPaths: string[] = [];
+      if (isPhotos && metaPicked.some((a) => a.platform === "instagram") && photos.some((ph) => ph.ig))
+        for (const [i, ph] of photos.entries()) instagramPhotoPaths.push(ph.ig ? await upload(ph.ig.file, t("photo {n} for Instagram", { n: i + 1 }), "photo") : photoPaths[i]);
       // The comment image goes to Facebook (not as a draft) and Threads; Instagram comments are text only (C4d).
       const imageApps = metaPicked.some((a) => (a.platform === "facebook" && (!fbDraft || isPhotos)) || a.platform === "threads");
       const commentImagePath = !imageApps ? undefined : commentImage ? await upload(commentImage, t("the comment image"), "comment-image") : (keptImage?.path ?? undefined);
       setBusy(when === "draft" ? t("Saving…") : t("Scheduling…"));
       const at = when === "pick" ? new Date(pickAt).toISOString() : when;
       const video = isPhotos ? { photoPaths } : { source, storagePath, linkUrl: source === "link" ? linkUrl : undefined };
+      const instagramPhotos = instagramPhotoPaths.length ? { instagramPhotoPaths } : {};
       let tiktokPost: { id: string; scheduled_at: string | null; status: string } | null = null;
       if (ttKey) {
         const r = await fetch("/api/posts", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...choice, ...video, when: at, consent: true, account: ttAccount, staged: !!edit }) });
@@ -377,7 +410,7 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
         const r = await fetch("/api/social/posts", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ ...video, durationSec: isPhotos ? undefined : durationSec, when: at, tiktokPostId: tiktokPost?.id, commentImagePath, staged: !!edit, channels: metaPicked.map((a) => ({ accountId: a.id, caption: captionOf(a.platform), firstComment: a.platform === "facebook" && fbDraft && !isPhotos ? "" : commentOf(a.platform), settings: settingsFor(a.platform) })) }),
+          body: JSON.stringify({ ...video, ...instagramPhotos, durationSec: isPhotos ? undefined : durationSec, when: at, tiktokPostId: tiktokPost?.id, commentImagePath, staged: !!edit, channels: metaPicked.map((a) => ({ accountId: a.id, caption: captionOf(a.platform), firstComment: a.platform === "facebook" && fbDraft && !isPhotos ? "" : commentOf(a.platform), settings: settingsFor(a.platform) })) }),
         });
         const d = (await r.json()) as { posts?: { scheduled_at: string | null; group_id: string }[]; error?: string | string[] };
         if (!r.ok || !d.posts) {
@@ -525,7 +558,8 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
             {!isPhotos && frames && frames.maxGapSec > KEYFRAME_GAP_MAX && <p className="cx-warn" role="status">{t("Facebook and Threads may show this video broken, mixed with other footage: it has {what}. This is common with videos straight from AI generators like Google Flow. Export it again (for example through CapCut) and upload that file.", { what: frames.keyframes === 1 ? t("only one full frame in the whole clip") : t("a {n}-second stretch without a full frame", { n: Math.round(frames.maxGapSec) }) })}</p>}
             {!isPhotos && durationSec !== null && <p className="np-muted">{t("Length {length}", { length: `${Math.floor(durationSec / 60)}:${String(durationSec % 60).padStart(2, "0")}` })}{apps.includes("facebook") ? t(" · Facebook: {how}", { how: durationSec >= 3 && durationSec <= 90 ? t("goes out as a Reel") : t("goes out as a Page video (Reels are 3–90 s)") }) : ""}</p>}
             <p className="np-muted">{t("Photos per post:")} {(apps.length ? apps : APPS).map((p) => `${NAMES[p]} ${PHOTO_MAX[p]}`).join(" · ")}</p>
-            {igLeftOut && <p className="cx-warn" role="status">{t("Instagram is left out of this post: it takes photos from 4:5 (portrait) to 1.91:1 (landscape), and photo {list} doesn't fit. Crop it to post to Instagram too.", { list: igMisfits.join(", ") })}</p>}
+            <p className="np-muted">{t("Best photo size: 1080 × 1350 (4:5) fits every app. TikTok also takes 1080 × 1920 (9:16) full screen.")}</p>
+            {igCropNote && <p className="np-note" role="status">{t("For Instagram, photo {list} is cut to fit: Instagram takes photos from 4:5 (portrait) to 1.91:1 (landscape), so the middle part is used. The other apps get the whole photo.", { list: igMisfits.join(", ") })}</p>}
           </section>
 
           <section className="card">
@@ -735,7 +769,7 @@ export function Composer({ tiktok: initialTikTok, social: initialSocial, brands:
               <select className="np-input" value={pKey} onChange={(e) => setPreviewAcct(e.target.value)}>{inApp(pApp).map((k) => <option key={k} value={k}>{byKey.get(k)?.name}</option>)}</select>
             </label>
           )}
-          {mounted && pApp && pKey ? <PhonePreview channel={pApp} caption={captionOf(pApp)} commentImage={(pApp === "facebook" && (!fbDraft || isPhotos)) || pApp === "threads" ? commentImageUrl : null} comment={pApp === "facebook" && fbDraft && !isPhotos ? "" : commentOf(pApp)} video={isPhotos ? null : videoUrl} photos={isPhotos ? photos.map((ph) => ph.url) : undefined} who={who(pKey)} fbView={fbView} theme={theme} topic={topic} collaborators={collaborators} /> : <div className="pv-phone"><div className="pv-scr" /></div>}
+          {mounted && pApp && pKey ? <PhonePreview channel={pApp} caption={captionOf(pApp)} commentImage={(pApp === "facebook" && (!fbDraft || isPhotos)) || pApp === "threads" ? commentImageUrl : null} comment={pApp === "facebook" && fbDraft && !isPhotos ? "" : commentOf(pApp)} video={isPhotos ? null : videoUrl} photos={isPhotos ? photos.map((ph) => (pApp === "instagram" && ph.ig ? ph.ig.url : ph.url)) : undefined} who={who(pKey)} fbView={fbView} theme={theme} topic={topic} collaborators={collaborators} /> : <div className="pv-phone"><div className="pv-scr" /></div>}
           {pApp === "facebook" && <Seg value={fbView} set={setFbView} items={[["reels", "Reels"], ["feed", t("Feed")]]} label={t("Facebook view")} />}
           {(pApp === "threads" || (pApp === "facebook" && fbView === "feed")) && <Seg value={theme} set={setTheme} items={[["light", t("Light")], ["dark", t("Dark")]]} label={t("App theme")} />}
           <p className="cx-note">{pApp ? t(PREVIEW_NOTE[pApp]) : t("Pick a channel to see its preview.")}</p>

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { cleanPhotoPaths, filesOf } from "./photos.ts";
 import { checkPhotoLink, photoLink } from "./photo-links.ts";
-import { instagramMisfits, photoProblems } from "../social/rules.ts";
+import { instagramCrop, instagramMisfits, photoProblems } from "../social/rules.ts";
 import { toPhotoInfo } from "./rules.ts";
 
 process.env.TOKEN_ENCRYPTION_KEY = randomBytes(32).toString("base64");
@@ -31,10 +31,18 @@ test("TikTok's photo links are on rezekii.com, signed, and stop working when cha
   assert.equal(checkPhotoLink("../secrets.jpg", q.get("e"), q.get("s")), null);
 });
 
+test("Instagram crops: the middle 4:5 of a tall photo, the middle 1.91:1 of a wide one, nothing for one that fits", () => {
+  assert.deepEqual(instagramCrop(1080, 1920), { x: 0, y: 285, w: 1080, h: 1350 });
+  assert.deepEqual(instagramCrop(2000, 1000), { x: 45, y: 0, w: 1910, h: 1000 });
+  assert.equal(instagramCrop(1080, 1350), null);
+  assert.equal(instagramCrop(0, 0), null);
+});
+
 test("each app's photo limit, and Instagram's 4:5 to 1.91:1 shapes", () => {
   assert.deepEqual(photoProblems("tiktok", 35), []);
   assert.deepEqual(photoProblems("instagram", 21), ["Instagram takes up to 20 photos in one post. This post has 21."]);
-  assert.deepEqual(photoProblems("facebook", 11), ["Facebook takes up to 10 photos in one post. This post has 11."]);
+  assert.deepEqual(photoProblems("facebook", 35), []);
+  assert.deepEqual(photoProblems("facebook", 36), ["Facebook takes up to 35 photos in one post. This post has 36."]);
   // 1080×1920 (9:16) is too tall; 1080×1350 (4:5), 1080×1080 and 1910×1000 fit; a photo not sized yet isn't counted.
   assert.deepEqual(instagramMisfits([{ w: 1080, h: 1350 }, { w: 1080, h: 1920 }, { w: 1080, h: 1080 }, { w: 1910, h: 1000 }, { w: 0, h: 0 }, { w: 2000, h: 1000 }]), [2, 6]);
 });

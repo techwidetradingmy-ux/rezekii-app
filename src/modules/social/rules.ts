@@ -23,14 +23,24 @@ export const REEL_SECONDS = { min: 3, max: 90 };
 export const THREADS_MAX_SECONDS = 300;
 /**
  * Photos in one post, each app's own limit (owner, 21 Nov 2026): TikTok 35, Instagram and Threads 20 per carousel. Facebook
- * doesn't publish one for apps; 10 is Rezekii's.
+ * doesn't publish one for apps, so it gets TikTok's 35 (owner, 21 Nov 2026).
  */
-export const PHOTO_MAX: Record<Channel, number> = { tiktok: 35, facebook: 10, instagram: 20, threads: 20 };
+export const PHOTO_MAX: Record<Channel, number> = { tiktok: 35, facebook: 35, instagram: 20, threads: 20 };
 /** Instagram takes feed photos from 4:5 (portrait) to 1.91:1 (landscape), width ÷ height. */
 export const INSTAGRAM_RATIO = { min: 0.8, max: 1.91 };
-/** Photos Instagram can't take (1-based), by their width and height. */
-export const instagramMisfits = (photos: { w: number; h: number }[]) =>
-  photos.flatMap((p, i) => (p.w / p.h < INSTAGRAM_RATIO.min - 0.005 || p.w / p.h > INSTAGRAM_RATIO.max + 0.005 ? [i + 1] : []));
+/** Photos Instagram can't take as they are (1-based), by their width and height; a photo not sized yet isn't counted. */
+export const instagramMisfits = (photos: { w: number; h: number }[]) => photos.flatMap((p, i) => (instagramCrop(p.w, p.h) ? [i + 1] : []));
+/**
+ * Where to cut a photo so Instagram takes it (owner, 21 Nov 2026: crop it automatically): the middle part, as tall as 4:5
+ * for a taller photo or as wide as 1.91:1 for a wider one. Null when the photo already fits.
+ */
+export function instagramCrop(w: number, h: number): { x: number; y: number; w: number; h: number } | null {
+  if (!w || !h) return null;
+  const r = w / h;
+  if (r < INSTAGRAM_RATIO.min - 0.005) { const ch = Math.round(w / INSTAGRAM_RATIO.min); return { x: 0, y: Math.floor((h - ch) / 2), w, h: ch }; }
+  if (r > INSTAGRAM_RATIO.max + 0.005) { const cw = Math.round(h * INSTAGRAM_RATIO.max); return { x: Math.floor((w - cw) / 2), y: 0, w: cw, h }; }
+  return null;
+}
 
 /** Too many photos for this app (empty = OK). */
 export function photoProblems(ch: Channel, count: number, t: T = EN): string[] {

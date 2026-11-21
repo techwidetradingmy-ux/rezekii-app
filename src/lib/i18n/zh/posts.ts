@@ -546,7 +546,6 @@ export const POSTS: Record<string, string> = {
   "Add more photos ({n} of {max})": "添加更多照片（{n}/{max}）",
   "Choose one video (MP4, MOV or WebM, up to 50 MB) or photos (JPG, PNG or WebP)": "选择一个视频（MP4、MOV 或 WebM，最大 50 MB）或照片（JPG、PNG 或 WebP）",
   "Photos per post:": "每条发布的照片数：",
-  "Instagram is left out of this post: it takes photos from 4:5 (portrait) to 1.91:1 (landscape), and photo {list} doesn't fit. Crop it to post to Instagram too.": "这条发布不会发到 Instagram：Instagram 只接受 4:5（竖）到 1.91:1（横）的照片，而照片 {list} 不符合。裁剪后即可一起发到 Instagram。",
   "Turn on if the photos were made or heavily edited with AI.": "如果照片是用 AI 制作或大幅编辑的，请开启。",
   "Advanced: collaborators, tag people": "进阶：合作者、标记用户",
   "Previous photo": "上一张照片",
@@ -561,4 +560,7 @@ export const POSTS: Record<string, string> = {
   "Each photo can be up to 8 MB.": "每张照片最大 8 MB。",
   "The photos for this post aren't stored any more. Make a new post with them.": "此发布的照片已不再保存，请用它们新建一条发布。",
   "TikTok couldn't fetch the photos from Rezekii. Try again later.": "TikTok 无法从 Rezekii 获取照片，请稍后再试。",
+  "photo {n} for Instagram": "Instagram 用的第 {n} 张照片",
+  "Best photo size: 1080 × 1350 (4:5) fits every app. TikTok also takes 1080 × 1920 (9:16) full screen.": "最佳照片尺寸：1080 × 1350（4:5）适合所有应用。TikTok 也接受全屏的 1080 × 1920（9:16）。",
+  "For Instagram, photo {list} is cut to fit: Instagram takes photos from 4:5 (portrait) to 1.91:1 (landscape), so the middle part is used. The other apps get the whole photo.": "发到 Instagram 时，照片 {list} 会被裁剪：Instagram 只接受 4:5（竖）到 1.91:1（横）的照片，所以会使用中间部分。其他应用会收到完整照片。",
 };
