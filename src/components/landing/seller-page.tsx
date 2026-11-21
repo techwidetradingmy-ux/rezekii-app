@@ -8,7 +8,6 @@ import { Icon } from "@/components/icons";
 import { DemoStrip } from "@/components/shell";
 import { AiHead, Count, Tip } from "@/components/ui";
 import { Ava, ContactSheet } from "@/components/seller/seller-ui";
-import { JoinBar } from "@/components/join-board";
 import { PartnerCard } from "@/components/partner-card";
 import { Reveal } from "@/components/creator1/reveal";
 import { SELLER_RESULTS, rm } from "@/lib/mock";
@@ -98,7 +97,7 @@ const CHIPS = [tx("RM 0 a Month"), tx("Commission Only on Sales"), tx("Set Up in
 
 /**
  * Seller site, "Watch Rezekii Work" (owner, 29 Oct 2026): the AI-powered affiliate platform that connects sellers with
- * creators. JoinBar → hero → partner → what you get → without vs with → a week with Rezekii → everything in one app → what
+ * creators. Hero → partner → what you get → without vs with → a week with Rezekii → everything in one app → what
  * you'll see + sample testimonials → cost → 2 steps → custom service → FAQ → one CTA.
  * In English, Malay or Chinese (owner, 3 Nov 2026), with the language switch in the top bar for visitors.
  */
@@ -112,7 +111,6 @@ export function SellerLanding() {
   return (
     <>
       <DemoStrip />
-      <JoinBar />
       <header className="lp-hero">
         <nav className="site-nav site-wrap" aria-label={t("Main menu")}>
           <Link href="/seller" className="site-brand">

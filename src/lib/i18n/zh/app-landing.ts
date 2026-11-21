@@ -457,4 +457,6 @@ export const APP_LANDING: Record<string, string> = {
   "Yes. You can stop adding samples or end a product early. Samples already sent can't be taken back, and creators who have them still finish their videos.": "可以。你可以停止添加样品，或提早结束某件商品。已寄出的样品无法收回，拿到样品的达人仍会完成视频。",
   "Do you guarantee sales?": "你们保证销售吗？",
   "No. We pick the creators most likely to sell, but we don't control them, so we can't promise reach, sales or posting dates. You'll see real numbers from TikTok, updated every day.": "不保证。我们挑选最有可能卖得好的达人，但无法控制他们，所以不能承诺曝光、销售额或发布日期。你会看到来自 TikTok 的真实数据，每天更新。",
+  "Join now for free.": "现在免费加入。",
+  "It's free. Link TikTok Shop to see your real rates; you can unlink anytime.": "完全免费。连接 TikTok Shop 即可查看你的真实佣金，随时可以取消连接。",
 };

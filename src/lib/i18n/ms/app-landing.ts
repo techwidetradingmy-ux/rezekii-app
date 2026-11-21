@@ -468,4 +468,6 @@ export const APP_LANDING: Record<string, string> = {
   "Yes. You can stop adding samples or end a product early. Samples already sent can't be taken back, and creators who have them still finish their videos.": "Ya. Anda boleh berhenti tambah sampel atau tamatkan produk lebih awal. Sampel yang sudah dihantar tak boleh diambil balik, dan kreator yang memegangnya tetap siapkan video mereka.",
   "Do you guarantee sales?": "Adakah anda jamin jualan?",
   "No. We pick the creators most likely to sell, but we don't control them, so we can't promise reach, sales or posting dates. You'll see real numbers from TikTok, updated every day.": "Tidak. Kami pilih kreator yang paling berpotensi menjual, tapi kami tak kawal mereka, jadi kami tak boleh janji capaian, jualan atau tarikh siaran. Anda akan lihat angka sebenar daripada TikTok, dikemas kini setiap hari.",
+  "Join now for free.": "Sertai sekarang secara percuma.",
+  "It's free. Link TikTok Shop to see your real rates; you can unlink anytime.": "Ia percuma. Sambung TikTok Shop untuk melihat kadar sebenar anda; anda boleh putuskan sambungan bila-bila masa.",
 };

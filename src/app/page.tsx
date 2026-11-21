@@ -7,7 +7,6 @@ import { DemoStrip } from "@/components/shell";
 import { Icon } from "@/components/icons";
 import { AiHead } from "@/components/ui";
 import { Reveal } from "@/components/creator1/reveal";
-import { JoinBar } from "@/components/join-board";
 import { ShowcaseCheck } from "@/components/creator1/showcase-check";
 import { PartnerCard } from "@/components/partner-card";
 import { ForceLight } from "@/components/landing/force-light";
@@ -69,7 +68,6 @@ export default async function Landing() {
     <>
       <ForceLight />
       <DemoStrip />
-      <JoinBar />
       <header className="lp-hero">
         <nav className="site-nav site-wrap" aria-label={t("Main menu")}>
           <Link href="/" className="site-brand">
@@ -117,7 +115,7 @@ export default async function Landing() {
           <CreatorReport />
           <div className="lp-rbanner">
             <span className="lp-rbanner-ic" aria-hidden="true"><Icon name="scan" size={120} /></span>
-            <span className="lp-rcta-free"><Icon name="gift" size={14} /> {t("Free during Beta")}</span>
+            <span className="lp-rcta-free"><Icon name="gift" size={14} /> {t("Free")}</span>
             <h3>{t("Get Your Own Report, Free Today")}</h3>
             <ul className="lp-rbanner-parts">
               {PARTS.map((x) => <li key={x}><Icon name="check" size={13} width={3} />{t(x)}</li>)}

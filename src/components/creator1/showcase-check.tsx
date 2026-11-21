@@ -91,7 +91,7 @@ export function ShowcaseCheck() {
         </div>
         {tried && err && <span className="sc-err" role="alert">{err}</span>}
         {/* Price is just "free to join", by the button (owner, 29 Oct 2026). */}
-        <p className="sc-free"><b>{t("Beta open now. Join now for free.")}</b> · <a href="#how" className="sc-how">{t("How It Works")}</a></p>
+        <p className="sc-free"><b>{t("Join now for free.")}</b> · <a href="#how" className="sc-how">{t("How It Works")}</a></p>
       </form>
     );
   }
@@ -154,7 +154,7 @@ export function ShowcaseCheck() {
         </div>
         <span className="sc-tag"><Icon name="lock" size={14} /> {found ? t("Which ones are in your showcase?") : t("Example only")}</span>
       </div>
-      <small className="sc-note">{t("Free during Beta. Link TikTok Shop to see your real rates; you can unlink anytime.")}</small>
+      <small className="sc-note">{t("It's free. Link TikTok Shop to see your real rates; you can unlink anytime.")}</small>
       <Link href={`/signin?u=${encodeURIComponent(handle)}`} className="np-btn cr1-bigbtn">{t("Sign Up to Reveal")} <Icon name="arrow" size={20} /></Link>
       {/* Under every CTA (owner, 29 Oct 2026): people feel safe signing up to a TikTok-related app. */}
       <span className="sc-trust">
