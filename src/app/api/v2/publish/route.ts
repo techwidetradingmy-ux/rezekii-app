@@ -7,12 +7,13 @@ import { listAccounts } from "@/modules/social/accounts.ts";
 import { boardPosts } from "@/modules/social/board.ts";
 import { lastPostChannels, listBrands } from "@/modules/social/brands.ts";
 import { tiktokKey } from "@/modules/social/picker.ts";
+import { listShopee, shopeeLabel } from "@/modules/shopee/connections.ts";
 import { getLang, tFor } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
 const NO_STORE = { headers: { "cache-control": "private, no-store" } };
-const COLOR = { tiktok: "#00a862", facebook: "#1877f2", instagram: "#e1306c", threads: "#111111" } as const;
+const COLOR = { tiktok: "#00a862", facebook: "#1877f2", instagram: "#e1306c", threads: "#111111", shopee: "#ee4d2d" } as const;
 const SUB = { tiktok: "TikTok", facebook: "Facebook Page", instagram: "Instagram", threads: "Threads" } as const;
 const initials = (s: string) => s.replace(/^@/, "").split(/[\s._-]+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?";
 
@@ -30,13 +31,16 @@ export async function GET(req: NextRequest) {
   await settlePostRefunds(user.id).catch((e) => console.error("[post credits] refunds", e instanceof Error ? e.message : e));
   if (q.get("part") === "posts") return NextResponse.json(await boardPosts(user.id, lang), NO_STORE);
 
-  const [tiktok, social, brands, last, credits, free] = await Promise.all([
+  // Shopee shows only where the Shopee app's keys are set (as on rezekii.com's Shopee build).
+  const shopeeOn = !!process.env.SHOPEE_PARTNER_ID;
+  const [tiktok, social, brands, last, credits, free, shopee] = await Promise.all([
     userTikTokAccounts(user.id),
     listAccounts(user.id),
     listBrands(user.id),
     lastPostChannels(user.id),
     balanceOf(user.id, postSide(q.get("side"))),
     postsFree(user.id),
+    shopeeOn ? listShopee(user.id).catch(() => []) : Promise.resolve([]),
   ]);
   const channels = [
     ...tiktok.map((acc) => {
@@ -48,6 +52,12 @@ export async function GET(req: NextRequest) {
       const sub = a.platform === "facebook" ? t("Facebook Page") : a.username ? `@${a.username}` : SUB[a.platform];
       return { key: a.id, app: a.platform, name, sub, initials: initials(name), color: COLOR[a.platform], status: a.status === "reconnect" ? ("reconnect" as const) : ("active" as const) };
     }),
+    ...shopee.map((c) => {
+      const name = shopeeLabel(c);
+      // Shopee gives apps no username for an affiliate, only its account number.
+      const sub = c.role === "seller" ? t("Shopee Shop") : t("Shopee Affiliate · ID {id}", { id: c.shopee_user_id });
+      return { key: `shopee:${c.id}`, app: "shopee" as const, name, sub, initials: initials(name), color: COLOR.shopee, status: c.status, role: c.role, shopId: c.shop_id };
+    }),
   ];
-  return NextResponse.json({ channels, brands, last, credits, free }, NO_STORE);
+  return NextResponse.json({ channels, brands, last, credits, free, shopeeOn }, NO_STORE);
 }

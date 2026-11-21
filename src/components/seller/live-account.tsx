@@ -10,6 +10,7 @@ import { useLang, useT } from "@/lib/i18n/client";
 import { dateLocale, type Lang } from "@/lib/i18n/lang";
 import { AccountSwitcher } from "@/components/account-switcher";
 import { signOut } from "@/lib/sign-out";
+import { ShopeeAccounts, type ShopeeChan } from "@/components/shopee-accounts";
 
 const day = (iso: string, lang: Lang) => new Date(iso).toLocaleDateString(dateLocale(lang), { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kuala_Lumpur" });
 
@@ -39,14 +40,15 @@ export function LiveShopAuth() {
   );
 }
 
-type Chan = { key: string; app: string; name: string; sub: string; status: "active" | "reconnect" };
+type Chan = ShopeeChan;
 const APPS = [["facebook", "Facebook"], ["instagram", "Instagram"], ["threads", "Threads"]] as const;
 /** Facebook, Instagram and Threads for the shop's posts, connected for real. */
 export function LiveSellerSocials() {
   const t = useT();
   const { toast } = useDemo();
   const [chans, setChans] = useState<Chan[] | null>(null);
-  const load = () => fetch("/api/v2/publish?part=setup&side=seller", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d: { channels?: Chan[] } | null) => setChans(d?.channels ?? [])).catch(() => setChans([]));
+  const [shopeeOn, setShopeeOn] = useState(false);
+  const load = () => fetch("/api/v2/publish?part=setup&side=seller", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d: { channels?: Chan[]; shopeeOn?: boolean } | null) => { setChans(d?.channels ?? []); setShopeeOn(!!d?.shopeeOn); }).catch(() => setChans([]));
   useEffect(() => {
     void load();
     const q = new URLSearchParams(window.location.search);
@@ -87,6 +89,7 @@ export function LiveSellerSocials() {
             </div>
           );
         })}
+        {chans !== null && shopeeOn && <ShopeeAccounts chans={chans} from="seller-account" row="sl-acct" size={30} reload={() => void load()} />}
       </div>
     </section>
   );

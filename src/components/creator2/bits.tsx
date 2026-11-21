@@ -9,7 +9,7 @@ import { useT } from "@/lib/i18n/client";
 import type { Platform } from "@/lib/mock-creator2";
 
 /** Platform logos for the publish screens and account: the real logos (owner, 30 Oct 2026). */
-export function PlatformIcon({ name, size = 40 }: { name: Platform; size?: number }) {
+export function PlatformIcon({ name, size = 40 }: { name: Platform | "Shopee"; size?: number }) {
   return <BrandLogo name={name} size={size} className="cr2-pi" />;
 }
 

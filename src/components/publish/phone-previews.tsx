@@ -110,7 +110,7 @@ function Rich({ text, links, tags, at, handles = true }: { text: string; links?:
 }
 
 export type Who = { name: string; username: string; avatar: string | null; initials: string; color: string };
-export type PreviewProps = { channel: Channel; caption: string; comment: string; commentImage?: string | null; video: string | null; cover?: string | null; photos?: string[]; who: Who; fbView: "reels" | "feed"; theme: "light" | "dark"; topic?: string; collaborators?: string[] };
+export type PreviewProps = { channel: Channel; caption: string; comment: string; commentImage?: string | null; video: string | null; cover?: string | null; photos?: string[]; who: Who; fbView: "reels" | "feed"; theme: "light" | "dark"; topic?: string; collaborators?: string[]; product?: string };
 
 /** Starts muted (browsers only autoplay muted video); the speaker button turns the sound on and off. */
 function Video({ src, cover, s = 16 }: { src: string | null; cover?: string | null; s?: number }) {
@@ -331,7 +331,40 @@ function Threads({ caption, comment, commentImage, video, cover, photos, who, th
 }
 
 /** The phone for one app, as it looks after posting. */
+/**
+ * Shopee Video (owner, 21 Nov 2026, from rezekii.com's Shopee build), laid out like Shopee's own preview in Seller Centre: the
+ * Discover · Video · Live · For You tabs, the side rail, @name and the caption (tap more), and Shopee's bottom bar.
+ */
+function Shopee({ caption, video, cover, who, product }: PreviewProps) {
+  const [open, setOpen] = useState(false);
+  const t = useT();
+  const c = clamp(caption, `400 ${14.5 * PT}px ${TT_FONT}`, 280 - 98 * PT, 2, ` ${t("more")}`);
+  const handle = who.name.startsWith("@") ? who.name : `@${who.name}`;
+  return (
+    <div className="pb-pv-scr pb-pv-tt">
+      <StatusBar color="#fff" />
+      <div className="pb-pv-vid" style={{ bottom: "calc(83 * var(--p))" }}><Media video={video} cover={cover} /></div>
+      <div className="pb-pv-tt-top pb-pv-sh"><span className="pb-pv-tt-live"><Ic n="user" s={24} /></span><div className="pb-pv-tt-tabs"><span>Discover</span><b>Video</b><span>Live</span><span>For You</span></div><span className="pb-pv-tt-srch"><Ic n="search" s={24} /></span></div>
+      <div className="pb-pv-rail pb-pv-sh" style={{ "--rr": 25 } as CSSProperties}>
+        <span className="it" style={{ top: "47%" }}><span className="pb-pv-tt-av"><Av who={who} size={46} /><i>+</i></span></span>
+        <span className="it" style={{ top: "57%" }}><Ic n="heartF" s={32} /><span>0</span></span>
+        <span className="it" style={{ top: "65%" }}><Ic n="cmtF" s={30} /><span>0</span></span>
+        <span className="it" style={{ top: "73%" }}><Ic n="shareF" s={30} /><span>{t("Share")}</span></span>
+      </div>
+      {open && <div className="pb-pv-dim" onClick={() => setOpen(false)} />}
+      <div className={`pb-pv-tt-txt pb-pv-sh${open ? " open" : ""}`}>
+        {product && <div className="pb-pv-sp-prod"><Ic n="bag" s={13} /><span>{product}</span></div>}
+        <div className="nm">{handle}</div>
+        {open ? <div className="cp" onClick={() => setOpen(false)}><Rich text={caption} tags="bold" at="bold" /> <More label={<b>{t("less")}</b>} onClick={() => setOpen(false)} /></div>
+          : <div className="cp"><Rich text={c.text} tags="bold" at="bold" />{c.cut && <> <More label={<b>{t("more")}</b>} onClick={() => setOpen(true)} /></>}</div>}
+      </div>
+      <div className="pb-pv-bar pb-pv-tt-bar"><Nav n="homeO" label="Home" /><Nav n="store" label="New Products" /><Nav n="reels" label="Live & Video" on /><Nav n="bell" label="Notification" /><Nav n="user" label="Me" /></div>
+      <span className="pb-pv-hi" style={{ color: "#fff" }} />
+    </div>
+  );
+}
+
 export function PhonePreview(props: PreviewProps) {
-  const C = props.channel === "tiktok" ? TikTok : props.channel === "instagram" ? Instagram : props.channel === "facebook" ? Facebook : Threads;
+  const C = props.channel === "tiktok" ? TikTok : props.channel === "shopee" ? Shopee : props.channel === "instagram" ? Instagram : props.channel === "facebook" ? Facebook : Threads;
   return <div className="pb-pv-phone"><C {...props} /></div>;
 }

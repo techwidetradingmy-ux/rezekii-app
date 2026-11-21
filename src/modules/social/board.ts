@@ -56,7 +56,7 @@ function socialChannel(s: SocialPostRow, lang: Lang): BoardChannel {
     : s.status === "processing" ? translate(lang, "{app} is processing the video", { app })
     : s.status === "scheduled" && s.last_error ? (now ? translate(lang, "Trying again now: {error}", { error: why(s.last_error) }) : translate(lang, "Trying again soon: {error}", { error: why(s.last_error) }))
     : now ? translate(lang, "Starting within a minute") : "";
-  return { id: s.id, kind: s.platform, account: s.account_id ?? "", name: s.account_name ?? NAMES[s.platform], state, note, permalink: removed ? null : s.permalink, canCancel: s.status === "scheduled" || s.status === "draft" || s.status === "failed", canRetry: s.status === "failed", commentFailed: posted && s.comment_status === "failed", active: s.status === "publishing" || s.status === "processing" || (posted && s.comment_status === "pending") || (s.status === "scheduled" && soon(s.next_attempt_at)) };
+  return { id: s.id, kind: s.platform, account: s.account_id ?? (s.shopee_connection_id ? `shopee:${s.shopee_connection_id}` : ""), name: s.account_name ?? NAMES[s.platform], state, note, permalink: removed ? null : s.permalink, canCancel: s.status === "scheduled" || s.status === "draft" || s.status === "failed", canRetry: s.status === "failed", commentFailed: posted && s.comment_status === "failed", active: s.status === "publishing" || s.status === "processing" || (posted && s.comment_status === "pending") || (s.status === "scheduled" && soon(s.next_attempt_at)) };
 }
 
 const ORDER: Channel[] = ["tiktok", "facebook", "instagram", "threads"];

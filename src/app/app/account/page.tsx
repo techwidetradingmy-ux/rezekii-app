@@ -1,5 +1,6 @@
 "use client";
 
+import { ShopeeAccounts } from "@/components/shopee-accounts";
 import { FeedbackForm } from "@/components/feedback-form";
 import { COUNTRIES, DIAL_OPTIONS, countryName, dialOfNumber, RACES } from "@/lib/countries";
 import { SUPPORT } from "@/lib/support";
@@ -220,16 +221,18 @@ export default function Account() {
   };
 
   // Signed in (owner, 31 Oct 2026): her real channels for Connections, and a message when she comes back from connecting one.
-  type Chan = { key: string; app: "tiktok" | "facebook" | "instagram" | "threads"; name: string; sub: string; status: "active" | "reconnect" };
+  type Chan = { key: string; app: "tiktok" | "facebook" | "instagram" | "threads" | "shopee"; name: string; sub: string; status: "active" | "reconnect"; role?: "seller" | "affiliate" };
   const [chans, setChans] = useState<Chan[] | null>(null);
-  const loadChans = () => fetch("/api/v2/publish?part=setup&side=creator", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d: { channels?: Chan[] } | null) => setChans(d?.channels ?? [])).catch(() => setChans([]));
+  // Shopee only where its app keys are set; until then its row still reads Coming Soon.
+  const [shopeeOn, setShopeeOn] = useState(false);
+  const loadChans = () => fetch("/api/v2/publish?part=setup&side=creator", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d: { channels?: Chan[]; shopeeOn?: boolean } | null) => { setChans(d?.channels ?? []); setShopeeOn(!!d?.shopeeOn); }).catch(() => setChans([]));
   useEffect(() => {
     if (!live) return;
     void loadChans();
     const q = new URLSearchParams(window.location.search);
     const result = q.get("connect");
     if (result) {
-      const app = ({ tiktok: "TikTok", facebook: "Facebook", instagram: "Instagram", threads: "Threads" } as Record<string, string>)[q.get("channel") ?? ""] ?? t("The app");
+      const app = ({ tiktok: "TikTok", facebook: "Facebook", instagram: "Instagram", threads: "Threads", shopee: "Shopee" } as Record<string, string>)[q.get("channel") ?? ""] ?? t("The app");
       toast(result === "ok" ? t("{app} connected.", { app }) : result === "no_pages" ? t("No Facebook Pages were picked. Connect again and tick your Pages.") : result === "personal" ? t("That Instagram account is personal. Switch it to a Business or Creator account, then connect again.") : result === "cancelled" ? t("{app} sign-in was cancelled.", { app }) : t("{app} didn't connect. Please try again.", { app }));
       window.history.replaceState(null, "", `${window.location.pathname}${window.location.hash}`);
     }
@@ -574,11 +577,13 @@ export default function Account() {
                 </Fragment>
               );
             })}
-            <div className="cr2-cell row">
-              <BrandLogo name="Shopee" size={34} className="cr2-pi" />
-              <span className="cr2-conn"><b>Shopee</b><small>{t("Shopee Affiliate, on the way")}</small></span>
-              <span className="badge badge-amber">{t("Coming Soon")}</span>
-            </div>
+            {chans !== null && shopeeOn ? <ShopeeAccounts chans={chans} from="account" row="cr2-cell row" reload={() => void loadChans()} /> : (
+              <div className="cr2-cell row">
+                <BrandLogo name="Shopee" size={34} className="cr2-pi" />
+                <span className="cr2-conn"><b>Shopee</b><small>{t("Shopee Affiliate, on the way")}</small></span>
+                <span className="badge badge-amber">{t("Coming Soon")}</span>
+              </div>
+            )}
           </div>
         </section>
         )}

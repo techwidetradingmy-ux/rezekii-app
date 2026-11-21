@@ -16,11 +16,12 @@ import { postToEdit, saveEdit } from "./post-edits";
 import { creatorInfo, keepRecipe, sendPost, swapEdit, upload, type CreatorInfo } from "@/lib/live-publish";
 import type { EditPost } from "@/modules/posting/edit.ts";
 import type { Recipe } from "@/modules/social/recipe.ts";
+import type { ShopeeItem } from "@/integrations/shopee/products.ts";
 import { PhonePreview, type Who } from "./phone-previews";
 import {
   APPS, CAPTION_MAX, COLLABORATORS_MAX, COMMENT_MAX, ICON, NAMES, PRIVACY, REPLY_CONTROLS, TAGS_MAX,
   autoCaption, autoComment, channelProblems, channelWarnings, cleanTopic, hasLinkOrCta, lengthFor, links, parseHashtags,
-  parseUsernames, threadsTopic, tiktokProblems, withHashtags,
+  parseUsernames, shopeeProblems, shopeeProduct, threadsTopic, tiktokProblems, withHashtags,
   type Channel, type Platform, type Privacy, type ReplyControl, type TrialMode,
 } from "./rules";
 import { PHOTO_MAX, instagramCrop, instagramMisfits, photoProblems } from "@/modules/social/rules.ts";
@@ -202,6 +203,10 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   useEffect(() => () => { if (commentImageUrl?.startsWith("blob:")) URL.revokeObjectURL(commentImageUrl); }, [commentImageUrl]);
   const [igFeed, setIgFeed] = useState(true);
   const [igTrial, setIgTrial] = useState<TrialMode>("off");
+  // Shopee Video (owner, 21 Nov 2026, from rezekii.com's Shopee build): Duet and Stitch start on; a shop picks up to 6 of its own products.
+  const [shopeeAllow, setShopeeAllow] = useState({ duet: true, stitch: true });
+  const [shopeeItems, setShopeeItems] = useState<Record<string, number[]>>({});
+  const [shopProducts, setShopProducts] = useState<Record<string, { items?: ShopeeItem[]; error?: string }>>({});
   const [collabText, setCollabText] = useState("");
   const [tagText, setTagText] = useState("");
   const [replies, setReplies] = useState<ReplyControl>("everyone");
@@ -256,7 +261,24 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     });
 
   const ttKey = [...picked].find((k) => connected.has(k) && isTikTok(byKey.get(k)));
-  const metaPicked = channels.filter((c) => picked.has(c.key) && c.status === "active" && c.app !== "tiktok");
+  const metaPicked = channels.filter((c) => picked.has(c.key) && c.status === "active" && c.app !== "tiktok" && c.app !== "shopee");
+  const shopeePicked = channels.filter((c) => picked.has(c.key) && c.status === "active" && c.app === "shopee");
+  // A shop shows its own products under the video; until some are picked, Product Link counts when it is one of the shop's own.
+  const product = shopeeProduct(link.trim());
+  const itemsFor = (c: PubChannel): number[] => (c.role !== "seller" ? [] : shopeeItems[c.key] ?? (product && product.shopId === c.shopId ? [Number(product.itemId)] : []));
+  const sellersPicked = shopeePicked.filter((c) => c.role === "seller").map((c) => c.key).join(",");
+  const asked = useRef(new Set<string>());
+  useEffect(() => {
+    for (const key of sellersPicked ? sellersPicked.split(",") : []) {
+      if (asked.current.has(key)) continue;
+      asked.current.add(key);
+      const fail = tx("Couldn't load the shop's products from Shopee. Try again.");
+      fetch(`/api/shopee/connections/${key.replace("shopee:", "")}/products`, { cache: "no-store" })
+        .then(async (r) => (await r.json()) as { items?: ShopeeItem[]; error?: string })
+        .then((d) => setShopProducts((o) => ({ ...o, [key]: d.items ? { items: d.items } : { error: d.error ?? fail } })))
+        .catch(() => setShopProducts((o) => ({ ...o, [key]: { error: fail } })));
+    }
+  }, [sellersPicked]);
   // TikTok requires its rules for the account to be asked fresh each time it's picked for a post.
   useEffect(() => {
     if (!liveSide || !ttKey) return;
@@ -276,7 +298,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   const promoLabel = promo.on && promo.branded ? t("Your video will be labeled \"Paid partnership\".") : promo.on && promo.own ? t("Your video will be labeled \"Promotional content\".") : "";
   const promoIncomplete = !!ttKey && mode === "direct" && when !== "draft" && promo.on && !promo.own && !promo.branded;
   const brandedBlocked = privacy === "SELF_ONLY" && !promo.branded;
-  const keys = [...(ttKey ? [ttKey] : []), ...metaPicked.map((c) => c.key)];
+  const keys = [...(ttKey ? [ttKey] : []), ...metaPicked.map((c) => c.key), ...shopeePicked.map((c) => c.key)];
   const chOf = (key: string): Channel => byKey.get(key)?.app ?? "facebook";
   const apps = APPS.filter((p) => keys.some((k) => chOf(k) === p));
   const inApp = (p: Channel) => keys.filter((k) => chOf(k) === p);
@@ -284,7 +306,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   const mainFull = withHashtags(main, parseHashtags(tagsText));
   // Captions never carry the link or call to action; those go in the first comment (TikTok: the yellow basket).
   const captionOf = (p: Channel) => capOver[p] ?? autoCaption(p, mainFull);
-  const commentOf = (p: Channel) => (p === "tiktok" ? "" : (comOver[p] ?? autoComment(p, link.trim(), ownComment, cta)));
+  const commentOf = (p: Channel) => (p === "tiktok" || p === "shopee" ? "" : (comOver[p] ?? autoComment(p, link.trim(), ownComment, cta)));
   // "Facebook · 3 Pages" and "3 Facebook Pages": what each app calls a channel.
   const appLabel = (p: Channel) => { const n = inApp(p).length; const v = { app: NAMES[p], n }; return n < 2 ? NAMES[p] : p === "facebook" ? t("{app} · {n} Pages", v) : p === "threads" ? t("{app} · {n} profiles", v) : t("{app} · {n} accounts", v); };
   const summary = () => apps.map((p) => { const n = inApp(p).length; const v = { app: NAMES[p], n }; return n < 2 ? `${NAMES[p]} ${byKey.get(inApp(p)[0])?.name ?? ""}`.trim() : p === "facebook" ? t("{n} {app} Pages", v) : p === "threads" ? t("{n} {app} profiles", v) : t("{n} {app} accounts", v); }).join(lang === "zh" ? "、" : ", ");
@@ -329,7 +351,13 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
       tiktokProblems(choice).forEach((en, i) => out.push(en.startsWith("The caption") ? [t("TikTok: {problem}", { problem: shownAs[i] }), "caption"] : [shownAs[i], "tiktok"]));
     }
     for (const p of apps)
-      if (p !== "tiktok") {
+      if (p === "shopee") {
+        // A photo post's Shopee problem is in photoProblems above.
+        if (!isPhotos) {
+          const shownAs = shopeeProblems(captionOf(p), durationSec, t);
+          shopeeProblems(captionOf(p), durationSec).forEach((en, i) => out.push([shownAs[i], en.includes("Video takes") ? "video" : "caption"]));
+        }
+      } else if (p !== "tiktok") {
         const dur = isPhotos ? null : durationSec;
         const shownAs = channelProblems(p, captionOf(p), commentOf(p), dur, t);
         channelProblems(p, captionOf(p), commentOf(p), dur).forEach((en, i) => out.push([shownAs[i], en.includes("first comment") ? "comment" : /videos up to|at least 3 seconds/.test(en) ? "video" : "caption"]));
@@ -359,8 +387,11 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   ];
 
   /** Real accounts: each app's own sign-in, then back here with the result. */
-  function connectReal(app: Channel) {
-    window.location.href = app === "tiktok" ? "/api/auth/tiktok/start" : `/api/auth/meta/${app}/start${liveSide === "seller" ? "?from=seller" : ""}`;
+  function connectReal(app: Channel, role?: PubChannel["role"]) {
+    const seller = liveSide === "seller";
+    window.location.href = app === "tiktok" ? "/api/auth/tiktok/start"
+      : app === "shopee" ? `/api/auth/shopee/start?role=${role ?? "affiliate"}${seller ? "&from=seller" : ""}`
+      : `/api/auth/meta/${app}/start${seller ? "?from=seller" : ""}`;
   }
   async function checkReal(c: PubChannel) {
     const r = await fetch("/api/channels/check", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ key: c.key }) }).catch(() => null);
@@ -371,7 +402,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     say(status === "active" ? t("{name} is connected and working.", { name: c.name }) : t("{name} needs reconnecting.", { name: c.name }));
   }
   async function disconnectReal(c: PubChannel) {
-    const r = await fetch(c.app === "tiktok" ? `/api/account/tiktok/${encodeURIComponent(openIdOf(c.key))}` : `/api/social/accounts/${c.key}`, { method: "DELETE" }).catch(() => null);
+    const r = await fetch(c.app === "tiktok" ? `/api/account/tiktok/${encodeURIComponent(openIdOf(c.key))}` : c.app === "shopee" ? `/api/shopee/connections/${c.key.replace("shopee:", "")}` : `/api/social/accounts/${c.key}`, { method: "DELETE" }).catch(() => null);
     if (!r?.ok) return say(t("Couldn't disconnect. Try again."));
     setChannels((l) => l.filter((x) => x.key !== c.key));
     setPicked((s) => new Set([...s].filter((k) => k !== c.key)));
@@ -593,7 +624,10 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
         side, when: at, durationSec: isPhotos ? null : durationSec, staged: !!edit, commentImagePath,
         video: isPhotos ? { photoPaths, ...(instagramPhotoPaths.length ? { instagramPhotoPaths } : {}) } : { source, storagePath, linkUrl: source === "link" ? linkUrl : undefined },
         tiktok: ttKey ? { account: openIdOf(ttKey), choice: { mode, caption: captionOf("tiktok"), privacyLevel: privacy || null, allowComments: allow.comments && !lockAllow.comments, allowDuet: allow.duet && !lockAllow.duet && !isPhotos, allowStitch: allow.stitch && !lockAllow.stitch && !isPhotos, promo: promo.on, brandOrganic: promo.own, brandedContent: promo.branded, isAigc, durationSec: isPhotos ? null : durationSec } } : undefined,
-        others: metaPicked.map((c) => ({ accountId: c.key, caption: captionOf(c.app), firstComment: c.app === "facebook" && fbDraft ? "" : commentOf(c.app), settings: settingsFor(c.app) })),
+        others: [
+          ...metaPicked.map((c) => ({ accountId: c.key, caption: captionOf(c.app), firstComment: c.app === "facebook" && fbDraft ? "" : commentOf(c.app), settings: settingsFor(c.app) })),
+          ...shopeePicked.map((c) => ({ accountId: c.key, caption: captionOf("shopee"), firstComment: "", settings: { items: itemsFor(c), duet: shopeeAllow.duet, stitch: shopeeAllow.stitch, aigc: isAigc } })),
+        ],
       }, t);
       // An edit replaces the old post only now; if it had started sending, the changes are dropped and it goes out as it was.
       if (edit && r.key) await swapEdit(edit.key, r.key, side, t);
@@ -661,8 +695,13 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     const n = lengthFor(p, captionOf(p));
     return <span key={p} className={n > CAPTION_MAX[p] ? "over" : ""}><PlatformIcon name={ICON[p]} size={14} />{n.toLocaleString("en-US")} / {CAPTION_MAX[p].toLocaleString("en-US")}</span>;
   });
+  // The Shopee preview names the picked products of the account being previewed (sellers only).
+  const pShop = pKey ? shopeePicked.find((c) => c.key === pKey) : undefined;
+  const nItems = pShop ? itemsFor(pShop).length : 0;
+  const productLabel = !nItems ? undefined : nItems === 1 ? t("Product from your shop") : t("{n} products from your shop", { n: nItems });
   const linkWhere = (p: Channel) =>
     p === "tiktok" ? t("Yellow basket")
+      : p === "shopee" ? (shopeePicked.some((c) => itemsFor(c).length) ? t("Your picked products, under the video") : t("Not added (Shopee shows a shop's own products only)"))
       : p === "facebook" && fbDraft ? t("No comment on drafts")
       : p === "instagram" ? t("First comment (links not tappable)")
       : t("First comment");
@@ -880,6 +919,11 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
               </div>
             )}
             {apps.length > 0 && <ul className="pb-how">{apps.map((p) => <li key={p}><PlatformIcon name={ICON[p]} size={18} /><span><b>{appLabel(p)}</b><small>{linkWhere(p)}</small></span></li>)}</ul>}
+            {/* Shopee only lets a shop add its own products (tested 30 Oct 2026); affiliates' videos go out without one. */}
+            {shopeePicked.some((c) => c.role === "affiliate") && <p className="pb-warn">{t("Shopee doesn't let apps add a product to an affiliate account's video yet, so it posts without one. Only a shop can show its own products.")}</p>}
+            {shopeePicked.filter((c) => c.role === "seller").map((c) => (
+              <ShopeeProducts key={c.key} name={c.name} list={shopProducts[c.key]} picked={itemsFor(c)} onPick={(ids) => setShopeeItems((o) => ({ ...o, [c.key]: ids }))} />
+            ))}
             {secErr("comment")}
           </section>
 
@@ -980,7 +1024,23 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
                   </label>
                 </div>
               )}
-              <p className="np-muted">{t("Need it private? Use a Facebook draft.")}</p>
+              {apps.includes("shopee") && (
+                <div className="pb-set">
+                  <span className="pb-gh"><PlatformIcon name="Shopee" size={16} />Shopee</span>
+                  <div className="np-checks">
+                    <label className="np-check"><input type="checkbox" checked={shopeeAllow.duet} onChange={(e) => setShopeeAllow((a) => ({ ...a, duet: e.target.checked }))} />{t("Allow Duet")}</label>
+                    <label className="np-check"><input type="checkbox" checked={shopeeAllow.stitch} onChange={(e) => setShopeeAllow((a) => ({ ...a, stitch: e.target.checked }))} />{t("Allow Stitch")}</label>
+                  </div>
+                  {ttKey && mode === "direct" ? <p className="np-muted">{t("AI label: the AI-generated content switch in TikTok settings applies to Shopee too.")}</p> : (
+                    <div className="np-switchrow">
+                      <span><b>{t("AI-Generated Content")}</b><small>{t("Shopee shows an AI label on the video when this is on.")}</small></span>
+                      <button type="button" role="switch" aria-checked={isAigc} className={isAigc ? "np-switch on" : "np-switch"} onClick={() => setIsAigc(!isAigc)} aria-label={t("AI-Generated Content")}><span /></button>
+                    </div>
+                  )}
+                  <p className="np-muted">{t("Before an account's first post from Rezekii, post one video from Shopee Seller Centre on a computer (Marketing Centre → Live & Video → Upload Video) and tick Shopee Video's terms.")}</p>
+                </div>
+              )}
+              {apps.some((p) => p !== "tiktok" && p !== "shopee") && <p className="np-muted">{t("Need it private? Use a Facebook draft.")}</p>}
               {secErr("settings")}
             </section>
           )}
@@ -1000,7 +1060,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
           )}
           <div className="pb-phone-wrap">
             {mounted && pApp && pKey ? (
-              <PhonePreview channel={pApp} caption={captionOf(pApp)} comment={pApp === "facebook" && fbDraft ? "" : commentOf(pApp)} commentImage={(pApp === "facebook" && !fbDraft) || pApp === "threads" ? commentImageUrl : null} video={videoUrl} cover={cover} photos={isPhotos ? photos.map((ph) => (pApp === "instagram" && ph.ig ? ph.ig.url : ph.url)) : undefined} who={who(pKey)} fbView={fbView} theme={theme} topic={topic} collaborators={collaborators} />
+              <PhonePreview channel={pApp} product={pApp === "shopee" ? productLabel : undefined} caption={captionOf(pApp)} comment={pApp === "facebook" && fbDraft ? "" : commentOf(pApp)} commentImage={(pApp === "facebook" && !fbDraft) || pApp === "threads" ? commentImageUrl : null} video={videoUrl} cover={cover} photos={isPhotos ? photos.map((ph) => (pApp === "instagram" && ph.ig ? ph.ig.url : ph.url)) : undefined} who={who(pKey)} fbView={fbView} theme={theme} topic={topic} collaborators={collaborators} />
             ) : (
               <div className="pb-pv-phone"><div className="pb-pv-scr" /></div>
             )}
@@ -1078,9 +1138,10 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
         <ChannelsSheet
           channels={channels}
           connectable={missing}
+          shopeeOn={!!setup.shopeeOn}
           onConnect={connectApp}
           onConnectApp={liveSide ? connectReal : undefined}
-          onReconnect={(c) => { if (liveSide) return connectReal(c.app); setChannels((l) => l.map((x) => (x.key === c.key ? { ...x, status: "active" } : x))); say(t("{name} reconnected", { name: c.name })); }}
+          onReconnect={(c) => { if (liveSide) return connectReal(c.app, c.role); setChannels((l) => l.map((x) => (x.key === c.key ? { ...x, status: "active" } : x))); say(t("{name} reconnected", { name: c.name })); }}
           onCheck={(c) => (liveSide ? void checkReal(c) : say(c.status === "active" ? t("{name} is working.", { name: c.name }) : t("{name} needs reconnecting.", { name: c.name })))}
           onDisconnect={(c) => {
             if (liveSide) return void disconnectReal(c);
@@ -1112,6 +1173,7 @@ const PREVIEW_NOTE: Record<Channel, string> = {
   instagram: tx("Reels viewer."),
   facebook: tx("Shown as a Reel. Switch to Feed to compare."),
   threads: tx("Threads feed."),
+  shopee: tx("As it appears in Shopee Video. A shop's own product shows under the caption."),
 };
 
 /** Notes under the phone where an app treats the post differently. [text, informational] */
@@ -1159,7 +1221,7 @@ function Tabs<T extends string>({ value, set, items, label }: { value: T; set: (
 }
 
 /** Channels: everything connected, grouped by app. Each can be checked, reconnected when the app stopped accepting it, or disconnected. */
-function ChannelsSheet({ channels, connectable, onConnect, onConnectApp, onReconnect, onCheck, onDisconnect, onClose }: { channels: PubChannel[]; connectable: PubChannel[]; onConnect: (c: PubChannel) => void; onConnectApp?: (p: Channel) => void; onReconnect: (c: PubChannel) => void; onCheck: (c: PubChannel) => void; onDisconnect: (c: PubChannel) => void; onClose: () => void }) {
+function ChannelsSheet({ channels, connectable, shopeeOn, onConnect, onConnectApp, onReconnect, onCheck, onDisconnect, onClose }: { channels: PubChannel[]; connectable: PubChannel[]; shopeeOn?: boolean; onConnect: (c: PubChannel) => void; onConnectApp?: (p: Channel, role?: PubChannel["role"]) => void; onReconnect: (c: PubChannel) => void; onCheck: (c: PubChannel) => void; onDisconnect: (c: PubChannel) => void; onClose: () => void }) {
   const { toast } = useDemo();
   const t = useT();
   const can = useCanPost();
@@ -1169,7 +1231,7 @@ function ChannelsSheet({ channels, connectable, onConnect, onConnectApp, onRecon
     <Sheet title={t("Channels")} onClose={onClose}>
       <p className="np-muted" style={{ margin: 0 }}>{t("Connect once. Rezekii never sees your password.")}</p>
       {channels.length > 8 && <label className="pb-search">{SEARCH_ICON}<input className="np-input" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("Search {n} channels", { n: channels.length })} aria-label={t("Search channels")} /></label>}
-      {APPS.map((p) => {
+      {APPS.filter((p) => p !== "shopee" || shopeeOn).map((p) => {
         const list = channels.filter((c) => c.app === p && (!s || `${c.name} ${c.sub}`.toLowerCase().includes(s)));
         if (s && !list.length) return null;
         const add = connectable.find((c) => c.app === p);
@@ -1190,7 +1252,7 @@ function ChannelsSheet({ channels, connectable, onConnect, onConnectApp, onRecon
               <div className="pb-ch">
                 <PlatformIcon name={ICON[p]} size={34} />
                 <span><b>{!list.length ? t("Connect {app}", { app: NAMES[p] }) : p === "facebook" ? t("Add Pages") : p === "threads" ? t("Add profiles") : t("Add accounts")}</b><small>{p === "facebook" ? t("Pick Pages after sign-in") : p === "instagram" ? t("Business or Creator account") : p === "threads" ? t("Your Threads profile") : t("Your TikTok account")}</small></span>
-                {can(p) ? <button type="button" className="np-btn v2-btn-sm" onClick={() => (onConnectApp ? onConnectApp(p) : add ? onConnect(add) : toast(t("Preview: {app} sign-in opens here", { app: NAMES[p] })))}>{t("Connect")}</button> : <NotYet app={p} />}
+                {p === "shopee" && onConnectApp ? <span className="pb-acts"><button type="button" className="np-btn v2-btn-sm" onClick={() => onConnectApp("shopee", "seller")}>{t("Shop")}</button><button type="button" className="btn-outline v2-btn-sm" onClick={() => onConnectApp("shopee", "affiliate")}>{t("Affiliate")}</button></span> : can(p) ? <button type="button" className="np-btn v2-btn-sm" onClick={() => (onConnectApp ? onConnectApp(p) : add ? onConnect(add) : toast(t("Preview: {app} sign-in opens here", { app: NAMES[p] })))}>{t("Connect")}</button> : <NotYet app={p} />}
               </div>
             )}
           </div>
@@ -1215,7 +1277,7 @@ function BrandsSheet({ brands, channels, byKey, connected, onSaved, onDeleted, o
         <button type="button" className="pb-link" style={{ justifySelf: "start" }} onClick={() => setEdit(null)}>← {t("Back")}</button>
         <label className="pb-field"><b>{t("Brand name")}</b><input className="np-input" type="text" value={edit.name} maxLength={60} onChange={(e) => setEdit({ ...edit, name: e.target.value })} placeholder={t("e.g. Seri Living")} /></label>
         <p className="np-muted" style={{ margin: 0 }}>{edit.channels.length === 1 ? t("{n} channel in this brand.", { n: 1 }) : t("{n} channels in this brand.", { n: edit.channels.length })}</p>
-        {APPS.map((p) => {
+        {APPS.filter((p) => p !== "shopee").map((p) => {
           const list = channels.filter((c) => c.app === p);
           return list.length ? (
             <div key={p} className="pb-group">
@@ -1252,5 +1314,40 @@ function BrandsSheet({ brands, channels, byKey, connected, onSaved, onDeleted, o
       <button type="button" className="btn-outline" onClick={() => open({ name: "", channels: [] })}>{t("+ New brand")}</button>
       <button type="button" className="np-btn" onClick={onClose}>{t("Done")}</button>
     </Sheet>
+  );
+}
+
+/** Up to 6 of a shop's own live products on Shopee, to show under its Shopee Video (as on rezekii.com's Shopee build). */
+function ShopeeProducts({ name, list, picked, onPick }: { name: string; list?: { items?: ShopeeItem[]; error?: string }; picked: number[]; onPick: (ids: number[]) => void }) {
+  const t = useT();
+  const [q, setQ] = useState("");
+  const items = list?.items;
+  const s = q.trim().toLowerCase();
+  const shown = (items ?? []).filter((i) => !s || i.name.toLowerCase().includes(s) || String(i.itemId) === s);
+  const toggle = (id: number) => onPick(picked.includes(id) ? picked.filter((x) => x !== id) : [...picked, id].slice(0, 6));
+  return (
+    <div className="pb-field">
+      <span className="pb-row"><b><PlatformIcon name="Shopee" size={16} /> {t("Products on Shopee · {name}", { name })}</b><small className="np-muted">{t("{n} of 6 picked", { n: picked.length })}</small></span>
+      {!list || (!items && !list.error) ? <p className="np-muted">{t("Loading the shop's products from Shopee…")}</p>
+        : list.error ? <p className="pb-warn">{t(list.error)}</p>
+        : !items?.length ? <p className="np-muted">{t("This shop has no live products on Shopee.")}</p>
+        : (
+          <>
+            {items.length > 6 && <input className="np-input" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("Search {n} products", { n: items.length })} aria-label={t("Search products")} />}
+            <div className="pb-products">
+              {shown.map((i) => (
+                <label key={i.itemId} className="pb-product">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <span className="pb-product-img">{i.image ? <img src={i.image} alt="" loading="lazy" /> : <PlatformIcon name="Shopee" size={22} />}</span>
+                  <span className="pb-product-name">{i.name}</span>
+                  <input type="checkbox" checked={picked.includes(i.itemId)} disabled={!picked.includes(i.itemId) && picked.length >= 6} onChange={() => toggle(i.itemId)} />
+                </label>
+              ))}
+              {!shown.length && <p className="np-muted">{t("No product matches \"{query}\".", { query: q })}</p>}
+            </div>
+          </>
+        )}
+      <small className="np-muted">{t("They show under the video on Shopee. Only your own shop's products can be added.")}</small>
+    </div>
   );
 }

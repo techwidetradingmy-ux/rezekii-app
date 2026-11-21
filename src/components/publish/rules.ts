@@ -9,15 +9,16 @@ import { makeT, tx, type T } from "@/lib/i18n/lang";
 const EN: T = makeT(null);
 
 export type Platform = "facebook" | "instagram" | "threads";
-export type Channel = Platform | "tiktok";
-export const APPS: Channel[] = ["tiktok", "facebook", "instagram", "threads"];
-export const NAMES: Record<Channel, string> = { tiktok: "TikTok", facebook: "Facebook", instagram: "Instagram", threads: "Threads" };
+/** Shopee Video too (owner, 21 Nov 2026: from rezekii.com's Shopee build), shown only where Shopee is set up. */
+export type Channel = Platform | "tiktok" | "shopee";
+export const APPS: Channel[] = ["tiktok", "facebook", "instagram", "threads", "shopee"];
+export const NAMES: Record<Channel, string> = { tiktok: "TikTok", facebook: "Facebook", instagram: "Instagram", threads: "Threads", shopee: "Shopee" };
 /** For V2's PlatformIcon. */
-export const ICON: Record<Channel, "TikTok" | "Facebook" | "Instagram" | "Threads"> = { tiktok: "TikTok", facebook: "Facebook", instagram: "Instagram", threads: "Threads" };
+export const ICON: Record<Channel, "TikTok" | "Facebook" | "Instagram" | "Threads" | "Shopee"> = { tiktok: "TikTok", facebook: "Facebook", instagram: "Instagram", threads: "Threads", shopee: "Shopee" };
 
-export const CAPTION_MAX: Record<Channel, number> = { tiktok: 2200, facebook: 63206, instagram: 2200, threads: 500 };
+export const CAPTION_MAX: Record<Channel, number> = { tiktok: 2200, facebook: 63206, instagram: 2200, threads: 500, shopee: 150 };
 export const COMMENT_MAX: Record<Platform, number> = { facebook: 8000, instagram: 2200, threads: 500 };
-const HASHTAG_MAX: Record<Channel, number> = { tiktok: 5, instagram: 5, threads: 0, facebook: Infinity };
+const HASHTAG_MAX: Record<Channel, number> = { tiktok: 5, instagram: 5, threads: 0, facebook: Infinity, shopee: Infinity };
 const THREADS_LINK_MAX = 5;
 export const COLLABORATORS_MAX = 3;
 export const TAGS_MAX = 20;
@@ -32,6 +33,8 @@ export const DEFAULT_PLACEMENT: Record<Channel, Placement> = {
   instagram: { caption: false, comment: true },
   threads: { caption: false, comment: true },
   facebook: { caption: false, comment: true },
+  // Shopee shows a shop's own products under the video instead, and has no first comment.
+  shopee: { caption: false, comment: false },
 };
 
 export type ReplyControl = "everyone" | "accounts_you_follow" | "followers_only" | "mentioned_only";
@@ -68,6 +71,8 @@ const tidy = (s: string) => s.split("\n").map((l) => l.replace(/[ \t]{2,}/g, " "
 export function autoCaption(ch: Channel, main: string): string {
   const text = main.replace(CTA_WITH_LINK, "");
   if (!tidy(text)) return "";
+  // Shopee has no link anywhere, so a sentence about the link goes too.
+  if (ch === "shopee") return shopeeCaption(text.replace(/[^.!?\n]*\blink\b[^.!?\n]*[.!?]?/gi, ""), hashtags(main));
   let n = 0;
   return tidy(text.replace(TAG, (m, before: string) => (++n <= HASHTAG_MAX[ch] ? m : before)));
 }
@@ -120,6 +125,38 @@ export function channelWarnings(ch: Channel, caption: string, t: T = EN): string
   if ((ch === "instagram" || ch === "tiktok") && n > HASHTAG_MAX[ch]) return [t("{app} allows {max} hashtags. This caption has {n}.", { app: NAMES[ch], max: HASHTAG_MAX[ch], n })];
   if (ch === "threads" && n > 0) return [t("On Threads, hashtags in the text show as plain words. A post gets one topic: set it in the Topic box.")];
   return [];
+}
+
+/**
+ * Shopee's 150 characters: the caption without links as it is when it fits; otherwise its first sentence, then as many
+ * hashtags as still fit, cut at a word if even the first sentence is too long.
+ */
+function shopeeCaption(text: string, tags: string[]): string {
+  const all = tidy(text);
+  const max = CAPTION_MAX.shopee;
+  if (all.length <= max) return all;
+  let out = (tidy(text.replace(TAG, "$1")).match(/^[^.!?\n]*[.!?]?/) ?? [""])[0].trim();
+  if (out.length > max) out = out.slice(0, max - 1).replace(/\s+\S*$/, "") + "…";
+  for (const tag of tags) if (`${out} ${tag}`.length <= max) out = `${out} ${tag}`;
+  return out;
+}
+
+/** Shopee Video takes videos longer than 3 seconds, up to 3 minutes. */
+export const SHOPEE_SECONDS = { min: 4, max: 180 };
+
+/** Plain-language problems that block scheduling to Shopee (empty = OK). */
+export function shopeeProblems(caption: string, durationSec?: number | null, t: T = EN): string[] {
+  const out: string[] = [];
+  if (caption.length > CAPTION_MAX.shopee) out.push(t("{app} allows {max} characters. This caption has {n}.", { app: "Shopee", max: CAPTION_MAX.shopee, n: caption.length }));
+  if (links(caption).length) out.push(t("Shopee captions can't have links. The product shows under the video instead."));
+  if (durationSec && (durationSec < SHOPEE_SECONDS.min || durationSec > SHOPEE_SECONDS.max)) out.push(t("Shopee Video takes videos longer than 3 seconds, up to 3 minutes."));
+  return out;
+}
+
+/** A Shopee product link's shop and item, from a full link (…-i.SHOP.ITEM or /product/SHOP/ITEM); null for short links. */
+export function shopeeProduct(link: string): { shopId: string; itemId: string } | null {
+  const m = link.match(/^https?:\/\/(?:[\w-]+\.)*shopee\.[\w.]+\/(?:[^?#]*-i\.(\d+)\.(\d+)|product\/(\d+)\/(\d+))/i);
+  return m ? { shopId: m[1] ?? m[3], itemId: m[2] ?? m[4] } : null;
 }
 
 /** Instagram usernames from what was typed ("@a, b c"): the valid ones, lower case; `bad` lists the rest. */
