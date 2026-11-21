@@ -10,7 +10,8 @@ import type { Comment, CommentAction, CommentedPost } from "@/integrations/meta/
 import type { ChannelComments } from "@/modules/social/comments.ts";
 import "@/app/social.css";
 
-type Ch = { id: string; platform: "facebook" | "instagram"; name: string; status: "active" | "reconnect" };
+type Ch = { id: string; platform: "facebook" | "instagram" | "threads"; name: string; status: "active" | "reconnect" };
+const APP = { facebook: "Facebook", instagram: "Instagram", threads: "Threads" } as const;
 type Account = { id: string; platform: string; name: string | null; username: string | null; status: "active" | "reconnect" };
 const DONE: Record<CommentAction, string> = { reply: tx("Reply sent."), hide: tx("Comment hidden."), unhide: tx("Comment shown again."), delete: tx("Comment deleted.") };
 const FILTERS = ["All", "Not Answered"] as const;
@@ -63,14 +64,16 @@ export function CommentsView({ newPost }: { newPost: string }) {
   useEffect(() => {
     let live = true;
     fetch("/api/social/accounts", { cache: "no-store" })
-      .then((r) => r.json() as Promise<{ accounts?: Account[] }>)
-      .catch(() => ({ accounts: [] as Account[] }))
+      .then((r) => r.json() as Promise<{ accounts?: Account[]; threadsReplies?: boolean }>)
+      .catch(() => ({ accounts: [] as Account[], threadsReplies: false }))
       .then((b) => {
         if (!live) return;
         const all = b.accounts ?? [];
-        const list = all.flatMap((a): Ch[] => (a.platform === "facebook" || a.platform === "instagram" ? [{ id: a.id, platform: a.platform, name: a.name ?? a.username ?? a.platform, status: a.status }] : []));
+        // Threads replies only for accounts asked for threads_read_replies (Meta's second review, see metaLevel).
+        const apps = b.threadsReplies ? ["facebook", "instagram", "threads"] : ["facebook", "instagram"];
+        const list = all.flatMap((a): Ch[] => (apps.includes(a.platform) ? [{ id: a.id, platform: a.platform as Ch["platform"], name: a.name ?? a.username ?? a.platform, status: a.status }] : []));
         setChannels(list);
-        setHasThreads(all.some((a) => a.platform === "threads"));
+        setHasThreads(!b.threadsReplies && all.some((a) => a.platform === "threads"));
         const first = list.find((c) => c.status === "active")?.id ?? list[0]?.id ?? "";
         setChannel(first);
         setLoading(!!first);
@@ -137,7 +140,7 @@ export function CommentsView({ newPost }: { newPost: string }) {
   }
 
   const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString(dateLocale(lang), { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kuala_Lumpur" }) : "");
-  const who = (c: Comment) => (c.mine ? `${ch?.name ?? ""} · ${t("You")}` : c.author ?? (ch?.platform === "instagram" ? t("Instagram User") : t("Facebook User")));
+  const who = (c: Comment) => (c.mine ? `${ch?.name ?? ""} · ${t("You")}` : c.author ?? (ch?.platform === "instagram" ? t("Instagram User") : ch?.platform === "threads" ? t("Threads User") : t("Facebook User")));
   const title = <Title title={t("Comments")} sub={`${t("Reply to, hide or delete comments on your latest 10 posts, newest first.")}${hasThreads ? ` ${t("Threads replies aren't available here yet.")}` : ""}`} />;
 
   function row(c: Comment, top: boolean) {
@@ -193,9 +196,9 @@ export function CommentsView({ newPost }: { newPost: string }) {
       {title}
       <div className="cm-top">
         <label className="cm-pick">
-          {ch && <BrandLogo name={ch.platform === "facebook" ? "Facebook" : "Instagram"} size={24} />}
+          {ch && <BrandLogo name={APP[ch.platform]} size={24} />}
           <select className="np-input" aria-label={t("Channel")} value={channel} onChange={(e) => load(e.target.value)}>
-            {channels.map((c) => <option key={c.id} value={c.id}>{c.name} · {c.platform === "facebook" ? "Facebook" : "Instagram"}</option>)}
+            {channels.map((c) => <option key={c.id} value={c.id}>{c.name} · {APP[c.platform]}</option>)}
           </select>
         </label>
         <div className="np-seg" role="group" aria-label={t("Show")}>

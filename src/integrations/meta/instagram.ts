@@ -5,9 +5,11 @@ const IG = (path: string) => `https://graph.instagram.com/${GRAPH_VERSION}/${pat
 export const INSTAGRAM_SCOPES = ["instagram_business_basic", "instagram_business_content_publish", "instagram_business_manage_comments"];
 /** Community (Admins, owner 23 Oct 2026): account and post numbers and the DM inbox, on top of posting. */
 export const INSTAGRAM_COMMUNITY_SCOPES = [...INSTAGRAM_SCOPES, "instagram_business_manage_insights", "instagram_business_manage_messages"];
+/** Meta's second review (owner, 12 Nov 2026): account and post views and reach on top of what everyone has. */
+export const INSTAGRAM_INSIGHTS_SCOPES = [...INSTAGRAM_SCOPES, "instagram_business_manage_insights"];
 
-export function instagramAuthUrl(state: string, redirectUri: string, community = false): string {
-  const scope = (community ? INSTAGRAM_COMMUNITY_SCOPES : INSTAGRAM_SCOPES).join(",");
+export function instagramAuthUrl(state: string, redirectUri: string, level: "basic" | "insights" | "community" = "basic"): string {
+  const scope = { basic: INSTAGRAM_SCOPES, insights: INSTAGRAM_INSIGHTS_SCOPES, community: INSTAGRAM_COMMUNITY_SCOPES }[level].join(",");
   const q = new URLSearchParams({ client_id: metaApp("instagram").id, redirect_uri: redirectUri, response_type: "code", scope, state, force_reauth: "true" });
   return `https://www.instagram.com/oauth/authorize?${q}`;
 }

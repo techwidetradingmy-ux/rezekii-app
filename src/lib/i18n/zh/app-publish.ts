@@ -349,4 +349,11 @@ export const APP_PUBLISH: Record<string, string> = {
   "Branded Content Policy": "品牌内容政策",
   "and": "和",
   "Music Usage Confirmation": "音乐使用确认",
+  // Meta's second review: views, reach and Threads for the accounts Meta reviews with.
+  "Followers, views, reach, likes and comments for your channels, read daily.": "你的渠道的粉丝、观看、覆盖、点赞和评论，每天读取。",
+  "From Meta · read daily": "来自 Meta · 每天读取",
+  "From Meta · read {time}": "来自 Meta · 读取于 {time}",
+  "Reach": "覆盖人数",
+  "people reached each day, added up": "每天覆盖的人数相加",
+  "Threads User": "Threads 用户",
 };

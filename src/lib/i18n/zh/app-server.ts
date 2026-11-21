@@ -296,4 +296,5 @@ export const APP_SERVER: Record<string, string> = {
   "This channel isn't connected to your account.": "此渠道没有连接到你的账号。",
   "This channel needs connecting again (Publish → New Post).": "此渠道需要重新连接（发布 → 新建发布）。",
   "Connect this channel again once so Meta allows answering comments (Publish → New Post).": "请重新连接此渠道一次，Meta 才会允许回复评论（发布 → 新建发布）。",
+  "Threads doesn't let apps delete replies. Hide it instead.": "Threads 不允许应用删除回复，可以改为隐藏。",
 };

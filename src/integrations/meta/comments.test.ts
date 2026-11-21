@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { facebookCommentAction, facebookComments, instagramCommentAction, instagramComments, noPermission } from "./comments.ts";
+import { facebookCommentAction, facebookComments, instagramCommentAction, instagramComments, noPermission, threadsCommentAction, threadsConversation } from "./comments.ts";
 import { MetaError } from "./graph.ts";
 
 type Call = { url: string; method: string; body: string };
@@ -99,4 +99,31 @@ test("a missing permission is told apart from an ended sign-in", () => {
   assert.equal(noPermission(new MetaError("(#200) Requires pages_read_user_content permission", 200)), true);
   assert.equal(noPermission(new MetaError("Error validating access token", 190)), false);
   assert.equal(noPermission(new Error("network")), false);
+});
+
+test("Threads: a post's conversation becomes top replies with every deeper reply under its top one, the profile's own marked", () => {
+  const list = threadsConversation("post1", [
+    { id: "r1", text: "Price?", timestamp: "2026-11-10T02:00:00+0000", username: "aina", replied_to: { id: "post1" } },
+    { id: "r2", text: "Nice", timestamp: "2026-11-10T03:00:00+0000", username: "siti", replied_to: { id: "post1" }, hide_status: "HIDDEN" },
+    { id: "r3", text: "DM ya", timestamp: "2026-11-10T02:30:00+0000", username: "shop.my", replied_to: { id: "r1" }, is_reply_owned_by_me: true },
+    { id: "r4", text: "ok!", timestamp: "2026-11-10T02:40:00+0000", username: "aina", replied_to: { id: "r3" } },
+  ]);
+  assert.deepEqual(list.map((c) => [c.id, c.hidden, c.replies.map((r) => r.id)]), [["r2", true, []], ["r1", false, ["r3", "r4"]]]);
+  assert.deepEqual([list[1].replies[0].mine, list[1].replies[0].canHide, list[1].canDelete], [true, false, false]);
+});
+
+test("Threads: a reply is made then published (tried again while Threads is getting it ready); hide goes to manage_reply", async () => {
+  let publishTries = 0;
+  const { result, calls } = await withMeta(
+    (url) => {
+      if (url.includes("threads_publish")) return ++publishTries < 2 ? { error: { message: "Media not ready", code: 24 } } : { id: "pub1" };
+      return { id: "cont1", success: true };
+    },
+    async () => [await threadsCommentAction("me1", "r1", "tok", "reply", "Thanks!", async () => {}), await threadsCommentAction("me1", "r2", "tok", "hide")],
+  );
+  assert.deepEqual(result, ["pub1", null]);
+  assert.deepEqual(calls.map((c) => new URL(c.url).pathname), ["/v1.0/me1/threads", "/v1.0/me1/threads_publish", "/v1.0/me1/threads_publish", "/v1.0/r2/manage_reply"]);
+  assert.equal(new URLSearchParams(calls[0].body).get("reply_to_id"), "r1");
+  assert.equal(new URLSearchParams(calls[3].body).get("hide"), "true");
+  await assert.rejects(threadsCommentAction("me1", "r1", "tok", "delete"), /can't be deleted/);
 });

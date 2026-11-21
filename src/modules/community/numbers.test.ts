@@ -87,3 +87,38 @@ test("everyone's Facebook Pages are read daily with the approved permissions: fo
   assert.deepEqual(post.map((r) => [r.media_id, r.numbers]), [["444_1", { likes: 50, comments: 7, shares: 3 }]]);
   assert.ok(!calls.some((c) => c.init.method === "PATCH"), "nobody is marked for reconnecting");
 });
+
+test("the account Meta reviews with (app setting meta_review_users) gets the full reading: its Threads too, and views", async () => {
+  process.env.SUPABASE_URL = "https://db.test";
+  process.env.SUPABASE_SECRET_KEY = "secret";
+  process.env.TOKEN_ENCRYPTION_KEY = randomBytes(32).toString("base64");
+  const ch = (id: string, user_id: string, platform: SocialAccount["platform"], external_id: string): SocialAccount => ({
+    id, user_id, platform, external_id, name: id, username: null, avatar_url: null, account_type: null,
+    token_enc: encryptToken("token"), token_expires_at: "2099-01-01T00:00:00Z", status: "active", connected_at: "2026-11-01T00:00:00Z",
+  });
+  const channels = [ch("rev-th", "r1", "threads", "777"), ch("other-th", "c2", "threads", "888")];
+  const asked: string[] = [];
+  const saved: { account_id: string; numbers: Record<string, number> }[] = [];
+  const real = globalThis.fetch;
+  globalThis.fetch = (async (input: string | URL, init: RequestInit = {}) => {
+    const url = String(input);
+    if (url.includes("graph.threads.net")) {
+      asked.push(new URL(url).pathname);
+      if (url.includes("/777/threads_insights") && url.includes("since=")) return new Response(JSON.stringify({ data: [{ name: "views", total_value: { value: 40 } }, { name: "likes", total_value: { value: 9 } }] }));
+      if (url.includes("/777/threads_insights")) return new Response(JSON.stringify({ data: [{ name: "followers_count", total_value: { value: 310 } }] }));
+      return new Response(JSON.stringify({ data: [] }));
+    }
+    if (url.includes("app_settings?key=in.")) return new Response(JSON.stringify([{ key: "meta_review_users", value: ["r1"] }]));
+    if (url.includes("app_users?role=eq.admin")) return new Response(JSON.stringify([]));
+    if (url.includes("social_accounts?status=in.")) return new Response(JSON.stringify(channels));
+    if (url.includes("social_stats?") && init.method === "POST") saved.push(...JSON.parse(String(init.body)));
+    return new Response("");
+  }) as typeof fetch;
+  try {
+    await refreshCommunity(0, Date.now() + 60_000, Date.parse("2026-11-12T04:00:00Z"));
+  } finally {
+    globalThis.fetch = real;
+  }
+  assert.ok(asked.every((p) => p.includes("/777")), "only the review account's Threads is read");
+  assert.deepEqual(saved.map((r) => [r.account_id, r.numbers]), [["rev-th", { followers: 310, profile_views: 40, engagement: 9 }]]);
+});

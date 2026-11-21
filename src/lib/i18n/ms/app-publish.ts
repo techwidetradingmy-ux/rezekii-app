@@ -469,4 +469,11 @@ export const APP_PUBLISH: Record<string, string> = {
   "Branded Content Policy": "Dasar Kandungan Berjenama TikTok",
   "and": "dan",
   "Music Usage Confirmation": "Pengesahan Penggunaan Muzik TikTok",
+  // Meta's second review: views, reach and Threads for the accounts Meta reviews with.
+  "Followers, views, reach, likes and comments for your channels, read daily.": "Pengikut, tontonan, capaian, suka dan komen untuk saluran anda, dibaca setiap hari.",
+  "From Meta · read daily": "Dari Meta · dibaca setiap hari",
+  "From Meta · read {time}": "Dari Meta · dibaca {time}",
+  "Reach": "Capaian",
+  "people reached each day, added up": "orang dicapai setiap hari, dijumlahkan",
+  "Threads User": "Pengguna Threads",
 };

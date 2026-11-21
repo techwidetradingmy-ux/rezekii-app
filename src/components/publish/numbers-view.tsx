@@ -10,13 +10,16 @@ import type { CommunityChannel, CommunityDay, CommunityPost } from "@/modules/co
 import "@/app/social.css";
 
 type Data = { channels: CommunityChannel[]; days: CommunityDay[]; posts: CommunityPost[]; refreshedAt: string | null; now: number; hasThreads: boolean };
-type Sort = "Likes" | "Comments" | "Shares";
-const KEY: Record<Sort, "likes" | "comments" | "shares"> = { Likes: "likes", Comments: "comments", Shares: "shares" };
+type Sort = "Views" | "Likes" | "Comments" | "Shares";
+type App = "all" | "facebook" | "instagram" | "threads";
+const KEY: Record<Sort, "views" | "likes" | "comments" | "shares"> = { Views: "views", Likes: "likes", Comments: "comments", Shares: "shares" };
 const RANGES = ["7 Days", "28 Days"] as const;
 const DAY = 86_400_000;
 const MYT = 8 * 3_600_000;
 const dayKey = (t: number) => new Date(t + MYT).toISOString().slice(0, 10);
 const sum = (xs: (number | undefined)[]) => xs.reduce<number>((s, x) => s + (x ?? 0), 0);
+/** A total when Meta gave any of the values, "–" when it gave none (Threads has no daily views or reach). */
+const given = (xs: (number | undefined)[]) => (xs.some((x) => x !== undefined) ? shortCount(sum(xs)) : "–");
 const plus = (v: number) => `${v >= 0 ? "+" : ""}${v.toLocaleString("en-MY")}`;
 const logo = (p: CommunityChannel["platform"]) => (p === "facebook" ? "Facebook" : p === "instagram" ? "Instagram" : "Threads");
 
@@ -31,14 +34,15 @@ async function read(): Promise<Data | null> {
 
 /**
  * Channel Numbers (owner, 9 Nov 2026): what Meta gives every app for the account's own Facebook Pages and Instagram accounts, from the
- * daily reading: followers and their change, and likes, comments and shares on the posts of the last 7 or 28 days.
+ * daily reading: followers and their change, and likes, comments and shares on the posts of the last 7 or 28 days. Accounts asked
+ * for the insights permissions (see metaLevel) also get views and reach, and their Threads profiles (Meta's second review).
  */
 export function NumbersView({ newPost }: { newPost: string }) {
   const t = useT();
   const lang = useLang();
   const [data, setData] = useState<Data | null | "error">(null);
   const [round, setRound] = useState(0);
-  const [app, setApp] = useState<"all" | "facebook" | "instagram">("all");
+  const [app, setApp] = useState<App>("all");
   const [channel, setChannel] = useState("all");
   const [range, setRange] = useState<(typeof RANGES)[number]>("7 Days");
   const [sort, setSort] = useState<Sort>("Likes");
@@ -55,8 +59,10 @@ export function NumbersView({ newPost }: { newPost: string }) {
     };
   }, [round]);
 
-  const tip = `${t("Followers, likes, comments and shares for your Facebook Pages and Instagram accounts, read daily.")} ${t("Views and reach aren't available yet.")}`;
-  const head = (d?: Data) => <Title title={t("Channel Numbers")} sub={d?.hasThreads ? `${tip} ${t("Threads numbers aren't available yet.")}` : tip} />;
+  // Views and reach come only with the insights permissions: shown once Meta has given any.
+  const full = typeof data === "object" && !!data && (data.days.some((d) => d.numbers.views !== undefined || d.numbers.reach !== undefined) || data.posts.some((p) => p.numbers.views !== undefined));
+  const tip = full ? t("Followers, views, reach, likes and comments for your channels, read daily.") : `${t("Followers, likes, comments and shares for your Facebook Pages and Instagram accounts, read daily.")} ${t("Views and reach aren't available yet.")}`;
+  const head = (d?: Data) => <Title title={t("Channel Numbers")} sub={d?.hasThreads && !d.channels.some((c) => c.platform === "threads") ? `${tip} ${t("Threads numbers aren't available yet.")}` : tip} />;
   if (data === null) return <div className="v2-stack v2-in" style={{ gap: 16 }}>{head()}<Loading text={t("Loading your numbers…")} /></div>;
   if (data === "error") return <div className="v2-stack v2-in" style={{ gap: 16 }}>{head()}<p className="v2-muted">{t("Couldn't load your numbers. Please refresh.")}</p></div>;
   const { channels, days, posts, refreshedAt, now } = data;
@@ -81,6 +87,8 @@ export function NumbersView({ newPost }: { newPost: string }) {
   const postsOf = (id: string) => inRange.filter((p) => p.channel === id);
   const followers = sum(shown.map((c) => latest(daysOf(c.id))));
   const before = sum(shown.map((c) => first(daysOf(c.id))));
+  const inDays = shown.flatMap((c) => daysOf(c.id));
+  const sorts: Sort[] = full ? ["Views", "Likes", "Comments", "Shares"] : ["Likes", "Comments", "Shares"];
   const top = [...inRange].sort((a, b) => (b.numbers[KEY[sort]] ?? -1) - (a.numbers[KEY[sort]] ?? -1)).slice(0, 30);
   const byId = new Map(channels.map((c) => [c.id, c]));
   const notes = shown.map((c) => [c, [...daysOf(c.id)].reverse()[0]?.numbers.note] as const).filter(([, note]) => note);
@@ -109,7 +117,7 @@ export function NumbersView({ newPost }: { newPost: string }) {
       <div className="nm-top">
         {apps.length > 1 && (
           <div className="np-seg" role="group" aria-label={t("App")}>
-            {(["all", ...apps] as ("all" | "facebook" | "instagram")[]).map((a) => <button key={a} type="button" className={app === a ? "on" : undefined} aria-pressed={app === a} onClick={() => { setApp(a); setChannel("all"); }}>{a === "all" ? t("All") : logo(a)}</button>)}
+            {(["all", ...apps] as App[]).map((a) => <button key={a} type="button" className={app === a ? "on" : undefined} aria-pressed={app === a} onClick={() => { setApp(a); setChannel("all"); }}>{a === "all" ? t("All") : logo(a)}</button>)}
           </div>
         )}
         {channels.length > 1 && (
@@ -123,12 +131,14 @@ export function NumbersView({ newPost }: { newPost: string }) {
         </div>
         <button type="button" className="btn-outline" disabled={busy} onClick={refreshNow}>{busy ? t("Reading…") : t("Refresh Now")}</button>
       </div>
-      <p className="v2-muted nm-src">{refreshedAt ? t("From Facebook and Instagram · read {time}", { time: when(refreshedAt) }) : t("From Facebook and Instagram · read daily")}</p>
+      <p className="v2-muted nm-src">{apps.includes("threads") ? (refreshedAt ? t("From Meta · read {time}", { time: when(refreshedAt) }) : t("From Meta · read daily")) : refreshedAt ? t("From Facebook and Instagram · read {time}", { time: when(refreshedAt) }) : t("From Facebook and Instagram · read daily")}</p>
       {msg && <p className="np-note" role="status">{msg}</p>}
       {notes.length > 0 && <p className="np-note nm-warn" role="note">{notes.map(([c, note]) => `${c.name}: ${t(note ?? "")}`).join(" · ")}</p>}
 
       <section className="nm-tiles" aria-label={t("Totals")}>
         <Stat label={t("Followers")} value={shortCount(followers)} note={before ? t("{change} in {n} days", { change: plus(followers - before), n: span }) : undefined} tone={followers - before >= 0 ? "up" : "down"} />
+        {full && <Stat label={t("Views")} value={given(inDays.map((d) => d.numbers.views))} note={t("last {n} days", { n: span })} />}
+        {full && <Stat label={t("Reach")} value={given(inDays.map((d) => d.numbers.reach))} note={t("people reached each day, added up")} />}
         <Stat label={t("Posts")} value={shortCount(inRange.length)} note={t("last {n} days", { n: span })} />
         <Stat label={t("Likes")} value={shortCount(sum(inRange.map((p) => p.numbers.likes)))} />
         <Stat label={t("Comments")} value={shortCount(sum(inRange.map((p) => p.numbers.comments)))} />
@@ -139,7 +149,7 @@ export function NumbersView({ newPost }: { newPost: string }) {
         <h2 id="nmch">{t("Channels")}</h2>
         <div className="nm-scroll">
           <table className="nm-table">
-            <thead><tr><th>{t("Channel")}</th><th>{t("Followers")}</th><th>{t("Net Change")}</th><th>{t("Posts")}</th><th>{t("Likes")}</th><th>{t("Comments")}</th></tr></thead>
+            <thead><tr><th>{t("Channel")}</th><th>{t("Followers")}</th><th>{t("Net Change")}</th>{full && <><th>{t("Views")}</th><th>{t("Reach")}</th></>}<th>{t("Posts")}</th><th>{t("Likes")}</th><th>{t("Comments")}</th></tr></thead>
             <tbody>
               {shown.map((c) => {
                 const list = daysOf(c.id);
@@ -151,6 +161,7 @@ export function NumbersView({ newPost }: { newPost: string }) {
                     <td><span className="nm-ch"><BrandLogo name={logo(c.platform)} size={20} /><span>{c.name}</span></span></td>
                     <td className="nm-strong">{a === undefined ? "–" : shortCount(a)}</td>
                     <td>{a !== undefined && b !== undefined ? plus(a - b) : "–"}</td>
+                    {full && <><td>{given(list.map((d) => d.numbers.views))}</td><td>{given(list.map((d) => d.numbers.reach))}</td></>}
                     <td>{ps.length}</td>
                     <td>{shortCount(sum(ps.map((p) => p.numbers.likes)))}</td>
                     <td>{shortCount(sum(ps.map((p) => p.numbers.comments)))}</td>
@@ -166,7 +177,7 @@ export function NumbersView({ newPost }: { newPost: string }) {
         <div className="nm-head">
           <h2 id="nmtop">{t("Top Posts")}</h2>
           <div className="np-seg" role="group" aria-label={t("Sort by")}>
-            {(["Likes", "Comments", "Shares"] as Sort[]).map((s) => <button key={s} type="button" className={sort === s ? "on" : undefined} aria-pressed={sort === s} onClick={() => setSort(s)}>{t(s)}</button>)}
+            {sorts.map((s) => <button key={s} type="button" className={sort === s ? "on" : undefined} aria-pressed={sort === s} onClick={() => setSort(s)}>{t(s)}</button>)}
           </div>
         </div>
         {top.length ? (
@@ -187,6 +198,7 @@ export function NumbersView({ newPost }: { newPost: string }) {
                     <small>{c && <BrandLogo name={logo(c.platform)} size={14} />} {c?.name}{p.at ? ` · ${when(p.at)}` : ""}</small>
                   </span>
                   <span className="nm-nums">
+                    {full && <span><b>{p.numbers.views === undefined ? "–" : shortCount(p.numbers.views)}</b><small>{t("Views")}</small></span>}
                     <span><b>{p.numbers.likes === undefined ? "–" : shortCount(p.numbers.likes)}</b><small>{t("Likes")}</small></span>
                     <span><b>{p.numbers.comments === undefined ? "–" : shortCount(p.numbers.comments)}</b><small>{t("Comments")}</small></span>
                     <span><b>{p.numbers.shares === undefined ? "–" : shortCount(p.numbers.shares)}</b><small>{t("Shares")}</small></span>

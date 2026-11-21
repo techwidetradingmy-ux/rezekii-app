@@ -446,4 +446,5 @@ export const APP_SERVER: Record<string, string> = {
   "This channel isn't connected to your account.": "Saluran ini tidak disambungkan ke akaun anda.",
   "This channel needs connecting again (Publish → New Post).": "Saluran ini perlu disambungkan semula (Terbit → Hantaran Baharu).",
   "Connect this channel again once so Meta allows answering comments (Publish → New Post).": "Sambungkan saluran ini semula sekali supaya Meta membenarkan komen dibalas (Terbit → Hantaran Baharu).",
+  "Threads doesn't let apps delete replies. Hide it instead.": "Threads tidak membenarkan aplikasi memadam balasan. Sembunyikannya sahaja.",
 };

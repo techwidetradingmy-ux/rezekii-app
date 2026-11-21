@@ -1,13 +1,15 @@
-import { GRAPH_VERSION, MetaError, metaFetch, qs } from "./graph.ts";
+import { GRAPH_VERSION, MetaError, THREADS_VERSION, metaFetch, qs } from "./graph.ts";
+import { createThreadsReply, publishThreads } from "./threads.ts";
 
 /**
  * Comments (owner, 9 Nov 2026, after Meta approved the app): the latest comments on a Facebook Page's or Instagram account's
  * own posts, and replying to, hiding or deleting them. Only permissions Meta approved for every user are used:
  * pages_read_user_content + pages_manage_engagement (Facebook), instagram_business_manage_comments (Instagram).
- * Threads replies need threads_read_replies, which isn't approved yet.
+ * Threads replies need threads_read_replies, in Meta's second review (owner, 12 Nov 2026): only accounts asked for it see them.
  */
 const G = (path: string) => `https://graph.facebook.com/${GRAPH_VERSION}/${path}`;
 const IG = (path: string) => `https://graph.instagram.com/${GRAPH_VERSION}/${path}`;
+const TH = (path: string) => `https://graph.threads.net/${THREADS_VERSION}/${path}`;
 
 export type Comment = {
   id: string;
@@ -129,4 +131,92 @@ export async function instagramCommentAction(commentId: string, token: string, a
   if (action === "delete") await metaFetch(IG(`${commentId}?${qs({ access_token: token })}`), undefined, 60_000, "DELETE");
   else await metaFetch(IG(commentId), { hide: String(action === "hide"), access_token: token });
   return null;
+}
+
+// ---- Threads (threads_read_replies to read, threads_manage_replies to hide and reply) ----
+
+type ThReply = { id: string; text?: string; timestamp?: string; username?: string; hide_status?: string; replied_to?: { id?: string }; is_reply_owned_by_me?: boolean };
+type ThPost = { id: string; text?: string; timestamp?: string; permalink?: string; thumbnail_url?: string; media_url?: string; media_type?: string };
+
+const threadsComment = (r: ThReply, replies: Comment[] = []): Comment => {
+  const mine = !!r.is_reply_owned_by_me;
+  return {
+    id: r.id,
+    text: r.text ?? "",
+    at: r.timestamp ?? null,
+    author: r.username ?? null,
+    mine,
+    hidden: r.hide_status === "HIDDEN",
+    // Threads lets a profile hide others' replies to its posts, not its own; apps can't delete others' replies.
+    canHide: !mine,
+    canDelete: false,
+    replies,
+  };
+};
+
+/**
+ * One post's conversation (all replies, every depth) as top replies with the rest under them: each deeper reply goes under the
+ * top reply it belongs to, oldest first.
+ */
+export function threadsConversation(postId: string, all: ThReply[]): Comment[] {
+  const byId = new Map(all.map((r) => [r.id, r]));
+  const isTop = (r: ThReply) => !r.replied_to?.id || r.replied_to.id === postId;
+  const topOf = (r: ThReply): string | null => {
+    let cur: ThReply | undefined = r;
+    for (let i = 0; cur && i < 20; i++) {
+      if (isTop(cur)) return cur.id;
+      cur = byId.get(cur.replied_to?.id ?? "");
+    }
+    return null;
+  };
+  const under = new Map<string, ThReply[]>();
+  for (const r of all) {
+    if (isTop(r)) continue;
+    const top = topOf(r);
+    if (top) under.set(top, [...(under.get(top) ?? []), r]);
+  }
+  return all
+    .filter(isTop)
+    .map((t) => threadsComment(t, (under.get(t.id) ?? []).map((r) => threadsComment(r)).sort((a, b) => -byTime(a, b))))
+    .sort(byTime);
+}
+
+/** The profile's latest posts with their replies: one call for the posts, then one per post, at the same time. */
+export async function threadsComments(userId: string, token: string): Promise<CommentedPost[]> {
+  const r = await metaFetch<{ data?: ThPost[] }>(TH(`${userId}/threads?${qs({ fields: "id,text,timestamp,permalink,thumbnail_url,media_url,media_type", limit: POSTS, access_token: token })}`));
+  const posts = (r.data ?? []).filter((p) => p.media_type !== "REPOST_FACADE");
+  const fields = "id,text,timestamp,username,hide_status,replied_to,is_reply_owned_by_me";
+  return Promise.all(
+    posts.map(async (p) => {
+      const c = await metaFetch<{ data?: ThReply[] }>(TH(`${p.id}/conversation?${qs({ fields, reverse: "false", limit: "50", access_token: token })}`));
+      return {
+        id: p.id,
+        caption: (p.text ?? "").slice(0, 300),
+        at: p.timestamp ?? null,
+        url: p.permalink ?? null,
+        thumb: p.thumbnail_url ?? (p.media_type === "IMAGE" ? p.media_url ?? null : null),
+        total: (c.data ?? []).length,
+        comments: threadsConversation(p.id, c.data ?? []).slice(0, COMMENTS),
+      };
+    }),
+  );
+}
+
+/** Reply (a text reply from the profile, made then published), hide or show again. Apps can't delete Threads replies. */
+export async function threadsCommentAction(userId: string, commentId: string, token: string, action: CommentAction, message = "", wait = (ms: number) => new Promise((r) => setTimeout(r, ms))): Promise<string | null> {
+  if (action === "delete") throw new Error("Threads replies can't be deleted from here.");
+  if (action === "hide" || action === "unhide") {
+    await metaFetch(TH(`${commentId}/manage_reply`), { hide: String(action === "hide"), access_token: token });
+    return null;
+  }
+  const container = await createThreadsReply(userId, token, message, commentId);
+  // A text reply is usually ready at once; give Threads a moment and try again if it isn't.
+  for (let i = 0; ; i++) {
+    try {
+      return await publishThreads(userId, token, container);
+    } catch (err) {
+      if (i >= 3 || (err instanceof MetaError && err.needsReconnect)) throw err;
+      await wait(1500);
+    }
+  }
 }
