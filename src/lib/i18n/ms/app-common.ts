@@ -762,4 +762,14 @@ export const APP_COMMON: Record<string, string> = {
   "You're back on the list. We'll look at your sign-up again.": "Anda kembali dalam senarai. Kami akan semak pendaftaran anda sekali lagi.",
   "Apply Again": "Mohon Semula",
   "Sending…": "Menghantar…",
+  // Public level card and phone sample pages (as on rezekii.com).
+  "Couldn't open the sample request": "Tidak dapat membuka permintaan sampel",
+  "Couldn't reach Rezekii. Check your connection and try again.": "Tidak dapat menghubungi Rezekii. Semak sambungan anda dan cuba lagi.",
+  "TikTok didn't open the sample request. Please try again.": "TikTok tidak membuka permintaan sampel. Sila cuba lagi.",
+  "Back to the product": "Kembali ke produk",
+  "Earn with Rezekii": "Jana pendapatan dengan Rezekii",
+  "Shares TikTok Shop finds through Rezekii.": "Berkongsi produk TikTok Shop melalui Rezekii.",
+  "Submit it in TikTok. It then shows in My Samples.": "Hantar dalam TikTok. Kemudian ia akan muncul dalam Sampel Saya.",
+  "{handle} is {level} on Rezekii": "{handle} ialah {level} di Rezekii",
+  "✦ REZEKII CREATOR": "✦ PENCIPTA REZEKII",
 };
