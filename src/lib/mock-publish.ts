@@ -98,6 +98,8 @@ export type PostTarget = {
   key: string; status: PostStatus; reason?: string; fix?: "Retry" | "Reconnect"; views?: number;
   /** A real post: this channel's own post id, whether it can still be cancelled, and its link once posted. */
   postId?: string; canCancel?: boolean; permalink?: string | null;
+  /** Posted, but its first comment didn't go: `reason` says why, and she can send the comment again. */
+  commentFailed?: boolean;
 };
 export type MyPost = {
   id: string;

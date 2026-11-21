@@ -508,4 +508,9 @@ export const APP_PUBLISH: Record<string, string> = {
   "It has started sending or has gone out. Posts already on an app can only be edited or deleted in that app.": "Ia sudah mula dihantar atau sudah disiarkan. Hantaran yang sudah ada di aplikasi hanya boleh diedit atau dipadam dalam aplikasi itu.",
   "Loading the post…": "Memuatkan hantaran…",
   "Your changes couldn't be saved. Please try again.": "Perubahan anda tidak dapat disimpan. Sila cuba lagi.",
+  "Retry Comment": "Cuba Semula Komen",
+  "Posting the first comment again.": "Menghantar komen pertama sekali lagi.",
+  "Couldn't retry the comment. Please try again.": "Komen tidak dapat dicuba semula. Sila cuba lagi.",
+  "Brand": "Jenama",
+  "All Brands": "Semua Jenama",
 };

@@ -110,7 +110,7 @@ export function keepRecipe(key: string, recipe: Recipe): void {
 
 /* ---------------- Content Calendar ---------------- */
 
-type BoardChannel = { id: string; kind: Channel; account: string; name: string; state: "draft" | "scheduled" | "posting" | "posted" | "failed" | "fbdraft" | "removed"; note: string; permalink: string | null; canCancel: boolean; canRetry: boolean };
+type BoardChannel = { id: string; kind: Channel; account: string; name: string; state: "draft" | "scheduled" | "posting" | "posted" | "failed" | "fbdraft" | "removed"; note: string; permalink: string | null; canCancel: boolean; canRetry: boolean; commentFailed: boolean };
 type BoardPost = { key: string; at: string | null; caption: string; channels: BoardChannel[] };
 
 const STATE: Record<BoardChannel["state"], PostStatus> = { draft: "draft", scheduled: "scheduled", posting: "sending", posted: "posted", failed: "failed", fbdraft: "pagedraft", removed: "removed" };
@@ -135,7 +135,8 @@ export async function loadPosts(): Promise<MyPost[]> {
       targets: p.channels.map((c) => ({
         key: c.account,
         status: STATE[c.state],
-        reason: c.state === "failed" ? c.note : undefined,
+        reason: c.state === "failed" || c.commentFailed ? c.note : undefined,
+        commentFailed: c.commentFailed,
         fix: c.canRetry ? ("Retry" as const) : undefined,
         postId: c.id,
         canCancel: c.canCancel,
@@ -155,6 +156,12 @@ export async function cancelChannel(app: Channel, postId: string, t: T = EN): Pr
 export async function retryChannel(app: Channel, postId: string, t: T = EN): Promise<void> {
   const r = app === "tiktok" ? await post(`/api/posts/${postId}/retry`, {}) : await post(`/api/social/posts/${postId}`, { action: "retry" });
   await json(r, t("Couldn't try again. Please try again."));
+}
+
+/** Sends a posted channel's failed first comment again (Facebook, Instagram, Threads; it costs nothing). */
+export async function retryComment(postId: string, t: T = EN): Promise<void> {
+  const r = await post(`/api/social/posts/${postId}`, { action: "retry-comment" });
+  await json(r, t("Couldn't retry the comment. Please try again."));
 }
 
 /* ---------------- Hooks for the pages ---------------- */

@@ -11,7 +11,7 @@ import { POST_CREDITS, type MyPost, type PostStatus, type PostTarget, type Publi
 import { product } from "@/lib/mock";
 import { IDEA_DRAFTS, type IdeaDraft } from "@/components/creator1/shoot-today";
 import { openPost, takeEdits } from "./post-edits";
-import { cancelChannel, loadPosts, retryChannel } from "@/lib/live-publish";
+import { cancelChannel, loadPosts, retryChannel, retryComment } from "@/lib/live-publish";
 import { ICON, NAMES, type Channel } from "./rules";
 import { useLang, useT } from "@/lib/i18n/client";
 import { dateLocale, tx, type Lang, type T } from "@/lib/i18n/lang";
@@ -135,9 +135,14 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
   const [day, setDay] = useState<string | null>(null);
   const [month, setMonth] = useState(() => TODAY.slice(0, 7));
   const [cancelling, setCancelling] = useState<string | null>(null);
+  const [resending, setResending] = useState<string | null>(null);
   // Owner, 28 Oct 2026: posts she made from her phone show here too, marked, so the calendar is the whole picture.
   const [src, setSrc] = useState<"all" | "rezekii" | "phone">("all");
   const srcOk = (p: MyPost) => src === "all" || (src === "phone") === (p.source === "phone");
+  // Show one brand's posts: any post that went to one of its channels (owner, 21 Nov 2026, as on rezekii.com).
+  const [brand, setBrand] = useState<string | null>(null);
+  const brandNow = setup.brands.find((b) => b.id === brand);
+  const brandOk = (p: MyPost) => !brandNow || p.targets.some((tg) => brandNow.channels.includes(tg.key));
 
   // Posts going out move one step every couple of seconds, like V1's status updates while TikTok works on them.
   const moving = posts.some((p) => p.targets.some((tg) => MOVING.includes(tg.status)));
@@ -164,8 +169,8 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
   const chan = (key: string) => setup.channels.find((c) => c.key === key);
   const appOf = (tg: PostTarget): Channel => chan(tg.key)?.app ?? "facebook";
   const inRange = (p: MyPost) => !p.date || (p.date >= from && p.date <= to);
-  const shown = posts.filter((p) => srcOk(p) && inRange(p) && (!day || p.date === day) && (!only || groupOf(p) === only));
-  const count = (g: Group) => posts.filter((p) => srcOk(p) && inRange(p) && groupOf(p) === g).length;
+  const shown = posts.filter((p) => srcOk(p) && brandOk(p) && inRange(p) && (!day || p.date === day) && (!only || groupOf(p) === only));
+  const count = (g: Group) => posts.filter((p) => srcOk(p) && brandOk(p) && inRange(p) && groupOf(p) === g).length;
   const SOURCES = [["all", t("All")], ["rezekii", t("Via Rezekii")], ["phone", t("From Phone")]] as const;
   const needs = count("fail");
 
@@ -183,6 +188,15 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
     }
     toast(tg.fix === "Reconnect" ? t("{name} reconnected. Posting again… {n} credits", { name, n: POST_CREDITS }) : t("Trying {name} again… {n} credits", { name, n: POST_CREDITS }));
     setTarget(p.id, tg.key, { status: "uploading", reason: undefined, fix: undefined });
+  };
+  // The post went out but its first comment didn't: send just the comment again (owner, 21 Nov 2026, as on rezekii.com).
+  const resend = (tg: PostTarget) => {
+    if (!tg.postId || resending) return;
+    setResending(tg.postId);
+    retryComment(tg.postId, t)
+      .then(() => { toast(t("Posting the first comment again.")); reload(); })
+      .catch((e: unknown) => toast(e instanceof Error ? t(e.message) : t("Couldn't retry the comment. Please try again.")))
+      .finally(() => setResending(null));
   };
   const cancel = (p: MyPost) => {
     if (live) {
@@ -233,6 +247,12 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
                   <span className="sq-pill">{MOVING.includes(tg.status) && <i className="sq-spin" aria-hidden="true" />}{tg.status === "posted" && <i className="sq-live" aria-hidden="true" />}{statusText(tg.status, app, t)}</span>
                   {MOVING.includes(tg.status) && <span className="sq-track" aria-hidden="true">{STEPS.slice(1).map((s, i) => <i key={s} className={i + 1 <= step ? "on" : ""} />)}</span>}
                   {tg.status === "posted" && tg.views ? <small className="sq-views"><Icon name="eye" size={13} /> {t("{n} views", { n: views(tg.views) })}</small> : null}
+                  {tg.commentFailed && (
+                    <span className="sq-why">
+                      <small>{tg.reason}</small>
+                      <button type="button" className="btn-outline v2-btn-sm" disabled={!!resending} onClick={() => resend(tg)}>{t("Retry Comment")}</button>
+                    </span>
+                  )}
                   {tg.status === "failed" && (
                     <span className="sq-why">
                       {/* Why it failed is from TikTok or the app (or the sample), shown in her language where Rezekii knows the words. */}
@@ -306,12 +326,13 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
             },
           )}
         </p>
-        {(only || day || src !== "all") && (
+        {(only || day || src !== "all" || brandNow) && (
           <span className="sq-chips">
             {only && <button type="button" className="sq-chip" onClick={() => setOnly(null)} aria-label={t("Remove {name}", { name: t(GROUPS.find((g) => g.key === only)!.title) })}>{t(GROUPS.find((g) => g.key === only)!.title)} <Icon name="x" size={13} width={2.6} /></button>}
             {day && <button type="button" className="sq-chip" onClick={() => setDay(null)} aria-label={t("Remove {name}", { name: dayLabel(day) })}>{dayLabel(day)} <Icon name="x" size={13} width={2.6} /></button>}
             {src !== "all" && <button type="button" className="sq-chip" onClick={() => setSrc("all")} aria-label={t("Remove posted from")}>{SOURCES.find(([k]) => k === src)![1]} <Icon name="x" size={13} width={2.6} /></button>}
-            <button type="button" className="pb-link" onClick={() => { setOnly(null); setDay(null); setSrc("all"); }}>{t("Show All")}</button>
+            {brandNow && <button type="button" className="sq-chip" onClick={() => setBrand(null)} aria-label={t("Remove {name}", { name: brandNow.name })}>{brandNow.name} <Icon name="x" size={13} width={2.6} /></button>}
+            <button type="button" className="pb-link" onClick={() => { setOnly(null); setDay(null); setSrc("all"); setBrand(null); }}>{t("Show All")}</button>
           </span>
         )}
       </div>
@@ -325,6 +346,14 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
           </button>
         ))}
       </div>
+
+      {setup.brands.length > 0 && (
+        <div className="v2-chips sq-brands" role="group" aria-label={t("Brand")}>
+          {[{ id: "", name: t("All Brands") }, ...setup.brands].map((b) => (
+            <button key={b.id} type="button" className={`v2-chip${(brand ?? "") === b.id ? " on" : ""}`} aria-pressed={(brand ?? "") === b.id} onClick={() => setBrand(b.id || null)}>{b.name}</button>
+          ))}
+        </div>
+      )}
 
       {!live && <div className="sq-srcbar">
         <div className="v2-chips" role="group" aria-label={t("Posted from")}>
@@ -346,7 +375,7 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
           {Array.from({ length: lead }, (_, i) => <span key={`b${i}`} />)}
           {Array.from({ length: daysIn }, (_, i) => {
             const d = `${month}-${String(i + 1).padStart(2, "0")}`;
-            const list = posts.filter((p) => p.date === d && srcOk(p));
+            const list = posts.filter((p) => p.date === d && srcOk(p) && brandOk(p));
             const out = d < from || d > to;
             // How many went up that day (owner, 1 Nov 2026), with a dot for anything else.
             const posted = list.filter((p) => groupOf(p) === "done").length;

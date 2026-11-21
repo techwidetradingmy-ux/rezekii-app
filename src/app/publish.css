@@ -449,7 +449,7 @@
 
 /* Posted from her phone (owner, 28 Oct 2026): a filter and a small tag on each post. */
 .sq-srcbar { display: grid; gap: 8px; }
-.sq-srcbar .v2-chip { height: 36px; padding: 0 14px; font-size: 13.5px; }
+.sq-srcbar .v2-chip, .sq-brands .v2-chip { height: 36px; padding: 0 14px; font-size: 13.5px; }
 .sq-src { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; padding: 1px 8px; border-radius: 99px; background: var(--gsoft); color: var(--gink); font-size: 11.5px; font-weight: 800; vertical-align: 1px; }
 .sq-src.phone { background: #eef0ff; color: #3b3fb8; }
 

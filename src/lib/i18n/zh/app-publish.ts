@@ -387,4 +387,8 @@ export const APP_PUBLISH: Record<string, string> = {
   "It has started sending or has gone out. Posts already on an app can only be edited or deleted in that app.": "它已开始发送或已发布。已在应用上的发布只能在该应用中编辑或删除。",
   "Loading the post…": "正在加载这条发布…",
   "Your changes couldn't be saved. Please try again.": "无法保存你的更改，请重试。",
+  "Retry Comment": "重试评论",
+  "Posting the first comment again.": "正在重新发布第一条评论。",
+  "Couldn't retry the comment. Please try again.": "无法重试评论，请重试。",
+  "All Brands": "全部品牌",
 };
