@@ -7,6 +7,18 @@ const API = "https://open.tiktokapis.com/v2/post/publish";
 type Envelope<T> = { data?: T; error?: { code: string; message: string; log_id?: string } };
 export type TikTokReply<T> = { data?: T; error?: { code: string; message: string; logId?: string } };
 
+/**
+ * TikTok sends post IDs as 19-digit numbers, longer than JavaScript numbers hold exactly (7710492037702765844 would become
+ * 7710492037702766000), so numbers of 16+ digits are read as text. Owner's first public post, 21 Nov 2026.
+ */
+export function parseKeepingIds<T>(text: string): T {
+  try {
+    return JSON.parse(text.replace(/([[:,]\s*)(-?\d{16,})(?=\s*[,\]}])/g, '$1"$2"')) as T;
+  } catch {
+    return {} as T;
+  }
+}
+
 async function call<T>(token: string, path: string, body: unknown): Promise<TikTokReply<T>> {
   const res = await fetch(`${API}${path}`, {
     method: "POST",
@@ -15,7 +27,7 @@ async function call<T>(token: string, path: string, body: unknown): Promise<TikT
     cache: "no-store",
     signal: AbortSignal.timeout(30_000),
   });
-  const json = (await res.json().catch(() => ({}))) as Envelope<T>;
+  const json = parseKeepingIds<Envelope<T>>(await res.text().catch(() => ""));
   const e = json.error;
   return { data: json.data, error: e && e.code !== "ok" ? { code: e.code, message: e.message, logId: e.log_id } : !res.ok ? { code: `http_${res.status}`, message: res.statusText } : undefined };
 }

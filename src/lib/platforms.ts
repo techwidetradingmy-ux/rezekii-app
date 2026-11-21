@@ -1,15 +1,14 @@
 import { tx } from "./i18n/lang.ts";
 
 /**
- * Which apps anyone can connect and post to (owner, 3 Nov 2026). Meta's app (Facebook Page, Instagram, Threads) only lets in
- * the testers added there until Meta approves Rezekii, so until then their Connect buttons read Not Available Yet. TikTok sign-in
- * and linking are fine; only posting to TikTok waits for TikTok's review (owner, 3 Nov 2026). Missions that need a closed app are
- * hidden. Admins can still connect and post, and anyone already connected can still reconnect. Turn one on here once approved.
+ * Which apps anyone can connect and post to. All open (owner, 21 Nov 2026): Meta approved Facebook Page, Instagram and Threads
+ * on 9 Nov 2026 and TikTok approved Content Posting (Direct Post) on 20 Nov 2026. A closed one's Connect button reads Not
+ * Available Yet and its missions are hidden; Admins can still connect and post, and anyone already connected can reconnect.
  */
 export type Network = "tiktok" | "facebook" | "instagram" | "threads";
-export const OPEN: Record<Network, boolean> = { tiktok: true, facebook: false, instagram: false, threads: false };
-/** Posting to TikTok through Rezekii (TikTok's Content Posting review). */
-export const TIKTOK_POSTING = false;
+export const OPEN: Record<Network, boolean> = { tiktok: true, facebook: true, instagram: true, threads: true };
+/** Posting to TikTok through Rezekii (TikTok's Content Posting review, approved 20 Nov 2026). */
+export const TIKTOK_POSTING = true;
 
 /** Why a closed one can't be used yet, for its tip. */
 export const WAITING: Record<Network, string> = {
