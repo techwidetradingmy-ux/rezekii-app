@@ -9,12 +9,18 @@ const DATA = ["/api/rankings/daily", "/api/rankings/top", "/api/rankings/sellers
  * Keeps the site quick on a first visit (owner, 15 Oct 2026): the timer opens each page and the Rankings data routes, so their
  * servers and caches are already running when a creator arrives. Every 15 minutes from 7 am to 1 am Malaysia time (owner,
  * 23 Oct 2026: fewer warm-ups, less server use; the timer calls on every quarter hour). A failed warm-up changes nothing.
+ * The pages only start their servers, so they go together. The Rankings data routes read the two biggest tables, and five at
+ * once overloaded the database every quarter hour: Rankings timed out, and on 6 Nov 2026 the database stopped answering for
+ * about 7 minutes (owner: "why rezekii.com keep crashing?"). So they go one after another, at most 15 s each.
  */
 export async function warmSite(origin: string, token: string, now = Date.now()): Promise<number> {
   if (!warmDue(now)) return 0;
-  const hit = (path: string, headers: Record<string, string> = {}) =>
-    fetch(origin + path, { redirect: "manual", cache: "no-store", headers, signal: AbortSignal.timeout(20_000) }).then((r) => r.body?.cancel(), () => undefined);
-  await Promise.all([...PAGES.map((p) => hit(p)), ...DATA.map((p) => hit(p, { "x-warm": token }))]);
+  const hit = (path: string, headers: Record<string, string> = {}, ms = 20_000) =>
+    fetch(origin + path, { redirect: "manual", cache: "no-store", headers, signal: AbortSignal.timeout(ms) }).then((r) => r.body?.cancel(), () => undefined);
+  const data = async () => {
+    for (const p of DATA) await hit(p, { "x-warm": token }, 15_000);
+  };
+  await Promise.all([...PAGES.map((p) => hit(p)), data()]);
   return PAGES.length + DATA.length;
 }
 
