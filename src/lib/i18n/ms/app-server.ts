@@ -459,4 +459,6 @@ export const APP_SERVER: Record<string, string> = {
   "Each photo can be up to 8 MB.": "Setiap foto boleh sehingga 8 MB.",
   "Photos are sent as JPG. Add the photo again.": "Foto dihantar sebagai JPG. Tambah foto semula.",
   "{app} takes up to {max} photos in one post. This post has {n}.": "{app} menerima sehingga {max} foto dalam satu hantaran. Hantaran ini ada {n}.",
+  // Edit for real scheduled posts.
+  "It has started sending or has gone out, so it can't be edited any more.": "Ia sudah mula dihantar atau sudah disiarkan, jadi tidak boleh diedit lagi.",
 };

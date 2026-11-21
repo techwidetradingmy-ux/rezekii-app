@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useDemo } from "@/components/demo";
 import { Icon } from "@/components/icons";
-import { Sheet, Tip } from "@/components/ui";
+import { Loading, Sheet, Tip } from "@/components/ui";
 import { useLang, useT } from "@/lib/i18n/client";
 import { dateLocale, tx, type Lang, type T } from "@/lib/i18n/lang";
 import { rich } from "./rich";
@@ -13,7 +13,9 @@ import { PlatformIcon } from "@/components/creator2/bits";
 import { NotYet, useCanPost } from "@/components/not-yet";
 import { POST_CREDITS, type MyPost, type PubBrand, type PubChannel, type PublishSetup } from "@/lib/mock-publish";
 import { postToEdit, saveEdit } from "./post-edits";
-import { creatorInfo, sendPost, upload, type CreatorInfo } from "@/lib/live-publish";
+import { creatorInfo, keepRecipe, sendPost, swapEdit, upload, type CreatorInfo } from "@/lib/live-publish";
+import type { EditPost } from "@/modules/posting/edit.ts";
+import type { Recipe } from "@/modules/social/recipe.ts";
 import { PhonePreview, type Who } from "./phone-previews";
 import {
   APPS, CAPTION_MAX, COLLABORATORS_MAX, COMMENT_MAX, ICON, NAMES, PRIVACY, REPLY_CONTROLS, TAGS_MAX,
@@ -32,10 +34,11 @@ type Sec = "channels" | "video" | "caption" | "comment" | "tiktok" | "settings" 
 type Problem = [string, Sec];
 
 /**
- * One photo of a photo post (owner, 21 Nov 2026, as on rezekii.com), made a JPG here, with its size. `ig` is Instagram's own copy,
+ * One photo of a photo post (owner, 21 Nov 2026, as on rezekii.com): a new one (made a JPG here) or one an edit kept (`path`), with
+ * its size. `ig` is Instagram's own copy,
  * cut to fit, when the photo is taller than 4:5 or wider than 1.91:1 (instagramCrop).
  */
-type Photo = { key: string; file: File; url: string; w: number; h: number; ig?: { file: File; url: string } };
+type Photo = { key: string; file?: File; path?: string; url: string; w: number; h: number; ig?: { file: File; url: string } };
 
 /** Draws part of an image (all of it by default) as a JPG of `w` × `h`, on white where it was see-through. */
 async function drawJpeg(src: ImageBitmap, w: number, h: number, name: string, box = { x: 0, y: 0, w: src.width, h: src.height }): Promise<File> {
@@ -109,6 +112,8 @@ const openIdOf = (key: string) => key.replace(/^tiktok:/, "");
 /** An ISO time as Malaysia time for pretty(). */
 const mytLocal = (iso: string) => new Date(Date.parse(iso) + 8 * 3600_000).toISOString().slice(0, 16);
 /** Now, as the date picker's minimum (the browser's own time). */
+/** A stored time as the date picker shows it (the browser's own time). */
+const localInput = (iso: string) => { const d = new Date(iso); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); };
 const nowLocal = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset() + 2); return d.toISOString().slice(0, 16); };
 
 /** A profile picture: initials in the account's colour, with the app's icon in the corner. */
@@ -164,6 +169,24 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [mediaError, setMediaError] = useState("");
   const isPhotos = photos.length > 0;
+  // Edit for a real scheduled post (as on rezekii.com): the post as it was scheduled, its video or photos kept until others
+  // are picked. "gone" once it has started sending.
+  const [liveEdit, setLiveEdit] = useState<EditPost | null | "loading" | "gone">(null);
+  const edit = typeof liveEdit === "object" ? liveEdit : null;
+  const [keptVideo, setKeptVideo] = useState<{ storagePath: string; url: string | null } | null>(null);
+  // Kept photos come without their size: read it once they load, and make Instagram's cut copy when one is needed.
+  useEffect(() => {
+    const unsized = photos.filter((p) => !p.w && p.url && !p.file);
+    if (!unsized.length) return;
+    let live = true;
+    for (const p of unsized)
+      fetch(p.url).then((r) => r.blob()).then((b) => createImageBitmap(b)).then(async (bmp) => {
+        const ig = await instagramCopy(bmp, bmp.width, bmp.height, `photo-${p.key.split("/").pop() ?? "kept.jpg"}`).catch(() => undefined);
+        if (live) setPhotos((list) => list.map((x) => (x.key === p.key ? { ...x, w: bmp.width, h: bmp.height, ig } : x)));
+        bmp.close();
+      }).catch(() => {});
+    return () => { live = false; };
+  }, [photos]);
   const [mode, setMode] = useState<"direct" | "inbox">("direct");
   const [privacy, setPrivacy] = useState<Privacy | "">("");
   const [allow, setAllow] = useState({ comments: false, duet: false, stitch: false });
@@ -190,7 +213,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   const [tried, setTried] = useState(false);
   const [flash, setFlash] = useState<Sec | "">("");
   const [check, setCheck] = useState<"" | "busy" | "ok">("");
-  const [done, setDone] = useState<{ summary: string; when: When; at: string; cost: number; tiktok: "direct" | "inbox" | null; photos?: boolean } | null>(null);
+  const [done, setDone] = useState<{ summary: string; when: When; at: string; cost: number; tiktok: "direct" | "inbox" | null; photos?: boolean; edit?: boolean } | null>(null);
   // Signed in (owner, 31 Oct 2026): real channels, real sending from this wallet.
   const liveSide = setup.live;
   const [credits, setCredits] = useState(setup.credits);
@@ -274,17 +297,17 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   const pKey = pApp ? (inApp(pApp).includes(previewAcct) ? previewAcct : inApp(pApp)[0]) : undefined;
   const activeTab = tab !== "main" && apps.includes(tab) ? tab : "main";
 
-  const videoUrl = useMemo(() => (source === "upload" ? (file ? URL.createObjectURL(file) : null) : /^https:\/\/\S+\.(mp4|mov|webm)(\?|$)/i.test(linkUrl) ? linkUrl : null), [source, file, linkUrl]);
+  const videoUrl = useMemo(() => (source === "upload" ? (file ? URL.createObjectURL(file) : (keptVideo?.url ?? null)) : /^https:\/\/\S+\.(mp4|mov|webm)(\?|$)/i.test(linkUrl) ? linkUrl : null), [source, file, linkUrl, keptVideo]);
   useEffect(() => () => { if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl); }, [videoUrl]);
   const vid = editing ? { cover: editing.cover, file: t("Your video"), seconds: editing.seconds } : setup.sample;
   const cover = source === "upload" && sample && !file ? vid.cover : null;
-  const hasVideo = isPhotos || (source === "upload" ? !!file || sample : /^https:\/\/\S+$/.test(linkUrl));
+  const hasVideo = isPhotos || (source === "upload" ? !!file || sample || !!keptVideo : /^https:\/\/\S+$/.test(linkUrl));
   // Instagram takes photos from 4:5 to 1.91:1 only: one that doesn't fit goes to Instagram cut to fit (owner, 21 Nov 2026).
   const igMisfits = isPhotos ? instagramMisfits(photos) : [];
 
   // Cross-channel posting costs credits per channel (owner, 28 Oct 2026). Drafts are free; failed or cancelled channels get theirs back.
   // Editing a scheduled post only charges for channels added now.
-  const paid = editing?.date ? editing.targets.map((x) => x.key) : [];
+  const paid = edit ? (edit.at ? (edit.recipe?.channels ?? []) : []) : editing?.date ? editing.targets.map((x) => x.key) : [];
   const cost = when === "draft" ? 0 : keys.filter((k) => !paid.includes(k)).length * POST_CREDITS;
   const problems = ((): Problem[] => {
     const out: Problem[] = [];
@@ -401,6 +424,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     const videos = files.filter((f) => f.type.startsWith("video/")), images = files.filter((f) => f.type.startsWith("image/"));
     if (videos.length > 1 || (videos.length && images.length)) return setMediaError(t("Pick one video, or photos. A post can't have both."));
     if (videos.length) {
+      setKeptVideo(null);
       setFile(videos[0]);
       setDurationSec(null);
       setSample(false);
@@ -422,6 +446,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     }
     setBusy("");
     setFile(null);
+    setKeptVideo(null);
     setSample(false);
     setDurationSec(null);
     setSource("upload");
@@ -463,6 +488,13 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     if (q.has("sample")) fillSample();
     // From Today's Ideas: the idea becomes the start of the caption; she adds the video.
     else if (q.get("idea")) { setMain(q.get("idea")!.slice(0, 200)); say(t("Idea added. Now add a video and channels.")); }
+    else if (q.get("edit") && liveSide) {
+      setLiveEdit("loading");
+      fetch(`/api/posts/edit?key=${encodeURIComponent(q.get("edit")!)}`, { cache: "no-store" })
+        .then((r) => (r.ok ? (r.json() as Promise<EditPost>) : null))
+        .catch(() => null)
+        .then((e) => (e ? fillFromEdit(e) : setLiveEdit("gone")));
+    }
     else if (q.get("edit")) {
       const p = postToEdit(q.get("edit")!);
       if (!p) return;
@@ -478,15 +510,56 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     }
   }, []);
 
+  /** New Post as the post was scheduled: what was typed (its recipe), TikTok's choices, the kept video or photos and the time. */
+  function fillFromEdit(e: EditPost) {
+    const r = e.recipe;
+    if (r) {
+      setPicked(new Set(r.channels.filter((k) => connected.has(k))));
+      setMain(r.main);
+      setTagsText(r.tags);
+      setOwnComment(r.comment);
+      setLink(r.link);
+      setCta(r.cta);
+      setCapOver(r.captions);
+      setComOver(r.comments);
+      setTopicOver(r.topic);
+      setFbDraft(r.fbDraft);
+      setIgFeed(r.igFeed);
+      setIgTrial(r.igTrial);
+      setCollabText(r.collaborators);
+      setTagText(r.tagged);
+      setReplies(r.replies);
+    }
+    if (e.tiktok) {
+      setMode(e.tiktok.mode);
+      setPrivacy((e.tiktok.privacy ?? "") as Privacy | "");
+      setAllow({ comments: e.tiktok.allowComments, duet: e.tiktok.allowDuet, stitch: e.tiktok.allowStitch });
+      setPromo({ on: e.tiktok.brandOrganic || e.tiktok.brandedContent, own: e.tiktok.brandOrganic, branded: e.tiktok.brandedContent });
+      setIsAigc(e.tiktok.isAigc);
+    }
+    if (e.photos) {
+      setPhotos(e.photos.map((p) => ({ key: p.path, path: p.path, url: p.url ?? "", w: 0, h: 0 })));
+      setSource("upload");
+    } else {
+      setSource(e.video.source);
+      if (e.video.source === "upload" && e.video.storagePath) setKeptVideo({ storagePath: e.video.storagePath, url: e.video.url });
+      if (e.video.source === "link") setLinkUrl(e.video.linkUrl ?? "");
+      setDurationSec(e.video.durationSec);
+    }
+    if (e.at) { setWhen("pick"); setPickAt(localInput(e.at)); } else setWhen("draft");
+    setLiveEdit(e);
+  }
+
   /** Real sending: upload, then TikTok, then the other apps as one group; each scheduled channel takes credits. */
   async function sendLive(side: "creator" | "seller") {
     setSendError("");
     try {
       let storagePath: string | undefined;
       if (source === "upload" && file && !isPhotos) storagePath = await upload(file, (pct) => setBusy(t("Uploading video… {pct}%", { pct })), t);
+      else if (source === "upload" && keptVideo && !isPhotos) storagePath = keptVideo.storagePath;
       // A photo post: each photo is uploaded in order; Instagram gets the cut copies of photos that don't fit it.
       const photoPaths: string[] = [];
-      for (const [i, ph] of photos.entries()) photoPaths.push(await upload(ph.file, (pct) => setBusy(t("Uploading photo {n} of {total}… {pct}%", { n: i + 1, total: photos.length, pct })), t, "photo"));
+      for (const [i, ph] of photos.entries()) photoPaths.push(ph.path ?? await upload(ph.file as File, (pct) => setBusy(t("Uploading photo {n} of {total}… {pct}%", { n: i + 1, total: photos.length, pct })), t, "photo"));
       const instagramPhotoPaths: string[] = [];
       if (isPhotos && apps.includes("instagram") && photos.some((ph) => ph.ig))
         for (const [i, ph] of photos.entries()) instagramPhotoPaths.push(ph.ig ? await upload(ph.ig.file, (pct) => setBusy(t("Uploading photo {n} for Instagram… {pct}%", { n: i + 1, pct })), t, "photo") : photoPaths[i]);
@@ -494,13 +567,19 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
       const at = when === "pick" ? new Date(pickAt).toISOString() : when;
       const settingsFor = (p: Channel): Record<string, unknown> => (p === "facebook" ? { draft: fbDraft } : p === "instagram" ? { feed: igFeed, collaborators, tags: tagged, trial: igTrial } : { replies, topic });
       const r = await sendPost({
-        side, when: at, durationSec: isPhotos ? null : durationSec,
+        side, when: at, durationSec: isPhotos ? null : durationSec, staged: !!edit, commentImagePath: edit?.commentImage?.path,
         video: isPhotos ? { photoPaths, ...(instagramPhotoPaths.length ? { instagramPhotoPaths } : {}) } : { source, storagePath, linkUrl: source === "link" ? linkUrl : undefined },
         tiktok: ttKey ? { account: openIdOf(ttKey), choice: { mode, caption: captionOf("tiktok"), privacyLevel: privacy || null, allowComments: allow.comments && !lockAllow.comments, allowDuet: allow.duet && !lockAllow.duet && !isPhotos, allowStitch: allow.stitch && !lockAllow.stitch && !isPhotos, promo: promo.on, brandOrganic: promo.own, brandedContent: promo.branded, isAigc, durationSec: isPhotos ? null : durationSec } } : undefined,
         others: metaPicked.map((c) => ({ accountId: c.key, caption: captionOf(c.app), firstComment: c.app === "facebook" && fbDraft ? "" : commentOf(c.app), settings: settingsFor(c.app) })),
       }, t);
+      // An edit replaces the old post only now; if it had started sending, the changes are dropped and it goes out as it was.
+      if (edit && r.key) await swapEdit(edit.key, r.key, side, t);
+      if (r.key) {
+        const recipe: Recipe = { channels: keys, main, tags: tagsText, comment: ownComment, link, cta, captions: capOver, comments: comOver, place: {}, topic: topicOver, fbDraft, igFeed, igTrial, collaborators: collabText, tagged: tagText, replies };
+        keepRecipe(r.key, recipe);
+      }
       setCredits((n) => n - cost);
-      setDone({ summary: summary(), when, at: r.at ? pretty(mytLocal(r.at), lang) : t(RECOMMENDED), cost, tiktok: ttKey ? mode : null, photos: isPhotos });
+      setDone({ summary: summary(), when, at: r.at ? pretty(mytLocal(r.at), lang) : t(RECOMMENDED), cost, tiktok: ttKey ? mode : null, photos: isPhotos, edit: !!edit });
     } catch (e) {
       setSendError(e instanceof Error ? t(e.message) : t("Didn't go through. Please try again."));
     } finally {
@@ -524,15 +603,24 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     setBusy(when === "draft" ? t("Saving…") : t("Scheduling…"));
     window.setTimeout(() => {
       setBusy("");
-      setDone({ summary: summary(), when, at: when === "pick" ? pretty(pickAt, lang) : t(RECOMMENDED), cost, tiktok: ttKey ? mode : null, photos: isPhotos });
+      setDone({ summary: summary(), when, at: when === "pick" ? pretty(pickAt, lang) : t(RECOMMENDED), cost, tiktok: ttKey ? mode : null, photos: isPhotos, edit: !!edit });
     }, 700);
   }
 
+  if (liveEdit === "loading") return <Loading text={t("Loading the post…")} />;
+  if (liveEdit === "gone")
+    return (
+      <section className="v2-card pb-sent" role="status">
+        <h2>{t("This Post Can't Be Edited Any More")}</h2>
+        <p>{t("It has started sending or has gone out. Posts already on an app can only be edited or deleted in that app.")}</p>
+        <div className="np-row"><Link href={setup.calendar} className="np-btn">{t("Open Content Calendar")}</Link></div>
+      </section>
+    );
   if (done) {
     return (
       <section className="v2-card pb-sent" role="status">
         <span className="pb-sent-ico" aria-hidden="true">✓</span>
-        <h2>{done.when === "draft" ? t("Saved as a Draft") : done.when === "now" ? t("On Its Way") : t("Scheduled")}</h2>
+        <h2>{done.edit ? t("Changes Saved") : done.when === "draft" ? t("Saved as a Draft") : done.when === "now" ? t("On Its Way") : t("Scheduled")}</h2>
         <p>
           {done.when === "draft" ? t("Saved in Rezekii for {summary}. Track or edit it in Content Calendar.", { summary: done.summary }) : done.when === "now" ? t("{summary}: posting now. Track or edit it in Content Calendar.", { summary: done.summary }) : t("{summary}: {time} (Malaysia time). Track or edit it in Content Calendar.", { summary: done.summary, time: done.at })}
         </p>
@@ -672,7 +760,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
               ) : (
                 <label className="np-drop">
                   <input type="file" multiple accept="video/mp4,video/quicktime,video/webm,image/jpeg,image/png,image/webp" onChange={(e) => { void pickFiles(e.target.files); e.target.value = ""; }} />
-                  <span>{isPhotos ? t("Add more photos ({n} of {max})", { n: photos.length, max: PHOTOS_MAX }) : file ? `${file.name} · ${(file.size / 1048576).toFixed(1)} MB` : t("Choose one video (MP4, MOV or WebM, up to 50 MB) or photos (JPG, PNG or WebP)")}</span>
+                  <span>{isPhotos ? t("Add more photos ({n} of {max})", { n: photos.length, max: PHOTOS_MAX }) : file ? `${file.name} · ${(file.size / 1048576).toFixed(1)} MB` : keptVideo ? t("The post's video is kept. Choose another to replace it.") : t("Choose one video (MP4, MOV or WebM, up to 50 MB) or photos (JPG, PNG or WebP)")}</span>
                 </label>
               )
             ) : (
@@ -932,7 +1020,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
           <span className="np-submit-wrap" title={promoIncomplete ? t("You need to indicate if your content promotes yourself, a third party, or both.") : undefined}>
           <button type="submit" className="np-btn np-submit" disabled={!!busy || promoIncomplete}>
             {/* Each part of the button in her language, joined by dots as in English. */}
-            {busy || editing
+            {busy || editing || edit
               ? busy || [t("Save changes"), when === "draft" ? "" : t("{n} credits", { n: cost })].filter(Boolean).join(" · ")
               : !keys.length
                 ? when === "draft" ? t("Pick a Channel") : t("Pick a Channel · {n} credits each", { n: POST_CREDITS })

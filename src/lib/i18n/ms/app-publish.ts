@@ -501,4 +501,11 @@ export const APP_PUBLISH: Record<string, string> = {
   "Uploading photo {n} for Instagram… {pct}%": "Memuat naik foto {n} untuk Instagram… {pct}%",
   "Uploading photo {n} of {total}… {pct}%": "Memuat naik foto {n} daripada {total}… {pct}%",
   "Video or Photos": "Video atau Foto",
+  // Edit for real scheduled posts (as on rezekii.com).
+  "The post's video is kept. Choose another to replace it.": "Video hantaran ini dikekalkan. Pilih yang lain untuk menggantikannya.",
+  "This Post Can't Be Edited Any More": "Hantaran Ini Tidak Boleh Diedit Lagi",
+  "Changes Saved": "Perubahan Disimpan",
+  "It has started sending or has gone out. Posts already on an app can only be edited or deleted in that app.": "Ia sudah mula dihantar atau sudah disiarkan. Hantaran yang sudah ada di aplikasi hanya boleh diedit atau dipadam dalam aplikasi itu.",
+  "Loading the post…": "Memuatkan hantaran…",
+  "Your changes couldn't be saved. Please try again.": "Perubahan anda tidak dapat disimpan. Sila cuba lagi.",
 };

@@ -381,4 +381,10 @@ export const APP_PUBLISH: Record<string, string> = {
   "Uploading photo {n} for Instagram… {pct}%": "正在为 Instagram 上传第 {n} 张照片… {pct}%",
   "Uploading photo {n} of {total}… {pct}%": "正在上传第 {n}/{total} 张照片… {pct}%",
   "Video or Photos": "视频或照片",
+  // Edit for real scheduled posts (as on rezekii.com).
+  "This Post Can't Be Edited Any More": "这条发布已无法编辑",
+  "Changes Saved": "已保存更改",
+  "It has started sending or has gone out. Posts already on an app can only be edited or deleted in that app.": "它已开始发送或已发布。已在应用上的发布只能在该应用中编辑或删除。",
+  "Loading the post…": "正在加载这条发布…",
+  "Your changes couldn't be saved. Please try again.": "无法保存你的更改，请重试。",
 };

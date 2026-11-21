@@ -309,4 +309,6 @@ export const APP_SERVER: Record<string, string> = {
   "Each photo can be up to 8 MB.": "每张照片最大 8 MB。",
   "Photos are sent as JPG. Add the photo again.": "照片会以 JPG 发送，请重新添加照片。",
   "{app} takes up to {max} photos in one post. This post has {n}.": "{app} 一条发布最多 {max} 张照片，这条有 {n} 张。",
+  // Edit for real scheduled posts.
+  "It has started sending or has gone out, so it can't be edited any more.": "它已开始发送或已发布，所以无法再编辑。",
 };

@@ -252,7 +252,8 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
             </span>
           ) : (
             <span className="sq-acts">
-              {!live && <button type="button" className="btn-outline v2-btn-sm" onClick={() => { openPost(p); router.push(`${newPost}?edit=${encodeURIComponent(p.id)}`); }}><Icon name="edit" size={15} /> {t("Edit")}</button>}
+              {/* A real post opens New Post filled in from the server (as on rezekii.com); the preview's sample through this tab. */}
+              <button type="button" className="btn-outline v2-btn-sm" onClick={() => { if (!live) openPost(p); router.push(`${newPost}?edit=${encodeURIComponent(p.id)}`); }}><Icon name="edit" size={15} /> {t("Edit")}</button>
               <button type="button" className="sq-ghost v2-btn-sm" onClick={() => setCancelling(p.id)}>{g === "draft" ? t("Delete") : t("Cancel")}</button>
             </span>
           ))}

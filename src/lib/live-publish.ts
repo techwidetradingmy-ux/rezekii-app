@@ -5,6 +5,7 @@ import { useDemo } from "@/components/demo";
 import type { Channel } from "@/components/publish/rules";
 import type { MyPost, PostStatus, PubBrand, PubChannel, PublishSetup } from "./mock-publish";
 import { makeT, type T } from "@/lib/i18n/lang";
+import type { Recipe } from "@/modules/social/recipe.ts";
 
 /**
  * Post Everywhere on real data for signed-in accounts (owner, 31 Oct 2026): her connected channels, brands and credits, real
@@ -61,36 +62,50 @@ export type OtherChannel = { accountId: string; caption: string; firstComment: s
 
 /**
  * Sends one New post: TikTok first (if picked), then the other apps as one group at TikTok's time. Each scheduled channel takes
- * credits from the wallet. Returns when it goes out (null for a draft).
+ * credits from the wallet. Returns when it goes out (null for a draft) and the post's key (the TikTok post or the group).
+ * `staged`: an edit, held as a draft with its time until swapEdit puts it in place of the old post.
  */
 export async function sendPost(p: {
-  side: Side; when: string; durationSec: number | null;
+  side: Side; when: string; durationSec: number | null; staged?: boolean; commentImagePath?: string;
   // A video (an upload or a link), or a photo post's photos in order with Instagram's cut-to-fit copies when some don't fit it.
   video: { source: "upload" | "link"; storagePath?: string; linkUrl?: string } | { photoPaths: string[]; instagramPhotoPaths?: string[] };
   tiktok?: { account: string; choice: TikTokChoice }; others: OtherChannel[];
-}, t: T = EN): Promise<{ at: string | null }> {
+}, t: T = EN): Promise<{ at: string | null; key: string | null }> {
   let tiktokPost: { id: string; scheduled_at: string | null } | null = null;
   if (p.tiktok) {
     const d = await json<{ post?: { id: string; scheduled_at: string | null } }>(
-      await post("/api/posts", { ...p.tiktok.choice, ...("photoPaths" in p.video ? { photoPaths: p.video.photoPaths } : p.video), when: p.when, consent: true, account: p.tiktok.account, side: p.side }),
+      await post("/api/posts", { ...p.tiktok.choice, ...("photoPaths" in p.video ? { photoPaths: p.video.photoPaths } : p.video), when: p.when, consent: true, account: p.tiktok.account, side: p.side, staged: p.staged }),
       t("TikTok post couldn't be saved."),
     );
     tiktokPost = d.post ?? null;
   }
   let at = tiktokPost?.scheduled_at ?? null;
+  let key = tiktokPost?.id ?? null;
   if (p.others.length) {
     try {
-      const d = await json<{ posts?: { scheduled_at: string | null }[] }>(
-        await post("/api/social/posts", { ...p.video, durationSec: p.durationSec, when: p.when, tiktokPostId: tiktokPost?.id, side: p.side, channels: p.others }),
+      const d = await json<{ posts?: { scheduled_at: string | null; group_id: string }[] }>(
+        await post("/api/social/posts", { ...p.video, durationSec: p.durationSec, when: p.when, tiktokPostId: tiktokPost?.id, side: p.side, staged: p.staged, commentImagePath: p.commentImagePath, channels: p.others }),
         t("The other channels couldn't be saved."),
       );
       at ??= d.posts?.[0]?.scheduled_at ?? null;
+      // With TikTok in the post, its id is the key (the group points to it).
+      key ??= d.posts?.[0]?.group_id ?? null;
     } catch (e) {
       const why = e instanceof Error ? t(e.message) : "";
       throw new Error(tiktokPost ? (why ? t("The TikTok post was saved, but {error}", { error: why }) : t("The TikTok post was saved, but the other channels weren't.")) : why || t("Didn't go through."));
     }
   }
-  return { at };
+  return { at, key };
+}
+
+/** Saving an edit: puts the held, changed post (`next`) in place of the old one, as long as it hasn't started sending. */
+export async function swapEdit(old: string, next: string, side: Side, t: T = EN): Promise<void> {
+  await json(await post("/api/posts/swap", { old, new: next, side }), t("Your changes couldn't be saved. Please try again."));
+}
+
+/** Keeps what was typed with the post it made, so Edit (and Reuse) can fill New Post in again. Best effort. */
+export function keepRecipe(key: string, recipe: Recipe): void {
+  void fetch("/api/social/recipes", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ key, recipe }), keepalive: true }).catch(() => {});
 }
 
 /* ---------------- Content Calendar ---------------- */
