@@ -1,15 +1,16 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * During the beta, Rezekii V2 lives at beta.rezekii.com (owner, 2 Nov 2026). The old rezekii-v2-preview.vercel.app address
- * keeps working: its pages and sign-in steps move over to APP_URL, including TikTok Shop's return from rezekii.com, so the
- * sign-in cookies are found. The timers and other API calls stay where they are.
+ * Rezekii's older addresses keep working: their pages and sign-in steps move over to APP_URL, so the sign-in cookies are found.
+ * The timers and other API calls stay where they are. rezekii-v2-preview.vercel.app was the first beta address; beta.rezekii.com
+ * the beta itself (owner, 2 Nov 2026), until the new site became rezekii.com (owner, 21 Nov 2026: "we no longer need
+ * beta.rezekii.com, just move everything to rezekii.com").
  */
-const OLD_HOST = "rezekii-v2-preview.vercel.app";
+const OLD_HOSTS = new Set(["rezekii-v2-preview.vercel.app", "beta.rezekii.com"]);
 
 export function proxy(req: NextRequest) {
   const base = process.env.APP_URL;
-  if (!base || req.nextUrl.host !== OLD_HOST || new URL(base).host === OLD_HOST) return;
+  if (!base || !OLD_HOSTS.has(req.nextUrl.host) || new URL(base).host === req.nextUrl.host) return;
   if (req.method !== "GET" && req.method !== "HEAD") return;
   const path = req.nextUrl.pathname;
   if (path.startsWith("/api/") && !path.startsWith("/api/auth/")) return;
