@@ -311,4 +311,9 @@ export const APP_SERVER: Record<string, string> = {
   "{app} takes up to {max} photos in one post. This post has {n}.": "{app} 一条发布最多 {max} 张照片，这条有 {n} 张。",
   // Edit for real scheduled posts.
   "It has started sending or has gone out, so it can't be edited any more.": "它已开始发送或已发布，所以无法再编辑。",
+  "Pick at least one Facebook, Instagram, Threads or Shopee channel.": "请至少选择一个 Facebook、Instagram、Threads 或 Shopee 渠道。",
+  "Shopee Video takes videos only. Untick Shopee for a photo post.": "Shopee Video 只接受视频。照片帖请取消勾选 Shopee。",
+  "Shopee needs the video's length: wait for the video to load, or upload the file instead of a link.": "Shopee 需要知道视频长度：请等视频加载完，或上传文件而不是贴链接。",
+  "Shopee captions can't have links. The product shows under the video instead.": "Shopee 文案不能放链接，商品会显示在视频下方。",
+  "Shopee Video takes videos longer than 3 seconds, up to 3 minutes.": "Shopee Video 接受 3 秒以上、最长 3 分钟的视频。",
 };

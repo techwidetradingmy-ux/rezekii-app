@@ -75,6 +75,34 @@ async function reconnectChannels(): Promise<{ rows: ReconnectChannel[]; owners: 
   return { rows, owners: (await (await supabaseRest(`app_users?id=in.(${ids})&select=id,role,display_name,email`)).json()) as ChannelOwner[] };
 }
 
+type ShopeeReconnect = { user_id: string; role: "seller" | "affiliate"; name: string | null };
+
+/** Shopee accounts marked "Reconnect", one item each; only the owner can sign in to Shopee again, so only they get the button. */
+export function shopeeReconnects(rows: ShopeeReconnect[], owners: ChannelOwner[], adminId: string): Need[] {
+  const byId = new Map(owners.map((u) => [u.id, u]));
+  return rows.map((r) => {
+    const owner = byId.get(r.user_id);
+    const mine = r.user_id === adminId;
+    const admin = mine || owner?.role === "admin";
+    return {
+      kind: "reconnect" as const,
+      title: `Reconnect needed · Shopee · ${r.name ?? (r.role === "seller" ? "Shop" : "Affiliate account")}`,
+      detail: "Shopee stopped accepting this sign-in. Rezekii can't use it until it's connected again.",
+      techwide: admin,
+      href: mine ? `/api/auth/shopee/start?role=${r.role}` : undefined,
+      by: admin && !mine ? owner?.display_name || owner?.email || "another admin" : undefined,
+    };
+  });
+}
+
+/** Shopee accounts marked "Reconnect" and their owners (looked up only when there are some). */
+async function reconnectShopee(): Promise<{ rows: ShopeeReconnect[]; owners: ChannelOwner[] }> {
+  const rows = (await (await supabaseRest("shopee_connections?status=eq.reconnect&select=user_id,role,name&order=connected_at&limit=500")).json()) as ShopeeReconnect[];
+  if (!rows.length) return { rows, owners: [] };
+  const ids = [...new Set(rows.map((r) => r.user_id))].join(",");
+  return { rows, owners: (await (await supabaseRest(`app_users?id=in.(${ids})&select=id,role,display_name,email`)).json()) as ChannelOwner[] };
+}
+
 /** Everything the admin Today page shows the signed-in admin (`adminId`), from Rezekii's own records and the daily refresh. */
 export async function adminToday(adminId: string): Promise<AdminToday> {
   const now = Date.now();
@@ -82,7 +110,7 @@ export async function adminToday(adminId: string): Promise<AdminToday> {
   const startIso = new Date(dayStart).toISOString();
   const endIso = new Date(dayStart + 86400_000).toISOString();
   const twoDaysAgo = new Date(now - 2 * 86400_000).toISOString();
-  const [today, recent, accounts, links, samplesWaiting, waitingRows, creators, places, health, tapLive, com, creatorsWaiting, channels] = await Promise.all([
+  const [today, recent, accounts, links, samplesWaiting, waitingRows, creators, places, health, tapLive, com, creatorsWaiting, channels, shopee] = await Promise.all([
     postsBetween(startIso, endIso),
     postsBetween(twoDaysAgo, new Date(now).toISOString()),
     allAccounts(),
@@ -96,6 +124,7 @@ export async function adminToday(adminId: string): Promise<AdminToday> {
     commission(),
     count("creator_access?status=eq.waiting&select=user_id"),
     reconnectChannels(),
+    reconnectShopee(),
   ]);
   const by = (s: CalStatus) => today.filter((p) => p.status === s).length;
   const seen = new Set<string>();
@@ -105,6 +134,7 @@ export async function adminToday(adminId: string): Promise<AdminToday> {
     ...posts.filter((p) => p.status === "unconfirmed").map((p) => ({ kind: "unconfirmed" as const, title: `Unconfirmed post · ${p.handle} · ${time(p.at)}`, detail: "Sent to TikTok, but TikTok hasn't confirmed it after 30 minutes. Check the account on TikTok first.", techwide: p.techwide, postId: p.id })),
     ...accounts.filter((a) => a.tiktok === "expired").map((a) => ({ kind: "reconnect" as const, title: `Reconnect needed · ${a.handle}`, detail: `TikTok Connection expired.${a.queued ? ` ${a.queued} ${a.queued === 1 ? "post is" : "posts are"} paused until ${a.techwide ? "it is reconnected" : "the owner reconnects"}.` : ""}`, techwide: a.techwide })),
     ...channelReconnects(channels.rows, channels.owners, adminId),
+    ...shopeeReconnects(shopee.rows, shopee.owners, adminId),
   ];
   const rows = new Map<string, TimelineRow>();
   for (const p of today.sort((a, b) => a.at.localeCompare(b.at))) {

@@ -6,7 +6,9 @@ import { nextRecommendedSlot } from "@/modules/posting/rules.ts";
 import { postingHours } from "@/modules/posting/times.ts";
 import { getAccount } from "@/modules/social/accounts.ts";
 import { canUseSocial } from "@/modules/social/access.ts";
-import { NAMES, channelProblems, facebookAsReel, photoProblems } from "@/modules/social/rules.ts";
+import { NAMES, channelProblems, facebookAsReel, photoProblems, shopeeProblems } from "@/modules/social/rules.ts";
+import { getShopee, shopeeLabel } from "@/modules/shopee/connections.ts";
+import type { ShopeeSettings } from "@/modules/shopee/posting.ts";
 import { cleanPhotoPaths } from "@/modules/posting/photos.ts";
 import { cleanSettings, settingsProblems } from "@/modules/social/settings.ts";
 import { fileInUse } from "@/modules/posting/edit.ts";
@@ -19,6 +21,8 @@ export const dynamic = "force-dynamic";
 
 /** Daily caps per account (rolling 24 h): Instagram 100, Threads 250, Facebook Reels 30. */
 const DAILY_CAP = { instagram: 100, threads: 250, facebook: 30 };
+/** A Shopee account picked in New Post comes as "shopee:<connection id>" (Shopee Video, owner 21 Nov 2026: from rezekii.com's Shopee build). */
+const SHOPEE_KEY = /^shopee:([0-9a-f-]{36})$/;
 
 export async function GET() {
   const t = tFor(await getLang());
@@ -34,7 +38,7 @@ type Body = { source?: "upload" | "link"; storagePath?: string; photoPaths?: unk
 const bad = (error: string | string[], status = 400) => NextResponse.json({ error }, { status });
 
 /**
- * Schedules the Meta channels of one New post. Each channel gets its own post (its own caption and first comment), all in
+ * Schedules the Meta and Shopee channels of one New post. Each channel gets its own post (its own caption and first comment), all in
  * one group with the TikTok post when there is one. With a TikTok post, the channels go out at the TikTok post's time.
  * `staged`: an edit being saved, held as drafts with their time until /api/posts/swap puts them in place of the old post.
  */
@@ -54,12 +58,22 @@ export async function POST(req: NextRequest) {
     return bad(t("Add a video or photos: upload them or paste a video link."));
   let commentImage = b.commentImagePath ?? null;
   if (commentImage && !new RegExp(`^${user.id}/comment/[0-9a-f-]{36}\\.(jpg|png)$`).test(commentImage)) return bad(t("The comment image upload wasn't found. Add it again."));
-  const channels = (b.channels ?? []).filter((c) => c.accountId);
-  if (!channels.length) return bad(t("Pick at least one Facebook, Instagram or Threads channel."));
+  const picked = (b.channels ?? []).filter((c) => c.accountId);
+  if (!picked.length) return bad(t("Pick at least one Facebook, Instagram, Threads or Shopee channel."));
+  const channels = picked.filter((c) => !SHOPEE_KEY.test(String(c.accountId)));
+  const shopeeChannels = picked.filter((c) => SHOPEE_KEY.test(String(c.accountId)));
   const durationSec = !photos && typeof b.durationSec === "number" ? b.durationSec : null;
 
   const accounts = await Promise.all(channels.map((c) => getAccount(String(c.accountId), user.id)));
+  const shops = await Promise.all(shopeeChannels.map((c) => getShopee(String(c.accountId).replace("shopee:", ""), user.id)));
   const problems: string[] = [];
+  if (photos && shopeeChannels.length) problems.push(t("Shopee Video takes videos only. Untick Shopee for a photo post."));
+  else shops.forEach((c, i) => {
+    if (!c) problems.push(t("One of the channels isn't connected any more. Reload and pick again."));
+    else if (c.status === "reconnect") problems.push(t("{channel} needs reconnecting first (Posts → Channels).", { channel: shopeeLabel(c) }));
+    else if (!durationSec) problems.push(t("Shopee needs the video's length: wait for the video to load, or upload the file instead of a link."));
+    else problems.push(...shopeeProblems(String(shopeeChannels[i].caption ?? ""), durationSec, t));
+  });
   accounts.forEach((a, i) => {
     if (!a) problems.push(t("One of the channels isn't connected any more. Reload and pick again."));
     else if (a.status === "reconnect") problems.push(t("{channel} needs reconnecting first (Posts → Channels).", { channel: a.name ?? NAMES[a.platform] }));
@@ -91,7 +105,7 @@ export async function POST(req: NextRequest) {
 
   // Post Everywhere costs credits per channel from the creator or seller wallet; drafts are free.
   const side = postSide(b.side);
-  if (scheduledAt && !b.staged && !(await canPay(user.id, side, channels.length)))
+  if (scheduledAt && !b.staged && !(await canPay(user.id, side, picked.length)))
     return bad(t("Not enough credits for these channels. Earn more or save as a draft."), 402);
 
   // With TikTok in the post, the channels get their own copy of the upload (TikTok deletes its file once it has posted). An
@@ -123,6 +137,34 @@ export async function POST(req: NextRequest) {
     commentImage = copy;
   }
   const groupId = randomUUID();
+  const shopeeRows: NewSocialPost[] = shopeeChannels.map((c, i) => {
+    const shop = shops[i]!;
+    const s = (c.settings ?? {}) as { items?: unknown; duet?: unknown; stitch?: unknown; aigc?: unknown };
+    // Sellers pick up to 6 of their own shop's products (Shopee checks they're the shop's); Shopee refuses other shops' products for affiliates.
+    const items = shop.role === "seller" && Array.isArray(s.items) ? s.items.map(Number).filter((n) => Number.isSafeInteger(n) && n > 0) : [];
+    const settings: ShopeeSettings = { itemIds: [...new Set(items)].slice(0, 6), duet: s.duet !== false, stitch: s.stitch !== false, aigc: s.aigc === true };
+    return {
+      group_id: groupId,
+      tiktok_post_id: tiktok?.id ?? null,
+      user_id: user.id,
+      account_id: null,
+      shopee_connection_id: shop.id,
+      account_name: shopeeLabel(shop),
+      platform: "shopee",
+      source: b.source as "upload" | "link",
+      storage_path: storagePath,
+      photo_paths: null,
+      link_url: b.source === "link" ? (b.linkUrl as string) : null,
+      duration_sec: durationSec,
+      caption: String(c.caption ?? ""),
+      first_comment: "",
+      comment_image_path: null,
+      status: scheduledAt && !b.staged ? "scheduled" : "draft",
+      scheduled_at: scheduledAt?.toISOString() ?? null,
+      next_attempt_at: scheduledAt?.toISOString() ?? null,
+      settings,
+    };
+  });
   const rows: NewSocialPost[] = channels.map((c, i) => {
     const a = accounts[i]!;
     // Facebook drafts are for Reels only, never photos (S1).
@@ -134,6 +176,7 @@ export async function POST(req: NextRequest) {
       tiktok_post_id: tiktok?.id ?? null,
       user_id: user.id,
       account_id: a.id,
+      shopee_connection_id: null,
       account_name: a.name ?? a.username,
       platform: a.platform,
       source: photoPaths ? "upload" : (b.source as "upload" | "link"),
@@ -150,7 +193,7 @@ export async function POST(req: NextRequest) {
       settings,
     };
   });
-  const posts = await insertSocialPosts(rows);
+  const posts = await insertSocialPosts([...rows, ...shopeeRows]);
   const due = posts.filter((p) => p.status === "scheduled");
   if (due.length) {
     const paid = await chargePosts(user.id, side, due.map((p) => ({ id: p.id, app: p.platform })), t);
