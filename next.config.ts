@@ -16,8 +16,6 @@ const OLD: [string, string][] = [
   ["/app/sales", "/app/data"],
   ["/app/levels", "/app/account"],
   ["/app/levels/benefits", "/app/account"],
-  ["/app/links", "/app"],
-  ["/app/lookup", "/app"],
   ["/app/rankings", "/app"],
   ["/app/golden-sellers", "/app"],
   ["/app/admin", "/admin"],

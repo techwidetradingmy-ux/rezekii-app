@@ -7,7 +7,7 @@ export type AppKind = "creator" | "seller" | "admin";
 export const MENUS: Record<AppKind, Section[]> = {
   creator: [
     { href: "/app", label: "Home", icon: "home", pages: [] },
-    { href: "/app/market", label: "Marketplace", icon: "store", pages: [["/app/market", "Marketplace"], ["/app/market/wanted", "Community Wish List"]] },
+    { href: "/app/market", label: "Marketplace", icon: "store", pages: [["/app/market", "Marketplace"], ["/app/market/wanted", "Community Wish List"], ["/app/links", "Convert Links"], ["/app/lookup", "Product Lookup"]] },
     {
       href: "/app/data", label: "Analytics", icon: "chart",
       pages: [["/app/data", "Overview"], ["/app/data/performance", "Performance"], ["/app/data/ai-picks", "AI Picks"], ["/app/data/risk", "Risk Check"], ["/app/data/payouts", "Payouts"]],
