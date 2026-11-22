@@ -93,6 +93,8 @@
 @keyframes pb-pop { from { transform: scale(0.9); opacity: 0.4; } }
 .pb-check { display: flex; align-items: center; gap: 11px; padding: 7px 4px; border-radius: 12px; cursor: pointer; }
 .pb-check:hover { background: var(--surface2); }
+/* A ticked channel stands out (owner, 23 Nov 2026), in light and dark. */
+.pb-check:has(input:checked) { background: var(--gsoft); }
 .pb-check > span:not(.pb-face) { flex: 1; min-width: 0; display: grid; line-height: 1.3; }
 .pb-check b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
 .pb-check small { color: var(--muted); font-size: 12px; }
@@ -421,17 +423,18 @@
 .sq-edit-apps { display: flex; flex-wrap: wrap; gap: 8px; font-size: 12.5px; color: var(--body); }
 .sq-edit-apps > span { display: inline-flex; gap: 5px; align-items: center; }
 @media (prefers-reduced-motion: reduce) { .sq-spin { animation: none; } }
-.pb-check { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 14px; background: #f3f1ff; border: 1px solid #e0dbff; }
-.pb-check > span:nth-child(2) { display: grid; gap: 1px; }
-.pb-check b { font-size: 13.5px; }
-.pb-check small { font-size: 12.5px; color: var(--muted); line-height: 1.4; }
-.pb-check-ico { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; background: #ffffff; color: #5b4ee0; font-weight: 900; }
-.pb-check.busy .pb-check-ico { animation: pb-pulse 1s ease-in-out infinite; }
-.pb-check.ok { background: var(--gsoft); border-color: #b8ead2; }
-.pb-check.ok .pb-check-ico { background: #00c073; color: #ffffff; }
+/* The video check in New Post (its own name, owner 23 Nov 2026: sharing .pb-check made the brand list white on white in dark mode). */
+.pb-vcheck { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 14px; background: color-mix(in srgb, #5b4ee0 10%, var(--surface)); border: 1px solid color-mix(in srgb, #5b4ee0 25%, var(--surface)); }
+.pb-vcheck > span:nth-child(2) { display: grid; gap: 1px; }
+.pb-vcheck b { font-size: 13.5px; }
+.pb-vcheck small { font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+.pb-check-ico { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; background: var(--surface); color: #7c6ff0; font-weight: 900; }
+.pb-vcheck.busy .pb-check-ico { animation: pb-pulse 1s ease-in-out infinite; }
+.pb-vcheck.ok { background: var(--gsoft); border-color: color-mix(in srgb, #00c073 35%, var(--surface)); }
+.pb-vcheck.ok .pb-check-ico { background: #00c073; color: #ffffff; }
 @keyframes pb-pulse { 50% { transform: scale(0.88); opacity: 0.7; } }
-@media (max-width: 560px) { .pb-check { grid-template-columns: auto minmax(0, 1fr); } .pb-check .btn-outline { grid-column: 1 / -1; } }
-@media (prefers-reduced-motion: reduce) { .pb-check.busy .pb-check-ico { animation: none; } }
+@media (max-width: 560px) { .pb-vcheck { grid-template-columns: auto minmax(0, 1fr); } .pb-vcheck .btn-outline { grid-column: 1 / -1; } }
+@media (prefers-reduced-motion: reduce) { .pb-vcheck.busy .pb-check-ico { animation: none; } }
 /* Content calendar on desktop (owner, 28 Oct 2026: website first): the month on the left stays in view, posts on the right. */
 @media (min-width: 1200px) {
   .v2-stack.sq-page { display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: 18px 24px; align-items: start; }

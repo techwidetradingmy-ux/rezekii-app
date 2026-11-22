@@ -835,7 +835,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
             <p className="np-muted">{t("Best photo size: 1080 × 1350 (4:5) fits every app. TikTok also takes 1080 × 1920 (9:16) full screen.")}</p>
             {igMisfits.length > 0 && apps.includes("instagram") && <p className="np-note" role="status">{t("For Instagram, photo {list} is cut to fit: Instagram takes photos from 4:5 (portrait) to 1.91:1 (landscape), so the middle part is used. The other apps get the whole photo.", { list: igMisfits.join(", ") })}</p>}
             {setup.precheck && ttKey && hasVideo && !isPhotos && (
-              <div className={`pb-check ${check}`}>
+              <div className={`pb-vcheck ${check}`}>
                 <span className="pb-check-ico" aria-hidden="true">{check === "ok" ? "✓" : <Icon name="shield" size={18} />}</span>
                 {check === "ok" ? (
                   <span><b>{t("TikTok found no problems")}</b><small>{t("No violations. Views aren't guaranteed.")}</small></span>
