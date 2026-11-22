@@ -79,7 +79,7 @@ export const APP_LANDING: Record<string, string> = {
   "THREE STEPS": "TIGA LANGKAH",
   "Start in 3 Steps": "Mula dalam 3 Langkah",
   "Sign Up": "Daftar",
-  "Free during Beta. About 1 minute.": "Percuma semasa Beta. Kira-kira 1 minit.",
+  "Free. About 1 minute.": "Percuma. Kira-kira 1 minit.",
   "Approve access in TikTok. Unlink anytime.": "Luluskan akses di TikTok. Putuskan bila-bila masa.",
   "Scan & Add": "Imbas & Tambah",
   "Rezekii AI checks every product. Add better rates in one tap.": "Rezekii AI semak setiap produk. Tambah kadar lebih baik dengan satu ketik.",

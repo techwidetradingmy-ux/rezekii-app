@@ -31,7 +31,7 @@ export async function generateMetadata() {
 }
 
 const START: PathStep[] = [
-  { icon: "user", title: tx("Sign Up"), line: tx("Free during Beta. About 1 minute.") },
+  { icon: "user", title: tx("Sign Up"), line: tx("Free. About 1 minute.") },
   { icon: "link", title: tx("Link TikTok Shop"), line: tx("Approve access in TikTok. Unlink anytime.") },
   { icon: "scan", title: tx("Scan & Add"), line: tx("Rezekii AI checks every product. Add better rates in one tap.") },
 ];

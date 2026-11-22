@@ -74,7 +74,7 @@ export const APP_LANDING: Record<string, string> = {
   "THREE STEPS": "三个步骤",
   "Start in 3 Steps": "3 步开始",
   "Sign Up": "注册",
-  "Free during Beta. About 1 minute.": "Beta 期间免费，大约 1 分钟。",
+  "Free. About 1 minute.": "免费，大约 1 分钟。",
   "Approve access in TikTok. Unlink anytime.": "在 TikTok 里授权，随时可解除连接。",
   "Scan & Add": "扫描并添加",
   "Rezekii AI checks every product. Add better rates in one tap.": "Rezekii AI 检查每件商品，一键添加更高佣金率。",
