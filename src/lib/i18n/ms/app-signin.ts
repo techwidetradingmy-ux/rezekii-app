@@ -95,4 +95,8 @@ export const APP_SIGNIN: Record<string, string> = {
   "Go back to the Rezekii app on your Home Screen. It signs you in by itself.": "Kembali ke aplikasi Rezekii di Skrin Utama anda. Ia akan log masuk anda dengan sendirinya.",
   "Open Sign-In Again": "Buka Log Masuk Semula",
   "Sign-in took too long. Please try again.": "Log masuk mengambil masa terlalu lama. Sila cuba lagi.",
+  "{app} Connected": "{app} Disambungkan",
+  "{app} Didn't Connect": "{app} Tidak Bersambung",
+  "Go back to the Rezekii app on your Home Screen. It shows your new link by itself.": "Kembali ke aplikasi Rezekii di Skrin Utama anda. Sambungan baharu anda akan dipaparkan dengan sendirinya.",
+  "Go back to the Rezekii app on your Home Screen and try again.": "Kembali ke aplikasi Rezekii di Skrin Utama anda dan cuba lagi.",
 };

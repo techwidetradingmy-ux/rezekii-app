@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useT } from "@/lib/i18n/client";
+import { openConnect, warmPass } from "@/lib/connect";
 import type { BetaState } from "@/modules/beta/access.ts";
 
 export type Role = "creator" | "seller";
@@ -78,6 +79,14 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       .finally(() => requestAnimationFrame(() => requestAnimationFrame(() => { delete document.documentElement.dataset.wait; })));
   }, []);
   useEffect(() => refreshMe(), [refreshMe]);
+  // Home Screen app: a connect pass kept ready while she's signed in, so Connect and Re-link open the browser at once.
+  const signedIn = !!me;
+  useEffect(() => {
+    if (!signedIn) return;
+    warmPass();
+    const timer = window.setInterval(warmPass, 5 * 60_000);
+    return () => window.clearInterval(timer);
+  }, [signedIn]);
   // Check again whenever the page comes back (owner, 1 Nov 2026: no more sample data after signing in): the Back button's saved
   // page, a tab brought to the front after a while, or signing in or out in another tab.
   useEffect(() => {
@@ -126,7 +135,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     if (!on && consent && !consent.unlinkedAt) save({ ...consent, unlinkedAt: now() });
     if (me) {
       // Real account: linking goes to TikTok Shop; unlinking removes the real link and withdraws the consent on record.
-      if (on) window.location.href = "/api/auth/tiktokshop/start";
+      if (on) openConnect("/api/auth/tiktokshop/start");
       else {
         void fetch("/api/v2/consent", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ role: "creator", action: "withdrawn" }) }).catch(() => null);
         fetch("/api/account/tiktokshop/unlink", { method: "POST" }).finally(refreshMe);
@@ -141,7 +150,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     if (me) {
       // Kept on record (owner, 31 Oct 2026) for the admin Consent Log; keepalive lets it finish as the page moves on.
       void fetch("/api/v2/consent", { method: "POST", keepalive: true, headers: { "content-type": "application/json" }, body: JSON.stringify({ role: asking ?? "creator", action: "agreed" }) }).catch(() => null);
-      window.location.href = "/api/auth/tiktokshop/start";
+      openConnect("/api/auth/tiktokshop/start");
       return;
     }
     store(true);

@@ -19,6 +19,7 @@ import type { Recipe } from "@/modules/social/recipe.ts";
 import type { ShopeeItem } from "@/integrations/shopee/products.ts";
 import { PhonePreview, type Who } from "./phone-previews";
 import { AccountFace } from "./account-face";
+import { openConnect } from "@/lib/connect";
 import {
   APPS, CAPTION_MAX, COLLABORATORS_MAX, COMMENT_MAX, ICON, NAMES, PRIVACY, REPLY_CONTROLS, TAGS_MAX,
   autoCaption, autoComment, channelProblems, channelWarnings, cleanTopic, hasLinkOrCta, lengthFor, links, parseHashtags,
@@ -385,9 +386,8 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   /** Real accounts: each app's own sign-in, then back here with the result. */
   function connectReal(app: Channel, role?: PubChannel["role"]) {
     const seller = liveSide === "seller";
-    window.location.href = app === "tiktok" ? "/api/auth/tiktok/start"
-      : app === "shopee" ? `/api/auth/shopee/start?role=${role ?? "affiliate"}${seller ? "&from=seller" : ""}`
-      : `/api/auth/meta/${app}/start${seller ? "?from=seller" : ""}`;
+    if (app === "shopee") window.location.href = `/api/auth/shopee/start?role=${role ?? "affiliate"}${seller ? "&from=seller" : ""}`;
+    else openConnect(app === "tiktok" ? "/api/auth/tiktok/start" : `/api/auth/meta/${app}/start${seller ? "?from=seller" : ""}`);
   }
   async function checkReal(c: PubChannel) {
     const r = await fetch("/api/channels/check", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ key: c.key }) }).catch(() => null);

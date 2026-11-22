@@ -7,6 +7,7 @@ import { canUseSocial, isPlatform, metaLevel } from "@/modules/social/access.ts"
 import { newState } from "../../../tiktokshop/state.ts";
 import { OAUTH_COOKIE_OPTIONS, appBase, canonicalRedirect } from "../../../oauth.ts";
 import { META_BACK, metaCallbackUrl, metaCookie } from "../../meta.ts";
+import { keepPass, passAtStart } from "../../../connect.ts";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ plat
   if (!isPlatform(platform)) return NextResponse.redirect(`${appBase(req)}${back}`);
   const moved = canonicalRedirect(req);
   if (moved) return moved;
-  const user = await currentUser();
+  // From the Home Screen app this opens in the phone's browser, signed in only by its pass (owner, 23 Nov 2026).
+  const user = (await currentUser()) ?? (await passAtStart(req));
   if (!user) return NextResponse.redirect(`${appBase(req)}/signin`);
   if (!canUseSocial(user)) return NextResponse.redirect(`${appBase(req)}${back}`);
   const state = newState();
@@ -39,5 +41,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ plat
   const res = NextResponse.redirect(url);
   res.cookies.set(metaCookie(platform), state, OAUTH_COOKIE_OPTIONS);
   res.cookies.set(META_BACK, from === "seller" ? "seller" : from === "seller-account" ? "seller-account" : from === "account" ? "account" : "creator", OAUTH_COOKIE_OPTIONS);
+  keepPass(req, res);
   return res;
 }

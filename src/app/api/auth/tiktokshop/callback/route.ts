@@ -15,6 +15,7 @@ import { tagTask } from "@/modules/accounts/tags.ts";
 import { mytDay } from "@/modules/refresh/plan.ts";
 import { addTasks } from "@/modules/refresh/store.ts";
 import { STATE_COOKIE, STATE_COOKIE_OPTIONS, stateMatches } from "../state.ts";
+import { linkedPage, passAtReturn } from "../../connect.ts";
 
 // Linking also reads the creator's orders and her free samples in the background, so Analytics and the Marketplace are ready on
 // the first visit. Together they ran past 60 seconds (31 Oct 2026); the page itself still answers straight away.
@@ -26,9 +27,14 @@ const CREATOR_RESULTS = new Set(["connected", "waiting", "waitlist", "taken", "d
 /** TikTok Shop returns here after the creator approves (the one registered return address). */
 export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
+  // Signed in here, or (Home Screen app, owner 23 Nov 2026) the pass it opened this browser with.
+  const session = await userForSession(req.cookies.get(SESSION_COOKIE)?.value).catch(() => null);
+  const pass = session ? null : await passAtReturn(req);
   // Whoever linked their TikTok Shop (admins too) goes back to Getting set up; Techwide's partner and shop logins keep /connected.
   const finish = async (result: string) => {
-    const user = CREATOR_RESULTS.has(result) ? await userForSession(req.cookies.get(SESSION_COOKIE)?.value).catch(() => null) : null;
+    // From the Home Screen app: a page here saying to go back to the app, which shows the new link.
+    if (pass && (CREATOR_RESULTS.has(result) || result.startsWith("seller"))) return linkedPage(req, "tiktokshop", result === "connected" || result === "waiting" || result === "seller-connected");
+    const user = CREATOR_RESULTS.has(result) ? session : null;
     // Rezekii 2.0 (owner, 30 Oct 2026): creators back to Connections, a seller shop to the seller app, the partner to admin.
     const to = user ? `/app/account?tts=${result}#connections` : result.startsWith("seller") ? `/seller/app?tts=${result}` : `/admin?tts=${result}`;
     const res = NextResponse.redirect(new URL(to, req.nextUrl));
@@ -50,7 +56,7 @@ export async function GET(req: NextRequest) {
     const tokens = tokenReply.data;
     if (tokens.user_type === 3) return finish(await connectPartner(tokens));
     // The Rezekii account signed in while authorizing the shop sees it in the seller app (owner, 30 Oct 2026).
-    if (tokens.user_type === 0) return finish(await connectSeller(tokens, (await userForSession(req.cookies.get(SESSION_COOKIE)?.value).catch(() => null))?.id));
+    if (tokens.user_type === 0) return finish(await connectSeller(tokens, (session ?? pass)?.id));
 
     const profileReply = await getCreatorProfile(tokens.access_token);
     if (profileReply.code !== 0 || !profileReply.data) {
@@ -64,7 +70,7 @@ export async function GET(req: NextRequest) {
       return finish("error");
     }
     // A creator links TikTok Shop to the Rezekii account they are signed in to; Techwide then approves it (see creator access).
-    const user = await userForSession(req.cookies.get(SESSION_COOKIE)?.value).catch(() => null);
+    const user = session ?? pass;
     if (!user) return finish("signin");
     const linked = await linkCreator(user, { openId, username: profile.username, avatarUrl: profile.avatar?.url }, tokens);
     if (linked === "connected") {

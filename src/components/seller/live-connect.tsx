@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { openConnect } from "@/lib/connect";
 import { DemoStrip } from "@/components/shell";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
@@ -34,7 +35,7 @@ export function LiveSellerConnect() {
     setBusy(true);
     // The agreement is kept on record (Consent Log); keepalive lets it finish as TikTok's page opens.
     void fetch("/api/v2/consent", { method: "POST", keepalive: true, headers: { "content-type": "application/json" }, body: JSON.stringify({ role: "seller", action: "agreed" }) }).catch(() => null);
-    window.location.href = "/api/auth/tiktokshop/start?as=seller";
+    openConnect("/api/auth/tiktokshop/start?as=seller");
   };
 
   return (

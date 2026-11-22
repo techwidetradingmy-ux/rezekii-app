@@ -3,6 +3,7 @@ import { creatorAuthUrl, partnerAuthUrl, sellerAuthUrl } from "@/integrations/ti
 import { SESSION_COOKIE, userForSession } from "@/modules/accounts/session.ts";
 import { STATE_COOKIE, STATE_COOKIE_OPTIONS, newState } from "../state.ts";
 import { betaApproved } from "@/modules/beta/access.ts";
+import { keepPass, passAtStart } from "../../connect.ts";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,8 @@ export async function GET(req: NextRequest) {
   const as = req.nextUrl.searchParams.get("as");
   // Creators link TikTok Shop to their own Rezekii account, so they sign in first.
   if (as !== "partner" && as !== "seller") {
-    const user = await userForSession(req.cookies.get(SESSION_COOKIE)?.value).catch(() => null);
+    // From the Home Screen app this opens in the phone's browser, signed in only by its pass (owner, 23 Nov 2026).
+    const user = (await userForSession(req.cookies.get(SESSION_COOKIE)?.value).catch(() => null)) ?? (await passAtStart(req));
     if (!user) return NextResponse.redirect(new URL("/signin?in=1", req.nextUrl));
     // Beta (owner, 2 Nov 2026): only creators Techwide has let in can link TikTok Shop; the others see where they stand.
     if (!(await betaApproved(user, "creator").catch(() => false))) return NextResponse.redirect(new URL("/app", req.nextUrl));
@@ -20,5 +22,6 @@ export async function GET(req: NextRequest) {
   const state = `${req.nextUrl.hostname === "localhost" ? "v2l" : "v2"}.${newState()}`;
   const res = NextResponse.redirect(as === "partner" ? partnerAuthUrl(state) : as === "seller" ? sellerAuthUrl(state) : creatorAuthUrl(state));
   res.cookies.set(STATE_COOKIE, state, STATE_COOKIE_OPTIONS);
+  keepPass(req, res);
   return res;
 }

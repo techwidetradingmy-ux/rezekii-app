@@ -38,6 +38,7 @@ import { LANGS, dateLocale } from "@/lib/i18n/lang";
 import { rich } from "@/components/account/rich-text";
 import { loadProfile, loadWallet, saveProfile } from "@/lib/live-rewards";
 import { notesChanged } from "@/lib/live-notes";
+import { openConnect } from "@/lib/connect";
 import "@/app/creator2.css";
 
 // Creator types, genders, races, niches and the theme are kept in English (saved as data) and translated where they're shown.
@@ -238,9 +239,16 @@ export default function Account() {
       window.history.replaceState(null, "", `${window.location.pathname}${window.location.hash}`);
     }
   }, [live]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Back from connecting in the phone's browser (Home Screen app, owner 23 Nov 2026): her accounts and TikTok Shop read again.
+  useEffect(() => {
+    if (!live) return;
+    const back = () => { if (document.visibilityState === "visible") { void loadChans(); refreshMe(); } };
+    document.addEventListener("visibilitychange", back);
+    return () => document.removeEventListener("visibilitychange", back);
+  }, [live]); // eslint-disable-line react-hooks/exhaustive-deps
   // TikTok and Meta wait for their platform's approval (owner, 3 Nov 2026); admins can still connect, and anyone can reconnect.
   const can = useCanConnect();
-  const connectApp = (app: Chan["app"]) => { window.location.href = app === "tiktok" ? "/api/auth/tiktok/start" : `/api/auth/meta/${app}/start?from=account`; };
+  const connectApp = (app: Chan["app"]) => openConnect(app === "tiktok" ? "/api/auth/tiktok/start" : `/api/auth/meta/${app}/start?from=account`);
   const disconnect = async (c: Chan) => {
     const r = await fetch(c.app === "tiktok" ? `/api/account/tiktok/${encodeURIComponent(c.key.replace(/^tiktok:/, ""))}` : `/api/social/accounts/${c.key}`, { method: "DELETE" }).catch(() => null);
     if (!r?.ok) return toast(t("Couldn't disconnect. Try again."));
@@ -650,7 +658,7 @@ export default function Account() {
                 <span className={`si-m ${ways.tiktok ? "on" : ""}`}>
                   <span className="si-ico tt" aria-hidden="true"><TikTokMark size={18} /></span>
                   <span><b>TikTok</b><small>{ways.tiktok ? t("Signed in as {name}", { name: ways.tiktok }) : t("Not linked")}</small></span>
-                  {ways.tiktok ? <span className="badge">{t("Linked")}</span> : can("tiktok") ? <a className="btn-outline v2-btn-sm" href="/api/auth/tiktok/start">{t("Link")}</a> : <NotYet app="tiktok" />}
+                  {ways.tiktok ? <span className="badge">{t("Linked")}</span> : can("tiktok") ? <a className="btn-outline v2-btn-sm" href="/api/auth/tiktok/start" onClick={(e) => { e.preventDefault(); openConnect("/api/auth/tiktok/start"); }}>{t("Link")}</a> : <NotYet app="tiktok" />}
                 </span>
                 <span className={`si-m ${ways.google ? "on" : ""}`}>
                   <span className="si-ico gg" aria-hidden="true"><GoogleMark /></span>
@@ -881,7 +889,7 @@ export default function Account() {
             <li>{t("On TikTok's page, make sure you're signed in as the account you want, then approve.")}</li>
             <li>{t("Rezekii then shows that account's sales, showcase and samples. {handle}'s sales stay in TikTok Shop.", { handle: `@${me.shop.handle}` })}</li>
           </ul>
-          <button type="button" className="np-btn" onClick={() => { window.location.href = "/api/auth/tiktokshop/start"; }}>{t("Continue to TikTok Shop")}</button>
+          <button type="button" className="np-btn" onClick={() => openConnect("/api/auth/tiktokshop/start")}>{t("Continue to TikTok Shop")}</button>
           <button type="button" className="btn-outline" onClick={() => setChanging(false)}>{t("Keep {handle}", { handle: `@${me.shop.handle}` })}</button>
         </Sheet>
       )}

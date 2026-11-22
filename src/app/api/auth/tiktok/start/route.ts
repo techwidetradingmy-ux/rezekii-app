@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { tiktokAuthUrl } from "@/integrations/tiktok/login.ts";
 import { newState } from "../../tiktokshop/state.ts";
 import { keepAdd, keepHandoff, keepNext, OAUTH_COOKIE_OPTIONS, callbackUrl, canonicalRedirect, oauthCookie, toSignin } from "../../oauth.ts";
+import { keepPass } from "../../connect.ts";
 
 export const dynamic = "force-dynamic";
 
@@ -22,5 +23,6 @@ export async function GET(req: NextRequest) {
   keepNext(req, res);
   keepHandoff(req, res);
   keepAdd(req, res);
+  keepPass(req, res);
   return res;
 }

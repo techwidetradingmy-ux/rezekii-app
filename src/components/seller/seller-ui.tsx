@@ -2,6 +2,7 @@
 
 import "@/app/seller.css";
 import { DIAL_OPTIONS } from "@/lib/countries";
+import { openConnect } from "@/lib/connect";
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -73,7 +74,7 @@ export function ConnBanner({ shop }: { shop?: boolean } = {}) {
     return (
       <div className="v2-alert red">
         <span>{t("Seller Center not connected. Connect it to see your products.")}</span>
-        <button type="button" onClick={() => { window.location.href = "/api/auth/tiktokshop/start?as=seller"; }}>{t("Connect")}</button>
+        <button type="button" onClick={() => openConnect("/api/auth/tiktokshop/start?as=seller")}>{t("Connect")}</button>
       </div>
     );
   }

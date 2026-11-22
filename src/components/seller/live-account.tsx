@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
+import { openConnect } from "@/lib/connect";
 import { useDemo } from "@/components/demo";
 import { PlatformIcon } from "@/components/creator2/bits";
 import { AccountFace } from "@/components/publish/account-face";
@@ -34,7 +35,7 @@ export function LiveShopAuth() {
         </span>
         <span className={`badge ${shop ? "" : "badge-red"}`}>{shop ? t("Connected") : t("Not Connected")}</span>
       </div>
-      <button type="button" className={shop ? "btn-outline" : "np-btn"} style={{ alignSelf: "flex-start" }} onClick={() => { window.location.href = "/api/auth/tiktokshop/start?as=seller"; }}>
+      <button type="button" className={shop ? "btn-outline" : "np-btn"} style={{ alignSelf: "flex-start" }} onClick={() => openConnect("/api/auth/tiktokshop/start?as=seller")}>
         <Icon name="refresh" size={18} /> {shop ? t("Reconnect") : t("Connect Seller Center")}
       </button>
     </section>
@@ -86,7 +87,7 @@ export function LiveSellerSocials() {
               <div className="sl-acct">
                 <PlatformIcon name={label} size={30} />
                 <span><b>{mine.length ? t("Add another {app}", { app: label }) : label}</b><small>{mine.length ? t("Connect one more") : t("Not connected")}</small></span>
-                <button type="button" className={mine.length ? "btn-outline" : "np-btn v2-btn-sm"} style={mine.length ? { height: 36, fontSize: 13.5 } : undefined} onClick={() => { window.location.href = `/api/auth/meta/${app}/start?from=seller-account`; }}>{t("Connect")}</button>
+                <button type="button" className={mine.length ? "btn-outline" : "np-btn v2-btn-sm"} style={mine.length ? { height: 36, fontSize: 13.5 } : undefined} onClick={() => openConnect(`/api/auth/meta/${app}/start?from=seller-account`)}>{t("Connect")}</button>
               </div>
             </div>
           );

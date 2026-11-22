@@ -93,4 +93,8 @@ export const APP_SIGNIN: Record<string, string> = {
   "Go back to the Rezekii app on your Home Screen. It signs you in by itself.": "请回到主屏幕上的 Rezekii 应用，它会自动为你登录。",
   "Open Sign-In Again": "重新打开登录",
   "Sign-in took too long. Please try again.": "登录时间太长，请重试。",
+  "{app} Connected": "{app} 已连接",
+  "{app} Didn't Connect": "{app} 未能连接",
+  "Go back to the Rezekii app on your Home Screen. It shows your new link by itself.": "请回到主屏幕上的 Rezekii 应用，它会自动显示你的新连接。",
+  "Go back to the Rezekii app on your Home Screen and try again.": "请回到主屏幕上的 Rezekii 应用，然后重试。",
 };

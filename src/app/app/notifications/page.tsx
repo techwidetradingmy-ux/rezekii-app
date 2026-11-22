@@ -9,6 +9,7 @@ import { NOTES } from "@/lib/mock-creator1";
 import { loadNotes, markNote, notesChanged, noteBg, noteDay, noteWhen, type LiveNote, type NoteCategory } from "@/lib/live-notes";
 import { CAT_LABEL, NoteFilter, passes, type NoteFilterValue } from "@/components/note-filter";
 import { useLang, useT } from "@/lib/i18n/client";
+import { openConnect } from "@/lib/connect";
 import "../../creator1.css";
 
 type Row = { id: string; day: "Today" | "Earlier"; when: string; icon: IconName; bg: string; title: string; line: string; href?: string | null; cta?: string | null; urgent?: string | null; action?: "reconnect"; cat?: NoteCategory };
@@ -110,7 +111,7 @@ export default function Notifications() {
                         {done ? t("Done") : n.cta}
                       </button>
                     ) : n.href && outside ? (
-                      <a href={n.href} className={n.urgent ? "np-btn v2-btn-sm" : "btn-outline v2-btn-sm"} onClick={() => read(n.id)} {...(n.href.startsWith("http") ? { target: "_blank", rel: "noreferrer" } : {})}>
+                      <a href={n.href} className={n.urgent ? "np-btn v2-btn-sm" : "btn-outline v2-btn-sm"} onClick={(e) => { read(n.id); const to = n.href ?? ""; if (to.startsWith("/api/auth/") && to.includes("/start")) { e.preventDefault(); openConnect(to); } }} {...(n.href.startsWith("http") ? { target: "_blank", rel: "noreferrer" } : {})}>
                         {n.cta} <Icon name="arrow" size={16} />
                       </a>
                     ) : n.href ? (
