@@ -11,6 +11,7 @@ import { useDemo, useWho } from "@/components/demo";
 import { Seg, Sheet, Title, Loading, Tip } from "@/components/ui";
 import { useSideScroll } from "@/components/side-scroll";
 import { PlatformIcon } from "@/components/creator2/bits";
+import { AccountFace } from "@/components/publish/account-face";
 import { CREATOR, MY_SAMPLES, SOCIALS } from "@/lib/mock";
 import { LiveSamples, MySamples } from "@/components/creator1/my-samples";
 import { LevelFace } from "@/components/level-face";
@@ -221,7 +222,7 @@ export default function Account() {
   };
 
   // Signed in (owner, 31 Oct 2026): her real channels for Connections, and a message when she comes back from connecting one.
-  type Chan = { key: string; app: "tiktok" | "facebook" | "instagram" | "threads" | "shopee"; name: string; sub: string; status: "active" | "reconnect"; role?: "seller" | "affiliate" };
+  type Chan = { key: string; app: "tiktok" | "facebook" | "instagram" | "threads" | "shopee"; name: string; sub: string; status: "active" | "reconnect"; role?: "seller" | "affiliate"; initials: string; color: string; photo?: string | null };
   const [chans, setChans] = useState<Chan[] | null>(null);
   // Shopee only where its app keys are set; until then its row still reads Coming Soon.
   const [shopeeOn, setShopeeOn] = useState(false);
@@ -563,7 +564,8 @@ export default function Account() {
                 <Fragment key={app}>
                   {mine.map((c) => (
                     <div key={c.key} className="cr2-cell row">
-                      <PlatformIcon name={icon} size={34} />
+                      {/* Her account's own picture, with the app's icon in the corner (owner, 22 Nov 2026). */}
+                      <AccountFace icon={icon} photo={c.photo} initials={c.initials} color={c.color} size={34} />
                       <span className="cr2-conn"><b>{c.name}</b><small>{c.sub}{c.status === "reconnect" ? ` · ${t("needs reconnecting")}` : ""}</small></span>
                       {c.status === "reconnect" && <button type="button" className="np-btn v2-btn-sm" onClick={() => connectApp(app)}><Icon name="refresh" size={15} /> {t("Reconnect")}</button>}
                       <button type="button" className="btn-outline v2-btn-sm" onClick={() => void disconnect(c)}>{t("Disconnect")}</button>

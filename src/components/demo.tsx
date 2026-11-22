@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { CREATOR } from "@/lib/mock";
 import { useT } from "@/lib/i18n/client";
 import type { BetaState } from "@/modules/beta/access.ts";
 
@@ -185,7 +184,8 @@ export const useDemo = () => useContext(Ctx);
 export function useWho() {
   const { me } = useContext(Ctx);
   const t = useT();
-  if (!me) return { name: CREATOR.name, first: CREATOR.first, photo: CREATOR.photo, initials: CREATOR.initials, handle: CREATOR.handle, email: CREATOR.email };
+  // Until her account has loaded: a blank face, never the sample person (owner, 22 Nov 2026: Aisyah's photo flashed after signing in).
+  if (!me) return { name: "", first: "", photo: "/avatars/blank.svg", initials: "", handle: "", email: "" };
   const name = me.name?.trim() || me.email?.split("@")[0] || t("You");
   const handle = me.shop?.handle ?? me.handle;
   return {

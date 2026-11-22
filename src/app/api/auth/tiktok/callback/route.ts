@@ -1,10 +1,10 @@
-import { after, type NextRequest } from "next/server";
+import { after, NextResponse, type NextRequest } from "next/server";
 import { syncMyVideos } from "@/modules/admin/videos.ts";
 import { exchangeTikTokCode, getTikTokUser, type TikTokTokens } from "@/integrations/tiktok/login.ts";
 import { SESSION_COOKIE, userForSession } from "@/modules/accounts/session.ts";
 import { linkOrSignInTikTok, saveTikTokConnection } from "@/modules/accounts/users.ts";
 import { stateMatches } from "../../tiktokshop/state.ts";
-import { adding, callbackUrl, oauthCookie, signedIn, toSignin } from "../../oauth.ts";
+import { OAUTH_COOKIE_OPTIONS, adding, appBase, callbackUrl, oauthCookie, signedIn, toSignin } from "../../oauth.ts";
 
 export const dynamic = "force-dynamic";
 
@@ -13,16 +13,16 @@ export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams;
   if (q.get("error")) {
     console.error("[tiktok] authorize error", q.get("error"), q.get("error_description"));
-    return toSignin(req, "denied", "tiktok");
+    return backOrSignin(req, "denied");
   }
   const code = q.get("code");
-  if (!code) return toSignin(req, "failed", "tiktok");
-  if (!stateMatches(q.get("state"), req.cookies.get(oauthCookie("tiktok"))?.value)) return toSignin(req, "expired", "tiktok");
+  if (!code) return backOrSignin(req, "failed");
+  if (!stateMatches(q.get("state"), req.cookies.get(oauthCookie("tiktok"))?.value)) return backOrSignin(req, "expired");
   try {
     const reply = await exchangeTikTokCode(code, callbackUrl(req, "tiktok"));
     if (!reply.access_token || !reply.open_id || !reply.refresh_token) {
       console.error("[tiktok] token exchange failed", reply.error, reply.error_description, reply.log_id);
-      return toSignin(req, "failed", "tiktok");
+      return backOrSignin(req, "failed");
     }
     const tokens = reply as TikTokTokens;
     const info = await getTikTokUser(tokens.access_token);
@@ -39,6 +39,20 @@ export async function GET(req: NextRequest) {
     return signedIn(req, user.id, "tiktok", !linked ? "/app" : "/app/account?channel=tiktok&connect=ok#connections");
   } catch (err) {
     console.error("[tiktok] callback error", err instanceof Error ? err.message : err);
-    return toSignin(req, "failed", "tiktok");
+    return backOrSignin(req, "failed");
   }
+}
+
+/**
+ * Already signed in (Connect TikTok on Account): back to Connections, not the sign-in page (owner, 22 Nov 2026: TikTok sent its
+ * reply twice; the second one found the check already used and looked like being signed out). An expired check says nothing:
+ * Connections shows whether TikTok is connected.
+ */
+async function backOrSignin(req: NextRequest, error: "denied" | "failed" | "expired"): Promise<NextResponse> {
+  const user = adding(req) ? null : await userForSession(req.cookies.get(SESSION_COOKIE)?.value).catch(() => null);
+  if (!user) return toSignin(req, error, "tiktok");
+  const said = error === "expired" ? "" : `&connect=${error === "denied" ? "cancelled" : "failed"}`;
+  const res = NextResponse.redirect(`${appBase(req)}/app/account?channel=tiktok${said}#connections`);
+  res.cookies.set(oauthCookie("tiktok"), "", { ...OAUTH_COOKIE_OPTIONS, maxAge: 0 });
+  return res;
 }

@@ -8,6 +8,7 @@ import { boardPosts } from "@/modules/social/board.ts";
 import { lastPostChannels, listBrands } from "@/modules/social/brands.ts";
 import { tiktokKey } from "@/modules/social/picker.ts";
 import { listShopee, shopeeLabel } from "@/modules/shopee/connections.ts";
+import { photoFor, savedPhotos } from "@/modules/photos/store.ts";
 import { getLang, tFor } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest) {
 
   // Shopee shows only where the Shopee app's keys are set (as on rezekii.com's Shopee build).
   const shopeeOn = !!process.env.SHOPEE_PARTNER_ID;
-  const [tiktok, social, brands, last, credits, free, shopee] = await Promise.all([
+  const [tiktok, social, brands, last, credits, free, shopee, saved] = await Promise.all([
     userTikTokAccounts(user.id),
     listAccounts(user.id),
     listBrands(user.id),
@@ -41,22 +42,25 @@ export async function GET(req: NextRequest) {
     balanceOf(user.id, postSide(q.get("side"))),
     postsFree(user.id),
     shopeeOn ? listShopee(user.id).catch(() => []) : Promise.resolve([]),
+    savedPhotos().catch(() => new Map<string, string>()),
   ]);
+  // Each account's profile picture (owner, 22 Nov 2026): TikTok's saved copy (its own links expire within days), Meta's and
+  // Shopee's links as kept fresh by the timer. Initials show on the page when a picture won't load.
   const channels = [
     ...tiktok.map((acc) => {
       const name = acc.username ? `@${acc.username}` : t("TikTok account");
-      return { key: tiktokKey(acc.open_id), app: "tiktok" as const, name, sub: SUB.tiktok, initials: initials(name), color: COLOR.tiktok, status: acc.status };
+      return { key: tiktokKey(acc.open_id), app: "tiktok" as const, name, sub: SUB.tiktok, initials: initials(name), color: COLOR.tiktok, status: acc.status, photo: photoFor(acc.username ?? "", acc.avatar_url, saved) };
     }),
     ...social.map((a) => {
       const name = a.name ?? a.username ?? (a.platform === "facebook" ? t("Facebook Page") : SUB[a.platform]);
       const sub = a.platform === "facebook" ? t("Facebook Page") : a.username ? `@${a.username}` : SUB[a.platform];
-      return { key: a.id, app: a.platform, name, sub, initials: initials(name), color: COLOR[a.platform], status: a.status === "reconnect" ? ("reconnect" as const) : ("active" as const) };
+      return { key: a.id, app: a.platform, name, sub, initials: initials(name), color: COLOR[a.platform], status: a.status === "reconnect" ? ("reconnect" as const) : ("active" as const), photo: a.avatar_url ?? null };
     }),
     ...shopee.map((c) => {
       const name = shopeeLabel(c);
       // Shopee gives apps no username for an affiliate, only its account number.
       const sub = c.role === "seller" ? t("Shopee Shop") : t("Shopee Affiliate · ID {id}", { id: c.shopee_user_id });
-      return { key: `shopee:${c.id}`, app: "shopee" as const, name, sub, initials: initials(name), color: COLOR.shopee, status: c.status, role: c.role, shopId: c.shop_id };
+      return { key: `shopee:${c.id}`, app: "shopee" as const, name, sub, initials: initials(name), color: COLOR.shopee, status: c.status, role: c.role, shopId: c.shop_id, photo: c.avatar_url ?? null };
     }),
   ];
   return NextResponse.json({ channels, brands, last, credits, free, shopeeOn }, NO_STORE);

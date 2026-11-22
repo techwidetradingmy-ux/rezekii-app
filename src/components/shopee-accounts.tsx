@@ -4,9 +4,10 @@ import { Fragment, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { PlatformIcon } from "@/components/creator2/bits";
+import { AccountFace } from "@/components/publish/account-face";
 import { useT } from "@/lib/i18n/client";
 
-export type ShopeeChan = { key: string; app: string; name: string; sub: string; status: "active" | "reconnect"; role?: "seller" | "affiliate" };
+export type ShopeeChan = { key: string; app: string; name: string; sub: string; status: "active" | "reconnect"; role?: "seller" | "affiliate"; initials?: string; color?: string; photo?: string | null };
 
 /**
  * Shopee accounts in Connections (owner, 21 Nov 2026, from rezekii.com's Shopee build): a shop or an affiliate account, each
@@ -37,7 +38,8 @@ export function ShopeeAccounts({ chans, from, row, size = 34, reload }: { chans:
     <>
       {mine.map((c) => (
         <div key={c.key} className={row}>
-          <PlatformIcon name="Shopee" size={size} />
+          {/* The shop's own logo when Shopee gave one (owner, 22 Nov 2026). */}
+          {c.photo ? <AccountFace icon="Shopee" photo={c.photo} initials={c.initials ?? "S"} color={c.color ?? "#ee4d2d"} size={size} /> : <PlatformIcon name="Shopee" size={size} />}
           {naming?.key === c.key ? (
             <span className="cr2-conn shp-name">
               <input className="np-input" value={naming.text} maxLength={60} autoFocus aria-label={t("Name in Rezekii")} onChange={(e) => setNaming({ key: c.key, text: e.target.value })} onKeyDown={(e) => { if (e.key === "Enter") void rename(); if (e.key === "Escape") setNaming(null); }} />

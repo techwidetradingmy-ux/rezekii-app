@@ -151,9 +151,11 @@ function Photos({ photos }: { photos: string[] }) {
 /** The post's video, or its photos for a photo post. */
 const Media = ({ video, cover, photos, s }: { video: string | null; cover?: string | null; photos?: string[]; s?: number }) => (photos?.length ? <Photos photos={photos} /> : <Video src={video} cover={cover} s={s} />);
 const Av = ({ who, size }: { who: Who; size: number }) => {
+  // Initials when the picture link has expired (owner, 22 Nov 2026).
+  const [failed, setFailed] = useState<string | null>(null);
   const style = { width: `calc(${size} * var(--p))`, height: `calc(${size} * var(--p))` };
   // eslint-disable-next-line @next/next/no-img-element
-  if (who.avatar) return <img className="pb-pv-av" src={who.avatar} alt="" style={style} />;
+  if (who.avatar && who.avatar !== failed) return <img className="pb-pv-av" src={who.avatar} alt="" style={style} referrerPolicy="no-referrer" onError={() => setFailed(who.avatar)} />;
   return <span className="pb-pv-av pb-pv-ini" style={{ ...style, background: who.color, fontSize: `calc(${size * 0.4} * var(--p))` }}>{who.initials}</span>;
 };
 const Nav = ({ n, label, on, s = 26 }: { n: string; label?: string; on?: boolean; s?: number }) => <span className={`b${on ? " on" : ""}`}><Ic n={n} s={s} />{label && <span>{label}</span>}</span>;

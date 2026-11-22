@@ -2,6 +2,7 @@ import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import type { TikTokTokens } from "../../integrations/tiktok/login.ts";
 import { encryptToken } from "../creator-accounts/token-crypto.ts";
 import { tiktokKey } from "../social/picker.ts";
+import { freshUrl } from "../photos/store.ts";
 import { emailLoginProblem, hashPassword, verifyPassword } from "./password.ts";
 import { makeT, type T } from "../../lib/i18n/lang.ts";
 
@@ -115,7 +116,8 @@ export async function linkOrSignInTikTok(current: AppUser | null, t: TikTokProfi
     const user = await patch(current.id, {
       tiktok_open_id: t.open_id,
       tiktok_username: t.username?.toLowerCase() ?? current.tiktok_username,
-      ...(current.avatar_url ? {} : { avatar_url: t.avatar_url ?? null }),
+      // Her photo from TikTok when the account has none that still works (owner, 22 Nov 2026: an expired one kept it blank).
+      ...(freshUrl(current.avatar_url) || !t.avatar_url ? {} : { avatar_url: t.avatar_url }),
       ...(current.display_name ? {} : { display_name: t.display_name ?? null }),
       last_sign_in_at: now(),
     });

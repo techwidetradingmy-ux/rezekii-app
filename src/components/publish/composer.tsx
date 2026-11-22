@@ -18,6 +18,7 @@ import type { EditPost } from "@/modules/posting/edit.ts";
 import type { Recipe } from "@/modules/social/recipe.ts";
 import type { ShopeeItem } from "@/integrations/shopee/products.ts";
 import { PhonePreview, type Who } from "./phone-previews";
+import { AccountFace } from "./account-face";
 import {
   APPS, CAPTION_MAX, COLLABORATORS_MAX, COMMENT_MAX, ICON, NAMES, PRIVACY, REPLY_CONTROLS, TAGS_MAX,
   autoCaption, autoComment, channelProblems, channelWarnings, cleanTopic, hasLinkOrCta, lengthFor, links, parseHashtags,
@@ -117,14 +118,9 @@ const mytLocal = (iso: string) => new Date(Date.parse(iso) + 8 * 3600_000).toISO
 const localInput = (iso: string) => { const d = new Date(iso); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); };
 const nowLocal = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset() + 2); return d.toISOString().slice(0, 16); };
 
-/** A profile picture: initials in the account's colour, with the app's icon in the corner. */
-function Face({ ch, badge = true }: { ch: Pick<PubChannel, "app" | "initials" | "color">; badge?: boolean }) {
-  return (
-    <span className="pb-face">
-      <span className="pb-ini" style={{ background: ch.color }}>{ch.initials}</span>
-      {badge && <span className="badge-pi"><PlatformIcon name={ICON[ch.app]} size={12} /></span>}
-    </span>
-  );
+/** A profile picture (initials in the account's colour without one), with the app's icon in the corner. */
+function Face({ ch, badge = true }: { ch: Pick<PubChannel, "app" | "initials" | "color" | "photo">; badge?: boolean }) {
+  return <AccountFace icon={ICON[ch.app]} photo={ch.photo} initials={ch.initials} color={ch.color} badge={badge} />;
 }
 
 /** New post for creators and sellers: V1's composer (pick channels, one caption written per app, link placement, settings, phone previews). */
@@ -314,7 +310,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     const c = byKey.get(key);
     if (!c) return { name: "", username: "", avatar: null, initials: "", color: "#888" };
     const handle = (c.app === "tiktok" ? c.name : c.sub).replace(/^@/, "");
-    return { name: c.app === "tiktok" ? handle : c.name, username: c.app === "facebook" ? c.name : handle, avatar: null, initials: c.initials, color: c.color };
+    return { name: c.app === "tiktok" ? handle : c.name, username: c.app === "facebook" ? c.name : handle, avatar: c.photo ?? null, initials: c.initials, color: c.color };
   };
   const topic = cleanTopic(topicOver ?? threadsTopic(mainFull));
   const collaborators = parseUsernames(collabText).list.slice(0, COLLABORATORS_MAX);

@@ -9,8 +9,11 @@ import { SELLER_CREDITS } from "./mock-seller";
 /** Cross-channel posting costs credits per channel (owner, 28 Oct 2026). Admin can change it. */
 export const POST_CREDITS = 5;
 
-/** `role` and `shopId`: a Shopee account (owner, 21 Nov 2026): a shop shows its own products under its videos, an affiliate none. */
-export type PubChannel = { key: string; app: Channel; name: string; sub: string; initials: string; color: string; status: "active" | "reconnect"; role?: "seller" | "affiliate"; shopId?: string | null };
+/**
+ * `role` and `shopId`: a Shopee account (owner, 21 Nov 2026): a shop shows its own products under its videos, an affiliate none.
+ * `photo`: the account's profile picture (owner, 22 Nov 2026); initials show without one.
+ */
+export type PubChannel = { key: string; app: Channel; name: string; sub: string; initials: string; color: string; status: "active" | "reconnect"; role?: "seller" | "affiliate"; shopId?: string | null; photo?: string | null };
 export type PubBrand = { id: string; name: string; channels: string[] };
 export type PublishSetup = {
   /** Shown as the account in the phone previews. */

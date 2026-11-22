@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
 import { PlatformIcon } from "@/components/creator2/bits";
+import { AccountFace } from "@/components/publish/account-face";
 import { notesChanged } from "@/lib/live-notes";
 import { SUPPORT } from "@/lib/support";
 import { useLang, useT } from "@/lib/i18n/client";
@@ -76,7 +77,8 @@ export function LiveSellerSocials() {
             <div key={app}>
               {mine.map((c) => (
                 <div key={c.key} className="sl-acct">
-                  <PlatformIcon name={label} size={30} />
+                  {/* The account's own picture, with the app's icon in the corner (owner, 22 Nov 2026). */}
+                  <AccountFace icon={label} photo={c.photo} initials={c.initials ?? "?"} color={c.color ?? "#888888"} size={30} />
                   <span><b>{c.name}</b><small>{c.status === "reconnect" ? t("{account} · needs reconnecting", { account: c.sub }) : c.sub}</small></span>
                   <button type="button" className="btn-outline" style={{ height: 36, fontSize: 13.5 }} onClick={() => void disconnect(c)}>{t("Disconnect")}</button>
                 </div>
