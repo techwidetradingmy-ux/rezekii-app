@@ -65,6 +65,9 @@ const ORDER: Channel[] = ["tiktok", "facebook", "instagram", "threads"];
  * Every post the account made, with each channel's own status: the Meta channels of one New post are grouped, together
  * with the TikTok post they went out with. Newest scheduled first (drafts first).
  */
+/** The list shows a caption's start only (owner, 23 Nov 2026: the calendar was slow); Edit and Reuse read the whole post again. */
+const short = (c: string | null | undefined) => (c && c.length > 240 ? `${c.slice(0, 239).trimEnd()}…` : c ?? "");
+
 export async function boardPosts(userId: string, lang: Lang = "en"): Promise<{ posts: BoardPost[]; now: number }> {
   const [tiktok, social] = await Promise.all([listPosts(userId), listSocialPosts(userId)]);
   const byTikTok = new Map(tiktok.map((p) => [p.id, p]));
@@ -74,13 +77,13 @@ export async function boardPosts(userId: string, lang: Lang = "en"): Promise<{ p
     let g = groups.get(s.group_id);
     if (!g) {
       const tt = s.tiktok_post_id ? byTikTok.get(s.tiktok_post_id) : undefined;
-      g = { key: s.group_id, at: s.scheduled_at ?? s.posted_at, caption: tt?.caption || s.caption, channels: tt && tt.status !== "cancelled" ? [tiktokChannel(tt, lang)] : [] };
+      g = { key: s.group_id, at: s.scheduled_at ?? s.posted_at, caption: short(tt?.caption || s.caption), channels: tt && tt.status !== "cancelled" ? [tiktokChannel(tt, lang)] : [] };
       if (tt) usedTikTok.add(tt.id);
       groups.set(s.group_id, g);
     }
     g.channels.push(socialChannel(s, lang));
   }
-  const posts = [...groups.values(), ...tiktok.filter((p) => !usedTikTok.has(p.id)).map((p) => ({ key: p.id, at: p.status === "posted" && p.posted_at ? p.posted_at : p.scheduled_at, caption: p.caption, channels: [tiktokChannel(p, lang)] }))];
+  const posts = [...groups.values(), ...tiktok.filter((p) => !usedTikTok.has(p.id)).map((p) => ({ key: p.id, at: p.status === "posted" && p.posted_at ? p.posted_at : p.scheduled_at, caption: short(p.caption), channels: [tiktokChannel(p, lang)] }))];
   for (const p of posts) p.channels.sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind));
   return { posts: posts.sort((a, b) => (a.at ?? "9999").localeCompare(b.at ?? "9999") * -1), now: Date.now() };
 }

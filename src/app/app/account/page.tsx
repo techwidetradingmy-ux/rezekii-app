@@ -1,17 +1,16 @@
 "use client";
 
-import { ShopeeAccounts } from "@/components/shopee-accounts";
 import { FeedbackForm } from "@/components/feedback-form";
 import { COUNTRIES, DIAL_OPTIONS, countryName, dialOfNumber, RACES } from "@/lib/countries";
 import { SUPPORT } from "@/lib/support";
 import Link from "next/link";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo, useWho } from "@/components/demo";
 import { Seg, Sheet, Title, Loading, Tip } from "@/components/ui";
 import { useSideScroll } from "@/components/side-scroll";
 import { PlatformIcon } from "@/components/creator2/bits";
-import { AccountFace } from "@/components/publish/account-face";
+import { ConnectionsList } from "@/components/account/connections";
 import { CREATOR, MY_SAMPLES, SOCIALS } from "@/lib/mock";
 import { LiveSamples, MySamples } from "@/components/creator1/my-samples";
 import { LevelFace } from "@/components/level-face";
@@ -43,8 +42,6 @@ import { useStory } from "@/components/shell";
 import "@/app/creator2.css";
 
 // Creator types, genders, races, niches and the theme are kept in English (saved as data) and translated where they're shown.
-/** Connections: an app with more accounts than this shows them folded (owner, 23 Nov 2026). */
-const FOLD_AFTER = 3;
 const TYPES = ["Affiliate", "UGC", "Artist", "Influencer"] as const;
 const GENDERS = ["Female", "Male"] as const;
 const THEMES = ["Light", "Dark", "Auto"] as const;
@@ -229,8 +226,6 @@ export default function Account() {
   // Signed in (owner, 31 Oct 2026): her real channels for Connections, and a message when she comes back from connecting one.
   type Chan = { key: string; app: "tiktok" | "facebook" | "instagram" | "threads" | "shopee"; name: string; sub: string; status: "active" | "reconnect"; role?: "seller" | "affiliate"; initials: string; color: string; photo?: string | null };
   const [chans, setChans] = useState<Chan[] | null>(null);
-  // Apps whose long account list is unfolded (more than FOLD_AFTER accounts fold away).
-  const [openApps, setOpenApps] = useState<Record<string, boolean>>({});
   // Shopee only where its app keys are set; until then its row still reads Coming Soon.
   const [shopeeOn, setShopeeOn] = useState(false);
   const loadChans = () => fetch("/api/v2/publish?part=setup&side=creator", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d: { channels?: Chan[]; shopeeOn?: boolean } | null) => { setChans(d?.channels ?? []); setShopeeOn(!!d?.shopeeOn); }).catch(() => setChans([]));
@@ -574,45 +569,22 @@ export default function Account() {
                 ) : <button type="button" className="np-btn v2-btn-sm" onClick={() => setLinked(true)}>{t("Link")}</button>}
             </div>
             {chans === null && <Loading text={t("Loading your accounts…")} inline />}
-            {chans !== null && (["tiktok", "facebook", "instagram", "threads"] as const).map((app) => {
-              // One heading per app with its Connect button on top, and a long list folded away (owner, 23 Nov 2026: 35 Facebook
-              // Pages made Connections messy). Accounts that need reconnecting always show.
-              const label = { tiktok: t("TikTok Accounts"), facebook: t("Facebook Pages"), instagram: "Instagram", threads: "Threads" }[app];
-              const icon = { tiktok: "TikTok", facebook: "Facebook", instagram: "Instagram", threads: "Threads" }[app] as "TikTok" | "Facebook" | "Instagram" | "Threads";
-              const mine = chans.filter((c) => c.app === app);
-              const lost = mine.filter((c) => c.status === "reconnect");
-              const folds = mine.length > FOLD_AFTER;
-              const shown = !folds || openApps[app] ? mine : lost;
-              return (
-                <Fragment key={app}>
-                  <div className="cr2-cell row">
-                    <PlatformIcon name={icon} size={34} />
-                    <span className="cr2-conn"><b>{label}</b><small>{mine.length ? t("{n} connected", { n: mine.length }) : t("Not connected")}{lost.length ? <span className="cr2-lost"> · {t("{n} need reconnecting", { n: lost.length })}</span> : null}</small></span>
-                    <span className="cr2-connbtns">
-                      {folds && <button type="button" className="btn-outline v2-btn-sm" aria-expanded={!!openApps[app]} onClick={() => setOpenApps((o) => ({ ...o, [app]: !o[app] }))}>{openApps[app] ? t("Show Less") : t("Show All {n}", { n: mine.length })}</button>}
-                      {can(app) ? <button type="button" className={mine.length ? "btn-outline v2-btn-sm" : "np-btn v2-btn-sm"} onClick={() => connectApp(app)}>{t("Connect")}</button> : <NotYet app={app} />}
-                    </span>
-                  </div>
-                  {shown.map((c) => (
-                    <div key={c.key} className="cr2-cell row">
-                      {/* Her account's own picture, with the app's icon in the corner (owner, 22 Nov 2026). */}
-                      <AccountFace icon={icon} photo={c.photo} initials={c.initials} color={c.color} size={34} />
-                      <span className="cr2-conn"><b>{c.name}</b><small>{c.sub}{c.status === "reconnect" ? ` · ${t("needs reconnecting")}` : ""}</small></span>
-                      <span className="cr2-connbtns">
-                        {c.status === "reconnect" && <button type="button" className="np-btn v2-btn-sm" onClick={() => connectApp(app)}><Icon name="refresh" size={15} /> {t("Reconnect")}</button>}
-                        <button type="button" className="btn-outline v2-btn-sm" onClick={() => void disconnect(c)}>{t("Disconnect")}</button>
-                      </span>
-                    </div>
-                  ))}
-                </Fragment>
-              );
-            })}
-            {chans !== null && shopeeOn ? <ShopeeAccounts chans={chans} from="account" row="cr2-cell row" reload={() => void loadChans()} /> : (
-              <div className="cr2-cell row">
-                <BrandLogo name="Shopee" size={34} className="cr2-pi" />
-                <span className="cr2-conn"><b>Shopee</b><small>{t("Shopee Affiliate, on the way")}</small></span>
-                <span className="badge badge-amber">{t("Coming Soon")}</span>
-              </div>
+            {/* One Connect button, then her accounts grouped by app, five at most each (owner, 23 Nov 2026: "messy"). */}
+            {chans !== null && (
+              <ConnectionsList
+                chans={chans}
+                shopeeOn={shopeeOn}
+                can={(app) => can(app)}
+                onConnect={(app) => connectApp(app)}
+                onDisconnect={async (c) => {
+                  if (c.app !== "shopee") return disconnect(c);
+                  const r = await fetch(`/api/shopee/connections/${c.key.replace("shopee:", "")}`, { method: "DELETE" }).catch(() => null);
+                  if (!r?.ok) return toast(t("Couldn't disconnect. Try again."));
+                  toast(t("{name} disconnected. Its scheduled posts were cancelled.", { name: c.name }));
+                  void loadChans();
+                }}
+                reload={() => void loadChans()}
+              />
             )}
           </div>
         </section>

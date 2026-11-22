@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { after, NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { userTikTokAccounts } from "@/modules/posting/store.ts";
 import { balanceOf } from "@/modules/rewards/ledger.ts";
@@ -8,7 +8,7 @@ import { boardPosts } from "@/modules/social/board.ts";
 import { lastPostChannels, listBrands } from "@/modules/social/brands.ts";
 import { tiktokKey } from "@/modules/social/picker.ts";
 import { listShopee, shopeeLabel } from "@/modules/shopee/connections.ts";
-import { photoFor, savedPhotos } from "@/modules/photos/store.ts";
+import { freshUrl } from "@/modules/photos/store.ts";
 import { getLang, tFor } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
@@ -20,8 +20,8 @@ const initials = (s: string) => s.replace(/^@/, "").split(/[\s._-]+/).filter(Boo
 
 /**
  * Post Everywhere on real data (owner, 31 Oct 2026). ?part=setup: her connected channels, brands, last post's channels and
- * credits (?side=creator or seller wallet). ?part=posts: every post with each channel's status, after giving back credits for
- * channels that failed or were cancelled.
+ * credits (?side=creator or seller wallet). ?part=posts: every post with each channel's status. Credits for channels that
+ * failed or were cancelled come back after the answer is sent (owner, 23 Nov 2026: Publish and the Content Calendar were slow).
  */
 export async function GET(req: NextRequest) {
   const lang = await getLang();
@@ -29,12 +29,17 @@ export async function GET(req: NextRequest) {
   const user = await currentUser();
   if (!user) return NextResponse.json({ error: t("Sign in first.") }, { status: 401 });
   const q = req.nextUrl.searchParams;
-  await settlePostRefunds(user.id).catch((e) => console.error("[post credits] refunds", e instanceof Error ? e.message : e));
-  if (q.get("part") === "posts") return NextResponse.json(await boardPosts(user.id, lang), NO_STORE);
+  const started = Date.now();
+  after(() => settlePostRefunds(user.id).catch((e) => console.error("[post credits] refunds", e instanceof Error ? e.message : e)));
+  if (q.get("part") === "posts") {
+    const board = await boardPosts(user.id, lang);
+    console.info(`[publish] posts ${board.posts.length} in ${Date.now() - started}ms`);
+    return NextResponse.json(board, NO_STORE);
+  }
 
   // Shopee shows only where the Shopee app's keys are set (as on rezekii.com's Shopee build).
   const shopeeOn = !!process.env.SHOPEE_PARTNER_ID;
-  const [tiktok, social, brands, last, credits, free, shopee, saved] = await Promise.all([
+  const [tiktok, social, brands, last, credits, free, shopee] = await Promise.all([
     userTikTokAccounts(user.id),
     listAccounts(user.id),
     listBrands(user.id),
@@ -42,14 +47,13 @@ export async function GET(req: NextRequest) {
     balanceOf(user.id, postSide(q.get("side"))),
     postsFree(user.id),
     shopeeOn ? listShopee(user.id).catch(() => []) : Promise.resolve([]),
-    savedPhotos().catch(() => new Map<string, string>()),
   ]);
-  // Each account's profile picture (owner, 22 Nov 2026): TikTok's saved copy (its own links expire within days), Meta's and
-  // Shopee's links as kept fresh by the timer. Initials show on the page when a picture won't load.
+  // Each account's profile picture (owner, 22 Nov 2026): TikTok's own link while it works, else Rezekii's saved copy (TikTok's
+  // links expire within days); Meta's and Shopee's links as kept fresh by the timer. Initials show when a picture won't load.
   const channels = [
     ...tiktok.map((acc) => {
       const name = acc.username ? `@${acc.username}` : t("TikTok account");
-      return { key: tiktokKey(acc.open_id), app: "tiktok" as const, name, sub: SUB.tiktok, initials: initials(name), color: COLOR.tiktok, status: acc.status, photo: photoFor(acc.username ?? "", acc.avatar_url, saved) };
+      return { key: tiktokKey(acc.open_id), app: "tiktok" as const, name, sub: SUB.tiktok, initials: initials(name), color: COLOR.tiktok, status: acc.status, photo: freshUrl(acc.avatar_url) ?? (acc.username ? `/api/img/c/${encodeURIComponent(acc.username.toLowerCase())}` : null) };
     }),
     ...social.map((a) => {
       const name = a.name ?? a.username ?? (a.platform === "facebook" ? t("Facebook Page") : SUB[a.platform]);
@@ -63,5 +67,6 @@ export async function GET(req: NextRequest) {
       return { key: `shopee:${c.id}`, app: "shopee" as const, name, sub, initials: initials(name), color: COLOR.shopee, status: c.status, role: c.role, shopId: c.shop_id, photo: c.avatar_url ?? null };
     }),
   ];
+  console.info(`[publish] setup ${channels.length} channels in ${Date.now() - started}ms`);
   return NextResponse.json({ channels, brands, last, credits, free, shopeeOn }, NO_STORE);
 }
