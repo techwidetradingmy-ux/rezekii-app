@@ -262,7 +262,8 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   const shopeePicked = channels.filter((c) => picked.has(c.key) && c.status === "active" && c.app === "shopee");
   // A shop shows its own products under the video; until some are picked, Product Link counts when it is one of the shop's own.
   const product = shopeeProduct(link.trim());
-  const itemsFor = (c: PubChannel): number[] => (c.role !== "seller" ? [] : shopeeItems[c.key] ?? (product && product.shopId === c.shopId ? [Number(product.itemId)] : []));
+  // TEST (owner, 23 Nov 2026, temporary): an affiliate sends the Product Link's item too; the server keeps it for admins only.
+  const itemsFor = (c: PubChannel): number[] => (c.role !== "seller" ? (product ? [Number(product.itemId)] : []) : shopeeItems[c.key] ?? (product && product.shopId === c.shopId ? [Number(product.itemId)] : []));
   const sellersPicked = shopeePicked.filter((c) => c.role === "seller").map((c) => c.key).join(",");
   const asked = useRef(new Set<string>());
   useEffect(() => {
