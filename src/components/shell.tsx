@@ -38,11 +38,14 @@ const WHO: Record<AppKind, { name: string; initials: string; label: string; phot
   admin: { name: "Aina (Ops)", initials: "AI", label: "Settings", sub: "Techwide admin" },
 };
 
+/** Set to false to bring the preview strip back for admins. */
+const HIDE_STRIP = true;
+
 /** The preview strip: sample data notice, and quick jumps between the three apps. */
 export function DemoStrip() {
   const { linked, setLinked, bronze, setBronze, live, me } = useDemo();
-  // Techwide's admins only (owner, 2 Nov 2026: the beta is public, so creators and sellers don't see the preview strip).
-  if (me?.role !== "admin") return null;
+  // Hidden for everyone, admins too (owner, 23 Nov 2026: "quite annoying even for admin"); All Pages stays at /tour.
+  if (HIDE_STRIP || me?.role !== "admin") return null;
   return (
     <div className="v2-demo">
       <div className="site-wrap">
