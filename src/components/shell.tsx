@@ -8,7 +8,7 @@ import { SUPPORT } from "@/lib/support";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
 import { useDemo } from "./demo";
 import { Portal, Sheet } from "./ui";
@@ -96,6 +96,10 @@ function Chest() {
     </svg>
   );
 }
+
+/** Her Daily Story for pages inside the frame: whether there is one, whether a new page is out, and playing it (My Account). */
+const StoryCtx = createContext<{ has: boolean; fresh: boolean; open: () => void }>({ has: false, fresh: false, open: () => {} });
+export const useStory = () => useContext(StoryCtx);
 
 export function Shell({ app, children, banner }: { app: AppKind; children: React.ReactNode; banner?: React.ReactNode }) {
   // Menus in her language (owner, 3 Nov 2026); Admin always reads English (its layout says so).
@@ -211,7 +215,6 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
     const t = window.setInterval(check, 60_000);
     return () => window.clearInterval(t);
   }, [live, app, storyPages, story]);
-  const ring = hasStory ? (storyNew ? " story new" : " story") : "";
   useLayoutEffect(() => {
     const open = () => setAcctOpen(true);
     window.addEventListener(OPEN_ACCOUNT_MENU, open);
@@ -331,7 +334,9 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
               <Icon name={app === "admin" ? "home" : "shield"} size={16} /> {app === "admin" ? "Creator Dashboard" : t("Admin Dashboard")}
             </Link>
           )}
-          <Link href={ACCOUNT[app]} className={`v2-acct${ring}`} aria-label={storyNew && hasStory ? t("Watch your Daily Story") : undefined} onClick={(e) => { if (app === "admin") { e.preventDefault(); setAdminMenu(true); return; } if (hasStory && storyNew) { e.preventDefault(); setStory(true); return; } if (app === "creator" && window.matchMedia("(max-width: 760px)").matches) { e.preventDefault(); setAcctOpen(true); } }}>
+          {/* Her picture always opens her account, never the story (owner, 23 Nov 2026: "annoying every time"); the story plays
+              from her picture on My Account. Phones open the account panel, which holds language, theme and Sign Out. */}
+          <Link href={ACCOUNT[app]} className="v2-acct" onClick={(e) => { if (app === "admin") { e.preventDefault(); setAdminMenu(true); return; } if (app === "creator" && window.matchMedia("(max-width: 760px)").matches) { e.preventDefault(); setAcctOpen(true); } }}>
             {who.photo ? (
               // eslint-disable-next-line @next/next/no-img-element
               <span className="v2-av photo"><img src={who.photo} alt="" /></span>
@@ -358,7 +363,7 @@ export function Shell({ app, children, banner }: { app: AppKind; children: React
       {story && <DailyStory day={storyDay} pages={storyPages} onClose={() => { setStory(false); setStoryNew(false); }} />}
       <main className="site-wrap v2-main">
         {banner}
-        {children}
+        <StoryCtx.Provider value={{ has: hasStory, fresh: hasStory && storyNew, open: () => setStory(true) }}>{children}</StoryCtx.Provider>
       </main>
       <footer className="site-foot">
         <div className="site-wrap">

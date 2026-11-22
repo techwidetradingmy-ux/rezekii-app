@@ -39,6 +39,7 @@ import { rich } from "@/components/account/rich-text";
 import { loadProfile, loadWallet, saveProfile } from "@/lib/live-rewards";
 import { notesChanged } from "@/lib/live-notes";
 import { openConnect } from "@/lib/connect";
+import { useStory } from "@/components/shell";
 import "@/app/creator2.css";
 
 // Creator types, genders, races, niches and the theme are kept in English (saved as data) and translated where they're shown.
@@ -117,6 +118,7 @@ function MyMessages() {
 export default function Account() {
   const t = useT();
   const you = useWho();
+  const story = useStory();
   const { linked, setLinked, toast, consent, waVerified: verified, setWaVerified: setVerified, live, me, refreshMe } = useDemo();
   const [unlink, setUnlink] = useState(false);
   const [changing, setChanging] = useState(false);
@@ -344,7 +346,12 @@ export default function Account() {
         {tab !== "referral" && (
         <div className="cr2-cells">
           <div className="cr2-profile">
-            <LevelFace lv={live ? me?.ttLevel ?? null : linked ? CREATOR.tiktokLevel : null} size={76} img={you.photo} name={you.name} />
+            {/* Her Daily Story plays from her picture here, not from the top bar (owner, 23 Nov 2026); a green ring when a new page is out. */}
+            {story.has ? (
+              <button type="button" onClick={story.open} aria-label={t("Watch your Daily Story")} title={t("Watch your Daily Story")} style={{ padding: 0, border: 0, background: "none", borderRadius: "50%", cursor: "pointer", flexShrink: 0, boxShadow: story.fresh ? "0 0 0 3px #00c073" : undefined }}>
+                <LevelFace lv={live ? me?.ttLevel ?? null : linked ? CREATOR.tiktokLevel : null} size={76} img={you.photo} name={you.name} />
+              </button>
+            ) : <LevelFace lv={live ? me?.ttLevel ?? null : linked ? CREATOR.tiktokLevel : null} size={76} img={you.photo} name={you.name} />}
             <span>
               <strong className="cr2-name">
                 {name || you.name}
