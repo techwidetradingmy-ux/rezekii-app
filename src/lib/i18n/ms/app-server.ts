@@ -465,5 +465,5 @@ export const APP_SERVER: Record<string, string> = {
   "Shopee Video takes videos only. Untick Shopee for a photo post.": "Shopee Video hanya menerima video. Nyahtanda Shopee untuk hantaran foto.",
   "Shopee needs the video's length: wait for the video to load, or upload the file instead of a link.": "Shopee perlukan panjang video: tunggu video dimuatkan, atau muat naik fail dan bukannya pautan.",
   "Shopee captions can't have links. The product shows under the video instead.": "Kapsyen Shopee tidak boleh ada pautan. Produk dipaparkan di bawah video.",
-  "Shopee Video takes videos longer than 3 seconds, up to 3 minutes.": "Shopee Video menerima video lebih daripada 3 saat, sehingga 3 minit.",
+  "Shopee Video takes videos longer than 3 seconds, up to 60 seconds.": "Shopee Video menerima video lebih daripada 3 saat, sehingga 60 saat.",
 };

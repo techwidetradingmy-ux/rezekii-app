@@ -315,5 +315,5 @@ export const APP_SERVER: Record<string, string> = {
   "Shopee Video takes videos only. Untick Shopee for a photo post.": "Shopee Video 只接受视频。照片帖请取消勾选 Shopee。",
   "Shopee needs the video's length: wait for the video to load, or upload the file instead of a link.": "Shopee 需要知道视频长度：请等视频加载完，或上传文件而不是贴链接。",
   "Shopee captions can't have links. The product shows under the video instead.": "Shopee 文案不能放链接，商品会显示在视频下方。",
-  "Shopee Video takes videos longer than 3 seconds, up to 3 minutes.": "Shopee Video 接受 3 秒以上、最长 3 分钟的视频。",
+  "Shopee Video takes videos longer than 3 seconds, up to 60 seconds.": "Shopee Video 接受 3 秒以上、最长 60 秒的视频。",
 };

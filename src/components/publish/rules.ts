@@ -141,15 +141,16 @@ function shopeeCaption(text: string, tags: string[]): string {
   return out;
 }
 
-/** Shopee Video takes videos longer than 3 seconds, up to 3 minutes. */
-export const SHOPEE_SECONDS = { min: 4, max: 180 };
+/** Shopee Video takes videos longer than 3 seconds, up to 60 seconds. */
+// Shopee's upload refuses longer videos (owner, 23 Nov 2026: "Video duration cannot exceed 60 seconds").
+export const SHOPEE_SECONDS = { min: 4, max: 60 };
 
 /** Plain-language problems that block scheduling to Shopee (empty = OK). */
 export function shopeeProblems(caption: string, durationSec?: number | null, t: T = EN): string[] {
   const out: string[] = [];
   if (caption.length > CAPTION_MAX.shopee) out.push(t("{app} allows {max} characters. This caption has {n}.", { app: "Shopee", max: CAPTION_MAX.shopee, n: caption.length }));
   if (links(caption).length) out.push(t("Shopee captions can't have links. The product shows under the video instead."));
-  if (durationSec && (durationSec < SHOPEE_SECONDS.min || durationSec > SHOPEE_SECONDS.max)) out.push(t("Shopee Video takes videos longer than 3 seconds, up to 3 minutes."));
+  if (durationSec && (durationSec < SHOPEE_SECONDS.min || durationSec > SHOPEE_SECONDS.max)) out.push(t("Shopee Video takes videos longer than 3 seconds, up to 60 seconds."));
   return out;
 }
 
