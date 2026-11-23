@@ -1,13 +1,13 @@
 import { MetaError } from "../../integrations/meta/graph.ts";
 import { commentOnFacebook, facebookPermalink, facebookPostExists, facebookPostLink, facebookVideo, finishFacebookReel, postFacebookPhotos, postFacebookVideo, startFacebookReel, uploadFacebookReel } from "../../integrations/meta/facebook.ts";
-import { commentOnInstagram, createInstagramPhotos, createInstagramReel, instagramContainer, instagramPermalink, instagramPostExists, publishInstagram } from "../../integrations/meta/instagram.ts";
+import { commentOnInstagram, createInstagramPhotos, createInstagramReel, instagramContainer, instagramPermalink, instagramPostExists, publishInstagram, type IgAuth } from "../../integrations/meta/instagram.ts";
 import { createThreadsPhotos, createThreadsReply, createThreadsVideo, publishThreads, threadsContainer, threadsPermalink, threadsPostExists } from "../../integrations/meta/threads.ts";
 import { directLink } from "../posting/media.ts";
 import { nextRetry } from "../posting/rules.ts";
 import { checkShopee, publishShopee, shopeeStillLive, type ShopeeOutcome } from "../shopee/posting.ts";
-import { freshToken, getAccount, markReconnect, type SocialAccount } from "./accounts.ts";
+import { freshToken, getAccount, igAuth, markReconnect, type SocialAccount } from "./accounts.ts";
 import { NAMES, facebookAsReel } from "./rules.ts";
-import { cleanSettings, unreachableUsers, type InstagramSettings, type ThreadsSettings } from "./settings.ts";
+import { cleanSettings, songRefused, unreachableUsers, type InstagramSettings, type ThreadsSettings } from "./settings.ts";
 import { cleanUpGroup, signedMediaUrl, updateSocialPost, type SocialPostRow } from "./store.ts";
 // Reasons are saved in English and shown in her language when read (modules/posting/errors.ts).
 import { tx } from "../../lib/i18n/lang.ts";
@@ -82,17 +82,7 @@ export async function publishSocialPost(p: SocialPostRow): Promise<string> {
         await finishFacebookReel(acc.external_id, token, container, caption, draftOf(p));
       } else container = await postFacebookVideo(acc.external_id, token, video, caption);
     } else if (p.platform === "instagram") {
-      let s = cleanSettings("instagram", p.settings) as InstagramSettings;
-      try {
-        container = await createInstagramReel(acc.external_id, token, video, p.caption, s);
-      } catch (err) {
-        // A tagged or collaborator account Instagram can't reach (private, renamed): post without it, and say so (S6).
-        const gone = err instanceof MetaError ? unreachableUsers(err.message) : [];
-        if (!gone.length) throw err;
-        s = { ...s, tags: s.tags.filter((u) => !gone.includes(u)), collaborators: s.collaborators.filter((u) => !gone.includes(u)) };
-        await updateSocialPost(p.id, { settings: { ...p.settings, tags: s.tags, collaborators: s.collaborators, dropped: gone } });
-        container = await createInstagramReel(acc.external_id, token, video, p.caption, s);
-      }
+      container = await instagramReel(p, acc, igAuth(acc, token), video);
     } else {
       const s = cleanSettings("threads", p.settings) as ThreadsSettings;
       container = await createThreadsVideo(acc.external_id, token, video, p.caption, s);
@@ -101,6 +91,32 @@ export async function publishSocialPost(p: SocialPostRow): Promise<string> {
     return "sent";
   } catch (err) {
     return handleError(p, acc, err, true);
+  }
+}
+
+/**
+ * An Instagram Reel container. What Instagram can't take is left out and said on the post (S6), rather than failing it: a tagged
+ * or collaborator account it can't reach (private, renamed), or the song. Songs go only through Facebook (Meta's Audio API).
+ */
+async function instagramReel(p: SocialPostRow, acc: SocialAccount, ig: IgAuth, video: string): Promise<string> {
+  let s = cleanSettings("instagram", p.settings) as InstagramSettings;
+  if (acc.connected_via !== "facebook") s = { ...s, audio: null };
+  let saved = p.settings;
+  for (let tries = 0; ; tries++) {
+    try {
+      return await createInstagramReel(acc.external_id, ig, video, p.caption, s);
+    } catch (err) {
+      if (!(err instanceof MetaError) || err.needsReconnect || tries >= 2) throw err;
+      const gone = unreachableUsers(err.message);
+      if (gone.length) {
+        s = { ...s, tags: s.tags.filter((u) => !gone.includes(u)), collaborators: s.collaborators.filter((u) => !gone.includes(u)) };
+        saved = { ...saved, tags: s.tags, collaborators: s.collaborators, dropped: gone };
+      } else if (s.audio && songRefused(err.message)) {
+        saved = { ...saved, audio: null, songDropped: s.audio.title };
+        s = { ...s, audio: null };
+      } else throw err;
+      await updateSocialPost(p.id, { settings: saved });
+    }
   }
 }
 
@@ -114,14 +130,14 @@ async function publishPhotos(p: SocialPostRow, acc: SocialAccount, token: string
   if (p.platform === "instagram") {
     let s = cleanSettings("instagram", p.settings) as InstagramSettings;
     try {
-      container = await createInstagramPhotos(acc.external_id, token, photos, p.caption, s);
+      container = await createInstagramPhotos(acc.external_id, igAuth(acc, token), photos, p.caption, s);
     } catch (err) {
       // A tagged or collaborator account Instagram can't reach: post without it, and say so (S6), as for Reels.
       const gone = err instanceof MetaError ? unreachableUsers(err.message) : [];
       if (!gone.length) throw err;
       s = { ...s, tags: s.tags.filter((u) => !gone.includes(u)), collaborators: s.collaborators.filter((u) => !gone.includes(u)) };
       await updateSocialPost(p.id, { settings: { ...p.settings, tags: s.tags, collaborators: s.collaborators, dropped: gone } });
-      container = await createInstagramPhotos(acc.external_id, token, photos, p.caption, s);
+      container = await createInstagramPhotos(acc.external_id, igAuth(acc, token), photos, p.caption, s);
     }
   } else container = await createThreadsPhotos(acc.external_id, token, photos, p.caption, cleanSettings("threads", p.settings) as ThreadsSettings);
   await updateSocialPost(p.id, { status: "processing", container_id: container, last_error: null });
@@ -165,10 +181,11 @@ export async function checkSocialProcessing(p: SocialPostRow): Promise<string> {
       if (st?.video_status === "error") return recordFailure(p, st.publishing_phase?.errors?.[0]?.message ?? tx("Facebook couldn't process the video."), { clearContainer: true });
       if (st?.publishing_phase?.status === "complete" || st?.video_status === "ready") return markPosted(p, v.post_id ?? p.container_id, draftOf(p) ? null : facebookPermalink(v.permalink_url));
     } else if (p.platform === "instagram") {
-      const c = await instagramContainer(p.container_id, token);
+      const ig = igAuth(acc, token);
+      const c = await instagramContainer(p.container_id, ig);
       if (c.status_code === "FINISHED") {
-        const id = await publishInstagram(acc.external_id, token, p.container_id);
-        return markPosted(p, id, await instagramPermalink(id, token).catch(() => null));
+        const id = await publishInstagram(acc.external_id, ig, p.container_id);
+        return markPosted(p, id, await instagramPermalink(id, ig).catch(() => null));
       }
       if (c.status_code === "PUBLISHED") return markPosted(p, p.external_post_id ?? p.container_id, p.permalink);
       if (c.status_code === "ERROR" || c.status_code === "EXPIRED") return recordFailure(p, c.status ? `Instagram couldn't process ${what(p)} (${c.status}).` : p.photo_paths?.length ? tx("Instagram couldn't process the photos.") : tx("Instagram couldn't process the video."), { clearContainer: true });
@@ -205,7 +222,7 @@ export async function postFirstComment(p: SocialPostRow): Promise<string> {
     const image = p.comment_image_path && p.platform !== "instagram" ? await signedMediaUrl(p.comment_image_path) : null;
     let id: string;
     if (p.platform === "facebook") id = await commentOnFacebook(p.container_id ?? p.external_post_id, token, text, image);
-    else if (p.platform === "instagram") id = await commentOnInstagram(p.external_post_id, token, text);
+    else if (p.platform === "instagram") id = await commentOnInstagram(p.external_post_id, igAuth(acc, token), text);
     else {
       const reply = await createThreadsReply(acc.external_id, token, text, p.external_post_id, image);
       for (let i = 0; i < 5; i++) {
@@ -253,7 +270,7 @@ export async function checkStillLive(p: SocialPostRow): Promise<string> {
   }
   try {
     const token = await freshToken(acc);
-    const live = p.platform === "facebook" ? await facebookPostExists(id, token) : p.platform === "instagram" ? await instagramPostExists(id, token) : await threadsPostExists(id, token);
+    const live = p.platform === "facebook" ? await facebookPostExists(id, token) : p.platform === "instagram" ? await instagramPostExists(id, igAuth(acc, token)) : await threadsPostExists(id, token);
     if (live) {
       await updateSocialPost(p.id, { live_checked_at: now });
       return "live";

@@ -34,3 +34,17 @@ export const levelFor = (u: Pick<AppUser, "id" | "role">, a: { everyone: boolean
 export async function metaLevel(u: Pick<AppUser, "id" | "role">): Promise<MetaLevel> {
   return u.role === "admin" ? "community" : levelFor(u, await insightsAccess().catch(() => ({ everyone: false, users: new Set<string>() })));
 }
+
+/**
+ * Connect Instagram through Facebook (songs on Reels, owner 23 Nov 2026): Admins and the accounts Meta reviews with until Meta
+ * approves the Instagram permissions for Facebook Login; then everyone, once app setting meta_ig_facebook_everyone is true.
+ */
+export const igViaFacebookFor = (u: Pick<AppUser, "id" | "role">, a: { everyone: boolean; users: Set<string> }): boolean => u.role === "admin" || a.everyone || a.users.has(u.id);
+
+export async function canConnectIgViaFacebook(u: Pick<AppUser, "id" | "role">): Promise<boolean> {
+  if (u.role === "admin") return true;
+  const res = await supabaseRest("app_settings?key=in.(meta_review_users,meta_ig_facebook_everyone)&select=key,value").catch(() => null);
+  const rows = (res ? await res.json().catch(() => []) : []) as { key: string; value: unknown }[];
+  const users = rows.find((r) => r.key === "meta_review_users")?.value;
+  return igViaFacebookFor(u, { everyone: rows.find((r) => r.key === "meta_ig_facebook_everyone")?.value === true, users: new Set(Array.isArray(users) ? users.filter((x): x is string => typeof x === "string") : []) });
+}

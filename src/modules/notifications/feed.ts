@@ -61,7 +61,7 @@ export async function notesFor(userId: string, side: Side, lang: Lang = "en"): P
     rows<{ id: string; platform: string; account_name: string | null; status: string; caption: string | null; posted_at: string | null; updated_at: string; last_error: string | null; permalink: string | null }>(
       `social_posts?user_id=eq.${userId}&or=(status.eq.failed,posted_at.not.is.null)&updated_at=gte.${enc(since)}&select=id,platform,account_name,status,caption,posted_at,updated_at,last_error,permalink&order=updated_at.desc&limit=20`,
     ),
-    rows<{ id: string; platform: string; name: string | null; status: string; token_expires_at: string | null; updated_at: string }>(`social_accounts?user_id=eq.${userId}&select=id,platform,name,status,token_expires_at,updated_at`),
+    rows<{ id: string; platform: string; name: string | null; status: string; token_expires_at: string | null; updated_at: string; connected_via: string | null }>(`social_accounts?user_id=eq.${userId}&select=id,platform,name,status,token_expires_at,updated_at,connected_via`),
     side === "creator" ? rows<{ refresh_token_expires_at: string | null }>(`affiliate_connections?user_id=eq.${userId}&select=refresh_token_expires_at&limit=1`) : Promise.resolve([]),
     rows<{ open_id: string; username: string | null; status: string; refresh_token_expires_at: string | null; updated_at: string }>(`tiktok_connections?user_id=eq.${userId}&select=open_id,username,status,refresh_token_expires_at,updated_at`),
     side === "creator"
@@ -123,7 +123,7 @@ export async function notesFor(userId: string, side: Side, lang: Lang = "en"): P
     notes.push({
       id: `a:${a.id}:${a.status === "reconnect" ? "re" : a.token_expires_at}`, at: a.status === "reconnect" || !a.token_expires_at ? a.updated_at : new Date(Date.parse(a.token_expires_at) - 7 * DAY).toISOString(),
       icon: "link", title: a.name ? t("Reconnect {app}: {name}", { app, name: a.name }) : t("Reconnect {app}", { app }), line: t("{app} asks you to sign in again from time to time. Until then, posts to it can't go out.", { app }),
-      href: side === "seller" ? connections : `/api/auth/meta/${a.platform}/start?from=account`, cta: t("Reconnect"), urgent: a.status === "reconnect" ? t("Needs reconnecting") : left(a.token_expires_at!),
+      href: side === "seller" ? connections : `/api/auth/meta/${a.platform}/start?from=account${a.connected_via === "facebook" ? "&via=facebook" : ""}`, cta: t("Reconnect"), urgent: a.status === "reconnect" ? t("Needs reconnecting") : left(a.token_expires_at!),
     });
   }
   for (const c of tiktok) {

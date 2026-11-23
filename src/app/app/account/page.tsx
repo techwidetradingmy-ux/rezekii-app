@@ -224,11 +224,12 @@ export default function Account() {
   };
 
   // Signed in (owner, 31 Oct 2026): her real channels for Connections, and a message when she comes back from connecting one.
-  type Chan = { key: string; app: "tiktok" | "facebook" | "instagram" | "threads" | "shopee"; name: string; sub: string; status: "active" | "reconnect"; role?: "seller" | "affiliate"; initials: string; color: string; photo?: string | null };
+  type Chan = { key: string; app: "tiktok" | "facebook" | "instagram" | "threads" | "shopee"; name: string; sub: string; status: "active" | "reconnect"; role?: "seller" | "affiliate"; initials: string; color: string; photo?: string | null; via?: "facebook" };
   const [chans, setChans] = useState<Chan[] | null>(null);
   // Shopee only where its app keys are set; until then its row still reads Coming Soon.
   const [shopeeOn, setShopeeOn] = useState(false);
-  const loadChans = () => fetch("/api/v2/publish?part=setup&side=creator", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d: { channels?: Chan[]; shopeeOn?: boolean } | null) => { setChans(d?.channels ?? []); setShopeeOn(!!d?.shopeeOn); }).catch(() => setChans([]));
+  const [igViaFacebook, setIgViaFacebook] = useState(false);
+  const loadChans = () => fetch("/api/v2/publish?part=setup&side=creator", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d: { channels?: Chan[]; shopeeOn?: boolean; igViaFacebook?: boolean } | null) => { setChans(d?.channels ?? []); setShopeeOn(!!d?.shopeeOn); setIgViaFacebook(!!d?.igViaFacebook); }).catch(() => setChans([]));
   useEffect(() => {
     if (!live) return;
     void loadChans();
@@ -236,7 +237,7 @@ export default function Account() {
     const result = q.get("connect");
     if (result) {
       const app = ({ tiktok: "TikTok", facebook: "Facebook", instagram: "Instagram", threads: "Threads", shopee: "Shopee" } as Record<string, string>)[q.get("channel") ?? ""] ?? t("The app");
-      toast(result === "ok" ? t("{app} connected.", { app }) : result === "no_pages" ? t("No Facebook Pages were picked. Connect again and tick your Pages.") : result === "personal" ? t("That Instagram account is personal. Switch it to a Business or Creator account, then connect again.") : result === "cancelled" ? t("{app} sign-in was cancelled.", { app }) : t("{app} didn't connect. Please try again.", { app }));
+      toast(result === "ok" ? t("{app} connected.", { app }) : result === "no_pages" ? t("No Facebook Pages were picked. Connect again and tick your Pages.") : result === "personal" ? t("That Instagram account is personal. Switch it to a Business or Creator account, then connect again.") : result === "no_instagram" ? t("None of the Pages you picked has an Instagram account linked. Link one in Instagram, then connect again.") : result === "cancelled" ? t("{app} sign-in was cancelled.", { app }) : t("{app} didn't connect. Please try again.", { app }));
       window.history.replaceState(null, "", `${window.location.pathname}${window.location.hash}`);
     }
   }, [live]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -249,7 +250,7 @@ export default function Account() {
   }, [live]); // eslint-disable-line react-hooks/exhaustive-deps
   // TikTok and Meta wait for their platform's approval (owner, 3 Nov 2026); admins can still connect, and anyone can reconnect.
   const can = useCanConnect();
-  const connectApp = (app: Chan["app"]) => openConnect(app === "tiktok" ? "/api/auth/tiktok/start" : `/api/auth/meta/${app}/start?from=account`);
+  const connectApp = (app: Chan["app"], via?: "facebook") => openConnect(app === "tiktok" ? "/api/auth/tiktok/start" : `/api/auth/meta/${app}/start?from=account${via ? "&via=facebook" : ""}`);
   const disconnect = async (c: Chan) => {
     const r = await fetch(c.app === "tiktok" ? `/api/account/tiktok/${encodeURIComponent(c.key.replace(/^tiktok:/, ""))}` : `/api/social/accounts/${c.key}`, { method: "DELETE" }).catch(() => null);
     if (!r?.ok) return toast(t("Couldn't disconnect. Try again."));
@@ -574,8 +575,9 @@ export default function Account() {
               <ConnectionsList
                 chans={chans}
                 shopeeOn={shopeeOn}
+                igViaFacebook={igViaFacebook}
                 can={(app) => can(app)}
-                onConnect={(app) => connectApp(app)}
+                onConnect={(app, via) => connectApp(app, via)}
                 onDisconnect={async (c) => {
                   if (c.app !== "shopee") return disconnect(c);
                   const r = await fetch(`/api/shopee/connections/${c.key.replace("shopee:", "")}`, { method: "DELETE" }).catch(() => null);

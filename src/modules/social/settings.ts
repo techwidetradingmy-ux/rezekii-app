@@ -13,10 +13,17 @@ export const REPLY_CONTROLS: [ReplyControl, string][] = [["everyone", tx("Everyo
 export type TrialMode = "off" | "manual" | "auto";
 
 export type FacebookSettings = { draft: boolean };
-export type InstagramSettings = { feed: boolean; collaborators: string[]; tags: string[]; trial: TrialMode };
+/**
+ * A licensed song on a Reel (owner, 23 Nov 2026; Meta's Instagram Audio API, through Facebook only). `volume` is the song's
+ * loudness (Instagram's 1–100); the video's own sound stays at full volume.
+ */
+export type InstagramSong = { id: string; title: string; artist: string; volume: number };
+export type SongVolume = "low" | "medium" | "full";
+export const SONG_VOLUMES: Record<SongVolume, number> = { low: 25, medium: 50, full: 100 };
+export type InstagramSettings = { feed: boolean; collaborators: string[]; tags: string[]; trial: TrialMode; audio: InstagramSong | null };
 export type ThreadsSettings = { replies: ReplyControl; topic: string };
 export type Settings = { facebook: FacebookSettings; instagram: InstagramSettings; threads: ThreadsSettings };
-export const DEFAULT_SETTINGS: Settings = { facebook: { draft: false }, instagram: { feed: true, collaborators: [], tags: [], trial: "off" }, threads: { replies: "everyone", topic: "" } };
+export const DEFAULT_SETTINGS: Settings = { facebook: { draft: false }, instagram: { feed: true, collaborators: [], tags: [], trial: "off", audio: null }, threads: { replies: "everyone", topic: "" } };
 
 export const COLLABORATORS_MAX = 3;
 /** People tagged in a Reel (Instagram's own limit in the app). */
@@ -48,11 +55,22 @@ export function cleanSettings(platform: Platform, raw: unknown): FacebookSetting
   if (platform === "instagram") {
     const trial = r.trial === "manual" || r.trial === "auto" ? r.trial : "off";
     const names = (k: string) => parseCollaborators(Array.isArray(r[k]) ? (r[k] as string[]) : []).list;
-    return { feed: r.feed !== false, collaborators: names("collaborators").slice(0, COLLABORATORS_MAX), tags: names("tags").slice(0, TAGS_MAX), trial };
+    return { feed: r.feed !== false, collaborators: names("collaborators").slice(0, COLLABORATORS_MAX), tags: names("tags").slice(0, TAGS_MAX), trial, audio: cleanSong(r.audio) };
   }
   const replies = REPLY_CONTROLS.some(([v]) => v === r.replies) ? (r.replies as ReplyControl) : "everyone";
   return { replies, topic: cleanTopic(typeof r.topic === "string" ? r.topic : "") };
 }
+
+/** A song as the browser sent it, or null (unknown volumes fall back to medium). */
+function cleanSong(raw: unknown): InstagramSong | null {
+  const a = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  if (typeof a.id !== "string" || !/^[\w-]{1,64}$/.test(a.id)) return null;
+  const volume = Object.values(SONG_VOLUMES).includes(Number(a.volume)) ? Number(a.volume) : SONG_VOLUMES.medium;
+  return { id: a.id, title: String(a.title ?? "").slice(0, 200), artist: String(a.artist ?? "").slice(0, 200), volume };
+}
+
+/** Instagram turned the song down (Meta's words name the audio, song, music or its licence): the Reel goes without it. */
+export const songRefused = (message: string) => /audio[_ ]?(id|configuration)|\bsong\b|\bmusic\b|licen[cs]/i.test(message);
 
 /** Plain-language problems with a channel's settings that block scheduling (empty = OK). */
 export function settingsProblems(platform: Platform, s: Partial<Settings[Platform]>, durationSec?: number | null, collaboratorsTyped?: string, tagsTyped?: string, t: T = EN): string[] {

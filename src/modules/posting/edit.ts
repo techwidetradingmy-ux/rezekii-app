@@ -1,6 +1,7 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { loadRecipe } from "../social/recipes.ts";
 import type { Recipe } from "../social/recipe.ts";
+import { cleanSettings, type InstagramSettings, type InstagramSong } from "../social/settings.ts";
 import { cleanUpGroup, signedMediaUrl, type SocialPostRow } from "../social/store.ts";
 import { deleteUpload } from "./media.ts";
 import { filesOf } from "./photos.ts";
@@ -85,6 +86,8 @@ export type EditPost = {
   commentImage: { path: string; url: string | null } | null;
   tiktok: null | { account: string; mode: PostRow["mode"]; caption: string; privacy: string | null; allowComments: boolean; allowDuet: boolean; allowStitch: boolean; brandOrganic: boolean; brandedContent: boolean; isAigc: boolean };
   recipe: Recipe | null;
+  /** The Instagram Reel's song (it isn't in the recipe: it's for this post only). */
+  song: InstagramSong | null;
 };
 
 /** What New post starts from to edit a post: the post as it was scheduled, with its video kept. Null when it can't be edited. */
@@ -106,6 +109,7 @@ export async function loadEdit(userId: string, key: string): Promise<EditPost | 
     commentImage: imagePath ? { path: imagePath, url: imageUrl } : null,
     tiktok: t && { account: t.tiktok_open_id, mode: t.mode, caption: t.caption, privacy: t.privacy_level, allowComments: t.allow_comments, allowDuet: t.allow_duet, allowStitch: t.allow_stitch, brandOrganic: t.brand_organic, brandedContent: t.branded_content, isAigc: t.is_aigc },
     recipe: saved?.recipe ?? null,
+    song: (cleanSettings("instagram", p.channels.find((c) => c.platform === "instagram")?.settings) as InstagramSettings).audio,
   };
 }
 

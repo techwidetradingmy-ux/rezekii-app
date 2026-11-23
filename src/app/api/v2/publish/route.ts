@@ -4,6 +4,7 @@ import { userTikTokAccounts } from "@/modules/posting/store.ts";
 import { balanceOf } from "@/modules/rewards/ledger.ts";
 import { postSide, postsFree, settlePostRefunds } from "@/modules/rewards/post-credits.ts";
 import { listAccounts } from "@/modules/social/accounts.ts";
+import { canConnectIgViaFacebook } from "@/modules/social/access.ts";
 import { boardPosts } from "@/modules/social/board.ts";
 import { lastPostChannels, listBrands } from "@/modules/social/brands.ts";
 import { tiktokKey } from "@/modules/social/picker.ts";
@@ -39,7 +40,7 @@ export async function GET(req: NextRequest) {
 
   // Shopee shows only where the Shopee app's keys are set (as on rezekii.com's Shopee build).
   const shopeeOn = !!process.env.SHOPEE_PARTNER_ID;
-  const [tiktok, social, brands, last, credits, free, shopee] = await Promise.all([
+  const [tiktok, social, brands, last, credits, free, shopee, igViaFacebook] = await Promise.all([
     userTikTokAccounts(user.id),
     listAccounts(user.id),
     listBrands(user.id),
@@ -47,6 +48,7 @@ export async function GET(req: NextRequest) {
     balanceOf(user.id, postSide(q.get("side"))),
     postsFree(user.id),
     shopeeOn ? listShopee(user.id).catch(() => []) : Promise.resolve([]),
+    canConnectIgViaFacebook(user),
   ]);
   // Each account's profile picture (owner, 22 Nov 2026): TikTok's own link while it works, else Rezekii's saved copy (TikTok's
   // links expire within days); Meta's and Shopee's links as kept fresh by the timer. Initials show when a picture won't load.
@@ -57,8 +59,10 @@ export async function GET(req: NextRequest) {
     }),
     ...social.map((a) => {
       const name = a.name ?? a.username ?? (a.platform === "facebook" ? t("Facebook Page") : SUB[a.platform]);
-      const sub = a.platform === "facebook" ? t("Facebook Page") : a.username ? `@${a.username}` : SUB[a.platform];
-      return { key: a.id, app: a.platform, name, sub, initials: initials(name), color: COLOR[a.platform], status: a.status === "reconnect" ? ("reconnect" as const) : ("active" as const), photo: a.avatar_url ?? null };
+      const via = a.platform === "instagram" && a.connected_via === "facebook" ? ("facebook" as const) : undefined;
+      const handle = a.platform === "facebook" ? t("Facebook Page") : a.username ? `@${a.username}` : SUB[a.platform];
+      const sub = via ? `${handle} · ${t("Through Facebook")}` : handle;
+      return { key: a.id, app: a.platform, name, sub, initials: initials(name), color: COLOR[a.platform], status: a.status === "reconnect" ? ("reconnect" as const) : ("active" as const), photo: a.avatar_url ?? null, via };
     }),
     ...shopee.map((c) => {
       const name = shopeeLabel(c);
@@ -68,5 +72,5 @@ export async function GET(req: NextRequest) {
     }),
   ];
   console.info(`[publish] setup ${channels.length} channels in ${Date.now() - started}ms`);
-  return NextResponse.json({ channels, brands, last, credits, free, shopeeOn }, NO_STORE);
+  return NextResponse.json({ channels, brands, last, credits, free, shopeeOn, igViaFacebook }, NO_STORE);
 }

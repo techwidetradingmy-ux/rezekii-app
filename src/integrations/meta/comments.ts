@@ -1,5 +1,6 @@
 import { GRAPH_VERSION, MetaError, THREADS_VERSION, metaFetch, qs } from "./graph.ts";
 import { createThreadsReply, publishThreads } from "./threads.ts";
+import { igToken, igUrl, type IgAuth } from "./instagram.ts";
 
 /**
  * Comments (owner, 9 Nov 2026, after Meta approved the app): the latest comments on a Facebook Page's or Instagram account's
@@ -8,7 +9,6 @@ import { createThreadsReply, publishThreads } from "./threads.ts";
  * Threads replies need threads_read_replies, in Meta's second review (owner, 12 Nov 2026): only accounts asked for it see them.
  */
 const G = (path: string) => `https://graph.facebook.com/${GRAPH_VERSION}/${path}`;
-const IG = (path: string) => `https://graph.instagram.com/${GRAPH_VERSION}/${path}`;
 const TH = (path: string) => `https://graph.threads.net/${THREADS_VERSION}/${path}`;
 
 export type Comment = {
@@ -84,7 +84,7 @@ export async function facebookCommentAction(commentId: string, token: string, ac
   return null;
 }
 
-// ---- Instagram (Instagram Login) ----
+// ---- Instagram (Instagram Login, or through Facebook: see IgAuth) ----
 
 type IgComment = { id: string; text?: string; timestamp?: string; username?: string; from?: { id?: string; username?: string }; hidden?: boolean; replies?: { data?: IgComment[] } };
 type IgMedia = { id: string; caption?: string; timestamp?: string; permalink?: string; thumbnail_url?: string; media_url?: string; media_type?: string; comments_count?: number; comments?: { data?: IgComment[] } };
@@ -119,17 +119,17 @@ export function instagramCommentedPost(m: IgMedia, username: string | null): Com
 }
 
 /** The account's latest posts with their comments and replies, in one call. */
-export async function instagramComments(igId: string, token: string, username: string | null): Promise<CommentedPost[]> {
+export async function instagramComments(igId: string, auth: IgAuth, username: string | null): Promise<CommentedPost[]> {
   const one = "id,text,timestamp,username,hidden";
   const fields = `id,caption,timestamp,permalink,thumbnail_url,media_url,media_type,comments_count,comments.limit(50){${one},replies.limit(${REPLIES}){${one}}}`;
-  const r = await metaFetch<{ data?: IgMedia[] }>(IG(`${igId}/media?${qs({ fields, limit: POSTS, access_token: token })}`));
+  const r = await metaFetch<{ data?: IgMedia[] }>(igUrl(auth, `${igId}/media?${qs({ fields, limit: POSTS, access_token: igToken(auth) })}`));
   return (r.data ?? []).map((m) => instagramCommentedPost(m, username));
 }
 
-export async function instagramCommentAction(commentId: string, token: string, action: CommentAction, message = ""): Promise<string | null> {
-  if (action === "reply") return (await metaFetch<{ id: string }>(IG(`${commentId}/replies`), { message, access_token: token })).id;
-  if (action === "delete") await metaFetch(IG(`${commentId}?${qs({ access_token: token })}`), undefined, 60_000, "DELETE");
-  else await metaFetch(IG(commentId), { hide: String(action === "hide"), access_token: token });
+export async function instagramCommentAction(commentId: string, auth: IgAuth, action: CommentAction, message = ""): Promise<string | null> {
+  if (action === "reply") return (await metaFetch<{ id: string }>(igUrl(auth, `${commentId}/replies`), { message, access_token: igToken(auth) })).id;
+  if (action === "delete") await metaFetch(igUrl(auth, `${commentId}?${qs({ access_token: igToken(auth) })}`), undefined, 60_000, "DELETE");
+  else await metaFetch(igUrl(auth, commentId), { hide: String(action === "hide"), access_token: igToken(auth) });
   return null;
 }
 

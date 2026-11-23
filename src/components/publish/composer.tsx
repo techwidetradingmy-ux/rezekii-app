@@ -27,6 +27,8 @@ import {
   type Channel, type Platform, type Privacy, type ReplyControl, type TrialMode,
 } from "./rules";
 import { PHOTO_MAX, instagramCrop, instagramMisfits, photoProblems } from "@/modules/social/rules.ts";
+import { SONG_VOLUMES, type SongVolume } from "@/modules/social/settings.ts";
+import type { Song } from "@/integrations/meta/instagram.ts";
 import { PHOTOS_MAX } from "@/modules/posting/photos.ts";
 import "@/app/creator2.css";
 import "@/app/publish.css";
@@ -200,6 +202,10 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   useEffect(() => () => { if (commentImageUrl?.startsWith("blob:")) URL.revokeObjectURL(commentImageUrl); }, [commentImageUrl]);
   const [igFeed, setIgFeed] = useState(true);
   const [igTrial, setIgTrial] = useState<TrialMode>("off");
+  // A licensed song on the Reel (owner, 23 Nov 2026): only Instagram accounts connected through Facebook can take one.
+  const [igSong, setIgSong] = useState<Pick<Song, "id" | "title" | "artist" | "cover"> | null>(null);
+  const [igSongVol, setIgSongVol] = useState<SongVolume>("medium");
+  const [songSheet, setSongSheet] = useState(false);
   // Shopee Video (owner, 21 Nov 2026, from rezekii.com's Shopee build): Duet and Stitch start on; a shop picks up to 6 of its own products.
   const [shopeeAllow, setShopeeAllow] = useState({ duet: true, stitch: true });
   const [shopeeItems, setShopeeItems] = useState<Record<string, number[]>>({});
@@ -310,13 +316,17 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   const who = (key: string): Who => {
     const c = byKey.get(key);
     if (!c) return { name: "", username: "", avatar: null, initials: "", color: "#888" };
-    const handle = (c.app === "tiktok" ? c.name : c.sub).replace(/^@/, "");
+    const handle = (c.app === "tiktok" ? c.name : c.via ? c.sub.split(" · ")[0] : c.sub).replace(/^@/, "");
     return { name: c.app === "tiktok" ? handle : c.name, username: c.app === "facebook" ? c.name : handle, avatar: c.photo ?? null, initials: c.initials, color: c.color };
   };
   const topic = cleanTopic(topicOver ?? threadsTopic(mainFull));
   const collaborators = parseUsernames(collabText).list.slice(0, COLLABORATORS_MAX);
   const tagged = parseUsernames(tagText).list.slice(0, TAGS_MAX);
   const igAdvanced = (collabText.trim() ? 1 : 0) + (tagText.trim() ? 1 : 0) + (igTrial !== "off" ? 1 : 0);
+  // Songs are searched as the first picked Instagram account connected through Facebook; the others post without the song.
+  const igChosen = metaPicked.filter((c) => c.app === "instagram");
+  const songAcct = igChosen.find((c) => c.via === "facebook");
+  const songless = igChosen.filter((c) => c.via !== "facebook");
   const pApp = apps.includes(previewApp) ? previewApp : apps[0];
   const pKey = pApp ? (inApp(pApp).includes(previewAcct) ? previewAcct : inApp(pApp)[0]) : undefined;
   const activeTab = tab !== "main" && apps.includes(tab) ? tab : "main";
@@ -384,10 +394,11 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   ];
 
   /** Real accounts: each app's own sign-in, then back here with the result. */
-  function connectReal(app: Channel, role?: PubChannel["role"]) {
+  function connectReal(app: Channel, role?: PubChannel["role"], via?: PubChannel["via"]) {
     const seller = liveSide === "seller";
+    const q = [seller ? "from=seller" : "", via ? "via=facebook" : ""].filter(Boolean).join("&");
     if (app === "shopee") window.location.href = `/api/auth/shopee/start?role=${role ?? "affiliate"}${seller ? "&from=seller" : ""}`;
-    else openConnect(app === "tiktok" ? "/api/auth/tiktok/start" : `/api/auth/meta/${app}/start${seller ? "?from=seller" : ""}`);
+    else openConnect(app === "tiktok" ? "/api/auth/tiktok/start" : `/api/auth/meta/${app}/start${q ? `?${q}` : ""}`);
   }
   async function checkReal(c: PubChannel) {
     const r = await fetch("/api/channels/check", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ key: c.key }) }).catch(() => null);
@@ -484,10 +495,11 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     setSample(false);
     setDurationSec(null);
     setSource("upload");
-    // Facebook drafts, Instagram's Reels-only switch and trial reels are for videos.
+    // Facebook drafts, Instagram's Reels-only switch, trial reels and songs are for videos.
     setFbDraft(false);
     setIgFeed(true);
     setIgTrial("off");
+    setIgSong(null);
     setPhotos((list) => [...list, ...added]);
     if (failed.length) setMediaError(t("Couldn't read {names}. Use JPG, PNG or WebP photos.", { names: failed.join(", ") }));
     else if (images.length > room) setMediaError(t("A post can have up to {max} photos, so only the first {n} were added.", { max: PHOTOS_MAX, n: room }));
@@ -516,7 +528,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
     const connect = q.get("connect");
     if (connect) {
       const app = NAMES[(q.get("channel") ?? "facebook") as Channel] ?? t("The app");
-      say(connect === "ok" ? t("{app} connected.", { app }) : connect === "no_pages" ? t("No Facebook Pages were picked. Connect again and tick your Pages.") : connect === "personal" ? t("That Instagram account is personal. Switch it to a Business or Creator account in Instagram, then connect again.") : connect === "cancelled" ? t("{app} sign-in was cancelled.", { app }) : connect === "expired" ? t("That took too long. Please connect again.") : t("{app} didn't connect. Please try again.", { app }));
+      say(connect === "ok" ? t("{app} connected.", { app }) : connect === "no_pages" ? t("No Facebook Pages were picked. Connect again and tick your Pages.") : connect === "personal" ? t("That Instagram account is personal. Switch it to a Business or Creator account in Instagram, then connect again.") : connect === "no_instagram" ? t("None of the Pages you picked has an Instagram account linked. Link one in Instagram, then connect again.") : connect === "cancelled" ? t("{app} sign-in was cancelled.", { app }) : connect === "expired" ? t("That took too long. Please connect again.") : t("{app} didn't connect. Please try again.", { app }));
       window.history.replaceState(null, "", window.location.pathname);
     }
     if (q.has("sample")) fillSample();
@@ -577,6 +589,12 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
   /** New Post as the post was scheduled: what was typed (its recipe), TikTok's choices, the kept video or photos and the time. */
   function fillFromEdit(e: EditPost) {
     if (e.recipe) fillRecipe(e.recipe);
+    // The song isn't part of the recipe (it's for this post only): it comes back from the Instagram post's own settings.
+    const song = e.song;
+    if (song) {
+      setIgSong({ id: song.id, title: song.title, artist: song.artist, cover: null });
+      setIgSongVol((Object.entries(SONG_VOLUMES).find(([, v]) => v === song.volume)?.[0] as SongVolume | undefined) ?? "medium");
+    }
     setKeptImage(e.commentImage);
     if (e.tiktok) {
       setMode(e.tiktok.mode);
@@ -615,7 +633,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
       const commentImagePath = !imageApps ? undefined : commentImage ? await upload(commentImage, (pct) => setBusy(t("Uploading the comment image… {pct}%", { pct })), t, "comment-image") : keptImage?.path;
       setBusy(when === "draft" ? t("Saving…") : t("Scheduling…"));
       const at = when === "pick" ? new Date(pickAt).toISOString() : when;
-      const settingsFor = (p: Channel): Record<string, unknown> => (p === "facebook" ? { draft: fbDraft } : p === "instagram" ? { feed: igFeed, collaborators, tags: tagged, trial: igTrial } : { replies, topic });
+      const settingsFor = (p: Channel): Record<string, unknown> => (p === "facebook" ? { draft: fbDraft } : p === "instagram" ? { feed: igFeed, collaborators, tags: tagged, trial: igTrial, audio: igSong && !isPhotos ? { id: igSong.id, title: igSong.title, artist: igSong.artist, volume: SONG_VOLUMES[igSongVol] } : null } : { replies, topic });
       const r = await sendPost({
         side, when: at, durationSec: isPhotos ? null : durationSec, staged: !!edit, commentImagePath,
         video: isPhotos ? { photoPaths, ...(instagramPhotoPaths.length ? { instagramPhotoPaths } : {}) } : { source, storagePath, linkUrl: source === "link" ? linkUrl : undefined },
@@ -996,6 +1014,36 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
                     <span><b>{t("Also show in the main feed")}</b><small>{t("Off: Reels tab only.")}</small></span>
                     <button type="button" role="switch" aria-checked={igFeed} className={igFeed ? "np-switch on" : "np-switch"} onClick={() => setIgFeed(!igFeed)} aria-label={t("Also show in the main feed")}><span /></button>
                   </div>}
+                  {!isPhotos && songAcct && (
+                    <div className="pb-field">
+                      <b>{t("Music")}</b>
+                      {igSong ? (
+                        <div className="pb-ch">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          {igSong.cover ? <img className="pb-song-art" src={igSong.cover} alt="" /> : <span className="pb-song-art" aria-hidden="true">♪</span>}
+                          <span><b>{igSong.title}</b><small>{igSong.artist}</small></span>
+                          <span className="pb-acts">
+                            <button type="button" className="btn-outline v2-btn-sm" onClick={() => setSongSheet(true)}>{t("Change")}</button>
+                            <button type="button" className="pb-link pb-off" onClick={() => setIgSong(null)}>{t("Remove Song")}</button>
+                          </span>
+                        </div>
+                      ) : <button type="button" className="btn-outline v2-btn-sm" style={{ justifySelf: "start" }} onClick={() => setSongSheet(true)}>♪ {t("Add Music")}</button>}
+                      {igSong && <>
+                        <b className="pb-sub">{t("Song Volume")}</b>
+                        <div className="np-seg" role="radiogroup" aria-label={t("Song Volume")}>
+                          {([["low", t("Low")], ["medium", t("Medium")], ["full", t("Full")]] as [SongVolume, string][]).map(([v, l]) => <button key={v} type="button" role="radio" aria-checked={igSongVol === v} className={igSongVol === v ? "on" : ""} onClick={() => setIgSongVol(v)}>{l}</button>)}
+                        </div>
+                        <small className="np-muted">{t("Your video's own sound stays at full volume.")}</small>
+                      </>}
+                      {songless.length > 0 && <small className="np-muted">{t("Only Instagram accounts connected through Facebook get the song.")}</small>}
+                    </div>
+                  )}
+                  {!isPhotos && !songAcct && songless.length > 0 && liveSide && setup.igViaFacebook && (
+                    <div className="np-switchrow">
+                      <span><b>{t("Music")}</b><small>{t("Connect through Facebook to add music.")}</small></span>
+                      <button type="button" className="btn-outline v2-btn-sm" onClick={() => connectReal("instagram", undefined, "facebook")}>{t("Connect")}</button>
+                    </div>
+                  )}
                   <details className="pb-guide pb-adv">
                     <summary>{igAdvanced ? t("Advanced: collaborators, tags, trial reel · {n} in use", { n: igAdvanced }) : t("Advanced: collaborators, tags, trial reel")}</summary>
                     <div className="pb-adv-in">
@@ -1056,7 +1104,7 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
           )}
           <div className="pb-phone-wrap">
             {mounted && pApp && pKey ? (
-              <PhonePreview channel={pApp} product={pApp === "shopee" ? productLabel : undefined} caption={captionOf(pApp)} comment={pApp === "facebook" && fbDraft ? "" : commentOf(pApp)} commentImage={(pApp === "facebook" && !fbDraft) || pApp === "threads" ? commentImageUrl : null} video={videoUrl} cover={cover} photos={isPhotos ? photos.map((ph) => (pApp === "instagram" && ph.ig ? ph.ig.url : ph.url)) : undefined} who={who(pKey)} fbView={fbView} theme={theme} topic={topic} collaborators={collaborators} />
+              <PhonePreview channel={pApp} product={pApp === "shopee" ? productLabel : undefined} caption={captionOf(pApp)} comment={pApp === "facebook" && fbDraft ? "" : commentOf(pApp)} commentImage={(pApp === "facebook" && !fbDraft) || pApp === "threads" ? commentImageUrl : null} video={videoUrl} cover={cover} photos={isPhotos ? photos.map((ph) => (pApp === "instagram" && ph.ig ? ph.ig.url : ph.url)) : undefined} who={who(pKey)} fbView={fbView} theme={theme} topic={topic} collaborators={collaborators} song={pApp === "instagram" && !isPhotos && igSong && byKey.get(pKey ?? "")?.via ? `${igSong.title} · ${igSong.artist}` : null} />
             ) : (
               <div className="pb-pv-phone"><div className="pb-pv-scr" /></div>
             )}
@@ -1130,14 +1178,17 @@ function ComposerForm({ setup, onNew }: { setup: PublishSetup; onNew: () => void
         </aside>
       </form>
 
+      {songSheet && songAcct && <SongSheet account={songAcct.key} onPick={(x) => { setIgSong({ id: x.id, title: x.title, artist: x.artist, cover: x.cover }); setSongSheet(false); }} onClose={() => setSongSheet(false)} />}
+
       {sheet === "channels" && (
         <ChannelsSheet
           channels={channels}
           connectable={missing}
           shopeeOn={!!setup.shopeeOn}
+          igViaFacebook={!!liveSide && !!setup.igViaFacebook}
           onConnect={connectApp}
           onConnectApp={liveSide ? connectReal : undefined}
-          onReconnect={(c) => { if (liveSide) return connectReal(c.app, c.role); setChannels((l) => l.map((x) => (x.key === c.key ? { ...x, status: "active" } : x))); say(t("{name} reconnected", { name: c.name })); }}
+          onReconnect={(c) => { if (liveSide) return connectReal(c.app, c.role, c.via); setChannels((l) => l.map((x) => (x.key === c.key ? { ...x, status: "active" } : x))); say(t("{name} reconnected", { name: c.name })); }}
           onCheck={(c) => (liveSide ? void checkReal(c) : say(c.status === "active" ? t("{name} is working.", { name: c.name }) : t("{name} needs reconnecting.", { name: c.name })))}
           onDisconnect={(c) => {
             if (liveSide) return void disconnectReal(c);
@@ -1216,8 +1267,64 @@ function Tabs<T extends string>({ value, set, items, label }: { value: T; set: (
   return <div className="pb-tabs" role="tablist" aria-label={label}>{items.map(([v, l]) => <button key={v} type="button" role="tab" aria-selected={value === v} onClick={() => set(v)}>{l}</button>)}</div>;
 }
 
+/**
+ * Add Music (owner, 23 Nov 2026): Instagram's licensed songs (Meta's Audio API), its trending songs until she searches. Each
+ * can be heard first (a short preview), then used.
+ */
+function SongSheet({ account, onPick, onClose }: { account: string; onPick: (s: Song) => void; onClose: () => void }) {
+  const t = useT();
+  const [q, setQ] = useState("");
+  const [found, setFound] = useState<Song[] | { error: string } | "wait">("wait");
+  const [playing, setPlaying] = useState<string | null>(null);
+  const audio = useRef<HTMLAudioElement | null>(null);
+  useEffect(() => {
+    let on = true;
+    setFound("wait");
+    const fail = t("Meta didn't answer. Try again.");
+    const timer = window.setTimeout(() => {
+      fetch(`/api/social/instagram/songs?account=${encodeURIComponent(account)}&q=${encodeURIComponent(q.trim())}`, { cache: "no-store" })
+        .then(async (r) => (await r.json().catch(() => ({}))) as { songs?: Song[]; error?: string })
+        .then((d) => { if (on) setFound(d.songs ?? { error: d.error ?? fail }); })
+        .catch(() => { if (on) setFound({ error: fail }); });
+    }, q.trim() ? 400 : 0);
+    return () => { on = false; window.clearTimeout(timer); };
+  }, [account, q, t]);
+  useEffect(() => () => audio.current?.pause(), []);
+  const play = (x: Song) => {
+    audio.current?.pause();
+    if (playing === x.id || !x.preview) return setPlaying(null);
+    const a = new Audio(x.preview);
+    a.onended = () => setPlaying(null);
+    audio.current = a;
+    a.play().catch(() => setPlaying(null));
+    setPlaying(x.id);
+  };
+  const mins = (n: number) => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, "0")}`;
+  return (
+    <Sheet title={t("Add Music")} onClose={onClose}>
+      <label className="pb-search">{SEARCH_ICON}<input className="np-input" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("Search songs or artists")} aria-label={t("Search songs or artists")} /></label>
+      <small className="np-muted">{q.trim() ? t("Songs Instagram lets apps use.") : t("Trending on Instagram. Songs Instagram lets apps use.")}</small>
+      {found === "wait" ? <Loading text={t("Loading songs…")} inline /> : "error" in found ? <p className="np-muted">{found.error}</p> : !found.length ? <p className="np-muted">{q.trim() ? t("No songs match “{q}”.", { q: q.trim() }) : t("Instagram has no songs to show right now.")}</p> : (
+        <div className="pb-group">
+          {found.map((x) => (
+            <div key={x.id} className="pb-ch">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {x.cover ? <img className="pb-song-art" src={x.cover} alt="" /> : <span className="pb-song-art" aria-hidden="true">♪</span>}
+              <span><b>{x.title}</b><small>{[x.artist, x.seconds ? mins(x.seconds) : ""].filter(Boolean).join(" · ")}</small></span>
+              <span className="pb-acts">
+                {x.preview && <button type="button" className="btn-outline v2-btn-sm" aria-pressed={playing === x.id} aria-label={playing === x.id ? t("Stop {song}", { song: x.title }) : t("Play {song}", { song: x.title })} onClick={() => play(x)}>{playing === x.id ? "■" : "▶"}</button>}
+                <button type="button" className="np-btn v2-btn-sm" onClick={() => { audio.current?.pause(); onPick(x); }}>{t("Use")}</button>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </Sheet>
+  );
+}
+
 /** Channels: everything connected, grouped by app. Each can be checked, reconnected when the app stopped accepting it, or disconnected. */
-function ChannelsSheet({ channels, connectable, shopeeOn, onConnect, onConnectApp, onReconnect, onCheck, onDisconnect, onClose }: { channels: PubChannel[]; connectable: PubChannel[]; shopeeOn?: boolean; onConnect: (c: PubChannel) => void; onConnectApp?: (p: Channel, role?: PubChannel["role"]) => void; onReconnect: (c: PubChannel) => void; onCheck: (c: PubChannel) => void; onDisconnect: (c: PubChannel) => void; onClose: () => void }) {
+function ChannelsSheet({ channels, connectable, shopeeOn, igViaFacebook = false, onConnect, onConnectApp, onReconnect, onCheck, onDisconnect, onClose }: { channels: PubChannel[]; connectable: PubChannel[]; shopeeOn?: boolean; igViaFacebook?: boolean; onConnect: (c: PubChannel) => void; onConnectApp?: (p: Channel, role?: PubChannel["role"], via?: PubChannel["via"]) => void; onReconnect: (c: PubChannel) => void; onCheck: (c: PubChannel) => void; onDisconnect: (c: PubChannel) => void; onClose: () => void }) {
   const { toast } = useDemo();
   const t = useT();
   const can = useCanPost();
@@ -1249,6 +1356,13 @@ function ChannelsSheet({ channels, connectable, shopeeOn, onConnect, onConnectAp
                 <PlatformIcon name={ICON[p]} size={34} />
                 <span><b>{!list.length ? t("Connect {app}", { app: NAMES[p] }) : p === "facebook" ? t("Add Pages") : p === "threads" ? t("Add profiles") : t("Add accounts")}</b><small>{p === "facebook" ? t("Pick Pages after sign-in") : p === "instagram" ? t("Business or Creator account") : p === "threads" ? t("Your Threads profile") : t("Your TikTok account")}</small></span>
                 {p === "shopee" && onConnectApp ? <span className="pb-acts"><button type="button" className="np-btn v2-btn-sm" onClick={() => onConnectApp("shopee", "seller")}>{t("Shop")}</button><button type="button" className="btn-outline v2-btn-sm" onClick={() => onConnectApp("shopee", "affiliate")}>{t("Affiliate")}</button></span> : can(p) ? <button type="button" className="np-btn v2-btn-sm" onClick={() => (onConnectApp ? onConnectApp(p) : add ? onConnect(add) : toast(t("Preview: {app} sign-in opens here", { app: NAMES[p] })))}>{t("Connect")}</button> : <NotYet app={p} />}
+              </div>
+            )}
+            {!s && p === "instagram" && igViaFacebook && onConnectApp && (
+              <div className="pb-ch">
+                <PlatformIcon name="Facebook" size={34} />
+                <span><b>{t("Connect Through Facebook")}</b><small>{t("Through its Facebook Page. Lets you add music to Reels.")}</small></span>
+                <button type="button" className="btn-outline v2-btn-sm" onClick={() => onConnectApp("instagram", undefined, "facebook")}>{t("Connect")}</button>
               </div>
             )}
           </div>

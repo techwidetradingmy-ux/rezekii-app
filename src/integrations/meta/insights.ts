@@ -1,4 +1,5 @@
 import { GRAPH_VERSION, THREADS_VERSION, MetaError, metaFetch, qs } from "./graph.ts";
+import { igToken, igUrl, type IgAuth } from "./instagram.ts";
 
 /**
  * Community → Numbers (owner, 23 Oct 2026): a channel's day and its recent posts' numbers, read with the channel's own token.
@@ -6,7 +7,6 @@ import { GRAPH_VERSION, THREADS_VERSION, MetaError, metaFetch, qs } from "./grap
  * number Meta refuses is left out rather than failing the channel: the call is retried one number at a time.
  */
 const G = (path: string) => `https://graph.facebook.com/${GRAPH_VERSION}/${path}`;
-const IG = (path: string) => `https://graph.instagram.com/${GRAPH_VERSION}/${path}`;
 const TH = (path: string) => `https://graph.threads.net/${THREADS_VERSION}/${path}`;
 
 /** A channel's day. Threads' account "views" are profile views, so they are kept apart. */
@@ -122,12 +122,12 @@ export async function facebookPosts(pageId: string, token: string, since: string
   return (r.data ?? []).map(facebookPostStat);
 }
 
-// ---- Instagram (Instagram Login) ----
+// ---- Instagram (Instagram Login, or through Facebook: see IgAuth) ----
 
-export async function instagramDay(igId: string, token: string, from: string, to: string): Promise<DayNumbers> {
-  const user = await metaFetch<{ followers_count?: number }>(IG(`${igId}?${qs({ fields: "followers_count", access_token: token })}`));
+export async function instagramDay(igId: string, auth: IgAuth, from: string, to: string): Promise<DayNumbers> {
+  const user = await metaFetch<{ followers_count?: number }>(igUrl(auth, `${igId}?${qs({ fields: "followers_count", access_token: igToken(auth) })}`));
   const m = await metricsOf(
-    (metrics) => IG(`${igId}/insights?${qs({ metric: metrics, period: "day", metric_type: "total_value", since: unix(from), until: unix(to), access_token: token })}`),
+    (metrics) => igUrl(auth, `${igId}/insights?${qs({ metric: metrics, period: "day", metric_type: "total_value", since: unix(from), until: unix(to), access_token: igToken(auth) })}`),
     ["views", "reach", "total_interactions"],
   ).catch(followersOnly);
   return { followers: user.followers_count, ...pick(m, { views: "views", reach: "reach", engagement: "total_interactions" }) };
@@ -136,15 +136,15 @@ export async function instagramDay(igId: string, token: string, from: string, to
 type IgMedia = { id: string; timestamp?: string; permalink?: string; thumbnail_url?: string; media_url?: string; media_type?: string; like_count?: number; comments_count?: number; caption?: string };
 
 /** The account's posts since `since` (up to 30): counts from the list, views, reach, saves and shares from each post. */
-export async function instagramPosts(igId: string, token: string, since: string): Promise<PostStat[]> {
-  const url = (fields: string) => IG(`${igId}/media?${qs({ fields, limit: "30", access_token: token })}`);
+export async function instagramPosts(igId: string, auth: IgAuth, since: string): Promise<PostStat[]> {
+  const url = (fields: string) => igUrl(auth, `${igId}/media?${qs({ fields, limit: "30", access_token: igToken(auth) })}`);
   const base = "id,timestamp,permalink,thumbnail_url,media_url,media_type,like_count,comments_count";
   const r = await firstAccepted<{ data?: IgMedia[] }>([url(`${base},caption`), url(base)]);
   const recent = (r.data ?? []).filter((x) => !x.timestamp || x.timestamp >= since);
   const out: PostStat[] = [];
   let allowed = true;
   for (const x of recent) {
-    const m = !allowed ? {} : await metricsOf((metrics) => IG(`${x.id}/insights?${qs({ metric: metrics, access_token: token })}`), ["views", "reach", "saved", "shares"]).catch((err) => {
+    const m = !allowed ? {} : await metricsOf((metrics) => igUrl(auth, `${x.id}/insights?${qs({ metric: metrics, access_token: igToken(auth) })}`), ["views", "reach", "saved", "shares"]).catch((err) => {
       if (err instanceof MetaError && err.needsReconnect) throw err;
       if (refused(err)) allowed = false;
       return {};

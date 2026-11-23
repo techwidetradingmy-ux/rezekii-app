@@ -2,7 +2,7 @@ import { MetaError } from "../../integrations/meta/graph.ts";
 import { facebookDay, facebookPosts, instagramDay, instagramPosts, threadsDay, threadsPosts, type DayNumbers, type PostNumbers, type PostStat } from "../../integrations/meta/insights.ts";
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { insightsAccess, levelFor } from "../social/access.ts";
-import { freshToken, markReconnect, type SocialAccount } from "../social/accounts.ts";
+import { freshToken, igAuth, markReconnect, type SocialAccount } from "../social/accounts.ts";
 import type { Platform } from "../social/rules.ts";
 
 /**
@@ -70,8 +70,17 @@ export function noteFor(err: unknown): string {
   return err instanceof Error ? err.message.slice(0, 200) : String(err).slice(0, 200);
 }
 
-const DAY_READERS: Record<Platform, (id: string, token: string, from: string, to: string) => Promise<DayNumbers>> = { facebook: facebookDay, instagram: instagramDay, threads: threadsDay };
-const POST_READERS: Record<Platform, (id: string, token: string, since: string) => Promise<PostStat[]>> = { facebook: facebookPosts, instagram: instagramPosts, threads: threadsPosts };
+// Instagram's readers take the account's IgAuth (Instagram Login or through Facebook), so they get it here.
+const DAY_READERS: Record<Platform, (acc: SocialAccount, token: string, from: string, to: string) => Promise<DayNumbers>> = {
+  facebook: (a, t, from, to) => facebookDay(a.external_id, t, from, to),
+  instagram: (a, t, from, to) => instagramDay(a.external_id, igAuth(a, t), from, to),
+  threads: (a, t, from, to) => threadsDay(a.external_id, t, from, to),
+};
+const POST_READERS: Record<Platform, (acc: SocialAccount, token: string, since: string) => Promise<PostStat[]>> = {
+  facebook: (a, t, since) => facebookPosts(a.external_id, t, since),
+  instagram: (a, t, since) => instagramPosts(a.external_id, igAuth(a, t), since),
+  threads: (a, t, since) => threadsPosts(a.external_id, t, since),
+};
 
 /** One channel's yesterday and recent posts, saved. Meta saying the sign-in has ended also marks the channel "Reconnect". */
 async function refreshChannel(acc: SocialAccount, now: number, full = true): Promise<number> {
@@ -82,7 +91,7 @@ async function refreshChannel(acc: SocialAccount, now: number, full = true): Pro
   try {
     const token = await freshToken(acc);
     // The day and the posts are read apart: a Page connected before Community can still list its posts.
-    const [d, p] = await Promise.allSettled([DAY_READERS[acc.platform](acc.external_id, token, from, to), POST_READERS[acc.platform](acc.external_id, token, new Date(now - POST_DAYS * DAY).toISOString())]);
+    const [d, p] = await Promise.allSettled([DAY_READERS[acc.platform](acc, token, from, to), POST_READERS[acc.platform](acc, token, new Date(now - POST_DAYS * DAY).toISOString())]);
     if (d.status === "rejected") failed = d.reason;
     numbers = d.status === "fulfilled" ? d.value : { note: noteFor(d.reason) };
     // Facebook answers an empty list, not an error, when the Page wasn't connected with Community's permissions.

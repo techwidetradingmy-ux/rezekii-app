@@ -1,12 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { facebookAuthUrl } from "@/integrations/meta/facebook.ts";
-import { instagramAuthUrl } from "@/integrations/meta/instagram.ts";
+import { instagramAuthUrl, instagramFacebookAuthUrl } from "@/integrations/meta/instagram.ts";
 import { threadsAuthUrl } from "@/integrations/meta/threads.ts";
-import { canUseSocial, isPlatform, metaLevel } from "@/modules/social/access.ts";
+import { canConnectIgViaFacebook, canUseSocial, isPlatform, metaLevel } from "@/modules/social/access.ts";
 import { newState } from "../../../tiktokshop/state.ts";
 import { OAUTH_COOKIE_OPTIONS, appBase, canonicalRedirect } from "../../../oauth.ts";
-import { META_BACK, metaCallbackUrl, metaCookie } from "../../meta.ts";
+import { IG_VIA_FB, META_BACK, metaCallbackUrl, metaCookie } from "../../meta.ts";
 import { keepPass, passAtStart } from "../../../connect.ts";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +16,8 @@ export const dynamic = "force-dynamic";
  * for the permissions of its level (see metaLevel: Admins all of Community's, the accounts Meta reviews with views, reach and
  * Threads replies too).
  * From rezekii.com (owner, 31 Oct 2026); ?from=seller goes back to the seller's New Post.
+ * Instagram with ?via=facebook (owner, 23 Nov 2026) signs in with Facebook instead, through the account's Page, so its Reels can
+ * get songs: it uses Facebook's registered return address, and a cookie tells the callback to save the Instagram accounts.
  */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ platform: string }> }) {
   const { platform } = await params;
@@ -28,18 +30,21 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ plat
   const user = (await currentUser()) ?? (await passAtStart(req));
   if (!user) return NextResponse.redirect(`${appBase(req)}/signin`);
   if (!canUseSocial(user)) return NextResponse.redirect(`${appBase(req)}${back}`);
+  const viaFacebook = platform === "instagram" && req.nextUrl.searchParams.get("via") === "facebook";
+  if (viaFacebook && !(await canConnectIgViaFacebook(user))) return NextResponse.redirect(`${appBase(req)}${back}`);
   const state = newState();
-  const redirectUri = metaCallbackUrl(req, platform);
+  const redirectUri = metaCallbackUrl(req, viaFacebook ? "facebook" : platform);
   let url: string;
   try {
     const level = await metaLevel(user);
-    url = platform === "facebook" ? facebookAuthUrl(state, redirectUri, level) : platform === "instagram" ? instagramAuthUrl(state, redirectUri, level) : threadsAuthUrl(state, redirectUri, level);
+    url = viaFacebook ? instagramFacebookAuthUrl(state, redirectUri, level) : platform === "facebook" ? facebookAuthUrl(state, redirectUri, level) : platform === "instagram" ? instagramAuthUrl(state, redirectUri, level) : threadsAuthUrl(state, redirectUri, level);
   } catch (err) {
     console.error(`[meta] ${platform} not configured`, err instanceof Error ? err.message : err);
     return NextResponse.redirect(`${appBase(req)}${back}?channel=${platform}&connect=config`);
   }
   const res = NextResponse.redirect(url);
-  res.cookies.set(metaCookie(platform), state, OAUTH_COOKIE_OPTIONS);
+  res.cookies.set(metaCookie(viaFacebook ? "facebook" : platform), state, OAUTH_COOKIE_OPTIONS);
+  res.cookies.set(IG_VIA_FB, viaFacebook ? "1" : "", { ...OAUTH_COOKIE_OPTIONS, ...(viaFacebook ? {} : { maxAge: 0 }) });
   res.cookies.set(META_BACK, from === "seller" ? "seller" : from === "seller-account" ? "seller-account" : from === "account" ? "account" : "creator", OAUTH_COOKIE_OPTIONS);
   keepPass(req, res);
   return res;

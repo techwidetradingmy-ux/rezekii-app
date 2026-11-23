@@ -110,7 +110,7 @@ function Rich({ text, links, tags, at, handles = true }: { text: string; links?:
 }
 
 export type Who = { name: string; username: string; avatar: string | null; initials: string; color: string };
-export type PreviewProps = { channel: Channel; caption: string; comment: string; commentImage?: string | null; video: string | null; cover?: string | null; photos?: string[]; who: Who; fbView: "reels" | "feed"; theme: "light" | "dark"; topic?: string; collaborators?: string[]; product?: string };
+export type PreviewProps = { channel: Channel; caption: string; comment: string; commentImage?: string | null; video: string | null; cover?: string | null; photos?: string[]; who: Who; fbView: "reels" | "feed"; theme: "light" | "dark"; topic?: string; collaborators?: string[]; product?: string; /** Instagram: the picked song, "Title · Artist". */ song?: string | null };
 
 /** Starts muted (browsers only autoplay muted video); the speaker button turns the sound on and off. */
 function Video({ src, cover, s = 16 }: { src: string | null; cover?: string | null; s?: number }) {
@@ -215,7 +215,7 @@ function TikTok({ caption, video, cover, photos, who }: PreviewProps) {
   );
 }
 
-function Instagram({ caption, comment, video, cover, photos, who, collaborators }: PreviewProps) {
+function Instagram({ caption, comment, video, cover, photos, who, collaborators, song }: PreviewProps) {
   const [open, setOpen] = useState(false);
   const [sheet, setSheet] = useState(false);
   const t = useT();
@@ -236,7 +236,7 @@ function Instagram({ caption, comment, video, cover, photos, who, collaborators 
       {open && <div className="pb-pv-dim" onClick={() => setOpen(false)} />}
       <div className={`pb-pv-ig-txt pb-pv-sh${open ? " open" : ""}`}>
         <div className="u"><Av who={who} size={32} /><span className="un">{!collaborators?.length ? who.username : collaborators.length === 1 ? t("{user} and {name}", { user: who.username, name: collaborators[0] }) : t("{user} and {n} others", { user: who.username, n: collaborators.length })}</span><span className="pb-pv-follow">{t("Follow")}</span></div>
-        <div className="au"><Ic n="music" s={12} />{who.username} · {t("Original audio")}</div>
+        <div className="au"><Ic n="music" s={12} />{song || `${who.username} · ${t("Original audio")}`}</div>
         {open ? <div className="cp" onClick={() => setOpen(false)}><Rich text={caption} at="bold" /></div> : <div className="cp"><Rich text={c.text} at="bold" />{c.cut && <More label={<em>{t("… more")}</em>} onClick={() => setOpen(true)} />}</div>}
       </div>
       <div className="pb-pv-bar pb-pv-ig-bar"><Nav n="homeO" s={27} /><Nav n="reels" on s={27} /><Nav n="plane" s={27} /><Nav n="search" s={27} /><NavAv who={who} /></div>

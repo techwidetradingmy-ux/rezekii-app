@@ -623,3 +623,5 @@
 .sq-bp-name b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; }
 .sq-bp-row .bad { color: var(--red); font-weight: 800; }
 @media (max-width: 560px) { .sq-ov-app span { display: none; } .sq-bp-row { grid-template-columns: minmax(0, 1fr) 56px 62px 44px; font-size: 13px; } }
+/* A song's cover in the music picker (owner, 23 Nov 2026). */
+.pb-song-art { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 8px; object-fit: cover; background: var(--line); display: grid; place-items: center; color: var(--muted); }

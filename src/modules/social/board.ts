@@ -45,6 +45,8 @@ function socialChannel(s: SocialPostRow, lang: Lang): BoardChannel {
   const posted = s.status === "posted";
   const removed = s.status === "removed";
   const dropped = Array.isArray(s.settings?.dropped) ? (s.settings.dropped as string[]) : [];
+  // The song Instagram turned down: the Reel went without it (publisher.ts).
+  const songDropped = typeof s.settings?.songDropped === "string" ? s.settings.songDropped : null;
   const fbDraft = posted && s.platform === "facebook" && s.settings?.draft === true;
   const now = due(s.status, s.next_attempt_at);
   const state: BoardState = s.status === "draft" ? "draft" : s.status === "scheduled" ? (now ? "posting" : "scheduled") : s.status === "publishing" || s.status === "processing" ? "posting" : s.status === "failed" ? "failed" : removed ? "removed" : fbDraft ? "fbdraft" : "posted";
@@ -57,6 +59,7 @@ function socialChannel(s: SocialPostRow, lang: Lang): BoardChannel {
     : posted && s.comment_status === "failed" ? translate(lang, "First comment failed: {error}", { error: why(s.comment_error ?? tx("try again")) })
     : posted && s.comment_status === "pending" ? translate(lang, "Posting the first comment")
     : posted && dropped.length ? (dropped.length > 1 ? translate(lang, "Posted without {users}: Instagram couldn't reach those accounts (it must exist and be public)", { users }) : translate(lang, "Posted without {users}: Instagram couldn't reach that account (it must exist and be public)", { users }))
+    : posted && songDropped !== null ? translate(lang, "Posted without the song “{song}”: Instagram didn't take it", { song: songDropped })
     : s.status === "processing" ? translate(lang, "{app} is processing the video", { app })
     : s.status === "scheduled" && s.last_error ? (now ? translate(lang, "Trying again now: {error}", { error: why(s.last_error) }) : translate(lang, "Trying again soon: {error}", { error: why(s.last_error) }))
     : now ? translate(lang, "Starting within a minute") : "";

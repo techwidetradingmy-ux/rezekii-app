@@ -1,13 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/app/current-user";
 import { exchangeFacebookCode, facebookPages } from "@/integrations/meta/facebook.ts";
-import { exchangeInstagramCode, instagramProfile } from "@/integrations/meta/instagram.ts";
+import { exchangeInstagramCode, instagramProfile, pagesInstagram } from "@/integrations/meta/instagram.ts";
 import { exchangeThreadsCode, threadsProfile } from "@/integrations/meta/threads.ts";
 import { saveAccount } from "@/modules/social/accounts.ts";
 import { canUseSocial, isPlatform } from "@/modules/social/access.ts";
 import { stateMatches } from "../../../tiktokshop/state.ts";
-import { appBase } from "../../../oauth.ts";
-import { backToComposer, composerPath, metaCallbackUrl, metaCookie } from "../../meta.ts";
+import { OAUTH_COOKIE_OPTIONS, appBase } from "../../../oauth.ts";
+import { IG_VIA_FB, backToComposer, composerPath, metaCallbackUrl, metaCookie } from "../../meta.ts";
 import { linkedPage, passAtReturn } from "../../../connect.ts";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +24,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ plat
   // page saying to go back to the app.
   const session = await currentUser();
   const pass = session ? null : await passAtReturn(req);
-  const done = (result: string) => (pass ? linkedPage(req, platform, result === "ok") : backToComposer(req, platform, result));
+  // Instagram connected through Facebook (see the start route) comes back here, to Facebook's address; it's told as Instagram.
+  const igViaFacebook = platform === "facebook" && req.cookies.get(IG_VIA_FB)?.value === "1";
+  const shown = igViaFacebook ? "instagram" : platform;
+  const done = (result: string) => {
+    const res = pass ? linkedPage(req, shown, result === "ok") : backToComposer(req, shown, result);
+    if (igViaFacebook) res.cookies.set(metaCookie("facebook"), "", { ...OAUTH_COOKIE_OPTIONS, maxAge: 0 }).set(IG_VIA_FB, "", { ...OAUTH_COOKIE_OPTIONS, maxAge: 0 });
+    return res;
+  };
   if (q.get("error") || q.get("error_reason")) return done("cancelled");
   const code = q.get("code");
   if (!code) return done("cancelled");
@@ -34,6 +41,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ plat
   if (!canUseSocial(user)) return NextResponse.redirect(`${appBase(req)}${composerPath(req)}`);
   const redirectUri = metaCallbackUrl(req, platform);
   try {
+    if (igViaFacebook) {
+      const accounts = await pagesInstagram(await exchangeFacebookCode(code, redirectUri));
+      if (!accounts.length) return done("no_instagram");
+      for (const a of accounts) await saveAccount(user.id, { platform: "instagram", externalId: a.id, name: a.name || a.username, username: a.username, avatarUrl: a.profile_picture_url, token: a.pageToken, expiresIn: null, connectedVia: "facebook" });
+      return done("ok");
+    }
     if (platform === "facebook") {
       const pages = await facebookPages(await exchangeFacebookCode(code, redirectUri));
       if (!pages.length) return done("no_pages");

@@ -1,7 +1,7 @@
 import { supabaseRest } from "../../integrations/supabase/rest.ts";
 import { MetaError } from "../../integrations/meta/graph.ts";
 import { facebookPicture } from "../../integrations/meta/facebook.ts";
-import { instagramProfile, refreshInstagramToken } from "../../integrations/meta/instagram.ts";
+import { instagramAccount, instagramProfile, refreshInstagramToken, type IgAuth } from "../../integrations/meta/instagram.ts";
 import { refreshThreadsToken, threadsProfile } from "../../integrations/meta/threads.ts";
 import { decryptToken, encryptToken } from "../creator-accounts/token-crypto.ts";
 import type { Platform } from "./rules.ts";
@@ -20,13 +20,25 @@ export type SocialAccount = {
   token_expires_at: string | null;
   status: "active" | "reconnect";
   connected_at: string;
+  /** "facebook": an Instagram account connected through its Facebook Page (can add songs to Reels); null otherwise. */
+  connected_via?: "facebook" | null;
 };
 export type PublicAccount = Omit<SocialAccount, "token_enc" | "user_id" | "token_expires_at">;
-const PUBLIC = "id,platform,external_id,name,username,avatar_url,account_type,status,connected_at";
+const PUBLIC = "id,platform,external_id,name,username,avatar_url,account_type,status,connected_at,connected_via";
 const iso = () => new Date().toISOString();
 
-/** Saves a connection; connecting the same account again refreshes it (no duplicate). */
-export async function saveAccount(userId: string, a: { platform: Platform; externalId: string; name?: string | null; username?: string | null; avatarUrl?: string | null; accountType?: string | null; token: string; expiresIn?: number | null }): Promise<void> {
+/**
+ * Saves a connection; connecting the same account again refreshes it (no duplicate), and the way it was connected last is how
+ * it posts. An Instagram account already saved under another id but the same username (connected the other way) is the same
+ * account: its row is moved to the new id first, so its scheduled posts stay with it.
+ */
+export async function saveAccount(userId: string, a: { platform: Platform; externalId: string; name?: string | null; username?: string | null; avatarUrl?: string | null; accountType?: string | null; token: string; expiresIn?: number | null; connectedVia?: "facebook" | null }): Promise<void> {
+  if (a.platform === "instagram" && a.username)
+    await supabaseRest(`social_accounts?user_id=eq.${userId}&platform=eq.instagram&username=eq.${encodeURIComponent(a.username)}&external_id=neq.${encodeURIComponent(a.externalId)}`, {
+      method: "PATCH",
+      headers: { prefer: "return=minimal" },
+      body: JSON.stringify({ external_id: a.externalId }),
+    }).catch(() => undefined); // already saved under the new id too: the upsert below refreshes that one
   await supabaseRest("social_accounts?on_conflict=user_id,platform,external_id", {
     method: "POST",
     headers: { prefer: "resolution=merge-duplicates,return=minimal" },
@@ -41,6 +53,7 @@ export async function saveAccount(userId: string, a: { platform: Platform; exter
       token_enc: encryptToken(a.token),
       token_expires_at: a.expiresIn ? new Date(Date.now() + a.expiresIn * 1000).toISOString() : null,
       status: "active",
+      connected_via: a.connectedVia ?? null,
       avatar_checked_at: iso(),
       updated_at: iso(),
     }),
@@ -75,6 +88,9 @@ export async function markReconnect(id: string): Promise<void> {
   await supabaseRest(`social_accounts?id=eq.${id}`, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ status: "reconnect", updated_at: iso() }) });
 }
 
+/** How an Instagram account's calls are made: its bare token (Instagram Login) or through Facebook (see IgAuth). */
+export const igAuth = (acc: Pick<SocialAccount, "connected_via">, token: string): IgAuth => (acc.connected_via === "facebook" ? { token, viaFacebook: true } : token);
+
 const RENEW_BEFORE_MS = 7 * 86400e3;
 
 /** The account's token, renewed (and saved) when an Instagram or Threads token has under 7 days left. Page tokens don't expire. */
@@ -107,6 +123,7 @@ export async function refreshPicture(acc: SocialAccount): Promise<string> {
   let url: string | null | undefined;
   try {
     if (acc.platform === "facebook") url = await facebookPicture(acc.external_id, decryptToken(acc.token_enc));
+    else if (acc.platform === "instagram" && acc.connected_via === "facebook") url = (await instagramAccount(acc.external_id, igAuth(acc, decryptToken(acc.token_enc)))).profile_picture_url;
     else if (acc.platform === "instagram") url = (await instagramProfile(await freshToken(acc))).profile_picture_url;
     else url = (await threadsProfile(await freshToken(acc))).threads_profile_picture_url;
   } catch (err) {

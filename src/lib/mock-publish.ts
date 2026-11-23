@@ -13,7 +13,11 @@ export const POST_CREDITS = 5;
  * `role` and `shopId`: a Shopee account (owner, 21 Nov 2026): a shop shows its own products under its videos, an affiliate none.
  * `photo`: the account's profile picture (owner, 22 Nov 2026); initials show without one.
  */
-export type PubChannel = { key: string; app: Channel; name: string; sub: string; initials: string; color: string; status: "active" | "reconnect"; role?: "seller" | "affiliate"; shopId?: string | null; photo?: string | null };
+export type PubChannel = {
+  key: string; app: Channel; name: string; sub: string; initials: string; color: string; status: "active" | "reconnect"; role?: "seller" | "affiliate"; shopId?: string | null; photo?: string | null;
+  /** An Instagram account connected through Facebook: its Reels can get songs (owner, 23 Nov 2026). */
+  via?: "facebook";
+};
 export type PubBrand = { id: string; name: string; channels: string[] };
 export type PublishSetup = {
   /** Shown as the account in the phone previews. */
@@ -34,6 +38,8 @@ export type PublishSetup = {
   credits: number;
   /** Posting costs nothing for this account (Admins and the accounts Meta reviews with). */
   free?: boolean;
+  /** Instagram can be connected through Facebook, for songs on Reels (Admins and the review accounts until Meta approves). */
+  igViaFacebook?: boolean;
   earn: string;
   /** Signed in (owner, 31 Oct 2026): her real channels, posts go out for real, from this wallet. */
   live?: "creator" | "seller";

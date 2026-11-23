@@ -11,7 +11,7 @@ import {
 } from "../../integrations/meta/comments.ts";
 import { MetaError } from "../../integrations/meta/graph.ts";
 import { tx } from "../../lib/i18n/lang.ts";
-import { freshToken, getAccount, markReconnect, type SocialAccount } from "./accounts.ts";
+import { freshToken, getAccount, igAuth, markReconnect, type SocialAccount } from "./accounts.ts";
 
 /**
  * Comments (owner, 9 Nov 2026): every account reads and answers the comments on its own Facebook Pages and Instagram
@@ -40,7 +40,7 @@ export async function channelComments(userId: string, accountId: string): Promis
   try {
     const token = await freshToken(acc);
     const posts =
-      acc.platform === "facebook" ? await facebookComments(acc.external_id, token) : acc.platform === "instagram" ? await instagramComments(acc.external_id, token, acc.username) : await threadsComments(acc.external_id, token);
+      acc.platform === "facebook" ? await facebookComments(acc.external_id, token) : acc.platform === "instagram" ? await instagramComments(acc.external_id, igAuth(acc, token), acc.username) : await threadsComments(acc.external_id, token);
     return { posts };
   } catch (err) {
     if (await ended(acc, err)) return { posts: [], problem: "reconnect" };
@@ -64,7 +64,7 @@ export async function commentAction(userId: string, accountId: string, commentId
       acc.platform === "facebook"
         ? await facebookCommentAction(commentId, token, action, text)
         : acc.platform === "instagram"
-          ? await instagramCommentAction(commentId, token, action, text)
+          ? await instagramCommentAction(commentId, igAuth(acc, token), action, text)
           : await threadsCommentAction(acc.external_id, commentId, token, action, text);
     return { ok: true, id };
   } catch (err) {

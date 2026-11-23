@@ -10,7 +10,7 @@ import { useDemo } from "@/components/demo";
 import { useT } from "@/lib/i18n/client";
 
 export type ConnApp = "tiktok" | "facebook" | "instagram" | "threads" | "shopee";
-export type ConnChan = { key: string; app: ConnApp; name: string; sub: string; status: "active" | "reconnect"; role?: "seller" | "affiliate"; initials: string; color: string; photo?: string | null };
+export type ConnChan = { key: string; app: ConnApp; name: string; sub: string; status: "active" | "reconnect"; role?: "seller" | "affiliate"; initials: string; color: string; photo?: string | null; via?: "facebook" };
 
 /** How many accounts an app shows before the rest fold away (owner, 23 Nov 2026: "maximum five accounts"). */
 const SHOW = 5;
@@ -22,12 +22,14 @@ const ICON: Record<ConnApp, "TikTok" | "Facebook" | "Instagram" | "Threads" | "S
  * where they can't be missed; a search box; then each app's accounts, five at most until she unfolds the rest. Each account keeps
  * its actions (Rename for Shopee, Disconnect) behind "⋯", so the list stays quiet.
  */
-export function ConnectionsList({ chans, shopeeOn, can, onConnect, onDisconnect, reload }: {
+export function ConnectionsList({ chans, shopeeOn, igViaFacebook = false, can, onConnect, onDisconnect, reload }: {
   chans: ConnChan[];
   shopeeOn: boolean;
+  /** Instagram can also be connected through Facebook, for songs on Reels (owner, 23 Nov 2026). */
+  igViaFacebook?: boolean;
   can: (app: "tiktok" | "facebook" | "instagram" | "threads") => boolean;
-  /** Starts connecting (or reconnecting) TikTok, Facebook, Instagram or Threads. */
-  onConnect: (app: "tiktok" | "facebook" | "instagram" | "threads") => void;
+  /** Starts connecting (or reconnecting) TikTok, Facebook, Instagram or Threads; Instagram through Facebook with `via`. */
+  onConnect: (app: "tiktok" | "facebook" | "instagram" | "threads", via?: "facebook") => void;
   onDisconnect: (c: ConnChan) => Promise<void> | void;
   reload: () => void;
 }) {
@@ -41,7 +43,7 @@ export function ConnectionsList({ chans, shopeeOn, can, onConnect, onDisconnect,
   const [naming, setNaming] = useState<{ key: string; text: string } | null>(null);
 
   const shopee = (role: "seller" | "affiliate") => { window.location.href = `/api/auth/shopee/start?role=${role}&from=account`; };
-  const reconnect = (c: ConnChan) => (c.app === "shopee" ? shopee(c.role ?? "affiliate") : onConnect(c.app));
+  const reconnect = (c: ConnChan) => (c.app === "shopee" ? shopee(c.role ?? "affiliate") : onConnect(c.app, c.via));
   const label: Record<ConnApp, string> = { tiktok: "TikTok", facebook: t("Facebook Pages"), instagram: "Instagram", threads: "Threads", shopee: "Shopee" };
   const lost = chans.filter((c) => c.status === "reconnect");
   const words = q.trim().toLowerCase();
@@ -55,10 +57,11 @@ export function ConnectionsList({ chans, shopeeOn, can, onConnect, onDisconnect,
     reload();
   };
 
-  const choices: { key: string; icon: "TikTok" | "Facebook" | "Instagram" | "Threads" | "Shopee"; name: string; line: string; app?: "tiktok" | "facebook" | "instagram" | "threads"; role?: "seller" | "affiliate" }[] = [
+  const choices: { key: string; icon: "TikTok" | "Facebook" | "Instagram" | "Threads" | "Shopee"; name: string; line: string; app?: "tiktok" | "facebook" | "instagram" | "threads"; role?: "seller" | "affiliate"; via?: "facebook" }[] = [
     { key: "tiktok", icon: "TikTok", name: "TikTok", line: t("Post videos to your TikTok"), app: "tiktok" },
     { key: "facebook", icon: "Facebook", name: t("Facebook Page"), line: t("Pick one or more Pages"), app: "facebook" },
     { key: "instagram", icon: "Instagram", name: "Instagram", line: t("Business or Creator account"), app: "instagram" },
+    ...(igViaFacebook ? [{ key: "instagram-fb", icon: "Instagram" as const, name: t("Instagram (Through Facebook)"), line: t("Through its Facebook Page. Lets you add music to Reels."), app: "instagram" as const, via: "facebook" as const }] : []),
     { key: "threads", icon: "Threads", name: "Threads", line: t("Your Threads profile"), app: "threads" },
     ...(shopeeOn ? [
       { key: "shopee-affiliate", icon: "Shopee" as const, name: t("Shopee Affiliate"), line: t("Post Shopee Videos from your affiliate account"), role: "affiliate" as const },
@@ -118,7 +121,7 @@ export function ConnectionsList({ chans, shopeeOn, can, onConnect, onDisconnect,
               {ch.icon === "Shopee" ? <BrandLogo name="Shopee" size={30} className="cr2-pi" /> : <PlatformIcon name={ch.icon} size={30} />}
               <span className="cr2-conn"><b>{ch.name}</b><small>{ch.line}</small></span>
               {ch.app && !can(ch.app) ? <NotYet app={ch.app} /> : (
-                <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setPicking(false); if (ch.app) onConnect(ch.app); else if (ch.role) shopee(ch.role); }}>{t("Connect")}</button>
+                <button type="button" className="btn-outline v2-btn-sm" onClick={() => { setPicking(false); if (ch.app) onConnect(ch.app, ch.via); else if (ch.role) shopee(ch.role); }}>{t("Connect")}</button>
               )}
             </div>
           ))}
