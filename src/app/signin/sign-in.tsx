@@ -39,6 +39,16 @@ const HANDOFF_MS = 10 * 60_000;
 const homeScreenApp = () => {
   try { return window.matchMedia("(display-mode: standalone)").matches || (navigator as Navigator & { standalone?: boolean }).standalone === true; } catch { return false; }
 };
+/**
+ * Asks the browser to save her email and password once they've worked (owner, 23 Nov 2026: "remember password"), where it can
+ * (Chrome and Edge); other browsers offer to save from the form itself. Never stops the sign-in.
+ */
+async function rememberPassword(email: string, password: string): Promise<void> {
+  try {
+    const Cred = (window as unknown as { PasswordCredential?: new (d: { id: string; password: string; name?: string }) => Credential }).PasswordCredential;
+    if (Cred && navigator.credentials?.store) await navigator.credentials.store(new Cred({ id: email.trim(), password, name: email.trim() }));
+  } catch {}
+}
 const startPath = (p: "Google" | "TikTok") => (p === "Google" ? "/api/auth/google/start" : "/api/auth/tiktok/start");
 
 /**
@@ -225,7 +235,9 @@ export default function SignIn() {
   }
   const signInEmail = () => withBusy(async () => {
     try {
-      land((await emailCall({ mode: "signin", email, password: pw })).details);
+      const d = await emailCall({ mode: "signin", email, password: pw });
+      await rememberPassword(email, pw);
+      land(d.details);
     } catch (e) {
       // An email that signs in with Google has no password.
       const d = await emailCall({ mode: "check", email }).catch(() => null);
@@ -233,7 +245,7 @@ export default function SignIn() {
       throw e;
     }
   });
-  const signUpEmail = () => withBusy(async () => { await emailCall({ mode: "signup", email, password: pw, name: name.trim(), code }); land(true); });
+  const signUpEmail = () => withBusy(async () => { await emailCall({ mode: "signup", email, password: pw, name: name.trim(), code }); await rememberPassword(email, pw); land(true); });
   /** Emails a code for `purpose`; the code box then shows on the same card (or on `then`). */
   const sendCode = (purpose: "signup" | "signin" | "reset", then?: Step) => withBusy(async () => {
     if (!isEmail(email)) throw new Error(t("Enter your email first."));
@@ -244,7 +256,7 @@ export default function SignIn() {
     setCodeSent(true);
   });
   const signInCode = () => withBusy(async () => land((await emailCall({ mode: "signin", email, code })).details));
-  const resetPassword = () => withBusy(async () => land((await emailCall({ mode: "reset", email, code, password: pw })).details));
+  const resetPassword = () => withBusy(async () => { const d = await emailCall({ mode: "reset", email, code, password: pw }); await rememberPassword(email, pw); land(d.details); });
 
   // Waiting for the sign-in in the browser: asks every few seconds and whenever the app comes back to the front.
   useEffect(() => {
@@ -322,7 +334,8 @@ export default function SignIn() {
   const emailField = (
     <label className="v2-field">
       {t("Email")}
-      <input className="np-input" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} aria-invalid={tried && !isEmail(email)} />
+      {/* Named and marked as the account name, so the browser offers to save and fill the password (owner, 23 Nov 2026). */}
+      <input className="np-input" type="email" name="email" autoComplete="username" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} aria-invalid={tried && !isEmail(email)} />
       {tried && !isEmail(email) && <small className="cr1-err">{t("Enter an email like you@example.com")}</small>}
     </label>
   );
@@ -577,7 +590,7 @@ export default function SignIn() {
     <label className="v2-field">
       {label}
       <span className="cr1-pw">
-        <input className="np-input" type={showPw ? "text" : "password"} autoComplete={newPw ? "new-password" : "current-password"} value={pw} onChange={(e) => setPw(e.target.value)} aria-invalid={tried && (newPw ? pw.length < 8 : !pw)} />
+        <input className="np-input" type={showPw ? "text" : "password"} name="password" autoComplete={newPw ? "new-password" : "current-password"} value={pw} onChange={(e) => setPw(e.target.value)} aria-invalid={tried && (newPw ? pw.length < 8 : !pw)} />
         <button type="button" onClick={() => setShowPw((x) => !x)} aria-label={showPw ? t("Hide password") : t("Show password")}><Icon name="eye" size={18} /></button>
       </span>
       {newPw ? <small className={pw.length >= 8 ? "cr1-okline" : tried ? "cr1-err" : undefined}>{t("At least 8 characters")}</small> : tried && !pw ? <small className="cr1-err">{t("Enter your password")}</small> : null}
