@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
+import { WhatsAppNumbersCard } from "@/components/admin/live-whatsapp";
 import { Title } from "@/components/ui";
 import { Pill } from "@/components/admin/bits";
 import { when } from "@/components/admin/live-lists";
@@ -64,6 +65,8 @@ export function LiveSettings() {
               ))}
             </div>
           </section>
+
+          <WhatsAppNumbersCard />
 
           <section className="v2-card" style={{ padding: "6px 20px" }}>
             <div className="v2-card-h"><h2 className="v2-h2">Scheduled Jobs</h2><span className="v2-small">Daily refresh {d.health.refresh.runDate ?? "not run yet"}: {d.health.refresh.done} done, {d.health.refresh.open} running, {d.health.refresh.failed} failed</span></div>
