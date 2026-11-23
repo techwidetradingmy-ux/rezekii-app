@@ -141,8 +141,7 @@ export async function POST(req: NextRequest) {
     const shop = shops[i]!;
     const s = (c.settings ?? {}) as { items?: unknown; duet?: unknown; stitch?: unknown; aigc?: unknown };
     // Sellers pick up to 6 of their own shop's products (Shopee checks they're the shop's); Shopee refuses other shops' products for affiliates.
-    // TEST (owner, 23 Nov 2026, temporary): admins send products from affiliate accounts too, to see if Shopee now takes them.
-    const items = (shop.role === "seller" || user.role === "admin") && Array.isArray(s.items) ? s.items.map(Number).filter((n) => Number.isSafeInteger(n) && n > 0) : [];
+    const items = shop.role === "seller" && Array.isArray(s.items) ? s.items.map(Number).filter((n) => Number.isSafeInteger(n) && n > 0) : [];
     const settings: ShopeeSettings = { itemIds: [...new Set(items)].slice(0, 6), duet: s.duet !== false, stitch: s.stitch !== false, aigc: s.aigc === true };
     return {
       group_id: groupId,
