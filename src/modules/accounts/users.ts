@@ -115,7 +115,9 @@ export async function linkOrSignInTikTok(current: AppUser | null, t: TikTokProfi
   if (current && (!owner || owner.id === current.id)) {
     const user = await patch(current.id, {
       tiktok_open_id: t.open_id,
-      tiktok_username: t.username?.toLowerCase() ?? current.tiktok_username,
+      // Her TikTok name follows her TikTok Shop (owner, 23 Nov 2026: "TAP should follow TikTok Shop account"); connecting a
+      // TikTok account to post with only fills it in when she has none yet.
+      tiktok_username: current.tiktok_username ?? t.username?.toLowerCase() ?? null,
       // Her photo from TikTok when the account has none that still works (owner, 22 Nov 2026: an expired one kept it blank).
       ...(freshUrl(current.avatar_url) || !t.avatar_url ? {} : { avatar_url: t.avatar_url }),
       ...(current.display_name ? {} : { display_name: t.display_name ?? null }),
