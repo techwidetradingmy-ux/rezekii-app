@@ -27,7 +27,11 @@ export type BoardChannel = {
 const soon = (iso: string | null) => !!iso && Date.parse(iso) - Date.now() < 30 * 60e3;
 // Its time has come but the timer hasn't started it yet (it runs every minute): that's Posting, not Scheduled (M8).
 const due = (status: string, next: string | null) => status === "scheduled" && !!next && Date.parse(next) <= Date.now();
-export type BoardPost = { key: string; at: string | null; caption: string; channels: BoardChannel[] };
+/** `preview`: the post's video or first photo, which the calendar loads from /api/v2/publish/preview when it comes into view. */
+export type BoardPreview = { kind: "social" | "tiktok"; id: string; type: "video" | "photo" };
+export type BoardPost = { key: string; at: string | null; caption: string; channels: BoardChannel[]; preview: BoardPreview | null };
+const previewOf = (kind: BoardPreview["kind"], r: { id: string; storage_path: string | null; photo_paths: string[] | null }): BoardPreview | null =>
+  r.photo_paths?.length ? { kind, id: r.id, type: "photo" } : r.storage_path ? { kind, id: r.id, type: "video" } : null;
 
 function tiktokChannel(p: PostRow, lang: Lang): BoardChannel {
   const now = due(p.status, p.next_attempt_at);
@@ -77,13 +81,13 @@ export async function boardPosts(userId: string, lang: Lang = "en"): Promise<{ p
     let g = groups.get(s.group_id);
     if (!g) {
       const tt = s.tiktok_post_id ? byTikTok.get(s.tiktok_post_id) : undefined;
-      g = { key: s.group_id, at: s.scheduled_at ?? s.posted_at, caption: short(tt?.caption || s.caption), channels: tt && tt.status !== "cancelled" ? [tiktokChannel(tt, lang)] : [] };
+      g = { key: s.group_id, at: s.scheduled_at ?? s.posted_at, caption: short(tt?.caption || s.caption), channels: tt && tt.status !== "cancelled" ? [tiktokChannel(tt, lang)] : [], preview: previewOf("social", s) ?? (tt ? previewOf("tiktok", tt) : null) };
       if (tt) usedTikTok.add(tt.id);
       groups.set(s.group_id, g);
     }
     g.channels.push(socialChannel(s, lang));
   }
-  const posts = [...groups.values(), ...tiktok.filter((p) => !usedTikTok.has(p.id)).map((p) => ({ key: p.id, at: p.status === "posted" && p.posted_at ? p.posted_at : p.scheduled_at, caption: short(p.caption), channels: [tiktokChannel(p, lang)] }))];
+  const posts = [...groups.values(), ...tiktok.filter((p) => !usedTikTok.has(p.id)).map((p) => ({ key: p.id, at: p.status === "posted" && p.posted_at ? p.posted_at : p.scheduled_at, caption: short(p.caption), channels: [tiktokChannel(p, lang)], preview: previewOf("tiktok", p) }))];
   for (const p of posts) p.channels.sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind));
   return { posts: posts.sort((a, b) => (a.at ?? "9999").localeCompare(b.at ?? "9999") * -1), now: Date.now() };
 }

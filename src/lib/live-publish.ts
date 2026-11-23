@@ -111,7 +111,7 @@ export function keepRecipe(key: string, recipe: Recipe): void {
 /* ---------------- Content Calendar ---------------- */
 
 type BoardChannel = { id: string; kind: Channel; account: string; name: string; state: "draft" | "scheduled" | "posting" | "posted" | "failed" | "fbdraft" | "removed"; note: string; permalink: string | null; canCancel: boolean; canRetry: boolean; commentFailed: boolean };
-type BoardPost = { key: string; at: string | null; caption: string; channels: BoardChannel[] };
+type BoardPost = { key: string; at: string | null; caption: string; channels: BoardChannel[]; preview?: { kind: "social" | "tiktok"; id: string; type: "video" | "photo" } | null };
 
 const STATE: Record<BoardChannel["state"], PostStatus> = { draft: "draft", scheduled: "scheduled", posting: "sending", posted: "posted", failed: "failed", fbdraft: "pagedraft", removed: "removed" };
 const myt = (iso: string) => new Date(Date.parse(iso) + 8 * 3600_000).toISOString();
@@ -132,6 +132,7 @@ export async function loadPosts(): Promise<MyPost[]> {
       cover: "",
       seconds: 0,
       real: true,
+      preview: p.preview ? { url: `/api/v2/publish/preview?kind=${p.preview.kind}&id=${p.preview.id}`, type: p.preview.type } : null,
       targets: p.channels.map((c) => ({
         key: c.account,
         status: STATE[c.state],

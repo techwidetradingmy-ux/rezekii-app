@@ -109,6 +109,8 @@ export type PostTarget = {
 };
 export type MyPost = {
   id: string;
+  /** Her real post's video or first photo, loaded when it scrolls into view (owner, 23 Nov 2026). */
+  preview?: { url: string; type: "video" | "photo" } | null;
   /** ISO date and 24-hour time, Malaysia time; empty for a draft with no time yet. */
   date: string;
   time: string;

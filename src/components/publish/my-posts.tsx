@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/icons";
 import { useDemo } from "@/components/demo";
@@ -16,14 +16,13 @@ import { ICON, NAMES, type Channel } from "./rules";
 import { useLang, useT } from "@/lib/i18n/client";
 import { dateLocale, tx, type Lang, type T } from "@/lib/i18n/lang";
 import { rich } from "./rich";
+import { AccountFace } from "./account-face";
 import "@/app/creator2.css";
 import "@/app/publish.css";
 
 /** Today in the sample preview: Wednesday 28 October 2026, 9:15 AM Malaysia time. */
 const SAMPLE_TODAY = "2026-10-28";
 const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const WEEK = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
-const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const add = (s: string, n: number) => { const d = new Date(`${s}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 const dow = (s: string) => new Date(`${s}T00:00:00Z`).getUTCDay();
 /** Dates and times in her language (owner, 3 Nov 2026): English as before; Malay and Chinese from the browser's own dates. */
@@ -39,9 +38,10 @@ const clock = (time: string, lang: Lang) => {
   const [h, m] = time.split(":").map(Number);
   return lang === "en" ? `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}` : new Date(Date.UTC(2026, 0, 1, h, m)).toLocaleTimeString(dateLocale(lang), { hour: "numeric", minute: "2-digit", timeZone: "UTC" });
 };
-/** "October 2026" and the week's day letters, Monday first. */
-const monthTitle = (y: number, m: number, lang: Lang) => (lang === "en" ? `${MONTHS[m - 1]} ${y}` : new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString(dateLocale(lang), { month: "long", year: "numeric", timeZone: "UTC" }));
-const weekHeads = (lang: Lang) => (lang === "en" ? WEEK : WEEK.map((_, i) => inLang(add("2026-01-05", i), lang, { weekday: lang === "zh" ? "narrow" : "short" })));
+/** The overview's day heading: "Mon" over "24". */
+const dayHead = (s: string, lang: Lang) => (lang === "en" ? DOW[dow(s)] : inLang(s, lang, { weekday: "short" }));
+const OV_APPS: Channel[] = ["tiktok", "facebook", "instagram", "threads", "shopee"];
+const PAGE_ROWS = 5;
 const views = (n = 0) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}K` : String(n));
 
 const PRESETS: [string, string][] = [["around", tx("Last 7 & next 7 days")], ["today", tx("Today")], ["next7", tx("Next 7 days")], ["week", tx("This week")], ["last7", tx("Last 7 days")], ["month", tx("This month")], ["last30", tx("Last 30 days")]];
@@ -133,7 +133,12 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
   const [[from, to], setRange] = useState<[string, string]>(RANGE.month);
   const [only, setOnly] = useState<Group | null>(null);
   const [day, setDay] = useState<string | null>(null);
-  const [month, setMonth] = useState(() => TODAY.slice(0, 7));
+  // Filter by page (owner, 23 Nov 2026: "very difficult for us to search for pages"): one or more of her accounts.
+  const [pages, setPages] = useState<string[]>([]);
+  const [pagesOpen, setPagesOpen] = useState(false);
+  const [pageQ, setPageQ] = useState("");
+  const [allPages, setAllPages] = useState(false);
+  const [openCaps, setOpenCaps] = useState<Record<string, boolean>>({});
   const [cancelling, setCancelling] = useState<string | null>(null);
   const [resending, setResending] = useState<string | null>(null);
   // Owner, 28 Oct 2026: posts she made from her phone show here too, marked, so the calendar is the whole picture.
@@ -143,6 +148,8 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
   const [brand, setBrand] = useState<string | null>(null);
   const brandNow = setup.brands.find((b) => b.id === brand);
   const brandOk = (p: MyPost) => !brandNow || p.targets.some((tg) => brandNow.channels.includes(tg.key));
+  const pageOk = (p: MyPost) => !pages.length || p.targets.some((tg) => pages.includes(tg.key));
+  const togglePage = (k: string) => setPages((ps) => (ps.includes(k) ? ps.filter((x) => x !== k) : [...ps, k]));
 
   // Posts going out move one step every couple of seconds, like V1's status updates while TikTok works on them.
   const moving = posts.some((p) => p.targets.some((tg) => MOVING.includes(tg.status)));
@@ -169,12 +176,32 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
   const chan = (key: string) => setup.channels.find((c) => c.key === key);
   const appOf = (tg: PostTarget): Channel => chan(tg.key)?.app ?? "facebook";
   const inRange = (p: MyPost) => !p.date || (p.date >= from && p.date <= to);
-  const shown = posts.filter((p) => srcOk(p) && brandOk(p) && inRange(p) && (!day || p.date === day) && (!only || groupOf(p) === only));
-  const count = (g: Group) => posts.filter((p) => srcOk(p) && brandOk(p) && inRange(p) && groupOf(p) === g).length;
+  const shown = posts.filter((p) => srcOk(p) && brandOk(p) && pageOk(p) && inRange(p) && (!day || p.date === day) && (!only || groupOf(p) === only));
+  const count = (g: Group) => posts.filter((p) => srcOk(p) && brandOk(p) && pageOk(p) && inRange(p) && groupOf(p) === g).length;
+  // Each post's apps, only the picked pages when a page filter is on.
+  const targetsOf = (p: MyPost) => (pages.length ? p.targets.filter((tg) => pages.includes(tg.key)) : p.targets);
+  const inView = posts.filter((p) => srcOk(p) && brandOk(p) && pageOk(p) && inRange(p));
+
+  // By page (owner, 23 Nov 2026): for each page, posted today, scheduled and failed in these dates.
+  const perPage = new Map<string, { today: number; sched: number; fail: number }>();
+  for (const p of inView) for (const tg of targetsOf(p)) {
+    const r = perPage.get(tg.key) ?? { today: 0, sched: 0, fail: 0 };
+    if (tg.status === "posted" && p.date === TODAY) r.today++;
+    else if (tg.status === "scheduled" || MOVING.includes(tg.status)) r.sched++;
+    else if (tg.status === "failed") r.fail++;
+    perPage.set(tg.key, r);
+  }
+  const pageRows = [...perPage].filter(([, r]) => r.today + r.sched + r.fail > 0).sort((a, b) => b[1].sched + b[1].today + b[1].fail - (a[1].sched + a[1].today + a[1].fail));
+
+  // Schedule overview (owner, 23 Nov 2026): how many videos go out each day, per app, across these dates.
+  const days: string[] = [];
+  for (let d = from; d <= to && days.length < 62; d = add(d, 1)) days.push(d);
+  const onDay = (app: Channel | null, d: string) => inView.filter((p) => p.date === d).reduce((n, p) => n + targetsOf(p).filter((tg) => tg.status !== "draft" && (!app || appOf(tg) === app)).length, 0);
+  const ovApps = OV_APPS.filter((a) => days.some((d) => onDay(a, d) > 0));
   const SOURCES = [["all", t("All")], ["rezekii", t("Via Rezekii")], ["phone", t("From Phone")]] as const;
   const needs = count("fail");
 
-  const choose = (a: string, b: string, key: string | null) => { setRange([a, b]); setPreset(key); setDay(null); setMonth(b < TODAY ? b.slice(0, 7) : a > TODAY ? a.slice(0, 7) : TODAY.slice(0, 7)); };
+  const choose = (a: string, b: string, key: string | null) => { setRange([a, b]); setPreset(key); setDay(null); };
   const range = `${dayShort(from, lang)} – ${dayShort(to, lang)}`;
   const label = preset ? t(PRESETS.find(([k]) => k === preset)![1]) : range;
 
@@ -212,12 +239,6 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
     toast(t("Cancelled. {n} credits refunded; moved to drafts.", { n: p.targets.length * POST_CREDITS }));
   };
 
-  // The month map: each day shows a dot per post, in its group's colour.
-  const [y, m] = month.split("-").map(Number);
-  const lead = (new Date(Date.UTC(y, m - 1, 1)).getUTCDay() + 6) % 7;
-  const daysIn = new Date(Date.UTC(y, m, 0)).getUTCDate();
-  const moveMonth = (k: number) => { const d = new Date(Date.UTC(y, m - 1 + k, 1)); setMonth(d.toISOString().slice(0, 7)); };
-
   // Reuse (owner, 21 Nov 2026, as on rezekii.com): New Post filled in like this post; she adds a new video or photos.
   const reuse = (p: MyPost) => router.push(`${newPost}?reuse=${encodeURIComponent(p.id)}`);
 
@@ -230,7 +251,7 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
       <li key={p.id} className={`sq-post ${g}`}>
         <span className="sq-cover">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          {p.cover ? <img src={p.cover} alt="" /> : <span style={{ display: "grid", placeItems: "center", width: "100%", height: "100%" }}><Icon name="video" size={22} /></span>}
+          {p.preview ? <Preview url={p.preview.url} type={p.preview.type} /> : p.cover ? <img src={p.cover} alt="" /> : <span style={{ display: "grid", placeItems: "center", width: "100%", height: "100%" }}><Icon name="video" size={22} /></span>}
           {p.seconds > 0 && <small>{Math.floor(p.seconds / 60)}:{String(p.seconds % 60).padStart(2, "0")}</small>}
         </span>
         <span className="sq-body">
@@ -238,9 +259,11 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
             {p.date ? <><b>{dayLabel(p.date)}</b> · {clock(p.time, lang)}</> : <b>{t("No time yet")}</b>}
             <span className={`sq-src${p.source === "phone" ? " phone" : ""}`}>{p.source === "phone" ? <><Icon name="phone" size={12} /> {t("From Phone")}</> : t("Via Rezekii")}</span>
           </span>
-          <strong className="sq-cap">{p.caption}</strong>
+          {/* Two lines, the rest on More (owner, 23 Nov 2026: "the description is too long"). */}
+          <strong className={`sq-cap${openCaps[p.id] ? "" : " clamp"}`}>{p.caption}</strong>
+          {p.caption.length > 90 && <button type="button" className="pb-link sq-more" onClick={() => setOpenCaps((o) => ({ ...o, [p.id]: !o[p.id] }))}>{openCaps[p.id] ? t("Less") : t("More")}</button>}
           <span className="sq-targets">
-            {p.targets.map((tg) => {
+            {targetsOf(p).map((tg) => {
               const app = appOf(tg);
               const c = chan(tg.key);
               const step = STEPS.indexOf(tg.status);
@@ -335,13 +358,14 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
             },
           )}
         </p>
-        {(only || day || src !== "all" || brandNow) && (
+        {(only || day || src !== "all" || brandNow || pages.length > 0) && (
           <span className="sq-chips">
             {only && <button type="button" className="sq-chip" onClick={() => setOnly(null)} aria-label={t("Remove {name}", { name: t(GROUPS.find((g) => g.key === only)!.title) })}>{t(GROUPS.find((g) => g.key === only)!.title)} <Icon name="x" size={13} width={2.6} /></button>}
             {day && <button type="button" className="sq-chip" onClick={() => setDay(null)} aria-label={t("Remove {name}", { name: dayLabel(day) })}>{dayLabel(day)} <Icon name="x" size={13} width={2.6} /></button>}
             {src !== "all" && <button type="button" className="sq-chip" onClick={() => setSrc("all")} aria-label={t("Remove posted from")}>{SOURCES.find(([k]) => k === src)![1]} <Icon name="x" size={13} width={2.6} /></button>}
             {brandNow && <button type="button" className="sq-chip" onClick={() => setBrand(null)} aria-label={t("Remove {name}", { name: brandNow.name })}>{brandNow.name} <Icon name="x" size={13} width={2.6} /></button>}
-            <button type="button" className="pb-link" onClick={() => { setOnly(null); setDay(null); setSrc("all"); setBrand(null); }}>{t("Show All")}</button>
+            {pages.length > 0 && <button type="button" className="sq-chip" onClick={() => setPages([])} aria-label={t("Remove {name}", { name: t("{n} Pages", { n: pages.length }) })}>{pages.length === 1 ? chan(pages[0])?.name ?? t("1 Page") : t("{n} Pages", { n: pages.length })} <Icon name="x" size={13} width={2.6} /></button>}
+            <button type="button" className="pb-link" onClick={() => { setOnly(null); setDay(null); setSrc("all"); setBrand(null); setPages([]); }}>{t("Show All")}</button>
           </span>
         )}
       </div>
@@ -364,6 +388,32 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
         </div>
       )}
 
+      {setup.channels.length > 1 && (
+        <div className="sq-pagepick">
+          <button type="button" className={`v2-chip${pages.length ? " on" : ""}`} aria-expanded={pagesOpen} onClick={() => setPagesOpen((o) => !o)}>
+            <Icon name="user" size={15} /> {pages.length === 0 ? t("All Pages") : pages.length === 1 ? chan(pages[0])?.name ?? t("1 Page") : t("{n} Pages", { n: pages.length })} <Icon name="updown" size={13} />
+          </button>
+          {pagesOpen && (
+            <div className="v2-card sq-pagepanel">
+              <input className="np-input" type="search" value={pageQ} onChange={(e) => setPageQ(e.target.value)} placeholder={t("Search pages")} aria-label={t("Search pages")} autoFocus />
+              <div className="sq-pagelist">
+                {setup.channels.filter((c) => !pageQ.trim() || `${c.name} ${c.sub}`.toLowerCase().includes(pageQ.trim().toLowerCase())).map((c) => (
+                  <label key={c.key} className="pb-check">
+                    <AccountFace icon={ICON[c.app]} photo={c.photo} initials={c.initials} color={c.color} />
+                    <span><b>{c.name}</b><small>{c.sub}</small></span>
+                    <input type="checkbox" checked={pages.includes(c.key)} onChange={() => togglePage(c.key)} />
+                  </label>
+                ))}
+              </div>
+              <div className="pb-row" style={{ justifyContent: "space-between" }}>
+                <button type="button" className="pb-link" onClick={() => setPages([])}>{t("Clear")}</button>
+                <button type="button" className="np-btn v2-btn-sm" onClick={() => setPagesOpen(false)}>{t("Done")}</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {!live && <div className="sq-srcbar">
         <div className="v2-chips" role="group" aria-label={t("Posted from")}>
           {([["all", t("All Posts")], ["rezekii", t("Via Rezekii")], ["phone", t("From Phone")]] as const).map(([k, l]) => (
@@ -373,35 +423,60 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
         <span className="v2-small">{t("Phone posts sync every 30 minutes.")}</span>
       </div>}
 
-      <section className="v2-card sq-map">
-        <div className="sq-map-h">
-          <button type="button" className="cp-nav" aria-label={t("Previous month")} onClick={() => moveMonth(-1)}><Icon name="back" size={16} /></button>
-          <h2 className="v2-h2">{monthTitle(y, m, lang)}</h2>
-          <button type="button" className="cp-nav" aria-label={t("Next month")} onClick={() => moveMonth(1)}><Icon name="arrow" size={16} /></button>
-        </div>
-        <div className="sq-grid" role="grid" aria-label={t("Posts in {month}", { month: monthTitle(y, m, lang) })}>
-          {weekHeads(lang).map((w, i) => <span key={i} className="sq-wd">{w}</span>)}
-          {Array.from({ length: lead }, (_, i) => <span key={`b${i}`} />)}
-          {Array.from({ length: daysIn }, (_, i) => {
-            const d = `${month}-${String(i + 1).padStart(2, "0")}`;
-            const list = posts.filter((p) => p.date === d && srcOk(p) && brandOk(p));
-            const out = d < from || d > to;
-            // How many went up that day (owner, 1 Nov 2026), with a dot for anything else.
-            const posted = list.filter((p) => groupOf(p) === "done").length;
-            return (
-              <button key={d} type="button" className={`sq-day${d === TODAY ? " today" : ""}${day === d ? " on" : ""}${out ? " out" : ""}`} onClick={() => setDay(day === d ? null : d)} aria-label={list.length === 1 ? t("{day}: {posted} posted, {n} post in all", { day: dayShort(d, lang), posted, n: 1 }) : t("{day}: {posted} posted, {n} posts in all", { day: dayShort(d, lang), posted, n: list.length })} aria-pressed={day === d}>
-                <b>{i + 1}</b>
-                {posted > 0 && <em className="sq-posted">{posted}</em>}
-                <span className="sq-dots">{list.filter((p) => groupOf(p) !== "done").slice(0, 3).map((p) => <i key={p.id} className={groupOf(p)} />)}</span>
-              </button>
-            );
-          })}
-        </div>
-        <div className="sq-legend">
-          <span><em className="sq-posted">2</em>{t("Posted that day")}</span>
-          {GROUPS.filter((g) => g.key !== "draft" && g.key !== "done").map((g) => <span key={g.key}><i className={g.key} />{t(g.title)}</span>)}
-        </div>
-      </section>
+      <div className="sq-map">
+        {/* Schedule overview (owner, 23 Nov 2026): videos per day for each app; tap a day to see only its posts. */}
+        <section className="v2-card sq-ov-card">
+          <div className="v2-card-h"><h2 className="v2-h2">{t("Schedule Overview")}</h2><span className="v2-small">{t("Videos per day, by app")}</span></div>
+          {ovApps.length === 0 ? <p className="v2-small" style={{ margin: 0 }}>{t("No posts for these dates.")}</p> : (
+            <div className="sq-ov-wrap">
+              <table className="sq-ov">
+                <thead>
+                  <tr>
+                    <th aria-label={t("App")} />
+                    {days.map((d) => (
+                      <th key={d}>
+                        <button type="button" className={`sq-ov-day${d === TODAY ? " today" : ""}${day === d ? " on" : ""}`} aria-pressed={day === d} onClick={() => setDay(day === d ? null : d)} title={dayLabel(d)}>
+                          <small>{dayHead(d, lang)}</small><b>{Number(d.slice(8))}</b>
+                        </button>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {ovApps.map((a) => (
+                    <tr key={a}>
+                      <th><span className="sq-ov-app"><PlatformIcon name={ICON[a]} size={16} /><span>{NAMES[a]}</span></span></th>
+                      {days.map((d) => { const n = onDay(a, d); return <td key={d} className={`${n ? "has" : ""}${d === TODAY ? " today" : ""}${day === d ? " on" : ""}`}>{n || ""}</td>; })}
+                    </tr>
+                  ))}
+                  <tr className="sq-ov-total">
+                    <th>{t("Total")}</th>
+                    {days.map((d) => { const n = onDay(null, d); return <td key={d} className={`${d === TODAY ? "today" : ""}${day === d ? " on" : ""}`}>{n || ""}</td>; })}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        {/* By page (owner, 23 Nov 2026): what each page posted today and has scheduled, five until Show All. */}
+        {pageRows.length > 0 && (
+          <section className="v2-card sq-bypage">
+            <div className="v2-card-h"><h2 className="v2-h2">{t("By Page")}</h2><span className="v2-small">{pageRows.length}</span></div>
+            <div className="sq-bp-row sq-bp-head"><span>{t("Page")}</span><span>{t("Posted Today")}</span><span>{t("Scheduled")}</span><span>{t("Failed")}</span></div>
+            {(allPages ? pageRows : pageRows.slice(0, PAGE_ROWS)).map(([k, r]) => {
+              const c = chan(k);
+              return (
+                <button key={k} type="button" className={`sq-bp-row${pages.length === 1 && pages[0] === k ? " on" : ""}`} onClick={() => setPages(pages.length === 1 && pages[0] === k ? [] : [k])} title={t("Show only {name}", { name: c?.name ?? "" })}>
+                  <span className="sq-bp-name">{c ? <AccountFace icon={ICON[c.app]} photo={c.photo} initials={c.initials} color={c.color} /> : null}<b>{c?.name ?? t("Removed account")}</b></span>
+                  <span>{r.today || "–"}</span><span>{r.sched || "–"}</span><span className={r.fail ? "bad" : ""}>{r.fail || "–"}</span>
+                </button>
+              );
+            })}
+            {pageRows.length > PAGE_ROWS && <button type="button" className="pb-link" style={{ justifySelf: "start" }} onClick={() => setAllPages((v) => !v)}>{allPages ? t("Show Less") : t("Show All {n}", { n: pageRows.length })}</button>}
+          </section>
+        )}
+      </div>
 
 
       {GROUPS.map((g) => {
@@ -427,6 +502,31 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
 
 
     </div>
+  );
+}
+
+/** A post's video (its first frame, tap to play or pause) or first photo, loaded only once it scrolls into view (owner, 23 Nov 2026). */
+function Preview({ url, type }: { url: string; type: "video" | "photo" }) {
+  const box = useRef<HTMLSpanElement>(null);
+  const [seen, setSeen] = useState(false);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    const el = box.current;
+    if (!el || seen || typeof IntersectionObserver === "undefined") { if (!seen) setSeen(true); return; }
+    const io = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { setSeen(true); io.disconnect(); } }, { rootMargin: "300px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [seen]);
+  const blank = <span style={{ display: "grid", placeItems: "center", width: "100%", height: "100%" }}><Icon name="video" size={22} /></span>;
+  return (
+    <span ref={box} className="sq-prev">
+      {!seen || failed ? blank : type === "photo" ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={url} alt="" onError={() => setFailed(true)} />
+      ) : (
+        <video src={`${url}#t=0.5`} preload="metadata" muted playsInline onError={() => setFailed(true)} onClick={(e) => { const v = e.currentTarget; if (v.paused) { v.muted = false; void v.play(); } else v.pause(); }} />
+      )}
+    </span>
   );
 }
 
