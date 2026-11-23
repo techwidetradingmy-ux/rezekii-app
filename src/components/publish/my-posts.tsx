@@ -198,6 +198,13 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
   for (let d = from; d <= to && days.length < 62; d = add(d, 1)) days.push(d);
   const onDay = (app: Channel | null, d: string) => inView.filter((p) => p.date === d).reduce((n, p) => n + targetsOf(p).filter((tg) => tg.status !== "draft" && (!app || appOf(tg) === app)).length, 0);
   const ovApps = OV_APPS.filter((a) => days.some((d) => onDay(a, d) > 0));
+  // The overview opens on today, so she doesn't scroll past empty days to find it.
+  const ovWrap = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const wrap = ovWrap.current;
+    const el = wrap?.querySelector<HTMLElement>(".sq-ov-day.today") ?? null;
+    if (wrap && el) wrap.scrollLeft = Math.max(0, el.offsetLeft - wrap.clientWidth / 3);
+  }, [from, to, ovApps.length]);
   const SOURCES = [["all", t("All")], ["rezekii", t("Via Rezekii")], ["phone", t("From Phone")]] as const;
   const needs = count("fail");
 
@@ -334,6 +341,40 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
           onPreset={(k) => choose(RANGE[k][0], RANGE[k][1], k)}
         />
       </Title>
+      {/* Schedule overview (owner, 23 Nov 2026): videos per day for each app; tap a day to see only its posts. */}
+      <section className="v2-card sq-ov-card">
+        <div className="v2-card-h"><h2 className="v2-h2">{t("Schedule Overview")}</h2><span className="v2-small">{t("Videos per day, by app")}</span></div>
+        {ovApps.length === 0 ? <p className="v2-small" style={{ margin: 0 }}>{t("No posts for these dates.")}</p> : (
+          <div className="sq-ov-wrap" ref={ovWrap}>
+            <table className="sq-ov">
+              <thead>
+                <tr>
+                  <th aria-label={t("App")} />
+                  {days.map((d) => (
+                    <th key={d}>
+                      <button type="button" className={`sq-ov-day${d === TODAY ? " today" : ""}${day === d ? " on" : ""}`} aria-pressed={day === d} onClick={() => setDay(day === d ? null : d)} title={dayLabel(d)}>
+                        <small>{dayHead(d, lang)}</small><b>{Number(d.slice(8))}</b>
+                      </button>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {ovApps.map((a) => (
+                  <tr key={a}>
+                    <th><span className="sq-ov-app"><PlatformIcon name={ICON[a]} size={16} /><span>{NAMES[a]}</span></span></th>
+                    {days.map((d) => { const n = onDay(a, d); return <td key={d} className={`${n ? "has" : ""}${d === TODAY ? " today" : ""}${day === d ? " on" : ""}`}>{n || ""}</td>; })}
+                  </tr>
+                ))}
+                <tr className="sq-ov-total">
+                  <th>{t("Total")}</th>
+                  {days.map((d) => { const n = onDay(null, d); return <td key={d} className={`${d === TODAY ? "today" : ""}${day === d ? " on" : ""}`}>{n || ""}</td>; })}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
       <p className="an-range"><b>{label}</b><span>{range}</span></p>
 
       {needs > 0 && only !== "fail" && (
@@ -424,40 +465,6 @@ export function MyPosts({ setup, posts: start, newPost }: { setup: PublishSetup;
       </div>}
 
       <div className="sq-map">
-        {/* Schedule overview (owner, 23 Nov 2026): videos per day for each app; tap a day to see only its posts. */}
-        <section className="v2-card sq-ov-card">
-          <div className="v2-card-h"><h2 className="v2-h2">{t("Schedule Overview")}</h2><span className="v2-small">{t("Videos per day, by app")}</span></div>
-          {ovApps.length === 0 ? <p className="v2-small" style={{ margin: 0 }}>{t("No posts for these dates.")}</p> : (
-            <div className="sq-ov-wrap">
-              <table className="sq-ov">
-                <thead>
-                  <tr>
-                    <th aria-label={t("App")} />
-                    {days.map((d) => (
-                      <th key={d}>
-                        <button type="button" className={`sq-ov-day${d === TODAY ? " today" : ""}${day === d ? " on" : ""}`} aria-pressed={day === d} onClick={() => setDay(day === d ? null : d)} title={dayLabel(d)}>
-                          <small>{dayHead(d, lang)}</small><b>{Number(d.slice(8))}</b>
-                        </button>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {ovApps.map((a) => (
-                    <tr key={a}>
-                      <th><span className="sq-ov-app"><PlatformIcon name={ICON[a]} size={16} /><span>{NAMES[a]}</span></span></th>
-                      {days.map((d) => { const n = onDay(a, d); return <td key={d} className={`${n ? "has" : ""}${d === TODAY ? " today" : ""}${day === d ? " on" : ""}`}>{n || ""}</td>; })}
-                    </tr>
-                  ))}
-                  <tr className="sq-ov-total">
-                    <th>{t("Total")}</th>
-                    {days.map((d) => { const n = onDay(null, d); return <td key={d} className={`${d === TODAY ? "today" : ""}${day === d ? " on" : ""}`}>{n || ""}</td>; })}
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
 
         {/* By page (owner, 23 Nov 2026): what each page posted today and has scheduled, five until Show All. */}
         {pageRows.length > 0 && (
